@@ -68,3 +68,61 @@ export interface SafetyIndicator {
   frequency: string;
   is_active: 0 | 1;
 }
+
+// Shared types for organization modules
+
+export interface LUCProcedure {
+  id: string;
+  code: string;
+  sector: 'EVALUATION' | 'PLANNING' | 'MISSION';
+  version: string;
+  active: 'Y' | 'N';
+  description: string;
+  jsonSchema: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Checklist {
+  id: string;
+  code: string;
+  version: string;
+  active: 'Y' | 'N';
+  description: string;
+  jsonSchema: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Assignment {
+  id: string;
+  code: string;
+  version: string;
+  active: 'Y' | 'N';
+  description: string;
+  jsonSchema: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Communication {
+  id: string;
+  code: string;
+  version: string;
+  active: 'Y' | 'N';
+  description: string;
+  jsonSchema: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OrganizationNode {
+  id: string;
+  name: string;
+  title?: string;
+  department?: string;
+  children?: OrganizationNode[];
+}
+
+export type ActiveStatus = 'Y' | 'N';
+export type SectorType = 'EVALUATION' | 'PLANNING' | 'MISSION';

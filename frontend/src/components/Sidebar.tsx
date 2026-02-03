@@ -96,43 +96,43 @@ const navigationItems: NavItem[] = [
 const configurationItems: SubNavItem[] = [
   {
     name: 'Organization',
-    href: '/configuration/organization-chart',
+    href: '/organization/chart',
     subItems: [
-      { name: 'Chart', href: '/configuration/organization-chart' },
-      { name: 'Board', href: '/configuration/organization/board' },
-      { name: 'LUC Procedures', href: '/configuration/organization/luc-procedures' },
-      { name: 'Checklist', href: '/configuration/organization/checklist' },
-      { name: 'Assignments', href: '/configuration/organization/assignments' },
-      { name: 'Communication', href: '/configuration/organization/communication' },
-      { name: 'LUC Documents', href: '/configuration/organization/luc-docs' }
+      { name: 'Chart', href: '/organization/chart' },
+      // { name: 'Board', href: '/organization/board' },
+      { name: 'LUC Procedures', href: '/organization/luc-procedures' },
+      { name: 'Checklist', href: '/organization/checklist' },
+      { name: 'Assignments', href: '/organization/assignments' },
+      { name: 'Communication', href: '/organization/communication' },
+      // { name: 'LUC Documents', href: '/organization/luc-docs' }
     ]
   },
   {
     name: 'Mission',
-    href: '/configuration/mission-type',
+    href: '/mission-type',
     subItems: [
-      { name: 'Mission Type', href: '/configuration/mission-type' },
-      { name: 'Mission Category', href: '/configuration/mission/category' },
-      { name: 'Mission Status', href: '/configuration/mission/status' },
-      { name: 'Mission Result', href: '/configuration/mission/result' }
+      { name: 'Mission Type', href: '/mission-type' },
+      { name: 'Mission Category', href: '/mission/category' },
+      { name: 'Mission Status', href: '/mission/status' },
+      { name: 'Mission Result', href: '/mission/result' }
     ]
   },
   {
     name: 'Systems',
-    href: '/configuration/systems-manage',
+    href: '/systems-manage',
     subItems: [
-      { name: 'Manage Systems', href: '/configuration/systems-manage' },
-      { name: 'Map', href: '/configuration/systems/map' },
-      { name: 'Maintenance Dashboard', href: '/configuration/systems/maintenance-dashboard' },
-      { name: 'Maintenance Tickets', href: '/configuration/systems/maintenance-tickets' }
+      { name: 'Manage Systems', href: '/systems-manage' },
+      { name: 'Map', href: '/systems/map' },
+      { name: 'Maintenance Dashboard', href: '/systems/maintenance-dashboard' },
+      { name: 'Maintenance Tickets', href: '/systems/maintenance-tickets' }
     ]
   },
   {
     name: 'Team',
-    href: '/configuration/team-personnel',
+    href: '/team-personnel',
     subItems: [
-      { name: 'Personnel', href: '/configuration/team-personnel' },
-      { name: 'Crew Shift', href: '/configuration/team/crew-shift' }
+      { name: 'Personnel', href: '/team-personnel' },
+      { name: 'Crew Shift', href: '/team/crew-shift' }
     ]
   }
 ];

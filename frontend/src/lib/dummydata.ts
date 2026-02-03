@@ -1,5 +1,5 @@
+import { Assignment, Checklist, Communication, Document, DocumentType, LUCProcedure, Notifications, OrganizationNode, SafetyIndicator } from '../config/types';
 
-import { Document, DocumentType, Notifications, SafetyIndicator } from '../config/types';
 export const DUMMY_DOCUMENTS: Document[] = [
   {
     document_id: 1,
@@ -265,3 +265,267 @@ export const DUMMY_SAFETY_INDICATORS: SafetyIndicator[] = [
     is_active: 0,
   },
 ];
+
+
+
+export const dummyLUCProcedures: LUCProcedure[] = [
+  {
+    id: '1',
+    code: 'LUC-001',
+    sector: 'EVALUATION',
+    version: '1.0',
+    active: 'Y',
+    description: 'Pre-flight evaluation procedure for drone operations',
+    jsonSchema: JSON.stringify({
+      type: 'object',
+      properties: {
+        weatherCheck: { type: 'boolean' },
+        batteryLevel: { type: 'number', minimum: 80 },
+        equipmentStatus: { type: 'string', enum: ['good', 'fair', 'poor'] }
+      }
+    }, null, 2),
+    createdAt: '2024-01-15T10:00:00Z',
+    updatedAt: '2024-01-20T14:30:00Z'
+  },
+  {
+    id: '2',
+    code: 'LUC-002',
+    sector: 'PLANNING',
+    version: '2.1',
+    active: 'Y',
+    description: 'Mission route planning and airspace clearance',
+    jsonSchema: JSON.stringify({
+      type: 'object',
+      properties: {
+        routeWaypoints: { type: 'array' },
+        airspaceClearance: { type: 'boolean' },
+        estimatedDuration: { type: 'number' }
+      }
+    }, null, 2),
+    createdAt: '2024-02-01T09:00:00Z',
+    updatedAt: '2024-02-10T11:45:00Z'
+  },
+  {
+    id: '3',
+    code: 'LUC-003',
+    sector: 'MISSION',
+    version: '1.5',
+    active: 'N',
+    description: 'In-flight mission execution protocol (deprecated)',
+    jsonSchema: JSON.stringify({
+      type: 'object',
+      properties: {
+        missionStatus: { type: 'string' },
+        telemetryData: { type: 'object' }
+      }
+    }, null, 2),
+    createdAt: '2023-12-10T08:30:00Z',
+    updatedAt: '2024-01-05T16:00:00Z'
+  }
+];
+
+export const dummyChecklists: Checklist[] = [
+  {
+    id: '1',
+    code: 'CHK-001',
+    version: '1.0',
+    active: 'Y',
+    description: 'Pre-flight safety checklist',
+    jsonSchema: JSON.stringify({
+      title: 'Pre-flight Safety Checklist',
+      pages: [
+        {
+          name: 'safety',
+          elements: [
+            { type: 'checkbox', name: 'batteryCheck', title: 'Battery charged above 80%' },
+            { type: 'checkbox', name: 'propellerCheck', title: 'Propellers securely attached' },
+            { type: 'checkbox', name: 'weatherCheck', title: 'Weather conditions acceptable' }
+          ]
+        }
+      ]
+    }, null, 2),
+    createdAt: '2024-01-10T10:00:00Z',
+    updatedAt: '2024-01-15T14:20:00Z'
+  },
+  {
+    id: '2',
+    code: 'CHK-002',
+    version: '2.0',
+    active: 'Y',
+    description: 'Post-flight maintenance checklist',
+    jsonSchema: JSON.stringify({
+      title: 'Post-flight Maintenance',
+      pages: [
+        {
+          name: 'maintenance',
+          elements: [
+            { type: 'checkbox', name: 'visualInspection', title: 'Visual damage inspection' },
+            { type: 'checkbox', name: 'cleaningDone', title: 'Equipment cleaned' },
+            { type: 'text', name: 'notes', title: 'Additional notes' }
+          ]
+        }
+      ]
+    }, null, 2),
+    createdAt: '2024-02-05T11:30:00Z',
+    updatedAt: '2024-02-12T09:15:00Z'
+  },
+  {
+    id: '3',
+    code: 'CHK-003',
+    version: '1.2',
+    active: 'N',
+    description: 'Emergency landing procedure (outdated)',
+    jsonSchema: JSON.stringify({
+      title: 'Emergency Landing',
+      pages: [
+        {
+          name: 'emergency',
+          elements: [
+            { type: 'checkbox', name: 'emergencySignal', title: 'Emergency signal activated' }
+          ]
+        }
+      ]
+    }, null, 2),
+    createdAt: '2023-11-20T13:00:00Z',
+    updatedAt: '2023-12-15T10:30:00Z'
+  }
+];
+
+export const dummyAssignments: Assignment[] = [
+  {
+    id: '1',
+    code: 'ASG-001',
+    version: '1.0',
+    active: 'Y',
+    description: 'Pilot assignment for surveillance missions',
+    jsonSchema: JSON.stringify({
+      type: 'object',
+      properties: {
+        pilotId: { type: 'string' },
+        missionType: { type: 'string', enum: ['surveillance', 'delivery', 'inspection'] },
+        certificationRequired: { type: 'array', items: { type: 'string' } }
+      }
+    }, null, 2),
+    createdAt: '2024-01-20T08:00:00Z',
+    updatedAt: '2024-01-25T16:45:00Z'
+  },
+  {
+    id: '2',
+    code: 'ASG-002',
+    version: '1.1',
+    active: 'Y',
+    description: 'Ground crew assignment protocol',
+    jsonSchema: JSON.stringify({
+      type: 'object',
+      properties: {
+        crewMembers: { type: 'array' },
+        roles: { type: 'array' },
+        shiftTiming: { type: 'string' }
+      }
+    }, null, 2),
+    createdAt: '2024-02-08T10:30:00Z',
+    updatedAt: '2024-02-15T12:00:00Z'
+  }
+];
+
+export const dummyCommunications: Communication[] = [
+  {
+    id: '1',
+    code: 'COM-001',
+    version: '1.0',
+    active: 'Y',
+    description: 'Radio communication protocol for flight operations',
+    jsonSchema: JSON.stringify({
+      type: 'object',
+      properties: {
+        frequency: { type: 'number' },
+        callSign: { type: 'string' },
+        emergencyChannel: { type: 'number' }
+      }
+    }, null, 2),
+    createdAt: '2024-01-12T09:00:00Z',
+    updatedAt: '2024-01-18T15:30:00Z'
+  },
+  {
+    id: '2',
+    code: 'COM-002',
+    version: '2.0',
+    active: 'Y',
+    description: 'Ground-to-air communication standards',
+    jsonSchema: JSON.stringify({
+      type: 'object',
+      properties: {
+        protocol: { type: 'string', enum: ['VHF', 'UHF', 'digital'] },
+        encryption: { type: 'boolean' },
+        backupChannel: { type: 'number' }
+      }
+    }, null, 2),
+    createdAt: '2024-02-01T11:00:00Z',
+    updatedAt: '2024-02-10T13:45:00Z'
+  }
+];
+
+export const dummyOrganizationTree: OrganizationNode = {
+  id: '1',
+  name: 'Readi Drone Control Center',
+  title: 'Headquarters',
+  department: 'Executive',
+  children: [
+    {
+      id: '2',
+      name: 'Operations Division',
+      title: 'Division Head',
+      department: 'Operations',
+      children: [
+        {
+          id: '3',
+          name: 'Flight Operations',
+          title: 'Manager',
+          department: 'Flight Ops',
+          children: [
+            { id: '4', name: 'Pilot Team A', title: 'Team Lead', department: 'Flight Ops' },
+            { id: '5', name: 'Pilot Team B', title: 'Team Lead', department: 'Flight Ops' }
+          ]
+        },
+        {
+          id: '6',
+          name: 'Ground Support',
+          title: 'Manager',
+          department: 'Ground Ops',
+          children: [
+            { id: '7', name: 'Maintenance Crew', title: 'Supervisor', department: 'Maintenance' },
+            { id: '8', name: 'Logistics Team', title: 'Coordinator', department: 'Logistics' }
+          ]
+        }
+      ]
+    },
+    {
+      id: '9',
+      name: 'Planning Division',
+      title: 'Division Head',
+      department: 'Planning',
+      children: [
+        {
+          id: '10',
+          name: 'Mission Planning',
+          title: 'Manager',
+          department: 'Planning',
+          children: [
+            { id: '11', name: 'Route Planning', title: 'Specialist', department: 'Planning' },
+            { id: '12', name: 'Risk Assessment', title: 'Analyst', department: 'Safety' }
+          ]
+        }
+      ]
+    },
+    {
+      id: '13',
+      name: 'Technical Division',
+      title: 'Division Head',
+      department: 'Technical',
+      children: [
+        { id: '14', name: 'Software Development', title: 'Manager', department: 'IT' },
+        { id: '15', name: 'Hardware Engineering', title: 'Manager', department: 'Engineering' }
+      ]
+    }
+  ]
+};
