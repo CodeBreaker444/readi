@@ -4,7 +4,6 @@ import MissionPlanningFilters from '@/src/components/logbook/MissionPlanningFilt
 import MissionPlanningTable from '@/src/components/logbook/MissionPlanningTable';
 import { useSession } from '@/src/lib/useSession';
 import { useState } from 'react';
-import Layout from '../../layout';
 
 export default function MissionPlanningLogbookPage() {
   const { ownerId, isLoading } = useSession();
@@ -22,7 +21,6 @@ export default function MissionPlanningLogbookPage() {
   }
 
   return (
-    <Layout>
       <div className="container-fluid">
         <div className="row">
           <MissionPlanningFilters
@@ -41,6 +39,5 @@ export default function MissionPlanningLogbookPage() {
           </div>
         </div>
       </div>
-    </Layout>
   );
 }

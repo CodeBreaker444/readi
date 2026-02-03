@@ -5,7 +5,6 @@ import FlightLogbookOffcanvas from '@/src/components/logbook/FlightLogbookOffcan
 import FlightLogbookTable from '@/src/components/logbook/FlightLogbookTable';
 import { useSession } from '@/src/lib/useSession';
 import { useState } from 'react';
-import Layout from '../../layout';
 
 export default function OperationLogbookPage() {
   const { ownerId, isLoading } = useSession();
@@ -28,7 +27,6 @@ export default function OperationLogbookPage() {
   }
 
   return (
-    <Layout>
       <div className="container-fluid">
         <div className="row">
           <FlightLogbookFilters
@@ -53,6 +51,5 @@ export default function OperationLogbookPage() {
           onClose={() => setIsOffcanvasOpen(false)}
         />
       </div>
-    </Layout>
   );
 }
