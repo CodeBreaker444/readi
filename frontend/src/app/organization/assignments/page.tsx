@@ -1,9 +1,9 @@
 'use client';
 
-import DataTable from '@/components/organization/DataTable';
-import FormCard from '@/components/organization/FormCard';
-import { dummyAssignments } from '@/data/organizationData';
-import { ActiveStatus, Assignment } from '@/types/organization';
+import FormCard from '@/src/components/organization/FormCard';
+import OrgDataTable from '@/src/components/organization/OrgDataTable';
+import { ActiveStatus, Assignment } from '@/src/config/types';
+import { dummyAssignments } from '@/src/lib/dummydata';
 import { useState } from 'react';
 
 export default function AssignmentsPage() {
@@ -147,7 +147,7 @@ export default function AssignmentsPage() {
 
       <div className="row">
         <div className="col-md-12 col-lg-12">
-          <DataTable
+          <OrgDataTable
             columns={columns}
             data={assignments}
             title="Assignment List"

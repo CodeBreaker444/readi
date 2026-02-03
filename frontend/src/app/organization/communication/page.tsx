@@ -1,9 +1,9 @@
 'use client';
 
-import DataTable from '@/components/organization/DataTable';
-import FormCard from '@/components/organization/FormCard';
-import { dummyCommunications } from '@/data/organizationData';
-import { ActiveStatus, Communication } from '@/types/organization';
+import FormCard from '@/src/components/organization/FormCard';
+import OrgDataTable from '@/src/components/organization/OrgDataTable';
+import { ActiveStatus, Communication } from '@/src/config/types';
+import { dummyCommunications } from '@/src/lib/dummydata';
 import { useState } from 'react';
 
 export default function CommunicationPage() {
@@ -147,7 +147,7 @@ export default function CommunicationPage() {
 
       <div className="row">
         <div className="col-md-12 col-lg-12">
-          <DataTable
+          <OrgDataTable
             columns={columns}
             data={communications}
             title="Communication List"

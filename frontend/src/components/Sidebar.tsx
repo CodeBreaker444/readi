@@ -109,9 +109,9 @@ const configurationItems: SubNavItem[] = [
   },
   {
     name: 'Mission',
-    href: '/mission-type',
+    href: '/mission/type',
     subItems: [
-      { name: 'Mission Type', href: '/mission-type' },
+      { name: 'Mission Type', href: '/mission/type' },
       { name: 'Mission Category', href: '/mission/category' },
       { name: 'Mission Status', href: '/mission/status' },
       { name: 'Mission Result', href: '/mission/result' }

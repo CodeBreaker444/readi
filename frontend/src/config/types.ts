@@ -126,3 +126,27 @@ export interface OrganizationNode {
 
 export type ActiveStatus = 'Y' | 'N';
 export type SectorType = 'EVALUATION' | 'PLANNING' | 'MISSION';
+
+export interface MissionType {
+  id: number;
+  description: string;
+  code: string;
+  label: string;
+}
+
+export interface MissionCategory {
+  id: number;
+  description: string;
+}
+
+export interface MissionStatus {
+  id: number;
+  code: string;
+  description: string;
+}
+
+export interface MissionResult {
+  id: number;
+  code: string;
+  description: string;
+}
