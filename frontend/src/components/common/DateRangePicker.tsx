@@ -1,7 +1,5 @@
 'use client';
 
-import { useState } from 'react';
-
 interface DateRangePickerProps {
   startDate: string;
   endDate: string;
@@ -13,37 +11,30 @@ export default function DateRangePicker({
   endDate,
   onChange,
 }: DateRangePickerProps) {
-  const [start, setStart] = useState(startDate);
-  const [end, setEnd] = useState(endDate);
-
-  const handleStartChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setStart(e.target.value);
-    onChange(e.target.value, end);
-  };
-
-  const handleEndChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setEnd(e.target.value);
-    onChange(start, e.target.value);
-  };
-
   return (
-    <div className="input-group">
-      <span className="input-group-text">From</span>
-      <input
-        type="date"
-        className="form-control"
-        placeholder="Start"
-        value={start}
-        onChange={handleStartChange}
-      />
-      <span className="input-group-text">to</span>
-      <input
-        type="date"
-        className="form-control rounded-end"
-        placeholder="End"
-        value={end}
-        onChange={handleEndChange}
-      />
+    <div className="grid grid-cols-2 gap-3">
+      <div className="space-y-1">
+        <label className="block text-xs text-gray-600 dark:text-gray-400">
+          Start Date
+        </label>
+        <input
+          type="date"
+          value={startDate}
+          onChange={(e) => onChange(e.target.value, endDate)}
+          className="w-full px-3 py-2.5 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-transparent outline-none transition-all"
+        />
+      </div>
+      <div className="space-y-1">
+        <label className="block text-xs text-gray-600 dark:text-gray-400">
+          End Date
+        </label>
+        <input
+          type="date"
+          value={endDate}
+          onChange={(e) => onChange(startDate, e.target.value)}
+          className="w-full px-3 py-2.5 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-transparent outline-none transition-all"
+        />
+      </div>
     </div>
   );
 }

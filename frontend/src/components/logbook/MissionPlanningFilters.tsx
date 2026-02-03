@@ -1,5 +1,6 @@
 'use client';
 
+import { Briefcase, Calendar, FileCheck, Search, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import DateRangePicker from '../common/DateRangePicker';
 import FilterDropdown from '../common/FilterDropdown';
@@ -94,12 +95,26 @@ export default function MissionPlanningFilters({
     );
   };
 
+  const handleReset = () => {
+    onFiltersChange({
+      clientId: 0,
+      pilotId: 0,
+      evaluationId: 0,
+      planningId: 0,
+      dateStart: '',
+      dateEnd: '',
+    });
+  };
+
   return (
     <>
-      <div className="col-md-3 col-lg-3">
-        <label className="mb-2 mt-2">
-          Client{' '}
-          <span className="badge rounded-pill text-dark bg-light">
+      <div className="space-y-2">
+        <label className="flex items-center justify-between text-sm font-medium text-gray-700 dark:text-gray-300">
+          <span className="flex items-center gap-2">
+            <Briefcase className="w-4 h-4" />
+            Client
+          </span>
+          <span className="px-2 py-0.5 text-xs font-semibold bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full">
             {options.totals.client}
           </span>
         </label>
@@ -108,12 +123,17 @@ export default function MissionPlanningFilters({
           value={filters.clientId}
           options={options.clients}
           onChange={(value) => handleFilterChange('clientId', value)}
-          placeholder="Select"
+          placeholder="Select Client"
         />
+      </div>
 
-        <label className="mb-2 mt-2">
-          PiC{' '}
-          <span className="badge rounded-pill text-dark bg-light">
+      <div className="space-y-2">
+        <label className="flex items-center justify-between text-sm font-medium text-gray-700 dark:text-gray-300">
+          <span className="flex items-center gap-2">
+            <Users className="w-4 h-4" />
+            Pilot in Command
+          </span>
+          <span className="px-2 py-0.5 text-xs font-semibold bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full">
             {options.totals.pic}
           </span>
         </label>
@@ -122,14 +142,17 @@ export default function MissionPlanningFilters({
           value={filters.pilotId}
           options={options.pilots}
           onChange={(value) => handleFilterChange('pilotId', value)}
-          placeholder="Select"
+          placeholder="Select PiC"
         />
       </div>
 
-      <div className="col-md-3 col-lg-3">
-        <label className="mb-2 mt-2">
-          Evaluation List{' '}
-          <span className="badge rounded-pill text-dark bg-light">
+      <div className="space-y-2">
+        <label className="flex items-center justify-between text-sm font-medium text-gray-700 dark:text-gray-300">
+          <span className="flex items-center gap-2">
+            <FileCheck className="w-4 h-4" />
+            Evaluation
+          </span>
+          <span className="px-2 py-0.5 text-xs font-semibold bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded-full">
             {options.totals.evaluation}
           </span>
         </label>
@@ -138,21 +161,17 @@ export default function MissionPlanningFilters({
           value={filters.evaluationId}
           options={options.evaluations}
           onChange={(value) => handleFilterChange('evaluationId', value)}
-          placeholder="Select"
-        />
-
-        <label className="mb-2 mt-2">Last Update</label>
-        <DateRangePicker
-          startDate={filters.dateStart}
-          endDate={filters.dateEnd}
-          onChange={handleDateRangeChange}
+          placeholder="Select Evaluation"
         />
       </div>
 
-      <div className="col-md-3 col-lg-3">
-        <label className="mb-2 mt-2">
-          Planning List{' '}
-          <span className="badge rounded-pill text-dark bg-light">
+      <div className="space-y-2">
+        <label className="flex items-center justify-between text-sm font-medium text-gray-700 dark:text-gray-300">
+          <span className="flex items-center gap-2">
+            <Calendar className="w-4 h-4" />
+            Planning
+          </span>
+          <span className="px-2 py-0.5 text-xs font-semibold bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 rounded-full">
             {options.totals.planning}
           </span>
         </label>
@@ -161,22 +180,39 @@ export default function MissionPlanningFilters({
           value={filters.planningId}
           options={options.plannings}
           onChange={(value) => handleFilterChange('planningId', value)}
-          placeholder="Select"
+          placeholder="Select Planning"
         />
-
-        <label className="mb-2 mt-2">Filter Logbook</label>
-        <div className="input-group">
-          <button
-            type="button"
-            className="btn btn-dark"
-            onClick={handleSearch}
-          >
-            Search
-          </button>
-        </div>
       </div>
 
-      <div className="col-md-3 col-lg-3"></div>
+      <div className="space-y-2 col-span-full md:col-span-2">
+        <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+          <Calendar className="w-4 h-4" />
+          Last Update Date Range
+        </label>
+        <DateRangePicker
+          startDate={filters.dateStart}
+          endDate={filters.dateEnd}
+          onChange={handleDateRangeChange}
+        />
+      </div>
+
+      <div className="flex items-end gap-3 col-span-full md:col-span-2">
+        <button
+          type="button"
+          className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200 shadow-sm"
+          onClick={handleSearch}
+        >
+          <Search className="w-4 h-4" />
+          Search
+        </button>
+        <button
+          type="button"
+          className="px-4 py-2.5 bg-gray-200 hover:bg-gray-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 font-medium rounded-lg transition-colors duration-200"
+          onClick={handleReset}
+        >
+          Reset
+        </button>
+      </div>
     </>
   );
 }

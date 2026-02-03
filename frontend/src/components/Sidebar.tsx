@@ -57,7 +57,7 @@ const navigationItems: NavItem[] = [
     icon: BookOpen,
     subItems: [
       // { name: 'Operation Request Logbook', href: '/logbooks/operation-requests' },
-      { name: 'Planned Mission Logbook', href: '/logbooks/planned-missions' },
+      { name: 'Planned Mission Logbook', href: '/logbooks/mission-planning-logbook' },
       { name: 'Flight Logbook', href: '/logbooks/operation-logbook' },
       // { name: 'Battery Logbook', href: '/logbooks/battery' },
       // { name: 'Maintenance Logbook', href: '/logbooks/maintenance' }
@@ -70,7 +70,7 @@ const navigationItems: NavItem[] = [
     icon: Bell,
     subItems: [
       { name: 'SPI & KPI Definitions', href: '/safety/spi-kpi-definitions' },
-      { name: 'Document Repository', href: '/safety/documents' }
+      // { name: 'Document Repository', href: '/safety/documents' }
     ]
   },
 
@@ -88,7 +88,7 @@ const navigationItems: NavItem[] = [
 
   {
     name: 'Document Repository',
-    href: '/documents',
+    href: '/document-repository',
     icon: FileText
   }
 ];

@@ -60,11 +60,17 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   // Public routes that don't require authentication
-  const publicRoutes = ['/auth/login','/auth/setup-2fa','/auth/verify-mfa']
+  const publicRoutes = ['/auth/login', '/auth/setup-2fa', '/auth/verify-mfa']
   const isPublicRoute = publicRoutes.includes(request.nextUrl.pathname)
-  const home= ['/']
+  const pathname = request.nextUrl.pathname
+  
+  if (pathname === '/' && user) {
+    if (user) {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+    return NextResponse.redirect(new URL('/auth/login', request.url))
+  }
 
-  // Redirect authenticated users away from public auth pages
   if (user && isPublicRoute) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
