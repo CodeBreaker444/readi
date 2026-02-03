@@ -119,9 +119,9 @@ const configurationItems: SubNavItem[] = [
   },
   {
     name: 'Systems',
-    href: '/systems-manage',
+    href: '/systems/manage',
     subItems: [
-      { name: 'Manage Systems', href: '/systems-manage' },
+      { name: 'Manage Systems', href: '/systems/manage' },
       { name: 'Map', href: '/systems/map' },
       { name: 'Maintenance Dashboard', href: '/systems/maintenance-dashboard' },
       { name: 'Maintenance Tickets', href: '/systems/maintenance-tickets' }
@@ -129,9 +129,9 @@ const configurationItems: SubNavItem[] = [
   },
   {
     name: 'Team',
-    href: '/team-personnel',
+    href: '/team/personnel',
     subItems: [
-      { name: 'Personnel', href: '/team-personnel' },
+      { name: 'Personnel', href: '/team/personnel' },
       { name: 'Crew Shift', href: '/team/crew-shift' }
     ]
   }

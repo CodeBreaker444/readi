@@ -36,7 +36,7 @@ export default function StatusTable({ data, onDelete, onEdit }: StatusTableProps
     <div className="w-full">
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
         <table className="w-full">
-          <thead className="bg-gradient-to-r from-blue-50 to-indigo-50">
+          <thead className="bg-linear-to-r from-blue-50 to-indigo-50">
             <tr>
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 ID

@@ -44,7 +44,7 @@ export default function MissionCategoryForm({ onSubmit }: MissionCategoryFormPro
         </div>
         <button 
           type="submit" 
-          className="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:from-blue-600 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg font-medium"
+          className="inline-flex items-center gap-2 px-6 py-2.5 bg-linear-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:from-blue-600 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg font-medium"
         >
           <Plus size={20} />
           Add Category
