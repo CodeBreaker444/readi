@@ -213,7 +213,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark }) => {
 
   return (
     <div className={`w-64 ${isDark ? 'bg-slate-900 border-r border-slate-800' : 'bg-[#2c3e50]'} text-white flex flex-col h-screen`}>
-      {/* Logo/Brand */}
       <div className={`p-5 flex items-center space-x-3 border-b ${isDark ? 'border-slate-800' : 'border-slate-700'}`}>
         <div className="w-10 h-10 bg-linear-to-br from-yellow-400 to-yellow-600 rounded-lg flex items-center justify-center shadow-lg">
           <span className="text-white font-bold text-lg">R</span>
@@ -224,7 +223,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark }) => {
         </div>
       </div>
 
-      {/* Navigation Items */}
       <nav className="flex-1 px-2 py-4 overflow-y-auto custom-scrollbar">
         <ul className="space-y-0.5">
           {navigationItems.map((item) => {
@@ -269,7 +267,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark }) => {
             );
           })}
           
-          {/* Configuration Section Label */}
           <li className="pt-4 mt-4 border-t border-slate-700">
             <div className="px-3 py-2 flex items-center space-x-2">
               <Sliders size={16} className="text-gray-500" />
@@ -308,7 +305,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark }) => {
                       )}
                     </a>
                     
-                    {/* Configuration Sub Items */}
                     {configItem.subItems && isExpanded && renderSubItems(configItem.subItems, 2)}
                   </li>
                 );

@@ -1,6 +1,7 @@
-'use client';
 import { Bell, ChevronDown, Clock, LogOut, Mail, Moon, Sun, User, UserCircle } from 'lucide-react';
-import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { supabase } from '../lib/supabase';
 import ProfileModal from './ProfileModal';
 
 interface TopBarProps {
@@ -11,6 +12,33 @@ interface TopBarProps {
 const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error('Logout error:', error);
+        alert('Failed to logout. Please try again.');
+        return;
+      }
+
+      setShowUserMenu(false);
+      
+      router.push('/auth/login');
+      router.refresh();
+    } catch (error) {
+      console.error('Unexpected logout error:', error);
+      alert('An unexpected error occurred. Please try again.');
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
 
   return (
     <>
@@ -72,7 +100,6 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme }) => {
               <ChevronDown size={16} className={isDark ? 'text-gray-400' : 'text-gray-600'} />
             </button>
 
-            {/* User Dropdown Menu */}
             {showUserMenu && (
               <div className={`absolute right-0 mt-2 w-64 rounded-lg shadow-lg border z-50 ${
                 isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'
@@ -114,9 +141,11 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme }) => {
                   <div className={`my-2 border-t ${isDark ? 'border-slate-700' : 'border-gray-200'}`}></div>
 
                   <button
+                    onClick={handleLogout}
+                    disabled={isLoggingOut}
                     className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors text-red-500 hover:bg-red-50 ${
                       isDark && 'hover:bg-red-900/20'
-                    }`}
+                    } ${isLoggingOut ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     <LogOut size={18} />
                     <span>Logout</span>
