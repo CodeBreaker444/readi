@@ -1,5 +1,6 @@
 'use client';
 
+import { useTheme } from '@/src/components/useTheme';
 import { useState } from 'react';
 
 // Dummy data
@@ -63,6 +64,7 @@ const DUMMY_SYSTEMS = [
 ];
 
 export default function SystemsManage() {
+  const { isDark } = useTheme()
   const [systems, setSystems] = useState(DUMMY_SYSTEMS);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -94,172 +96,154 @@ export default function SystemsManage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="bg-white rounded-lg shadow-sm mb-6">
-          <div className="p-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <h1 className="text-2xl font-semibold text-gray-900">Drone System List</h1>
-              <div className="flex flex-wrap gap-2">
-                <button 
-                  className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
-                  onClick={() => console.log('Add Tool')}
-                >
-                  Add Tool
-                </button>
-                <button 
-                  className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
-                  onClick={() => console.log('Add Model')}
-                >
-                  Add Model
-                </button>
-                <button 
-                  className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
-                  onClick={() => console.log('Add Component')}
-                >
-                  Add Component
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Filters */}
-        <div className="bg-white rounded-lg shadow-sm mb-6 p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Search
-              </label>
-              <input
-                type="text"
-                placeholder="Search by code, client, or description..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Status
-              </label>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+   <div className={`min-h-screen p-6 ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
+  <div className="max-w-7xl mx-auto">
+    <div className={`rounded-lg shadow-sm mb-6 ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
+      <div className="p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <h1 className={`text-2xl font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Drone System List</h1>
+          <div className="flex flex-wrap gap-2">
+            {['Add Tool', 'Add Model', 'Add Component'].map((label) => (
+              <button 
+                key={label}
+                className={`px-4 py-2 text-sm rounded-lg transition-colors ${
+                  isDark
+                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
+                onClick={() => console.log(label)}
               >
-                <option value="ALL">All Status</option>
-                <option value="OPERATIONAL">Operational</option>
-                <option value="NOT_OPERATIONAL">Not Operational</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {/* Table */}
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Code
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Description
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Client
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Model
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Missions
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredSystems.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
-                      No systems found
-                    </td>
-                  </tr>
-                ) : (
-                  filteredSystems.map((system) => (
-                    <tr key={system.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {system.tool_code}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {system.tool_desc}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {system.client_name}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {system.factory_model}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(system.tool_status)}`}>
-                          {system.tool_status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {system.tot_mission}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <div className="flex gap-2">
-                          <button 
-                            className="text-blue-600 hover:text-blue-800"
-                            onClick={() => console.log('View', system.id)}
-                          >
-                            View
-                          </button>
-                          <button 
-                            className="text-gray-600 hover:text-gray-800"
-                            onClick={() => console.log('Edit', system.id)}
-                          >
-                            Edit
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Summary Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="text-sm text-gray-500 mb-1">Total Systems</div>
-            <div className="text-2xl font-semibold text-gray-900">{systems.length}</div>
-          </div>
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="text-sm text-gray-500 mb-1">Operational</div>
-            <div className="text-2xl font-semibold text-green-600">
-              {systems.filter(s => s.tool_status === 'OPERATIONAL').length}
-            </div>
-          </div>
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="text-sm text-gray-500 mb-1">Not Operational</div>
-            <div className="text-2xl font-semibold text-red-600">
-              {systems.filter(s => s.tool_status === 'NOT_OPERATIONAL').length}
-            </div>
+                {label}
+              </button>
+            ))}
           </div>
         </div>
       </div>
     </div>
+
+    <div className={`rounded-lg shadow-sm mb-6 p-6 ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
+            Search
+          </label>
+          <input
+            type="text"
+            placeholder="Search by code, client, or description..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent ${
+              isDark
+                ? 'border-gray-600 bg-gray-700 text-gray-100 focus:ring-blue-400'
+                : 'border-gray-300 bg-white text-gray-900 focus:ring-blue-500'
+            }`}
+          />
+        </div>
+        <div>
+          <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
+            Status
+          </label>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent ${
+              isDark
+                ? 'border-gray-600 bg-gray-700 text-gray-100 focus:ring-blue-400'
+                : 'border-gray-300 bg-white text-gray-900 focus:ring-blue-500'
+            }`}
+          >
+            <option value="ALL">All Status</option>
+            <option value="OPERATIONAL">Operational</option>
+            <option value="NOT_OPERATIONAL">Not Operational</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div className={`rounded-lg shadow-sm overflow-hidden ${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`}>
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead className={`${isDark ? 'bg-gray-700' : 'bg-gray-50'} border-b ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
+            <tr>
+              {['Code', 'Description', 'Client', 'Model', 'Status', 'Missions', 'Actions'].map((col) => (
+                <th
+                  key={col}
+                  className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
+                    isDark ? 'text-gray-300' : 'text-gray-500'
+                  }`}
+                >
+                  {col}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className={`divide-y ${isDark ? 'divide-gray-700' : 'divide-gray-200'}`}>
+            {filteredSystems.length === 0 ? (
+              <tr>
+                <td colSpan={7} className={`px-6 py-8 text-center ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  No systems found
+                </td>
+              </tr>
+            ) : (
+              filteredSystems.map((system) => (
+                <tr key={system.id} className={`transition-colors ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}>
+                  <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
+                    {system.tool_code}
+                  </td>
+                  <td className={`px-6 py-4 whitespace-nowrap text-sm ${isDark ? 'text-gray-200' : 'text-gray-600'}`}>
+                    {system.tool_desc}
+                  </td>
+                  <td className={`px-6 py-4 whitespace-nowrap text-sm ${isDark ? 'text-gray-200' : 'text-gray-600'}`}>
+                    {system.client_name}
+                  </td>
+                  <td className={`px-6 py-4 whitespace-nowrap text-sm ${isDark ? 'text-gray-200' : 'text-gray-600'}`}>
+                    {system.factory_model}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(system.tool_status)}`}>
+                      {system.tool_status}
+                    </span>
+                  </td>
+                  <td className={`px-6 py-4 whitespace-nowrap text-sm ${isDark ? 'text-gray-200' : 'text-gray-600'}`}>
+                    {system.tot_mission}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <div className="flex gap-2">
+                      <button 
+                        className={`transition-colors ${isDark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'}`}
+                        onClick={() => console.log('View', system.id)}
+                      >
+                        View
+                      </button>
+                      <button 
+                        className={`transition-colors ${isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-800'}`}
+                        onClick={() => console.log('Edit', system.id)}
+                      >
+                        Edit
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+      {[
+        { label: 'Total Systems', value: systems.length, color: isDark ? 'text-gray-100' : 'text-gray-900' },
+        { label: 'Operational', value: systems.filter(s => s.tool_status === 'OPERATIONAL').length, color: 'text-green-600' },
+        { label: 'Not Operational', value: systems.filter(s => s.tool_status === 'NOT_OPERATIONAL').length, color: 'text-red-600' },
+      ].map((stat) => (
+        <div key={stat.label} className={`rounded-lg shadow-sm p-6 ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
+          <div className={`text-sm mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{stat.label}</div>
+          <div className={`text-2xl font-semibold ${stat.color}`}>{stat.value}</div>
+        </div>
+      ))}
+    </div>
+  </div>
+</div>
   );
 }

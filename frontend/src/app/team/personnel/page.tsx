@@ -1,5 +1,6 @@
 'use client';
 
+import { useTheme } from '@/src/components/useTheme';
 import { useState } from 'react';
 
 // Dummy data
@@ -72,6 +73,7 @@ const DUMMY_PERSONNEL = [
 ];
 
 export default function TeamPersonnel() {
+  const { isDark } = useTheme()
   const [personnel, setPersonnel] = useState(DUMMY_PERSONNEL);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
@@ -139,243 +141,233 @@ export default function TeamPersonnel() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="bg-white rounded-lg shadow-sm mb-6 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-semibold text-gray-900">Personnel List</h1>
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
-            >
-              Add New User
-            </button>
-          </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="text-sm text-gray-600 mb-1">Total Personnel</div>
-              <div className="text-3xl font-bold text-gray-900">{stats.total}</div>
-            </div>
-            <div className="bg-green-50 rounded-lg p-4">
-              <div className="text-sm text-green-700 mb-1">Active</div>
-              <div className="text-3xl font-bold text-green-700">{stats.active}</div>
-            </div>
-            <div className="bg-blue-50 rounded-lg p-4">
-              <div className="text-sm text-blue-700 mb-1">Pilots</div>
-              <div className="text-3xl font-bold text-blue-700">{stats.pilots}</div>
-            </div>
-            <div className="bg-purple-50 rounded-lg p-4">
-              <div className="text-sm text-purple-700 mb-1">Technicians</div>
-              <div className="text-3xl font-bold text-purple-700">{stats.technicians}</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Filters */}
-        <div className="bg-white rounded-lg shadow-sm mb-6 p-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
-              <input
-                type="text"
-                placeholder="Search by name, email, or username..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
-              <select
-                value={roleFilter}
-                onChange={(e) => setRoleFilter(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="ALL">All Roles</option>
-                <option value="PILOT">Pilot</option>
-                <option value="TECHNICIAN">Technician</option>
-                <option value="OPERATOR">Operator</option>
-                <option value="ADMIN">Admin</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="ALL">All Status</option>
-                <option value="ACTIVE">Active</option>
-                <option value="INACTIVE">Inactive</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {/* Table */}
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Username</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Missions</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredPersonnel.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
-                      No personnel found
-                    </td>
-                  </tr>
-                ) : (
-                  filteredPersonnel.map((person) => (
-                    <tr key={person.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="font-medium text-gray-900">
-                          {person.first_name} {person.last_name}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-gray-600">
-                        {person.username}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-gray-600">
-                        {person.email}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getRoleBadge(person.role)}`}>
-                          {person.role}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(person.status)}`}>
-                          {person.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-gray-600">
-                        {person.total_missions}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <div className="flex gap-2">
-                          <button 
-                            className="text-blue-600 hover:text-blue-800"
-                            onClick={() => console.log('View', person.id)}
-                          >
-                            View
-                          </button>
-                          <button 
-                            className="text-gray-600 hover:text-gray-800"
-                            onClick={() => console.log('Edit', person.id)}
-                          >
-                            Edit
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+    <div className={`min-h-screen p-6 ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
+  <div className="max-w-7xl mx-auto">
+    {/* Header */}
+    <div className={`rounded-lg shadow-sm mb-6 p-6 ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className={`text-2xl font-semibold ${isDark ? 'text-gray-200' : 'text-gray-900'}`}>Personnel List</h1>
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
+        >
+          Add New User
+        </button>
       </div>
 
-      {/* Add User Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900">Add New User</h2>
-            </div>
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
-                <input
-                  type="text"
-                  value={newUser.username}
-                  onChange={(e) => setNewUser({...newUser, username: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-                  <input
-                    type="text"
-                    value={newUser.first_name}
-                    onChange={(e) => setNewUser({...newUser, first_name: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
-                  <input
-                    type="text"
-                    value={newUser.last_name}
-                    onChange={(e) => setNewUser({...newUser, last_name: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input
-                  type="email"
-                  value={newUser.email}
-                  onChange={(e) => setNewUser({...newUser, email: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                <input
-                  type="tel"
-                  value={newUser.phone}
-                  onChange={(e) => setNewUser({...newUser, phone: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-                <select
-                  value={newUser.role}
-                  onChange={(e) => setNewUser({...newUser, role: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className={`rounded-lg p-4 ${isDark ? 'bg-gray-700' : 'bg-gray-50'}`}>
+          <div className={`text-sm mb-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Total Personnel</div>
+          <div className={`text-3xl font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{stats.total}</div>
+        </div>
+        <div className={`rounded-lg p-4 ${isDark ? 'bg-green-900' : 'bg-green-50'}`}>
+          <div className={`text-sm mb-1 ${isDark ? 'text-green-300' : 'text-green-700'}`}>Active</div>
+          <div className={`text-3xl font-bold ${isDark ? 'text-green-300' : 'text-green-700'}`}>{stats.active}</div>
+        </div>
+        <div className={`rounded-lg p-4 ${isDark ? 'bg-blue-900' : 'bg-blue-50'}`}>
+          <div className={`text-sm mb-1 ${isDark ? 'text-blue-300' : 'text-blue-700'}`}>Pilots</div>
+          <div className={`text-3xl font-bold ${isDark ? 'text-blue-300' : 'text-blue-700'}`}>{stats.pilots}</div>
+        </div>
+        <div className={`rounded-lg p-4 ${isDark ? 'bg-purple-900' : 'bg-purple-50'}`}>
+          <div className={`text-sm mb-1 ${isDark ? 'text-purple-300' : 'text-purple-700'}`}>Technicians</div>
+          <div className={`text-3xl font-bold ${isDark ? 'text-purple-300' : 'text-purple-700'}`}>{stats.technicians}</div>
+        </div>
+      </div>
+    </div>
+
+    {/* Filters */}
+    <div className={`rounded-lg shadow-sm mb-6 p-6 ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Search</label>
+          <input
+            type="text"
+            placeholder="Search by name, email, or username..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+              isDark ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-300 bg-white text-gray-900'
+            }`}
+          />
+        </div>
+
+        <div>
+          <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Role</label>
+          <select
+            value={roleFilter}
+            onChange={(e) => setRoleFilter(e.target.value)}
+            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+              isDark ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-300 bg-white text-gray-900'
+            }`}
+          >
+            <option value="ALL">All Roles</option>
+            <option value="PILOT">Pilot</option>
+            <option value="TECHNICIAN">Technician</option>
+            <option value="OPERATOR">Operator</option>
+            <option value="ADMIN">Admin</option>
+          </select>
+        </div>
+
+        <div>
+          <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Status</label>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+              isDark ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-300 bg-white text-gray-900'
+            }`}
+          >
+            <option value="ALL">All Status</option>
+            <option value="ACTIVE">Active</option>
+            <option value="INACTIVE">Inactive</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    {/* Table */}
+    <div className={`rounded-lg shadow-sm overflow-hidden ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className={`${isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'} border-b`}>
+            <tr>
+              {['Name', 'Username', 'Email', 'Role', 'Status', 'Missions', 'Actions'].map((col) => (
+                <th
+                  key={col}
+                  className={`px-6 py-3 text-left text-xs font-medium uppercase ${
+                    isDark ? 'text-gray-300' : 'text-gray-500'
+                  }`}
                 >
-                  <option value="OPERATOR">Operator</option>
-                  <option value="PILOT">Pilot</option>
-                  <option value="TECHNICIAN">Technician</option>
-                  <option value="ADMIN">Admin</option>
-                </select>
-              </div>
+                  {col}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className={`${isDark ? 'bg-gray-900 divide-gray-700' : 'bg-white divide-gray-200'} divide-y`}>
+            {filteredPersonnel.length === 0 ? (
+              <tr>
+                <td colSpan={7} className={`px-6 py-8 text-center ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  No personnel found
+                </td>
+              </tr>
+            ) : (
+              filteredPersonnel.map((person) => (
+                <tr
+                  key={person.id}
+                  className={`${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}
+                >
+                  <td className={`${isDark ? 'text-gray-200' : 'text-gray-900'} px-6 py-4 whitespace-nowrap`}>
+                    {person.first_name} {person.last_name}
+                  </td>
+                  <td className={`${isDark ? 'text-gray-300' : 'text-gray-600'} px-6 py-4 whitespace-nowrap`}>
+                    {person.username}
+                  </td>
+                  <td className={`${isDark ? 'text-gray-300' : 'text-gray-600'} px-6 py-4 whitespace-nowrap`}>
+                    {person.email}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span
+                      className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getRoleBadge(person.role)}`}
+                    >
+                      {person.role}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span
+                      className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(person.status)}`}
+                    >
+                      {person.status}
+                    </span>
+                  </td>
+                  <td className={`${isDark ? 'text-gray-300' : 'text-gray-600'} px-6 py-4 whitespace-nowrap`}>
+                    {person.total_missions}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <div className="flex gap-2">
+                      <button
+                        className={`hover:${isDark ? 'text-blue-400' : 'text-blue-800'} ${isDark ? 'text-blue-300' : 'text-blue-600'}`}
+                        onClick={() => console.log('View', person.id)}
+                      >
+                        View
+                      </button>
+                      <button
+                        className={`${isDark ? 'text-gray-300 hover:text-gray-100' : 'text-gray-600 hover:text-gray-800'}`}
+                        onClick={() => console.log('Edit', person.id)}
+                      >
+                        Edit
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  {/* Add User Modal */}
+  {showAddModal && (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className={`rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
+        <div className={`p-6 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+          <h2 className={`text-xl font-semibold ${isDark ? 'text-gray-200' : 'text-gray-900'}`}>Add New User</h2>
+        </div>
+        <div className="p-6 space-y-4">
+          {[
+            { label: 'Username', key: 'username', type: 'text' },
+            { label: 'First Name', key: 'first_name', type: 'text' },
+            { label: 'Last Name', key: 'last_name', type: 'text' },
+            { label: 'Email', key: 'email', type: 'email' },
+            { label: 'Phone', key: 'phone', type: 'tel' },
+          ].map((field) => (
+            <div key={field.key}>
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{field.label}</label>
+              <input
+                type={field.type}
+                value={field.key}
+                onChange={(e) => setNewUser({ ...newUser, [field.key]: e.target.value })}
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
+                  isDark ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-300 bg-white text-gray-900'
+                }`}
+              />
             </div>
-            <div className="p-6 border-t border-gray-200 flex gap-3 justify-end">
-              <button
-                onClick={() => setShowAddModal(false)}
-                className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAddUser}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              >
-                Add User
-              </button>
-            </div>
+          ))}
+          <div>
+            <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Role</label>
+            <select
+              value={newUser.role}
+              onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
+                isDark ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-300 bg-white text-gray-900'
+              }`}
+            >
+              <option value="OPERATOR">Operator</option>
+              <option value="PILOT">Pilot</option>
+              <option value="TECHNICIAN">Technician</option>
+              <option value="ADMIN">Admin</option>
+            </select>
           </div>
         </div>
-      )}
+        <div className={`p-6 border-t flex gap-3 justify-end ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+          <button
+            onClick={() => setShowAddModal(false)}
+            className={`px-4 py-2 rounded-lg border ${isDark ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleAddUser}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Add User
+          </button>
+        </div>
+      </div>
     </div>
+  )}
+</div>
   );
 }

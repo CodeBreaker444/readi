@@ -158,10 +158,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark }) => {
   };
 
   const handleNavigation = (href: string, hasSubItems?: boolean) => {
-    setActiveItem(href);
     if (hasSubItems) {
       toggleExpand(href);
     } else {
+      setActiveItem(href);
       router.push(href);
     }
   };
@@ -185,13 +185,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark }) => {
                   flex items-center justify-between px-3 py-2 rounded-md
                   transition-all duration-150 cursor-pointer text-xs
                   ${isActive
-                    ? `${isDark ? 'bg-slate-700 text-white' : 'bg-[#3d566e] text-white'} font-medium`
-                    : `${isDark ? 'text-gray-300 hover:bg-slate-700' : 'text-gray-200 hover:bg-[#34495e]'} hover:text-white`
+                    ? `${isDark ? 'bg-slate-700 text-white' : 'bg-gray-200 text-gray-900'} font-medium`
+                    : `${isDark ? 'text-gray-300 hover:bg-slate-700' : 'text-gray-700 hover:bg-gray-100'} hover:text-gray-900`
                   }
                 `}
               >
                 <span className={`flex items-center ${level > 1 ? 'pl-2' : ''}`}>
-                  {level > 1 && <span className="mr-2 text-gray-500">•</span>}
+                  {level > 1 && <span className={`mr-2 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>•</span>}
                   {subItem.name}
                 </span>
                 {subItem.subItems && (
@@ -212,14 +212,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark }) => {
   };
 
   return (
-    <div className={`w-64 ${isDark ? 'bg-slate-900 border-r border-slate-800' : 'bg-[#2c3e50]'} text-white flex flex-col h-screen`}>
-      <div className={`p-5 flex items-center space-x-3 border-b ${isDark ? 'border-slate-800' : 'border-slate-700'}`}>
-        <div className="w-10 h-10 bg-linear-to-br from-yellow-400 to-yellow-600 rounded-lg flex items-center justify-center shadow-lg">
+    <div className={`w-64 ${isDark ? 'bg-slate-900 border-r border-slate-800' : 'bg-white border-r border-gray-200'} ${isDark ? 'text-white' : 'text-gray-800'} flex flex-col h-screen`}>
+      <div className={`p-5 flex items-center space-x-3 border-b ${isDark ? 'border-slate-800' : 'border-gray-200'}`}>
+        <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-lg flex items-center justify-center shadow-lg">
           <span className="text-white font-bold text-lg">R</span>
         </div>
         <div>
-          <span className="text-lg font-bold tracking-wide">ReADI</span>
-          <p className="text-xs text-gray-400">Drone Control</p>
+          <span className={`text-lg font-bold tracking-wide ${isDark ? 'text-white' : 'text-gray-800'}`}>ReADI</span>
+          <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Drone Control</p>
         </div>
       </div>
 
@@ -243,8 +243,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark }) => {
                       flex items-center justify-between px-3 py-2.5 rounded-md
                       transition-all duration-150 cursor-pointer group
                       ${isActive 
-                        ? `${isDark ? 'bg-slate-700 text-white' : 'bg-[#3d566e] text-white'} font-medium` 
-                        : `${isDark ? 'text-gray-300 hover:bg-slate-800' : 'text-gray-200 hover:bg-[#34495e]'} hover:text-white`
+                        ? `${isDark ? 'bg-slate-700 text-white' : 'bg-gray-200 text-gray-900'} font-medium` 
+                        : `${isDark ? 'text-gray-300 hover:bg-slate-800' : 'text-gray-700 hover:bg-gray-100'} hover:text-gray-900`
                       }
                     `}
                   >
@@ -267,10 +267,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark }) => {
             );
           })}
           
-          <li className="pt-4 mt-4 border-t border-slate-700">
+          <li className={`pt-4 mt-4 border-t ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
             <div className="px-3 py-2 flex items-center space-x-2">
-              <Sliders size={16} className="text-gray-500" />
-              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Configuration</span>
+              <Sliders size={16} className={isDark ? 'text-gray-500' : 'text-gray-400'} />
+              <span className={`text-xs font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>Configuration</span>
             </div>
             
             {/* Configuration Items */}
@@ -291,8 +291,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark }) => {
                         flex items-center justify-between px-3 py-2 rounded-md
                         transition-all duration-150 cursor-pointer text-xs
                         ${isActive
-                          ? `${isDark ? 'bg-slate-700 text-white' : 'bg-[#3d566e] text-white'} font-medium`
-                          : `${isDark ? 'text-gray-300 hover:bg-slate-700' : 'text-gray-200 hover:bg-[#34495e]'} hover:text-white`
+                          ? `${isDark ? 'bg-slate-700 text-white' : 'bg-gray-200 text-gray-900'} font-medium`
+                          : `${isDark ? 'text-gray-300 hover:bg-slate-700' : 'text-gray-700 hover:bg-gray-100'} hover:text-gray-900`
                         }
                       `}
                     >
@@ -321,14 +321,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark }) => {
           width: 4px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
-          background: ${isDark ? '#1e293b' : '#2c3e50'};
+          background: ${isDark ? '#1e293b' : '#f3f4f6'};
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: ${isDark ? '#475569' : '#34495e'};
+          background: ${isDark ? '#475569' : '#d1d5db'};
           border-radius: 2px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: ${isDark ? '#64748b' : '#4a5f7f'};
+          background: ${isDark ? '#64748b' : '#9ca3af'};
         }
       `}</style>
     </div>

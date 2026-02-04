@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useTheme } from '@/src/components/useTheme';
+import React, { useState } from 'react';
 
 // Dummy data
 const DUMMY_MAINTENANCE_DATA = [
@@ -108,36 +109,39 @@ const DUMMY_MAINTENANCE_DATA = [
 ];
 
 export default function MaintenanceDashboard() {
+    const { isDark } = useTheme()
     const [data] = useState(DUMMY_MAINTENANCE_DATA);
 
     const getStatusBadge = (status: string) => {
         const styles = {
-            OK: 'bg-green-100 text-green-800',
-            ALERT: 'bg-yellow-100 text-yellow-800',
-            DUE: 'bg-red-100 text-red-800'
+            OK: isDark ? 'bg-green-700 text-green-100' : 'bg-green-100 text-green-800',
+            ALERT: isDark ? 'bg-yellow-700 text-yellow-100' : 'bg-yellow-100 text-yellow-800',
+            DUE: isDark ? 'bg-red-700 text-red-100' : 'bg-red-100 text-red-800'
         };
-        return styles[status as keyof typeof styles] || 'bg-gray-100 text-gray-800';
+        return styles[status as keyof typeof styles] || (isDark ? 'bg-gray-700 text-gray-100' : 'bg-gray-100 text-gray-800');
     };
 
     const getProgressBar = (value: number, max: number, status: string, triggerType: string, triggers: string[]) => {
-        if (!max || max === 0) return <span className="text-gray-400">-</span>;
+        if (!max || max === 0) return <span className={`text-${isDark ? 'gray-400' : 'gray-500'}`}>-</span>;
 
         const percentage = Math.min(100, (value / max) * 100);
         const isTriggered = triggers.includes(triggerType);
 
-        let barColor = 'bg-green-500';
-        if (isTriggered && status === 'ALERT') barColor = 'bg-yellow-500';
-        if (isTriggered && status === 'DUE') barColor = 'bg-red-500';
+        let barColor = isDark ? 'bg-green-500' : 'bg-green-500';
+        if (isTriggered && status === 'ALERT') barColor = isDark ? 'bg-yellow-500' : 'bg-yellow-500';
+        if (isTriggered && status === 'DUE') barColor = isDark ? 'bg-red-500' : 'bg-red-500';
 
         return (
             <div>
-                <div className="w-full bg-gray-200 rounded-full h-2 mb-1">
+                <div className={`w-full ${isDark ? 'bg-gray-700' : 'bg-gray-200'} rounded-full h-2 mb-1`}>
                     <div
                         className={`${barColor} h-2 rounded-full transition-all`}
                         style={{ width: `${percentage}%` }}
                     />
                 </div>
-                <div className="text-xs text-gray-600">{Math.floor(value)}/{max}</div>
+                <div className={`text-xs ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                    {Math.floor(value)}/{max}
+                </div>
             </div>
         );
     };
@@ -157,179 +161,80 @@ export default function MaintenanceDashboard() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 p-6">
+        <div className={`min-h-screen p-6 ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
             <div className="max-w-7xl mx-auto">
-                <div className="bg-white rounded-lg shadow-sm mb-6 p-6">
-                    <h1 className="text-2xl font-semibold text-gray-900 mb-6">
+                {/* Stats */}
+                <div className={`rounded-lg shadow-sm mb-6 p-6 ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
+                    <h1 className={`text-2xl font-semibold mb-6 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
                         System List – Maintenance Overview
                     </h1>
 
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div className="bg-gray-50 rounded-lg p-4">
-                            <div className="text-sm text-gray-600 mb-1">Total Systems</div>
-                            <div className="text-3xl font-bold text-gray-900">{stats.total}</div>
+                        <div className={`rounded-lg p-4 ${isDark ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                            <div className={`text-sm mb-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Total Systems</div>
+                            <div className={`text-3xl font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{stats.total}</div>
                         </div>
-                        <div className="bg-green-50 rounded-lg p-4">
-                            <div className="text-sm text-green-700 mb-1">OK</div>
-                            <div className="text-3xl font-bold text-green-700">{stats.ok}</div>
+                        <div className={`rounded-lg p-4 ${isDark ? 'bg-green-900' : 'bg-green-50'}`}>
+                            <div className={`text-sm mb-1 ${isDark ? 'text-green-200' : 'text-green-700'}`}>OK</div>
+                            <div className={`text-3xl font-bold ${isDark ? 'text-green-100' : 'text-green-700'}`}>{stats.ok}</div>
                         </div>
-                        <div className="bg-yellow-50 rounded-lg p-4">
-                            <div className="text-sm text-yellow-700 mb-1">Alert</div>
-                            <div className="text-3xl font-bold text-yellow-700">{stats.alert}</div>
+                        <div className={`rounded-lg p-4 ${isDark ? 'bg-yellow-900' : 'bg-yellow-50'}`}>
+                            <div className={`text-sm mb-1 ${isDark ? 'text-yellow-200' : 'text-yellow-700'}`}>Alert</div>
+                            <div className={`text-3xl font-bold ${isDark ? 'text-yellow-100' : 'text-yellow-700'}`}>{stats.alert}</div>
                         </div>
-                        <div className="bg-red-50 rounded-lg p-4">
-                            <div className="text-sm text-red-700 mb-1">Due</div>
-                            <div className="text-3xl font-bold text-red-700">{stats.due}</div>
+                        <div className={`rounded-lg p-4 ${isDark ? 'bg-red-900' : 'bg-red-50'}`}>
+                            <div className={`text-sm mb-1 ${isDark ? 'text-red-200' : 'text-red-700'}`}>Due</div>
+                            <div className={`text-3xl font-bold ${isDark ? 'text-red-100' : 'text-red-700'}`}>{stats.due}</div>
                         </div>
                     </div>
                 </div>
 
-                <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+                {/* Table */}
+                <div className={`rounded-lg shadow-sm overflow-hidden ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
-                            <thead className="bg-gray-50 border-b border-gray-200">
+                            <thead className={`${isDark ? 'bg-gray-700 text-gray-100 border-gray-600' : 'bg-gray-50 border-b border-gray-200'}`}>
                                 <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                                        Drone / Component
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                                        Type
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                                        Serial
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                                        Last Maintenance
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                                        Hours
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                                        Flights
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                                        Days
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                                        Status
-                                    </th>
+                                    {['Drone / Component','Type','Serial','Last Maintenance','Hours','Flights','Days','Status'].map((col) => (
+                                        <th key={col} className="px-6 py-3 text-left text-xs font-medium uppercase">{col}</th>
+                                    ))}
                                 </tr>
                             </thead>
-
-                            <tbody className="bg-white divide-y divide-gray-200">
+                            <tbody className={`divide-y ${isDark ? 'divide-gray-700' : 'divide-gray-200'}`}>
                                 {data.map((drone) => (
-                                    <>
-                                        <tr key={drone.id} className="bg-gray-50">
-                                            <td className="px-6 py-4 font-semibold text-gray-900">
-                                                {drone.code}
-                                            </td>
-                                            <td className="px-6 py-4 text-gray-600">
-                                                Drone ({drone.model.factory_model})
-                                            </td>
-                                            <td className="px-6 py-4 text-gray-600">
-                                                {drone.serial_number}
-                                            </td>
-                                            <td className="px-6 py-4 text-gray-600">
-                                                {drone.last_maintenance || '-'}
-                                            </td>
+                                    <React.Fragment key={drone.id}>
+                                        <tr className={`${isDark ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                                            <td className={`px-6 py-4 font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{drone.code}</td>
+                                            <td className={`px-6 py-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Drone ({drone.model.factory_model})</td>
+                                            <td className={`px-6 py-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{drone.serial_number}</td>
+                                            <td className={`px-6 py-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{drone.last_maintenance || '-'}</td>
+                                            <td className="px-6 py-4">{getProgressBar(drone.total_hours, drone.model.maintenance_cycle_hour, drone.status, 'HOUR', drone.trigger)}</td>
+                                            <td className="px-6 py-4">{getProgressBar(drone.total_flights, drone.model.maintenance_cycle_flight, drone.status, 'FLIGHT', drone.trigger)}</td>
+                                            <td className="px-6 py-4">{drone.last_maintenance && drone.model.maintenance_cycle_day > 0 ? getProgressBar(calculateDays(drone.last_maintenance), drone.model.maintenance_cycle_day, drone.status, 'DAY', drone.trigger) : '-'}</td>
                                             <td className="px-6 py-4">
-                                                {getProgressBar(
-                                                    drone.total_hours,
-                                                    drone.model.maintenance_cycle_hour,
-                                                    drone.status,
-                                                    'HOUR',
-                                                    drone.trigger
-                                                )}
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                {getProgressBar(
-                                                    drone.total_flights,
-                                                    drone.model.maintenance_cycle_flight,
-                                                    drone.status,
-                                                    'FLIGHT',
-                                                    drone.trigger
-                                                )}
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                {drone.last_maintenance && drone.model.maintenance_cycle_day > 0
-                                                    ? getProgressBar(
-                                                        calculateDays(drone.last_maintenance),
-                                                        drone.model.maintenance_cycle_day,
-                                                        drone.status,
-                                                        'DAY',
-                                                        drone.trigger
-                                                    )
-                                                    : '-'}
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <span
-                                                    className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(
-                                                        drone.status
-                                                    )}`}
-                                                >
+                                                <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(drone.status)}`}>
                                                     {drone.status}
                                                 </span>
                                             </td>
                                         </tr>
 
                                         {drone.components.map((comp, idx) => (
-                                            <tr
-                                                key={`${drone.id}-comp-${idx}`}
-                                                className="hover:bg-gray-50"
-                                            >
-                                                <td className="px-6 py-4 pl-12 text-gray-700">
-                                                    {comp.component_type}
-                                                </td>
-                                                <td className="px-6 py-4 text-gray-600">
-                                                    {comp.model.factory_type} ({comp.model.factory_model})
-                                                </td>
-                                                <td className="px-6 py-4 text-gray-600">
-                                                    {comp.serial_number}
-                                                </td>
-                                                <td className="px-6 py-4 text-gray-600">
-                                                    {comp.last_maintenance || '-'}
-                                                </td>
+                                            <tr key={`${drone.id}-comp-${idx}`} className={`hover:${isDark ? 'bg-gray-600' : 'bg-gray-50'}`}>
+                                                <td className={`px-6 py-4 pl-12 ${isDark ? 'text-gray-100' : 'text-gray-700'}`}>{comp.component_type}</td>
+                                                <td className={`px-6 py-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{comp.model.factory_type} ({comp.model.factory_model})</td>
+                                                <td className={`px-6 py-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{comp.serial_number}</td>
+                                                <td className={`px-6 py-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{comp.last_maintenance || '-'}</td>
+                                                <td className="px-6 py-4">{getProgressBar(comp.total_hours, comp.model.maintenance_cycle_hour, comp.status, 'HOUR', comp.trigger)}</td>
+                                                <td className="px-6 py-4">{getProgressBar(comp.total_flights, comp.model.maintenance_cycle_flight, comp.status, 'FLIGHT', comp.trigger)}</td>
+                                                <td className="px-6 py-4">{comp.last_maintenance && comp.model.maintenance_cycle_day > 0 ? getProgressBar(calculateDays(comp.last_maintenance), comp.model.maintenance_cycle_day, comp.status, 'DAY', comp.trigger) : '-'}</td>
                                                 <td className="px-6 py-4">
-                                                    {getProgressBar(
-                                                        comp.total_hours,
-                                                        comp.model.maintenance_cycle_hour,
-                                                        comp.status,
-                                                        'HOUR',
-                                                        comp.trigger
-                                                    )}
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    {getProgressBar(
-                                                        comp.total_flights,
-                                                        comp.model.maintenance_cycle_flight,
-                                                        comp.status,
-                                                        'FLIGHT',
-                                                        comp.trigger
-                                                    )}
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    {comp.last_maintenance && comp.model.maintenance_cycle_day > 0
-                                                        ? getProgressBar(
-                                                            calculateDays(comp.last_maintenance),
-                                                            comp.model.maintenance_cycle_day,
-                                                            comp.status,
-                                                            'DAY',
-                                                            comp.trigger
-                                                        )
-                                                        : '-'}
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <span
-                                                        className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(
-                                                            comp.status
-                                                        )}`}
-                                                    >
+                                                    <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(comp.status)}`}>
                                                         {comp.status}
                                                     </span>
                                                 </td>
                                             </tr>
                                         ))}
-                                    </>
+                                    </React.Fragment>
                                 ))}
                             </tbody>
                         </table>
