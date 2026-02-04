@@ -2,12 +2,14 @@
 
 import FormCard from '@/src/components/organization/FormCard';
 import OrgDataTable from '@/src/components/organization/OrgDataTable';
+import { useTheme } from '@/src/components/useTheme';
 import { ActiveStatus, LUCProcedure, SectorType } from '@/src/config/types';
 import { dummyLUCProcedures } from '@/src/lib/dummydata';
 import { CheckCircle, Download, FileText, Plus, XCircle } from 'lucide-react';
 import { useState } from 'react';
 
 export default function LUCProceduresPage() {
+  const { isDark } = useTheme()
   const [procedures, setProcedures] = useState<LUCProcedure[]>(dummyLUCProcedures);
   const [formData, setFormData] = useState({
     code: '',
@@ -119,163 +121,196 @@ export default function LUCProceduresPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-gray-50 via-blue-50 to-indigo-50 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Page Header */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-linear-to-r from-blue-600 to-indigo-700">
-              <FileText className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">LUC Procedures</h1>
-              <p className="text-gray-600 text-sm mt-0.5">Manage operational procedures and protocols</p>
-            </div>
+ <div className={`min-h-screen p-6 ${isDark ? 'bg-linear-to-br from-gray-900 via-gray-800 to-gray-900' : 'bg-linear-to-br from-gray-50 via-blue-50 to-indigo-50'}`}>
+  <div className="max-w-7xl mx-auto space-y-6">
+
+    {/* Header */}
+    <div className={`rounded-xl shadow-lg border p-6 ${isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'}`}>
+      <div className="flex items-center gap-3">
+        <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-linear-to-r from-blue-600 to-indigo-700">
+          <FileText className="w-6 h-6 text-white" />
+        </div>
+        <div>
+          <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+            LUC Procedures
+          </h1>
+          <p className={`text-sm mt-0.5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+            Manage operational procedures and protocols
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <FormCard
+      title="Add LUC Procedure"
+      icon={<Plus className="w-5 h-5 text-white" />}
+      isDark={isDark}
+    >
+      <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'} mb-6`}>
+        Fill in the details below to create a new LUC Procedure for your organization.
+      </p>
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+
+        {/* Row 1 */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className={`block text-sm font-semibold mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+              Procedure Code *
+            </label>
+            <input
+              className={`w-full px-4 py-2.5 rounded-lg border outline-none transition-all ${
+                isDark
+                  ? 'bg-gray-800 border-gray-700 text-white focus:ring-blue-600'
+                  : 'bg-white border-gray-300 text-gray-900 focus:ring-blue-500'
+              }`}
+              type="text"
+              value={formData.code}
+              onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+              required
+            />
+          </div>
+
+          <div>
+            <label className={`block text-sm font-semibold mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+              Sector *
+            </label>
+            <select
+              className={`w-full px-4 py-2.5 rounded-lg border outline-none transition-all ${
+                isDark
+                  ? 'bg-gray-800 border-gray-700 text-white'
+                  : 'bg-white border-gray-300 text-gray-900'
+              }`}
+              value={formData.sector}
+              onChange={(e) => setFormData({ ...formData, sector: e.target.value as SectorType })}
+              required
+            >
+              <option value="">Select Sector</option>
+              <option value="EVALUATION">Evaluation</option>
+              <option value="PLANNING">Planning</option>
+              <option value="MISSION">Mission</option>
+            </select>
+          </div>
+
+          <div>
+            <label className={`block text-sm font-semibold mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+              Version *
+            </label>
+            <input
+              className={`w-full px-4 py-2.5 rounded-lg border outline-none transition-all ${
+                isDark
+                  ? 'bg-gray-800 border-gray-700 text-white'
+                  : 'bg-white border-gray-300 text-gray-900'
+              }`}
+              type="text"
+              value={formData.version}
+              onChange={(e) => setFormData({ ...formData, version: e.target.value })}
+              required
+            />
           </div>
         </div>
 
-        {/* Form Card */}
-        <FormCard 
-          title="Add LUC Procedure" 
-          icon={<Plus className="w-5 h-5 text-white" />}
-        >
-          <p className="text-gray-600 mb-6">
-            Fill in the details below to create a new LUC Procedure for your organization.
-          </p>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label htmlFor="code" className="block text-sm font-semibold text-gray-700 mb-2">
-                  Procedure Code *
-                </label>
-                <input
-                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 outline-none"
-                  type="text"
-                  id="code"
-                  placeholder="e.g., LUC-001"
-                  value={formData.code}
-                  onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                  required
-                />
-              </div>
-              <div>
-                <label htmlFor="sector" className="block text-sm font-semibold text-gray-700 mb-2">
-                  Sector *
-                </label>
-                <select
-                  id="sector"
-                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 outline-none bg-white"
-                  value={formData.sector}
-                  onChange={(e) => setFormData({ ...formData, sector: e.target.value as SectorType })}
-                  required
-                >
-                  <option value="">Select Sector</option>
-                  <option value="EVALUATION">Evaluation</option>
-                  <option value="PLANNING">Planning</option>
-                  <option value="MISSION">Mission</option>
-                </select>
-              </div>
-              <div>
-                <label htmlFor="version" className="block text-sm font-semibold text-gray-700 mb-2">
-                  Version *
-                </label>
-                <input
-                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 outline-none"
-                  type="text"
-                  id="version"
-                  placeholder="e.g., 1.0"
-                  value={formData.version}
-                  onChange={(e) => setFormData({ ...formData, version: e.target.value })}
-                  required
-                />
-              </div>
-            </div>
+        {/* Row 2 */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="md:col-span-2">
+            <label className={`block text-sm font-semibold mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+              Description *
+            </label>
+            <input
+              className={`w-full px-4 py-2.5 rounded-lg border outline-none transition-all ${
+                isDark
+                  ? 'bg-gray-800 border-gray-700 text-white'
+                  : 'bg-white border-gray-300 text-gray-900'
+              }`}
+              type="text"
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              required
+            />
+          </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="md:col-span-2">
-                <label htmlFor="description" className="block text-sm font-semibold text-gray-700 mb-2">
-                  Description *
-                </label>
-                <input
-                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 outline-none"
-                  type="text"
-                  id="description"
-                  placeholder="Brief description of the procedure"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  required
-                />
-              </div>
-              <div>
-                <label htmlFor="active" className="block text-sm font-semibold text-gray-700 mb-2">
-                  Status *
-                </label>
-                <select
-                  id="active"
-                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 outline-none bg-white"
-                  value={formData.active}
-                  onChange={(e) => setFormData({ ...formData, active: e.target.value as ActiveStatus })}
-                  required
-                >
-                  <option value="">Select Status</option>
-                  <option value="Y">Active</option>
-                  <option value="N">Inactive</option>
-                </select>
-              </div>
-            </div>
+          <div>
+            <label className={`block text-sm font-semibold mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+              Status *
+            </label>
+            <select
+              className={`w-full px-4 py-2.5 rounded-lg border outline-none transition-all ${
+                isDark
+                  ? 'bg-gray-800 border-gray-700 text-white'
+                  : 'bg-white border-gray-300 text-gray-900'
+              }`}
+              value={formData.active}
+              onChange={(e) => setFormData({ ...formData, active: e.target.value as ActiveStatus })}
+              required
+            >
+              <option value="">Select Status</option>
+              <option value="Y">Active</option>
+              <option value="N">Inactive</option>
+            </select>
+          </div>
+        </div>
 
-            <div>
-              <label htmlFor="jsonSchema" className="block text-sm font-semibold text-gray-700 mb-2">
-                JSON Schema
-              </label>
-              <textarea
-                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 outline-none font-mono text-sm"
-                rows={12}
-                id="jsonSchema"
-                value={formData.jsonSchema}
-                onChange={(e) => setFormData({ ...formData, jsonSchema: e.target.value })}
-                placeholder='{\n  "type": "object",\n  "properties": {\n    ...\n  }\n}'
-              />
-            </div>
+        {/* JSON */}
+        <div>
+          <label className={`block text-sm font-semibold mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+            JSON Schema
+          </label>
+          <textarea
+            rows={12}
+            className={`w-full px-4 py-3 rounded-lg border outline-none font-mono text-sm transition-all ${
+              isDark
+                ? 'bg-gray-800 border-gray-700 text-gray-100'
+                : 'bg-white border-gray-300 text-gray-900'
+            }`}
+            value={formData.jsonSchema}
+            onChange={(e) => setFormData({ ...formData, jsonSchema: e.target.value })}
+          />
+        </div>
 
-            <div className="flex items-center gap-3 pt-4 border-t border-gray-200">
-              <button 
-                type="submit" 
-                className="flex items-center gap-2 px-6 py-3 rounded-lg bg-linear-to-r from-blue-600 to-indigo-700 text-white font-semibold hover:shadow-lg transition-all duration-200"
-              >
-                <Plus className="w-5 h-5" />
-                Create Procedure
-              </button>
-              <button
-                type="button"
-                className="px-6 py-3 rounded-lg border border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 transition-all duration-200"
-                onClick={() => setFormData({
-                  code: '',
-                  sector: '',
-                  version: '',
-                  active: '',
-                  description: '',
-                  jsonSchema: ''
-                })}
-              >
-                Reset Form
-              </button>
-            </div>
-          </form>
-        </FormCard>
+        {/* Actions */}
+        <div className={`flex items-center gap-3 pt-4 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+          <button
+            type="submit"
+            className="flex items-center gap-2 px-6 py-3 rounded-lg bg-linear-to-r from-blue-600 to-indigo-700 text-white font-semibold hover:shadow-lg transition-all"
+          >
+            <Plus className="w-5 h-5" />
+            Create Procedure
+          </button>
 
-        <OrgDataTable
-          columns={columns}
-          data={procedures}
-          title="LUC Procedures List"
-          actions={
-            <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 transition-all duration-200 font-medium">
-              <Download className="w-4 h-4" />
-              Export
-            </button>
-          }
-        />
-      </div>
-    </div>
+          <button
+            type="button"
+            className={`px-6 py-3 rounded-lg border font-semibold transition-all ${
+              isDark
+                ? 'border-gray-700 text-gray-300 hover:bg-gray-800'
+                : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+            }`}
+            onClick={() =>
+              setFormData({ code: '', sector: '', version: '', active: '', description: '', jsonSchema: '' })
+            }
+          >
+            Reset Form
+          </button>
+        </div>
+      </form>
+    </FormCard>
+
+    <OrgDataTable
+      columns={columns}
+      data={procedures}
+      title="LUC Procedures List"
+      isDark={isDark}
+      actions={
+        <button className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all ${
+          isDark
+            ? 'bg-gray-800 text-gray-300 border-gray-700 hover:bg-gray-700'
+            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+        }`}>
+          <Download className="w-4 h-4" />
+          Export
+        </button>
+      }
+    />
+  </div>
+</div>
   );
 }

@@ -2,6 +2,7 @@
 
 import MissionTypeForm from '@/src/components/mission/MissionTypeForm';
 import MissionTypeTable from '@/src/components/mission/MissionTypeTable';
+import { useTheme } from '@/src/components/useTheme';
 import { MissionType } from '@/src/config/types';
 import { useState } from 'react';
 
@@ -14,6 +15,7 @@ const dummyMissionTypes: MissionType[] = [
 ];
 
 export default function MissionTypePage() {
+  const { isDark } = useTheme()
   const [missionTypes, setMissionTypes] = useState<MissionType[]>(dummyMissionTypes);
 
   const handleAddMissionType = (newType: Omit<MissionType, 'id'>) => {
@@ -35,41 +37,62 @@ export default function MissionTypePage() {
   };
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 p-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">Mission Types Management</h1>
-          <p className="text-gray-600 mt-2">Manage and configure mission types for your operations</p>
-        </div>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Table Section */}
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden hover:shadow-xl transition-shadow duration-300">
-            <div className="bg-linear-to-r from-blue-500 to-blue-600 px-6 py-4">
-              <h2 className="text-xl font-semibold text-white">Mission Type List</h2>
-              <p className="text-blue-100 text-sm mt-1">View and manage existing types</p>
-            </div>
-            <div className="p-6">
-              <MissionTypeTable
-                data={missionTypes}
-                onDelete={handleDeleteMissionType}
-                onEdit={handleEditMissionType}
-              />
-            </div>
-          </div>
+    <div
+  className={`min-h-screen p-6 ${
+    isDark
+      ? 'bg-linear-to-br from-gray-900 to-gray-800'
+      : 'bg-linear-to-br from-gray-50 to-gray-100'
+  }`}
+>
+  <div className="max-w-7xl mx-auto">
+    <div className="mb-8">
+      <h1 className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>
+        Mission Types Management
+      </h1>
+      <p className={`mt-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+        Manage and configure mission types for your operations
+      </p>
+    </div>
 
-          {/* Form Section */}
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden hover:shadow-xl transition-shadow duration-300">
-            <div className="bg-linear-to-r from-green-500 to-green-600 px-6 py-4">
-              <h2 className="text-xl font-semibold text-white">Add New Mission Type</h2>
-              <p className="text-green-100 text-sm mt-1">Create a new mission type entry</p>
-            </div>
-            <div className="p-6">
-              <MissionTypeForm onSubmit={handleAddMissionType} />
-            </div>
-          </div>
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+      {/* Table Section */}
+      <div
+        className={`rounded-2xl shadow-lg border overflow-hidden transition-shadow duration-300 hover:shadow-xl ${
+          isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'
+        }`}
+      >
+        <div className="bg-linear-to-r from-blue-500 to-blue-600 px-6 py-4">
+          <h2 className="text-xl font-semibold text-white">Mission Type List</h2>
+          <p className="text-blue-100 text-sm mt-1">View and manage existing types</p>
+        </div>
+        <div className="p-6">
+          <MissionTypeTable
+            data={missionTypes}
+            onDelete={handleDeleteMissionType}
+            onEdit={handleEditMissionType}
+            isDark={isDark}
+          />
         </div>
       </div>
+
+      <div
+        className={`rounded-2xl shadow-lg border overflow-hidden transition-shadow duration-300 hover:shadow-xl ${
+          isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'
+        }`}
+      >
+        <div className="bg-linear-to-r from-green-500 to-green-600 px-6 py-4">
+          <h2 className="text-xl font-semibold text-white">Add New Mission Type</h2>
+          <p className="text-green-100 text-sm mt-1">Create a new mission type entry</p>
+        </div>
+        <div className="p-6">
+          <MissionTypeForm onSubmit={handleAddMissionType} isDark={isDark} />
+        </div>
+      </div>
+
     </div>
+  </div>
+</div>
+
   );
 }

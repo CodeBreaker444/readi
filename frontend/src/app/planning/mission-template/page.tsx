@@ -1,7 +1,7 @@
 'use client';
 
 import MissionTemplateDashboard from "@/src/components/planning/MissionTemplateDashboard";
-import { useTheme } from "@/src/components/ThemeContext";
+import { useTheme } from "@/src/components/useTheme";
 
 export default function MissionTemplatesPage() {
   const { isDark } = useTheme();

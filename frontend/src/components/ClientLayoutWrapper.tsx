@@ -1,10 +1,11 @@
 'use client';
-import { useTheme } from 'next-themes';
+
 import { usePathname } from 'next/navigation';
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import MobileSidebar from './MobileSidebar';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
+import { useTheme } from './useTheme';
 
 interface ClientLayoutWrapperProps {
   children: React.ReactNode;
@@ -13,25 +14,10 @@ interface ClientLayoutWrapperProps {
 const ClientLayoutWrapper: React.FC<ClientLayoutWrapperProps> = ({ children }) => {
   const pathname = usePathname();
   const isAuthPage = pathname?.startsWith('/auth');
-  const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const isDark = theme === 'dark';
-
-  const toggleTheme = () => {
-    setTheme(isDark ? 'light' : 'dark');
-  };
+  const { isDark, toggleTheme } = useTheme();
 
   if (isAuthPage) {
     return <>{children}</>;
-  }
-
-  if (!mounted) {
-    return <div className="min-h-screen bg-gray-50">{children}</div>;
   }
 
   return (

@@ -3,6 +3,7 @@
 import SafetyFilters from '@/src/components/safety-management/SafetyFilters';
 import SafetyModal from '@/src/components/safety-management/SafetyModal';
 import SafetyTable from '@/src/components/safety-management/SafetyTable';
+import { useTheme } from '@/src/components/useTheme';
 import { DUMMY_SAFETY_INDICATORS } from '@/src/lib/dummydata';
 import { HelpCircle } from 'lucide-react';
 import { useState } from 'react';
@@ -20,6 +21,7 @@ export interface SafetyIndicator {
   is_active: 0 | 1;
 }
 export default function SafetyManagementPage() {
+  const { isDark } = useTheme()
   const [indicators, setIndicators] = useState<SafetyIndicator[]>(DUMMY_SAFETY_INDICATORS);
   const [filteredIndicators, setFilteredIndicators] = useState<SafetyIndicator[]>(DUMMY_SAFETY_INDICATORS);
   const [filters, setFilters] = useState({
@@ -112,39 +114,45 @@ export default function SafetyManagementPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-semibold text-gray-800">
-              Safety Management SPI KPI Definition
-            </h1>
-            <button className="text-gray-500 hover:text-gray-700 transition-colors">
-              <HelpCircle className="w-6 h-6" />
-            </button>
-          </div>
-        </div>
-
-        <SafetyFilters
-          filters={filters}
-          onFilterChange={handleFilterChange}
-          onReset={handleResetFilters}
-          onNew={handleNew}
-        />
-
-        <SafetyTable
-          indicators={filteredIndicators}
-          onEdit={handleEdit}
-          onToggle={handleToggle}
-        />
-
-        <SafetyModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          onSave={handleSave}
-          indicator={selectedIndicator}
-        />
+    <div className={`min-h-screen ${isDark ? 'bg-slate-900' : 'bg-gray-50'}`}>
+  <div className="container mx-auto px-4 py-6">
+    <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center gap-2">
+        <h1 className={`text-2xl font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>
+          Safety Management SPI KPI Definition
+        </h1>
+        <button
+          className={`transition-colors ${isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'}`}
+        >
+          <HelpCircle className="w-6 h-6" />
+        </button>
       </div>
     </div>
+
+    <SafetyFilters
+      filters={filters}
+      onFilterChange={handleFilterChange}
+      onReset={handleResetFilters}
+      onNew={handleNew}
+      isDark={isDark}
+    />
+
+    <SafetyTable
+      indicators={filteredIndicators}
+      onEdit={handleEdit}
+      onToggle={handleToggle}
+      isDark={isDark}
+    />
+
+    <SafetyModal
+      isOpen={isModalOpen}
+      onClose={() => setIsModalOpen(false)}
+      onSave={handleSave}
+      indicator={selectedIndicator}
+      isDark={isDark}
+    />
+  </div>
+</div>
+
   );
 }

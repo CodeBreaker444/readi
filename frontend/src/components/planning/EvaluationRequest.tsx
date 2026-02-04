@@ -1,5 +1,6 @@
 'use client';
 import React, { useState } from 'react';
+import { useTheme } from '../useTheme';
 import AreaTable from './AreaTable';
 import EvaluationForm from './EvaluationForm';
 import FileUpload from './FileUpload';
@@ -37,7 +38,8 @@ interface EvaluationRequestProps {
   isDark?: boolean;
 }
 
-const EvaluationRequest: React.FC<EvaluationRequestProps> = ({ isDark = false }) => {
+const EvaluationRequest: React.FC<EvaluationRequestProps> = () => {
+  const { isDark } = useTheme()
   const [drawnAreas, setDrawnAreas] = useState<DrawnArea[]>([]);
   const [evaluationId, setEvaluationId] = useState<number | null>(null);
   const [clientId, setClientId] = useState<number | null>(null);
@@ -105,85 +107,79 @@ const EvaluationRequest: React.FC<EvaluationRequestProps> = ({ isDark = false })
   };
 
   return (
+   <>
+  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    {/* Left Column - Map */}
     <div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        {/* Left Column - Map */}
-        <div>
-          <div className={` bg-white border-gray-200 rounded-lg shadow-sm border`}>
-            <div className="p-4 border-b border-gray-200 dark:border-slate-700">
-              <h2 className={`text-lg font-semibold text-gray-900`}>
-                Evaluation - Operational Scenario
-              </h2>
-              <p className={`text-sm mt-1  text-gray-600`}>
-                Draw your Operation Area
-              </p>
-            </div>
-            
-            <div className="p-4">
-              <MapDrawing 
-                onAreasChange={handleAreasChange} 
-                isDark={isDark}
-              />
-              
-              <AreaTable 
-                areas={drawnAreas}
-                onEdit={handleEditArea}
-                onDelete={handleDeleteArea}
-                isDark={isDark}
-              />
-            </div>
-          </div>
+      <div className={`rounded-lg shadow-sm border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+        <div className={`p-4 border-b ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
+          <h2 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+            Evaluation - Operational Scenario
+          </h2>
+          <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+            Draw your Operation Area
+          </p>
         </div>
 
-        {/* Right Column - Form */}
-        <div>
-          <div className={` bg-white border-gray-200 rounded-lg shadow-sm border`}>
-            <div className="p-4 border-b border-gray-200 dark:border-slate-700">
-              <h2 className={`text-lg font-semibold text-gray-900`}>
-                New Evaluation Request
-              </h2>
-              <p className={`text-sm mt-1 text-gray-600 `}>
-                Fill the form for adding a new evaluation request
-              </p>
-            </div>
-            
-            <div className="p-4">
-              <EvaluationForm 
-                onSubmit={handleFormSubmit}
-                isDark={isDark}
-              />
-            </div>
-          </div>
+        <div className="p-4">
+          <MapDrawing onAreasChange={handleAreasChange} isDark={isDark} />
+          <AreaTable
+            areas={drawnAreas}
+            onEdit={handleEditArea}
+            onDelete={handleDeleteArea}
+            isDark={isDark}
+          />
         </div>
       </div>
+    </div>
 
-      {/* File Upload Section - Shows after evaluation is created */}
-      {showFileUpload && evaluationId && clientId && (
-        <div className="mt-6">
-          <div className={` bg-white border-gray-200 rounded-lg shadow-sm border`}>
-            <div className="p-4 border-b border-gray-200 dark:border-slate-700">
-              <h2 className={`text-lg font-semibold text-gray-900`}>
-                Evaluation Files
-              </h2>
-              <p className={`text-sm mt-1  text-gray-600`}>
-                Upload supporting documents for this evaluation
-              </p>
-            </div>
-            
-            <div className="p-4">
-              <FileUpload
-                evaluationId={evaluationId}
-                clientId={clientId}
-                files={files}
-                onFileAdded={handleFileAdded}
-                onFileRemoved={handleFileRemoved}
-                isDark={isDark}
-              />
-            </div>
-          </div>
+    {/* Right Column - Form */}
+    <div>
+      <div className={`rounded-lg shadow-sm border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+        <div className={`p-4 border-b ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
+          <h2 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+            New Evaluation Request
+          </h2>
+          <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+            Fill the form for adding a new evaluation request
+          </p>
         </div>
-      )}
+
+        <div className="p-4">
+          <EvaluationForm onSubmit={handleFormSubmit} isDark={isDark} />
+        </div>
       </div>
+    </div>
+  </div>
+
+  {/* File Upload Section */}
+  {showFileUpload && evaluationId && clientId && (
+    <div className="mt-6">
+      <div className={`rounded-lg shadow-sm border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+        <div className={`p-4 border-b ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
+          <h2 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+            Evaluation Files
+          </h2>
+          <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+            Upload supporting documents for this evaluation
+          </p>
+        </div>
+
+        <div className="p-4">
+          <FileUpload
+            evaluationId={evaluationId}
+            clientId={clientId}
+            files={files}
+            onFileAdded={handleFileAdded}
+            onFileRemoved={handleFileRemoved}
+            isDark={isDark}
+          />
+        </div>
+      </div>
+    </div>
+  )}
+</>
+
   );
 };
 

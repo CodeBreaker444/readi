@@ -5,11 +5,13 @@ import DocumentModal from '@/src/components/document-repository/DocumentModal';
 import DocumentTable from '@/src/components/document-repository/DocumentTable';
 import HistoryModal from '@/src/components/document-repository/HistoryModal';
 import PageHeader from '@/src/components/document-repository/PageHeader';
+import { useTheme } from '@/src/components/useTheme';
 import { Document, FilterState } from '@/src/config/types';
 import { DUMMY_DOCUMENTS } from '@/src/lib/dummydata';
 import { useState } from 'react';
 
 export default function DocumentRepositoryPage() {
+  const { isDark } = useTheme()
   const [documents, setDocuments] = useState<Document[]>(DUMMY_DOCUMENTS);
   const [filteredDocuments, setFilteredDocuments] = useState<Document[]>(DUMMY_DOCUMENTS);
   const [filters, setFilters] = useState<FilterState>({
@@ -26,35 +28,35 @@ export default function DocumentRepositoryPage() {
 
   const handleFilterChange = (newFilters: FilterState) => {
     setFilters(newFilters);
-    
+
     let filtered = [...documents];
-    
+
     if (newFilters.search) {
       const search = newFilters.search.toLowerCase();
-      filtered = filtered.filter(doc => 
+      filtered = filtered.filter(doc =>
         doc.title.toLowerCase().includes(search) ||
         doc.doc_code.toLowerCase().includes(search) ||
         doc.description?.toLowerCase().includes(search) ||
         doc.keywords?.toLowerCase().includes(search)
       );
     }
-    
+
     if (newFilters.area) {
       filtered = filtered.filter(doc => doc.area === newFilters.area);
     }
-    
+
     if (newFilters.category) {
       filtered = filtered.filter(doc => doc.category === newFilters.category);
     }
-    
+
     if (newFilters.status) {
       filtered = filtered.filter(doc => doc.status === newFilters.status);
     }
-    
+
     if (newFilters.owner) {
       filtered = filtered.filter(doc => doc.owner_role === newFilters.owner);
     }
-    
+
     setFilteredDocuments(filtered);
   };
 
@@ -108,8 +110,8 @@ export default function DocumentRepositoryPage() {
   const handleSaveDocument = (formData: any) => {
     if (selectedDocument) {
       // Update existing document
-      const updatedDocs = documents.map(doc => 
-        doc.document_id === selectedDocument.document_id 
+      const updatedDocs = documents.map(doc =>
+        doc.document_id === selectedDocument.document_id
           ? { ...doc, ...formData }
           : doc
       );
@@ -130,34 +132,38 @@ export default function DocumentRepositoryPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={`min-h-screen ${isDark ? 'bg-slate-800' : 'bg-white'}`}>
       <div className="container mx-auto px-4 py-6">
         <PageHeader onNewDocument={handleNewDocument} />
-        
+
         <DocumentFilters
           filters={filters}
           onFilterChange={handleFilterChange}
           onReset={handleResetFilters}
+          isDark={isDark}
         />
-        
+
         <DocumentTable
           documents={filteredDocuments}
           onEdit={handleEditDocument}
           onViewHistory={handleViewHistory}
           onDownload={handleDownload}
+          isDark={isDark}
         />
-        
+
         <DocumentModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           onSave={handleSaveDocument}
           document={selectedDocument}
+          isDark={isDark}
         />
-        
+
         <HistoryModal
           isOpen={isHistoryModalOpen}
           onClose={() => setIsHistoryModalOpen(false)}
           history={selectedDocumentHistory}
+          isDark={isDark}
         />
       </div>
     </div>

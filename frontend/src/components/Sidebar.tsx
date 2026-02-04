@@ -1,5 +1,5 @@
 'use client';
-import { BarChart3, Bell, BookOpen, ChevronDown, ChevronRight, FileText, Home, Settings, Sliders, Users } from 'lucide-react';
+import { BarChart3, Bell, BookOpen, ChevronDown, ChevronRight, FileText, Home, Settings, Sliders } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 
@@ -35,7 +35,7 @@ const navigationItems: NavItem[] = [
       { name: 'P00 – New Evaluation Request', href: '/planning/new-evaluation' },
       { name: 'P01 – Evaluation', href: '/planning/evaluation' },
       { name: 'P02 – Planning Mission', href: '/planning/planning-mission' },
-      { name: 'P03 – Test Mission', href: '/planning/test-mission' },
+      // { name: 'P03 – Test Mission', href: '/planning/test-mission' },
       { name: 'P04 – Mission Templates', href: '/planning/mission-template' }
     ]
   },
@@ -74,11 +74,11 @@ const navigationItems: NavItem[] = [
     ]
   },
 
-  {
-    name: 'Emergency Contact List',
-    href: '/emergency',
-    icon: Users
-  },
+  // {
+  //   name: 'Emergency Contact List',
+  //   href: '/emergency',
+  //   icon: Users
+  // },
 
   {
     name: 'Notifications',

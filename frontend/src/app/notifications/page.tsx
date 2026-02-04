@@ -2,6 +2,7 @@
 
 import NotificationFilters from '@/src/components/notifications/NotificationFilters';
 import NotificationList from '@/src/components/notifications/NotificationList';
+import { useTheme } from '@/src/components/useTheme';
 import { Notifications } from '@/src/config/types';
 import { DUMMY_NOTIFICATIONS } from '@/src/lib/dummydata';
 import { Bell, CheckCheck, RefreshCw } from 'lucide-react';
@@ -10,6 +11,7 @@ import { useState } from 'react';
  
 
 export default function NotificationsPage() {
+  const { isDark } = useTheme()
   const [notifications, setNotifications] = useState<Notifications[]>(DUMMY_NOTIFICATIONS);
   const [filteredNotifications, setFilteredNotifications] = useState<Notifications[]>(DUMMY_NOTIFICATIONS);
   const [filters, setFilters] = useState({
@@ -93,42 +95,59 @@ export default function NotificationsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-6">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-semibold text-gray-800 flex items-center gap-2">
-            <Bell className="w-7 h-7" />
-            Notifications
-          </h1>
-          <div className="flex gap-2">
-            <button
-              onClick={handleMarkAllAsRead}
-              className="flex items-center gap-2 px-4 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
-            >
-              <CheckCheck className="w-4 h-4" />
-              Mark all as read
-            </button>
-            <button
-              onClick={handleReload}
-              className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              <RefreshCw className="w-4 h-4" />
-              Reload
-            </button>
-          </div>
-        </div>
+  <div className={`min-h-screen ${isDark ? 'bg-slate-900' : 'bg-gray-50'}`}>
+  <div className="container mx-auto px-4 py-6">
+    
+    <div className="flex items-center justify-between mb-6">
+      <h1
+        className={`text-2xl font-semibold flex items-center gap-2 ${
+          isDark ? 'text-white' : 'text-gray-800'
+        }`}
+      >
+        <Bell className="w-7 h-7" />
+        Notifications
+      </h1>
 
-        <NotificationFilters
-          filters={filters}
-          onFilterChange={handleFilterChange}
-        />
+      <div className="flex gap-2">
+        <button
+          onClick={handleMarkAllAsRead}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
+            isDark
+              ? 'border-blue-500 text-blue-400 hover:bg-blue-500/10'
+              : 'border-blue-600 text-blue-600 hover:bg-blue-50'
+          }`}
+        >
+          <CheckCheck className="w-4 h-4" />
+          Mark all as read
+        </button>
 
-        <NotificationList
-          notifications={filteredNotifications}
-          onMarkAsRead={handleMarkAsRead}
-          onDelete={handleDelete}
-        />
+        <button
+          onClick={handleReload}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
+            isDark
+              ? 'border-slate-600 text-gray-300 hover:bg-slate-800'
+              : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+          }`}
+        >
+          <RefreshCw className="w-4 h-4" />
+          Reload
+        </button>
       </div>
     </div>
+
+    <NotificationFilters
+      filters={filters}
+      onFilterChange={handleFilterChange}
+      isDark={isDark}
+    />
+
+    <NotificationList
+      notifications={filteredNotifications}
+      onMarkAsRead={handleMarkAsRead}
+      onDelete={handleDelete}
+      isDark={isDark}
+    />
+  </div>
+</div>
   );
 }

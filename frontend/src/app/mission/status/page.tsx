@@ -2,6 +2,7 @@
 
 import StatusForm from '@/src/components/mission/StatusForm';
 import StatusTable from '@/src/components/mission/StatusTable';
+import { useTheme } from '@/src/components/useTheme';
 import { MissionStatus } from '@/src/config/types';
 import { useState } from 'react';
 
@@ -15,6 +16,7 @@ const dummyMissionStatuses: MissionStatus[] = [
 ];
 
 export default function MissionStatusPage() {
+  const { isDark } = useTheme()
   const [statuses, setStatuses] = useState<MissionStatus[]>(dummyMissionStatuses);
 
   const handleAddStatus = (newStatus: Omit<MissionStatus, 'id'>) => {
@@ -36,50 +38,42 @@ export default function MissionStatusPage() {
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 bg-gray-50 min-h-screen">
-      {/* Page header */}
-      <div className="mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-          Mission | Status Management
-        </h1>
-        <p className="mt-1 text-sm text-gray-600">
-          Define mission statuses used across the operational workflow.
-        </p>
+   <div className={`p-4 sm:p-6 lg:p-8 min-h-screen ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
+  <div className="mb-6">
+    <h1 className={`text-2xl sm:text-3xl font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
+      Mission | Status Management
+    </h1>
+    <p className={`mt-1 text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+      Define mission statuses used across the operational workflow.
+    </p>
+  </div>
+
+  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className={`${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl shadow-sm border`}>
+      <div className={`px-4 py-3 border-b flex items-center justify-between ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
+        <h2 className={`text-base font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
+          Mission Status List
+        </h2>
       </div>
-
-      {/* Content grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* List card */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-            <h2 className="text-base font-semibold text-gray-900">
-              Mission Status List
-            </h2>
-          </div>
-          <div className="p-4">
-            <StatusTable
-              data={statuses}
-              onDelete={handleDeleteStatus}
-              onEdit={handleEditStatus}
-            />
-          </div>
-        </div>
-
-        {/* Form card */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-            <h2 className="text-base font-semibold text-gray-900">
-              Add Mission Status
-            </h2>
-          </div>
-          <div className="p-4">
-            <p className="text-sm text-gray-600 mb-4">
-              Fill the form below to add a new mission status.
-            </p>
-            <StatusForm onSubmit={handleAddStatus} />
-          </div>
-        </div>
+      <div className="p-4">
+        <StatusTable data={statuses} onDelete={handleDeleteStatus} onEdit={handleEditStatus} isDark={isDark} />
       </div>
     </div>
+
+    <div className={`${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl shadow-sm border`}>
+      <div className={`px-4 py-3 border-b flex items-center justify-between ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
+        <h2 className={`text-base font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
+          Add Mission Status
+        </h2>
+      </div>
+      <div className="p-4">
+        <p className={`text-sm mb-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+          Fill the form below to add a new mission status.
+        </p>
+        <StatusForm onSubmit={handleAddStatus} isDark={isDark}/>
+      </div>
+    </div>
+  </div>
+</div>
   );
 }

@@ -1,6 +1,6 @@
-import { ThemeProvider } from "next-themes";
 import { Geist, Geist_Mono } from "next/font/google";
 import ClientLayoutWrapper from "../components/ClientLayoutWrapper";
+import { ThemeProvider } from "../components/ThemeProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -13,6 +13,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// Uncomment and configure metadata as needed
 // export const metadata: Metadata = {
 //   title: "ReADI - Drone Control Center",
 //   description: "Professional Drone Control Center Dashboard",
@@ -26,7 +27,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <ThemeProvider>
           <ClientLayoutWrapper>
             {children}
           </ClientLayoutWrapper>
