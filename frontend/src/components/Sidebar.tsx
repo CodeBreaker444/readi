@@ -214,7 +214,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark }) => {
   return (
     <div className={`w-64 ${isDark ? 'bg-slate-900 border-r border-slate-800' : 'bg-white border-r border-gray-200'} ${isDark ? 'text-white' : 'text-gray-800'} flex flex-col h-screen`}>
       <div className={`p-5 flex items-center space-x-3 border-b ${isDark ? 'border-slate-800' : 'border-gray-200'}`}>
-        <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-lg flex items-center justify-center shadow-lg">
+        <div className="w-10 h-10 bg-linear-to-br from-yellow-400 to-yellow-600 rounded-lg flex items-center justify-center shadow-lg">
           <span className="text-white font-bold text-lg">R</span>
         </div>
         <div>

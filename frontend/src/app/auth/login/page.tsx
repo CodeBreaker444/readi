@@ -11,55 +11,98 @@ export default function LoginPage() {
   const router = useRouter()
 
   const [formData, setFormData] = useState({
-    username: '',
+    email: '', // Changed from username to email
     password: '',
   })
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault()
-  setLoading(true)
-  setError(null)
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
 
-  try {
-    const { data: profileData, error: profileError } = await supabase
-      .from('user_profiles')
-      .select('email, password_changed')
-      .eq('username', formData.username)
-      .single()
+    try {
+      // Step 1: Sign in with email and password
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      })
 
-    if (profileError || !profileData) {
-      throw new Error('Invalid username or password')
+      if (authError) {
+        throw new Error('Invalid email or password')
+      }
+
+      if (!authData.user) {
+        throw new Error('Authentication failed')
+      }
+
+      // Step 2: Check if user exists in public.users table
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('user_id, username, email, user_active')
+        .eq('auth_user_id', authData.user.id)
+        .single()
+
+      if (userError || !userData) {
+        // User exists in auth but not in public.users (shouldn't happen with trigger)
+        await supabase.auth.signOut()
+        throw new Error('User profile not found. Please contact administrator.')
+      }
+
+      // Step 3: Check if user is active
+      if (userData.user_active !== 'Y') {
+        await supabase.auth.signOut()
+        throw new Error('Your account has been deactivated. Please contact administrator.')
+      }
+
+      // Step 4: Get user profile to check password change status
+      const { data: profileData, error: profileError } = await supabase
+        .from('users_profile')
+        .select('profile_id, bio')
+        .eq('fk_user_id', userData.user_id)
+        .single()
+
+      // Step 5: Check user settings for password_changed flag
+      const { data: settingsData } = await supabase
+        .from('user_settings')
+        .select('setting_value')
+        .eq('fk_user_id', userData.user_id)
+        .eq('setting_key', 'password_changed')
+        .single()
+
+      if (!settingsData || settingsData.setting_value !== 'true') {
+        router.push('/auth/change-password')
+        return
+      }
+
+      const { data: factors } = await supabase.auth.mfa.listFactors()
+
+      if (factors && factors.totp && factors.totp.length > 0) {
+        router.push('/auth/verify-mfa')
+      } else {
+        const { data: mfaRequiredSetting } = await supabase
+          .from('user_settings')
+          .select('setting_value')
+          .eq('fk_user_id', userData.user_id)
+          .eq('setting_key', 'mfa_required')
+          .single()
+
+        if (mfaRequiredSetting && mfaRequiredSetting.setting_value === 'true') {
+          router.push('/auth/setup-2fa')
+        } else {
+          router.push('/dashboard')
+        }
+      }
+    } catch (err: any) {
+      console.error('Login error:', err)
+      setError(err.message || 'Login failed. Please try again.')
+    } finally {
+      setLoading(false)
     }
-
-    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-      email: profileData.email,
-      password: formData.password,
-    })
-
-    if (authError) throw authError
-
-    // Check if password needs to be changed
-    if (!profileData.password_changed) {
-      window.location.href = '/auth/change-password'
-      return
-    }
-
-    const { data: factors } = await supabase.auth.mfa.listFactors()
-
-    if (factors && factors.totp && factors.totp.length > 0) {
-      window.location.href = '/auth/verify-mfa'
-    } else {
-      window.location.href = '/dashboard'
-    }
-  } catch (err: any) {
-    setError(err.message || 'Login failed. Please try again.')
-  } finally {
-    setLoading(false)
   }
-}
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setFormData(prev => ({
@@ -70,7 +113,6 @@ const handleSubmit = async (e: React.FormEvent) => {
 
   return (
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
-      {/* Background Image with Overlay */}
       <div className="absolute inset-0 z-0">
         <Image
           src="/readi_login.png"
@@ -82,9 +124,7 @@ const handleSubmit = async (e: React.FormEvent) => {
         <div className="absolute inset-0 bg-gray-900/50"></div>
       </div>
 
-      {/* Login Form */}
-      <div className="relative z-10 w-full max-w-100 px-3">
-        {/* Logo Section */}
+      <div className="relative z-10 w-full max-w-md px-4">
         <div className="mb-8 flex flex-col items-center justify-center gap-4">
           <Image
             src="/logo-sm.png"
@@ -95,7 +135,6 @@ const handleSubmit = async (e: React.FormEvent) => {
           />
         </div>
 
-        {/* Login Card */}
         <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-2xl p-8">
           <form className="w-full" onSubmit={handleSubmit}>
             <p className="mb-7 text-center text-base text-gray-600">
@@ -109,21 +148,19 @@ const handleSubmit = async (e: React.FormEvent) => {
             )}
 
             <div className="flex flex-col gap-4">
-              {/* Username Input */}
               <div className="relative">
                 <CiMail className="absolute left-4 top-[35%] h-4 w-4 text-gray-400" />
                 <input
-                  type="text"
-                  name="username"
-                  placeholder="Username"
+                  type="email"
+                  name="email"
+                  placeholder="Email"
                   required
                   className="h-12 w-full rounded-lg border border-gray-300 bg-white pl-10 pr-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
-                  value={formData.username}
+                  value={formData.email}
                   onChange={handleChange}
                 />
               </div>
 
-              {/* Password Input */}
               <div className="relative">
                 <CiLock className="absolute left-4 top-[35%] h-4 w-4 text-gray-400" />
                 <input
@@ -148,7 +185,6 @@ const handleSubmit = async (e: React.FormEvent) => {
                 </button>
               </div>
 
-              {/* Submit Button */}
               <div className="button-section">
                 <button
                   type="submit"
@@ -165,20 +201,11 @@ const handleSubmit = async (e: React.FormEvent) => {
                   )}
                 </button>
 
-                {/* <div className="flex justify-center text-center text-sm">
-                  <Link
-                    href="/auth/forgot-password"
-                    className="text-gray-600 hover:text-gray-900 hover:underline"
-                  >
-                    Forgot password?
-                  </Link>
-                </div> */}
               </div>
             </div>
           </form>
         </div>
 
-        {/* Footer */}
         <p className="mt-6 text-center text-sm text-white/80">
           Contact your administrator for account access
         </p>
