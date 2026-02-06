@@ -2,6 +2,7 @@
 import { BarChart3, Bell, BookOpen, ChevronDown, ChevronRight, FileText, Home, Settings, Sliders } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
+import { Permission, Role, roleHasPermission, ROUTE_PERMISSIONS } from '../lib/auth/roles';
 
 interface SubNavItem {
   name: string;
@@ -139,9 +140,10 @@ const configurationItems: SubNavItem[] = [
 
 interface SidebarProps {
   isDark: boolean;
+  role: Role | null
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ isDark }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isDark, role }) => {
   const router = useRouter();
   const pathname = usePathname();
   const [activeItem, setActiveItem] = useState('/dashboard');
@@ -151,11 +153,78 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark }) => {
     setActiveItem(pathname);
   }, [pathname]);
 
+const getRequiredPermissionForRoute = (href: string): Permission | null => {
+  return ROUTE_PERMISSIONS[href] ?? null;
+};
+
+const filteredNavigationItems = navigationItems
+  .map((item) => {
+    const visibleSubItems = item.subItems?.filter((sub) => {
+      const perm = getRequiredPermissionForRoute(sub.href);
+      if (!perm) return true;
+      return roleHasPermission(role, perm);
+    }) ?? [];
+
+    const ownPerm = getRequiredPermissionForRoute(item.href);
+    const canSeeOwn = ownPerm ? roleHasPermission(role, ownPerm) : false;
+    const hasVisibleSub = visibleSubItems.length > 0;
+
+    if (!canSeeOwn && !hasVisibleSub) return null;
+
+    return { ...item, subItems: visibleSubItems };
+  })
+  .filter(Boolean) as typeof navigationItems;
+
+const filteredConfigurationItems = configurationItems
+  .map((configItem) => {
+    const visibleSubItems = configItem.subItems?.filter((sub) => {
+      const perm = getRequiredPermissionForRoute(sub.href);
+      if (!perm) return true;
+      return roleHasPermission(role, perm);
+    }) ?? [];
+
+    const ownPerm = getRequiredPermissionForRoute(configItem.href);
+    const canSeeOwn = ownPerm ? roleHasPermission(role, ownPerm) : false;
+    const hasVisibleSub = visibleSubItems.length > 0;
+
+    if (!canSeeOwn && !hasVisibleSub) return null;
+
+    return { ...configItem, subItems: visibleSubItems };
+  })
+  .filter(Boolean) as typeof configurationItems;
+
+  // const visibleNavigationItems = navigationItems.filter((item) => {
+  //   const requiredPermission = ROUTE_PERMISSIONS[item.href];
+  //   if (!requiredPermission) return true;
+  //   return roleHasPermission(role, requiredPermission);
+  // }).map(item => ({
+  //   ...item,
+  //   subItems: item.subItems?.filter(subItem => {
+  //     const subPermission = ROUTE_PERMISSIONS[subItem.href];
+  //     if (!subPermission) return true;
+  //     return roleHasPermission(role, subPermission);
+  //   })
+  // }));
+
+  // const visibleConfigurationItems = configurationItems.filter((configItem) => {
+  //   const requiredPermission = ROUTE_PERMISSIONS[configItem.href];
+  //   if (!requiredPermission) return true;
+  //   return roleHasPermission(role, requiredPermission);
+  // }).map(configItem => ({
+  //   ...configItem,
+  //   subItems: configItem.subItems?.filter(subItem => {
+  //     const subPermission = ROUTE_PERMISSIONS[subItem.href];
+  //     if (!subPermission) return true;
+  //     return roleHasPermission(role, subPermission);
+  //   })
+  // }));
+
   const toggleExpand = (href: string) => {
     setExpandedItems(prev =>
       prev.includes(href) ? prev.filter(item => item !== href) : [...prev, href]
     );
   };
+
 
   const handleNavigation = (href: string, hasSubItems?: boolean) => {
     if (hasSubItems) {
@@ -225,10 +294,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark }) => {
 
       <nav className="flex-1 px-2 py-4 overflow-y-auto custom-scrollbar">
         <ul className="space-y-0.5">
-          {navigationItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeItem === item.href;
-            const isExpanded = expandedItems.includes(item.href);
+{filteredNavigationItems.map((item) => {
+  const Icon = item.icon;
+  const isActive = activeItem === item.href;
+  const isExpanded = expandedItems.includes(item.href);
+  const hasSubItems = !!item.subItems && item.subItems.length > 0;
             
             return (
               <li key={item.href}>
@@ -237,7 +307,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark }) => {
                     href={item.href}
                     onClick={(e) => {
                       e.preventDefault();
-                      handleNavigation(item.href, !!item.subItems);
+                      handleNavigation(item.href, hasSubItems);
                     }}
                     className={`
                       flex items-center justify-between px-3 py-2.5 rounded-md
@@ -252,7 +322,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark }) => {
                       <Icon size={18} className={isActive ? 'opacity-100' : 'opacity-80 group-hover:opacity-100'} />
                       <span className="text-sm font-medium">{item.name}</span>
                     </div>
-                    {item.subItems && (
+                    {hasSubItems && (
                       <ChevronDown
                         size={14}
                         className={`transition-transform duration-200 opacity-60 ${isExpanded ? 'rotate-180' : ''}`}
@@ -261,21 +331,20 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark }) => {
                   </a>
                   
                   {/* Sub Items */}
-                  {item.subItems && isExpanded && renderSubItems(item.subItems)}
+                  {hasSubItems && isExpanded && renderSubItems(item.subItems!)}
                 </div>
               </li>
             );
           })}
-          
+          {filteredConfigurationItems.length > 0 && (
           <li className={`pt-4 mt-4 border-t ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
             <div className="px-3 py-2 flex items-center space-x-2">
               <Sliders size={16} className={isDark ? 'text-gray-500' : 'text-gray-400'} />
               <span className={`text-xs font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>Configuration</span>
             </div>
             
-            {/* Configuration Items */}
             <ul className="space-y-0.5 mt-2">
-              {configurationItems.map((configItem) => {
+              {filteredConfigurationItems.map((configItem) => {
                 const isExpanded = expandedItems.includes(configItem.href);
                 const isActive = activeItem === configItem.href;
                 
@@ -311,6 +380,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark }) => {
               })}
             </ul>
           </li>
+          )}
         </ul>
       </nav>
 

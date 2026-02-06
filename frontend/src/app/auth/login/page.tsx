@@ -1,107 +1,59 @@
 'use client'
 
-import { supabase } from '@/src/lib/supabase'
+import { authCookies } from '@/src/lib/auth/auth-cookies'
+import { getDefaultRoute } from '@/src/lib/auth/roles'
 import { EyeIcon, EyeOffIcon, Loader2Icon } from 'lucide-react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { CiLock, CiMail } from 'react-icons/ci'
+import { loginUser } from './actions'
 
 export default function LoginPage() {
   const router = useRouter()
 
   const [formData, setFormData] = useState({
-    email: '', // Changed from username to email
+    email: '',
     password: '',
   })
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError(null)
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault()
+  setLoading(true)
+  setError(null)
 
-    try {
-      // Step 1: Sign in with email and password
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email: formData.email,
-        password: formData.password,
-      })
+  try {
+    const result = await loginUser(formData.email, formData.password);
 
-      if (authError) {
-        throw new Error('Invalid email or password')
-      }
-
-      if (!authData.user) {
-        throw new Error('Authentication failed')
-      }
-
-      // Step 2: Check if user exists in public.users table
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('user_id, username, email, user_active')
-        .eq('auth_user_id', authData.user.id)
-        .single()
-
-      if (userError || !userData) {
-        // User exists in auth but not in public.users (shouldn't happen with trigger)
-        await supabase.auth.signOut()
-        throw new Error('User profile not found. Please contact administrator.')
-      }
-
-      // Step 3: Check if user is active
-      if (userData.user_active !== 'Y') {
-        await supabase.auth.signOut()
-        throw new Error('Your account has been deactivated. Please contact administrator.')
-      }
-
-      // Step 4: Get user profile to check password change status
-      const { data: profileData, error: profileError } = await supabase
-        .from('users_profile')
-        .select('profile_id, bio')
-        .eq('fk_user_id', userData.user_id)
-        .single()
-
-      // Step 5: Check user settings for password_changed flag
-      const { data: settingsData } = await supabase
-        .from('user_settings')
-        .select('setting_value')
-        .eq('fk_user_id', userData.user_id)
-        .eq('setting_key', 'password_changed')
-        .single()
-
-      if (!settingsData || settingsData.setting_value !== 'true') {
-        router.push('/auth/change-password')
-        return
-      }
-
-      const { data: factors } = await supabase.auth.mfa.listFactors()
-
-      if (factors && factors.totp && factors.totp.length > 0) {
-        router.push('/auth/verify-mfa')
-      } else {
-        const { data: mfaRequiredSetting } = await supabase
-          .from('user_settings')
-          .select('setting_value')
-          .eq('fk_user_id', userData.user_id)
-          .eq('setting_key', 'mfa_required')
-          .single()
-
-        if (mfaRequiredSetting && mfaRequiredSetting.setting_value === 'true') {
-          router.push('/auth/setup-2fa')
-        } else {
-          router.push('/dashboard')
-        }
-      }
-    } catch (err: any) {
-      console.error('Login error:', err)
-      setError(err.message || 'Login failed. Please try again.')
-    } finally {
-      setLoading(false)
+    if (!result.success) {
+      setError(result.error || 'Login failed');
+      return;
     }
+
+    if (result.redirect) {
+      window.location.href = result.redirect;
+      return;
+    }
+
+    if (result.data) {
+      authCookies.setAuthToken(result.data.token);
+      
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      const defaultRoute = getDefaultRoute(result.data.role);
+      
+      window.location.href = defaultRoute;
+    }
+  } catch (err: any) {
+    console.error('Login error:', err)
+    setError(err.message || 'Login failed. Please try again.')
+  } finally {
+    setLoading(false)
   }
+}
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -200,7 +152,6 @@ export default function LoginPage() {
                     'Sign in'
                   )}
                 </button>
-
               </div>
             </div>
           </form>

@@ -1,3 +1,4 @@
+import { verifyToken } from '@/src/lib/auth/jwt-utils'
 import { createServerClient } from '@supabase/ssr'
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
@@ -14,42 +15,19 @@ export async function updateSession(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value
+        getAll() {
+          return request.cookies.getAll()
         },
-        set(name: string, value: string, options) {
-          request.cookies.set({
-            name,
-            value,
-            ...options,
-          })
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value)
+          )
           response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
+            request,
           })
-          response.cookies.set({
-            name,
-            value,
-            ...options,
-          })
-        },
-        remove(name: string, options) {
-          request.cookies.set({
-            name,
-            value: '',
-            ...options,
-          })
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          })
-          response.cookies.set({
-            name,
-            value: '',
-            ...options,
-          })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options)
+          )
         },
       },
     }
@@ -62,7 +40,6 @@ export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
   const publicRoutes = ['/auth/login']
-  
   const authFlowRoutes = [
     '/auth/change-password',
     '/auth/setup-2fa',
@@ -71,6 +48,8 @@ export async function updateSession(request: NextRequest) {
 
   const isPublicRoute = publicRoutes.includes(pathname)
   const isAuthFlowRoute = authFlowRoutes.includes(pathname)
+
+  
 
   if (pathname === '/') {
     if (user) {
@@ -83,22 +62,36 @@ export async function updateSession(request: NextRequest) {
     if (isPublicRoute) {
       return response
     }
-    
+
     if (pathname == '/dashboard' || isAuthFlowRoute) {
       return NextResponse.redirect(new URL('/auth/login', request.url))
     }
-    
+
     return response
   }
+try{
+const jwtToken = request.cookies.get('readi_auth_token')?.value
 
-  try {
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('user_id, user_active')
-      .eq('auth_user_id', user.id)
-      .single()
+if (jwtToken) {
+  const verified = verifyToken(jwtToken)
+  if (!verified) {
+    console.log('JWT token verification failed')
+    if (!isAuthFlowRoute && !isPublicRoute) {
+      await supabase.auth.signOut()
+      response.cookies.delete('readi_auth_token')
+      return NextResponse.redirect(new URL('/auth/login?session_expired=true', request.url))
+    }
+  }
+} else if (!isAuthFlowRoute && !isPublicRoute) {
+  console.log('No JWT token found, but Supabase user exists - allowing access')
+}
 
-    // If user doesn't exist in public.users or is inactive
+  const { data: userData, error: userError } = await supabase
+    .from('users')
+    .select('user_id, user_active')
+    .eq('auth_user_id', user.id)
+    .single()
+
     if (userError || !userData || userData.user_active !== 'Y') {
       await supabase.auth.signOut()
       return NextResponse.redirect(new URL('/auth/login', request.url))
@@ -133,9 +126,8 @@ export async function updateSession(request: NextRequest) {
     const mfaEnabled = mfaEnabledSetting && mfaEnabledSetting.setting_value === 'true'
 
     if (hasMFAEnabled && mfaEnabled) {
-      // Check if MFA verification is complete for this session
       const mfaVerified = request.cookies.get('mfa_verified')?.value === 'true'
-      
+
       if (!mfaVerified) {
         if (pathname === '/auth/verify-mfa') {
           return response
@@ -144,7 +136,6 @@ export async function updateSession(request: NextRequest) {
       }
     }
 
-    // Check if user just changed password and hasn't seen setup-2fa yet
     const { data: mfaSetupShownSetting } = await supabase
       .from('user_settings')
       .select('setting_value')
@@ -154,7 +145,6 @@ export async function updateSession(request: NextRequest) {
 
     const mfaSetupShown = mfaSetupShownSetting && mfaSetupShownSetting.setting_value === 'true'
 
-    // If password just changed and MFA setup hasn't been shown yet, and user doesn't have MFA enabled
     if (!mfaSetupShown && !hasMFAEnabled) {
       if (pathname === '/auth/setup-2fa') {
         return response
@@ -180,6 +170,7 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
+  runtime: 'nodejs',
   matcher: [
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],

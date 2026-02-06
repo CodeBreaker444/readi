@@ -1,7 +1,10 @@
+'use client';
+
 import { Bell, ChevronDown, Clock, LogOut, Mail, Moon, Sun, User, UserCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-import { supabase } from '../lib/supabase';
+import { useEffect, useState } from 'react';
+import { authCookies } from '../lib/auth/auth-cookies';
+import { supabase } from '../lib/supabase/client';
 import ProfileModal from './ProfileModal';
 
 interface TopBarProps {
@@ -13,8 +16,26 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [userData, setUserData] = useState<{
+    username: string;
+    email: string;
+    userId: string;
+    role: string;
+  } | null>(null);
   
   const router = useRouter();
+
+  useEffect(() => {
+    const data = authCookies.getUserData();
+    if (data) {
+      setUserData({
+        username: data.username,
+        email: data.email,
+        userId: data.userId,
+        role: data.role,
+      });
+    }
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -28,6 +49,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme }) => {
         return;
       }
 
+      authCookies.clearAuth();
       setShowUserMenu(false);
       
       router.push('/auth/login');
@@ -93,9 +115,9 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme }) => {
               </div>
               <div className="hidden md:block text-left">
                 <p className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-800'}`}>
-                  John Doe
+                  {userData?.username || 'Loading...'}
                 </p>
-                <p className="text-xs text-gray-500">Admin</p>
+                <p className="text-xs text-gray-500">{userData?.role || 'User'}</p>
               </div>
               <ChevronDown size={16} className={isDark ? 'text-gray-400' : 'text-gray-600'} />
             </button>
@@ -106,9 +128,10 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme }) => {
               }`}>
                 <div className={`p-4 border-b ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
                   <p className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>
-                    John Doe
+                    {userData?.username || 'User'}
                   </p>
-                  <p className="text-sm text-gray-500">JD001</p>
+                  <p className="text-sm text-gray-500">{userData?.email || ''}</p>
+                  <p className="text-xs text-gray-400 mt-1">ID: {userData?.userId || ''}</p>
                 </div>
 
                 <div className="p-2">
@@ -148,7 +171,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme }) => {
                     } ${isLoggingOut ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     <LogOut size={18} />
-                    <span>Logout</span>
+                    <span>{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
                   </button>
                 </div>
               </div>
