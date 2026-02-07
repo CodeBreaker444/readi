@@ -135,6 +135,13 @@ const configurationItems: SubNavItem[] = [
       { name: 'Personnel', href: '/team/personnel' },
       { name: 'Crew Shift', href: '/team/crew-shift' }
     ]
+  },
+  {
+    name: 'Superadmin',
+    href: '/admin/users',
+    subItems: [
+      { name: 'User Management', href: '/admin/users' }
+    ]
   }
 ];
 
@@ -177,6 +184,11 @@ const filteredNavigationItems = navigationItems
 
 const filteredConfigurationItems = configurationItems
   .map((configItem) => {
+    if (configItem.name === 'Superadmin') {
+      const canManageUsers = roleHasPermission(role, 'manage_users');
+      if (!canManageUsers) return null;
+    }
+    
     const visibleSubItems = configItem.subItems?.filter((sub) => {
       const perm = getRequiredPermissionForRoute(sub.href);
       if (!perm) return true;
@@ -193,32 +205,7 @@ const filteredConfigurationItems = configurationItems
   })
   .filter(Boolean) as typeof configurationItems;
 
-  // const visibleNavigationItems = navigationItems.filter((item) => {
-  //   const requiredPermission = ROUTE_PERMISSIONS[item.href];
-  //   if (!requiredPermission) return true;
-  //   return roleHasPermission(role, requiredPermission);
-  // }).map(item => ({
-  //   ...item,
-  //   subItems: item.subItems?.filter(subItem => {
-  //     const subPermission = ROUTE_PERMISSIONS[subItem.href];
-  //     if (!subPermission) return true;
-  //     return roleHasPermission(role, subPermission);
-  //   })
-  // }));
-
-  // const visibleConfigurationItems = configurationItems.filter((configItem) => {
-  //   const requiredPermission = ROUTE_PERMISSIONS[configItem.href];
-  //   if (!requiredPermission) return true;
-  //   return roleHasPermission(role, requiredPermission);
-  // }).map(configItem => ({
-  //   ...configItem,
-  //   subItems: configItem.subItems?.filter(subItem => {
-  //     const subPermission = ROUTE_PERMISSIONS[subItem.href];
-  //     if (!subPermission) return true;
-  //     return roleHasPermission(role, subPermission);
-  //   })
-  // }));
-
+  
   const toggleExpand = (href: string) => {
     setExpandedItems(prev =>
       prev.includes(href) ? prev.filter(item => item !== href) : [...prev, href]

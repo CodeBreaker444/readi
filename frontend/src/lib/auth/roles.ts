@@ -23,7 +23,8 @@ export type Permission =
   | 'view_logs'
   | 'view_planning'
   | 'view_logbooks'
-  | 'view_notifications';
+  | 'view_notifications'
+  | 'manage_users';
 
 type WildcardPermission = '*';
 export type RolePermission = Permission | WildcardPermission;
@@ -80,6 +81,7 @@ export const ROUTE_PERMISSIONS: Record<string, Permission> = {
   '/systems/maintenance-tickets': 'view_config',
   '/team/personnel': 'view_config',
   '/team/crew-shift': 'view_config',
+   '/admin/users': 'manage_users', 
 };
 
 export function canAccessRoute(role: Role | null | undefined, pathname: string): boolean {
