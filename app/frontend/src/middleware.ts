@@ -1,7 +1,7 @@
-import { verifyToken } from '@/src/lib/auth/jwt-utils'
 import { createServerClient } from '@supabase/ssr'
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
+import { verifyToken } from './lib/auth/jwt-utils'
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({
