@@ -26,6 +26,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
     const role = await getRoleFromCookie();
+    console.log('user role:',role);
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>

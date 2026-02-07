@@ -193,7 +193,6 @@ const Dashboard: React.FC<DashboardProps> = () => {
           );
         })}
 
-        {/* Customer Served Card */}
         <div className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} rounded-lg shadow-sm border p-4 sm:p-6`}>
           <div className="flex items-center justify-between mb-2">
             <span className={`text-xs sm:text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
@@ -215,9 +214,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
         </div>
       </div>
 
-      {/* Mission Overview and Mission Results */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6 lg:mb-8">
-        {/* Mission Overview Chart */}
         <div className={`lg:col-span-2 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} rounded-lg shadow-sm border p-4 sm:p-6`}>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-3">
             <h2 className={`text-base sm:text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
@@ -231,7 +228,6 @@ const Dashboard: React.FC<DashboardProps> = () => {
             </select>
           </div>
 
-          {/* Placeholder for chart */}
           <div className={`h-64 sm:h-80 rounded-lg flex items-center justify-center ${isDark ? 'bg-linear-to-br from-slate-700 to-slate-600' : 'bg-linear-to-br from-blue-50 to-purple-50'
             }`}>
             <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-400'}`}>
@@ -240,7 +236,6 @@ const Dashboard: React.FC<DashboardProps> = () => {
           </div>
         </div>
 
-        {/* Mission Results */}
         <div className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} rounded-lg shadow-sm border p-4 sm:p-6`}>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-3">
             <h2 className={`text-base sm:text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
@@ -252,7 +247,6 @@ const Dashboard: React.FC<DashboardProps> = () => {
             </select>
           </div>
 
-          {/* Donut Chart Placeholder */}
           <div className="flex items-center justify-center h-48">
             <div className="relative">
               <div className={`w-40 h-40 rounded-full border-20 ${isDark ? 'border-slate-700' : 'border-gray-200'
@@ -272,7 +266,6 @@ const Dashboard: React.FC<DashboardProps> = () => {
             </div>
           </div>
 
-          {/* Legend */}
           <div className="mt-6 space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
@@ -299,9 +292,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
         </div>
       </div>
 
-      {/* Past 10 Missions and Next 10 Missions Tables */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Past 10 Missions Table */}
         <div className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} rounded-lg shadow-sm border p-4 sm:p-6`}>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-3">
             <h2 className={`text-base sm:text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
@@ -365,7 +356,6 @@ const Dashboard: React.FC<DashboardProps> = () => {
           </div>
         </div>
 
-        {/* Next 10 Missions Table */}
         <div className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} rounded-lg shadow-sm border p-4 sm:p-6`}>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-3">
             <h2 className={`text-base sm:text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
