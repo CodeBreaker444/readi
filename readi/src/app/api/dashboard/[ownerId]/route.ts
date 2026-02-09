@@ -20,18 +20,7 @@ export async function POST(
       );
     }
 
-    const apiKey = request.headers.get('x-api-key');
-    if (!apiKey || apiKey !== process.env.API_KEY) {
-      return NextResponse.json(
-        {
-          code: 0,
-          status: 'ERROR',
-          message: 'Invalid API key',
-        },
-        { status: 401 }
-      );
-    }
-
+  
     const body = await request.json();
     const { ownerId } = params;
 

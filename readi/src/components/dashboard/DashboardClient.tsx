@@ -2,6 +2,7 @@
 import { Clock, Navigation, Plane, TrendingDown, TrendingUp, Users } from 'lucide-react';
 import { useEffect, useState } from "react";
 import { useTheme } from "../useTheme";
+import DashboardSkeleton from './DashboardSkeleton';
 interface DashboardClientProps {
     ownerId: number;
     userProfileCode: string;
@@ -28,7 +29,7 @@ interface MissionData {
 export default function DashboardClient({ ownerId, userProfileCode, userId }: DashboardClientProps) {
     const { isDark } = useTheme();
     const [data, setData] = useState<any>(null);
-
+    const [loading, setLoading] = useState(true);
     const stats: StatData[] = [
         {
             label: 'Total Missions',
@@ -71,12 +72,11 @@ export default function DashboardClient({ ownerId, userProfileCode, userId }: Da
     useEffect(() => {
         async function fetchDashboard() {
             try {
-
+                setLoading(true);
                 const response = await fetch(`/api/dashboard/${ownerId}`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'x-api-key': process.env.NEXT_PUBLIC_API_KEY!,
                     },
                     body: JSON.stringify({
                         user_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -93,7 +93,9 @@ export default function DashboardClient({ ownerId, userProfileCode, userId }: Da
                 setData(result.data);
             } catch (err: any) {
                 console.log(err.message);
-            }  
+            } finally {
+                setLoading(false);
+            }
         }
 
         fetchDashboard();
@@ -114,6 +116,12 @@ export default function DashboardClient({ ownerId, userProfileCode, userId }: Da
         status: 'Waiting',
         completion: 'Waiting'
     }));
+
+    if (loading) {
+        return <DashboardSkeleton />;
+    }
+
+
     return (
         <div className={`p-4 sm:p-6 lg:p-8 ${isDark ? 'text-white' : 'text-gray-900'}`}>
             <div className="mb-6 lg:mb-8">
