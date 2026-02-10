@@ -1,7 +1,7 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import ClientLayoutWrapper from "../components/ClientLayoutWrapper";
 import { ThemeProvider } from "../components/ThemeProvider";
-import { getRoleFromCookie } from "../lib/auth/server-auth";
+import { getUserSession } from "../lib/auth/server-session";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -14,19 +14,16 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-// Uncomment and configure metadata as needed
-// export const metadata: Metadata = {
-//   title: "ReADI - Drone Control Center",
-//   description: "Professional Drone Control Center Dashboard",
-// };
+export const dynamic = 'force-dynamic';
 
 export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-    const role = await getRoleFromCookie();
-    console.log('user role:',role);
+  const session = await getUserSession();
+  const role = session?.user?.role ?? null;
+  
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
