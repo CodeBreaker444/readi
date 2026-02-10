@@ -1,6 +1,5 @@
 'use client'
 
-import { authCookies } from '@/lib/auth/auth-cookies'
 import { getDefaultRoute } from '@/lib/auth/roles'
 import axios from 'axios'
 import { EyeIcon, EyeOffIcon, Loader2Icon } from 'lucide-react'
@@ -29,23 +28,22 @@ export default function LoginPage() {
       const response = await axios.post('/api/auth/login', { 
         email: formData.email, 
         password: formData.password 
-      }); 
-      const result = await response.data
+      })
+      
+      const result = response.data
 
       if (!result.success) {
         setError(result.error || 'Login failed')
         return
       }
 
-      // Handle redirects (password change, MFA setup/verify)
       if (result.redirect) {
         window.location.href = result.redirect
         return
       }
 
       if (result.data) {
-        authCookies.setAuthToken(result.data.token)
-        
+        // Small delay to ensure cookie is set
         await new Promise(resolve => setTimeout(resolve, 100))
         
         const defaultRoute = getDefaultRoute(result.data.role)
@@ -54,7 +52,12 @@ export default function LoginPage() {
       }
     } catch (err: any) {
       console.error('Login error:', err)
-      setError(err.message || 'Login failed. Please try again.')
+      
+      if (err.response?.data?.error) {
+        setError(err.response.data.error)
+      } else {
+        setError(err.message || 'Login failed. Please try again.')
+      }
     } finally {
       setLoading(false)
     }
