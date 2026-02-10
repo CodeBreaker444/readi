@@ -1,5 +1,6 @@
 'use client';
 
+import { SessionUser } from '@/lib/auth/server-session';
 import { usePathname } from 'next/navigation';
 import React from 'react';
 import { Role } from '../lib/auth/roles';
@@ -11,13 +12,15 @@ import { useTheme } from './useTheme';
 interface ClientLayoutWrapperProps {
   children: React.ReactNode;
   role: Role | null;
+  userData:SessionUser | null;
 }
 
-const ClientLayoutWrapper: React.FC<ClientLayoutWrapperProps> = ({ children,role }) => {
+const ClientLayoutWrapper: React.FC<ClientLayoutWrapperProps> = ({ children, role, userData }) => {
   const pathname = usePathname();
   const isAuthPage = pathname?.startsWith('/auth');
   const { isDark, toggleTheme } = useTheme();
    console.log('role:',role);
+   console.log('userData:',userData);
    
 
   if (isAuthPage) {
@@ -33,7 +36,7 @@ const ClientLayoutWrapper: React.FC<ClientLayoutWrapperProps> = ({ children,role
       <MobileSidebar isDark={isDark} role={role}/>
       
       <div className="flex-1 flex flex-col overflow-hidden">
-        <TopBar isDark={isDark} toggleTheme={toggleTheme} />
+        <TopBar isDark={isDark} toggleTheme={toggleTheme} userData={userData} />
         
         <main className={`flex-1 overflow-y-auto ${isDark ? 'bg-slate-900' : 'bg-gray-50'}`}>
           {children}
