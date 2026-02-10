@@ -13,7 +13,7 @@ export interface JWTPayload {
 
 export function createToken(payload: Omit<JWTPayload, "iat" | "exp">): string {
   if (!env.JWT_SECRET) {
-    throw new Error("JWT_SECRET env is not configured");
+    throw new Error("JWT_SECRET CreateToken is not configured");
   }
 
   return jwt.sign(payload, env.JWT_SECRET, {
@@ -24,7 +24,7 @@ export function createToken(payload: Omit<JWTPayload, "iat" | "exp">): string {
 
 export function verifyToken(token: string): JWTPayload | null {
   if (!env.JWT_SECRET) {
-    console.error("JWT_SECRET verify is not configured");
+    console.error("JWT_SECRET Verifytoken is not configured");
     return null;
   }
 
