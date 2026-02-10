@@ -2,12 +2,12 @@
 
 import { authCookies } from '@/lib/auth/auth-cookies'
 import { getDefaultRoute } from '@/lib/auth/roles'
+import axios from 'axios'
 import { EyeIcon, EyeOffIcon, Loader2Icon } from 'lucide-react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { CiLock, CiMail } from 'react-icons/ci'
-import { loginUser } from './actions'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -20,40 +20,45 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault()
-  setLoading(true)
-  setError(null)
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
 
-  try {
-    const result = await loginUser(formData.email, formData.password);
+    try {
+      const response = await axios.post('/api/auth/login', { 
+        email: formData.email, 
+        password: formData.password 
+      }); 
+      const result = await response.data
 
-    if (!result.success) {
-      setError(result.error || 'Login failed');
-      return;
+      if (!result.success) {
+        setError(result.error || 'Login failed')
+        return
+      }
+
+      // Handle redirects (password change, MFA setup/verify)
+      if (result.redirect) {
+        window.location.href = result.redirect
+        return
+      }
+
+      if (result.data) {
+        authCookies.setAuthToken(result.data.token)
+        
+        await new Promise(resolve => setTimeout(resolve, 100))
+        
+        const defaultRoute = getDefaultRoute(result.data.role)
+        
+        window.location.href = defaultRoute
+      }
+    } catch (err: any) {
+      console.error('Login error:', err)
+      setError(err.message || 'Login failed. Please try again.')
+    } finally {
+      setLoading(false)
     }
-
-    if (result.redirect) {
-      window.location.href = result.redirect;
-      return;
-    }
-
-    if (result.data) {
-      authCookies.setAuthToken(result.data.token);
-      
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      const defaultRoute = getDefaultRoute(result.data.role);
-      
-      window.location.href = defaultRoute;
-    }
-  } catch (err: any) {
-    console.error('Login error:', err)
-    setError(err.message || 'Login failed. Please try again.')
-  } finally {
-    setLoading(false)
   }
-}
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
