@@ -1,8 +1,8 @@
 'use client';
 
-import OrganizationTree from "@/src/components/organization/OrganizationTree";
-import { useTheme } from "@/src/components/useTheme";
-import { dummyOrganizationTree } from "@/src/lib/dummydata";
+import OrganizationTree from "@/components/organization/OrganizationTree";
+import { useTheme } from "@/components/useTheme";
+import { dummyOrganizationTree } from "@/lib/dummydata";
 import { Building2, Download, Maximize2, Minimize2 } from "lucide-react";
 import { useState } from "react";
 

@@ -1,10 +1,10 @@
 'use client';
 
-import FormCard from '@/src/components/organization/FormCard';
-import OrgDataTable from '@/src/components/organization/OrgDataTable';
-import { useTheme } from '@/src/components/useTheme';
-import { ActiveStatus, Communication } from '@/src/config/types';
-import { dummyCommunications } from '@/src/lib/dummydata';
+import FormCard from '@/components/organization/FormCard';
+import OrgDataTable from '@/components/organization/OrgDataTable';
+import { useTheme } from '@/components/useTheme';
+import { ActiveStatus, Communication } from '@/config/types';
+import { dummyCommunications } from '@/lib/dummydata';
 import { useState } from 'react';
 
 export default function CommunicationPage() {

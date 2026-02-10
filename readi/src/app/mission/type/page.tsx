@@ -1,9 +1,9 @@
 'use client';
 
-import MissionTypeForm from '@/src/components/mission/MissionTypeForm';
-import MissionTypeTable from '@/src/components/mission/MissionTypeTable';
-import { useTheme } from '@/src/components/useTheme';
-import { MissionType } from '@/src/config/types';
+import MissionTypeForm from '@/components/mission/MissionTypeForm';
+import MissionTypeTable from '@/components/mission/MissionTypeTable';
+import { useTheme } from '@/components/useTheme';
+import { MissionType } from '@/config/types';
 import { useState } from 'react';
 
 const dummyMissionTypes: MissionType[] = [
@@ -56,7 +56,6 @@ export default function MissionTypePage() {
 
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-      {/* Table Section */}
       <div
         className={`rounded-2xl shadow-lg border overflow-hidden transition-shadow duration-300 hover:shadow-xl ${
           isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'

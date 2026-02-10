@@ -4,6 +4,7 @@ import { getChartReadiTotalMission, getChartReadiTotalMissionResult } from "./ch
 import { getReadiLastNextMissionList, getReadiTotalMission } from "./mission-queries";
 import { getPilotTotal } from "./pilot-queries";
 
+
 export interface DashboardRequestParams {
   owner_id: number;
   user_id: number;
@@ -58,7 +59,37 @@ export interface PilotTotal {
   total_distance: number;
 }
 
-
+/**
+ * Map database status values to normalized format
+ */
+const normalizeStatus = (status: string): 'GREEN' | 'YELLOW' | 'RED' => {
+  const statusUpper = String(status).toUpperCase().trim();
+  
+  if (statusUpper.includes('ABOVE') || 
+      statusUpper.includes('EXCELLENT') || 
+      statusUpper.includes('SUCCESS') ||
+      statusUpper.includes('TARGET') && statusUpper.includes('ABOVE')) {
+    return 'GREEN';
+  } 
+  
+  if (statusUpper.includes('ON TARGET') || 
+      statusUpper.includes('NORMAL') ||
+      statusUpper === 'YELLOW') {
+    return 'YELLOW';
+  }
+  
+  if (statusUpper.includes('BELOW') || 
+      statusUpper.includes('POOR') || 
+      statusUpper.includes('ERROR') ||
+      statusUpper.includes('FAIL') ||
+      statusUpper === 'RED') {
+    return 'RED';
+  }
+  
+  if (statusUpper === 'GREEN') return 'GREEN';
+  
+  return 'YELLOW';
+}
 /**
  * Get complete dashboard data
  */
@@ -105,7 +136,7 @@ export async function getDashboardData(params: DashboardRequestParams) {
   }
 }
 
-interface SPIKPIDataInput{
+interface SPIKPIDataInput {
   owner_id: number,
   user_id: number,
   user_timezone?: string,
@@ -114,15 +145,29 @@ interface SPIKPIDataInput{
 
 export async function getSPIKPIData(input: SPIKPIDataInput) {
   try {
+    
     const { data: latestPeriodData, error: periodError } = await supabase
       .from('spi_kpi')
       .select('measurement_date')
       .eq('fk_owner_id', input.owner_id)
       .order('measurement_date', { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
 
-    if (periodError || !latestPeriodData) {
+
+    if (periodError) {
+      return {
+        code: 0,
+        status: 'ERROR',
+        message: `Database error: ${periodError.message}`,
+        period: null,
+        safety_index: 0,
+        indexes: {},
+        data: {},
+      };
+    }
+
+    if (!latestPeriodData) {
       return {
         code: 0,
         status: 'ERROR',
@@ -196,7 +241,8 @@ export async function getSPIKPIData(input: SPIKPIDataInput) {
         value: parseFloat(record.actual_value || 0),
         target: parseFloat(record.target_value || 0),
         unit: def?.measurement_unit || '',
-        status: record.status || 'RED',
+        status: normalizeStatus(record.status),
+        raw_status: record.status,
       };
     });
 
@@ -345,8 +391,8 @@ export async function getSPIKPITrend(input: SPIKPITrendInput) {
     };
   }
 }
-interface SHITrendInput{
-   owner_id: number,
+interface SHITrendInput {
+  owner_id: number,
   user_id: number,
   user_timezone?: string,
   user_profile_code?: string
@@ -386,9 +432,12 @@ export async function getSHITrend(input: SHITrendInput) {
       const period = periodMap.get(label)!;
       period.total += 1;
 
-      if (record.status === 'GREEN') {
+      // Normalize status before checking
+      const normalizedStatus = normalizeStatus(record.status);
+
+      if (normalizedStatus === 'GREEN') {
         period.green += 1;
-      } else if (record.status === 'YELLOW') {
+      } else if (normalizedStatus === 'YELLOW') {
         period.yellow += 1;
       }
     });
@@ -398,7 +447,7 @@ export async function getSHITrend(input: SHITrendInput) {
 
     const sortedPeriods = Array.from(periodMap.entries())
       .sort((a, b) => a[0].localeCompare(b[0]))
-      .slice(-12);  
+      .slice(-12);
 
     sortedPeriods.forEach(([label, data]) => {
       labels.push(label);

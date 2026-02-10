@@ -1,7 +1,8 @@
 'use client';
 
-import EvaluationDashboard from "@/src/components/planning/EvaluationDashboard";
-import { useTheme } from "@/src/components/useTheme";
+import EvaluationDashboard from "@/components/planning/EvaluationDashboard";
+import { useTheme } from "@/components/useTheme";
+
 
 export default function EvaluationPage() {
   const { isDark } = useTheme();

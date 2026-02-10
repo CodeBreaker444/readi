@@ -1,7 +1,7 @@
 'use client'
 
-import { authCookies } from '@/src/lib/auth/auth-cookies'
-import { getDefaultRoute } from '@/src/lib/auth/roles'
+import { authCookies } from '@/lib/auth/auth-cookies'
+import { getDefaultRoute } from '@/lib/auth/roles'
 import { EyeIcon, EyeOffIcon, Loader2Icon } from 'lucide-react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'

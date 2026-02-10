@@ -1,4 +1,4 @@
-import { SafetyIndicator } from '@/src/config/types';
+import { SafetyIndicator } from '@/config/types';
 import { Edit2, ToggleLeft, ToggleRight } from 'lucide-react';
 
 interface SafetyTableProps {

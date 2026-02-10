@@ -1,9 +1,9 @@
 'use client';
 
-import MissionCategoryForm from '@/src/components/mission/MissionCategoryForm';
-import MissionCategoryTable from '@/src/components/mission/MissionCategoryTable';
-import { useTheme } from '@/src/components/useTheme';
-import { MissionCategory } from '@/src/config/types';
+import MissionCategoryForm from '@/components/mission/MissionCategoryForm';
+import MissionCategoryTable from '@/components/mission/MissionCategoryTable';
+import { useTheme } from '@/components/useTheme';
+import { MissionCategory } from '@/config/types';
 import { useState } from 'react';
 
 const dummyMissionCategories: MissionCategory[] = [

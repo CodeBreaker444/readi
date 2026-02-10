@@ -1,10 +1,10 @@
 'use client';
 
-import SafetyFilters from '@/src/components/safety-management/SafetyFilters';
-import SafetyModal from '@/src/components/safety-management/SafetyModal';
-import SafetyTable from '@/src/components/safety-management/SafetyTable';
-import { useTheme } from '@/src/components/useTheme';
-import { DUMMY_SAFETY_INDICATORS } from '@/src/lib/dummydata';
+import SafetyFilters from '@/components/safety-management/SafetyFilters';
+import SafetyModal from '@/components/safety-management/SafetyModal';
+import SafetyTable from '@/components/safety-management/SafetyTable';
+import { useTheme } from '@/components/useTheme';
+import { DUMMY_SAFETY_INDICATORS } from '@/lib/dummydata';
 import { HelpCircle } from 'lucide-react';
 import { useState } from 'react';
 

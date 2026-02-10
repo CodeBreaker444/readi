@@ -1,6 +1,6 @@
 'use client';
 
-import { useTheme } from '@/src/components/useTheme';
+import { useTheme } from '@/components/useTheme';
 import React, { useState } from 'react';
 
 // Dummy data

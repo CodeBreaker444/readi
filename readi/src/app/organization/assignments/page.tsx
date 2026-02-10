@@ -1,8 +1,8 @@
 'use client';
 
-import FormCard from '@/src/components/organization/FormCard';
-import OrgDataTable from '@/src/components/organization/OrgDataTable';
-import { useTheme } from '@/src/components/useTheme';
+import FormCard from '@/components/organization/FormCard';
+import OrgDataTable from '@/components/organization/OrgDataTable';
+import { useTheme } from '@/components/useTheme';
 import { Download, FileText } from 'lucide-react';
 import { useState } from 'react';
 

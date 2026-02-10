@@ -1,7 +1,7 @@
 'use client';
+import { CalendarDashboard } from "@/components/operation/CalendarDashboard";
+import { useTheme } from "@/components/useTheme";
 
-import { CalendarDashboard } from "@/src/components/operation/CalendarDashboard";
-import { useTheme } from "@/src/components/useTheme";
 
 export default function CalendarPage() {
     const { isDark } = useTheme();

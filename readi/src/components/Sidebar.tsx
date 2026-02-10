@@ -138,9 +138,9 @@ const configurationItems: SubNavItem[] = [
   },
   {
     name: 'Superadmin',
-    href: '/admin/users',
+    href: '/super-admin/users',
     subItems: [
-      { name: 'User Management', href: '/admin/users' }
+      { name: 'User Management', href: '/super-admin/users' }
     ]
   }
 ];

@@ -1,4 +1,4 @@
-import { Notifications } from '@/src/config/types';
+import { Notifications } from '@/config/types';
 import { Check, Trash2 } from 'lucide-react';
 
 interface NotificationListProps {

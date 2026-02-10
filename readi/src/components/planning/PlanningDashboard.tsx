@@ -1,5 +1,5 @@
 'use client';
-import { data } from '@/src/lib/mockdata';
+import { data } from '@/lib/mockdata';
 import React, { useEffect, useState } from 'react';
 import AddPlanningForm from './AddPlanningForm';
 import CollapsibleForm from './CollapsibleForm';

@@ -1,6 +1,7 @@
 'use client'
-import EvaluationRequest from "@/src/components/planning/EvaluationRequest";
-import { useTheme } from "@/src/components/useTheme";
+
+import EvaluationRequest from "@/components/planning/EvaluationRequest"
+import { useTheme } from "@/components/useTheme"
 
 export default function Page() {
   const {isDark} = useTheme()

@@ -1,6 +1,6 @@
 'use client';
 
-import { MissionCategory } from '@/src/config/types';
+import { MissionCategory } from '@/config/types';
 import { Plus } from 'lucide-react';
 import { FormEvent, useState } from 'react';
 

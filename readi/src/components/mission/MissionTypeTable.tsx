@@ -1,6 +1,6 @@
 'use client';
 
-import { MissionType } from '@/src/config/types';
+import { MissionType } from '@/config/types';
 import { useState } from 'react';
 
 interface MissionTypeTableProps {

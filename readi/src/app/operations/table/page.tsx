@@ -1,7 +1,7 @@
 'use client';
+import OperationDashboard from "@/components/operation/OperationDashboard";
+import { useTheme } from "@/components/useTheme";
 
-import OperationDashboard from "@/src/components/operation/OperationDashboard";
-import { useTheme } from "@/src/components/useTheme";
 
 export default function OperationsTablePage() {
   const { isDark } = useTheme();

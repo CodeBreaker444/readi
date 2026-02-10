@@ -1,6 +1,6 @@
 'use client';
 
-import { useTheme } from '@/src/components/useTheme';
+import { useTheme } from '@/components/useTheme';
 import { useState } from 'react';
 
 // Dummy shift data

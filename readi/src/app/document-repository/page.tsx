@@ -1,13 +1,13 @@
 'use client';
 
-import DocumentFilters from '@/src/components/document-repository/DocumentFilters';
-import DocumentModal from '@/src/components/document-repository/DocumentModal';
-import DocumentTable from '@/src/components/document-repository/DocumentTable';
-import HistoryModal from '@/src/components/document-repository/HistoryModal';
-import PageHeader from '@/src/components/document-repository/PageHeader';
-import { useTheme } from '@/src/components/useTheme';
-import { Document, FilterState } from '@/src/config/types';
-import { DUMMY_DOCUMENTS } from '@/src/lib/dummydata';
+import DocumentFilters from '@/components/document-repository/DocumentFilters';
+import DocumentModal from '@/components/document-repository/DocumentModal';
+import DocumentTable from '@/components/document-repository/DocumentTable';
+import HistoryModal from '@/components/document-repository/HistoryModal';
+import PageHeader from '@/components/document-repository/PageHeader';
+import { useTheme } from '@/components/useTheme';
+import { Document, FilterState } from '@/config/types';
+import { DUMMY_DOCUMENTS } from '@/lib/dummydata';
 import { useState } from 'react';
 
 export default function DocumentRepositoryPage() {

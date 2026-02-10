@@ -30,7 +30,7 @@ const ClientLayoutWrapper: React.FC<ClientLayoutWrapperProps> = ({ children,role
         <Sidebar isDark={isDark} role={role}/>
       </div>
       
-      <MobileSidebar isDark={isDark} />
+      <MobileSidebar isDark={isDark} role={role}/>
       
       <div className="flex-1 flex flex-col overflow-hidden">
         <TopBar isDark={isDark} toggleTheme={toggleTheme} />

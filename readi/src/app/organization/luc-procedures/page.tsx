@@ -1,10 +1,10 @@
 'use client';
 
-import FormCard from '@/src/components/organization/FormCard';
-import OrgDataTable from '@/src/components/organization/OrgDataTable';
-import { useTheme } from '@/src/components/useTheme';
-import { ActiveStatus, LUCProcedure, SectorType } from '@/src/config/types';
-import { dummyLUCProcedures } from '@/src/lib/dummydata';
+import FormCard from '@/components/organization/FormCard';
+import OrgDataTable from '@/components/organization/OrgDataTable';
+import { useTheme } from '@/components/useTheme';
+import { ActiveStatus, LUCProcedure, SectorType } from '@/config/types';
+import { dummyLUCProcedures } from '@/lib/dummydata';
 import { CheckCircle, Download, FileText, Plus, XCircle } from 'lucide-react';
 import { useState } from 'react';
 

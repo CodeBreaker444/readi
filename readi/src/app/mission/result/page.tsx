@@ -1,9 +1,9 @@
 'use client';
 
-import ResultForm from '@/src/components/mission/ResultForm';
-import ResultTable from '@/src/components/mission/ResultTable';
-import { useTheme } from '@/src/components/useTheme';
-import { MissionResult } from '@/src/config/types';
+import ResultForm from '@/components/mission/ResultForm';
+import ResultTable from '@/components/mission/ResultTable';
+import { useTheme } from '@/components/useTheme';
+import { MissionResult } from '@/config/types';
 import { useState } from 'react';
 
 const dummyMissionResults: MissionResult[] = [

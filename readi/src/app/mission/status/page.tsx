@@ -1,9 +1,9 @@
 'use client';
 
-import StatusForm from '@/src/components/mission/StatusForm';
-import StatusTable from '@/src/components/mission/StatusTable';
-import { useTheme } from '@/src/components/useTheme';
-import { MissionStatus } from '@/src/config/types';
+import StatusForm from '@/components/mission/StatusForm';
+import StatusTable from '@/components/mission/StatusTable';
+import { useTheme } from '@/components/useTheme';
+import { MissionStatus } from '@/config/types';
 import { useState } from 'react';
 
 const dummyMissionStatuses: MissionStatus[] = [

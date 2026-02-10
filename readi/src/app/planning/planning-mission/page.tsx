@@ -1,7 +1,8 @@
 'use client';
 
-import PlanningDashboard from "@/src/components/planning/PlanningDashboard";
-import { useTheme } from "@/src/components/useTheme";
+import PlanningDashboard from "@/components/planning/PlanningDashboard";
+import { useTheme } from "@/components/useTheme";
+
 
 export default function PlanningMissionPage() {
   const { isDark } = useTheme();

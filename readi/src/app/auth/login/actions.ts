@@ -1,8 +1,8 @@
 'use server'
 
-import { createToken } from '@/src/lib/auth/jwt-utils'
-import { Role } from '@/src/lib/auth/roles'
-import { createClient } from '@/src/lib/supabase/server'
+import { createToken } from '@/lib/auth/jwt-utils'
+import { Role } from '@/lib/auth/roles'
+import { createClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
 
 export async function loginUser(email: string, password: string) {

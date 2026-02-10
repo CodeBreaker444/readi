@@ -1,14 +1,14 @@
 'use client';
 
-import FlightLogbookFilters from '@/src/components/logbook/FlightLogbookFilters';
-import FlightLogbookOffcanvas from '@/src/components/logbook/FlightLogbookOffcanvas';
-import FlightLogbookTable from '@/src/components/logbook/FlightLogbookTable';
-import { useSession } from '@/src/lib/useSession';
+import FlightLogbookFilters from '@/components/logbook/FlightLogbookFilters';
+import FlightLogbookOffcanvas from '@/components/logbook/FlightLogbookOffcanvas';
+import FlightLogbookTable from '@/components/logbook/FlightLogbookTable';
+import { getUserSession } from '@/lib/auth/server-session';
 import { Plane } from 'lucide-react';
 import { useState } from 'react';
 
-export default function OperationLogbookPage() {
-  const { ownerId, isLoading } = useSession();
+export default async function OperationLogbookPage() {
+  const session = await getUserSession();
   const [filters, setFilters] = useState({
     dateStart: '',
     dateEnd: '',
@@ -28,14 +28,7 @@ export default function OperationLogbookPage() {
     setSelectedMission(mission);
     setIsOffcanvasOpen(true);
   };
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-600"></div>
-      </div>
-    );
-  }
+ 
 
   return (
     <div className="p-6 space-y-6">
@@ -61,7 +54,7 @@ export default function OperationLogbookPage() {
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <FlightLogbookFilters
-            ownerId={ownerId}
+            ownerId={session?.user.ownerId!}
             filters={filters}
             onFiltersChange={setFilters}
           />
@@ -71,7 +64,7 @@ export default function OperationLogbookPage() {
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700">
         <div className="p-6">
           <FlightLogbookTable
-            ownerId={ownerId}
+            ownerId={session?.user.ownerId!}
             filters={filters}
             onRowClick={handleRowClick}
           />

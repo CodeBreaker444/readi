@@ -1,6 +1,6 @@
 'use client';
 
-import { MissionCategory } from '@/src/config/types';
+import { MissionCategory } from '@/config/types';
 import { Check, Pencil, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
 

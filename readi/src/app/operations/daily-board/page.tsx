@@ -1,7 +1,7 @@
 'use client';
+import DailyBoard from "@/components/operation/DailyBoard";
+import { useTheme } from "@/components/useTheme";
 
-import DailyBoard from "@/src/components/operation/DailyBoard";
-import { useTheme } from "@/src/components/useTheme";
 
 export default function DailyBoardPage() {
     const { isDark } = useTheme();

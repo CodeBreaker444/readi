@@ -1,13 +1,15 @@
 'use client';
+import { Role } from '@/lib/auth/roles';
 import { Menu, X } from 'lucide-react';
 import React, { useState } from 'react';
 import Sidebar from './Sidebar';
 
 interface MobileSidebarProps {
   isDark: boolean;
+  role: Role | null
 }
 
-const MobileSidebar: React.FC<MobileSidebarProps> = ({ isDark }) => {
+const MobileSidebar: React.FC<MobileSidebarProps> = ({ isDark, role }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -33,7 +35,7 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({ isDark }) => {
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <Sidebar isDark={isDark} />
+        <Sidebar isDark={isDark} role={role}/>
       </div>
     </>
   );

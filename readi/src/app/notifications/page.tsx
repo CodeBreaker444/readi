@@ -1,10 +1,10 @@
 'use client';
 
-import NotificationFilters from '@/src/components/notifications/NotificationFilters';
-import NotificationList from '@/src/components/notifications/NotificationList';
-import { useTheme } from '@/src/components/useTheme';
-import { Notifications } from '@/src/config/types';
-import { DUMMY_NOTIFICATIONS } from '@/src/lib/dummydata';
+import NotificationFilters from '@/components/notifications/NotificationFilters';
+import NotificationList from '@/components/notifications/NotificationList';
+import { useTheme } from '@/components/useTheme';
+import { Notifications } from '@/config/types';
+import { DUMMY_NOTIFICATIONS } from '@/lib/dummydata';
 import { Bell, CheckCheck, RefreshCw } from 'lucide-react';
 import { useState } from 'react';
 

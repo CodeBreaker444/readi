@@ -1,13 +1,13 @@
 'use client';
 
-import MissionPlanningFilters from '@/src/components/logbook/MissionPlanningFilters';
-import MissionPlanningTable from '@/src/components/logbook/MissionPlanningTable';
-import { useSession } from '@/src/lib/useSession';
+import MissionPlanningFilters from '@/components/logbook/MissionPlanningFilters';
+import MissionPlanningTable from '@/components/logbook/MissionPlanningTable';
+import { getUserSession } from '@/lib/auth/server-session';
 import { FileText } from 'lucide-react';
 import { useState } from 'react';
 
-export default function MissionPlanningLogbookPage() {
-  const { ownerId, isLoading } = useSession();
+export default async function MissionPlanningLogbookPage() {
+  const session = await getUserSession();
   const [filters, setFilters] = useState({
     clientId: 0,
     pilotId: 0,
@@ -17,13 +17,7 @@ export default function MissionPlanningLogbookPage() {
     dateEnd: '',
   });
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
+ 
 
   return (
     <div className="p-6 space-y-6">
@@ -49,7 +43,7 @@ export default function MissionPlanningLogbookPage() {
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <MissionPlanningFilters
-            ownerId={ownerId}
+            ownerId={session?.user.ownerId!}
             filters={filters}
             onFiltersChange={setFilters}
           />
@@ -58,7 +52,7 @@ export default function MissionPlanningLogbookPage() {
 
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700">
         <div className="p-6">
-          <MissionPlanningTable ownerId={ownerId} filters={filters} />
+          <MissionPlanningTable ownerId={session?.user.ownerId!} filters={filters} />
         </div>
       </div>
     </div>
