@@ -1,6 +1,6 @@
-import { env } from '@/backend/config/env';
-import jwt from 'jsonwebtoken';
-import { Role } from './roles';
+import { env } from "@/backend/config/env";
+import jwt from "jsonwebtoken";
+import { Role } from "./roles";
 
 export interface JWTPayload {
   sub: string;
@@ -11,24 +11,20 @@ export interface JWTPayload {
   exp?: number;
 }
 
-export function createToken(payload: Omit<JWTPayload, 'iat' | 'exp'>): string {
+export function createToken(payload: Omit<JWTPayload, "iat" | "exp">): string {
   if (!env.JWT_SECRET) {
-    throw new Error('JWT_SECRET is not configured');
+    throw new Error("JWT_SECRET CreateToken is not configured");
   }
 
-  return jwt.sign(
-    payload,
-    env.JWT_SECRET,
-    {
-      expiresIn: '7d',
-      issuer: 'readi-app',
-    }
-  );
+  return jwt.sign(payload, env.JWT_SECRET, {
+    expiresIn: "7d",
+    issuer: "readi-app",
+  });
 }
 
 export function verifyToken(token: string): JWTPayload | null {
   if (!env.JWT_SECRET) {
-    console.error('JWT_SECRET is not configured');
+    console.error("JWT_SECRET Verifytoken is not configured");
     return null;
   }
 
@@ -36,7 +32,7 @@ export function verifyToken(token: string): JWTPayload | null {
     const decoded = jwt.verify(token, env.JWT_SECRET) as JWTPayload;
     return decoded;
   } catch (error) {
-    console.error('Token verification failed:', error);
+    console.error("Token verification failed:", error);
     return null;
   }
 }
