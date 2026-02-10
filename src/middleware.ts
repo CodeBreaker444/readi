@@ -1,7 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
-import { verifyToken } from './lib/auth/jwt-utils'
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({
@@ -70,21 +69,7 @@ export async function updateSession(request: NextRequest) {
     return response
   }
 try{
-const jwtToken = request.cookies.get('readi_auth_token')?.value
-
-if (jwtToken) {
-  const verified = verifyToken(jwtToken)
-  if (!verified) {
-    console.log('JWT token verification failed')
-    if (!isAuthFlowRoute && !isPublicRoute) {
-      await supabase.auth.signOut()
-      response.cookies.delete('readi_auth_token')
-      return NextResponse.redirect(new URL('/auth/login?session_expired=true', request.url))
-    }
-  }
-} else if (!isAuthFlowRoute && !isPublicRoute) {
-  console.log('No JWT token found, but Supabase user exists - allowing access')
-}
+console.log('User authenticated via Supabase session - allowing to proceed with checks')
 
   const { data: userData, error: userError } = await supabase
     .from('users')

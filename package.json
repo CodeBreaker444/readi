@@ -12,6 +12,7 @@
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.93.3",
     "@tanstack/react-table": "^8.21.3",
+    "axios": "^1.13.5",
     "dotenv": "^17.2.4",
     "express": "^5.2.1",
     "js-cookie": "^3.0.5",
