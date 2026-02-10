@@ -34,7 +34,6 @@ export async function getUserSession(): Promise<Session | null> {
       return null;
     }
 
-    // Query users table - just get fk_owner_id directly, no join needed
     const { data: userData, error: userDataError } = await supabase
       .from('users')
       .select(`

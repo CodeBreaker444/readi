@@ -41,12 +41,12 @@ export function verifyToken(token: string): JWTPayload | null {
   }
 }
 
-export function decodeToken(token: string): JWTPayload | null {
-  try {
-    const decoded = jwt.decode(token) as JWTPayload;
-    return decoded;
-  } catch (error) {
-    console.error('Token decode failed:', error);
-    return null;
-  }
-}
+// export function decodeToken(token: string): JWTPayload | null {
+//   try {
+//     const decoded = jwt.decode(token) as JWTPayload;
+//     return decoded;
+//   } catch (error) {
+//     console.error('Token decode failed:', error);
+//     return null;
+//   }
+// }

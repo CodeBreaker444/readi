@@ -69,7 +69,6 @@ export async function updateSession(request: NextRequest) {
     return response
   }
 try{
-console.log('User authenticated via Supabase session - allowing to proceed with checks')
 
   const { data: userData, error: userError } = await supabase
     .from('users')
