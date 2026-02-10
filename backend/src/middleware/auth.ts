@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
+import process, { env } from 'process';
 
 export interface AuthRequest extends Request {
   userId?: number;
@@ -28,7 +29,7 @@ export function verifyToken(
 
     const token = authHeader.substring(7); // Removed 'Bearer ' prefix
 
-    const jwtSecret = process.env.JWT_SECRET;
+    const jwtSecret = env.JWT_SECRET;
     if (!jwtSecret) {
       throw new Error('JWT_SECRET not configured');
     }
