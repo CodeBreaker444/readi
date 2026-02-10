@@ -30,7 +30,7 @@
     "@types/express": "^5.0.6",
     "@types/js-cookie": "^3.0.6",
     "@types/jsonwebtoken": "^9.0.10",
-    "@types/node": "^20",
+    "@types/node": "^20.19.33",
     "@types/react": "^19.2.13",
     "@types/react-dom": "^19",
     "autoprefixer": "^10.4.23",
