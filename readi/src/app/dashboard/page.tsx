@@ -1,12 +1,12 @@
-import DashboardClient from '@/src/components/dashboard/DashboardClient';
-import { getUserSession } from '@/src/lib/auth/server-session';
-import { redirect } from 'next/navigation';
+import DashboardClient from "@/components/dashboard/DashboardClient";
+import { getUserSession } from "@/lib/auth/server-session";
 
 export default async function DashboardPage() {
   const session = await getUserSession();
   
   if (!session) {
-    redirect('/auth/login');
+    console.log('session',session);
+    return
   }
 
   const ownerId = session.user.ownerId!;

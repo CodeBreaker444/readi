@@ -118,7 +118,7 @@ export default function DashboardClient({ ownerId, userProfileCode, userId }: Da
     }));
 
     if (loading) {
-        return <DashboardSkeleton />;
+        return <DashboardSkeleton isDark={isDark} />;
     }
 
 

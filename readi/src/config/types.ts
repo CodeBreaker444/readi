@@ -69,7 +69,6 @@ export interface SafetyIndicator {
   is_active: 0 | 1;
 }
 
-// Shared types for organization modules
 
 export interface LUCProcedure {
   id: string;
@@ -149,4 +148,58 @@ export interface MissionResult {
   id: number;
   code: string;
   description: string;
+}
+
+export interface DashboardRequestParams {
+  owner_id: number;
+  user_id: number;
+  user_timezone: string;
+  user_profile_code: string;
+}
+
+export interface MissionTotal {
+  status: string;
+  year: number;
+  fk_client_id: number;
+  client_name: string;
+  total_mission: number;
+  total_time: number;
+  total_hours: number;
+  total_meter: number;
+  total_planned: number;
+  total_drones_used: number;
+  total_clients_served: number;
+}
+
+export interface MissionListItem {
+  status: string;
+  year: number;
+  fk_client_id: number;
+  fk_user_id: number;
+  mission_id: number;
+  date: string;
+  pilot_name: string;
+  drone_code: string;
+  mission_type_desc: string;
+  mission_result_desc: string;
+  mission_duration_min: number;
+}
+
+export interface ChartData {
+  labels: string[];
+  series: Array<{
+    name: string;
+    data: number[];
+  }>;
+}
+
+export interface MissionResultChart {
+  labels: string[];
+  series: number[];
+}
+
+export interface PilotTotal {
+  total_missions: number;
+  total_hours: number;
+  total_distance: number;
 }

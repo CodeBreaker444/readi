@@ -3,17 +3,23 @@ import moment from 'moment-timezone';
 /**
  * Convert UTC timestamp to local timezone
  */
-export function dateConversionUtcToLocal(
-  utcTimestamp: string | Date,
-  timezone: string
-): string {
-  if (!utcTimestamp) return '';
-
+export function dateConversionUtcToLocal(utcDate: string | Date, timezone: string = 'UTC'): string {
   try {
-    return moment.utc(utcTimestamp).tz(timezone).format('YYYY-MM-DD HH:mm');
+    const date = new Date(utcDate);
+    
+    return date.toLocaleString('en-US', {
+      timeZone: timezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    });
   } catch (error) {
-    console.error('Date conversion error:', error);
-    return '';
+    console.error('Error converting date:', error);
+    return new Date(utcDate).toISOString();
   }
 }
 
@@ -38,7 +44,7 @@ export function dateConversionLocalToUtc(
  * Get current year
  */
 export function getCurrentYear(): number {
-  return moment().year();
+  return new Date().getFullYear();
 }
 
 /**

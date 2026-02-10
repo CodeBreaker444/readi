@@ -1,6 +1,6 @@
 'use client'
 
-import { supabase } from '@/src/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 import { EyeIcon, EyeOffIcon, Loader2Icon } from 'lucide-react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'

@@ -1,4 +1,4 @@
-import { serverEnv } from '@/src/config/environ';
+import { serverEnv } from '@/config/environ';
 import jwt from 'jsonwebtoken';
 import { Role } from './roles';
 

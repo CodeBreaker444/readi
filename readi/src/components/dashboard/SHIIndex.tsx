@@ -1,5 +1,4 @@
 'use client';
-import { data } from '@/src/lib/mockdata';
 import React, { useEffect, useState } from 'react';
 import { useTheme } from '../useTheme';
 import AreaGauges from './AreaGauges';
@@ -21,89 +20,108 @@ interface TrendData {
   target?: number;
 }
 
-interface SHIIndexProps {
-  isDark?: boolean;
-}
 
-const SHIIndex: React.FC<SHIIndexProps> = () => {
+const SHIIndex: React.FC = () => {
   const { isDark } = useTheme();
   const [shiData, setSHIData] = useState<SHIData | null>(null);
   const [shiTrend, setSHITrend] = useState<TrendData | null>(null);
   const [selectedIndicator, setSelectedIndicator] = useState<string>('');
   const [indicatorTrend, setIndicatorTrend] = useState<TrendData | null>(null);
   const [allIndicators, setAllIndicators] = useState<string[]>([]);
-  //   const [loading, setLoading] = useState(true);
 
-  // Load main dashboard data
-  useEffect(() => {
-    const loadDashboardData = async () => {
-      //   try {
-      // const res = await fetch('/api/dashboard/getSPIKPIData');
-      // const payload = await res.json();
-
-      // if (payload.code === 1) {
-      setSHIData(data.mockData);
-
-      // Extract all unique indicator names
-      const indicators = new Set<string>();
-      Object.values(data.mockData.data).forEach((areaIndicators: any) => {
-        areaIndicators.forEach((ind: any) => {
-          indicators.add(ind.indicator_name);
-        });
+useEffect(() => {
+  const loadDashboardData = async () => {
+    try {
+      const res = await fetch('/api/dashboard/getSPIKPIData', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          owner_id: 1, // Replace with actual session owner_id
+          user_id: 1,  // Replace with actual session user_id
+          user_timezone: 'UTC',
+          user_profile_code: 'ADMIN',
+        }),
       });
-
-      const sortedIndicators = Array.from(indicators).sort();
-      setAllIndicators(sortedIndicators);
-
-      if (sortedIndicators.length > 0) {
-        setSelectedIndicator(sortedIndicators[0]);
+      
+      const payload = await res.json();
+      
+      if (payload.code === 1) {
+        setSHIData(payload);
+        
+        const indicators = new Set<string>();
+        Object.values(payload.data).forEach((areaIndicators: any) => {
+          areaIndicators.forEach((ind: any) => {
+            indicators.add(ind.indicator_name);
+          });
+        });
+        
+        const sortedIndicators = Array.from(indicators).sort();
+        setAllIndicators(sortedIndicators);
+        
+        if (sortedIndicators.length > 0) {
+          setSelectedIndicator(sortedIndicators[0]);
+        }
       }
-      // }
-      //   } catch (error) {
-      //     console.error('Error loading dashboard data:', error);
-      //   } finally {
-      //     setLoading(false);
-      //   }
-    };
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+    }
+  };
 
-    loadDashboardData();
-  }, []);
+  loadDashboardData();
+}, []);
 
-  // Load SHI trend data
-  useEffect(() => {
-    const loadSHITrend = async () => {
-      //   try {
-      // const res = await fetch('/api/dashboard/getSHITrend');
-      // const data = await res.json();
-
-      setSHITrend(data.shiIndexData);
-      //   } catch (error) {
-      //     console.error('Error loading SHI trend:', error);
-      //   }
-    };
-
-    loadSHITrend();
-  }, []);
-
-  // Load indicator trend when selection changes
-  useEffect(() => {
-    if (!selectedIndicator) return;
-
-    const loadIndicatorTrend = async () => {
-      try {
-        // const res = await fetch(`/api/dashboard/getSPIKPITrend?name=${encodeURIComponent(selectedIndicator)}`);
-        // const data = await res.json();
-
-        // if (data.code === 1) {
-        setIndicatorTrend(data.getSPIKPITrend);
-        // }
-      } catch (error) {
-        console.error('Error loading indicator trend:', error);
+// Load SHI trend data
+useEffect(() => {
+  const loadSHITrend = async () => {
+    try {
+      const res = await fetch('/api/dashboard/getSHITrend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          owner_id: 1, // Replace with actual session owner_id
+          user_id: 1,  // Replace with actual session user_id
+        }),
+      });
+      
+      const data = await res.json();
+      if (data.code === 1) {
+        setSHITrend(data);
       }
-    };
+    } catch (error) {
+      console.error('Error loading SHI trend:', error);
+    }
+  };
 
-    loadIndicatorTrend();
-  }, []);
+  loadSHITrend();
+}, []);
+
+// Load indicator trend when selection changes
+useEffect(() => {
+  if (!selectedIndicator) return;
+
+  const loadIndicatorTrend = async () => {
+    try {
+      const res = await fetch('/api/dashboard/getSPIKPITrend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          owner_id: 1, // Replace with actual session owner_id
+          user_id: 1,  // Replace with actual session user_id
+          name: selectedIndicator,
+        }),
+      });
+      
+      const data = await res.json();
+      if (data.code === 1) {
+        setIndicatorTrend(data);
+      }
+    } catch (error) {
+      console.error('Error loading indicator trend:', error);
+    }
+  };
+
+  loadIndicatorTrend();
+}, [selectedIndicator]);
 
   //   if (loading) {
   //     return (

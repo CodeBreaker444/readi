@@ -1,7 +1,8 @@
 'use server';
 
-import { createClient } from '@/src/lib/supabase/server';
+import { createClient } from '../supabase/server';
 import { Role } from './roles';
+
 export interface SessionUser {
   id: string;
   userId: number;
@@ -29,9 +30,11 @@ export async function getUserSession(): Promise<Session | null> {
     } = await supabase.auth.getUser();
 
     if (userError || !supabaseUser) {
+      console.log('No authenticated user found');
       return null;
     }
 
+    // Query users table - just get fk_owner_id directly, no join needed
     const { data: userData, error: userDataError } = await supabase
       .from('users')
       .select(`
@@ -44,13 +47,14 @@ export async function getUserSession(): Promise<Session | null> {
         user_active,
         user_role,
         auth_user_id,
-        user_profiles(owner_id)
+        fk_owner_id
       `)
       .eq('auth_user_id', supabaseUser.id)
       .eq('user_active', 'Y')
       .single();
 
     if (userDataError || !userData) {
+      console.log('No user data found in database', userDataError);
       return null;
     }
 
@@ -61,7 +65,7 @@ export async function getUserSession(): Promise<Session | null> {
     const sessionUser: SessionUser = {
       id: supabaseUser.id,
       userId: userData.user_id,
-      ownerId: userData.user_profiles?.[0]?.owner_id,
+      ownerId: userData.fk_owner_id, 
       email: userData.email || supabaseUser.email || '',
       fullname,
       username: userData.username,
@@ -69,6 +73,8 @@ export async function getUserSession(): Promise<Session | null> {
       phone: userData.phone,
       userActive: userData.user_active,
     };
+
+    console.log('Session created:', sessionUser);
 
     return {
       user: sessionUser,
@@ -79,4 +85,3 @@ export async function getUserSession(): Promise<Session | null> {
     return null;
   }
 }
- 

@@ -1,10 +1,10 @@
-import { getDashboardData } from '@/backend/src/services/dashboard';
-import { getUserSession } from '@/src/lib/auth/server-session';
+import { getDashboardData } from '@/backend/services/dashboard/dashboard';
+import { getUserSession } from '@/lib/auth/server-session';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { ownerId: string } }
+  { params }: { params: Promise<{ ownerId: string }> }
 ) {
   try {
     const session = await getUserSession();
@@ -22,7 +22,7 @@ export async function POST(
 
   
     const body = await request.json();
-    const { ownerId } = params;
+    const { ownerId } = await params;
 
     const dashboardData = await getDashboardData({
       owner_id: parseInt(ownerId),

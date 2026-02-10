@@ -1,4 +1,4 @@
-import Cookies from '@/node_modules/@types/js-cookie';
+import Cookies from 'js-cookie';
 import { decodeToken } from './jwt-utils';
 import { Role } from './roles';
 
