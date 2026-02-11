@@ -1,5 +1,4 @@
 import { supabase } from "../../database/database";
-import { getCurrentYear } from "../../utils/date-utils";
 import { getChartReadiTotalMission, getChartReadiTotalMissionResult } from "./chart-queries";
 import { getReadiLastNextMissionList, getReadiTotalMission } from "./mission-queries";
 import { getPilotTotal } from "./pilot-queries";
@@ -95,7 +94,7 @@ const normalizeStatus = (status: string): 'GREEN' | 'YELLOW' | 'RED' => {
  */
 export async function getDashboardData(params: DashboardRequestParams) {
   const { owner_id, user_id, user_timezone, user_profile_code } = params;
-  const currentYear = getCurrentYear();
+  const currentYear = new Date().getFullYear();
 
   const isPilot = user_profile_code === 'PIC';
   const pilotUserId = isPilot ? user_id : 0;

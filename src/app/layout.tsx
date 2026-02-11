@@ -28,7 +28,7 @@ export default async function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <ThemeProvider>
-          <ClientLayoutWrapper role={role}>
+          <ClientLayoutWrapper role={role} userData={session?.user ?? null}>
             {children}
           </ClientLayoutWrapper>
         </ThemeProvider>

@@ -1,45 +1,27 @@
 'use client';
 
-import { getUserSession } from '@/lib/auth/server-session';
+import { SessionUser } from '@/lib/auth/server-session';
 import Cookies from 'js-cookie';
 import { Bell, ChevronDown, Clock, LogOut, Mail, Moon, Sun, User, UserCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '../lib/supabase/client';
 import ProfileModal from './ProfileModal';
 
 interface TopBarProps {
   isDark: boolean;
   toggleTheme: () => void;
+  userData: SessionUser | null;
 }
 
-const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme }) => {
+const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [userData, setUserData] = useState<{
-    username: string;
-    email: string;
-    userId: string;
-    role: string;
-  } | null>(null);
 
   const router = useRouter();
 
-  useEffect(() => {
-    const UserData = async () => {
-      const data = await getUserSession()
-      if (data) {
-        setUserData({
-          username: data.user.username || '',
-          email: data.user.email,
-          userId: data.user.userId.toString(),
-          role: data.user.role,
-        });
-      }
-    }
-    UserData()
-  }, []);
+
 
   const handleLogout = async () => {
     try {
@@ -54,7 +36,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme }) => {
       }
 
       Cookies.remove('readi_auth_token', { path: '/' });
-      
+
       Cookies.remove('mfa_verified', { path: '/' });
 
       setShowUserMenu(false);
@@ -117,9 +99,26 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme }) => {
               </div>
               <div className="hidden md:block text-left">
                 <p className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-800'}`}>
-                  {userData?.username || 'Loading...'}
+                  {userData?.username ? (
+                    userData.username
+                  ) : (
+                    <span
+                      className={`inline-block h-4 w-24 rounded-md animate-pulse ${isDark ? 'bg-slate-700' : 'bg-gray-300'
+                        }`}
+                    />
+                  )}
                 </p>
-                <p className="text-xs text-gray-500">{userData?.role || 'User'}</p>
+
+                <p className="text-xs text-gray-500">
+                  {userData?.role ? (
+                    userData.role
+                  ) : (
+                    <span
+                      className={`inline-block h-3 w-16 rounded-md animate-pulse ${isDark ? 'bg-slate-700' : 'bg-gray-200'
+                        }`}
+                    />
+                  )}
+                </p>
               </div>
               <ChevronDown size={16} className={isDark ? 'text-gray-400' : 'text-gray-600'} />
             </button>

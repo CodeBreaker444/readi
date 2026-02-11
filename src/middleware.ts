@@ -29,6 +29,11 @@ export async function updateSession(request: NextRequest) {
           )
         },
       },
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: false
+      }
     }
   )
 
@@ -48,7 +53,7 @@ export async function updateSession(request: NextRequest) {
   const isPublicRoute = publicRoutes.includes(pathname)
   const isAuthFlowRoute = authFlowRoutes.includes(pathname)
 
-  
+
 
   if (pathname === '/') {
     if (user) {
@@ -68,13 +73,29 @@ export async function updateSession(request: NextRequest) {
 
     return response
   }
-try{
+  try {
 
-  const { data: userData, error: userError } = await supabase
-    .from('users')
-    .select('user_id, user_active')
-    .eq('auth_user_id', user.id)
-    .single()
+    //session refresh before checking user
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
+
+    if (!user && session) {
+      const { data: { session: refreshedSession } } = await supabase.auth.refreshSession()
+      if (refreshedSession) {
+        // Session was refreshed, get user again
+        const { data: { user: refreshedUser } } = await supabase.auth.getUser()
+        if (!refreshedUser) {
+          return NextResponse.redirect(new URL('/auth/login', request.url))
+        }
+      }
+    }
+
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('user_id, user_active')
+      .eq('auth_user_id', user.id)
+      .single()
 
     if (userError || !userData || userData.user_active !== 'Y') {
       await supabase.auth.signOut()
