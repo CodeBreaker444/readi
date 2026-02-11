@@ -3,8 +3,8 @@
 import { SessionUser } from '@/lib/auth/server-session';
 import Cookies from 'js-cookie';
 import { Bell, ChevronDown, Clock, LogOut, Mail, Moon, Sun, User, UserCircle } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { supabase } from '../lib/supabase/client';
 import ProfileModal from './ProfileModal';
 
@@ -19,9 +19,6 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  const router = useRouter();
-
-
 
   const handleLogout = async () => {
     try {
@@ -31,7 +28,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
 
       if (error) {
         console.error('Logout error:', error);
-        alert('Failed to logout. Please try again.');
+        toast.error('Failed to logout. Please try again.');
         return;
       }
 
@@ -181,6 +178,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
         isOpen={showProfileModal}
         onClose={() => setShowProfileModal(false)}
         isDark={isDark}
+        userData={userData}
       />
     </>
   );

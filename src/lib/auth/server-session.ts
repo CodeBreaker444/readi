@@ -13,6 +13,7 @@ export interface SessionUser {
   role: Role;
   phone?: string;
   userActive: 'Y' | 'N';
+  avatar?: string | null;
 }
 
 export interface Session {
@@ -34,6 +35,7 @@ export async function getUserSession(): Promise<Session | null> {
       return null;
     }
 
+    // Fetch user data from users table
     const { data: userData, error: userDataError } = await supabase
       .from('users')
       .select(`
@@ -57,6 +59,12 @@ export async function getUserSession(): Promise<Session | null> {
       return null;
     }
 
+    const { data: profileData } = await supabase
+      .from('users_profile')
+      .select('profile_picture')
+      .eq('fk_user_id', userData.user_id)  
+      .single();
+
     const fullname = [userData.first_name, userData.last_name]
       .filter(Boolean)
       .join(' ') || userData.username || userData.email;
@@ -71,6 +79,7 @@ export async function getUserSession(): Promise<Session | null> {
       role: userData.user_role as Role,
       phone: userData.phone,
       userActive: userData.user_active,
+      avatar: profileData?.profile_picture || null,
     };
 
     console.log('Session created:', sessionUser);
