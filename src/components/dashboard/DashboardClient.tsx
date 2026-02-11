@@ -1,8 +1,10 @@
 'use client';
 import { Clock, Navigation, Plane, TrendingDown, TrendingUp, Users } from 'lucide-react';
 import { useEffect, useState } from "react";
+import { Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useTheme } from "../useTheme";
 import DashboardSkeleton from './DashboardSkeleton';
+
 interface DashboardClientProps {
     ownerId: number;
     userProfileCode: string;
@@ -30,6 +32,7 @@ export default function DashboardClient({ ownerId, userProfileCode, userId }: Da
     const { isDark } = useTheme();
     const [data, setData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+
     const stats: StatData[] = [
         {
             label: 'Total Missions',
@@ -103,7 +106,7 @@ export default function DashboardClient({ ownerId, userProfileCode, userId }: Da
 
     const missions: MissionData[] = (data?.readi_mission_scheduler_executed || []).map((mission: any) => ({
         id: `#${mission.mission_id}`,
-        name: mission.pilot_name || 'Unknown',
+        name: mission.pilot_name?.trim() || 'Not Assigned',
         date: mission.date,
         status: mission.mission_result_desc === 'Completed' ? 'Completed' : 'Waiting',
         completion: mission.mission_result_desc === 'Completed' ? 'Completed' : 'Waiting'
@@ -111,12 +114,14 @@ export default function DashboardClient({ ownerId, userProfileCode, userId }: Da
 
     const nextMissions: MissionData[] = (data?.readi_mission_scheduler_planned || []).map((mission: any) => ({
         id: `#${mission.mission_id}`,
-        name: mission.pilot_name || 'Unknown',
+        name: mission.pilot_name?.trim() || 'Not Assigned',
         date: mission.date,
         status: 'Waiting',
         completion: 'Waiting'
     }));
 
+    const COLORS = ['#ef4444', '#10b981'];
+    
     if (loading) {
         return <DashboardSkeleton isDark={isDark} />;
     }
@@ -200,11 +205,36 @@ export default function DashboardClient({ ownerId, userProfileCode, userId }: Da
                         </select>
                     </div>
 
-                    <div className={`h-64 sm:h-80 rounded-lg flex items-center justify-center ${isDark ? 'bg-linear-to-br from-slate-700 to-slate-600' : 'bg-linear-to-br from-blue-50 to-purple-50'
-                        }`}>
-                        <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-400'}`}>
-                            Chart visualization area
-                        </p>
+                    <div className="h-64 sm:h-80">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={data?.readi_mission_chart?.labels?.map((month: string, index: number) => ({
+                                month,
+                                ...data.readi_mission_chart.series.reduce((acc: any, drone: any) => ({
+                                    ...acc,
+                                    [drone.name]: drone.data[index]
+                                }), {})
+                            })) || []}>
+                                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
+                                <XAxis dataKey="month" stroke={isDark ? '#9ca3af' : '#6b7280'} />
+                                <YAxis stroke={isDark ? '#9ca3af' : '#6b7280'} />
+                                <Tooltip
+                                    contentStyle={{
+                                        backgroundColor: isDark ? '#1e293b' : '#ffffff',
+                                        border: `1px solid ${isDark ? '#334155' : '#e5e7eb'}`,
+                                        borderRadius: '8px'
+                                    }}
+                                />
+                                <Legend />
+                                {data?.readi_mission_chart?.series?.map((drone: any, index: number) => (
+                                    <Bar
+                                        key={drone.name}
+                                        dataKey={drone.name}
+                                        fill={['#3b82f6', '#10b981', '#f59e0b'][index % 3]}
+                                        radius={[8, 8, 0, 0]}
+                                    />
+                                ))}
+                            </BarChart>
+                        </ResponsiveContainer>
                     </div>
                 </div>
 
@@ -219,23 +249,44 @@ export default function DashboardClient({ ownerId, userProfileCode, userId }: Da
                         </select>
                     </div>
 
+                    
+
                     <div className="flex items-center justify-center h-48">
-                        <div className="relative">
-                            <div className={`w-40 h-40 rounded-full border-20 ${isDark ? 'border-slate-700' : 'border-gray-200'
-                                } flex items-center justify-center`}
-                                style={{
-                                    borderTopColor: '#10b981',
-                                    borderRightColor: '#f59e0b',
-                                    borderBottomColor: '#ef4444',
-                                    borderLeftColor: '#3b82f6'
-                                }}
-                            >
-                                <div className={`text-center ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                                    <p className="text-2xl font-bold">85%</p>
-                                    <p className="text-xs text-gray-500">Success Rate</p>
+                        <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Pie
+                                    data={data?.readi_mission_result_chart?.labels?.map((label: string, index: number) => ({
+                                        name: label,
+                                        value: data.readi_mission_result_chart.series[index]
+                                    })) || []}
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={60}
+                                    outerRadius={80}
+                                    paddingAngle={5}
+                                    dataKey="value"
+                                >
+                                    {data?.readi_mission_result_chart?.series?.map((entry: any, index: number) => (
+                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                    ))}
+                                </Pie>
+                                <Tooltip />
+                            </PieChart>
+                        </ResponsiveContainer>
+                    </div>
+
+                    <div className="mt-6 space-y-2">
+                        {data?.readi_mission_result_chart?.labels?.map((label: string, index: number) => (
+                            <div key={label} className="flex items-center justify-between">
+                                <div className="flex items-center space-x-2">
+                                    <div className={`w-3 h-3 rounded-full`} style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
+                                    <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{label}</span>
                                 </div>
+                                <span className={`text-xs font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                                    {data.readi_mission_result_chart.series[index]}
+                                </span>
                             </div>
-                        </div>
+                        ))}
                     </div>
 
                     <div className="mt-6 space-y-2">
