@@ -249,8 +249,6 @@ export default function DashboardClient({ ownerId, userProfileCode, userId }: Da
                         </select>
                     </div>
 
-                    
-
                     <div className="flex items-center justify-center h-48">
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>

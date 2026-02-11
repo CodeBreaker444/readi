@@ -1,27 +1,64 @@
 'use client';
+import { SessionUser } from '@/lib/auth/server-session';
+import axios from 'axios';
 import { X } from 'lucide-react';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 interface ProfileModalProps {
   isOpen: boolean;
   onClose: () => void;
   isDark: boolean;
+  userData:SessionUser | null;
 }
 
-const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, isDark }) => {
+const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, isDark, userData }) => {
   const [formData, setFormData] = useState({
-    fullName: 'Pilot Test 03',
-    email: '',
-    phone: '',
-    timezone: '',
+    fullName: userData?.fullname || '',
+    email: userData?.email || '',
+    phone: userData?.phone || '',
+    timezone:   '',
     department: 'Global',
     client: '',
     profile: '',
     type: '',
     signature: ''
   });
-
+  const [loading, setLoading] = useState(true);
   const [avatar, setAvatar] = useState<File | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchUserProfile();
+    }
+  }, [isOpen]);
+
+  const fetchUserProfile = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get('/api/profile');
+      const data = response.data;
+      
+      if (data.success) {
+        setFormData({
+          fullName: data.user.fullName || '',
+          email: data.user.email || '',
+          phone: data.user.phone || '',
+          timezone: data.user.user_timezone || 'IST',
+          department: 'Global', // TODO: Add to database
+          client: '', // TODO: Add to database
+          profile: '', // TODO: Add to database
+          type: data.user.user_type || '',
+          signature: data.user.users_profile?.user_signature || ''
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+      toast.error('Failed to load profile data');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({
@@ -36,34 +73,67 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, isDark }) 
     }
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const formDataToSend = new FormData();
+    formDataToSend.append('fullname', formData.fullName);
+    formDataToSend.append('email', formData.email);
+    formDataToSend.append('phone', formData.phone);
+    formDataToSend.append('timezone', formData.timezone);
+
+    if (avatar) {
+      formDataToSend.append('avatar', avatar);
+    }
+
+    try {
+      const response = await axios.post('/api/profile', formDataToSend, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      if (!response.data) {
+        throw new Error('Failed to update profile');
+      }
+
+      const result = await response.data
+
+      if (result.updateResult) {
+        toast.success('Profile updated successfully');
+        onClose();
+        window.location.reload();
+      } else {
+        toast.error('Failed to update profile');
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast.error('Error updating profile');
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className={`w-full max-w-5xl max-h-[90vh] overflow-y-auto rounded-lg shadow-2xl ${
-        isDark ? 'bg-slate-800' : 'bg-white'
-      }`}>
-        {/* Modal Header */}
-        <div className={`flex items-center justify-between p-6 border-b ${
-          isDark ? 'border-slate-700' : 'border-gray-200'
+      <div className={`w-full max-w-5xl max-h-[90vh] overflow-y-auto rounded-lg shadow-2xl ${isDark ? 'bg-slate-800' : 'bg-white'
         }`}>
+        <div className={`flex items-center justify-between p-6 border-b ${isDark ? 'border-slate-700' : 'border-gray-200'
+          }`}>
           <h2 className={`text-xl font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>
             User Profile: Pilot Test 03
           </h2>
           <button
             onClick={onClose}
-            className={`p-2 rounded-lg transition-colors ${
-              isDark ? 'hover:bg-slate-700 text-gray-400' : 'hover:bg-gray-100 text-gray-600'
-            }`}
+            className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-slate-700 text-gray-400' : 'hover:bg-gray-100 text-gray-600'
+              }`}
           >
             <X size={20} />
           </button>
         </div>
 
-        {/* Modal Content */}
         <div className="p-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left Column - Profile Image and Basic Info */}
             <div className="lg:col-span-1">
               <div className={`rounded-lg p-6 ${isDark ? 'bg-slate-700' : 'bg-gray-50'}`}>
                 <div className="relative w-48 h-48 mx-auto mb-6">
@@ -78,7 +148,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, isDark }) 
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="text-center mb-6">
                   <p className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                     Remote Autonomous Drone Intelligence
@@ -89,7 +159,6 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, isDark }) 
                 </div>
 
                 <div className={`space-y-4 pt-4 border-t ${isDark ? 'border-slate-600' : 'border-gray-200'}`}>
-                  {/* Full Name */}
                   <div>
                     <label className={`block text-sm font-medium mb-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                       Full Name
@@ -99,16 +168,14 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, isDark }) 
                       name="fullName"
                       value={formData.fullName}
                       onChange={handleInputChange}
-                      className={`w-full px-3 py-2 rounded-lg border text-sm transition-colors ${
-                        isDark 
-                          ? 'bg-slate-600 border-slate-500 text-white placeholder-gray-400 focus:border-blue-500' 
+                      className={`w-full px-3 py-2 rounded-lg border text-sm transition-colors ${isDark
+                          ? 'bg-slate-600 border-slate-500 text-white placeholder-gray-400 focus:border-blue-500'
                           : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-blue-500'
-                      } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
+                        } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
                       placeholder="Enter full name"
                     />
                   </div>
 
-                  {/* Email */}
                   <div>
                     <label className={`block text-sm font-medium mb-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                       Email
@@ -118,16 +185,14 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, isDark }) 
                       name="email"
                       value={formData.email}
                       onChange={handleInputChange}
-                      className={`w-full px-3 py-2 rounded-lg border text-sm transition-colors ${
-                        isDark 
-                          ? 'bg-slate-600 border-slate-500 text-white placeholder-gray-400 focus:border-blue-500' 
+                      className={`w-full px-3 py-2 rounded-lg border text-sm transition-colors ${isDark
+                          ? 'bg-slate-600 border-slate-500 text-white placeholder-gray-400 focus:border-blue-500'
                           : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-blue-500'
-                      } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
+                        } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
                       placeholder="Enter email address"
                     />
                   </div>
 
-                  {/* Phone */}
                   <div>
                     <label className={`block text-sm font-medium mb-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                       Phone
@@ -137,16 +202,14 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, isDark }) 
                       name="phone"
                       value={formData.phone}
                       onChange={handleInputChange}
-                      className={`w-full px-3 py-2 rounded-lg border text-sm transition-colors ${
-                        isDark 
-                          ? 'bg-slate-600 border-slate-500 text-white placeholder-gray-400 focus:border-blue-500' 
+                      className={`w-full px-3 py-2 rounded-lg border text-sm transition-colors ${isDark
+                          ? 'bg-slate-600 border-slate-500 text-white placeholder-gray-400 focus:border-blue-500'
                           : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-blue-500'
-                      } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
+                        } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
                       placeholder="Enter phone number"
                     />
                   </div>
 
-                  {/* TimeZone */}
                   <div>
                     <label className={`block text-sm font-medium mb-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                       TimeZone
@@ -155,11 +218,10 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, isDark }) 
                       name="timezone"
                       value={formData.timezone}
                       onChange={handleInputChange}
-                      className={`w-full px-3 py-2 rounded-lg border text-sm transition-colors ${
-                        isDark 
-                          ? 'bg-slate-600 border-slate-500 text-white focus:border-blue-500' 
+                      className={`w-full px-3 py-2 rounded-lg border text-sm transition-colors ${isDark
+                          ? 'bg-slate-600 border-slate-500 text-white focus:border-blue-500'
                           : 'bg-white border-gray-300 text-gray-900 focus:border-blue-500'
-                      } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
+                        } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
                     >
                       <option value="">Select timezone</option>
                       <option value="UTC">UTC</option>
@@ -169,7 +231,6 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, isDark }) 
                     </select>
                   </div>
 
-                  {/* Department */}
                   <div>
                     <label className={`block text-sm font-medium mb-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                       Department
@@ -179,16 +240,14 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, isDark }) 
                       name="department"
                       value={formData.department}
                       onChange={handleInputChange}
-                      className={`w-full px-3 py-2 rounded-lg border text-sm transition-colors ${
-                        isDark 
-                          ? 'bg-slate-600 border-slate-500 text-white placeholder-gray-400 focus:border-blue-500' 
+                      className={`w-full px-3 py-2 rounded-lg border text-sm transition-colors ${isDark
+                          ? 'bg-slate-600 border-slate-500 text-white placeholder-gray-400 focus:border-blue-500'
                           : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-blue-500'
-                      } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
+                        } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
                       placeholder="Enter department"
                     />
                   </div>
 
-                  {/* Client */}
                   <div>
                     <label className={`block text-sm font-medium mb-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                       Client
@@ -198,16 +257,14 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, isDark }) 
                       name="client"
                       value={formData.client}
                       onChange={handleInputChange}
-                      className={`w-full px-3 py-2 rounded-lg border text-sm transition-colors ${
-                        isDark 
-                          ? 'bg-slate-600 border-slate-500 text-white placeholder-gray-400 focus:border-blue-500' 
+                      className={`w-full px-3 py-2 rounded-lg border text-sm transition-colors ${isDark
+                          ? 'bg-slate-600 border-slate-500 text-white placeholder-gray-400 focus:border-blue-500'
                           : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-blue-500'
-                      } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
+                        } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
                       placeholder="Enter client name"
                     />
                   </div>
 
-                  {/* Profile */}
                   <div>
                     <label className={`block text-sm font-medium mb-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                       Profile
@@ -217,16 +274,14 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, isDark }) 
                       name="profile"
                       value={formData.profile}
                       onChange={handleInputChange}
-                      className={`w-full px-3 py-2 rounded-lg border text-sm transition-colors ${
-                        isDark 
-                          ? 'bg-slate-600 border-slate-500 text-white placeholder-gray-400 focus:border-blue-500' 
+                      className={`w-full px-3 py-2 rounded-lg border text-sm transition-colors ${isDark
+                          ? 'bg-slate-600 border-slate-500 text-white placeholder-gray-400 focus:border-blue-500'
                           : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-blue-500'
-                      } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
+                        } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
                       placeholder="Enter profile"
                     />
                   </div>
 
-                  {/* Type */}
                   <div>
                     <label className={`block text-sm font-medium mb-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                       Type
@@ -235,11 +290,10 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, isDark }) 
                       name="type"
                       value={formData.type}
                       onChange={handleInputChange}
-                      className={`w-full px-3 py-2 rounded-lg border text-sm transition-colors ${
-                        isDark 
-                          ? 'bg-slate-600 border-slate-500 text-white focus:border-blue-500' 
+                      className={`w-full px-3 py-2 rounded-lg border text-sm transition-colors ${isDark
+                          ? 'bg-slate-600 border-slate-500 text-white focus:border-blue-500'
                           : 'bg-white border-gray-300 text-gray-900 focus:border-blue-500'
-                      } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
+                        } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
                     >
                       <option value="">Select type</option>
                       <option value="admin">Admin</option>
@@ -248,17 +302,15 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, isDark }) 
                     </select>
                   </div>
 
-                  {/* Avatar */}
                   <div>
                     <label className={`block text-sm font-medium mb-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                       Avatar
                     </label>
                     <div className="flex items-center gap-3">
-                      <label className={`px-4 py-2 rounded-lg text-sm font-medium cursor-pointer transition-colors ${
-                        isDark 
-                          ? 'bg-slate-600 hover:bg-slate-500 text-white' 
+                      <label className={`px-4 py-2 rounded-lg text-sm font-medium cursor-pointer transition-colors ${isDark
+                          ? 'bg-slate-600 hover:bg-slate-500 text-white'
                           : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
-                      }`}>
+                        }`}>
                         Choose File
                         <input
                           type="file"
@@ -273,7 +325,6 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, isDark }) 
                     </div>
                   </div>
 
-                  {/* Signature */}
                   <div>
                     <label className={`block text-sm font-medium mb-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                       Signature
@@ -283,23 +334,24 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, isDark }) 
                       name="signature"
                       value={formData.signature}
                       onChange={handleInputChange}
-                      className={`w-full px-3 py-2 rounded-lg border text-sm transition-colors ${
-                        isDark 
-                          ? 'bg-slate-600 border-slate-500 text-white placeholder-gray-400 focus:border-blue-500' 
+                      className={`w-full px-3 py-2 rounded-lg border text-sm transition-colors ${isDark
+                          ? 'bg-slate-600 border-slate-500 text-white placeholder-gray-400 focus:border-blue-500'
                           : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-blue-500'
-                      } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
+                        } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
                       placeholder="Enter signature"
                     />
                   </div>
                 </div>
 
-                <button className="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white py-2.5 px-4 rounded-lg transition-colors font-medium">
+                <button
+                  onClick={handleSubmit}
+                  className="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white py-2.5 px-4 rounded-lg transition-colors font-medium"
+                >
                   Update User Profile
                 </button>
               </div>
             </div>
 
-            {/* Right Column - Last Activities */}
             <div className="lg:col-span-2">
               <div className={`rounded-lg overflow-hidden ${isDark ? 'bg-slate-700' : 'bg-gray-50'}`}>
                 <div className={`flex items-center justify-between p-4 border-b ${isDark ? 'border-slate-600' : 'border-gray-200'}`}>
@@ -389,13 +441,11 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, isDark }) 
           </div>
         </div>
 
-        {/* Modal Footer */}
         <div className={`flex justify-end gap-3 p-6 border-t ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
           <button
             onClick={onClose}
-            className={`px-6 py-2 rounded-lg transition-colors font-medium ${
-              isDark ? 'bg-slate-700 hover:bg-slate-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-800'
-            }`}
+            className={`px-6 py-2 rounded-lg transition-colors font-medium ${isDark ? 'bg-slate-700 hover:bg-slate-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-800'
+              }`}
           >
             Close
           </button>

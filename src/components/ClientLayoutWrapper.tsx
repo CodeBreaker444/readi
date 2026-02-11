@@ -20,8 +20,6 @@ const ClientLayoutWrapper: React.FC<ClientLayoutWrapperProps> = ({ children, rol
   const isAuthPage = pathname?.startsWith('/auth');
   const { isDark, toggleTheme } = useTheme();
    console.log('role:',role);
-   console.log('userData:',userData);
-   
 
   if (isAuthPage) {
     return <>{children}</>;

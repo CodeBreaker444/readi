@@ -1,5 +1,7 @@
 'use client';
+import axios from 'axios';
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 import { useTheme } from '../useTheme';
 import AreaTable from './AreaTable';
 import EvaluationForm from './EvaluationForm';
@@ -34,11 +36,9 @@ interface EvaluationFormData {
   evaluation_result: string;
 }
 
-interface EvaluationRequestProps {
-  isDark?: boolean;
-}
 
-const EvaluationRequest: React.FC<EvaluationRequestProps> = () => {
+
+const EvaluationRequest: React.FC = () => {
   const { isDark } = useTheme()
   const [drawnAreas, setDrawnAreas] = useState<DrawnArea[]>([]);
   const [evaluationId, setEvaluationId] = useState<number | null>(null);
@@ -52,40 +52,40 @@ const EvaluationRequest: React.FC<EvaluationRequestProps> = () => {
 
   const handleFormSubmit = async (formData: EvaluationFormData) => {
     try {
-      // Prepare the complete payload including drawn areas
-      const payload = {
-        ...formData,
-        areas: drawnAreas.map(area => ({
-          type: area.type,
-          area_sqm: area.area,
-          center_lat: area.center.lat,
-          center_lng: area.center.lng,
-          geojson: JSON.stringify(area.geoJSON)
-        }))
-      };
-
-      const response = await fetch('/api/evaluation/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        setEvaluationId(result.evaluation_id);
-        setClientId(formData.client_id);
-        setShowFileUpload(true);
-        
-        alert('Evaluation request created successfully!');
-      } else {
-        const error = await response.json();
-        alert(`Error: ${error.message || 'Failed to create evaluation'}`);
+      if (drawnAreas.length === 0) {
+        toast.error('Please draw at least one operational area on the map');
+        return;
       }
+
+      const areasData = drawnAreas.map(area => ({
+        type: area.type,
+        area_sqm: area.area,
+        center_lat: area.center.lat,
+        center_lng: area.center.lng,
+        geojson: area.geoJSON
+      }));
+
+      const response = await axios.post('/api/evaluation/create', { data: {
+          ...formData,
+          areas: areasData
+        }})
+
+      if (!response.data) {
+        const error = await response.data;
+        toast.error(error.message || 'Failed to create evaluation');
+        return;
+      }
+
+      const result = await response.data;
+
+      setEvaluationId(result.evaluation_id);
+      setClientId(formData.client_id);
+      setShowFileUpload(true);
+
+      toast.success('Evaluation request created successfully');
     } catch (error) {
       console.error('Error creating evaluation:', error);
-      alert('Error creating evaluation request');
+      toast.error(error instanceof Error ? error.message : 'Error creating evaluation request');
     }
   };
 
@@ -98,7 +98,6 @@ const EvaluationRequest: React.FC<EvaluationRequestProps> = () => {
   };
 
   const handleEditArea = (id: string) => {
-    // This would trigger the map to enter edit mode for this specific area
     console.log('Edit area:', id);
   };
 
@@ -107,78 +106,83 @@ const EvaluationRequest: React.FC<EvaluationRequestProps> = () => {
   };
 
   return (
-   <>
-  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-    {/* Left Column - Map */}
-    <div>
-      <div className={`rounded-lg shadow-sm border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
-        <div className={`p-4 border-b ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
-          <h2 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-            Evaluation - Operational Scenario
-          </h2>
-          <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-            Draw your Operation Area
-          </p>
+    <div className={`p-4 sm:p-6 lg:p-8 ${isDark ? 'bg-slate-800' : 'bg-white'}`}>
+      <div className="mb-6">
+        <h1 className={`text-2xl sm:text-3xl font-bold  ${isDark ? 'text-white' : 'text-gray-900'}`}>
+          Planning | New Evaluation Request
+        </h1>
+        <p className={`mt-1 text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>
+          Create a new operational scenario evaluation request
+        </p>
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div>
+          <div className={`rounded-lg shadow-sm border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+            <div className={`p-4 border-b ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
+              <h2 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                Evaluation - Operational Scenario
+              </h2>
+              <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                Draw your Operation Area
+              </p>
+            </div>
+
+            <div className="p-4">
+              <MapDrawing onAreasChange={handleAreasChange} isDark={isDark} />
+              <AreaTable
+                areas={drawnAreas}
+                onEdit={handleEditArea}
+                onDelete={handleDeleteArea}
+                isDark={isDark}
+              />
+            </div>
+          </div>
         </div>
 
-        <div className="p-4">
-          <MapDrawing onAreasChange={handleAreasChange} isDark={isDark} />
-          <AreaTable
-            areas={drawnAreas}
-            onEdit={handleEditArea}
-            onDelete={handleDeleteArea}
-            isDark={isDark}
-          />
+        <div>
+          <div className={`rounded-lg shadow-sm border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+            <div className={`p-4 border-b ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
+              <h2 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                New Evaluation Request
+              </h2>
+              <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                Fill the form for adding a new evaluation request
+              </p>
+            </div>
+
+            <div className="p-4">
+              <EvaluationForm onSubmit={handleFormSubmit} isDark={isDark} />
+            </div>
+          </div>
         </div>
       </div>
+
+      {showFileUpload && evaluationId && clientId && (
+        <div className="mt-6">
+          <div className={`rounded-lg shadow-sm border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+            <div className={`p-4 border-b ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
+              <h2 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                Evaluation Files
+              </h2>
+              <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                Upload supporting documents for this evaluation
+              </p>
+            </div>
+
+            <div className="p-4">
+              <FileUpload
+                evaluationId={evaluationId}
+                clientId={clientId}
+                files={files}
+                onFileAdded={handleFileAdded}
+                onFileRemoved={handleFileRemoved}
+                isDark={isDark}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
-
-    {/* Right Column - Form */}
-    <div>
-      <div className={`rounded-lg shadow-sm border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
-        <div className={`p-4 border-b ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
-          <h2 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-            New Evaluation Request
-          </h2>
-          <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-            Fill the form for adding a new evaluation request
-          </p>
-        </div>
-
-        <div className="p-4">
-          <EvaluationForm onSubmit={handleFormSubmit} isDark={isDark} />
-        </div>
-      </div>
-    </div>
-  </div>
-
-  {/* File Upload Section */}
-  {showFileUpload && evaluationId && clientId && (
-    <div className="mt-6">
-      <div className={`rounded-lg shadow-sm border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
-        <div className={`p-4 border-b ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
-          <h2 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-            Evaluation Files
-          </h2>
-          <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-            Upload supporting documents for this evaluation
-          </p>
-        </div>
-
-        <div className="p-4">
-          <FileUpload
-            evaluationId={evaluationId}
-            clientId={clientId}
-            files={files}
-            onFileAdded={handleFileAdded}
-            onFileRemoved={handleFileRemoved}
-            isDark={isDark}
-          />
-        </div>
-      </div>
-    </div>
-  )}
-</>
 
   );
 };
