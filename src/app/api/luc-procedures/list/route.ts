@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const sector = searchParams.get('sector') || undefined;
     
-    const ownerId = (session.user as any).owner_id;
+    const ownerId = session.user.ownerId;
     const result = await getLUCProceduresList(ownerId, sector);
 
     return NextResponse.json(result);

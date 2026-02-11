@@ -7,6 +7,11 @@ interface EvaluationCreateData {
   evaluation_request_date: string;
   evaluation_year: number;
   evaluation_desc: string;
+  evaluation_name?: string;
+  evaluation_type?: string;
+  evaluation_priority?: string;
+  location?: string;
+  assigned_to_user_id?: number;
   evaluation_offer?: string;
   evaluation_sale_manager?: string;
   evaluation_result: string;
@@ -25,6 +30,9 @@ export async function createEvaluation(
   data: EvaluationCreateData
 ) {
   try {
+    console.log('Creating evaluation for owner:', ownerId, 'user:', userId);
+    console.log('Data received:', JSON.stringify(data, null, 2));
+    
     const evaluationCode = await generateEvaluationCode(ownerId, data.evaluation_year);
 
     const polygonData = {
@@ -43,29 +51,55 @@ export async function createEvaluation(
       }))
     };
 
+    const totalArea = data.areas.reduce((sum, area) => sum + area.area_sqm, 0);
+    const centerCoordinates = data.areas.length > 0 
+      ? `${data.areas[0].center_lat},${data.areas[0].center_lng}` 
+      : null;
+
+    const insertData = {
+      fk_owner_id: ownerId,
+      fk_client_id: data.client_id,
+      evaluation_code: evaluationCode,
+      evaluation_name: data.evaluation_name || `Evaluation ${evaluationCode}`,
+      evaluation_description: data.evaluation_desc,
+      evaluation_type: data.evaluation_type || 'General',
+      evaluation_status: data.evaluation_status || 'Planning',
+      scheduled_date: data.evaluation_request_date,
+      location: data.location || null,
+      coordinates: centerCoordinates,
+      assigned_to_user_id: data.assigned_to_user_id || userId,
+      created_by_user_id: userId,
+      evaluation_priority: data.evaluation_priority || 'Medium',
+      evaluation_active: 'Y',
+      evaluation_metadata: JSON.stringify({
+        polygon: polygonData,
+        area_sqm: totalArea,
+        procedure_id: data.fk_luc_procedure_id,
+        year: data.evaluation_year,
+        offer: data.evaluation_offer,
+        sale_manager: data.evaluation_sale_manager,
+        result: data.evaluation_result
+      })
+    };
+
+
     const { data: evaluation, error } = await supabase
       .from('evaluation')
-      .insert({
-        fk_owner_id: ownerId,
-        fk_client_id: data.client_id,
-        fk_user_id: userId,
-        fk_luc_procedure_id: data.fk_luc_procedure_id,
-        fk_evaluation_code: evaluationCode,
-        evaluation_year: data.evaluation_year,
-        evaluation_request_date: data.evaluation_request_date,
-        evaluation_desc: data.evaluation_desc,
-        evaluation_status: data.evaluation_status,
-        evaluation_result: data.evaluation_result,
-        evaluation_offer: data.evaluation_offer || null,
-        evaluation_sale_manager: data.evaluation_sale_manager || null,
-        evaluation_polygon: JSON.stringify(polygonData),
-        evaluation_folder: `evaluations/${ownerId}/${evaluationCode}`,
-        last_update: new Date().toISOString()
-      })
+      .insert(insertData)
       .select()
       .single();
 
-    if (error) throw error;
+    console.log('Supabase response - data:', evaluation, 'error:', error);
+
+    if (error) {
+      console.error('Supabase error details:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      });
+      throw error;
+    }
 
     return {
       success: true,
@@ -74,22 +108,29 @@ export async function createEvaluation(
       message: 'Evaluation created successfully'
     };
   } catch (error) {
+    console.error('Full error object:', JSON.stringify(error, null, 2));
     console.error('Error creating evaluation:', error);
-    throw new Error('Failed to create evaluation');
+    throw new Error(error instanceof Error ? error.message : 'Failed to create evaluation');
   }
 }
 
 async function generateEvaluationCode(ownerId: number, year: number): Promise<string> {
+  
   const { count, error } = await supabase
     .from('evaluation')
     .select('*', { count: 'exact', head: true })
     .eq('fk_owner_id', ownerId)
-    .eq('evaluation_year', year);
+    .like('evaluation_code', `EVAL-${year}-%`);
 
-  if (error) throw error;
+  if (error) {
+    console.error('Error in generateEvaluationCode:', error);
+    throw error;
+  }
 
   const nextNumber = (count || 0) + 1;
-  return `EVAL_${year}_${String(nextNumber).padStart(4, '0')}`;
+  const code = `EVAL-${year}-${String(nextNumber).padStart(3, '0')}`;
+  console.log('Generated code:', code);
+  return code;
 }
 
 export async function getEvaluationFileList(evaluationId: number, ownerId: number) {

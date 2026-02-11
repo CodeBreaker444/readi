@@ -13,8 +13,6 @@ export async function GET(request: NextRequest) {
     const ownerId = session.user.ownerId;
     const result = await getClientsList(ownerId);
 
-    console.log('result:',result);
-    
 
     return NextResponse.json(result);
   } catch (error) {

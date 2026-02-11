@@ -11,10 +11,10 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const ownerId = (session.user as any).owner_id;
-    const userId = (session.user as any).id;
-
-    const result = await createEvaluation(ownerId, userId, body);
+    const ownerId = session.user.ownerId;
+    const userId = session.user.userId;
+    
+    const result = await createEvaluation(ownerId, userId, body.data);
 
     return NextResponse.json(result);
   } catch (error) {

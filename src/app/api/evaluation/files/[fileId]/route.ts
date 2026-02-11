@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { fileId: string } }
+  { params }: { params: Promise<{ fileId: string }> }
 ) {
   try {
     const session = await getUserSession();
@@ -13,10 +13,11 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const fileId = parseInt(params.fileId);
-    const ownerId = (session.user as any).owner_id;
+    const { fileId } = await params;   
+    const fileIdNum = parseInt(fileId);
+    const ownerId = session.user.ownerId;
 
-    const result = await deleteEvaluationFile(fileId, ownerId);
+    const result = await deleteEvaluationFile(fileIdNum, ownerId);
 
     return NextResponse.json(result);
   } catch (error) {

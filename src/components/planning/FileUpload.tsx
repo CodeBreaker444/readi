@@ -1,6 +1,8 @@
 'use client';
+import axios from 'axios';
 import { FileText, Upload, X } from 'lucide-react';
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 
 interface EvaluationFile {
   id: number;
@@ -28,7 +30,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
   isDark = false
 }) => {
   const [description, setDescription] = useState('');
-  const [version, setVersion] = useState('1.0');
+  const [version, setVersion] = useState<string>('1.0');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
 
@@ -54,16 +56,17 @@ const FileUpload: React.FC<FileUploadProps> = ({
       formData.append('evaluation_id', evaluationId.toString());
       formData.append('client_id', clientId.toString());
 
-      const response = await fetch('/api/evaluation/files/upload', {
-        method: 'POST',
-        body: formData
+      const response = await axios.post('/api/evaluation/files/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
       });
 
-      if (!response.ok) {
+      if (!response.data.success) {
         throw new Error('Failed to upload file');
       }
 
-      const result = await response.json();
+      const result = response.data;
       onFileAdded(result.file);
 
       setDescription('');
@@ -73,34 +76,31 @@ const FileUpload: React.FC<FileUploadProps> = ({
       const fileInput = document.getElementById('file-input') as HTMLInputElement;
       if (fileInput) fileInput.value = '';
 
-      alert('File uploaded successfully');
+      toast.success('File uploaded successfully');
 
     } catch (error) {
       console.error('Error uploading file:', error);
-      alert('Error uploading file');
+      toast.error('Error uploading file');
     } finally {
       setUploading(false);
     }
   };
 
   const handleRemove = async (fileId: number) => {
-    if (!confirm('Are you sure you want to remove this file?')) return;
 
     try {
-      const response = await fetch(`/api/evaluation/files/${fileId}`, {
-        method: 'DELETE'
-      });
+      const response = await axios.delete(`/api/evaluation/files/${fileId}`);
 
-      if (!response.ok) {
+      if (!response.data.success) {
         throw new Error('Failed to remove file');
       }
 
       onFileRemoved(fileId);
-      alert('File removed successfully');
+      toast.success('File removed successfully');
 
     } catch (error) {
       console.error('Error removing file:', error);
-      alert('Error removing file');
+      toast.error('Error removing file');
     }
   };
 
