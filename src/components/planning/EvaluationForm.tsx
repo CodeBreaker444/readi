@@ -1,5 +1,19 @@
 'use client';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import axios from 'axios';
 import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 interface Client {
   id: number;
@@ -28,9 +42,10 @@ interface EvaluationFormProps {
   isDark?: boolean;
 }
 
-const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, isDark = false }) => {
+const EvaluationForm: React.FC<EvaluationFormProps> =({ onSubmit, isDark }) => {
+ 
   const currentYear = new Date().getFullYear();
-  
+
   const [formData, setFormData] = useState<EvaluationFormData>({
     client_id: 0,
     fk_luc_procedure_id: 0,
@@ -52,23 +67,35 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, isDark = fals
     loadLUCProcedures();
   }, []);
 
-  const loadClients = async () => {
-    try {
-      const response = await fetch('/api/clients');
-      const data = await response.json();
-      setClients(data);
-    } catch (error) {
-      console.error('Error loading clients:', error);
-    }
-  };
+const loadClients = async () => {
+  try {
+    const response = await axios.get('/api/client/list');
+    if (!response.data)
+      {
+        toast.error('Failed to load clients');
+        return;
+      }  
+    const data = await response.data
+    setClients(data.clients || []);
+  } catch (error) {
+    console.error('Error loading clients:', error);
+    toast.error('Failed to load clients');
+  }
+};
 
   const loadLUCProcedures = async () => {
     try {
-      const response = await fetch('/api/luc-procedures?type=EVALUATION');
-      const data = await response.json();
-      setLUCProcedures(data);
+      const response = await axios.get('/api/luc-procedures/list?sector=EVALUATION');
+      if (!response.data)
+        {
+          toast.error('Failed to load LUC procedures');
+          return;
+        }  
+      const data = await response.data;
+      setLUCProcedures(data.procedures || []);
     } catch (error) {
       console.error('Error loading LUC procedures:', error);
+      toast.error('Failed to load LUC procedures');
     }
   };
 
@@ -82,17 +109,17 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, isDark = fals
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (formData.client_id === 0) {
       alert('Please select a client');
       return;
     }
-    
+
     if (formData.fk_luc_procedure_id === 0) {
       alert('Please select a LUC procedure');
       return;
     }
-    
+
     setLoading(true);
     try {
       await onSubmit(formData);
@@ -101,180 +128,203 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, isDark = fals
     }
   };
 
-  const inputClass = `w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-    isDark 
-      ? 'bg-slate-700 border-slate-600 text-white' 
-      : 'bg-white border-gray-300 text-gray-900'
-  }`;
-
-  const labelClass = `block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`;
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Client and LUC Procedure */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label htmlFor="client_id" className={labelClass}>
-            Client <span className="text-red-500">*</span>
-          </label>
-          <select
-            id="client_id"
-            name="client_id"
-            value={formData.client_id}
-            onChange={handleChange}
-            required
-            className={inputClass}
-          >
-            <option value={0}>Select Client</option>
+  <form onSubmit={handleSubmit} className="space-y-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="space-y-2">
+        <Label>
+          Client <span className="text-red-500">*</span>
+        </Label>
+        <Select
+          value={String(formData.client_id)}
+          onValueChange={(value) =>
+            setFormData(prev => ({
+              ...prev,
+              client_id: Number(value),
+            }))
+          }
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select Client" />
+          </SelectTrigger>
+          <SelectContent>
             {clients.map(client => (
-              <option key={client.id} value={client.id}>
+              <SelectItem
+                key={client.id}
+                value={String(client.id)}
+              >
                 {client.name}
-              </option>
+              </SelectItem>
             ))}
-          </select>
-        </div>
+          </SelectContent>
+        </Select>
+      </div>
 
-        <div>
-          <label htmlFor="fk_luc_procedure_id" className={labelClass}>
-            LUC Procedure <span className="text-red-500">*</span>
-          </label>
-          <select
-            id="fk_luc_procedure_id"
-            name="fk_luc_procedure_id"
-            value={formData.fk_luc_procedure_id}
-            onChange={handleChange}
-            required
-            className={inputClass}
-          >
-            <option value={0}>Select LUC Procedure for this Task</option>
+      <div className="space-y-2">
+        <Label>
+          LUC Procedure <span className="text-red-500">*</span>
+        </Label>
+        <Select
+          value={String(formData.fk_luc_procedure_id)}
+          onValueChange={(value) =>
+            setFormData(prev => ({
+              ...prev,
+              fk_luc_procedure_id: Number(value),
+            }))
+          }
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select LUC Procedure" />
+          </SelectTrigger>
+          <SelectContent>
             {lucProcedures.map(procedure => (
-              <option key={procedure.id} value={procedure.id}>
+              <SelectItem
+                key={procedure.id}
+                value={String(procedure.id)}
+              >
                 {procedure.name}
-              </option>
+              </SelectItem>
             ))}
-          </select>
-        </div>
+          </SelectContent>
+        </Select>
+      </div>
+    </div>
+
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+      <div className="space-y-2">
+        <Label>Status</Label>
+        <Select
+          value={formData.evaluation_status}
+          onValueChange={(value) =>
+            setFormData(prev => ({
+              ...prev,
+              evaluation_status: value,
+            }))
+          }
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="NEW">New Task</SelectItem>
+            <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+            <SelectItem value="COMPLETED">Completed</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
-      {/* Status, Request Date, Year */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-          <label htmlFor="evaluation_status" className={labelClass}>
-            Status
-          </label>
-          <select
-            id="evaluation_status"
-            name="evaluation_status"
-            value={formData.evaluation_status}
-            onChange={handleChange}
-            className={inputClass}
-          >
-            <option value="NEW">New Task</option>
-            <option value="IN_PROGRESS">In Progress</option>
-            <option value="COMPLETED">Completed</option>
-          </select>
-        </div>
-
-        <div>
-          <label htmlFor="evaluation_request_date" className={labelClass}>
-            Request Date <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="date"
-            id="evaluation_request_date"
-            name="evaluation_request_date"
-            value={formData.evaluation_request_date}
-            onChange={handleChange}
-            required
-            className={inputClass}
-          />
-        </div>
-
-        <div>
-          <label htmlFor="evaluation_year" className={labelClass}>
-            Year Reference
-          </label>
-          <select
-            id="evaluation_year"
-            name="evaluation_year"
-            value={formData.evaluation_year}
-            onChange={handleChange}
-            className={inputClass}
-          >
-            <option value={currentYear - 1}>{currentYear - 1}</option>
-            <option value={currentYear}>{currentYear}</option>
-            <option value={currentYear + 1}>{currentYear + 1}</option>
-            <option value={currentYear + 2}>{currentYear + 2}</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Description */}
-      <div>
-        <label htmlFor="evaluation_desc" className={labelClass}>
-          Description <span className="text-red-500">*</span>
-        </label>
-        <textarea
-          id="evaluation_desc"
-          name="evaluation_desc"
-          value={formData.evaluation_desc}
-          onChange={handleChange}
+      <div className="space-y-2">
+        <Label>
+          Request Date <span className="text-red-500">*</span>
+        </Label>
+        <Input
+          type="date"
+          value={formData.evaluation_request_date}
+          onChange={(e) =>
+            setFormData(prev => ({
+              ...prev,
+              evaluation_request_date: e.target.value,
+            }))
+          }
           required
-          rows={4}
-          className={inputClass}
-          placeholder="Enter evaluation description..."
         />
       </div>
 
-      {/* Offer and Sales Manager */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label htmlFor="evaluation_offer" className={labelClass}>
-            Offer Reference
-          </label>
-          <input
-            type="text"
-            id="evaluation_offer"
-            name="evaluation_offer"
-            value={formData.evaluation_offer}
-            onChange={handleChange}
-            className={inputClass}
-            placeholder="Enter offer reference"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="evaluation_sale_manager" className={labelClass}>
-            Sales Manager
-          </label>
-          <input
-            type="text"
-            id="evaluation_sale_manager"
-            name="evaluation_sale_manager"
-            value={formData.evaluation_sale_manager}
-            onChange={handleChange}
-            className={inputClass}
-            placeholder="Enter sales manager name"
-          />
-        </div>
-      </div>
-
-      {/* Submit Button */}
-      <div className="flex justify-start">
-        <button
-          type="submit"
-          disabled={loading}
-          className={`px-6 py-2 rounded-lg font-medium transition-colors ${
-            loading
-              ? 'bg-gray-400 cursor-not-allowed'
-              : 'bg-blue-600 hover:bg-blue-700 text-white'
-          }`}
+      <div className="space-y-2">
+        <Label>Year Reference</Label>
+        <Select
+          value={String(formData.evaluation_year)}
+          onValueChange={(value) =>
+            setFormData(prev => ({
+              ...prev,
+              evaluation_year: Number(value),
+            }))
+          }
         >
-          {loading ? 'Adding...' : 'Add New Evaluation'}
-        </button>
+          <SelectTrigger>
+            <SelectValue placeholder="Select Year" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={String(currentYear - 1)}>
+              {currentYear - 1}
+            </SelectItem>
+            <SelectItem value={String(currentYear)}>
+              {currentYear}
+            </SelectItem>
+            <SelectItem value={String(currentYear + 1)}>
+              {currentYear + 1}
+            </SelectItem>
+            <SelectItem value={String(currentYear + 2)}>
+              {currentYear + 2}
+            </SelectItem>
+          </SelectContent>
+        </Select>
       </div>
-    </form>
-  );
+    </div>
+
+    <div className="space-y-2">
+      <Label>
+        Description <span className="text-red-500">*</span>
+      </Label>
+      <Textarea
+        rows={4}
+        placeholder="Enter evaluation description..."
+        value={formData.evaluation_desc}
+        onChange={(e) =>
+          setFormData(prev => ({
+            ...prev,
+            evaluation_desc: e.target.value,
+          }))
+        }
+        required
+      />
+    </div>
+
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="space-y-2">
+        <Label>Offer Reference</Label>
+        <Input
+          type="text"
+          placeholder="Enter offer reference"
+          value={formData.evaluation_offer}
+          onChange={(e) =>
+            setFormData(prev => ({
+              ...prev,
+              evaluation_offer: e.target.value,
+            }))
+          }
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label>Sales Manager</Label>
+        <Input
+          type="text"
+          placeholder="Enter sales manager name"
+          value={formData.evaluation_sale_manager}
+          onChange={(e) =>
+            setFormData(prev => ({
+              ...prev,
+              evaluation_sale_manager: e.target.value,
+            }))
+          }
+        />
+      </div>
+    </div>
+
+    <div>
+      <Button
+        type="submit"
+        disabled={loading}
+        className="w-full md:w-auto"
+      >
+        {loading ? "Adding..." : "Add New Evaluation"}
+      </Button>
+    </div>
+  </form>
+)
 };
 
 export default EvaluationForm;

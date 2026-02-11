@@ -6,7 +6,7 @@ import { Role } from './roles';
 export interface SessionUser {
   id: string;
   userId: number;
-  ownerId?: number;
+  ownerId: number;
   email: string;
   fullname: string;
   username?: string;

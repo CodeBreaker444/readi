@@ -54,26 +54,27 @@ const FileUpload: React.FC<FileUploadProps> = ({
       formData.append('evaluation_id', evaluationId.toString());
       formData.append('client_id', clientId.toString());
 
-      const response = await fetch('/api/evaluation/files', {
+      const response = await fetch('/api/evaluation/files/upload', {
         method: 'POST',
         body: formData
       });
 
-      if (response.ok) {
-        const newFile = await response.json();
-        onFileAdded(newFile);
-        
-        // Reset form
-        setDescription('');
-        setVersion('1.0');
-        setSelectedFile(null);
-        
-        // Reset file input
-        const fileInput = document.getElementById('file-input') as HTMLInputElement;
-        if (fileInput) fileInput.value = '';
-      } else {
-        alert('Error uploading file');
+      if (!response.ok) {
+        throw new Error('Failed to upload file');
       }
+
+      const result = await response.json();
+      onFileAdded(result.file);
+
+      setDescription('');
+      setVersion('1.0');
+      setSelectedFile(null);
+
+      const fileInput = document.getElementById('file-input') as HTMLInputElement;
+      if (fileInput) fileInput.value = '';
+
+      alert('File uploaded successfully');
+
     } catch (error) {
       console.error('Error uploading file:', error);
       alert('Error uploading file');
@@ -90,28 +91,23 @@ const FileUpload: React.FC<FileUploadProps> = ({
         method: 'DELETE'
       });
 
-      if (response.ok) {
-        onFileRemoved(fileId);
-      } else {
-        alert('Error removing file');
+      if (!response.ok) {
+        throw new Error('Failed to remove file');
       }
+
+      onFileRemoved(fileId);
+      alert('File removed successfully');
+
     } catch (error) {
       console.error('Error removing file:', error);
       alert('Error removing file');
     }
   };
 
-  const inputClass = `w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-    isDark 
-      ? 'bg-slate-700 border-slate-600 text-white' 
-      : 'bg-white border-gray-300 text-gray-900'
-  }`;
 
-  const labelClass = `block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`;
 
   return (
     <div className="space-y-4">
-      {/* Existing Files */}
       {files.length > 0 && (
         <div className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} rounded-lg border p-4`}>
           <h3 className={`text-sm font-semibold mb-3 ${isDark ? 'text-white' : 'text-gray-900'}`}>
@@ -119,11 +115,10 @@ const FileUpload: React.FC<FileUploadProps> = ({
           </h3>
           <div className="space-y-2">
             {files.map(file => (
-              <div 
+              <div
                 key={file.id}
-                className={`flex items-center justify-between p-3 rounded-lg ${
-                  isDark ? 'bg-slate-700' : 'bg-gray-50'
-                }`}
+                className={`flex items-center justify-between p-3 rounded-lg ${isDark ? 'bg-slate-700' : 'bg-gray-50'
+                  }`}
               >
                 <div className="flex items-center space-x-3 flex-1">
                   <FileText className={isDark ? 'text-blue-400' : 'text-blue-600'} size={20} />
@@ -149,15 +144,14 @@ const FileUpload: React.FC<FileUploadProps> = ({
         </div>
       )}
 
-      {/* Upload New File */}
       <div className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} rounded-lg border p-4`}>
         <h3 className={`text-sm font-semibold mb-3 ${isDark ? 'text-white' : 'text-gray-900'}`}>
           Add New File
         </h3>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
-            <label htmlFor="file-description" className={labelClass}>
+            <label htmlFor="file-description" className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
               File Description
             </label>
             <input
@@ -165,13 +159,16 @@ const FileUpload: React.FC<FileUploadProps> = ({
               id="file-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className={inputClass}
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${isDark
+                  ? 'bg-slate-700 border-slate-600 text-white'
+                  : 'bg-white border-gray-300 text-gray-900'
+                }`}
               placeholder="Enter description"
             />
           </div>
 
           <div>
-            <label htmlFor="file-version" className={labelClass}>
+            <label htmlFor="file-version" className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
               Version
             </label>
             <input
@@ -179,20 +176,26 @@ const FileUpload: React.FC<FileUploadProps> = ({
               id="file-version"
               value={version}
               onChange={(e) => setVersion(e.target.value)}
-              className={inputClass}
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${isDark
+                  ? 'bg-slate-700 border-slate-600 text-white'
+                  : 'bg-white border-gray-300 text-gray-900'
+                }`}
               placeholder="1.0"
             />
           </div>
 
           <div>
-            <label htmlFor="file-input" className={labelClass}>
+            <label htmlFor="file-input" className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
               File
             </label>
             <input
               type="file"
               id="file-input"
               onChange={handleFileChange}
-              className={inputClass}
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${isDark
+                  ? 'bg-slate-700 border-slate-600 text-white'
+                  : 'bg-white border-gray-300 text-gray-900'
+                }`}
             />
           </div>
 
@@ -201,11 +204,10 @@ const FileUpload: React.FC<FileUploadProps> = ({
               type="button"
               onClick={handleUpload}
               disabled={uploading || !selectedFile || !description}
-              className={`w-full px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2 ${
-                uploading || !selectedFile || !description
+              className={`w-full px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2 ${uploading || !selectedFile || !description
                   ? 'bg-gray-400 cursor-not-allowed text-white'
                   : 'bg-blue-600 hover:bg-blue-700 text-white'
-              }`}
+                }`}
             >
               <Upload size={16} />
               <span>{uploading ? 'Uploading...' : 'Add File'}</span>

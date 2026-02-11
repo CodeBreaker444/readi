@@ -1,3 +1,4 @@
+import { Toaster } from "@/components/ui/sonner";
 import { Geist, Geist_Mono } from "next/font/google";
 import ClientLayoutWrapper from "../components/ClientLayoutWrapper";
 import { ThemeProvider } from "../components/ThemeProvider";
@@ -28,6 +29,7 @@ export default async function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <ThemeProvider>
+           <Toaster />
           <ClientLayoutWrapper role={role} userData={session?.user ?? null}>
             {children}
           </ClientLayoutWrapper>
