@@ -1,4 +1,4 @@
-import { deleteMissionStatus } from '@/backend/services/mission/statusService';
+import { deleteMissionStatus } from '@/backend/services/mission/status-service';
 import { getUserSession } from '@/lib/auth/server-session';
 import { NextRequest, NextResponse } from 'next/server';
 

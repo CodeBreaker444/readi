@@ -1,16 +1,17 @@
-import { addMissionType } from '@/backend/services/mission/mission-type';
+import { updateMissionResult } from '@/backend/services/mission/result-service';
 import { getUserSession } from '@/lib/auth/server-session';
 import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
+import z from 'zod';
 
-const missionTypeSchema = z.object({
-  mission_type_name: z.string().min(1, 'Mission type name is required'),
-  mission_type_desc: z.string().optional(),
-  mission_type_code: z.string().min(1, 'Mission type code is required'),
-  mission_type_label: z.string().optional(),
-});
+const updateMissionResultSchema = z.object({
+  mission_result_code: z.string().min(1, 'Result code is required').max(50, 'Code too long'),
+  mission_result_desc: z.string().min(1, 'Result description is required').max(255, 'Description too long'),
+}); 
 
-export async function POST( request: NextRequest ) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     const session = await getUserSession();
     if (!session) {
@@ -22,7 +23,7 @@ export async function POST( request: NextRequest ) {
 
     const body = await request.json();
     
-    const validation = missionTypeSchema.safeParse(body);
+    const validation = updateMissionResultSchema.safeParse(body);
     if (!validation.success) {
       return NextResponse.json(
         { 
@@ -36,12 +37,11 @@ export async function POST( request: NextRequest ) {
     }
 
     const ownerId = session.user.ownerId;
-    const result = await addMissionType(ownerId, {
-      mission_type_name: body.mission_type_name,
-      mission_type_desc: body.mission_type_desc,
-      mission_type_code: body.mission_type_code,
-      mission_type_label: body.mission_type_label,
-      fk_owner_id: ownerId
+    const { id } = await params;
+    
+    const result = await updateMissionResult(ownerId, Number(id), {
+      code: validation.data.mission_result_code,
+      description: validation.data.mission_result_desc
     });
 
     return NextResponse.json(result);

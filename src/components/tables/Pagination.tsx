@@ -1,4 +1,3 @@
-import { Mission } from '@/config/types';
 import { Table } from '@tanstack/react-table';
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import { FC } from 'react';
@@ -7,7 +6,7 @@ import { Button } from '../ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 interface Props {
-  table: Table<Mission>;
+  table: Table<any>;
 }
 
 export const TablePagination: FC<Props> = ({ table }) => {

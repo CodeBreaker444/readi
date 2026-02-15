@@ -215,3 +215,9 @@ export interface Mission {
   order?: number;
   isFinalStatus?: boolean;
 }
+
+export interface MissionResult {
+  id: number;
+  code: string;
+  description: string;
+}

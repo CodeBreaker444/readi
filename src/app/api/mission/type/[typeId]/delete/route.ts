@@ -1,4 +1,4 @@
-import { deleteMissionType } from '@/backend/services/mission/missionType';
+import { deleteMissionType } from '@/backend/services/mission/mission-type';
 import { getUserSession } from '@/lib/auth/server-session';
 import { NextRequest, NextResponse } from 'next/server';
 

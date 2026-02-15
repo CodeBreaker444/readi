@@ -1,6 +1,6 @@
 'use client';
 
-import { Mission } from '@/config/types';
+import { MissionResult } from '@/config/types';
 import {
     flexRender,
     getCoreRowModel,
@@ -13,31 +13,31 @@ import { Check, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { TablePagination } from '../tables/Pagination';
-import { createMissionStatusColumns } from '../tables/StatusColumn';
+import { createMissionResultColumns } from './missionResultColumns';
 
-interface MissionStatusTableProps {
-  data: Mission[];
+interface MissionResultTableProps {
+  data: MissionResult[];
   onDelete: (id: number) => void;
-  onEdit: (status: Mission) => void;
+  onEdit: (result: MissionResult) => void;
   isDark: boolean;
 }
 
-export default function MissionStatusTable({ data, onDelete, onEdit, isDark }: MissionStatusTableProps) {
+export default function MissionResultTable({ data, onDelete, onEdit, isDark }: MissionResultTableProps) {
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [editForm, setEditForm] = useState<Mission | null>(null);
+  const [editForm, setEditForm] = useState<MissionResult | null>(null);
 
-  const handleEditClick = (status: Mission) => {
-    setEditingId(status.id);
-    setEditForm({ ...status });
+  const handleEditClick = (result: MissionResult) => {
+    setEditingId(result.id);
+    setEditForm({ ...result });
   };
 
   const handleSaveEdit = () => {
-    if (editForm && editForm.code.trim() && editForm.name.trim()) {
+    if (editForm && editForm.code.trim() && editForm.description.trim()) {
       onEdit(editForm);
       setEditingId(null);
       setEditForm(null);
     } else {
-      toast.error('Code and Name are required');
+      toast.error('Code and Description are required');
     }
   };
 
@@ -47,7 +47,7 @@ export default function MissionStatusTable({ data, onDelete, onEdit, isDark }: M
   };
 
   const columns = useMemo(
-    () => createMissionStatusColumns(isDark, handleEditClick, onDelete),
+    () => createMissionResultColumns(isDark, handleEditClick, onDelete),
     [isDark, onDelete]
   );
 
@@ -67,7 +67,7 @@ export default function MissionStatusTable({ data, onDelete, onEdit, isDark }: M
 
   return (
     <div className="w-full">
-      <div className={`overflow-x-auto rounded-xl border shadow-sm ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+      <div className={`overflow-x-auto rounded-md shadow-sm ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
         <table className="w-full">
           <thead className={isDark ? 'bg-slate-700' : 'bg-gradient-to-r from-blue-50 to-indigo-50'}>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -112,50 +112,17 @@ export default function MissionStatusTable({ data, onDelete, onEdit, isDark }: M
                       />
                     </td>
                     <td className="px-6 py-4">
-                      <input
-                        type="text"
+                      <textarea
                         required
-                        maxLength={100}
+                        maxLength={255}
+                        rows={2}
                         className={`w-full px-3 py-2 rounded-lg border outline-none transition-all ${
                           isDark
                             ? 'bg-slate-900 border-slate-600 text-white focus:ring-blue-500'
                             : 'bg-white border-gray-300 text-gray-900 focus:ring-blue-500'
                         } focus:ring-2 focus:border-transparent`}
-                        value={editForm.name}
-                        onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                      />
-                    </td>
-                    <td className="px-6 py-4">
-                      <input
-                        type="text"
-                        className={`w-full px-3 py-2 rounded-lg border outline-none transition-all ${
-                          isDark
-                            ? 'bg-slate-900 border-slate-600 text-white focus:ring-blue-500'
-                            : 'bg-white border-gray-300 text-gray-900 focus:ring-blue-500'
-                        } focus:ring-2 focus:border-transparent`}
-                        value={editForm.description || ''}
+                        value={editForm.description}
                         onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-                      />
-                    </td>
-                    <td className="px-6 py-4">
-                      <input
-                        type="number"
-                        min="0"
-                        className={`w-full px-3 py-2 rounded-lg border outline-none transition-all ${
-                          isDark
-                            ? 'bg-slate-900 border-slate-600 text-white focus:ring-blue-500'
-                            : 'bg-white border-gray-300 text-gray-900 focus:ring-blue-500'
-                        } focus:ring-2 focus:border-transparent`}
-                        value={editForm.order || 0}
-                        onChange={(e) => setEditForm({ ...editForm, order: parseInt(e.target.value) || 0 })}
-                      />
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <input
-                        type="checkbox"
-                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        checked={editForm.isFinalStatus || false}
-                        onChange={(e) => setEditForm({ ...editForm, isFinalStatus: e.target.checked })}
                       />
                     </td>
                     <td className="px-6 py-4 text-right">
@@ -191,16 +158,16 @@ export default function MissionStatusTable({ data, onDelete, onEdit, isDark }: M
           <div className={`text-center py-12 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
             <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 ${isDark ? 'bg-slate-700' : 'bg-gray-100'}`}>
               <svg className="w-8 h-8 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
             </div>
-            <p className="text-lg font-medium">No mission statuses available</p>
-            <p className="text-sm mt-1">Add your first status to get started</p>
+            <p className="text-lg font-medium">No mission results available</p>
+            <p className="text-sm mt-1">Add your first result to get started</p>
           </div>
         )}
       </div>
 
-       <TablePagination table={table} />
+      <TablePagination table={table}   />
     </div>
   );
 }

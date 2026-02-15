@@ -1,8 +1,11 @@
-import { getMissionStatusList } from '@/backend/services/mission/status-service';
+import { deleteMissionResult } from '@/backend/services/mission/result-service';
 import { getUserSession } from '@/lib/auth/server-session';
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(request: NextRequest) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     const session = await getUserSession();
     if (!session) {
@@ -13,7 +16,8 @@ export async function GET(request: NextRequest) {
     }
 
     const ownerId = session.user.ownerId;
-    const result = await getMissionStatusList(ownerId);
+    const { id } = await params;
+    const result = await deleteMissionResult(ownerId, Number(id));
 
     return NextResponse.json(result);
   } catch (error: any) {

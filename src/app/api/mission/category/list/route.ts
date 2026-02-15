@@ -1,4 +1,4 @@
-import { getMissionCategoryList } from '@/backend/services/mission/categoryService';
+import { getMissionCategoryList } from '@/backend/services/mission/category-service';
 import { getUserSession } from '@/lib/auth/server-session';
 import { NextRequest, NextResponse } from 'next/server';
 
