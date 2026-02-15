@@ -8,29 +8,29 @@ import "./globals.css";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+  display: 'swap',  
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  display: 'swap', 
 });
 
-export const dynamic = 'force-dynamic';
 
 export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const session = await getUserSession();
-  const role = session?.user?.role ?? null;
+  const sessionPromise = getUserSession();
   
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <ThemeProvider>
-           <Toaster />
-          <ClientLayoutWrapper role={role} userData={session?.user ?? null}>
+          <Toaster />
+          <ClientLayoutWrapper sessionPromise={sessionPromise}>
             {children}
           </ClientLayoutWrapper>
         </ThemeProvider>

@@ -31,11 +31,10 @@ export default function MissionCategoryForm({ onSubmit, isDark }: MissionCategor
           type="text"
           required
           maxLength={50}
-          className={`w-full px-4 py-2.5 rounded-lg border outline-none transition-all ${
-            isDark
+          className={`w-full px-4 py-2.5 rounded-lg border outline-none transition-all ${isDark
               ? 'bg-slate-900 border-slate-600 text-white focus:ring-blue-500'
               : 'bg-white border-gray-300 text-gray-900 focus:ring-blue-500'
-          } focus:ring-2 focus:border-transparent`}
+            } focus:ring-2 focus:border-transparent`}
           value={formData.code}
           onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
           placeholder="e.g., COMMERCIAL"
@@ -50,11 +49,10 @@ export default function MissionCategoryForm({ onSubmit, isDark }: MissionCategor
           type="text"
           required
           maxLength={100}
-          className={`w-full px-4 py-2.5 rounded-lg border outline-none transition-all ${
-            isDark
+          className={`w-full px-4 py-2.5 rounded-lg border outline-none transition-all ${isDark
               ? 'bg-slate-900 border-slate-600 text-white focus:ring-blue-500'
               : 'bg-white border-gray-300 text-gray-900 focus:ring-blue-500'
-          } focus:ring-2 focus:border-transparent`}
+            } focus:ring-2 focus:border-transparent`}
           value={formData.name}
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           placeholder="e.g., Commercial"
@@ -67,11 +65,10 @@ export default function MissionCategoryForm({ onSubmit, isDark }: MissionCategor
         </label>
         <textarea
           rows={3}
-          className={`w-full px-4 py-2.5 rounded-lg border outline-none transition-all ${
-            isDark
+          className={`w-full px-4 py-2.5 rounded-lg border outline-none transition-all ${isDark
               ? 'bg-slate-900 border-slate-600 text-white focus:ring-blue-500'
               : 'bg-white border-gray-300 text-gray-900 focus:ring-blue-500'
-          } focus:ring-2 focus:border-transparent`}
+            } focus:ring-2 focus:border-transparent`}
           value={formData.description}
           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
           placeholder="e.g., Commercial client work"
@@ -80,7 +77,10 @@ export default function MissionCategoryForm({ onSubmit, isDark }: MissionCategor
 
       <button
         type="submit"
-        className="w-full px-4 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors"
+        className={`w-full px-4 py-2.5 ${isDark
+          ? 'bg-slate-700 hover:bg-slate-600 text-white border border-slate-600'
+          : 'bg-gray-50 hover:bg-gray-200 text-gray-700 border border-gray-300'
+          } rounded-lg font-medium transition-colors`}
       >
         Add Category
       </button>
