@@ -2,6 +2,7 @@
 
 import { MissionType } from '@/config/types';
 import { FormEvent, useState } from 'react';
+import { toast } from 'sonner';
 
 interface MissionTypeFormProps {
   onSubmit: (data: Omit<MissionType, 'id'>) => void;
@@ -20,7 +21,7 @@ export default function MissionTypeForm({ onSubmit, isDark }: MissionTypeFormPro
     e.preventDefault();
     
     if (!formData.description || !formData.code || !formData.label) {
-      alert('Please fill in all fields');
+      toast.error('Please fill in all fields');
       return;
     }
 

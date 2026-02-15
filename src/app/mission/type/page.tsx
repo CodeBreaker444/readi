@@ -38,48 +38,71 @@ export default function MissionTypePage() {
   }, [ ]);
 
   const handleAddMissionType = async (newType: Omit<MissionType, 'id'>) => {
+  try {
+    const response = await axios.post(`/api/mission/type/add`, {
+      mission_type_name: newType.name,
+      mission_type_desc: newType.description,
+      mission_type_code: newType.code,
+      mission_type_label: newType.label
+    });
 
-    try {
-      const response = await axios.post(`/api/mission/type/add`, {
-          mission_type_name: newType.name,
-          mission_type_desc: newType.description,
-          mission_type_code: newType.code,
-          mission_type_label: newType.label
-      });
-
-      const result = await response.data;
-      if (result.code === 1) {
-        await fetchMissionTypes();
-      }
-    } catch (error) {
-      console.error('Error adding mission type:', error);
+    const result = await response.data;
+    if (result.code === 1) {
+      const newMissionType: MissionType = {
+        id: result.data.mission_type_id,
+        name: result.data.type_name,
+        code: result.data.type_code,
+        label: result.data.type_description,
+        description: result.data.type_description,
+      };
+      setMissionTypes(prev => [...prev, newMissionType]);
+      setShowForm(false);
     }
-  };
+  } catch (error) {
+    console.error('Error adding mission type:', error);
+  }
+};
 
-  const handleDeleteMissionType = async (id: number) => {
+const handleDeleteMissionType = async (id: number) => {
+  try {
+    const response = await axios.post(`/api/mission/type/${id}/delete`);
 
-    try {
-      const response = await axios.post(`/api/mission/type/${id}/delete`);
-
-      const result = await response.data
-      if (result.code === 1) {
-        await fetchMissionTypes();
-      }
-    } catch (error) {
-      console.error('Error deleting mission type:', error);
+    const result = await response.data;
+    if (result.code === 1) {
+      setMissionTypes(prev => prev.filter(type => type.id !== id));
     }
-  };
-  const handleEditMissionType = (updatedType: MissionType) => {
-    setMissionTypes(missionTypes.map(type =>
-      type.id === updatedType.id ? updatedType : type
-    ));
-  };
+  } catch (error) {
+    console.error('Error deleting mission type:', error);
+  }
+};
+
+const handleEditMissionType = async (updatedType: MissionType) => {
+  try {
+    const response = await axios.put(`/api/mission/type/${updatedType.id}/edit`, {
+      mission_type_name: updatedType.name,
+      mission_type_desc: updatedType.description,
+      mission_type_code: updatedType.code,
+      mission_type_label: updatedType.label
+    });
+
+    const result = await response.data;
+    if (result.code === 1) {
+      setMissionTypes(prev => 
+        prev.map(type => 
+          type.id === updatedType.id ? updatedType : type
+        )
+      );
+    }
+  } catch (error) {
+    console.error('Error updating mission type:', error);
+  }
+};
   if (loading) {
      <MissionTypeSkeleton isDark={isDark} />
   }
 
  return (
-    <div className={`min-h-screen ${isDark ? 'bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800' : 'bg-gradient-to-br from-gray-50 via-white to-gray-100'}`}>
+    <div className={`min-h-screen ${isDark ? 'bg-linear-to-br from-gray-900 via-gray-900 to-gray-800' : 'bg-linear-to-br from-gray-50 via-white to-gray-100'}`}>
       <div className="w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <div className="mb-6 sm:mb-10 flex items-center justify-between">
           <div>
@@ -97,7 +120,7 @@ export default function MissionTypePage() {
                 ? isDark
                   ? 'bg-gray-700 hover:bg-gray-600 text-white'
                   : 'bg-gray-200 hover:bg-gray-300 text-gray-800'
-                : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white'
+                : 'bg-linear-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white'
             }`}
           >
             {showForm ? (

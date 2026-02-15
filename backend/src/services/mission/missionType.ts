@@ -34,7 +34,17 @@ export async function getMissionTypeList(ownerId: number) {
 }
 
 export async function addMissionType(ownerId: number, missionType: Omit<MissionType, 'mission_type_id'>) {
-  
+  const { data: existing } = await supabase
+    .from('pilot_mission_type')
+    .select('type_code')
+    .eq('type_code', missionType.mission_type_code)
+    .eq('is_active', true)
+    .single();
+
+  if (existing) {
+    throw new Error('Mission type code already exists');
+  }
+
   const { data, error } = await supabase
     .from('pilot_mission_type')
     .insert({
@@ -55,6 +65,8 @@ export async function addMissionType(ownerId: number, missionType: Omit<MissionT
   };
 }
 
+ 
+
 export async function deleteMissionType(ownerId: number, missionTypeId: number) {
   
   const { error } = await supabase
@@ -71,14 +83,28 @@ export async function deleteMissionType(ownerId: number, missionTypeId: number) 
 }
 
 export async function updateMissionType(ownerId: number, missionTypeId: number, missionType: Partial<MissionType>) {
-  
+  if (missionType.mission_type_code) {
+    const { data: existing } = await supabase
+      .from('pilot_mission_type')
+      .select('mission_type_id')
+      .eq('type_code', missionType.mission_type_code)
+      .eq('is_active', true)
+      .neq('mission_type_id', missionTypeId)
+      .single();
+
+    if (existing) {
+      throw new Error('Mission type code already exists');
+    }
+  }
+
+  const updateData: any = {};
+  if (missionType.mission_type_name) updateData.type_name = missionType.mission_type_name;
+  if (missionType.mission_type_code) updateData.type_code = missionType.mission_type_code;
+  if (missionType.mission_type_label) updateData.type_description = missionType.mission_type_label;
+
   const { data, error } = await supabase
     .from('pilot_mission_type')
-    .update({
-      type_name: missionType.mission_type_desc,
-      type_code: missionType.mission_type_code,
-      type_description: missionType.mission_type_label
-    })
+    .update(updateData)
     .eq('mission_type_id', missionTypeId)
     .select()
     .single();
