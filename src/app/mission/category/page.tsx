@@ -4,7 +4,8 @@ import MissionCategoryForm from '@/components/mission/MissionCategoryForm';
 import MissionCategoryTable from '@/components/mission/MissionCategoryTable';
 import { useTheme } from '@/components/useTheme';
 import { MissionCategory } from '@/config/types';
-import { useState } from 'react';
+import axios from 'axios';
+import { useEffect, useState } from 'react';
 
 const dummyMissionCategories: MissionCategory[] = [
   { id: 1, description: 'Commercial Operations' },
@@ -16,25 +17,102 @@ const dummyMissionCategories: MissionCategory[] = [
 ];
 
 export default function MissionCategoryPage() {
-  const { isDark } = useTheme()
-  const [categories, setCategories] = useState<MissionCategory[]>(dummyMissionCategories);
+  const { isDark } = useTheme();
+  const [categories, setCategories] = useState<MissionCategory[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleAddCategory = (newCategory: Omit<MissionCategory, 'id'>) => {
-    const newItem: MissionCategory = {
-      ...newCategory,
-      id: Math.max(...categories.map(c => c.id), 0) + 1,
-    };
-    setCategories([...categories, newItem]);
+  const fetchCategories = async () => {
+    
+    setLoading(true);
+    try {
+      const response = await axios.get(`/api/mission/category/list`);
+      
+      const result = response.data;
+      if (result.code === 1) {
+        setCategories(result.data.map((item: any) => ({
+          id: item.mission_category_id,
+          description: item.mission_category_desc
+        })));
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleDeleteCategory = (id: number) => {
-    setCategories(categories.filter(cat => cat.id !== id));
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const handleAddCategory = async (newCategory: Omit<MissionCategory, 'id'>) => {
+    
+    try {
+      const response = await fetch(`/api/owner/${session.user.ownerId}/missionCategory/add`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mission_category_desc: newCategory.description
+        })
+      });
+      
+      const result = await response.json();
+      if (result.code === 1) {
+        await fetchCategories();
+      } else {
+        alert('Failed to add category');
+      }
+    } catch (error) {
+      console.error('Error adding category:', error);
+      alert('Error adding category');
+    }
   };
 
-  const handleEditCategory = (updatedCategory: MissionCategory) => {
-    setCategories(categories.map(cat =>
-      cat.id === updatedCategory.id ? updatedCategory : cat
-    ));
+  const handleDeleteCategory = async (id: number) => {
+    if (!session?.user?.ownerId) return;
+    
+    try {
+      const response = await fetch(
+        `/api/owner/${session.user.ownerId}/missionCategory/${id}/delete`,
+        { method: 'POST' }
+      );
+      
+      const result = await response.json();
+      if (result.code === 1) {
+        await fetchCategories();
+      } else {
+        alert('Failed to delete category');
+      }
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      alert('Error deleting category');
+    }
+  };
+
+  const handleEditCategory = async (updatedCategory: MissionCategory) => {
+    
+    try {
+      const response = await fetch(
+        `/api/mission/category/${updatedCategory.id}/update`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            mission_category_desc: updatedCategory.description
+          })
+        }
+      );
+      
+      const result = await response.json();
+      if (result.code === 1) {
+        await fetchCategories();
+      } else {
+        alert('Failed to update category');
+      }
+    } catch (error) {
+      console.error('Error updating category:', error);
+      alert('Error updating category');
+    }
   };
 
   return (

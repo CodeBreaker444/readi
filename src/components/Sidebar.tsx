@@ -135,13 +135,6 @@ const configurationItems: SubNavItem[] = [
       { name: 'Personnel', href: '/team/personnel' },
       { name: 'Crew Shift', href: '/team/crew-shift' }
     ]
-  },
-  {
-    name: 'Superadmin',
-    href: '/super-admin/users',
-    subItems: [
-      { name: 'User Management', href: '/super-admin/users' }
-    ]
   }
 ];
 
@@ -160,52 +153,52 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role }) => {
     setActiveItem(pathname);
   }, [pathname]);
 
-const getRequiredPermissionForRoute = (href: string): Permission | null => {
-  return ROUTE_PERMISSIONS[href] ?? null;
-};
+  const getRequiredPermissionForRoute = (href: string): Permission | null => {
+    return ROUTE_PERMISSIONS[href] ?? null;
+  };
 
-const filteredNavigationItems = navigationItems
-  .map((item) => {
-    const visibleSubItems = item.subItems?.filter((sub) => {
-      const perm = getRequiredPermissionForRoute(sub.href);
-      if (!perm) return true;
-      return roleHasPermission(role, perm);
-    }) ?? [];
+  const filteredNavigationItems = navigationItems
+    .map((item) => {
+      const visibleSubItems = item.subItems?.filter((sub) => {
+        const perm = getRequiredPermissionForRoute(sub.href);
+        if (!perm) return true;
+        return roleHasPermission(role, perm);
+      }) ?? [];
 
-    const ownPerm = getRequiredPermissionForRoute(item.href);
-    const canSeeOwn = ownPerm ? roleHasPermission(role, ownPerm) : false;
-    const hasVisibleSub = visibleSubItems.length > 0;
+      const ownPerm = getRequiredPermissionForRoute(item.href);
+      const canSeeOwn = ownPerm ? roleHasPermission(role, ownPerm) : false;
+      const hasVisibleSub = visibleSubItems.length > 0;
 
-    if (!canSeeOwn && !hasVisibleSub) return null;
+      if (!canSeeOwn && !hasVisibleSub) return null;
 
-    return { ...item, subItems: visibleSubItems };
-  })
-  .filter(Boolean) as typeof navigationItems;
+      return { ...item, subItems: visibleSubItems };
+    })
+    .filter(Boolean) as typeof navigationItems;
 
-const filteredConfigurationItems = configurationItems
-  .map((configItem) => {
-    if (configItem.name === 'Superadmin') {
-      const canManageUsers = roleHasPermission(role, 'manage_users');
-      if (!canManageUsers) return null;
-    }
-    
-    const visibleSubItems = configItem.subItems?.filter((sub) => {
-      const perm = getRequiredPermissionForRoute(sub.href);
-      if (!perm) return true;
-      return roleHasPermission(role, perm);
-    }) ?? [];
+  const filteredConfigurationItems = configurationItems
+    .map((configItem) => {
+      if (configItem.name === 'Superadmin') {
+        const canManageUsers = roleHasPermission(role, 'manage_users');
+        if (!canManageUsers) return null;
+      }
 
-    const ownPerm = getRequiredPermissionForRoute(configItem.href);
-    const canSeeOwn = ownPerm ? roleHasPermission(role, ownPerm) : false;
-    const hasVisibleSub = visibleSubItems.length > 0;
+      const visibleSubItems = configItem.subItems?.filter((sub) => {
+        const perm = getRequiredPermissionForRoute(sub.href);
+        if (!perm) return true;
+        return roleHasPermission(role, perm);
+      }) ?? [];
 
-    if (!canSeeOwn && !hasVisibleSub) return null;
+      const ownPerm = getRequiredPermissionForRoute(configItem.href);
+      const canSeeOwn = ownPerm ? roleHasPermission(role, ownPerm) : false;
+      const hasVisibleSub = visibleSubItems.length > 0;
 
-    return { ...configItem, subItems: visibleSubItems };
-  })
-  .filter(Boolean) as typeof configurationItems;
+      if (!canSeeOwn && !hasVisibleSub) return null;
 
-  
+      return { ...configItem, subItems: visibleSubItems };
+    })
+    .filter(Boolean) as typeof configurationItems;
+
+
   const toggleExpand = (href: string) => {
     setExpandedItems(prev =>
       prev.includes(href) ? prev.filter(item => item !== href) : [...prev, href]
@@ -228,7 +221,7 @@ const filteredConfigurationItems = configurationItems
         {subItems.map((subItem) => {
           const isExpanded = expandedItems.includes(subItem.href);
           const isActive = activeItem === subItem.href;
-          
+
           return (
             <li key={subItem.href}>
               <a
@@ -257,7 +250,7 @@ const filteredConfigurationItems = configurationItems
                   />
                 )}
               </a>
-              
+
               {/* Nested Sub Items */}
               {subItem.subItems && isExpanded && renderSubItems(subItem.subItems, level + 1)}
             </li>
@@ -270,23 +263,30 @@ const filteredConfigurationItems = configurationItems
   return (
     <div className={`w-64 ${isDark ? 'bg-slate-900 border-r border-slate-800' : 'bg-white border-r border-gray-200'} ${isDark ? 'text-white' : 'text-gray-800'} flex flex-col h-screen`}>
       <div className={`p-5 flex items-center space-x-3 border-b ${isDark ? 'border-slate-800' : 'border-gray-200'}`}>
-        <div className="w-10 h-10 bg-linear-to-br from-yellow-400 to-yellow-600 rounded-lg flex items-center justify-center shadow-lg">
-          <span className="text-white font-bold text-lg">R</span>
+        <div className="w-10 h-10 rounded-lg flex items-center justify-center  overflow-hidden">
+          <img
+            src="/logo-sm.png"
+            alt="ReADI Logo"
+            className="w-full h-full object-contain"
+          />
         </div>
         <div>
-          <span className={`text-lg font-bold tracking-wide ${isDark ? 'text-white' : 'text-gray-800'}`}>ReADI</span>
-          <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Drone Control</p>
+          <span className={`text-lg font-bold tracking-wide ${isDark ? 'text-white' : 'text-gray-800'}`}>
+            ReADI
+          </span>
+          <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+            Drone Control
+          </p>
         </div>
       </div>
-
       <nav className="flex-1 px-2 py-4 overflow-y-auto custom-scrollbar">
         <ul className="space-y-0.5">
-{filteredNavigationItems.map((item) => {
-  const Icon = item.icon;
-  const isActive = activeItem === item.href;
-  const isExpanded = expandedItems.includes(item.href);
-  const hasSubItems = !!item.subItems && item.subItems.length > 0;
-            
+          {filteredNavigationItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeItem === item.href;
+            const isExpanded = expandedItems.includes(item.href);
+            const hasSubItems = !!item.subItems && item.subItems.length > 0;
+
             return (
               <li key={item.href}>
                 <div>
@@ -299,8 +299,8 @@ const filteredConfigurationItems = configurationItems
                     className={`
                       flex items-center justify-between px-3 py-2.5 rounded-md
                       transition-all duration-150 cursor-pointer group
-                      ${isActive 
-                        ? `${isDark ? 'bg-slate-700 text-white' : 'bg-gray-200 text-gray-900'} font-medium` 
+                      ${isActive
+                        ? `${isDark ? 'bg-slate-700 text-white' : 'bg-gray-200 text-gray-900'} font-medium`
                         : `${isDark ? 'text-gray-300 hover:bg-slate-800' : 'text-gray-700 hover:bg-gray-100'} hover:text-gray-900`
                       }
                     `}
@@ -316,7 +316,7 @@ const filteredConfigurationItems = configurationItems
                       />
                     )}
                   </a>
-                  
+
                   {/* Sub Items */}
                   {hasSubItems && isExpanded && renderSubItems(item.subItems!)}
                 </div>
@@ -324,49 +324,49 @@ const filteredConfigurationItems = configurationItems
             );
           })}
           {filteredConfigurationItems.length > 0 && (
-          <li className={`pt-4 mt-4 border-t ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
-            <div className="px-3 py-2 flex items-center space-x-2">
-              <Sliders size={16} className={isDark ? 'text-gray-500' : 'text-gray-400'} />
-              <span className={`text-xs font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>Configuration</span>
-            </div>
-            
-            <ul className="space-y-0.5 mt-2">
-              {filteredConfigurationItems.map((configItem) => {
-                const isExpanded = expandedItems.includes(configItem.href);
-                const isActive = activeItem === configItem.href;
-                
-                return (
-                  <li key={configItem.href}>
-                    <a
-                      href={configItem.href}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        handleNavigation(configItem.href, !!configItem.subItems);
-                      }}
-                      className={`
+            <li className={`pt-4 mt-4 border-t ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
+              <div className="px-3 py-2 flex items-center space-x-2">
+                <Sliders size={16} className={isDark ? 'text-gray-500' : 'text-gray-400'} />
+                <span className={`text-xs font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>Configuration</span>
+              </div>
+
+              <ul className="space-y-0.5 mt-2">
+                {filteredConfigurationItems.map((configItem) => {
+                  const isExpanded = expandedItems.includes(configItem.href);
+                  const isActive = activeItem === configItem.href;
+
+                  return (
+                    <li key={configItem.href}>
+                      <a
+                        href={configItem.href}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleNavigation(configItem.href, !!configItem.subItems);
+                        }}
+                        className={`
                         flex items-center justify-between px-3 py-2 rounded-md
                         transition-all duration-150 cursor-pointer text-xs
                         ${isActive
-                          ? `${isDark ? 'bg-slate-700 text-white' : 'bg-gray-200 text-gray-900'} font-medium`
-                          : `${isDark ? 'text-gray-300 hover:bg-slate-700' : 'text-gray-700 hover:bg-gray-100'} hover:text-gray-900`
-                        }
+                            ? `${isDark ? 'bg-slate-700 text-white' : 'bg-gray-200 text-gray-900'} font-medium`
+                            : `${isDark ? 'text-gray-300 hover:bg-slate-700' : 'text-gray-700 hover:bg-gray-100'} hover:text-gray-900`
+                          }
                       `}
-                    >
-                      <span>{configItem.name}</span>
-                      {configItem.subItems && (
-                        <ChevronRight
-                          size={12}
-                          className={`transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
-                        />
-                      )}
-                    </a>
-                    
-                    {configItem.subItems && isExpanded && renderSubItems(configItem.subItems, 2)}
-                  </li>
-                );
-              })}
-            </ul>
-          </li>
+                      >
+                        <span>{configItem.name}</span>
+                        {configItem.subItems && (
+                          <ChevronRight
+                            size={12}
+                            className={`transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
+                          />
+                        )}
+                      </a>
+
+                      {configItem.subItems && isExpanded && renderSubItems(configItem.subItems, 2)}
+                    </li>
+                  );
+                })}
+              </ul>
+            </li>
           )}
         </ul>
       </nav>

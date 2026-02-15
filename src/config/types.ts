@@ -128,8 +128,9 @@ export type SectorType = 'EVALUATION' | 'PLANNING' | 'MISSION';
 
 export interface MissionType {
   id: number;
-  description: string;
+  name: string;
   code: string;
+  description: string;
   label: string;
 }
 

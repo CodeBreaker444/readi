@@ -1,8 +1,12 @@
 'use client';
 
 import { useTheme } from '@/components/useTheme';
+import { Session } from '@/lib/auth/server-session';
+import axios from 'axios';
 import { Edit, Filter, Mail, Plus, Search, Trash2, User } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import { UserFormModal } from './UserFormModal';
 
 interface UserData {
   user_id: number;
@@ -45,7 +49,10 @@ const ROLE_OPTIONS = [
   { value: 16, label: 'SLA Manager (SLA)' },
 ];
 
-export default function UserManagement() {
+interface UserManagementProps {
+  session: Session;
+}
+export default function UserManagement({ session }: UserManagementProps) {
   const { isDark } = useTheme();
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,19 +62,7 @@ export default function UserManagement() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
-  const [newUser, setNewUser] = useState({
-    username: '',
-    fullname: '',
-    email: '',
-    phone: '',
-    fk_user_profile_id: 9,
-    user_type: 'EMPLOYEE',
-    is_viewer: 'N',
-    is_manager: 'N',
-    timezone: 'UTC',
-    fk_client_id: 0,
-    fk_territorial_unit: 0,
-  });
+ 
 
   useEffect(() => {
     fetchUsers();
@@ -76,14 +71,14 @@ export default function UserManagement() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/user/getUserListByOwner', {
+      const response = await fetch('/api/team/user/list', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           o_id: 0,
-          userRequest: 0,
+          user_profile: 0,
         }),
       });
 
@@ -124,7 +119,7 @@ export default function UserManagement() {
     if (!confirm('Are you sure you want to delete this user?')) return;
 
     try {
-      await fetch(`/api/user/deleteUser`, {
+      await fetch(`/api/team/user/delete`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -137,59 +132,60 @@ export default function UserManagement() {
     }
   };
 
-  const handleAddUser = async () => {
+  const handleAddUser = async (formData: any) => {
     try {
-      const response = await fetch('/api/user/userDataAdd', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(newUser),
+      const response = await axios.post('/api/team/user/add', {
+        username: formData.username,
+        fullname: formData.fullname,
+        email: formData.email,
+        phone: formData.phone || '',
+        fk_client_id: 0,
+        profile: formData.fk_user_profile_id,
+        ownerTerritorialUnit: 0,
+        user_type: formData.user_type,
+        user_viewer: formData.is_viewer,
+        user_manager: formData.is_manager,
+        timezone: 'IST',
       });
 
-      const data = await response.json();
+      const data = await response.data;
       if (data.code === 1) {
+        toast.success('User created successfully');
         setShowAddModal(false);
-        setNewUser({
-          username: '',
-          fullname: '',
-          email: '',
-          phone: '',
-          fk_user_profile_id: 9,
-          user_type: 'EMPLOYEE',
-          is_viewer: 'N',
-          is_manager: 'N',
-          timezone: 'UTC',
-          fk_client_id: 0,
-          fk_territorial_unit: 0,
-        });
         fetchUsers();
+      } else {
+        toast.error(data.error || 'Failed to create user');
       }
     } catch (error) {
       console.error('Error adding user:', error);
+      toast.error('Error creating user');
     }
   };
 
-  const handleUpdateUser = async () => {
-    if (!selectedUser) return;
-
+  const handleUpdateUser = async (formData: any) => {
     try {
-      const response = await fetch('/api/user/userDataUpdate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(selectedUser),
+      const response = await axios.post('/api/team/user/update', {
+        data: JSON.stringify({
+          ...formData,
+          owner_id: session?.user.ownerId,
+          profile_id: formData.fk_user_profile_id,
+          user_viewer: formData.is_viewer,
+          user_manager: formData.is_manager,
+        }),
       });
 
-      const data = await response.json();
+      const data = await response.data;
       if (data.code === 1) {
+        toast.success('User updated successfully');
         setShowEditModal(false);
         setSelectedUser(null);
         fetchUsers();
+      } else {
+        toast.error(data.error || 'Failed to update user');
       }
     } catch (error) {
       console.error('Error updating user:', error);
+      toast.error('Error updating user');
     }
   };
 
@@ -202,14 +198,13 @@ export default function UserManagement() {
 
   return (
     <div className={`p-4 sm:p-6 lg:p-8 ${isDark ? 'bg-slate-900 text-white' : 'bg-gray-50 text-gray-900'}`}>
-      {/* Header */}
       <div className="mb-6 lg:mb-8 flex items-center justify-between">
         <div>
           <h1 className={`text-2xl sm:text-3xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-            User Management
+            Team Management
           </h1>
           <p className={`mt-1 text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-            Manage users and their roles across the system
+            Manage users and roles within your organization.
           </p>
         </div>
         <button
@@ -221,7 +216,6 @@ export default function UserManagement() {
         </button>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {[
           { label: 'Total Users', value: stats.total, color: 'blue' },
@@ -231,9 +225,8 @@ export default function UserManagement() {
         ].map((stat, idx) => (
           <div
             key={idx}
-            className={`${
-              isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'
-            } rounded-lg shadow-sm border p-4`}
+            className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'
+              } rounded-lg shadow-sm border p-4`}
           >
             <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{stat.label}</p>
             <p className={`text-2xl font-bold mt-1 text-${stat.color}-500`}>{stat.value}</p>
@@ -254,9 +247,8 @@ export default function UserManagement() {
               placeholder="Search by name, email, username..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                isDark ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-300 bg-white'
-              }`}
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${isDark ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-300 bg-white'
+                }`}
             />
           </div>
 
@@ -268,9 +260,8 @@ export default function UserManagement() {
             <select
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value)}
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                isDark ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-300 bg-white'
-              }`}
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${isDark ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-300 bg-white'
+                }`}
             >
               <option value="ALL">All Roles</option>
               {Object.entries(ROLE_MAPPING).map(([id, role]) => (
@@ -288,9 +279,8 @@ export default function UserManagement() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                isDark ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-300 bg-white'
-              }`}
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${isDark ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-300 bg-white'
+                }`}
             >
               <option value="ALL">All Status</option>
               <option value="ACTIVE">Active</option>
@@ -300,7 +290,6 @@ export default function UserManagement() {
         </div>
       </div>
 
-      {/* Table */}
       <div className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} rounded-lg shadow-sm border overflow-hidden`}>
         {loading ? (
           <div className="p-8 text-center">
@@ -315,9 +304,8 @@ export default function UserManagement() {
                   {['Name', 'Username', 'Email', 'Role', 'Type', 'Status', 'Permissions', 'Actions'].map((col) => (
                     <th
                       key={col}
-                      className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
-                        isDark ? 'text-gray-300' : 'text-gray-500'
-                      }`}
+                      className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gray-300' : 'text-gray-500'
+                        }`}
                     >
                       {col}
                     </th>
@@ -337,7 +325,7 @@ export default function UserManagement() {
                     <tr key={user.user_id} className={isDark ? 'hover:bg-slate-700' : 'hover:bg-gray-50'}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
+                          <div className="shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
                             <User size={20} className="text-blue-600" />
                           </div>
                           <div className="ml-4">
@@ -366,11 +354,10 @@ export default function UserManagement() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
-                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            user.active === 1
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800'
-                          }`}
+                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.active === 1
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-red-100 text-red-800'
+                            }`}
                         >
                           {user.active === 1 ? 'Active' : 'Inactive'}
                         </span>
@@ -393,18 +380,16 @@ export default function UserManagement() {
                         <div className="flex gap-2">
                           <button
                             onClick={() => handleEdit(user)}
-                            className={`p-2 rounded hover:bg-opacity-80 ${
-                              isDark ? 'text-blue-400 hover:bg-gray-700' : 'text-blue-600 hover:bg-blue-50'
-                            }`}
+                            className={`p-2 rounded hover:bg-opacity-80 ${isDark ? 'text-blue-400 hover:bg-gray-700' : 'text-blue-600 hover:bg-blue-50'
+                              }`}
                             title="Edit User"
                           >
                             <Edit size={18} />
                           </button>
                           <button
                             onClick={() => handleDelete(user.user_id)}
-                            className={`p-2 rounded hover:bg-opacity-80 ${
-                              isDark ? 'text-red-400 hover:bg-gray-700' : 'text-red-600 hover:bg-red-50'
-                            }`}
+                            className={`p-2 rounded hover:bg-opacity-80 ${isDark ? 'text-red-400 hover:bg-gray-700' : 'text-red-600 hover:bg-red-50'
+                              }`}
                             title="Delete User"
                           >
                             <Trash2 size={18} />
@@ -420,260 +405,28 @@ export default function UserManagement() {
         )}
       </div>
 
-      {/* Add User Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className={`${isDark ? 'bg-slate-800' : 'bg-white'} rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto`}>
-            <h2 className={`text-xl font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              Add New User
-            </h2>
-
-            <div className="space-y-4">
-              {[
-                { label: 'Username', key: 'username', type: 'text', required: true },
-                { label: 'Full Name', key: 'fullname', type: 'text', required: true },
-                { label: 'Email', key: 'email', type: 'email', required: true },
-                { label: 'Phone', key: 'phone', type: 'tel', required: false },
-              ].map((field) => (
-                <div key={field.key}>
-                  <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                    {field.label} {field.required && <span className="text-red-500">*</span>}
-                  </label>
-                  <input
-                    type={field.type}
-                    required={field.required}
-                    value={newUser[field.key as keyof typeof newUser] as string}
-                    onChange={(e) => setNewUser({ ...newUser, [field.key]: e.target.value })}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                      isDark ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-300 bg-white'
-                    }`}
-                  />
-                </div>
-              ))}
-
-              <div>
-                <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                  Role <span className="text-red-500">*</span>
-                </label>
-                <select
-                  value={newUser.fk_user_profile_id}
-                  onChange={(e) => setNewUser({ ...newUser, fk_user_profile_id: parseInt(e.target.value) })}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                    isDark ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-300 bg-white'
-                  }`}
-                >
-                  {ROLE_OPTIONS.map((role) => (
-                    <option key={role.value} value={role.value}>
-                      {role.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                  User Type <span className="text-red-500">*</span>
-                </label>
-                <select
-                  value={newUser.user_type}
-                  onChange={(e) => setNewUser({ ...newUser, user_type: e.target.value })}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                    isDark ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-300 bg-white'
-                  }`}
-                >
-                  <option value="EMPLOYEE">Employee</option>
-                  <option value="EXTERNAL">External</option>
-                </select>
-              </div>
-
-              <div>
-                <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                  Viewer Only
-                </label>
-                <select
-                  value={newUser.is_viewer}
-                  onChange={(e) => setNewUser({ ...newUser, is_viewer: e.target.value })}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                    isDark ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-300 bg-white'
-                  }`}
-                >
-                  <option value="N">Full Access</option>
-                  <option value="Y">Viewer</option>
-                </select>
-              </div>
-
-              <div>
-                <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                  Manager Role
-                </label>
-                <select
-                  value={newUser.is_manager}
-                  onChange={(e) => setNewUser({ ...newUser, is_manager: e.target.value })}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                    isDark ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-300 bg-white'
-                  }`}
-                >
-                  <option value="N">Not Manager</option>
-                  <option value="Y">Manager</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 mt-6">
-              <button
-                onClick={() => setShowAddModal(false)}
-                className={`px-4 py-2 rounded-lg border ${
-                  isDark ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAddUser}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              >
-                Add User
-              </button>
-            </div>
-          </div>
-        </div>
+        <UserFormModal
+          isOpen={showAddModal}
+          onClose={() => setShowAddModal(false)}
+          mode="add"
+          onSubmit={handleAddUser}
+          isDark={isDark}
+        />
       )}
 
-      {/* Edit User Modal */}
       {showEditModal && selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className={`${isDark ? 'bg-slate-800' : 'bg-white'} rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto`}>
-            <h2 className={`text-xl font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              Edit User
-            </h2>
-
-            <div className="space-y-4">
-              {[
-                { label: 'Username', key: 'username', type: 'text', required: true },
-                { label: 'Full Name', key: 'fullname', type: 'text', required: true },
-                { label: 'Email', key: 'email', type: 'email', required: true },
-              ].map((field) => (
-                <div key={field.key}>
-                  <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                    {field.label} {field.required && <span className="text-red-500">*</span>}
-                  </label>
-                  <input
-                    type={field.type}
-                    required={field.required}
-                    value={selectedUser[field.key as keyof UserData] as string}
-                    onChange={(e) => setSelectedUser({ ...selectedUser, [field.key]: e.target.value })}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                      isDark ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-300 bg-white'
-                    }`}
-                  />
-                </div>
-              ))}
-
-              <div>
-                <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                  Role <span className="text-red-500">*</span>
-                </label>
-                <select
-                  value={selectedUser.fk_user_profile_id}
-                  onChange={(e) => setSelectedUser({ ...selectedUser, fk_user_profile_id: parseInt(e.target.value) })}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                    isDark ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-300 bg-white'
-                  }`}
-                >
-                  {ROLE_OPTIONS.map((role) => (
-                    <option key={role.value} value={role.value}>
-                      {role.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                  User Type
-                </label>
-                <select
-                  value={selectedUser.user_type}
-                  onChange={(e) => setSelectedUser({ ...selectedUser, user_type: e.target.value })}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                    isDark ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-300 bg-white'
-                  }`}
-                >
-                  <option value="EMPLOYEE">Employee</option>
-                  <option value="EXTERNAL">External</option>
-                </select>
-              </div>
-
-              <div>
-                <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                  Status
-                </label>
-                <select
-                  value={selectedUser.active}
-                  onChange={(e) => setSelectedUser({ ...selectedUser, active: parseInt(e.target.value) })}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                    isDark ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-300 bg-white'
-                  }`}
-                >
-                  <option value={1}>Active</option>
-                  <option value={0}>Inactive</option>
-                </select>
-              </div>
-
-              <div>
-                <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                  Viewer Only
-                </label>
-                <select
-                  value={selectedUser.is_viewer}
-                  onChange={(e) => setSelectedUser({ ...selectedUser, is_viewer: e.target.value })}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                    isDark ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-300 bg-white'
-                  }`}
-                >
-                  <option value="N">Full Access</option>
-                  <option value="Y">Viewer</option>
-                </select>
-              </div>
-
-              <div>
-                <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                  Manager Role
-                </label>
-                <select
-                  value={selectedUser.is_manager}
-                  onChange={(e) => setSelectedUser({ ...selectedUser, is_manager: e.target.value })}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                    isDark ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-300 bg-white'
-                  }`}
-                >
-                  <option value="N">Not Manager</option>
-                  <option value="Y">Manager</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 mt-6">
-              <button
-                onClick={() => {
-                  setShowEditModal(false);
-                  setSelectedUser(null);
-                }}
-                className={`px-4 py-2 rounded-lg border ${
-                  isDark ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleUpdateUser}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              >
-                Update User
-              </button>
-            </div>
-          </div>
-        </div>
+        <UserFormModal
+          isOpen={showEditModal}
+          onClose={() => {
+            setShowEditModal(false);
+            setSelectedUser(null);
+          }}
+          mode="edit"
+          userData={selectedUser}
+          onSubmit={handleUpdateUser}
+          isDark={isDark}
+        />
       )}
     </div>
   );

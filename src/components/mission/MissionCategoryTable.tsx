@@ -20,13 +20,13 @@ export default function MissionCategoryTable({ data, onDelete, onEdit, isDark}: 
     setEditForm({ ...category });
   };
 
-  const handleSaveEdit = () => {
-    if (editForm) {
-      onEdit(editForm);
-      setEditingId(null);
-      setEditForm(null);
-    }
-  };
+const handleSaveEdit = () => {
+  if (editForm) {
+    onEdit(editForm); 
+    setEditingId(null);
+    setEditForm(null);
+  }
+};
 
   const handleCancelEdit = () => {
     setEditingId(null);

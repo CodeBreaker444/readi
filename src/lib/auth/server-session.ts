@@ -1,6 +1,8 @@
 'use server';
 
-import { createClient } from '../supabase/server';
+import { supabase } from '@/backend/database/database';
+import { verifyToken } from '@/lib/auth/jwt-utils';
+import { cookies } from 'next/headers';
 import { Role } from './roles';
 
 export interface SessionUser {
@@ -18,24 +20,27 @@ export interface SessionUser {
 
 export interface Session {
   user: SessionUser;
-  expires: string;
 }
  
 export async function getUserSession(): Promise<Session | null> {
   try {
-    const supabase = await createClient();
+    const cookieStore = await cookies();
+    const token = cookieStore.get('readi_auth_token')?.value;
 
-    const {
-      data: { user: supabaseUser },
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    if (userError || !supabaseUser) {
-      console.log('No authenticated user found');
+    if (!token) {
+      console.log('No auth token found');
       return null;
     }
 
-    // Fetch user data from users table
+    const payload = verifyToken(token);
+    
+    if (!payload || !payload.sub) {
+      console.log('Invalid token');
+      return null;
+    }
+
+    const userId = payload.sub;
+
     const { data: userData, error: userDataError } = await supabase
       .from('users')
       .select(`
@@ -50,7 +55,7 @@ export async function getUserSession(): Promise<Session | null> {
         auth_user_id,
         fk_owner_id
       `)
-      .eq('auth_user_id', supabaseUser.id)
+      .eq('user_id', userId)
       .eq('user_active', 'Y')
       .single();
 
@@ -70,10 +75,10 @@ export async function getUserSession(): Promise<Session | null> {
       .join(' ') || userData.username || userData.email;
 
     const sessionUser: SessionUser = {
-      id: supabaseUser.id,
+      id: userData.auth_user_id , 
       userId: userData.user_id,
       ownerId: userData.fk_owner_id, 
-      email: userData.email || supabaseUser.email || '',
+      email: userData.email,
       fullname,
       username: userData.username,
       role: userData.user_role as Role,
@@ -82,11 +87,8 @@ export async function getUserSession(): Promise<Session | null> {
       avatar: profileData?.profile_picture || null,
     };
 
-    console.log('Session created:', sessionUser);
-
     return {
       user: sessionUser,
-      expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
     };
   } catch (error) {
     console.error('Error getting server session:', error);
