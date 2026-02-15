@@ -1,12 +1,15 @@
 import { updateMissionType } from '@/backend/services/mission/missionType';
 import { getUserSession } from '@/lib/auth/server-session';
 import { NextRequest, NextResponse } from 'next/server';
+import z from 'zod';
+
 const updateMissionTypeSchema = z.object({
   mission_type_name: z.string().min(1, 'Mission type name is required'),
   mission_type_desc: z.string().optional(),
   mission_type_code: z.string().min(1, 'Mission type code is required'),
   mission_type_label: z.string().optional(),
 }); 
+
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -29,7 +32,7 @@ export async function PUT(
           code: 0, 
           status: 'ERROR', 
           message: 'Validation failed',
-          errors: validation.error.errors 
+          errors: validation.error 
         },
         { status: 400 }
       );

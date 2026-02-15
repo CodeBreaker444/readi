@@ -136,6 +136,8 @@ export interface MissionType {
 
 export interface MissionCategory {
   id: number;
+  code: string;
+  name: string;
   description: string;
 }
 
