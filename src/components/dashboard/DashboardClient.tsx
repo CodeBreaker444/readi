@@ -1,5 +1,4 @@
 'use client';
-import { DashboardRequestParams } from '@/config/types';
 import { Clock, Navigation, Plane, TrendingDown, TrendingUp, Users } from 'lucide-react';
 import { useEffect, useState } from "react";
 import { Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
@@ -10,7 +9,7 @@ interface DashboardClientProps {
     ownerId: number;
     userProfileCode: string;
     userId: number;
-     initialData?: DashboardRequestParams
+    initialData?: any;
 }
 
 interface StatData {
@@ -30,7 +29,7 @@ interface MissionData {
     status: 'Left' | 'Waiting' | 'Completed';
     completion: 'Completed' | 'Waiting';
 }
-export default function DashboardClient({ ownerId, userProfileCode, userId ,initialData }: DashboardClientProps) {
+export default function DashboardClient({ ownerId, userProfileCode, userId, initialData }: DashboardClientProps) {
     const { isDark } = useTheme();
     const [data, setData] = useState<any>(initialData || null);
     const [loading, setLoading] = useState(!initialData);
@@ -75,7 +74,7 @@ export default function DashboardClient({ ownerId, userProfileCode, userId ,init
     ];
 
     useEffect(() => {
-        if (initialData) return;  
+        if (initialData) return;
 
         async function fetchDashboard() {
             try {
@@ -125,7 +124,7 @@ export default function DashboardClient({ ownerId, userProfileCode, userId ,init
     }));
 
     const COLORS = ['#ef4444', '#10b981'];
-    
+
     if (loading) {
         return <DashboardSkeleton isDark={isDark} />;
     }

@@ -206,3 +206,12 @@ export interface PilotTotal {
   total_hours: number;
   total_distance: number;
 }
+
+export interface Mission {
+  id: number;
+  code: string;
+  name: string;
+  description?: string;
+  order?: number;
+  isFinalStatus?: boolean;
+}
