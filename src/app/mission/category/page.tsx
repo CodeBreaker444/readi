@@ -4,38 +4,109 @@ import MissionCategoryForm from '@/components/mission/MissionCategoryForm';
 import MissionCategoryTable from '@/components/mission/MissionCategoryTable';
 import { useTheme } from '@/components/useTheme';
 import { MissionCategory } from '@/config/types';
-import { useState } from 'react';
+import axios from 'axios';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
-const dummyMissionCategories: MissionCategory[] = [
-  { id: 1, description: 'Commercial Operations' },
-  { id: 2, description: 'Public Safety' },
-  { id: 3, description: 'Research & Development' },
-  { id: 4, description: 'Military Operations' },
-  { id: 5, description: 'Environmental Monitoring' },
-  { id: 6, description: 'Agricultural Surveys' },
-];
 
 export default function MissionCategoryPage() {
-  const { isDark } = useTheme()
-  const [categories, setCategories] = useState<MissionCategory[]>(dummyMissionCategories);
+  const { isDark } = useTheme();
+  const [categories, setCategories] = useState<MissionCategory[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleAddCategory = (newCategory: Omit<MissionCategory, 'id'>) => {
-    const newItem: MissionCategory = {
-      ...newCategory,
-      id: Math.max(...categories.map(c => c.id), 0) + 1,
-    };
-    setCategories([...categories, newItem]);
-  };
+const fetchCategories = async () => {
+  setLoading(true);
+  try {
+    const response = await axios.get(`/api/mission/category/list`);
+    
+    const result = response.data;
+    if (result.code === 1) {
+      setCategories(result.data.map((item: any) => ({
+        id: item.mission_category_id,
+        code: item.mission_category_code,
+        name: item.mission_category_name,
+        description: item.mission_category_desc
+      })));
+    }
+  } catch (error) {
+    console.error('Error fetching categories:', error);
+  } finally {
+    setLoading(false);
+  }
+};
+  useEffect(() => {
+    fetchCategories();
+  }, []);
 
-  const handleDeleteCategory = (id: number) => {
-    setCategories(categories.filter(cat => cat.id !== id));
-  };
+const handleAddCategory = async (newCategory: Omit<MissionCategory, 'id'>) => {
+  try {
+    const response = await axios.post(`/api/mission/category/add`, {
+      mission_category_code: newCategory.code,
+      mission_category_name: newCategory.name,
+      mission_category_desc: newCategory.description
+    });
+    
+    const result = response.data;
+    if (result.code === 1) {
+      const newCat: MissionCategory = {
+        id: result.data.category_id,
+        code: result.data.category_code,
+        name: result.data.category_name,
+        description: result.data.category_description
+      };
+      setCategories(prev => [...prev, newCat]);
+    } else {
+      toast.error(result.message || 'Failed to add category');
+    }
+  } catch (error: any) {
+    console.error('Error adding category:', error);
+    toast.error(error.response?.data?.message || 'Error adding category');
+  }
+};
 
-  const handleEditCategory = (updatedCategory: MissionCategory) => {
-    setCategories(categories.map(cat =>
-      cat.id === updatedCategory.id ? updatedCategory : cat
-    ));
-  };
+const handleDeleteCategory = async (id: number) => {
+  try {
+    const response = await axios.post(`/api/mission/category/${id}/delete`);
+    
+    const result = response.data;
+    if (result.code === 1) {
+      setCategories(prev => prev.filter(cat => cat.id !== id));
+      toast.success('Category deleted successfully');
+    } else {
+      toast.error(result.message || 'Failed to delete category');
+    }
+  } catch (error: any) {
+    console.error('Error deleting category:', error);
+    toast.error(error.response?.data?.message || 'Error deleting category');
+  }
+};
+
+const handleEditCategory = async (updatedCategory: MissionCategory) => {
+  try {
+    const response = await axios.post(
+      `/api/mission/category/${updatedCategory.id}/update`,
+      {
+        mission_category_code: updatedCategory.code,
+        mission_category_name: updatedCategory.name,
+        mission_category_desc: updatedCategory.description
+      }
+    );
+    
+    const result = response.data;
+    if (result.code === 1) {
+      setCategories(prev => 
+        prev.map(cat => 
+          cat.id === updatedCategory.id ? updatedCategory : cat
+        )
+      );
+    } else {
+      toast.error(result.message || 'Failed to update category');
+    }
+  } catch (error: any) {
+    console.error('Error updating category:', error);
+    toast.error(error.response?.data?.message || 'Error updating category');
+  }
+};
 
   return (
   <div className={`min-h-screen p-4 sm:p-6 lg:p-8 ${isDark ? 'bg-slate-900' : 'bg-gray-50'}`}>

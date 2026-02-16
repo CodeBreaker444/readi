@@ -4,38 +4,54 @@ import { getDefaultRoute } from '@/lib/auth/roles'
 import axios from 'axios'
 import { EyeIcon, EyeOffIcon, Loader2Icon } from 'lucide-react'
 import Image from 'next/image'
-import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import { CiLock, CiMail } from 'react-icons/ci'
+import { toast } from 'sonner'
 
 export default function LoginPage() {
   const router = useRouter()
-
+  const searchParams = useSearchParams()
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   })
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (searchParams.get('activated') === 'true') {
+      toast.success(`Account activated successfully!`)
+    }
+
+    const error = searchParams.get('error')
+    if (error === 'invalid_link') {
+      toast.error('Invalid activation link. Please contact administrator.')
+    } else if (error === 'activation_failed') {
+      toast.error('Activation failed. The link may have expired or already been used.')
+    } else if (error === 'activation_error') {
+      toast.error('An error occurred during activation. Please try again or contact administrator.')
+    }
+  }, [searchParams])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    setError(null)
 
     try {
-      const response = await axios.post('/api/auth/login', { 
-        email: formData.email, 
-        password: formData.password 
+      const response = await axios.post('/api/auth/login', {
+        email: formData.email,
+        password: formData.password
       })
-      
+
       const result = response.data
 
       if (!result.success) {
-        setError(result.error || 'Login failed')
+        toast.error(result.error || 'Login failed')
         return
       }
+
+      toast.success(result.message || 'Login successful!')
 
       if (result.redirect) {
         window.location.href = result.redirect
@@ -43,20 +59,16 @@ export default function LoginPage() {
       }
 
       if (result.data) {
-        // Small delay to ensure cookie is set
-        await new Promise(resolve => setTimeout(resolve, 100))
-        
         const defaultRoute = getDefaultRoute(result.data.role)
-        
         window.location.href = defaultRoute
       }
     } catch (err: any) {
       console.error('Login error:', err)
-      
+
       if (err.response?.data?.error) {
-        setError(err.response.data.error)
+        toast.error(err.response.data.error)
       } else {
-        setError(err.message || 'Login failed. Please try again.')
+        toast.error(err.message || 'Login failed. Please try again.')
       }
     } finally {
       setLoading(false)
@@ -101,12 +113,6 @@ export default function LoginPage() {
               Please login to continue to your account
             </p>
 
-            {error && (
-              <div className="mb-4 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-800">
-                {error}
-              </div>
-            )}
-
             <div className="flex flex-col gap-4">
               <div className="relative">
                 <CiMail className="absolute left-4 top-[35%] h-4 w-4 text-gray-400" />
@@ -118,6 +124,7 @@ export default function LoginPage() {
                   className="h-12 w-full rounded-lg border border-gray-300 bg-white pl-10 pr-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
                   value={formData.email}
                   onChange={handleChange}
+                  disabled={loading}
                 />
               </div>
 
@@ -131,11 +138,13 @@ export default function LoginPage() {
                   className="h-12 w-full rounded-lg border border-gray-300 bg-white pl-10 pr-12 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
                   value={formData.password}
                   onChange={handleChange}
+                  disabled={loading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  disabled={loading}
                 >
                   {showPassword ? (
                     <EyeOffIcon className="h-5 w-5" />

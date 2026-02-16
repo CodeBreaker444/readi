@@ -1,57 +1,89 @@
 'use client';
 
 import { MissionCategory } from '@/config/types';
-import { Plus } from 'lucide-react';
-import { FormEvent, useState } from 'react';
+import { useState } from 'react';
 
 interface MissionCategoryFormProps {
-  onSubmit: (data: Omit<MissionCategory, 'id'>) => void;
-  isDark: boolean
+  onSubmit: (category: Omit<MissionCategory, 'id'>) => void;
+  isDark: boolean;
 }
 
 export default function MissionCategoryForm({ onSubmit, isDark }: MissionCategoryFormProps) {
-  const [description, setDescription] = useState('');
+  const [formData, setFormData] = useState({
+    code: '',
+    name: '',
+    description: ''
+  });
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!description.trim()) {
-      alert('Please enter a description');
-      return;
-    }
-
-    onSubmit({ description });
-    setDescription('');
+    onSubmit(formData);
+    setFormData({ code: '', name: '', description: '' });
   };
 
   return (
-   <div className={`${isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'} rounded-xl border shadow-sm p-6 mb-6`}>
-  <h3 className={`text-lg font-semibold mb-4 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Add New Category</h3>
-  <form onSubmit={handleSubmit} className="flex gap-4 items-end">
-    <div className="flex-1">
-      <label htmlFor="mission_category_desc" className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-        Description
-      </label>
-      <input
-        className={`w-full px-4 py-2.5 rounded-lg transition-all focus:ring-2 focus:ring-blue-500 focus:border-transparent ${isDark ? 'bg-gray-800 border-gray-600 text-gray-100 placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'}`}
-        type="text"
-        id="mission_category_desc"
-        name="mission_category_desc"
-        placeholder="Enter category description"
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-        required
-      />
-    </div>
-    <button
-      type="submit"
-      className="inline-flex items-center gap-2 px-6 py-2.5 bg-linear-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:from-blue-600 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg font-medium"
-    >
-      <Plus size={20} />
-      Add Category
-    </button>
-  </form>
-</div>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>
+          Category Code <span className="text-red-500">*</span>
+        </label>
+        <input
+          type="text"
+          required
+          maxLength={50}
+          className={`w-full px-4 py-2.5 rounded-lg border outline-none transition-all ${isDark
+              ? 'bg-slate-900 border-slate-600 text-white focus:ring-blue-500'
+              : 'bg-white border-gray-300 text-gray-900 focus:ring-blue-500'
+            } focus:ring-2 focus:border-transparent`}
+          value={formData.code}
+          onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
+          placeholder="e.g., COMMERCIAL"
+        />
+      </div>
 
+      <div>
+        <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>
+          Category Name <span className="text-red-500">*</span>
+        </label>
+        <input
+          type="text"
+          required
+          maxLength={100}
+          className={`w-full px-4 py-2.5 rounded-lg border outline-none transition-all ${isDark
+              ? 'bg-slate-900 border-slate-600 text-white focus:ring-blue-500'
+              : 'bg-white border-gray-300 text-gray-900 focus:ring-blue-500'
+            } focus:ring-2 focus:border-transparent`}
+          value={formData.name}
+          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+          placeholder="e.g., Commercial"
+        />
+      </div>
+
+      <div>
+        <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>
+          Description
+        </label>
+        <textarea
+          rows={3}
+          className={`w-full px-4 py-2.5 rounded-lg border outline-none transition-all ${isDark
+              ? 'bg-slate-900 border-slate-600 text-white focus:ring-blue-500'
+              : 'bg-white border-gray-300 text-gray-900 focus:ring-blue-500'
+            } focus:ring-2 focus:border-transparent`}
+          value={formData.description}
+          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+          placeholder="e.g., Commercial client work"
+        />
+      </div>
+
+      <button
+        type="submit"
+        className={`w-full px-4 py-2.5 ${isDark
+          ? 'bg-slate-700 hover:bg-slate-600 text-white border border-slate-600'
+          : 'bg-gray-50 hover:bg-gray-200 text-gray-700 border border-gray-300'
+          } rounded-lg font-medium transition-colors`}
+      >
+        Add Category
+      </button>
+    </form>
   );
 }

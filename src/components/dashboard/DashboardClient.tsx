@@ -9,6 +9,7 @@ interface DashboardClientProps {
     ownerId: number;
     userProfileCode: string;
     userId: number;
+    initialData?: any;
 }
 
 interface StatData {
@@ -28,10 +29,10 @@ interface MissionData {
     status: 'Left' | 'Waiting' | 'Completed';
     completion: 'Completed' | 'Waiting';
 }
-export default function DashboardClient({ ownerId, userProfileCode, userId }: DashboardClientProps) {
+export default function DashboardClient({ ownerId, userProfileCode, userId, initialData }: DashboardClientProps) {
     const { isDark } = useTheme();
-    const [data, setData] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
+    const [data, setData] = useState<any>(initialData || null);
+    const [loading, setLoading] = useState(!initialData);
 
     const stats: StatData[] = [
         {
@@ -73,6 +74,8 @@ export default function DashboardClient({ ownerId, userProfileCode, userId }: Da
     ];
 
     useEffect(() => {
+        if (initialData) return;
+
         async function fetchDashboard() {
             try {
                 setLoading(true);
@@ -102,7 +105,7 @@ export default function DashboardClient({ ownerId, userProfileCode, userId }: Da
         }
 
         fetchDashboard();
-    }, [ownerId, userProfileCode]);
+    }, [ownerId, userProfileCode, initialData]);
 
     const missions: MissionData[] = (data?.readi_mission_scheduler_executed || []).map((mission: any) => ({
         id: `#${mission.mission_id}`,
@@ -121,7 +124,7 @@ export default function DashboardClient({ ownerId, userProfileCode, userId }: Da
     }));
 
     const COLORS = ['#ef4444', '#10b981'];
-    
+
     if (loading) {
         return <DashboardSkeleton isDark={isDark} />;
     }

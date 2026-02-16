@@ -1,11 +1,12 @@
 'use client'
 
-import { supabase } from '@/lib/supabase/client'
+import axios from 'axios'
 import { EyeIcon, EyeOffIcon, Loader2Icon } from 'lucide-react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { CiLock } from 'react-icons/ci'
+import { toast } from 'sonner'
 
 export default function ChangePasswordPage() {
   const router = useRouter()
@@ -18,32 +19,6 @@ export default function ChangePasswordPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [userId, setUserId] = useState<number | null>(null)
-
-  useEffect(() => {
-    // Get current user
-    const getCurrentUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      
-      if (!user) {
-        router.push('/auth/login')
-        return
-      }
-
-      // Get user_id from public.users
-      const { data: userData } = await supabase
-        .from('users')
-        .select('user_id')
-        .eq('auth_user_id', user.id)
-        .single()
-
-      if (userData) {
-        setUserId(userData.user_id)
-      }
-    }
-
-    getCurrentUser()
-  }, [router])
 
   const validatePassword = (password: string): string | null => {
     if (password.length < 8) {
@@ -79,46 +54,29 @@ export default function ChangePasswordPage() {
         throw new Error(passwordError)
       }
 
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: formData.newPassword
+      
+      const response = await axios.post('/api/auth/update-password', {
+        newPassword: formData.newPassword
       })
 
-      if (updateError) throw updateError
+      console.log('Password change response:', response.data)
 
-      if (!userId) {
-        throw new Error('User ID not found')
+      if (response.data && response.data.success) {
+        toast.success('Password changed successfully!')
+        setTimeout(() => {
+          window.location.href = '/auth/setup-2fa'
+        }, 500)
+      } else {
+        console.error('Response data:', response.data)
+        throw new Error(response.data?.error || 'Failed to change password')
       }
-
-      const { error: settingsError } = await supabase
-        .from('user_settings')
-        .upsert({
-          fk_user_id: userId,
-          setting_key: 'password_changed',
-          setting_value: 'true',
-          setting_type: 'boolean',
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'fk_user_id,setting_key'
-        })
-
-      if (settingsError) throw settingsError
-
-      await supabase
-        .from('user_settings')
-        .upsert({
-          fk_user_id: userId,
-          setting_key: 'mfa_setup_shown',
-          setting_value: 'false',
-          setting_type: 'boolean',
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'fk_user_id,setting_key'
-        })
-
-      router.push('/auth/setup-2fa')
     } catch (err: any) {
       console.error('Password change error:', err)
-      setError(err.message || 'Failed to change password. Please try again.')
+      console.error('Error response:', err.response?.data)
+      
+      const errorMessage = err.response?.data?.error || err.message || 'Failed to change password. Please try again.'
+      setError(errorMessage)
+      toast.error(errorMessage)
     } finally {
       setLoading(false)
     }
@@ -134,7 +92,6 @@ export default function ChangePasswordPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
-      {/* Background Image with Overlay */}
       <div className="absolute inset-0 z-0">
         <Image
           src="/readi_login.png"
@@ -146,9 +103,7 @@ export default function ChangePasswordPage() {
         <div className="absolute inset-0 bg-gray-900/50"></div>
       </div>
 
-      {/* Change Password Form */}
       <div className="relative z-10 w-full max-w-md px-4">
-        {/* Logo Section */}
         <div className="mb-8 flex flex-col items-center justify-center gap-4">
           <Image
             src="/logo-sm.png"
@@ -159,11 +114,10 @@ export default function ChangePasswordPage() {
           />
         </div>
 
-        {/* Form Card */}
         <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-2xl p-8">
           <form className="w-full" onSubmit={handleSubmit}>
             <h2 className="mb-2 text-2xl font-semibold text-gray-900 text-center">
-              Change Password
+              Update Password
             </h2>
             <p className="mb-7 text-center text-sm text-gray-600">
               Please create a new strong password for your account
@@ -176,7 +130,6 @@ export default function ChangePasswordPage() {
             )}
 
             <div className="flex flex-col gap-4">
-              {/* New Password Input */}
               <div className="relative">
                 <CiLock className="absolute left-4 top-[35%] h-4 w-4 text-gray-400" />
                 <input
@@ -184,7 +137,8 @@ export default function ChangePasswordPage() {
                   name="newPassword"
                   placeholder="New Password"
                   required
-                  className="h-12 w-full rounded-lg border border-gray-300 bg-white pl-10 pr-12 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                  disabled={loading}
+                  className="h-12 w-full rounded-lg border border-gray-300 bg-white pl-10 pr-12 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent disabled:opacity-50"
                   value={formData.newPassword}
                   onChange={handleChange}
                 />
@@ -192,6 +146,7 @@ export default function ChangePasswordPage() {
                   type="button"
                   onClick={() => setShowNewPassword(!showNewPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  disabled={loading}
                 >
                   {showNewPassword ? (
                     <EyeOffIcon className="h-5 w-5" />
@@ -201,7 +156,6 @@ export default function ChangePasswordPage() {
                 </button>
               </div>
 
-              {/* Confirm Password Input */}
               <div className="relative">
                 <CiLock className="absolute left-4 top-[35%] h-4 w-4 text-gray-400" />
                 <input
@@ -209,7 +163,8 @@ export default function ChangePasswordPage() {
                   name="confirmPassword"
                   placeholder="Confirm New Password"
                   required
-                  className="h-12 w-full rounded-lg border border-gray-300 bg-white pl-10 pr-12 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                  disabled={loading}
+                  className="h-12 w-full rounded-lg border border-gray-300 bg-white pl-10 pr-12 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent disabled:opacity-50"
                   value={formData.confirmPassword}
                   onChange={handleChange}
                 />
@@ -217,6 +172,7 @@ export default function ChangePasswordPage() {
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  disabled={loading}
                 >
                   {showConfirmPassword ? (
                     <EyeOffIcon className="h-5 w-5" />
@@ -226,7 +182,6 @@ export default function ChangePasswordPage() {
                 </button>
               </div>
 
-              {/* Password Requirements */}
               <div className="text-xs text-gray-600 space-y-1">
                 <p className="font-medium">Password must contain:</p>
                 <ul className="list-disc list-inside space-y-0.5 ml-2">
@@ -238,7 +193,6 @@ export default function ChangePasswordPage() {
                 </ul>
               </div>
 
-              {/* Submit Button */}
               <button
                 type="submit"
                 disabled={loading}

@@ -43,7 +43,7 @@ export async function updateSession(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname
 
-  const publicRoutes = ['/auth/login']
+  const publicRoutes = ['/auth/login', '/auth/activate','/auth/update-password', '/auth/setup-2fa', '/auth/verify-mfa']
   const authFlowRoutes = [
     '/auth/change-password',
     '/auth/setup-2fa',
@@ -52,8 +52,6 @@ export async function updateSession(request: NextRequest) {
 
   const isPublicRoute = publicRoutes.includes(pathname)
   const isAuthFlowRoute = authFlowRoutes.includes(pathname)
-
-
 
   if (pathname === '/') {
     if (user) {
@@ -67,7 +65,7 @@ export async function updateSession(request: NextRequest) {
       return response
     }
 
-    if (pathname == '/dashboard' || isAuthFlowRoute) {
+    if (pathname == '/dashboard' ) {
       return NextResponse.redirect(new URL('/auth/login', request.url))
     }
 
@@ -75,7 +73,6 @@ export async function updateSession(request: NextRequest) {
   }
   try {
 
-    //session refresh before checking user
     const {
       data: { session },
     } = await supabase.auth.getSession()
@@ -83,7 +80,6 @@ export async function updateSession(request: NextRequest) {
     if (!user && session) {
       const { data: { session: refreshedSession } } = await supabase.auth.refreshSession()
       if (refreshedSession) {
-        // Session was refreshed, get user again
         const { data: { user: refreshedUser } } = await supabase.auth.getUser()
         if (!refreshedUser) {
           return NextResponse.redirect(new URL('/auth/login', request.url))
@@ -177,6 +173,6 @@ export async function middleware(request: NextRequest) {
 export const config = {
   runtime: 'nodejs',
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+     '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }

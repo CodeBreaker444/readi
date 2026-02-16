@@ -1,4 +1,4 @@
-import { getUserProfile, updateUserProfile } from '@/backend/services/user/userProfile';
+import { getUserProfile, updateUserProfile } from '@/backend/services/user/user-profile';
 import { getUserSession } from '@/lib/auth/server-session';
 import { NextRequest, NextResponse } from 'next/server';
 

@@ -128,13 +128,16 @@ export type SectorType = 'EVALUATION' | 'PLANNING' | 'MISSION';
 
 export interface MissionType {
   id: number;
-  description: string;
+  name: string;
   code: string;
+  description: string;
   label: string;
 }
 
 export interface MissionCategory {
   id: number;
+  code: string;
+  name: string;
   description: string;
 }
 
@@ -202,4 +205,87 @@ export interface PilotTotal {
   total_missions: number;
   total_hours: number;
   total_distance: number;
+}
+
+export interface Mission {
+  id: number;
+  code: string;
+  name: string;
+  description?: string;
+  order?: number;
+  isFinalStatus?: boolean;
+}
+
+export interface MissionResult {
+  id: number;
+  code: string;
+  description: string;
+}
+export interface Tool {
+  id: number;
+  ownerId: number;
+  clientId?: number;
+  modelId?: number;
+  statusId?: number;
+  typeId?: number;
+  code: string;
+  serialNumber: string;
+  type: string;
+  description: string;
+  status: 'OPERATIONAL' | 'NOT_OPERATIONAL' | 'MAINTENANCE' | 'DECOMMISSIONED';
+  active: string;
+  activationDate: string;
+  latitude?: number;
+  longitude?: number;
+  streamingType?: string;
+  streamingUrl?: string;
+  ccPlatform?: string;
+  gcsType?: string;
+  vendor?: string;
+  guaranteeDays?: number;
+  purchaseDate?: string;
+  totalMissions?: number;
+  totalFlownTime?: number;
+  totalFlownMeters?: number;
+  clientName?: string;
+  factoryType?: string;
+  factorySerie?: string;
+  factoryModel?: string;
+  maintenanceLogbook?: string;
+}
+
+export interface ToolModel {
+  id: number;
+  toolTypeId: number;
+  code: string;
+  name: string;
+  manufacturer: string;
+  serie: string;
+  model: string;
+  description?: string;
+  specifications?: any;
+  active: string;
+}
+
+export interface ToolComponent {
+  id: number;
+  toolId: number;
+  modelId?: number;
+  type: string;
+  serialNumber: string;
+  status: string;
+  activationDate?: string;
+  purchaseDate?: string;
+  vendor?: string;
+  guaranteeDays?: number;
+  cycles?: number;
+  totalCycles?: number;
+  factorySerie?: string;
+  factoryModel?: string;
+}
+
+export interface Client {
+  id: number;
+  name: string;
+  code: string;
 }

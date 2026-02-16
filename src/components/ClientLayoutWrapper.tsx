@@ -1,8 +1,8 @@
 'use client';
 
-import { SessionUser } from '@/lib/auth/server-session';
+import { Session, SessionUser } from '@/lib/auth/server-session';
 import { usePathname } from 'next/navigation';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Role } from '../lib/auth/roles';
 import MobileSidebar from './MobileSidebar';
 import Sidebar from './Sidebar';
@@ -11,15 +11,28 @@ import { useTheme } from './useTheme';
 
 interface ClientLayoutWrapperProps {
   children: React.ReactNode;
-  role: Role | null;
-  userData:SessionUser | null;
+  sessionPromise: Promise<Session | null>;
 }
 
-const ClientLayoutWrapper: React.FC<ClientLayoutWrapperProps> = ({ children, role, userData }) => {
+const ClientLayoutWrapper: React.FC<ClientLayoutWrapperProps> = ({ 
+  children, 
+  sessionPromise 
+}) => {
   const pathname = usePathname();
   const isAuthPage = pathname?.startsWith('/auth');
   const { isDark, toggleTheme } = useTheme();
-   console.log('role:',role);
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    sessionPromise.then((sess) => {
+      setSession(sess);
+      setLoading(false);
+    });
+  }, [sessionPromise]);
+
+  const role: Role | null = session?.user?.role ?? null;
+  const userData: SessionUser | null = session?.user ?? null;
 
   if (isAuthPage) {
     return <>{children}</>;

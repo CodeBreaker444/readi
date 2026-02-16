@@ -121,7 +121,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, isDark, us
         <div className={`flex items-center justify-between p-6 border-b ${isDark ? 'border-slate-700' : 'border-gray-200'
           }`}>
           <h2 className={`text-xl font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>
-            User Profile: Pilot Test 03
+            User Profile: {userData?.fullname || userData?.username || 'Unknown User'}
           </h2>
           <button
             onClick={onClose}
@@ -356,15 +356,15 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, isDark, us
               <div className={`rounded-lg overflow-hidden ${isDark ? 'bg-slate-700' : 'bg-gray-50'}`}>
                 <div className={`flex items-center justify-between p-4 border-b ${isDark ? 'border-slate-600' : 'border-gray-200'}`}>
                   <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>
-                    Last Activities
+                    Last Activities ( coming soon )
                   </h3>
-                  <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+                  {/* <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors">
                     View All
-                  </button>
+                  </button> */}
                 </div>
 
                 <div className="overflow-x-auto">
-                  <table className="w-full">
+                  {/* <table className="w-full">
                     <thead>
                       <tr className={`${isDark ? 'bg-slate-600' : 'bg-gray-100'}`}>
                         <th className={`px-4 py-3 text-left text-sm font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
@@ -434,7 +434,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, isDark, us
                         </td>
                       </tr>
                     </tbody>
-                  </table>
+                  </table> */}
                 </div>
               </div>
             </div>
