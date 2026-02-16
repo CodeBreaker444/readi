@@ -11,7 +11,7 @@ const updateMissionCategorySchema = z.object({
 
 export async function POST(
     request: NextRequest,
-    { params }: { params: { categoryId: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const session = await getUserSession();
@@ -38,8 +38,8 @@ export async function POST(
         }
 
         const ownerId = session.user.ownerId;
-        const { categoryId } = await params;
-        const result = await updateMissionCategory(ownerId, Number(categoryId), {
+        const { id } = await params;
+        const result = await updateMissionCategory(ownerId, Number(id), {
             code: validation.data.mission_category_code,
             name: validation.data.mission_category_name,
             description: validation.data.mission_category_desc

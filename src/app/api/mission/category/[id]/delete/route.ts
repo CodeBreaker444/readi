@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { categoryId: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getUserSession();
@@ -15,9 +15,9 @@ export async function POST(
       );
     }
     const ownerId = session.user.ownerId;
-    const { categoryId } = await params;
+    const { id } = await params;
     
-    const result = await deleteMissionCategory(ownerId, Number(categoryId));
+    const result = await deleteMissionCategory(ownerId, Number(id));
     
     return NextResponse.json(result);
   } catch (error: any) {
