@@ -1,4 +1,3 @@
-// src/components/system/drone-tool/columns.tsx
 import { Button } from '@/components/ui/button';
 import { ColumnDef } from '@tanstack/react-table';
 

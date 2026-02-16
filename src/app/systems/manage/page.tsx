@@ -9,6 +9,7 @@ import ViewToolModal from '@/components/system/ViewToolModal';
 import { systemCreateColumns } from '@/components/tables/systemColumn';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import axios from 'axios';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -21,10 +22,14 @@ export default function DroneToolPage() {
   const [showViewTool, setShowViewTool] = useState<boolean>(false);
   const [showUpdateStatus, setShowUpdateStatus] = useState(false);
   const [selectedToolId, setSelectedToolId] = useState<number | null>(null);
-
+  const [models, setModels] = useState([]);
+  const [clients, setClients] = useState([]);
+  const [tools, setTools] = useState([]);
 
   useEffect(() => {
     fetchToolData();
+    fetchModels();
+    fetchClients();
   }, []);
 
   const fetchToolData = async () => {
@@ -33,15 +38,13 @@ export default function DroneToolPage() {
       const response = await fetch('/api/system/tool/list', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          active: 'ALL',
-          status: 'ALL',
-        }),
+        body: JSON.stringify({ active: 'ALL', status: 'ALL' }),
       });
 
       const result = await response.json();
       if (result.code === 1) {
         setToolData(result.data);
+        setTools(result.data);
       } else {
         toast.error(result.message || 'Failed to fetch tool data');
       }
@@ -50,6 +53,29 @@ export default function DroneToolPage() {
       console.error(error);
     } finally {
       setLoading(false);
+    }
+  };
+  const fetchModels = async () => {
+    try {
+      const response = await fetch('/api/system/tool/model/list', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      const result = await response.json();
+      if (result.code === 1) setModels(result.data);
+    } catch (error) {
+      console.error('Error fetching models:', error);
+    }
+  };
+
+
+  const fetchClients = async () => {
+    try {
+      const response = await axios.get('/api/client/list');
+      if (response.data?.clients) setClients(response.data.clients);
+    } catch (error) {
+      console.error('Error fetching clients:', error);
     }
   };
 
@@ -83,7 +109,7 @@ export default function DroneToolPage() {
     }
   };
 
-    const columns = useMemo(
+  const columns = useMemo(
     () => systemCreateColumns({
       onView: handleView,
       onUpdateStatus: handleUpdateStatus,
@@ -120,10 +146,9 @@ export default function DroneToolPage() {
         <AddToolModal
           open={showAddTool}
           onClose={() => setShowAddTool(false)}
-          onSuccess={() => {
-            setShowAddTool(false);
-            fetchToolData();
-          }}
+          onSuccess={() => { setShowAddTool(false); fetchToolData(); }}
+          models={models}
+          clients={clients}
         />
       )}
 
@@ -131,7 +156,7 @@ export default function DroneToolPage() {
         <AddModelModal
           open={showAddModel}
           onClose={() => setShowAddModel(false)}
-          onSuccess={() => setShowAddModel(false)}
+          onSuccess={() => { setShowAddModel(false); fetchModels(); }}
         />
       )}
 
@@ -140,6 +165,9 @@ export default function DroneToolPage() {
           open={showAddComponent}
           onClose={() => setShowAddComponent(false)}
           onSuccess={() => setShowAddComponent(false)}
+          tools={tools}
+          models={models}
+          clients={clients}
         />
       )}
 

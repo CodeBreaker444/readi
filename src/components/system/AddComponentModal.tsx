@@ -14,13 +14,13 @@ interface AddComponentModalProps {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  tools: any[];
+  models: any[];
+  clients: any[];
 }
 
-export default function AddComponentModal({ open, onClose, onSuccess }: AddComponentModalProps) {
+export default function AddComponentModal({ open, onClose, onSuccess, tools, models, clients }: AddComponentModalProps) {
   const [loading, setLoading] = useState(false);
-  const [tools, setTools] = useState([]);
-  const [clients, setClients] = useState([]);
-  const [models, setModels] = useState([]);
   const [formData, setFormData] = useState({
     fk_tool_id: '',
     component_type: '',
@@ -36,51 +36,22 @@ export default function AddComponentModal({ open, onClose, onSuccess }: AddCompo
 
   useEffect(() => {
     if (open) {
-      fetchTools();
-      fetchClients();
-      fetchModels();
+      setFormData({
+        fk_tool_id: '',
+        component_type: '',
+        fk_tool_model_id: '',
+        component_sn: '',
+        component_activation_date: '',
+        component_purchase_date: '',
+        component_vendor: '',
+        component_guarantee_day: '',
+        component_status: 'OPERATIONAL',
+        fk_client_id: '',
+      });
     }
   }, [open]);
 
-  const fetchClients = async () => {
-    try {
-      const response = await axios.get('/api/client/list');
-      if (response.data?.clients) {
-        setClients(response.data.clients);
-      }
-    } catch (error) {
-      console.error('Error fetching clients:', error);
-    }
-  };
 
-  const fetchModels = async () => {
-    try {
-      const response = await fetch('/api/system/tool/model/list', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
-      });
-      const result = await response.json();
-      if (result.code === 1) setModels(result.data);
-    } catch (error) {
-      console.error('Error fetching models:', error);
-    }
-  };
-
-  const fetchTools = async () => {
-    try {
-      const response = await axios.post('/api/system/tool/list', {
-        data: { active: 'Y' },
-      });
-
-      const result = await response.data;
-      if (result.code === 1) {
-        setTools(result.data);
-      }
-    } catch (error) {
-      console.error('Error fetching tools:', error);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
