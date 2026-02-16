@@ -4,13 +4,12 @@ import { getDefaultRoute } from '@/lib/auth/roles'
 import axios from 'axios'
 import { EyeIcon, EyeOffIcon, Loader2Icon } from 'lucide-react'
 import Image from 'next/image'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { CiLock, CiMail } from 'react-icons/ci'
 import { toast } from 'sonner'
 
 export function LoginForm() {
-  const router = useRouter()
   const searchParams = useSearchParams()
   const [formData, setFormData] = useState({
     email: '',

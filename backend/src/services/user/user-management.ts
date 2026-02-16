@@ -33,7 +33,7 @@ export interface UserUpdateData {
   user_signature?: string;
 }
 
-export async function getUserListByOwner(ownerId: number, userProfileId: number) {
+export async function getUserListByOwner(ownerId: number, userProfileId: number, currentUserId: number) {
   try {
     let query = supabase
       .from('users')
@@ -45,19 +45,20 @@ export async function getUserListByOwner(ownerId: number, userProfileId: number)
         last_name,
         phone,
         user_active,
-        user_type,
+        user_role,
+        user_unique_code,
         is_viewer,
         is_manager,
         fk_owner_id,
         fk_client_id,
         fk_territorial_unit,
         fk_user_profile_id,
-        users_profile!inner (
+        users_profile (
           fk_user_id,
           profile_picture,
           user_signature
         ),
-        owner!inner (
+        owner (
           owner_code,
           owner_name
         ),
@@ -72,9 +73,7 @@ export async function getUserListByOwner(ownerId: number, userProfileId: number)
       query = query.eq('fk_owner_id', ownerId);
     }
 
-    // if (userProfileId > 0) {
-    //   query = query.eq('fk_user_profile_id', userProfileId);
-    // }
+    query = query.neq('user_id', currentUserId);
 
     const { data, error } = await query;
 
@@ -83,12 +82,12 @@ export async function getUserListByOwner(ownerId: number, userProfileId: number)
     const formattedData = data.map((user: any) => ({
       user_id: user.user_id,
       username: user.username,
-      fullname: `${user.first_name} ${user.last_name}`.trim(),
+      fullname: `${user.first_name} ${user.last_name}`.trim() || user.username,
       email: user.email,
-      user_profile: getRoleLabel(user.fk_user_profile_id),
+      user_role: user.user_role || 'Unknown',
+      user_unique_code: user.user_unique_code || '',
       fk_user_profile_id: user.fk_user_profile_id,
       active: user.user_active === 'Y' ? 1 : 0,
-      user_type: user.user_type,
       is_viewer: user.is_viewer,
       is_manager: user.is_manager,
       fk_territorial_unit: user.fk_territorial_unit,
@@ -111,7 +110,6 @@ export async function getUserListByOwner(ownerId: number, userProfileId: number)
     throw new Error('Failed to fetch user list');
   }
 }
-
 export async function createUser(userData: UserCreateData) {
   try {
     const uid = generateUniqueCode();

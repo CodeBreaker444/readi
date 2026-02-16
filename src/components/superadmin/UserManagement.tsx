@@ -13,45 +13,17 @@ interface UserData {
   username: string;
   fullname: string;
   email: string;
-  user_profile: string;
-  fk_user_profile_id: number;
   active: number;
-  user_type: string;
+  user_role: string;
+  user_unique_code: string;
   is_viewer: string;
   is_manager: string;
-  fk_territorial_unit?: number;
-  terr_unit_code?: string;
-  owner_code?: string;
-  owner_name?: string;
 }
-
-const ROLE_MAPPING: Record<number, string> = {
-  8: 'PIC',
-  9: 'OPM',
-  10: 'SM',
-  11: 'AM',
-  12: 'CMM',
-  13: 'RM',
-  14: 'TM',
-  15: 'DC',
-  16: 'SLA',
-};
-
-const ROLE_OPTIONS = [
-  { value: 8, label: 'Pilot in Command (PIC)' },
-  { value: 9, label: 'Operation Manager (OPM)' },
-  { value: 10, label: 'Safety Manager (SM)' },
-  { value: 11, label: 'Accountable Manager (AM)' },
-  { value: 12, label: 'Compliance Monitoring Manager (CMM)' },
-  { value: 13, label: 'Responsabile Manutenzione (RM)' },
-  { value: 14, label: 'Training Manager (TM)' },
-  { value: 15, label: 'Data Controller (DC)' },
-  { value: 16, label: 'SLA Manager (SLA)' },
-];
 
 interface UserManagementProps {
   session: Session;
 }
+
 export default function UserManagement({ session }: UserManagementProps) {
   const { isDark } = useTheme();
   const [users, setUsers] = useState<UserData[]>([]);
@@ -62,7 +34,6 @@ export default function UserManagement({ session }: UserManagementProps) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
- 
 
   useEffect(() => {
     fetchUsers();
@@ -73,13 +44,8 @@ export default function UserManagement({ session }: UserManagementProps) {
       setLoading(true);
       const response = await fetch('/api/team/user/list', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          o_id: 0,
-          user_profile: 0,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
       });
 
       const data = await response.json();
@@ -100,7 +66,7 @@ export default function UserManagement({ session }: UserManagementProps) {
       user.username?.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesRole =
-      roleFilter === 'ALL' || ROLE_MAPPING[user.fk_user_profile_id] === roleFilter;
+      roleFilter === 'ALL' || user.user_role === roleFilter;
 
     const matchesStatus =
       statusFilter === 'ALL' ||
@@ -116,13 +82,10 @@ export default function UserManagement({ session }: UserManagementProps) {
   };
 
   const handleDelete = async (userId: number) => {
-
     try {
-      await fetch(`/api/team/user/delete`, {
+      await fetch('/api/team/user/delete', {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: userId }),
       });
       fetchUsers();
@@ -188,6 +151,9 @@ export default function UserManagement({ session }: UserManagementProps) {
     }
   };
 
+  // Get unique roles from fetched users for the filter dropdown
+  const uniqueRoles = [...new Set(users.map((u) => u.user_role))].filter(Boolean);
+
   const stats = {
     total: users.length,
     active: users.filter((u) => u.active === 1).length,
@@ -224,8 +190,7 @@ export default function UserManagement({ session }: UserManagementProps) {
         ].map((stat, idx) => (
           <div
             key={idx}
-            className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'
-              } rounded-lg shadow-sm border p-4`}
+            className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} rounded-lg shadow-sm border p-4`}
           >
             <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{stat.label}</p>
             <p className={`text-2xl font-bold mt-1 text-${stat.color}-500`}>{stat.value}</p>
@@ -246,8 +211,7 @@ export default function UserManagement({ session }: UserManagementProps) {
               placeholder="Search by name, email, username..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${isDark ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-300 bg-white'
-                }`}
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${isDark ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-300 bg-white'}`}
             />
           </div>
 
@@ -259,12 +223,11 @@ export default function UserManagement({ session }: UserManagementProps) {
             <select
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value)}
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${isDark ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-300 bg-white'
-                }`}
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${isDark ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-300 bg-white'}`}
             >
               <option value="ALL">All Roles</option>
-              {Object.entries(ROLE_MAPPING).map(([id, role]) => (
-                <option key={id} value={role}>
+              {uniqueRoles.map((role) => (
+                <option key={role} value={role}>
                   {role}
                 </option>
               ))}
@@ -278,8 +241,7 @@ export default function UserManagement({ session }: UserManagementProps) {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${isDark ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-300 bg-white'
-                }`}
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${isDark ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-300 bg-white'}`}
             >
               <option value="ALL">All Status</option>
               <option value="ACTIVE">Active</option>
@@ -300,11 +262,10 @@ export default function UserManagement({ session }: UserManagementProps) {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className={isDark ? 'bg-slate-700' : 'bg-gray-50'}>
                 <tr>
-                  {['Name', 'Username', 'Email', 'Role', 'Type', 'Status', 'Permissions', 'Actions'].map((col) => (
+                  {['Name', 'Username', 'Email', 'Role', 'User Code', 'Status', 'Permissions', 'Actions'].map((col) => (
                     <th
                       key={col}
-                      className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gray-300' : 'text-gray-500'
-                        }`}
+                      className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gray-300' : 'text-gray-500'}`}
                     >
                       {col}
                     </th>
@@ -345,18 +306,15 @@ export default function UserManagement({ session }: UserManagementProps) {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                          {ROLE_MAPPING[user.fk_user_profile_id] || 'Unknown'}
+                          {user.user_role}
                         </span>
                       </td>
                       <td className={`px-6 py-4 whitespace-nowrap text-sm ${isDark ? 'text-gray-300' : 'text-gray-500'}`}>
-                        {user.user_type}
+                        {user.user_unique_code}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
-                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.active === 1
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-red-100 text-red-800'
-                            }`}
+                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.active === 1 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
                         >
                           {user.active === 1 ? 'Active' : 'Inactive'}
                         </span>
@@ -379,16 +337,14 @@ export default function UserManagement({ session }: UserManagementProps) {
                         <div className="flex gap-2">
                           <button
                             onClick={() => handleEdit(user)}
-                            className={`p-2 rounded hover:bg-opacity-80 ${isDark ? 'text-blue-400 hover:bg-gray-700' : 'text-blue-600 hover:bg-blue-50'
-                              }`}
+                            className={`p-2 rounded hover:bg-opacity-80 ${isDark ? 'text-blue-400 hover:bg-gray-700' : 'text-blue-600 hover:bg-blue-50'}`}
                             title="Edit User"
                           >
                             <Edit size={18} />
                           </button>
                           <button
                             onClick={() => handleDelete(user.user_id)}
-                            className={`p-2 rounded hover:bg-opacity-80 ${isDark ? 'text-red-400 hover:bg-gray-700' : 'text-red-600 hover:bg-red-50'
-                              }`}
+                            className={`p-2 rounded hover:bg-opacity-80 ${isDark ? 'text-red-400 hover:bg-gray-700' : 'text-red-600 hover:bg-red-50'}`}
                             title="Delete User"
                           >
                             <Trash2 size={18} />
