@@ -6,11 +6,11 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getUserSession();
     
-    if (!session?.user) {
+    if (!session?.user || session.user.role!=='ADMIN') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const ownerId = session.user.ownerId;
+     const ownerId = session.user.ownerId;
     const result = await getClientsList(ownerId);
 
 

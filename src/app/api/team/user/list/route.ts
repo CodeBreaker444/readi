@@ -11,10 +11,11 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const ownerId =  session.user.ownerId  
-    const userProfileId = body.user_profile
+    const ownerId = session.user.ownerId;
+    const currentUserId = session.user.userId;
+    const userProfileId = body.user_profile;
 
-    const result = await getUserListByOwner(ownerId, userProfileId);
+    const result = await getUserListByOwner(ownerId, userProfileId, currentUserId);
 
     return NextResponse.json({
       code: 1,
@@ -22,16 +23,12 @@ export async function POST(request: NextRequest) {
       message: 'success',
       dataRows: result.count,
       data: result.data,
-      param: [{ owner_id: ownerId, user_profile_id: userProfileId }],
+      param: [{ owner_id: ownerId }],
     });
   } catch (error) {
     console.error('API Error:', error);
     return NextResponse.json(
-      { 
-        code: 0,
-        status: 'ERROR',
-        error: error instanceof Error ? error.message : 'Internal server error' 
-      },
+      { code: 0, status: 'ERROR', error: error instanceof Error ? error.message : 'Internal server error' },
       { status: 500 }
     );
   }
