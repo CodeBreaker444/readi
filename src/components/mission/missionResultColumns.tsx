@@ -50,9 +50,7 @@ export const createMissionResultColumns = (
         <button
           className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-500 hover:bg-rose-600 text-white rounded-lg text-sm font-medium transition-colors"
           onClick={() => {
-            if (confirm('Are you sure you want to delete this mission result?')) {
               onDelete(row.original.id);
-            }
           }}
         >
           <Trash2 size={16} /> Delete

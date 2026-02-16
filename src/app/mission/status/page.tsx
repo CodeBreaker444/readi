@@ -126,7 +126,7 @@ export default function MissionStatusPage() {
  
 
   return (
-    <div className={`min-h-screen ${isDark ? 'bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800' : 'bg-white'}`}>
+    <div className={`min-h-screen ${isDark ? 'bg-linear-to-br from-gray-900 via-gray-900 to-gray-800' : 'bg-white'}`}>
       <div className="w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <div className="mb-6 sm:mb-10 flex items-center justify-between">
           <div>

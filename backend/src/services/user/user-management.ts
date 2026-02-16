@@ -72,9 +72,9 @@ export async function getUserListByOwner(ownerId: number, userProfileId: number)
       query = query.eq('fk_owner_id', ownerId);
     }
 
-    if (userProfileId > 0) {
-      query = query.eq('fk_user_profile_id', userProfileId);
-    }
+    // if (userProfileId > 0) {
+    //   query = query.eq('fk_user_profile_id', userProfileId);
+    // }
 
     const { data, error } = await query;
 

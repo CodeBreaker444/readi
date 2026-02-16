@@ -10,7 +10,7 @@ export default function MissionStatusSkeleton({ isDark }: MissionStatusSkeletonP
         <div className="w-full animate-pulse">
           <div className={`overflow-x-auto rounded-xl border shadow-sm ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
             <table className="w-full">
-              <thead className={isDark ? 'bg-slate-700' : 'bg-gradient-to-r from-blue-50 to-indigo-50'}>
+              <thead className={isDark ? 'bg-slate-700' : 'bg-linear-to-r from-blue-50 to-indigo-50'}>
                 <tr>
                   {[1, 2, 3, 4, 5, 6, 7].map((i) => (
                     <th key={i} className="px-6 py-4">

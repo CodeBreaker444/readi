@@ -221,3 +221,71 @@ export interface MissionResult {
   code: string;
   description: string;
 }
+export interface Tool {
+  id: number;
+  ownerId: number;
+  clientId?: number;
+  modelId?: number;
+  statusId?: number;
+  typeId?: number;
+  code: string;
+  serialNumber: string;
+  type: string;
+  description: string;
+  status: 'OPERATIONAL' | 'NOT_OPERATIONAL' | 'MAINTENANCE' | 'DECOMMISSIONED';
+  active: string;
+  activationDate: string;
+  latitude?: number;
+  longitude?: number;
+  streamingType?: string;
+  streamingUrl?: string;
+  ccPlatform?: string;
+  gcsType?: string;
+  vendor?: string;
+  guaranteeDays?: number;
+  purchaseDate?: string;
+  totalMissions?: number;
+  totalFlownTime?: number;
+  totalFlownMeters?: number;
+  clientName?: string;
+  factoryType?: string;
+  factorySerie?: string;
+  factoryModel?: string;
+  maintenanceLogbook?: string;
+}
+
+export interface ToolModel {
+  id: number;
+  toolTypeId: number;
+  code: string;
+  name: string;
+  manufacturer: string;
+  serie: string;
+  model: string;
+  description?: string;
+  specifications?: any;
+  active: string;
+}
+
+export interface ToolComponent {
+  id: number;
+  toolId: number;
+  modelId?: number;
+  type: string;
+  serialNumber: string;
+  status: string;
+  activationDate?: string;
+  purchaseDate?: string;
+  vendor?: string;
+  guaranteeDays?: number;
+  cycles?: number;
+  totalCycles?: number;
+  factorySerie?: string;
+  factoryModel?: string;
+}
+
+export interface Client {
+  id: number;
+  name: string;
+  code: string;
+}

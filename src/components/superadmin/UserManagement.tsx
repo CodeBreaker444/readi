@@ -116,7 +116,6 @@ export default function UserManagement({ session }: UserManagementProps) {
   };
 
   const handleDelete = async (userId: number) => {
-    if (!confirm('Are you sure you want to delete this user?')) return;
 
     try {
       await fetch(`/api/team/user/delete`, {

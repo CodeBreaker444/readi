@@ -35,7 +35,6 @@ export async function addMissionResult(ownerId: number, resultData: {
   code: string;
   description: string;
 }) {
-  // Check if code already exists for this owner
   const { data: existing } = await supabase
     .from('pilot_mission_result_type')
     .select('result_type_code')

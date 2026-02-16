@@ -102,7 +102,7 @@ export default function MissionTypeForm({ onSubmit, isDark }: MissionTypeFormPro
 
     <button 
       type="submit" 
-      className="w-full py-3.5 px-6 rounded-lg font-bold text-white shadow-lg transition-all duration-200 transform hover:-translate-y-1 hover:shadow-xl bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
+      className="w-full py-3.5 px-6 rounded-lg font-bold text-white shadow-lg transition-all duration-200 transform hover:-translate-y-1 hover:shadow-xl bg-linear-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
     >
       Add Mission Type
     </button>

@@ -40,7 +40,7 @@ export default function MissionCategoryTable({ data, onDelete, onEdit, isDark }:
     <div className="w-full">
       <div className={`overflow-hidden rounded-xl border shadow-sm ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
         <table className="w-full">
-          <thead className={isDark ? 'bg-slate-700' : 'bg-gradient-to-r from-blue-50 to-indigo-50'}>
+          <thead className={isDark ? 'bg-slate-700' : 'bg-linear-to-r from-blue-50 to-indigo-50'}>
             <tr>
               <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>ID</th>
               <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>Code</th>
@@ -130,9 +130,7 @@ export default function MissionCategoryTable({ data, onDelete, onEdit, isDark }:
                         <button
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-500 hover:bg-rose-600 text-white rounded-lg text-sm font-medium transition-colors"
                           onClick={() => {
-                            if (confirm('Are you sure you want to delete this mission category?')) {
                               onDelete(category.id);
-                            }
                           }}
                         >
                           <Trash2 size={16} /> Delete

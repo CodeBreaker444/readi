@@ -136,9 +136,7 @@ export default function ResultTable({ data, onDelete, onEdit, isDark }: ResultTa
                     <button
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium"
                       onClick={() => {
-                        if (confirm('Are you sure you want to delete this mission result?')) {
                           onDelete(result.id);
-                        }
                       }}
                     >
                       <Trash2 size={16} /> Delete

@@ -1,4 +1,4 @@
-import { createUser } from '@/backend/services/user/userManagement';
+import { createUser } from '@/backend/services/user/user-management';
 import { getUserSession } from '@/lib/auth/server-session';
 import { NextRequest, NextResponse } from 'next/server';
 

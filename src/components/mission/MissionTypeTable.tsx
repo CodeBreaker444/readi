@@ -60,10 +60,10 @@ export default function MissionTypeTable({ data, onDelete, onEdit, isDark }: Mis
                       type="text"
                       value={editForm.name}
                       onChange={e => setEditForm({ ...editForm, name: e.target.value })}
-                      className={`w-full min-w-[80px] sm:min-w-[120px] px-1.5 sm:px-3 py-1 sm:py-2 rounded-lg outline-none text-[10px] sm:text-sm border-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all ${isDark ? 'bg-gray-800 border-gray-600 text-gray-100' : 'bg-white border-gray-300 text-gray-800'}`}
+                      className={`w-full min-w-20 sm:min-w-30 px-1.5 sm:px-3 py-1 sm:py-2 rounded-lg outline-none text-[10px] sm:text-sm border-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all ${isDark ? 'bg-gray-800 border-gray-600 text-gray-100' : 'bg-white border-gray-300 text-gray-800'}`}
                     />
                   ) : (
-                    <div className="min-w-[80px] sm:min-w-[120px] font-medium">{type.name}</div>
+                    <div className="min-w-20 sm:min-w-30 font-medium">{type.name}</div>
                   )}
                 </td>
 
@@ -73,7 +73,7 @@ export default function MissionTypeTable({ data, onDelete, onEdit, isDark }: Mis
                       type="text"
                       value={editForm.code}
                       onChange={e => setEditForm({ ...editForm, code: e.target.value.toUpperCase() })}
-                      className={`w-full min-w-[60px] sm:min-w-[80px] px-1.5 sm:px-3 py-1 sm:py-2 rounded-lg outline-none text-[10px] sm:text-sm border-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all ${isDark ? 'bg-gray-800 border-gray-600 text-gray-100' : 'bg-white border-gray-300 text-gray-800'}`}
+                      className={`w-full min-w-15 sm:min-w-20 px-1.5 sm:px-3 py-1 sm:py-2 rounded-lg outline-none text-[10px] sm:text-sm border-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all ${isDark ? 'bg-gray-800 border-gray-600 text-gray-100' : 'bg-white border-gray-300 text-gray-800'}`}
                     />
                   ) : (
                     <span className={`inline-flex items-center px-1.5 sm:px-3 py-0.5 sm:py-1 rounded-full text-[9px] sm:text-xs font-bold uppercase tracking-wide whitespace-nowrap ${isDark ? 'bg-indigo-900/50 text-indigo-300 border border-indigo-700' : 'bg-indigo-50 text-indigo-700 border border-indigo-200'}`}>
@@ -88,10 +88,10 @@ export default function MissionTypeTable({ data, onDelete, onEdit, isDark }: Mis
                       type="text"
                       value={editForm.label}
                       onChange={e => setEditForm({ ...editForm, label: e.target.value })}
-                      className={`w-full min-w-[100px] sm:min-w-[150px] px-1.5 sm:px-3 py-1 sm:py-2 rounded-lg outline-none text-[10px] sm:text-sm border-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all ${isDark ? 'bg-gray-800 border-gray-600 text-gray-100' : 'bg-white border-gray-300 text-gray-800'}`}
+                      className={`w-full min-w-25 sm:min-w-37.5 px-1.5 sm:px-3 py-1 sm:py-2 rounded-lg outline-none text-[10px] sm:text-sm border-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all ${isDark ? 'bg-gray-800 border-gray-600 text-gray-100' : 'bg-white border-gray-300 text-gray-800'}`}
                     />
                   ) : (
-                    <div className="min-w-[100px] sm:min-w-[150px] max-w-[150px] sm:max-w-[200px] truncate" title={type.label}>
+                    <div className="min-w-25 sm:min-w-37.5 max-w-37.5 sm:max-w-50 truncate" title={type.label}>
                       {type.label}
                     </div>
                   )}
@@ -102,7 +102,7 @@ export default function MissionTypeTable({ data, onDelete, onEdit, isDark }: Mis
                     <div className="flex justify-center gap-1 sm:gap-2 whitespace-nowrap">
                       <button
                         onClick={handleSaveEdit}
-                        className="px-2 sm:px-4 py-1 sm:py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-[10px] sm:text-sm font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
+                        className="px-2 sm:px-4 py-1 sm:py-2 bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-[10px] sm:text-sm font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
                       >
                         Save
                       </button>
@@ -117,14 +117,14 @@ export default function MissionTypeTable({ data, onDelete, onEdit, isDark }: Mis
                     <div className="flex justify-center gap-1 sm:gap-2 whitespace-nowrap">
                       <button
                         onClick={() => handleStartEdit(type)}
-                        className="inline-flex items-center gap-1 px-2 sm:px-4 py-1 sm:py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-[10px] sm:text-sm font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
+                        className="inline-flex items-center gap-1 px-2 sm:px-4 py-1 sm:py-2 bg-linear-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-[10px] sm:text-sm font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
                       >
                         <Pencil size={14} className="hidden sm:block" />
                         Edit
                       </button>
                       <button
-                        onClick={() => confirm('Are you sure you want to delete this mission type?') && onDelete(type.id)}
-                        className="inline-flex items-center gap-1 px-2 sm:px-4 py-1 sm:py-2 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 text-white text-[10px] sm:text-sm font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
+                        onClick={() => onDelete(type.id)}
+                        className="inline-flex items-center gap-1 px-2 sm:px-4 py-1 sm:py-2 bg-linear-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 text-white text-[10px] sm:text-sm font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
                       >
                         <Trash2 size={14} className="hidden sm:block" />
                         Delete

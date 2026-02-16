@@ -82,11 +82,9 @@ export default function NotificationsPage() {
   };
 
   const handleDelete = (id: number) => {
-    if (confirm('Confermi eliminazione?')) {
       const updated = notifications.filter(n => n.notification_id !== id);
       setNotifications(updated);
       setFilteredNotifications(updated);
-    }
   };
 
   const handleReload = () => {
