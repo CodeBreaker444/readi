@@ -1,4 +1,5 @@
 export type Role =
+  | 'SUPERADMIN'
   | 'ADMIN'
   | 'PIC'
   | 'OPM'
@@ -24,13 +25,15 @@ export type Permission =
   | 'view_planning'
   | 'view_logbooks'
   | 'view_notifications'
-  | 'manage_users';
+  | 'manage_users'
+  | 'add_company';  
 
 type WildcardPermission = '*';
 export type RolePermission = Permission | WildcardPermission;
 
 export const ROLE_PERMISSIONS: Record<Role, RolePermission[]> = {
-  ADMIN: ['*'],
+  SUPERADMIN: ['*'], 
+  ADMIN: ['view_dashboard','view_pilot_dashboard','view_operations','view_compliance','view_training','view_safety_mgmt','view_config','view_repository','view_logs','view_planning','view_logbooks','view_notifications','manage_users'],
   PIC: ['view_pilot_dashboard', 'view_operations', 'view_repository', 'view_logbooks'],
   OPM: ['view_dashboard', 'view_operations', 'view_logs', 'view_repository', 'view_planning', 'view_logbooks'],
   SM: ['view_dashboard', 'view_safety_mgmt', 'view_repository', 'view_notifications'],
@@ -42,7 +45,6 @@ export const ROLE_PERMISSIONS: Record<Role, RolePermission[]> = {
   SLA: ['view_dashboard', 'view_logs'],
   CLIENT: ['view_dashboard', 'view_repository'],
 };
-
 export function roleHasPermission(role: Role | null | undefined, permission: Permission): boolean {
   if (!role) return false;
   const perms = ROLE_PERMISSIONS[role];
@@ -79,9 +81,9 @@ export const ROUTE_PERMISSIONS: Record<string, Permission> = {
   '/systems/map': 'view_config',
   '/systems/maintenance-dashboard': 'view_config',
   '/systems/maintenance-tickets': 'view_config',
-  '/team/personnel': 'view_config',
+  '/team/personnel': 'manage_users',
   '/team/crew-shift': 'view_config',
-   '/admin/users': 'manage_users', 
+  '/company': 'add_company',
 };
 
 export function canAccessRoute(role: Role | null | undefined, pathname: string): boolean {

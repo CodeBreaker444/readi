@@ -110,104 +110,121 @@ export async function getUserListByOwner(ownerId: number, userProfileId: number,
     throw new Error('Failed to fetch user list');
   }
 }
+
 export async function createUser(userData: UserCreateData) {
-  try {
-    const uid = generateUniqueCode();
-    const key = generateActivationToken(128);
+    try {
+      const uid = generateUniqueCode();
+      const key = generateActivationToken(128);
 
-    const { data: existingUser } = await supabase
-      .from('users')
-      .select('user_id, email, username')
-      .or(`email.ilike.${userData.email},username.eq.${userData.username}`)
-      .maybeSingle();
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('user_id, email, username')
+        .or(`email.ilike.${userData.email},username.eq.${userData.username}`)
+        .maybeSingle();
 
-    if (existingUser) {
-      if (existingUser.email?.toLowerCase() === userData.email.toLowerCase()) {
-        throw new Error('This email is already registered');
+      if (existingUser) {
+        if (existingUser.email?.toLowerCase() === userData.email.toLowerCase()) {
+          throw new Error('This email is already registered');
+        }
+        if (existingUser.username === userData.username) {
+          throw new Error('This username is already taken');
+        }
       }
-      if (existingUser.username === userData.username) {
-        throw new Error('This username is already taken');
+
+      const nameParts = userData.fullname.trim().split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+
+      const { data: newUser, error: insertError } = await supabase
+        .from('users')
+        .insert({
+          username: userData.username,
+          email: userData.email,
+          password_hash: uid,  
+          first_name: firstName,
+          last_name: lastName,
+          phone: userData.phone,
+          fk_owner_id: userData.owner_id,
+          fk_client_id: userData.fk_client_id || null,
+          fk_territorial_unit: userData.fk_territorial_unit || null,
+          user_type: userData.user_type,
+          user_active: 'N',
+          user_role: getRoleCode(userData.fk_user_profile_id),
+          is_viewer: userData.is_viewer,
+          is_manager: userData.is_manager,
+          user_timezone: userData.timezone,
+          user_unique_code: uid,
+          _key_: key,
+          notes: '',
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error('User insert error:', insertError);
+        throw insertError;
       }
-    }
 
-    const nameParts = userData.fullname.trim().split(' ');
-    const firstName = nameParts[0] || '';
-    const lastName = nameParts.slice(1).join(' ') || '';
+      const { data: userOwner, error: userOwnerError } = await supabase
+        .from('user_owner')
+        .insert({
+          fk_user_id: newUser.user_id,
+          fk_owner_id: userData.owner_id,
+          relationship_type: 'EMPLOYEE',
+          role_in_organization: getRoleLabel(userData.fk_user_profile_id),
+          is_primary: true,
+          is_active: true,
+        })
+        .select()
+        .single();
 
-    const { data: newUser, error: insertError } = await supabase
-      .from('users')
-      .insert({
-        username: userData.username,
-        email: userData.email,
-        password_hash: uid,  
-        first_name: firstName,
-        last_name: lastName,
-        phone: userData.phone,
-        fk_owner_id: userData.owner_id,
-        fk_client_id: userData.fk_client_id || null,
-        fk_territorial_unit: userData.fk_territorial_unit || null,
-        user_type: userData.user_type,
-        user_active: 'N',
-        user_role: getRoleCode(userData.fk_user_profile_id),
-        is_viewer: userData.is_viewer,
-        is_manager: userData.is_manager,
-        user_timezone: userData.timezone,
-        user_unique_code: uid,
-        _key_: key,
-        notes: '',
-      })
-      .select()
-      .single();
-
-    if (insertError) {
-      console.error('User insert error:', insertError);
-      throw insertError;
-    }
-
-    const { data: userOwner, error: userOwnerError } = await supabase
-      .from('user_owner')
+      if (userOwnerError) {
+        console.error('User-owner relationship error:', userOwnerError);
+        throw userOwnerError;
+      }
+          const { error: profileError } = await supabase
+      .from('users_profile')
       .insert({
         fk_user_id: newUser.user_id,
-        fk_owner_id: userData.owner_id,
-        relationship_type: 'EMPLOYEE',
-        role_in_organization: getRoleLabel(userData.fk_user_profile_id),
-        is_primary: true,
-        is_active: true,
-      })
-      .select()
-      .single();
+        address: null,
+        city: null,
+        state: null,
+        postal_code: null,
+        fk_country_id: null,
+        certifications: null,
+        skills: null,
+      });
 
-    if (userOwnerError) {
-      console.error('User-owner relationship error:', userOwnerError);
-      throw userOwnerError;
+    if (profileError) {
+      console.error('User profile creation error:', profileError);
     }
 
-    const activationLink = `${env.APP_URL}/auth/activate?o=${userData.owner_id}&email=${userData.email}&username=${userData.username}&id=${key}`;
+      const activationLink = `${env.APP_URL}/auth/activate?o=${userData.owner_id}&email=${userData.email}&username=${userData.username}&id=${key}`;
 
-    const emailResult = await sendUserActivationEmail(
-      userData.email,
-      userData.fullname,
-      {
-        organization: 'ReADI Control Center',
-        username: userData.username,
-        passcode: uid,
-        loginlink: activationLink,
-      }
-    );
+      const emailResult = await sendUserActivationEmail(
+        userData.email,
+        userData.fullname,
+        {
+          organization: 'ReADI Control Center',
+          username: userData.username,
+          passcode: uid,
+          loginlink: activationLink,
+        }
+      );
 
-    return {
-      success: true,
-      userId: newUser.user_id,
-      userOwnerId: userOwner.user_owner_id,
-      activationKey: key,
-      emailSent: emailResult.message,
-      message: 'User created successfully',
-    };
-  } catch (error) {
-    console.error('Error creating user:', error);
-    throw new Error(error instanceof Error ? error.message : 'Failed to create user');
+      return {
+        success: true,
+        userId: newUser.user_id,
+        userOwnerId: userOwner.user_owner_id,
+        activationKey: key,
+        emailSent: emailResult.message,
+        message: 'User created successfully',
+      };
+    } catch (error) {
+      console.error('Error creating user:', error);
+      throw new Error(error instanceof Error ? error.message : 'Failed to create user');
+    }
   }
-}
 
 export async function updateUser(userData: UserUpdateData) {
   try {
@@ -309,11 +326,11 @@ const getRoleCode = (profileId: number): string => {
   return getRoleLabel(profileId);
 }
 
-const generateUniqueCode = (): string => {
+export const generateUniqueCode = (): string => {
   return `USR-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`.toUpperCase();
 }
 
-const generateActivationToken = (length: number): string => {
+export const generateActivationToken = (length: number): string => {
   const bytes = length * 2;
   const array = new Uint8Array(bytes);
   crypto.getRandomValues(array);

@@ -140,6 +140,10 @@ export default function FlightLogbookTable({
   const [data, setData] = useState<Mission[]>([]);
   const [loading, setLoading] = useState(true);
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [pagination, setPagination] = useState({
+    pageIndex: 0,
+    pageSize: 8,
+  });
 
   useEffect(() => {
     loadMissionData();
@@ -180,22 +184,19 @@ export default function FlightLogbookTable({
     }
   };
 
- const table = useReactTable<Mission>({
+  const table = useReactTable<Mission>({
     data,
     columns: flightBookColumns,
     state: {
       sorting,
+      pagination
     },
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    initialState: {
-      pagination: {
-        pageSize: 10,
-      },
-    },
+    onPaginationChange: setPagination,
   });
 
   if (loading) {
@@ -237,9 +238,9 @@ export default function FlightLogbookTable({
                     {header.isPlaceholder
                       ? null
                       : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
                   </th>
                 ))}
               </tr>
@@ -277,7 +278,7 @@ export default function FlightLogbookTable({
             <span className="font-medium">
               {Math.min(
                 (table.getState().pagination.pageIndex + 1) *
-                  table.getState().pagination.pageSize,
+                table.getState().pagination.pageSize,
                 table.getFilteredRowModel().rows.length
               )}
             </span>{' '}
