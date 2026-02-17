@@ -59,17 +59,18 @@ export async function updateSession(request: NextRequest) {
     }
     return NextResponse.redirect(new URL('/auth/login', request.url))
   }
-
-  if (!user) {
+if (!user) {
     if (isPublicRoute) {
       return response
     }
 
-    if (pathname == '/dashboard' ) {
-      return NextResponse.redirect(new URL('/auth/login', request.url))
+    const hasJwtToken = request.cookies.get('readi_auth_token')?.value
+
+    if (hasJwtToken) {
+      return response
     }
 
-    return response
+    return NextResponse.redirect(new URL('/auth/login', request.url))
   }
   try {
 
@@ -87,15 +88,28 @@ export async function updateSession(request: NextRequest) {
       }
     }
 
-    const { data: userData, error: userError } = await supabase
+const { data: userData, error: userError } = await supabase
       .from('users')
-      .select('user_id, user_active')
+      .select('user_id, user_active, fk_owner_id, user_role')
       .eq('auth_user_id', user.id)
       .single()
 
     if (userError || !userData || userData.user_active !== 'Y') {
       await supabase.auth.signOut()
       return NextResponse.redirect(new URL('/auth/login', request.url))
+    }
+
+    if (userData.user_role !== 'SUPERADMIN' && userData.fk_owner_id) {
+      const { data: ownerData } = await supabase
+        .from('owner')
+        .select('owner_active')
+        .eq('owner_id', userData.fk_owner_id)
+        .single()
+
+      if (!ownerData || ownerData.owner_active !== 'Y') {
+        await supabase.auth.signOut()
+        return NextResponse.redirect(new URL('/auth/login', request.url))
+      }
     }
 
     const { data: passwordChangedSetting } = await supabase
