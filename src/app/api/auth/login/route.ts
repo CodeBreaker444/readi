@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-   const { data: userData, error: userError } = await supabase
+    const { data: userData, error: userError } = await supabase
       .from('users')
       .select('user_id, username, email, user_active, user_role, password_hash, auth_user_id, fk_owner_id')
       .eq('email', email)
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-  if (userData.user_active !== 'Y') {
+    if (userData.user_active !== 'Y') {
       return NextResponse.json(
         {
           success: false,
@@ -44,32 +44,32 @@ export async function POST(request: NextRequest) {
         { status: 403 }
       )
     }
+    if (userData.user_role !== 'SUPERADMIN') {
+      // Check owner is active from owner table directly
+      const { data: ownerData, error: ownerError } = await supabase
+        .from('owner')
+        .select('owner_id, owner_name, owner_active')
+        .eq('owner_id', userData.fk_owner_id)
+        .single()
 
-    // Check owner is active from owner table directly
-    const { data: ownerData, error: ownerError } = await supabase
-      .from('owner')
-      .select('owner_id, owner_name, owner_active')
-      .eq('owner_id', userData.fk_owner_id)
-      .single()
+      if (ownerError || !ownerData) {
+        return NextResponse.json(
+          { success: false, error: 'No organization found for your account. Please contact administrator.' },
+          { status: 403 }
+        )
+      }
 
-    if (ownerError || !ownerData) {
-      return NextResponse.json(
-        { success: false, error: 'No organization found for your account. Please contact administrator.' },
-        { status: 403 }
-      )
+      if (ownerData.owner_active !== 'Y') {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `Your organization "${ownerData.owner_name}" has been deactivated. Please contact administrator.`
+          },
+          { status: 403 }
+        )
+      }
+
     }
-
-    if (ownerData.owner_active !== 'Y') {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `Your organization "${ownerData.owner_name}" has been deactivated. Please contact administrator.`
-        },
-        { status: 403 }
-      )
-    }
-
-
     if (userData.auth_user_id) {
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email: email,
