@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import { Role } from '../lib/auth/roles';
 import MobileSidebar from './MobileSidebar';
+import { RoleIndicator } from './RoleIndicator';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
 import { useTheme } from './useTheme';
@@ -40,13 +41,15 @@ const ClientLayoutWrapper: React.FC<ClientLayoutWrapperProps> = ({
 
   return (
     <div className={`flex h-screen ${isDark ? 'bg-slate-900' : 'bg-gray-50'}`}>
+      {!loading && <RoleIndicator role={role} />}
+
       <div className="hidden lg:block">
         <Sidebar isDark={isDark} role={role}/>
       </div>
       
       <MobileSidebar isDark={isDark} role={role}/>
       
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden pt-1">
         <TopBar isDark={isDark} toggleTheme={toggleTheme} userData={userData} />
         
         <main className={`flex-1 overflow-y-auto ${isDark ? 'bg-slate-900' : 'bg-gray-50'}`}>
@@ -56,5 +59,4 @@ const ClientLayoutWrapper: React.FC<ClientLayoutWrapperProps> = ({
     </div>
   );
 };
-
 export default ClientLayoutWrapper;

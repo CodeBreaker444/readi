@@ -2,12 +2,12 @@
 
 import { MissionResult } from '@/config/types';
 import {
-    flexRender,
-    getCoreRowModel,
-    getFilteredRowModel,
-    getPaginationRowModel,
-    getSortedRowModel,
-    useReactTable,
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
 } from '@tanstack/react-table';
 import { Check, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -25,6 +25,10 @@ interface MissionResultTableProps {
 export default function MissionResultTable({ data, onDelete, onEdit, isDark }: MissionResultTableProps) {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<MissionResult | null>(null);
+  const [pagination, setPagination] = useState({
+    pageIndex: 0,
+    pageSize: 8,
+  });
 
   const handleEditClick = (result: MissionResult) => {
     setEditingId(result.id);
@@ -54,15 +58,14 @@ export default function MissionResultTable({ data, onDelete, onEdit, isDark }: M
   const table = useReactTable({
     data,
     columns,
+    state: {
+      pagination,
+    },
+    onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    initialState: {
-      pagination: {
-        pageSize: 8,
-      },
-    },
   });
 
   return (
@@ -102,11 +105,10 @@ export default function MissionResultTable({ data, onDelete, onEdit, isDark }: M
                         type="text"
                         required
                         maxLength={50}
-                        className={`w-full px-3 py-2 rounded-lg border outline-none transition-all ${
-                          isDark
+                        className={`w-full px-3 py-2 rounded-lg border outline-none transition-all ${isDark
                             ? 'bg-slate-900 border-slate-600 text-white focus:ring-blue-500'
                             : 'bg-white border-gray-300 text-gray-900 focus:ring-blue-500'
-                        } focus:ring-2 focus:border-transparent`}
+                          } focus:ring-2 focus:border-transparent`}
                         value={editForm.code}
                         onChange={(e) => setEditForm({ ...editForm, code: e.target.value.toUpperCase() })}
                       />
@@ -116,11 +118,10 @@ export default function MissionResultTable({ data, onDelete, onEdit, isDark }: M
                         required
                         maxLength={255}
                         rows={2}
-                        className={`w-full px-3 py-2 rounded-lg border outline-none transition-all ${
-                          isDark
+                        className={`w-full px-3 py-2 rounded-lg border outline-none transition-all ${isDark
                             ? 'bg-slate-900 border-slate-600 text-white focus:ring-blue-500'
                             : 'bg-white border-gray-300 text-gray-900 focus:ring-blue-500'
-                        } focus:ring-2 focus:border-transparent`}
+                          } focus:ring-2 focus:border-transparent`}
                         value={editForm.description}
                         onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
                       />
@@ -167,7 +168,7 @@ export default function MissionResultTable({ data, onDelete, onEdit, isDark }: M
         )}
       </div>
 
-      <TablePagination table={table}   />
+      <TablePagination table={table} />
     </div>
   );
 }

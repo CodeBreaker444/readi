@@ -12,6 +12,8 @@ export default async function DashboardPage() {
   const ownerId = session.user.ownerId!;
   const userProfileCode = session.user.role;
   const userId = session.user.userId;
+console.log('ownerId:',ownerId);
+console.log('userId:',userId);
 
   const dashboardData = await getDashboardData({
     owner_id: ownerId,

@@ -7,6 +7,7 @@ import { Edit, Filter, Mail, Plus, Search, Trash2, User } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { UserFormModal } from './UserFormModal';
+import { SkeletonRow, StatSkeleton } from './UserSkeleton';
 
 interface UserData {
   user_id: number;
@@ -23,6 +24,7 @@ interface UserData {
 interface UserManagementProps {
   session: Session;
 }
+
 
 export default function UserManagement({ session }: UserManagementProps) {
   const { isDark } = useTheme();
@@ -65,8 +67,7 @@ export default function UserManagement({ session }: UserManagementProps) {
       user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.username?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesRole =
-      roleFilter === 'ALL' || user.user_role === roleFilter;
+    const matchesRole = roleFilter === 'ALL' || user.user_role === roleFilter;
 
     const matchesStatus =
       statusFilter === 'ALL' ||
@@ -151,7 +152,6 @@ export default function UserManagement({ session }: UserManagementProps) {
     }
   };
 
-  // Get unique roles from fetched users for the filter dropdown
   const uniqueRoles = [...new Set(users.map((u) => u.user_role))].filter(Boolean);
 
   const stats = {
@@ -182,20 +182,28 @@ export default function UserManagement({ session }: UserManagementProps) {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        {[
-          { label: 'Total Users', value: stats.total, color: 'blue' },
-          { label: 'Active', value: stats.active, color: 'green' },
-          { label: 'Inactive', value: stats.inactive, color: 'red' },
-          { label: 'Managers', value: stats.managers, color: 'purple' },
-        ].map((stat, idx) => (
-          <div
-            key={idx}
-            className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} rounded-lg shadow-sm border p-4`}
-          >
-            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{stat.label}</p>
-            <p className={`text-2xl font-bold mt-1 text-${stat.color}-500`}>{stat.value}</p>
-          </div>
-        ))}
+        {loading ? (
+          <>
+            {[...Array(4)].map((_, idx) => (
+              <StatSkeleton key={idx} isDark={isDark} />
+            ))}
+          </>
+        ) : (
+          [
+            { label: 'Total Users', value: stats.total, color: 'blue' },
+            { label: 'Active', value: stats.active, color: 'green' },
+            { label: 'Inactive', value: stats.inactive, color: 'red' },
+            { label: 'Managers', value: stats.managers, color: 'purple' },
+          ].map((stat, idx) => (
+            <div
+              key={idx}
+              className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} rounded-lg shadow-sm border p-4`}
+            >
+              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{stat.label}</p>
+              <p className={`text-2xl font-bold mt-1 text-${stat.color}-500`}>{stat.value}</p>
+            </div>
+          ))
+        )}
       </div>
 
       {/* Filters */}
@@ -251,113 +259,109 @@ export default function UserManagement({ session }: UserManagementProps) {
         </div>
       </div>
 
+      {/* Table */}
       <div className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} rounded-lg shadow-sm border overflow-hidden`}>
-        {loading ? (
-          <div className="p-8 text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-            <p className={`mt-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Loading...</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className={isDark ? 'bg-slate-700' : 'bg-gray-50'}>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className={isDark ? 'bg-slate-700' : 'bg-gray-50'}>
+              <tr>
+                {['Name', 'Username', 'Email', 'Role', 'User Code', 'Status', 'Permissions', 'Actions'].map((col) => (
+                  <th
+                    key={col}
+                    className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gray-300' : 'text-gray-500'}`}
+                  >
+                    {col}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className={`${isDark ? 'bg-slate-800 divide-slate-700' : 'bg-white divide-gray-200'} divide-y`}>
+              {loading ? (
+                [...Array(5)].map((_, idx) => <SkeletonRow key={idx} isDark={isDark} />)
+              ) : filteredUsers.length === 0 ? (
                 <tr>
-                  {['Name', 'Username', 'Email', 'Role', 'User Code', 'Status', 'Permissions', 'Actions'].map((col) => (
-                    <th
-                      key={col}
-                      className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gray-300' : 'text-gray-500'}`}
-                    >
-                      {col}
-                    </th>
-                  ))}
+                  <td colSpan={8} className="px-6 py-8 text-center">
+                    <User size={48} className={`mx-auto mb-2 ${isDark ? 'text-gray-600' : 'text-gray-300'}`} />
+                    <p className={isDark ? 'text-gray-400' : 'text-gray-500'}>No users found</p>
+                  </td>
                 </tr>
-              </thead>
-              <tbody className={`${isDark ? 'bg-slate-800 divide-slate-700' : 'bg-white divide-gray-200'} divide-y`}>
-                {filteredUsers.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="px-6 py-8 text-center">
-                      <User size={48} className={`mx-auto mb-2 ${isDark ? 'text-gray-600' : 'text-gray-300'}`} />
-                      <p className={isDark ? 'text-gray-400' : 'text-gray-500'}>No users found</p>
+              ) : (
+                filteredUsers.map((user) => (
+                  <tr key={user.user_id} className={isDark ? 'hover:bg-slate-700' : 'hover:bg-gray-50'}>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
+                          <User size={20} className="text-blue-600" />
+                        </div>
+                        <div className="ml-4">
+                          <div className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                            {user.fullname}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${isDark ? 'text-gray-300' : 'text-gray-500'}`}>
+                      {user.username}
+                    </td>
+                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${isDark ? 'text-gray-300' : 'text-gray-500'}`}>
+                      <div className="flex items-center">
+                        <Mail size={14} className="mr-2" />
+                        {user.email}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                        {user.user_role}
+                      </span>
+                    </td>
+                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${isDark ? 'text-gray-300' : 'text-gray-500'}`}>
+                      {user.user_unique_code}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span
+                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.active === 1 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
+                      >
+                        {user.active === 1 ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex gap-1">
+                        {user.is_manager === 'Y' && (
+                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
+                            Manager
+                          </span>
+                        )}
+                        {user.is_viewer === 'Y' && (
+                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                            Viewer
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEdit(user)}
+                          className={`p-2 rounded hover:bg-opacity-80 ${isDark ? 'text-blue-400 hover:bg-gray-700' : 'text-blue-600 hover:bg-blue-50'}`}
+                          title="Edit User"
+                        >
+                          <Edit size={18} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(user.user_id)}
+                          className={`p-2 rounded hover:bg-opacity-80 ${isDark ? 'text-red-400 hover:bg-gray-700' : 'text-red-600 hover:bg-red-50'}`}
+                          title="Delete User"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
-                ) : (
-                  filteredUsers.map((user) => (
-                    <tr key={user.user_id} className={isDark ? 'hover:bg-slate-700' : 'hover:bg-gray-50'}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
-                            <User size={20} className="text-blue-600" />
-                          </div>
-                          <div className="ml-4">
-                            <div className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                              {user.fullname}
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className={`px-6 py-4 whitespace-nowrap text-sm ${isDark ? 'text-gray-300' : 'text-gray-500'}`}>
-                        {user.username}
-                      </td>
-                      <td className={`px-6 py-4 whitespace-nowrap text-sm ${isDark ? 'text-gray-300' : 'text-gray-500'}`}>
-                        <div className="flex items-center">
-                          <Mail size={14} className="mr-2" />
-                          {user.email}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                          {user.user_role}
-                        </span>
-                      </td>
-                      <td className={`px-6 py-4 whitespace-nowrap text-sm ${isDark ? 'text-gray-300' : 'text-gray-500'}`}>
-                        {user.user_unique_code}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.active === 1 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
-                        >
-                          {user.active === 1 ? 'Active' : 'Inactive'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex gap-1">
-                          {user.is_manager === 'Y' && (
-                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
-                              Manager
-                            </span>
-                          )}
-                          {user.is_viewer === 'Y' && (
-                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
-                              Viewer
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleEdit(user)}
-                            className={`p-2 rounded hover:bg-opacity-80 ${isDark ? 'text-blue-400 hover:bg-gray-700' : 'text-blue-600 hover:bg-blue-50'}`}
-                            title="Edit User"
-                          >
-                            <Edit size={18} />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(user.user_id)}
-                            className={`p-2 rounded hover:bg-opacity-80 ${isDark ? 'text-red-400 hover:bg-gray-700' : 'text-red-600 hover:bg-red-50'}`}
-                            title="Delete User"
-                          >
-                            <Trash2 size={18} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {showAddModal && (

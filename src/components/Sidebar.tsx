@@ -135,7 +135,14 @@ const configurationItems: SubNavItem[] = [
       { name: 'Personnel', href: '/team/personnel' },
       { name: 'Crew Shift', href: '/team/crew-shift' }
     ]
-  }
+  },
+  {
+    name: 'Company',
+    href: '/company',
+    subItems: [
+      { name: 'Company List', href: '/company' },
+    ]
+  },
 ];
 
 interface SidebarProps {

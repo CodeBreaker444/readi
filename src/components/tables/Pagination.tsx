@@ -11,7 +11,7 @@ interface Props {
 
 export const TablePagination: FC<Props> = ({ table }) => {
   const row = table.getRowCount();
-  if (row < 8) return null;
+  // if (row < 8) return null;
 
   return (
     <div className="my-5 flex flex-col-reverse items-start justify-between gap-2 px-2 md:flex-row md:items-center">

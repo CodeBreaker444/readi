@@ -31,6 +31,10 @@ export default function DataTable<TData, TValue>({
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState('');
+    const [pagination, setPagination] = useState({
+    pageIndex: 0,
+    pageSize: 8,
+  });
 
   const table = useReactTable({
     data,
@@ -42,8 +46,10 @@ export default function DataTable<TData, TValue>({
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onGlobalFilterChange: setGlobalFilter,
+    onPaginationChange: setPagination,
     state: {
       sorting,
+      pagination,
       columnFilters,
       globalFilter,
     },
