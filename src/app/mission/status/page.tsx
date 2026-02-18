@@ -3,6 +3,7 @@
 import MissionStatusForm from '@/components/mission/MissionStatusForm';
 import MissionStatusTable from '@/components/mission/MissionStatusTable';
 import MissionStatusSkeleton from '@/components/mission/StatusSkeleton';
+import { Button } from '@/components/ui/button';
 import { useTheme } from '@/components/useTheme';
 import { Mission } from '@/config/types/types';
 import axios from 'axios';
@@ -137,16 +138,16 @@ export default function MissionStatusPage() {
               Define and maintain mission statuses for tracking flight operations
             </p>
           </div>
-          <button
+          <Button
             onClick={() => setShowModal(true)}
             className={`flex items-center gap-1 px-2 sm:px-6 py-2.5 sm:py-3 rounded-md transition-all duration-200 shadow-md hover:shadow-lg ${isDark
-                ? 'bg-slate-700 hover:bg-slate-600 text-white border border-slate-600'
-                : 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-300'
-              }`}
+              ? 'bg-white hover:bg-white/90 text-black'
+              : ''
+            }`}
           >
             <Plus size={20} />
             <span className="hidden sm:inline">Add New Status</span>
-          </button>
+          </Button>
         </div>
 
         {loading ? (

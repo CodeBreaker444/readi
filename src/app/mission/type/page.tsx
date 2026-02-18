@@ -3,6 +3,7 @@
 import MissionTypeForm from '@/components/mission/MissionTypeForm';
 import MissionTypeSkeleton from '@/components/mission/MissionTypeSkeleton';
 import MissionTypeTable from '@/components/mission/MissionTypeTable';
+import { Button } from '@/components/ui/button';
 import { useTheme } from '@/components/useTheme';
 import { MissionType } from '@/config/types/types';
 import axios from 'axios';
@@ -113,14 +114,11 @@ const handleEditMissionType = async (updatedType: MissionType) => {
               Manage and configure mission types for your operations
             </p>
           </div>
-          <button
+          <Button
             onClick={() => setShowForm(!showForm)}
-            className={`flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg font-semibold transition-all duration-200 shadow-lg hover:shadow-xl ${
-              showForm
-                ? isDark
-                  ? 'bg-gray-700 hover:bg-gray-600 text-white'
-                  : 'bg-gray-200 hover:bg-gray-300 text-gray-800'
-                : 'bg-linear-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white'
+            className={`flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg font-semibold transition-all duration-200 shadow-lg hover:shadow-xl ${isDark
+              ? 'bg-white hover:bg-white/90 text-black'
+              : ''
             }`}
           >
             {showForm ? (
@@ -134,7 +132,7 @@ const handleEditMissionType = async (updatedType: MissionType) => {
                 <span className="hidden sm:inline">Add New Type</span>
               </>
             )}
-          </button>
+          </Button>
         </div>
 
         <div className={`grid gap-4 sm:gap-6 lg:gap-8 ${showForm ? 'grid-cols-1 xl:grid-cols-2' : 'grid-cols-1'}`}>
