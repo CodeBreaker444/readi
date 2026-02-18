@@ -20,11 +20,8 @@ const ModelSchema = z.object({
 export async function POST(req: NextRequest) {
   try {
     const session = await getUserSession();
-    if (!session) {
-      return NextResponse.json(
-        { code: 0, status: 'ERROR', message: 'Unauthorized' },
-        { status: 401 }
-      );
+    if (!session?.user || (session.user.role !== 'ADMIN' && session.user.role !== 'SUPERADMIN')) {
+      return NextResponse.json({ status: 'ERROR', message: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await req.json();
