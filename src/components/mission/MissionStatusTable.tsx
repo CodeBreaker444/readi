@@ -1,13 +1,13 @@
 'use client';
 
-import { Mission } from '@/config/types';
+import { Mission } from '@/config/types/types';
 import {
-    flexRender,
-    getCoreRowModel,
-    getFilteredRowModel,
-    getPaginationRowModel,
-    getSortedRowModel,
-    useReactTable,
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
 } from '@tanstack/react-table';
 import { Check, X } from 'lucide-react';
 import { useMemo, useState } from 'react';

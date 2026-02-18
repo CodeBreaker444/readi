@@ -1,4 +1,4 @@
-import { getToolList } from '@/backend/services/tool/tool-service';
+import { getToolList } from '@/backend/services/system/tool/tool-service';
 import { getUserSession } from '@/lib/auth/server-session';
 import { NextRequest, NextResponse } from 'next/server';
 

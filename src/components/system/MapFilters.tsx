@@ -1,6 +1,6 @@
 "use client";
 
-import type { Client, MapFilters } from "@/config/types";
+import type { Client, MapFilters } from "@/config/types/types";
 
 interface MapFiltersProps {
   filters: MapFilters;

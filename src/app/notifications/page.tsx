@@ -3,7 +3,7 @@
 import NotificationFilters from '@/components/notifications/NotificationFilters';
 import NotificationList from '@/components/notifications/NotificationList';
 import { useTheme } from '@/components/useTheme';
-import { Notifications } from '@/config/types';
+import { Notifications } from '@/config/types/types';
 import { DUMMY_NOTIFICATIONS } from '@/lib/dummydata';
 import { Bell, CheckCheck, RefreshCw } from 'lucide-react';
 import { useState } from 'react';

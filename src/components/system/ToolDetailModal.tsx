@@ -1,6 +1,6 @@
 "use client";
 
-import type { ToolsResponse } from "@/config/types";
+import type { ToolsResponse } from "@/config/types/types";
 import { colorByStatus, isDock, statusLabel } from "@/lib/mapUtils";
 import { useEffect, useState } from "react";
 

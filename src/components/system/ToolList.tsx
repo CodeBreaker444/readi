@@ -1,6 +1,6 @@
 "use client";
 
-import type { ToolsResponse } from "@/config/types";
+import type { ToolsResponse } from "@/config/types/types";
 import { colorByStatus, isDock } from "@/lib/mapUtils";
 
 interface ToolListProps {

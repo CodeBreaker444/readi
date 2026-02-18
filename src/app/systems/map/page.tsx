@@ -9,7 +9,7 @@ import MapLegend from "@/components/system/MapLegend";
 import ToolDetailModal from "@/components/system/ToolDetailModal";
 import ToolList from "@/components/system/ToolList";
 import { Button } from "@/components/ui/button";
-import type { Client, MapFiltersType, ToolsResponse } from "@/config/types";
+import type { Client, MapFiltersType, ToolsResponse } from "@/config/types/types";
 import { isDock, isValidCoord, matchSearch } from "@/lib/mapUtils";
 import axios from "axios";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";

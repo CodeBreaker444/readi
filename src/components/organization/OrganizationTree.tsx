@@ -1,6 +1,6 @@
 'use client';
 
-import { OrganizationNode } from '@/config/types';
+import { OrganizationNode } from '@/config/types/types';
 import { Building2, ChevronRight, User } from 'lucide-react';
 
 interface TreeNodeProps {

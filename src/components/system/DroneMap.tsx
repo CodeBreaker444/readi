@@ -1,6 +1,6 @@
 "use client";
 
-import type { ToolsResponse } from "@/config/types";
+import type { ToolsResponse } from "@/config/types/types";
 import { colorByStatus, DEFAULT_CONTROL_CENTER, isDock, isValidCoord } from "@/lib/mapUtils";
 import L from "leaflet";
 import "leaflet.markercluster";

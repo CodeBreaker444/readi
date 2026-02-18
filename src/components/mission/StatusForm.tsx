@@ -1,6 +1,6 @@
 'use client';
 
-import { MissionStatus } from '@/config/types';
+import { MissionStatus } from '@/config/types/types';
 import { Plus } from 'lucide-react';
 import { FormEvent, useState } from 'react';
 

@@ -6,7 +6,7 @@ import DocumentTable from '@/components/document-repository/DocumentTable';
 import HistoryModal from '@/components/document-repository/HistoryModal';
 import PageHeader from '@/components/document-repository/PageHeader';
 import { useTheme } from '@/components/useTheme';
-import { Document, FilterState } from '@/config/types';
+import { Document, FilterState } from '@/config/types/types';
 import { DUMMY_DOCUMENTS } from '@/lib/dummydata';
 import { useState } from 'react';
 

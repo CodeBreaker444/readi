@@ -4,7 +4,7 @@ import MissionStatusForm from '@/components/mission/MissionStatusForm';
 import MissionStatusTable from '@/components/mission/MissionStatusTable';
 import MissionStatusSkeleton from '@/components/mission/StatusSkeleton';
 import { useTheme } from '@/components/useTheme';
-import { Mission } from '@/config/types';
+import { Mission } from '@/config/types/types';
 import axios from 'axios';
 import { Plus, X } from 'lucide-react';
 import { useEffect, useState } from 'react';

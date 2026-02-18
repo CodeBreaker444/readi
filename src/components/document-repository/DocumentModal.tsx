@@ -2,7 +2,7 @@
 
 import { X } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Document } from '../../config/types';
+import { Document } from '../../config/types/types';
 import { DUMMY_DOCUMENT_TYPES } from '../../lib/dummydata';
 
 interface DocumentModalProps {

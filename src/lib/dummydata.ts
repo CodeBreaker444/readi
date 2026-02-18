@@ -1,4 +1,4 @@
-import { Assignment, Checklist, Communication, Document, DocumentType, LUCProcedure, Notifications, OrganizationNode, SafetyIndicator } from '@/config/types';
+import { Assignment, Checklist, Communication, Document, DocumentType, LUCProcedure, Notifications, OrganizationNode, SafetyIndicator } from '@/config/types/types';
 
 export const DUMMY_DOCUMENTS: Document[] = [
   {

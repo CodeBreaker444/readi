@@ -1,4 +1,4 @@
-import { MissionResult } from '@/config/types';
+import { MissionResult } from '@/config/types/types';
 import { cn } from '@/lib/utils';
 import { ColumnDef } from '@tanstack/react-table';
 import { Pencil, Trash2 } from 'lucide-react';

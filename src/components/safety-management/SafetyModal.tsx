@@ -1,6 +1,6 @@
 'use client';
 
-import { SafetyIndicator } from '@/config/types';
+import { SafetyIndicator } from '@/config/types/types';
 import { X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 

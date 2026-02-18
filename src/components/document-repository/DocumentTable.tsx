@@ -1,5 +1,5 @@
 import { Download, Edit2, History } from 'lucide-react';
-import { Document } from '../../config/types';
+import { Document } from '../../config/types/types';
 interface DocumentTableProps {
   documents: Document[];
   onEdit: (doc: Document) => void;

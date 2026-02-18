@@ -3,7 +3,7 @@
 import FormCard from '@/components/organization/FormCard';
 import OrgDataTable from '@/components/organization/OrgDataTable';
 import { useTheme } from '@/components/useTheme';
-import { ActiveStatus, Checklist } from '@/config/types';
+import { ActiveStatus, Checklist } from '@/config/types/types';
 import { dummyChecklists } from '@/lib/dummydata';
 import { CheckCircle, CheckSquare, Download, Plus, XCircle } from 'lucide-react';
 import { useState } from 'react';

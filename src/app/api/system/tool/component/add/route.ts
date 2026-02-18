@@ -1,4 +1,4 @@
-import { addComponent } from '@/backend/services/tool/tool-service';
+import { addComponent } from '@/backend/services/system/tool/tool-service';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 

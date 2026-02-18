@@ -3,7 +3,7 @@
 import MissionCategoryForm from '@/components/mission/MissionCategoryForm';
 import MissionCategoryTable from '@/components/mission/MissionCategoryTable';
 import { useTheme } from '@/components/useTheme';
-import { MissionCategory } from '@/config/types';
+import { MissionCategory } from '@/config/types/types';
 import axios from 'axios';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
