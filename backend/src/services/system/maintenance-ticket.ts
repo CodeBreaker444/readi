@@ -1,22 +1,22 @@
 import { supabase } from '@/backend/database/database';
 import type {
-    AddReportPayload,
-    AssignTicketPayload,
-    CloseTicketPayload,
-    ComponentOption,
-    CreateTicketPayload,
-    DroneOption,
-    MaintenanceTicket,
-    TicketEvent,
-    UserOption,
+  AddReportPayload,
+  AssignTicketPayload,
+  CloseTicketPayload,
+  ComponentOption,
+  CreateTicketPayload,
+  DroneOption,
+  MaintenanceTicket,
+  TicketEvent,
+  UserOption,
 } from '@/config/types/maintenance';
 import {
-    REGION,
-    buildS3Key,
-    buildS3Url,
-    deleteFileFromS3,
-    getPresignedDownloadUrl,
-    uploadFileToS3
+  REGION,
+  buildS3Key,
+  buildS3Url,
+  deleteFileFromS3,
+  getPresignedDownloadUrl,
+  uploadFileToS3
 } from '@/lib/s3Client';
 
 
@@ -61,26 +61,26 @@ export async function getTicketList(owner_id: number): Promise<MaintenanceTicket
   if (error) throw new Error(`getTicketList: ${error.message}`);
 
   return (data ?? []).map((row: any) => ({
-    ticket_id:           row.ticket_id,
-    fk_owner_id:         row.fk_owner_id,
-    fk_tool_id:          row.fk_tool_id,
-    ticket_type:         row.ticket_type ?? 'STANDARD',
-    entity_type:         'AIRCRAFT',
-    ticket_status:       row.ticket_status ?? 'OPEN',
-    ticket_priority:     row.ticket_priority ?? 'MEDIUM',
+    ticket_id: row.ticket_id,
+    fk_owner_id: row.fk_owner_id,
+    fk_tool_id: row.fk_tool_id,
+    ticket_type: row.ticket_type ?? 'STANDARD',
+    entity_type: 'AIRCRAFT',
+    ticket_status: row.ticket_status ?? 'OPEN',
+    ticket_priority: row.ticket_priority ?? 'MEDIUM',
     assigned_to_user_id: row.assigned_to_user_id,
-    opened_by:           'system',
-    opened_at:           row.reported_at ?? row.created_at,
-    closed_at:           row.closed_at ?? null,
-    note:                row.resolution_notes ?? null,
-    created_at:          row.created_at,
-    updated_at:          row.updated_at,
-    drone_code:          row.tool?.tool_code ?? '-',
-    drone_serial:        row.tool?.tool_serial_number ?? '-',
-    drone_model:         row.tool?.tool_model
+    opened_by: 'system',
+    opened_at: row.reported_at ?? row.created_at,
+    closed_at: row.closed_at ?? null,
+    note: row.resolution_notes ?? null,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    drone_code: row.tool?.tool_code ?? '-',
+    drone_serial: row.tool?.tool_serial_number ?? '-',
+    drone_model: row.tool?.tool_model
       ? `${row.tool.tool_model.manufacturer ?? ''} ${row.tool.tool_model.model_name ?? ''}`.trim()
       : '-',
-    assigner_name:  row.assignee
+    assigner_name: row.assignee
       ? `${row.assignee.first_name ?? ''} ${row.assignee.last_name ?? ''}`.trim()
       : 'Unassigned',
     assigner_email: row.assignee?.email ?? '',
@@ -90,10 +90,16 @@ export async function getTicketList(owner_id: number): Promise<MaintenanceTicket
 
 
 export async function createTicket(payload: CreateTicketPayload): Promise<number> {
-  const insert = {
+  const targets = payload.components?.length
+    ? payload.components
+    : [null];
+
+  const insert = targets.map((componentId) => ({
     fk_owner_id:         payload.fk_owner_id,
     fk_tool_id:          payload.fk_tool_id,
-    ticket_title:        `Maintenance - Tool #${payload.fk_tool_id}`,
+    ticket_title:        componentId
+      ? `Component Maintenance - #${componentId}`
+      : `Maintenance - Tool #${payload.fk_tool_id}`,
     ticket_type:         payload.type,
     ticket_priority:     payload.priority,
     ticket_status:       'OPEN',
@@ -101,7 +107,7 @@ export async function createTicket(payload: CreateTicketPayload): Promise<number
     assigned_to_user_id: payload.assigned_to ?? null,
     resolution_notes:    payload.note ?? null,
     reported_at:         new Date().toISOString(),
-  };
+  }));
 
   const { data, error } = await supabase
     .from('maintenance_ticket')
@@ -115,36 +121,15 @@ export async function createTicket(payload: CreateTicketPayload): Promise<number
 
   await addTicketEvent(ticketId, 'CREATED', `Ticket created by user #${payload.fk_user_id}`);
 
-  if (payload.components && payload.components.length > 0) {
-    const componentInserts = payload.components.map((componentId) => ({
-      fk_owner_id:         payload.fk_owner_id,
-      fk_tool_id:          payload.fk_tool_id,
-      ticket_title:        `Component Maintenance - #${componentId}`,
-      ticket_type:         payload.type,
-      ticket_priority:     payload.priority,
-      ticket_status:       'OPEN',
-      reported_by_user_id: payload.fk_user_id,
-      assigned_to_user_id: payload.assigned_to ?? null,
-      reported_at:         new Date().toISOString(),
-    }));
-
-    const { error: compError } = await supabase
-      .from('maintenance_ticket')
-      .insert(componentInserts);
-
-    if (compError) throw new Error(`createTicket (components): ${compError.message}`);
-  }
-
   return ticketId;
 }
-
 
 export async function closeTicket(payload: CloseTicketPayload): Promise<void> {
   const { error } = await supabase
     .from('maintenance_ticket')
     .update({
-      ticket_status:    'CLOSED',
-      closed_at:        new Date().toISOString(),
+      ticket_status: 'CLOSED',
+      closed_at: new Date().toISOString(),
       resolution_notes: payload.note ?? null,
     })
     .eq('ticket_id', payload.ticket_id);
@@ -177,11 +162,11 @@ export async function assignTicket(payload: AssignTicketPayload): Promise<void> 
 
 export async function addReport(payload: AddReportPayload): Promise<void> {
   const { error } = await supabase.from('maintenance_ticket_report').insert({
-    fk_ticket_id:  payload.ticket_id,
-    report_title:  'Intervention Report',
+    fk_ticket_id: payload.ticket_id,
+    report_title: 'Intervention Report',
     report_content: payload.report_text,
-    report_type:   'INTERVENTION',
-    generated_at:  new Date().toISOString(),
+    report_type: 'INTERVENTION',
+    generated_at: new Date().toISOString(),
   });
 
   if (error) throw new Error(`addReport: ${error.message}`);
@@ -204,11 +189,11 @@ export async function getTicketEvents(ticketId: number): Promise<TicketEvent[]> 
   if (error) throw new Error(`getTicketEvents: ${error.message}`);
 
   return (data ?? []).map((row: any) => ({
-    event_id:      row.event_id,
+    event_id: row.event_id,
     fk_ticket_id: ticketId,
-    event_type:    row.event_type,
+    event_type: row.event_type,
     event_message: row.event_description ?? '',
-    created_at:    row.created_at,
+    created_at: row.created_at,
   }));
 }
 
@@ -218,27 +203,27 @@ export async function uploadAttachment(
   file: File,
   description: string,
   uploadedBy: string,
-  uploadedByUserId?: number    
+  uploadedByUserId?: number
 ): Promise<{ file_key: string; s3_url: string }> {
   const fileKey = buildS3Key(ticketId, file.name);
-  const s3Url   = buildS3Url(fileKey);
+  const s3Url = buildS3Url(fileKey);
 
   await uploadFileToS3(fileKey, file);
 
   const { error: dbError } = await supabase
     .from('ticket_attachment')
     .insert({
-      fk_ticket_id:        ticketId,
-      file_name:           file.name,
-      file_key:            fileKey,
-      file_type:           file.type || 'application/octet-stream',
-      file_size:           file.size,
-      file_description:    description || null,
-      s3_region:           REGION,
-      s3_url:              s3Url,
-      uploaded_by:         uploadedBy,
+      fk_ticket_id: ticketId,
+      file_name: file.name,
+      file_key: fileKey,
+      file_type: file.type || 'application/octet-stream',
+      file_size: file.size,
+      file_description: description || null,
+      s3_region: REGION,
+      s3_url: s3Url,
+      uploaded_by: uploadedBy,
       uploaded_by_user_id: uploadedByUserId ?? null,
-      uploaded_at:         new Date().toISOString(),
+      uploaded_at: new Date().toISOString(),
     });
 
   if (dbError) throw new Error(`uploadAttachment (db): ${dbError.message}`);
@@ -300,9 +285,9 @@ export async function getDroneList(ownerId: number): Promise<DroneOption[]> {
   if (error) throw new Error(`getDroneList: ${error.message}`);
 
   return (data ?? []).map((row: any) => ({
-    tool_id:     row.tool_id,
-    tool_code:   row.tool_code ?? '',
-    tool_desc:   row.tool_name ?? '',
+    tool_id: row.tool_id,
+    tool_code: row.tool_code ?? '',
+    tool_desc: row.tool_name ?? '',
     tool_status: String(row.fk_status_id ?? 'UNKNOWN'),
   }));
 }
@@ -319,8 +304,8 @@ export async function getComponentList(toolId: number): Promise<ComponentOption[
 
   return (data ?? []).map((row: any) => ({
     tool_component_id: row.component_id,
-    component_type:    row.component_type ?? row.component_name ?? '',
-    component_sn:      row.serial_number ?? '',
+    component_type: row.component_type ?? row.component_name ?? '',
+    component_sn: row.serial_number ?? '',
   }));
 }
 
@@ -339,9 +324,9 @@ export async function getUserList(profileCode?: string): Promise<UserOption[]> {
   if (error) throw new Error(`getUserList: ${error.message}`);
 
   return (data ?? []).map((row: any) => ({
-    user_id:      row.user_id,
-    fullname:     `${row.first_name ?? ''} ${row.last_name ?? ''}`.trim(),
-    email:        row.email ?? '',
+    user_id: row.user_id,
+    fullname: `${row.first_name ?? ''} ${row.last_name ?? ''}`.trim(),
+    email: row.email ?? '',
     user_profile: row.user_role ?? '',
   }));
 }
@@ -353,9 +338,9 @@ async function addTicketEvent(
   message: string
 ): Promise<void> {
   await supabase.from('maintenance_ticket_event').insert({
-    fk_ticket_id:      ticketId,
-    event_type:        eventType,
+    fk_ticket_id: ticketId,
+    event_type: eventType,
     event_description: message,
-    created_at:        new Date().toISOString(),
+    created_at: new Date().toISOString(),
   });
 }

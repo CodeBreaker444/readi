@@ -219,7 +219,7 @@ export function NewTicketModal({
         onCancel={onClose}
         onConfirm={onSubmit}
         confirmLabel="Create Ticket"
-        confirmClass="bg-indigo-600 hover:bg-indigo-700"
+        confirmClass="bg-black hover:bg-black/60 text-white"
         isDark={isDark}
       />
     </Modal>
