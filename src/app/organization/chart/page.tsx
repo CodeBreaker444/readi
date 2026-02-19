@@ -18,7 +18,7 @@ export default function OrganizationPage() {
     let cancelled = false;
     async function fetchTree() {
       try {
-        const res = await fetch("/api/organization");
+        const res = await fetch("/api/organization/chart");
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));
           throw new Error(body.error ?? `HTTP ${res.status}`);
