@@ -1,145 +1,176 @@
-'use client';
+"use client";
 
-import { OrganizationNode } from '@/config/types/types';
-import { Building2, ChevronRight, User } from 'lucide-react';
-
-interface TreeNodeProps {
-  node: OrganizationNode;
-  level?: number;
-  isLast?: boolean;
-  isDark: boolean
-}
-
-function TreeNode({ node, level = 0, isLast = false, isDark }: TreeNodeProps) {
-  const hasChildren = node.children && node.children.length > 0;
-
-  const getBgColor = () => {
-    if (level === 0) return 'from-blue-600 to-indigo-700';
-    if (level === 1) return 'from-emerald-500 to-teal-600';
-    if (level === 2) return 'from-amber-500 to-orange-600';
-    return 'from-violet-500 to-purple-600';
-  };
-
-  return (
-    <div className="relative">
-      {level > 0 && (
-        <div
-          className={`absolute -left-4 top-0 bottom-0 w-px ${isDark
-              ? 'bg-linear-to-b from-gray-700 to-transparent'
-              : 'bg-linear-to-b from-gray-300 to-transparent'
-            }`}
-        />
-      )}
-
-      <div className={`${level > 0 ? 'ml-8' : ''} mb-4`}>
-        <div
-          className={`group relative rounded-lg shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border ${isDark
-              ? 'bg-gray-900 border-gray-700'
-              : 'bg-white border-gray-200'
-            }`}
-        >
-          <div className={`h-1 bg-linear-to-r ${getBgColor()}`} />
-
-          <div className="p-4">
-            <div className="flex items-center gap-4">
-              <div className="relative shrink-0">
-                <div
-                  className={`w-14 h-14 rounded-full bg-linear-to-br ${getBgColor()} text-white flex items-center justify-center text-lg font-bold shadow-lg`}
-                >
-                  {node.name
-                    .split(' ')
-                    .map(n => n[0])
-                    .join('')
-                    .substring(0, 2)}
-                </div>
-
-                {level === 0 && (
-                  <div
-                    className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 ${isDark
-                        ? 'bg-green-400 border-gray-900'
-                        : 'bg-green-500 border-white'
-                      }`}
-                  />
-                )}
-              </div>
-
-              <div className="grow">
-                <h3
-                  className={`font-bold text-lg flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'
-                    }`}
-                >
-                  {node.name}
-                  {level === 0 && <Building2 className="w-5 h-5 text-blue-500" />}
-                  {level > 0 && (
-                    <User className={`${isDark ? 'text-gray-400' : 'text-gray-500'} w-4 h-4`} />
-                  )}
-                </h3>
-
-                {node.title && (
-                  <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                    {node.title}
-                  </p>
-                )}
-
-                {node.department && (
-                  <span
-                    className={`inline-block mt-2 px-3 py-1 rounded-full text-xs font-semibold ${isDark
-                        ? 'bg-gray-800 text-gray-300'
-                        : 'bg-gray-100 text-gray-700'
-                      }`}
-                  >
-                    {node.department}
-                  </span>
-                )}
-              </div>
-
-              {hasChildren && (
-                <div className="shrink-0">
-                  <div
-                    className={`flex items-center gap-1 px-3 py-1 rounded-full ${isDark
-                        ? 'bg-blue-900/40 text-blue-300'
-                        : 'bg-blue-50 text-blue-700'
-                      }`}
-                  >
-                    <span className="text-xs font-semibold">
-                      {node.children!.length}
-                    </span>
-                    <ChevronRight className="w-4 h-4" />
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {hasChildren && (
-        <div className="relative">
-          {node.children!.map((child, index) => (
-            <TreeNode
-              key={child.id}
-              node={child}
-              level={level + 1}
-              isLast={index === node.children!.length - 1}
-              isDark={isDark}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-
-  );
-}
+import { OrgNode } from "@/backend/services/organization/organizatio-service";
+import { useEffect, useRef, useState } from "react";
 
 interface OrganizationTreeProps {
-  data: OrganizationNode;
-  isDark: boolean;
+  data: OrgNode | null;
+  isDark?: boolean;
 }
 
-export default function OrganizationTree({ data, isDark }: OrganizationTreeProps) {
-  return (
-    <div className="organization-tree p-6">
-      <TreeNode node={data} isDark={isDark} />
-    </div>
+export default function OrganizationTree({ data, isDark = false }: OrganizationTreeProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const treeRef      = useRef<ApexTreeInstance | null>(null);
+  const [scriptReady, setScriptReady] = useState(
+    () => typeof window !== "undefined" && !!window.ApexTree
   );
+
+  // Load ApexTree once
+  useEffect(() => {
+    if (window.ApexTree) { setScriptReady(true); return; }
+    const script    = document.createElement("script");
+    script.src      = "https://cdn.jsdelivr.net/npm/apextree";
+    script.async    = true;
+    script.onload   = () => setScriptReady(true);
+    script.onerror  = () => console.error("ApexTree load failed");
+    document.head.appendChild(script);
+  }, []);
+
+  // Render / re-render tree
+  useEffect(() => {
+    if (!scriptReady || !data || !containerRef.current || !window.ApexTree) return;
+
+    if (treeRef.current?.destroy) {
+      treeRef.current.destroy();
+      treeRef.current = null;
+    }
+    containerRef.current.innerHTML = "";
+
+    const bg          = isDark ? "#0f172a" : "#f8fafc";
+    const card        = isDark ? "#1e293b" : "#ffffff";
+    const border      = isDark ? "#334155" : "#e2e8f0";
+    const textPrimary = isDark ? "#f1f5f9" : "#0f172a";
+    const textSub     = isDark ? "#94a3b8" : "#64748b";
+    const textMuted   = isDark ? "#475569" : "#94a3b8";
+    const accent      = "#6366f1"; 
+
+    const options: ApexTreeOptions = {
+      contentKey:           "data",
+      width:                "100%",
+      height:               "100%",
+      nodeWidth:            240,
+      nodeHeight:           100,
+      fontColor:            textPrimary,
+      borderColor:          border,
+      childrenSpacing:      70,
+      siblingSpacing:       18,
+      direction:            "top",
+      enableExpandCollapse: true,
+      enableToolbar:        true,
+      canvasStyle:          `background:${bg}; border:none;`,
+      nodeTemplate: (content: OrgNode["data"]) => {
+        const initial = (content.name || content.title || "?")[0].toUpperCase();
+        const hue     = stringToHue(content.title);
+        const avatarBg = `hsl(${hue},60%,${isDark ? "30%" : "90%"})`;
+        const avatarFg = `hsl(${hue},60%,${isDark ? "75%" : "35%"})`;
+
+        return `
+          <div style="
+            display:flex; align-items:center; gap:10px;
+            height:100%; padding:0 14px;
+            background:${card};
+            border-radius:12px;
+            border:1px solid ${border};
+            box-shadow: 0 1px 3px rgba(0,0,0,${isDark ? ".4" : ".06"}),
+                        0 4px 12px rgba(0,0,0,${isDark ? ".3" : ".04"});
+            transition: box-shadow .2s, transform .2s;
+          ">
+            <div style="
+              width:38px; height:38px; border-radius:10px;
+              background:${avatarBg}; color:${avatarFg};
+              display:flex; align-items:center; justify-content:center;
+              font-size:15px; font-weight:700; flex-shrink:0;
+              font-family:'DM Mono', monospace;
+            ">${escapeHtml(initial)}</div>
+            <div style="flex:1; min-width:0;">
+              <p style="
+                margin:0 0 2px; font-size:11px; font-weight:600;
+                text-transform:uppercase; letter-spacing:.06em;
+                color:${accent}; white-space:nowrap;
+                overflow:hidden; text-overflow:ellipsis;
+              ">${escapeHtml(content.title)}</p>
+              <p style="
+                margin:0; font-size:13px; font-weight:500;
+                color:${textPrimary}; white-space:nowrap;
+                overflow:hidden; text-overflow:ellipsis;
+              ">${escapeHtml(content.name) || "<span style='color:" + textMuted + "'>—</span>"}</p>
+              <p style="
+                margin:0; font-size:10px; color:${textSub};
+                white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+              ">${escapeHtml(content.email) || ""}</p>
+            </div>
+          </div>`;
+      },
+    };
+
+    const tree = new window.ApexTree(containerRef.current, options);
+    tree.render(data);
+    treeRef.current = tree;
+  }, [scriptReady, data, isDark]);
+
+  if (!data) return null;
+
+  return (
+    <div
+      ref={containerRef}
+      style={{
+        width: "100%",
+        height: "640px",
+        minHeight: "500px",
+        borderRadius: "12px",
+        overflow: "hidden",
+      }}
+    />
+  );
+}
+
+function stringToHue(str: string): number {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) & 0xffffffff;
+  return Math.abs(h) % 360;
+}
+
+function escapeHtml(str: unknown): string {
+  return String(str ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+interface ApexTreeOptions {
+  contentKey:           string;
+  width:                string;
+  height:               string;
+  nodeWidth:            number;
+  nodeHeight:           number;
+  fontColor:            string;
+  borderColor:          string;
+  childrenSpacing:      number;
+  siblingSpacing:       number;
+  direction:            string;
+  enableExpandCollapse: boolean;
+  enableToolbar:        boolean;
+  canvasStyle:          string;
+  nodeTemplate:         (content: OrgNode["data"]) => string;
+}
+
+interface ApexTreeInstance {
+  render:   (data: OrgNode) => void;
+  destroy?: () => void;
+}
+
+declare global {
+  interface Window {
+    ApexTree: new (el: HTMLElement, options: ApexTreeOptions) => ApexTreeInstance;
+  }
+}
+
+export function countVisible(node: OrgNode): number {
+  return 1 + (node.children ?? []).reduce((s, c) => s + countVisible(c), 0);
+}
+export function countDepth(node: OrgNode, d = 1): number {
+  if (!node.children?.length) return d;
+  return Math.max(...node.children.map((c) => countDepth(c, d + 1)));
 }
