@@ -1,5 +1,6 @@
 import { env } from '@/backend/config/env';
 import { supabase } from '@/backend/database/database';
+import bcrypt from 'bcrypt';
 import { sendUserActivationEmail } from 'lib/resend/mail';
 
 export interface UserCreateData {
@@ -134,13 +135,15 @@ export async function createUser(userData: UserCreateData) {
       const nameParts = userData.fullname.trim().split(' ');
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
+      const saltRounds = 10;
+      const hashedPasscode = await bcrypt.hash(uid, saltRounds);
 
-      const { data: newUser, error: insertError } = await supabase
+     const { data: newUser, error: insertError } = await supabase
         .from('users')
         .insert({
           username: userData.username,
           email: userData.email,
-          password_hash: uid,  
+          password_hash: hashedPasscode,  
           first_name: firstName,
           last_name: lastName,
           phone: userData.phone,
@@ -153,7 +156,7 @@ export async function createUser(userData: UserCreateData) {
           is_viewer: userData.is_viewer,
           is_manager: userData.is_manager,
           user_timezone: userData.timezone,
-          user_unique_code: uid,
+          user_unique_code: uid,  
           _key_: key,
           notes: '',
         })
