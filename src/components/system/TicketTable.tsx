@@ -18,9 +18,9 @@ interface Props {
 }
 
 import {
-    getCoreRowModel,
-    getPaginationRowModel,
-    useReactTable,
+  getCoreRowModel,
+  getPaginationRowModel,
+  useReactTable,
 } from '@tanstack/react-table';
 import { useState } from 'react';
 import { TablePagination } from '../tables/Pagination';

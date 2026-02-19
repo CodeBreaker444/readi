@@ -2,6 +2,12 @@
 
 import { MaintenanceTicket, TicketPriority } from '@/config/types/maintenance';
 import { useEffect } from 'react';
+import {
+  MdCheckCircleOutline,
+  MdConfirmationNumber,
+  MdErrorOutline,
+  MdOutlineWatchLater
+} from 'react-icons/md';
 
 export const PRIORITY_STYLES: Record<TicketPriority, string> = {
   HIGH: 'bg-red-100 text-red-700 border border-red-200',
@@ -156,49 +162,74 @@ interface Props {
   isDark: boolean;
 }
 
-export function TicketStats({ tickets, isDark }: Props ) {
+
+export function TicketStats({ tickets, isDark }: Props) {
   const stats = [
     {
       label: 'Total Tickets',
       value: tickets.length,
+      icon: MdConfirmationNumber,
       color: isDark ? 'text-slate-200' : 'text-slate-700',
+      iconColor: isDark ? 'text-slate-500' : 'text-slate-400',
       bg: isDark ? 'bg-slate-800' : 'bg-white',
     },
     {
       label: 'Open',
       value: tickets.filter((t) => t.ticket_status === 'OPEN').length,
+      icon: MdOutlineWatchLater,
       color: isDark ? 'text-rose-400' : 'text-rose-600',
+      iconColor: isDark ? 'text-rose-500/80' : 'text-rose-500',
       bg: isDark ? 'bg-rose-900/20' : 'bg-rose-50',
     },
     {
       label: 'Closed',
       value: tickets.filter((t) => t.ticket_status === 'CLOSED').length,
+      icon: MdCheckCircleOutline,
       color: isDark ? 'text-emerald-400' : 'text-emerald-600',
+      iconColor: isDark ? 'text-emerald-500/80' : 'text-emerald-500',
       bg: isDark ? 'bg-emerald-900/20' : 'bg-emerald-50',
     },
     {
-      label: 'High Priority Open',
+      label: 'High Priority',
       value: tickets.filter(
         (t) => t.ticket_priority === 'HIGH' && t.ticket_status === 'OPEN'
       ).length,
+      icon: MdErrorOutline,
       color: isDark ? 'text-amber-400' : 'text-amber-600',
+      iconColor: isDark ? 'text-amber-500/80' : 'text-amber-500',
       bg: isDark ? 'bg-amber-900/20' : 'bg-amber-50',
     },
   ];
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-      {stats.map((s) => (
-        <div
-          key={s.label}
-          className={`${s.bg} rounded-2xl border ${isDark ? 'border-slate-700' : 'border-slate-200'} p-4 shadow-sm`}
-        >
-          <p className={`text-xs font-semibold uppercase tracking-wide ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-            {s.label}
-          </p>
-          <p className={`text-3xl font-bold mt-1 ${s.color}`}>{s.value}</p>
-        </div>
-      ))}
+      {stats.map((s) => {
+        const Icon = s.icon;
+        return (
+          <div
+            key={s.label}
+            className={`${s.bg} rounded-2xl border ${
+              isDark ? 'border-slate-700' : 'border-slate-200'
+            } p-5 shadow-sm transition-all hover:translate-y-[-2px] duration-200`}
+          >
+            <div className="flex items-start justify-between">
+              <div>
+                <p className={`text-xs font-bold uppercase tracking-wider ${
+                  isDark ? 'text-slate-400' : 'text-slate-500'
+                }`}>
+                  {s.label}
+                </p>
+                <p className={`text-3xl font-bold mt-2 ${s.color} tabular-nums`}>
+                  {s.value}
+                </p>
+              </div>
+              <div className={`p-2 rounded-xl ${isDark ? 'bg-slate-700/50' : 'bg-white shadow-sm'}`}>
+                <Icon size={22} className={s.iconColor} />
+              </div>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

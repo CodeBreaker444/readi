@@ -97,7 +97,7 @@ export default function MaintenanceLogbookPage() {
         </div>
       </div>
 
-      <div className={`px-6 py-6 space-y-6 flex flex-col min-h-full ${isDark ? 'bg-slate-800' : 'bg-white'}`}>
+      <div className={`px-6 py-6 space-y-6 flex flex-col min-h-[calc(100vh-64px)] ${isDark ? 'bg-slate-800' : 'bg-white'}`}>
         <TicketStats tickets={tickets} isDark={isDark} />
 
         <TicketFilters
@@ -108,7 +108,7 @@ export default function MaintenanceLogbookPage() {
           isDark={isDark}
         />
 
-        <div className="flex-1">
+        <div className="flex-1 flex flex-col min-h-0">
           <TicketTable
             tickets={filtered}
             loading={ticketsLoading}
