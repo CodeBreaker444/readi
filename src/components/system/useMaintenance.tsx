@@ -91,6 +91,12 @@ export function useMaintenanceLogbook() {
     }
   }, []);
 
+  const updateLocalTicket = (ticketId: number, updates: Partial<MaintenanceTicket>) => {
+    setTickets((prev) =>
+      prev.map((t) => (t.ticket_id === ticketId ? { ...t, ...updates } : t))
+    );
+  };
+
 
   async function openNewTicketModal() {
     try {
@@ -98,8 +104,8 @@ export function useMaintenanceLogbook() {
         axios.get(`/api/system/maintenance/lookups?type=drones`),
         axios.get(`/api/system/maintenance/lookups?type=users&profile=PIC`),
       ]);
-      setDrones(dronesRes.data.data);    
-      setUsers(usersRes.data.data);      
+      setDrones(dronesRes.data.data);
+      setUsers(usersRes.data.data);
       setNewTicket(defaultNewTicket);
       setComponents([]);
       openModal('newTicket');
@@ -113,7 +119,7 @@ export function useMaintenanceLogbook() {
     if (!toolId) return;
     try {
       const { data } = await axios.get(`/api/system/maintenance/lookups?type=components&tool_id=${toolId}`);
-      setComponents(data.data);       
+      setComponents(data.data);
     } catch (e: any) {
       toast.error(e.response?.data?.message ?? e.message);
     }
@@ -129,7 +135,7 @@ export function useMaintenanceLogbook() {
     setActiveTicketId(id);
     try {
       const { data } = await axios.get(`/api/system/maintenance/lookups?type=users`);
-      setUsers(data.data);              
+      setUsers(data.data);
       setAssignTo(0);
       openModal('assign');
     } catch (e: any) {
@@ -163,13 +169,17 @@ export function useMaintenanceLogbook() {
 
   async function handleCreateTicket() {
     try {
-      await axios.post(`/api/system/maintenance/tickets/create`, {
+      const res = await axios.post(`/api/system/maintenance/tickets/create`, {
         ...newTicket,
         opened_by: 'web',
       });
       toast.success('Ticket created successfully');
       closeModal('newTicket');
-      loadTickets();
+      if (res.data.ticket) {
+        setTickets(prev => [res.data.ticket, ...prev]);
+      } else {
+        loadTickets();
+      }
     } catch (e: any) {
       toast.error(e.response?.data?.message ?? e.message);
     }
@@ -184,7 +194,10 @@ export function useMaintenanceLogbook() {
       });
       toast.success('Ticket closed');
       closeModal('close');
-      loadTickets();
+      updateLocalTicket(activeTicketId, {
+        ticket_status: 'CLOSED',
+        closed_at: new Date().toISOString(),
+      });
     } catch (e: any) {
       toast.error(e.response?.data?.message ?? e.message);
     }
@@ -199,7 +212,11 @@ export function useMaintenanceLogbook() {
       });
       toast.success('Ticket assigned');
       closeModal('assign');
-      loadTickets();
+      const selectedUser = users.find(u => u.user_id === assignTo);
+      updateLocalTicket(activeTicketId, {
+        assigned_to_user_id: assignTo,
+        assigner_name: selectedUser?.fullname
+      });
     } catch (e: any) {
       toast.error(e.response?.data?.message ?? e.message);
     }
@@ -218,7 +235,12 @@ export function useMaintenanceLogbook() {
       });
       toast.success('Report saved');
       closeModal('report');
-      loadTickets();
+      if (report.close) {
+        updateLocalTicket(activeTicketId, {
+          ticket_status: 'CLOSED',
+          closed_at: new Date().toISOString()
+        });
+      }
     } catch (e: any) {
       toast.error(e.response?.data?.message ?? e.message);
     }
