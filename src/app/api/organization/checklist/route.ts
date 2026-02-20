@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
         const ownerId = session.user.ownerId
 
         const result = await getChecklistsByOwner(ownerId)
-        return NextResponse.json(result, {status: 200 })
+        return NextResponse.json({result, message: 'Checklists retrieved successfully'}, {status: 200 })
     } catch (error) {
         const message = error instanceof Error ? error.message : 'Unexpected error';
         return NextResponse.json({ message, code: 0, data: [], dataRows: 0 }, { status: 500 });
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
             fk_user_id: session.user.userId,
         })
 
-        return NextResponse.json(result, { status: 201 })
+        return NextResponse.json({...result, message: 'Checklist created successfully'}, { status: 201 })
     } catch (error) {
         const message = error instanceof Error ? error.message : 'Unexpected error';
         return NextResponse.json({ message, code: 0, data: null, dataRows: 0 }, { status: 500 });

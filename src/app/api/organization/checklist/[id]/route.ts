@@ -74,7 +74,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
             fk_owner_id: session.user.ownerId ,
             fk_user_id: session.user.userId })
 
-        return NextResponse.json(result, { status: 200 })
+        return NextResponse.json({ ...result, message: 'Checklist updated successfully' }, { status: 200 })
     } catch (error) {
         return NextResponse.json(
             { code: 0, message: 'Error updating checklist', dataRows: 0, data: null },
@@ -96,7 +96,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     const ownerId = session.user.ownerId
 
     const result = await deleteChecklist(ownerId, Number(id))
-    return NextResponse.json(result, { status:  200  })
+    return NextResponse.json({ ...result, message: 'Checklist deleted successfully' }, { status:  200  })
     }catch (error) {
         return NextResponse.json(
             { code: 0, message: 'Error deleting checklist', dataRows: 0, data: null },
