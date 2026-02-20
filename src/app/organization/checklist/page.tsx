@@ -1,290 +1,234 @@
-'use client';
+'use client'
 
-import FormCard from '@/components/organization/FormCard';
-import OrgDataTable from '@/components/organization/OrgDataTable';
+import { ChecklistForm, Modal } from '@/components/organization/ChecklistUi';
+import { getColumns } from '@/components/tables/CheckListColumn';
+import { TablePagination } from '@/components/tables/Pagination';
 import { useTheme } from '@/components/useTheme';
-import { ActiveStatus, Checklist } from '@/config/types';
-import { dummyChecklists } from '@/lib/dummydata';
-import { CheckCircle, CheckSquare, Download, Plus, XCircle } from 'lucide-react';
-import { useState } from 'react';
+import type { Checklist } from '@/config/types/checklist';
+import { flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, useReactTable } from '@tanstack/react-table';
+import axios from 'axios';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  HiPlus,
+  HiRefresh,
+  HiSearch
+} from 'react-icons/hi';
+import { toast } from 'sonner';
+
+type FormData = {
+  checklist_code: string
+  checklist_ver: string
+  checklist_active: 'Y' | 'N'
+  checklist_desc: string
+  checklist_json: string
+}
+
+const emptyForm: FormData = {
+  checklist_code: '',
+  checklist_ver: '1.0',
+  checklist_active: 'Y',
+  checklist_desc: '',
+  checklist_json: '',
+}
 
 export default function ChecklistPage() {
-  const { isDark } = useTheme()
-  const [checklists, setChecklists] = useState<Checklist[]>(dummyChecklists);
-  const [formData, setFormData] = useState({
-    code: '',
-    version: '',
-    active: '' as ActiveStatus | '',
-    description: '',
-    jsonSchema: ''
+  const { isDark } = useTheme();
+  const [checklists, setChecklists] = useState<Checklist[]>([])
+  const [loading, setLoading] = useState(true)
+  const [addOpen, setAddOpen] = useState(false)
+  const [editItem, setEditItem] = useState<Checklist | null>(null)
+  const [previewItem, setPreviewItem] = useState<Checklist | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState<Checklist | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+  const [search, setSearch] = useState('')
+  const [globalFilter, setGlobalFilter] = useState('');
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await axios.get('/api/organization/checklist')
+
+      setChecklists(res.data.data ?? [])
+    } catch (error) {
+      toast.error('Failed to load checklists')
+      setChecklists([])
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  const columns = useMemo(() => getColumns(
+    isDark,
+    (item) => setEditItem(item),
+    (item) => setPreviewItem(item),
+    (item) => setConfirmDelete(item)
+  ), [isDark]);
+
+  const table = useReactTable({
+    data: checklists,
+    columns,
+    state: { globalFilter },
+    onGlobalFilterChange: setGlobalFilter,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    initialState: { pagination: { pageSize: 8 } },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const newChecklist: Checklist = {
-      id: String(checklists.length + 1),
-      code: formData.code,
-      version: formData.version,
-      active: formData.active as ActiveStatus,
-      description: formData.description,
-      jsonSchema: formData.jsonSchema,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
+  const handleCreate = async (form: FormData) => {
+    setSubmitting(true)
+    try {
+      const res = await axios.post('/api/organization/checklist', form)
+      if (res.status === 201) { setAddOpen(false); load(); toast.success('Checklist created') }
+    } catch { toast.error('Creation failed') }
+    setSubmitting(false)
+  }
 
-    setChecklists([...checklists, newChecklist]);
-    
-    // Reset form
-    setFormData({
-      code: '',
-      version: '',
-      active: '',
-      description: '',
-      jsonSchema: ''
-    });
-  };
+  const handleUpdate = async (form: FormData) => {
+    if (!editItem) return
+    setSubmitting(true)
+    try {
+      const res = await axios.put(`/api/organization/checklist/${editItem.checklist_id}`, form)
+      if (res.status === 200) { setEditItem(null); load(); toast.success('Checklist updated') }
+    } catch { toast.error('Update failed') }
+    setSubmitting(false)
+  }
 
-  const columns = [
-    { 
-      key: 'code', 
-      label: 'Code',
-      render: (value: string) => (
-        <span className="font-semibold text-emerald-600">{value}</span>
-      )
-    },
-    { 
-      key: 'version', 
-      label: 'Version',
-      render: (value: string) => (
-        <span className="px-2 py-1 rounded bg-gray-100 text-gray-700 text-xs font-mono">
-          v{value}
-        </span>
-      )
-    },
-    {
-      key: 'active',
-      label: 'Status',
-      render: (value: ActiveStatus) => (
-        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
-          value === 'Y' 
-            ? 'bg-green-100 text-green-800 border border-green-200' 
-            : 'bg-gray-100 text-gray-600 border border-gray-200'
-        }`}>
-          {value === 'Y' ? (
-            <>
-              <CheckCircle className="w-3.5 h-3.5" />
-              Active
-            </>
-          ) : (
-            <>
-              <XCircle className="w-3.5 h-3.5" />
-              Inactive
-            </>
-          )}
-        </span>
-      )
-    },
-    { key: 'description', label: 'Description' },
-    {
-      key: 'updatedAt',
-      label: 'Last Updated',
-      render: (value: string) => (
-        <span className="text-gray-600 text-sm">
-          {new Date(value).toLocaleDateString('en-US', { 
-            month: 'short', 
-            day: 'numeric', 
-            year: 'numeric' 
-          })}
-        </span>
-      )
-    }
-  ];
+  const handleDelete = async () => {
+    if (!confirmDelete) return
+    setSubmitting(true)
+    try {
+      const res = await axios.delete(`/api/organization/checklist/${confirmDelete.checklist_id}`)
+      if (res.status === 200) { setConfirmDelete(null); load(); toast.success('Checklist deleted') }
+    } catch { toast.error('Deletion failed') }
+    setSubmitting(false)
+  }
+
+  const safeChecklists = Array.isArray(checklists) ? checklists : []
+
+  const filtered = safeChecklists.filter(c =>
+    !search ||
+    c.checklist_code?.toLowerCase().includes(search.toLowerCase()) ||
+    c.checklist_desc?.toLowerCase().includes(search.toLowerCase())
+  )
+
+  const editInitial: FormData = editItem ? {
+    checklist_code: editItem.checklist_code ?? '',
+    checklist_ver: String(editItem.checklist_ver ?? '1.0'),
+    checklist_active: (editItem.checklist_active as 'Y' | 'N') ?? 'Y',
+    checklist_desc: editItem.checklist_desc ?? '',
+    checklist_json: editItem.checklist_json ? JSON.stringify(editItem.checklist_json, null, 2) : '',
+  } : emptyForm
+
 
   return (
-  <div
-  className={`min-h-screen p-6 ${
-    isDark
-      ? 'bg-linear-to-br from-gray-900 via-gray-800 to-gray-900'
-      : 'bg-linear-to-br from-gray-50 via-emerald-50 to-teal-50'
-  }`}
->
-  <div className="max-w-7xl mx-auto space-y-6">
+    <div className={`min-h-screen ${isDark ? 'bg-slate-950 text-slate-300' : 'bg-slate-100 text-slate-700'}`}>
+      <div className="mx-auto px-6 py-10">
 
-    <div
-      className={`rounded-xl shadow-lg border p-6 ${
-        isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'
-      }`}
-    >
-      <div className="flex items-center gap-3">
-        <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-linear-to-r from-emerald-600 to-teal-700">
-          <CheckSquare className="w-6 h-6 text-white" />
-        </div>
-        <div>
-          <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-            Checklists
-          </h1>
-          <p className={`text-sm mt-0.5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-            Create and manage operational checklists
-          </p>
-        </div>
-      </div>
-    </div>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+          <div className="flex items-center gap-3">
+            <div>
+              <h1 className={`text-xl font-bold leading-none ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                Checklists
+              </h1>
 
-    <FormCard
-      title="Add Checklist"
-      icon={<Plus className="w-5 h-5 text-white" />}
-      isDark={isDark}
-    >
-      <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'} mb-6`}>
-        Create a new checklist with Survey.js compatible JSON schema.
-      </p>
-
-      <form onSubmit={handleSubmit} className="space-y-6">
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className={`block text-sm font-semibold mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-              Checklist Code *
-            </label>
-            <input
-              className={`w-full px-4 py-2.5 rounded-lg border outline-none transition-all ${
-                isDark
-                  ? 'bg-gray-800 border-gray-700 text-white focus:ring-emerald-600'
-                  : 'bg-white border-gray-300 text-gray-900 focus:ring-emerald-500'
-              }`}
-              type="text"
-              placeholder="e.g., CHK-001"
-              value={formData.code}
-              onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-              required
-            />
+              <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>
+                Manage and organize your checklist items
+              </p>
+            </div>
           </div>
-
-          <div>
-            <label className={`block text-sm font-semibold mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-              Version *
-            </label>
-            <input
-              className={`w-full px-4 py-2.5 rounded-lg border outline-none transition-all ${
-                isDark
-                  ? 'bg-gray-800 border-gray-700 text-white'
-                  : 'bg-white border-gray-300 text-gray-900'
-              }`}
-              type="text"
-              placeholder="e.g., 1.0"
-              value={formData.version}
-              onChange={(e) => setFormData({ ...formData, version: e.target.value })}
-              required
-            />
-          </div>
-
-          <div>
-            <label className={`block text-sm font-semibold mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-              Status *
-            </label>
-            <select
-              className={`w-full px-4 py-2.5 rounded-lg border outline-none transition-all ${
-                isDark
-                  ? 'bg-gray-800 border-gray-700 text-white'
-                  : 'bg-white border-gray-300 text-gray-900'
-              }`}
-              value={formData.active}
-              onChange={(e) => setFormData({ ...formData, active: e.target.value as ActiveStatus })}
-              required
-            >
-              <option value="">Select Status</option>
-              <option value="Y">Active</option>
-              <option value="N">Inactive</option>
-            </select>
+          <div className="flex items-center gap-2">
+            <button onClick={load} className={`h-9 px-4 rounded-lg border text-sm flex items-center gap-2 transition-all ${isDark ? 'border-slate-700 bg-slate-800 hover:bg-slate-700' : 'border-slate-200 bg-white hover:bg-slate-50'}`}>
+              <HiRefresh className={loading ? 'animate-spin' : ''} /> Refresh
+            </button>
+            <button onClick={() => setAddOpen(true)} className="h-9 px-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium flex items-center gap-2 shadow-md">
+              <HiPlus /> Add Checklist
+            </button>
           </div>
         </div>
 
-        <div>
-          <label className={`block text-sm font-semibold mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-            Description *
-          </label>
+        <div className="relative mb-4">
+          <HiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
-            className={`w-full px-4 py-2.5 rounded-lg border outline-none transition-all ${
-              isDark
-                ? 'bg-gray-800 border-gray-700 text-white'
-                : 'bg-white border-gray-300 text-gray-900'
-            }`}
-            type="text"
-            placeholder="Brief description of the checklist"
-            value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            required
+            value={globalFilter ?? ''}
+            onChange={e => setGlobalFilter(e.target.value)}
+            placeholder="Search all columns..."
+            className={`w-full h-10 pl-9 pr-4 rounded-lg border text-sm outline-none focus:ring-2 focus:ring-blue-500/20 ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`}
           />
         </div>
 
-        <div>
-          <label className={`block text-sm font-semibold mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-            JSON Schema (Survey.js Format)
-          </label>
-          <textarea
-            rows={12}
-            className={`w-full px-4 py-3 rounded-lg border outline-none font-mono text-sm transition-all ${
-              isDark
-                ? 'bg-gray-800 border-gray-700 text-gray-100'
-                : 'bg-white border-gray-300 text-gray-900'
-            }`}
-            value={formData.jsonSchema}
-            onChange={(e) => setFormData({ ...formData, jsonSchema: e.target.value })}
-          />
+        <div className={`rounded-xl border overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                {table.getHeaderGroups().map(headerGroup => (
+                  <tr key={headerGroup.id} className={`border-b text-xs uppercase tracking-wider ${isDark ? 'border-slate-800 bg-slate-800/50 text-slate-500' : 'border-slate-100 bg-slate-50 text-slate-400'}`}>
+                    {headerGroup.headers.map(header => (
+                      <th key={header.id} className="px-4 py-3 text-left font-semibold">
+                        {flexRender(header.column.columnDef.header, header.getContext())}
+                      </th>
+                    ))}
+                  </tr>
+                ))}
+              </thead>
+              <tbody className={`divide-y ${isDark ? 'divide-slate-800/60' : 'divide-slate-100'}`}>
+                {loading ? (
+                  <tr><td colSpan={columns.length} className="py-10 text-center animate-pulse">Loading data...</td></tr>
+                ) : table.getRowModel().rows.length === 0 ? (
+                  <tr><td colSpan={columns.length} className="py-20 text-center text-slate-500 italic">No results found.</td></tr>
+                ) : table.getRowModel().rows.map(row => (
+                  <tr key={row.id} className={`transition-colors ${isDark ? 'hover:bg-slate-800/40' : 'hover:bg-slate-50'}`}>
+                    {row.getVisibleCells().map(cell => (
+                      <td key={cell.id} className="px-4 py-3">
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        <div className={`flex items-center gap-3 pt-4 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
-          <button
-            type="submit"
-            className="flex items-center gap-2 px-6 py-3 rounded-lg bg-linear-to-r from-emerald-600 to-teal-700 text-white font-semibold hover:shadow-lg transition-all"
-          >
-            <Plus className="w-5 h-5" />
-            Create Checklist
-          </button>
+        <TablePagination table={table} />
+      </div>
 
+      <Modal open={addOpen} title="Add Checklist" onClose={() => setAddOpen(false)} isDark={isDark}>
+        <ChecklistForm initial={emptyForm} onSubmit={handleCreate} loading={submitting} submitLabel="Create Checklist" isDark={isDark} />
+      </Modal>
+
+      <Modal open={!!editItem} title={`Edit — ${editItem?.checklist_code}`} onClose={() => setEditItem(null)} isDark={isDark}>
+        <ChecklistForm initial={editInitial} onSubmit={handleUpdate} loading={submitting} submitLabel="Save Changes" isDark={isDark} />
+      </Modal>
+
+      <Modal open={!!previewItem} title={`JSON Schema — ${previewItem?.checklist_code}`} onClose={() => setPreviewItem(null)} isDark={isDark}>
+        <pre className={`rounded-lg p-4 text-xs font-mono leading-relaxed overflow-x-auto max-h-[60vh] whitespace-pre-wrap ${isDark ? 'bg-slate-950 text-blue-400' : 'bg-slate-50 text-blue-700'}`}>
+          {previewItem?.checklist_json ? JSON.stringify(previewItem.checklist_json, null, 2) : '// No schema defined'}
+        </pre>
+      </Modal>
+
+      <Modal open={!!confirmDelete} title="Delete Checklist" onClose={() => setConfirmDelete(null)} isDark={isDark}>
+        <p className={`text-sm leading-relaxed mb-6 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+          Permanently delete <span className={`font-semibold font-mono ${isDark ? 'text-white' : 'text-slate-900'}`}>{confirmDelete?.checklist_code}</span>? This cannot be undone.
+        </p>
+        <div className="flex gap-3 justify-end">
           <button
-            type="button"
-            className={`px-6 py-3 rounded-lg border font-semibold transition-all ${
-              isDark
-                ? 'border-gray-700 text-gray-300 hover:bg-gray-800'
-                : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-            }`}
-            onClick={() =>
-              setFormData({
-                code: '',
-                version: '',
-                active: '',
-                description: '',
-                jsonSchema: ''
-              })
-            }
+            onClick={() => setConfirmDelete(null)}
+            className={`px-4 py-2 rounded-lg border text-sm transition-colors ${isDark ? 'border-slate-700 text-slate-400 hover:bg-slate-800' : 'border-slate-200 text-slate-500 hover:bg-slate-50'}`}
           >
-            Reset Form
+            Cancel
+          </button>
+          <button
+            onClick={handleDelete}
+            disabled={submitting}
+            className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-medium transition-colors disabled:opacity-50"
+          >
+            {submitting ? 'Deleting…' : 'Delete'}
           </button>
         </div>
-      </form>
-    </FormCard>
-
-    <OrgDataTable
-      columns={columns}
-      data={checklists}
-      title="Checklist List"
-      isDark={isDark}
-      actions={
-        <button
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all font-medium ${
-            isDark
-              ? 'bg-gray-800 text-gray-300 border-gray-700 hover:bg-gray-700'
-              : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-          }`}
-        >
-          <Download className="w-4 h-4" />
-          Export
-        </button>
-      }
-    />
-  </div>
-</div>
-  );
+      </Modal>
+    </div>
+  )
 }

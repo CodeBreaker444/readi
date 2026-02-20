@@ -1,6 +1,6 @@
 'use client';
 
-import { MissionType } from '@/config/types';
+import { MissionType } from '@/config/types/types';
 import { FormEvent, useState } from 'react';
 import { toast } from 'sonner';
 

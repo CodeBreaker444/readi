@@ -1,6 +1,6 @@
 'use client';
 
-import { MissionCategory } from '@/config/types';
+import { MissionCategory } from '@/config/types/types';
 import { useState } from 'react';
 
 interface MissionCategoryFormProps {

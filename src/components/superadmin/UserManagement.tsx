@@ -6,6 +6,7 @@ import axios from 'axios';
 import { Edit, Filter, Mail, Plus, Search, Trash2, User } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { Button } from '../ui/button';
 import { UserFormModal } from './UserFormModal';
 import { SkeletonRow, StatSkeleton } from './UserSkeleton';
 
@@ -172,13 +173,13 @@ export default function UserManagement({ session }: UserManagementProps) {
             Manage users and roles within your organization.
           </p>
         </div>
-        <button
+        <Button
           onClick={() => setShowAddModal(true)}
-          className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 flex items-center gap-2"
+          className="px-4 py-2   text-white text-sm rounded-lg  flex items-center gap-2"
         >
           <Plus size={18} />
           Add New User
-        </button>
+        </Button>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">

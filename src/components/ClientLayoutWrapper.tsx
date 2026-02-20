@@ -6,6 +6,7 @@ import React, { useEffect, useState } from 'react';
 import { Role } from '../lib/auth/roles';
 import MobileSidebar from './MobileSidebar';
 import { RoleIndicator } from './RoleIndicator';
+import { RouteLoadingOverlay, RouteLoadingProvider } from './RouteLoading';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
 import { useTheme } from './useTheme';
@@ -15,9 +16,9 @@ interface ClientLayoutWrapperProps {
   sessionPromise: Promise<Session | null>;
 }
 
-const ClientLayoutWrapper: React.FC<ClientLayoutWrapperProps> = ({ 
-  children, 
-  sessionPromise 
+const ClientLayoutWrapper: React.FC<ClientLayoutWrapperProps> = ({
+  children,
+  sessionPromise
 }) => {
   const pathname = usePathname();
   const isAuthPage = pathname?.startsWith('/auth');
@@ -35,28 +36,37 @@ const ClientLayoutWrapper: React.FC<ClientLayoutWrapperProps> = ({
   const role: Role | null = session?.user?.role ?? null;
   const userData: SessionUser | null = session?.user ?? null;
 
-  if (isAuthPage) {
-    return <>{children}</>;
-  }
-
   return (
-    <div className={`flex h-screen ${isDark ? 'bg-slate-900' : 'bg-gray-50'}`}>
-      {!loading && <RoleIndicator role={role} />}
-
-      <div className="hidden lg:block">
-        <Sidebar isDark={isDark} role={role}/>
-      </div>
-      
-      <MobileSidebar isDark={isDark} role={role}/>
-      
-      <div className="flex-1 flex flex-col overflow-hidden pt-1">
-        <TopBar isDark={isDark} toggleTheme={toggleTheme} userData={userData} />
-        
-        <main className={`flex-1 overflow-y-auto ${isDark ? 'bg-slate-900' : 'bg-gray-50'}`}>
+    <RouteLoadingProvider>
+      {isAuthPage ? (
+        <>
           {children}
-        </main>
-      </div>
-    </div>
+          <RouteLoadingOverlay variant="fullscreen" isDark={isDark} />
+        </>
+      ) : (
+        <div className={`flex h-screen ${isDark ? 'bg-slate-900' : 'bg-gray-50'}`}>
+          {!loading && <RoleIndicator role={role} />}
+
+          <div className="hidden lg:block">
+            <Sidebar isDark={isDark} role={role} />
+          </div>
+
+          <MobileSidebar isDark={isDark} role={role} />
+
+          <div className="flex-1 flex flex-col overflow-hidden pt-1">
+            <TopBar isDark={isDark} toggleTheme={toggleTheme} userData={userData} />
+
+            <main
+              className={`relative flex-1 overflow-y-auto ${isDark ? 'bg-slate-900' : 'bg-gray-50'}`}
+            >
+              {children}
+              <RouteLoadingOverlay variant="main" isDark={isDark} />
+            </main>
+          </div>
+        </div>
+      )}
+    </RouteLoadingProvider>
   );
 };
+
 export default ClientLayoutWrapper;

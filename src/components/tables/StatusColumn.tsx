@@ -1,4 +1,4 @@
-import { Mission } from '@/config/types';
+import { Mission } from '@/config/types/types';
 import { cn } from '@/lib/utils';
 import { ColumnDef } from '@tanstack/react-table';
 import { Pencil, Trash2 } from 'lucide-react';

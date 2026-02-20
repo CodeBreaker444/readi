@@ -1,5 +1,5 @@
 import { Clock, X } from 'lucide-react';
-import { HistoryItem } from '../../config/types';
+import { HistoryItem } from '../../config/types/types';
 
 interface HistoryModalProps {
   isOpen: boolean;

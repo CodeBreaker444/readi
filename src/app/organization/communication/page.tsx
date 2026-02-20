@@ -3,7 +3,7 @@
 import FormCard from '@/components/organization/FormCard';
 import OrgDataTable from '@/components/organization/OrgDataTable';
 import { useTheme } from '@/components/useTheme';
-import { ActiveStatus, Communication } from '@/config/types';
+import { ActiveStatus, Communication } from '@/config/types/types';
 import { dummyCommunications } from '@/lib/dummydata';
 import { useState } from 'react';
 

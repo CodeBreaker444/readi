@@ -1,316 +1,414 @@
 'use client';
 
-import FormCard from '@/components/organization/FormCard';
-import OrgDataTable from '@/components/organization/OrgDataTable';
-import { useTheme } from '@/components/useTheme';
-import { ActiveStatus, LUCProcedure, SectorType } from '@/config/types';
-import { dummyLUCProcedures } from '@/lib/dummydata';
-import { CheckCircle, Download, FileText, Plus, XCircle } from 'lucide-react';
-import { useState } from 'react';
+import {
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getSortedRowModel,
+  useReactTable,
+  type ColumnFiltersState,
+  type SortingState,
+} from '@tanstack/react-table';
+import axios from 'axios';
+import { ChevronDown, ChevronsUpDown, ChevronUp, Plus, RefreshCw } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 
-export default function LUCProceduresPage() {
-  const { isDark } = useTheme()
-  const [procedures, setProcedures] = useState<LUCProcedure[]>(dummyLUCProcedures);
-  const [formData, setFormData] = useState({
-    code: '',
-    sector: '' as SectorType | '',
-    version: '',
-    active: '' as ActiveStatus | '',
-    description: '',
-    jsonSchema: ''
+import { getLucProcedureColumns } from '@/components/organization/LcuProcedureColumn';
+import { LcuDeleteDialog, LcuEditModal } from '@/components/organization/LcuProcedureSections';
+import { TablePagination } from '@/components/tables/Pagination';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import type {
+  CreateLucProcedurePayload,
+  LucProcedure,
+  LucProcedureStatus,
+} from '@/config/types/lcuProcedures';
+
+// ─── Filter options ────────────────────────────────────────────────────────────
+const STATUS_FILTER_OPTIONS: { value: LucProcedureStatus | 'ALL'; label: string }[] = [
+  { value: 'ALL',        label: 'All Statuses' },
+  { value: 'EVALUATION', label: 'Evaluation'   },
+  { value: 'PLANNING',   label: 'Planning'     },
+  { value: 'MISSION',    label: 'Mission'      },
+];
+
+const ACTIVE_FILTER_OPTIONS = [
+  { value: 'ALL', label: 'All' },
+  { value: 'Y',   label: 'Active'   },
+  { value: 'N',   label: 'Inactive' },
+];
+
+// ─── Stat card ────────────────────────────────────────────────────────────────
+function StatCard({ label, value, colorClass, bgClass }: {
+  label: string; value: number; colorClass: string; bgClass: string;
+}) {
+  return (
+    <div className={`${bgClass} rounded-xl px-4 py-3 border border-slate-100 shadow-sm`}>
+      <div className={`text-xl font-bold ${colorClass}`}>{value}</div>
+      <div className="text-xs text-slate-500 font-medium mt-0.5">{label}</div>
+    </div>
+  );
+}
+
+// ─── Sort icon ────────────────────────────────────────────────────────────────
+function SortIcon({ direction }: { direction: 'asc' | 'desc' | false }) {
+  if (direction === 'asc')  return <ChevronUp   className="h-3 w-3 ml-1 shrink-0" />;
+  if (direction === 'desc') return <ChevronDown  className="h-3 w-3 ml-1 shrink-0" />;
+  return <ChevronsUpDown className="h-3 w-3 ml-1 shrink-0 opacity-40" />;
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+export default function LucProceduresPage() {
+  const [procedures, setProcedures] = useState<LucProcedure[]>([]);
+  const [loading, setLoading]       = useState(true);
+  const [saving, setSaving]         = useState(false);
+
+  const [showCreate, setShowCreate]     = useState(false);
+  const [editTarget, setEditTarget]     = useState<LucProcedure | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<LucProcedure | null>(null);
+
+  const [globalFilter, setGlobalFilter]   = useState('');
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [sorting, setSorting]             = useState<SortingState>([]);
+
+  // ── Fetch ───────────────────────────────────────────────────────────────────
+  const loadProcedures = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await axios.get('/api/organization/luc-procedures');
+      // API returns { data: LucProcedure[], message, code, dataRows }
+      setProcedures(res.data.data ?? []);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to load procedures');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadProcedures(); }, [loadProcedures]);
+
+  // ── CRUD ────────────────────────────────────────────────────────────────────
+  const handleCreate = async (data: Partial<CreateLucProcedurePayload>) => {
+    try {
+      setSaving(true);
+      await axios.post('/api/organization/luc-procedures', data);
+      toast.success('Procedure created successfully');
+      setShowCreate(false);
+      loadProcedures();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Create failed');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleUpdate = async (data: Partial<CreateLucProcedurePayload>) => {
+    if (!editTarget) return;
+    try {
+      setSaving(true);
+      // Use procedure_id (real PK) for the URL
+      await axios.put(`/api/organization/luc-procedures/${editTarget.procedure_id}`, data);
+      toast.success('Procedure updated successfully');
+      setEditTarget(null);
+      loadProcedures();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Update failed');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await axios.delete(`/api/organization/luc-procedures/${deleteTarget.procedure_id}`);
+      toast.success('Procedure deleted');
+      setDeleteTarget(null);
+      loadProcedures();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Delete failed');
+    }
+  };
+
+  // ── Table ───────────────────────────────────────────────────────────────────
+  const columns = useMemo(
+    () => getLucProcedureColumns(setEditTarget, setDeleteTarget),
+    [],
+  );
+
+  const table = useReactTable({
+    data: procedures,
+    columns,
+    state: { globalFilter, columnFilters, sorting },
+    onGlobalFilterChange: setGlobalFilter,
+    onColumnFiltersChange: setColumnFilters,
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    // Search across code + name + description
+    globalFilterFn: (row, _colId, filterValue: string) => {
+      const q = filterValue.toLowerCase();
+      return (
+        row.original.procedure_code.toLowerCase().includes(q) ||
+        row.original.procedure_name.toLowerCase().includes(q) ||
+        (row.original.procedure_description ?? '').toLowerCase().includes(q)
+      );
+    },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const newProcedure: LUCProcedure = {
-      id: String(procedures.length + 1),
-      code: formData.code,
-      sector: formData.sector as SectorType,
-      version: formData.version,
-      active: formData.active as ActiveStatus,
-      description: formData.description,
-      jsonSchema: formData.jsonSchema,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
+  // ── Filter helpers ──────────────────────────────────────────────────────────
+  const getColFilter = (colId: string) =>
+    (columnFilters.find(f => f.id === colId)?.value as string) ?? 'ALL';
 
-    setProcedures([...procedures, newProcedure]);
-    
-    // Reset form
-    setFormData({
-      code: '',
-      sector: '',
-      version: '',
-      active: '',
-      description: '',
-      jsonSchema: ''
+  const setColFilter = (colId: string, value: string) => {
+    setColumnFilters(prev => {
+      const rest = prev.filter(f => f.id !== colId);
+      return value === 'ALL' ? rest : [...rest, { id: colId, value }];
     });
   };
 
-  const columns = [
-    { 
-      key: 'code', 
-      label: 'Code',
-      render: (value: string) => (
-        <span className="font-semibold text-blue-600">{value}</span>
-      )
-    },
-    {
-      key: 'sector',
-      label: 'Sector',
-      render: (value: SectorType) => {
-        const colors = {
-          EVALUATION: 'bg-purple-100 text-purple-800 border-purple-200',
-          PLANNING: 'bg-blue-100 text-blue-800 border-blue-200',
-          MISSION: 'bg-green-100 text-green-800 border-green-200'
-        };
-        return (
-          <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${colors[value]}`}>
-            {value}
-          </span>
-        );
-      }
-    },
-    { 
-      key: 'version', 
-      label: 'Version',
-      render: (value: string) => (
-        <span className="px-2 py-1 rounded bg-gray-100 text-gray-700 text-xs font-mono">
-          v{value}
-        </span>
-      )
-    },
-    {
-      key: 'active',
-      label: 'Status',
-      render: (value: ActiveStatus) => (
-        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
-          value === 'Y' 
-            ? 'bg-green-100 text-green-800 border border-green-200' 
-            : 'bg-gray-100 text-gray-600 border border-gray-200'
-        }`}>
-          {value === 'Y' ? (
-            <>
-              <CheckCircle className="w-3.5 h-3.5" />
-              Active
-            </>
-          ) : (
-            <>
-              <XCircle className="w-3.5 h-3.5" />
-              Inactive
-            </>
-          )}
-        </span>
-      )
-    },
-    { key: 'description', label: 'Description' },
-    {
-      key: 'updatedAt',
-      label: 'Last Updated',
-      render: (value: string) => (
-        <span className="text-gray-600 text-sm">
-          {new Date(value).toLocaleDateString('en-US', { 
-            month: 'short', 
-            day: 'numeric', 
-            year: 'numeric' 
-          })}
-        </span>
-      )
-    }
-  ];
+  // ── Stats — derived from real field names ───────────────────────────────────
+  const stats = useMemo(() => ({
+    total:      procedures.length,
+    active:     procedures.filter(p => p.procedure_active === 'Y').length,
+    evaluation: procedures.filter(p => p.procedure_status === 'EVALUATION').length,
+    planning:   procedures.filter(p => p.procedure_status === 'PLANNING').length,
+    mission:    procedures.filter(p => p.procedure_status === 'MISSION').length,
+  }), [procedures]);
 
+  const visibleCount = table.getRowModel().rows.length;
+
+  // ── Render ──────────────────────────────────────────────────────────────────
   return (
- <div className={`min-h-screen p-6 ${isDark ? 'bg-linear-to-br from-gray-900 via-gray-800 to-gray-900' : 'bg-linear-to-br from-gray-50 via-blue-50 to-indigo-50'}`}>
-  <div className="max-w-7xl mx-auto space-y-6">
+    <div className="bg-slate-50 min-h-screen">
+      <div className="mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
 
-    {/* Header */}
-    <div className={`rounded-xl shadow-lg border p-6 ${isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'}`}>
-      <div className="flex items-center gap-3">
-        <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-linear-to-r from-blue-600 to-indigo-700">
-          <FileText className="w-6 h-6 text-white" />
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">LUC Procedures</h1>
+            <p className="text-sm text-slate-500 mt-0.5">
+              Manage light UAS operator certificate procedures
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={loadProcedures}
+              disabled={loading}
+              className="h-9 gap-1.5"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+            <Button size="sm" className="h-9 gap-1.5" onClick={() => setShowCreate(true)}>
+              <Plus className="h-4 w-4" />
+              Add Procedure
+            </Button>
+          </div>
         </div>
-        <div>
-          <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-            LUC Procedures
-          </h1>
-          <p className={`text-sm mt-0.5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-            Manage operational procedures and protocols
-          </p>
+
+        {/* Stats */}
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          <StatCard label="Total"      value={stats.total}      colorClass="text-slate-700"   bgClass="bg-white"      />
+          <StatCard label="Active"     value={stats.active}     colorClass="text-emerald-700" bgClass="bg-emerald-50" />
+          <StatCard label="Evaluation" value={stats.evaluation} colorClass="text-violet-700"  bgClass="bg-violet-50"  />
+          <StatCard label="Planning"   value={stats.planning}   colorClass="text-sky-700"     bgClass="bg-sky-50"     />
+          <StatCard label="Mission"    value={stats.mission}    colorClass="text-amber-700"   bgClass="bg-amber-50"   />
         </div>
+
+        {/* Filters */}
+        <div className="bg-white rounded-xl border border-slate-100 shadow-sm px-4 py-3 flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <svg
+              className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"
+              fill="none" viewBox="0 0 24 24" stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <Input
+              placeholder="Search by code, name or description…"
+              value={globalFilter}
+              onChange={e => setGlobalFilter(e.target.value)}
+              className="pl-9 h-9 text-sm"
+            />
+          </div>
+
+          {/* Filter on procedure_status column */}
+          <Select
+            value={getColFilter('procedure_status')}
+            onValueChange={val => setColFilter('procedure_status', val)}
+          >
+            <SelectTrigger className="w-full sm:w-44 h-9 text-sm">
+              <SelectValue placeholder="All Statuses" />
+            </SelectTrigger>
+            <SelectContent>
+              {STATUS_FILTER_OPTIONS.map(s => (
+                <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Filter on procedure_active column */}
+          <Select
+            value={getColFilter('procedure_active')}
+            onValueChange={val => setColFilter('procedure_active', val)}
+          >
+            <SelectTrigger className="w-full sm:w-36 h-9 text-sm">
+              <SelectValue placeholder="All" />
+            </SelectTrigger>
+            <SelectContent>
+              {ACTIVE_FILTER_OPTIONS.map(s => (
+                <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Table */}
+        <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map(hg => (
+                <TableRow key={hg.id} className="bg-slate-50 hover:bg-slate-50">
+                  {hg.headers.map(header => {
+                    const canSort = header.column.getCanSort();
+                    return (
+                      <TableHead
+                        key={header.id}
+                        style={{ width: header.column.getSize() }}
+                        className="text-xs font-semibold text-slate-500 uppercase tracking-wider h-10"
+                      >
+                        {header.isPlaceholder ? null : (
+                          <button
+                            type="button"
+                            disabled={!canSort}
+                            onClick={header.column.getToggleSortingHandler()}
+                            className={`flex items-center ${canSort ? 'cursor-pointer hover:text-slate-700' : 'cursor-default'}`}
+                          >
+                            {flexRender(header.column.columnDef.header, header.getContext())}
+                            {canSort && <SortIcon direction={header.column.getIsSorted()} />}
+                          </button>
+                        )}
+                      </TableHead>
+                    );
+                  })}
+                </TableRow>
+              ))}
+            </TableHeader>
+
+            <TableBody>
+              {loading ? (
+                [...Array(5)].map((_, i) => (
+                  <TableRow key={i}>
+                    {columns.map((_, j) => (
+                      <TableCell key={j} className="py-3.5">
+                        <Skeleton className="h-4 w-full rounded" />
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : table.getRowModel().rows.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={columns.length} className="h-48 text-center">
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center">
+                        <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </div>
+                      <p className="text-sm font-medium text-slate-600">No procedures found</p>
+                      <p className="text-xs text-slate-400">
+                        {globalFilter || columnFilters.length > 0
+                          ? 'Try adjusting your filters'
+                          : 'Add your first LUC procedure to get started'}
+                      </p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                table.getRowModel().rows.map(row => (
+                  <TableRow key={row.id} className="hover:bg-slate-50/70 transition-colors">
+                    {row.getVisibleCells().map(cell => (
+                      <TableCell key={cell.id} className="py-3.5">
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+           
+{/* 
+          {!loading && (
+            <div className="px-6 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+              <p className="text-xs text-slate-400">
+                Showing{' '}
+                <span className="font-medium text-slate-600">{visibleCount}</span>
+                {' '}of{' '}
+                <span className="font-medium text-slate-600">{procedures.length}</span>
+                {' '}procedures
+              </p>
+              {(globalFilter || columnFilters.length > 0) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs text-slate-500"
+                  onClick={() => { setGlobalFilter(''); setColumnFilters([]); }}
+                >
+                  Clear filters
+                </Button>
+              )}
+            </div>
+          )} */}
+        </div>
+         <TablePagination table={table} />
       </div>
+
+      <LcuEditModal
+        open={showCreate}
+        procedure={null}
+        onClose={() => setShowCreate(false)}
+        onSave={handleCreate}
+        saving={saving}
+      />
+
+      <LcuEditModal
+        open={!!editTarget}
+        procedure={editTarget}
+        onClose={() => setEditTarget(null)}
+        onSave={handleUpdate}
+        saving={saving}
+      />
+
+      <LcuDeleteDialog
+        open={!!deleteTarget}
+        procedure={deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+      />
     </div>
-
-    <FormCard
-      title="Add LUC Procedure"
-      icon={<Plus className="w-5 h-5 text-white" />}
-      isDark={isDark}
-    >
-      <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'} mb-6`}>
-        Fill in the details below to create a new LUC Procedure for your organization.
-      </p>
-
-      <form onSubmit={handleSubmit} className="space-y-6">
-
-        {/* Row 1 */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className={`block text-sm font-semibold mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-              Procedure Code *
-            </label>
-            <input
-              className={`w-full px-4 py-2.5 rounded-lg border outline-none transition-all ${
-                isDark
-                  ? 'bg-gray-800 border-gray-700 text-white focus:ring-blue-600'
-                  : 'bg-white border-gray-300 text-gray-900 focus:ring-blue-500'
-              }`}
-              type="text"
-              value={formData.code}
-              onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-              required
-            />
-          </div>
-
-          <div>
-            <label className={`block text-sm font-semibold mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-              Sector *
-            </label>
-            <select
-              className={`w-full px-4 py-2.5 rounded-lg border outline-none transition-all ${
-                isDark
-                  ? 'bg-gray-800 border-gray-700 text-white'
-                  : 'bg-white border-gray-300 text-gray-900'
-              }`}
-              value={formData.sector}
-              onChange={(e) => setFormData({ ...formData, sector: e.target.value as SectorType })}
-              required
-            >
-              <option value="">Select Sector</option>
-              <option value="EVALUATION">Evaluation</option>
-              <option value="PLANNING">Planning</option>
-              <option value="MISSION">Mission</option>
-            </select>
-          </div>
-
-          <div>
-            <label className={`block text-sm font-semibold mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-              Version *
-            </label>
-            <input
-              className={`w-full px-4 py-2.5 rounded-lg border outline-none transition-all ${
-                isDark
-                  ? 'bg-gray-800 border-gray-700 text-white'
-                  : 'bg-white border-gray-300 text-gray-900'
-              }`}
-              type="text"
-              value={formData.version}
-              onChange={(e) => setFormData({ ...formData, version: e.target.value })}
-              required
-            />
-          </div>
-        </div>
-
-        {/* Row 2 */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="md:col-span-2">
-            <label className={`block text-sm font-semibold mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-              Description *
-            </label>
-            <input
-              className={`w-full px-4 py-2.5 rounded-lg border outline-none transition-all ${
-                isDark
-                  ? 'bg-gray-800 border-gray-700 text-white'
-                  : 'bg-white border-gray-300 text-gray-900'
-              }`}
-              type="text"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              required
-            />
-          </div>
-
-          <div>
-            <label className={`block text-sm font-semibold mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-              Status *
-            </label>
-            <select
-              className={`w-full px-4 py-2.5 rounded-lg border outline-none transition-all ${
-                isDark
-                  ? 'bg-gray-800 border-gray-700 text-white'
-                  : 'bg-white border-gray-300 text-gray-900'
-              }`}
-              value={formData.active}
-              onChange={(e) => setFormData({ ...formData, active: e.target.value as ActiveStatus })}
-              required
-            >
-              <option value="">Select Status</option>
-              <option value="Y">Active</option>
-              <option value="N">Inactive</option>
-            </select>
-          </div>
-        </div>
-
-        {/* JSON */}
-        <div>
-          <label className={`block text-sm font-semibold mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-            JSON Schema
-          </label>
-          <textarea
-            rows={12}
-            className={`w-full px-4 py-3 rounded-lg border outline-none font-mono text-sm transition-all ${
-              isDark
-                ? 'bg-gray-800 border-gray-700 text-gray-100'
-                : 'bg-white border-gray-300 text-gray-900'
-            }`}
-            value={formData.jsonSchema}
-            onChange={(e) => setFormData({ ...formData, jsonSchema: e.target.value })}
-          />
-        </div>
-
-        {/* Actions */}
-        <div className={`flex items-center gap-3 pt-4 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
-          <button
-            type="submit"
-            className="flex items-center gap-2 px-6 py-3 rounded-lg bg-linear-to-r from-blue-600 to-indigo-700 text-white font-semibold hover:shadow-lg transition-all"
-          >
-            <Plus className="w-5 h-5" />
-            Create Procedure
-          </button>
-
-          <button
-            type="button"
-            className={`px-6 py-3 rounded-lg border font-semibold transition-all ${
-              isDark
-                ? 'border-gray-700 text-gray-300 hover:bg-gray-800'
-                : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-            }`}
-            onClick={() =>
-              setFormData({ code: '', sector: '', version: '', active: '', description: '', jsonSchema: '' })
-            }
-          >
-            Reset Form
-          </button>
-        </div>
-      </form>
-    </FormCard>
-
-    <OrgDataTable
-      columns={columns}
-      data={procedures}
-      title="LUC Procedures List"
-      isDark={isDark}
-      actions={
-        <button className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all ${
-          isDark
-            ? 'bg-gray-800 text-gray-300 border-gray-700 hover:bg-gray-700'
-            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-        }`}>
-          <Download className="w-4 h-4" />
-          Export
-        </button>
-      }
-    />
-  </div>
-</div>
   );
 }

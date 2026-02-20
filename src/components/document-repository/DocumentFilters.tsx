@@ -1,5 +1,5 @@
 import { Search } from 'lucide-react';
-import { FilterState } from '../../config/types';
+import { FilterState } from '../../config/types/types';
 
 interface DocumentFiltersProps {
   filters: FilterState;

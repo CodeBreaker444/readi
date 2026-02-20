@@ -1,6 +1,6 @@
 'use client';
 
-import { Mission } from '@/config/types';
+import { Mission } from '@/config/types/types';
 import { useState } from 'react';
 
 interface MissionStatusFormProps {
