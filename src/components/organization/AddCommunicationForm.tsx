@@ -40,7 +40,6 @@ export function AddCommunicationForm({ onSuccess, isDark }: AddCommunicationForm
     setIsSubmitting(true);
 
     try {
-      // ✅ Send form fields directly at the top level, not nested under "data"
       const res = await axios.post("/api/organization/communication/add", form);
       if (res.status === 201) {
         toast.success("Communication protocol deployed");
