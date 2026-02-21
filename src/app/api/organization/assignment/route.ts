@@ -1,7 +1,7 @@
 import {
     createAssignment,
     getAssignmentsByOwner,
-} from '@/backend/services/organization/assignment/assignment-service'
+} from '@/backend/services/organization/assignment-service'
 import { getUserSession } from '@/lib/auth/server-session'
 import { NextRequest, NextResponse } from 'next/server'
 import z from 'zod'

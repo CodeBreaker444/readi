@@ -1,4 +1,4 @@
-import { Assignment } from '@/backend/services/organization/assignment/assignment-service'
+import { Assignment } from '@/backend/services/organization/assignment-service'
 import { ColumnDef } from '@tanstack/react-table'
 import { HiPencilAlt, HiPlay, HiTrash } from 'react-icons/hi'
 import { Badge } from '../organization/ChecklistUi'

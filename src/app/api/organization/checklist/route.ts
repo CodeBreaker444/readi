@@ -1,4 +1,4 @@
-import { createChecklist, getChecklistsByOwner } from '@/backend/services/organization/checklist/checklist-service'
+import { createChecklist, getChecklistsByOwner } from '@/backend/services/organization/checklist-service'
 import type { ChecklistCreatePayload } from '@/config/types/checklist'
 import { getUserSession } from '@/lib/auth/server-session'
 import { NextRequest, NextResponse } from 'next/server'

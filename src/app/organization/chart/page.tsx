@@ -1,6 +1,6 @@
 "use client";
 
-import { OrgNode } from "@/backend/services/organization/organizatio-service";
+import { OrgNode } from "@/backend/services/organization/organization-service";
 import OrganizationTree, { countDepth, countVisible } from "@/components/organization/OrganizationTree";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/useTheme";

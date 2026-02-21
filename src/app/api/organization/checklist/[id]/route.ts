@@ -1,4 +1,4 @@
-import { deleteChecklist, getChecklistById, updateChecklist } from '@/backend/services/organization/checklist/checklist-service'
+import { deleteChecklist, getChecklistById, updateChecklist } from '@/backend/services/organization/checklist-service'
 import type { ChecklistUpdatePayload } from '@/config/types/checklist'
 import { getUserSession } from '@/lib/auth/server-session'
 import { NextRequest, NextResponse } from 'next/server'

@@ -1,4 +1,4 @@
-import { countNodes, getOrganizationTree } from "@/backend/services/organization/organizatio-service";
+import { countNodes, getOrganizationTree } from "@/backend/services/organization/organization-service";
 import { getUserSession } from "@/lib/auth/server-session";
 import { NextResponse } from "next/server";
 
