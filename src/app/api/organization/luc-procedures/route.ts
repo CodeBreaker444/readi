@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
 
-import { createLucProcedure, getLucProcedures } from '@/backend/services/organization/lcu-procedures/lcu-service';
+import { createLucProcedure, getLucProcedures } from '@/backend/services/organization/lcu-service';
 import { getUserSession } from '@/lib/auth/server-session';
 
 export async function GET(request: NextRequest) {

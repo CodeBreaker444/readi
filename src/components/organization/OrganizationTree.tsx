@@ -1,6 +1,6 @@
 "use client";
 
-import { OrgNode } from "@/backend/services/organization/organizatio-service";
+import { OrgNode } from "@/backend/services/organization/organization-service";
 import { useEffect, useRef, useState } from "react";
 
 interface OrganizationTreeProps {

@@ -1,9 +1,9 @@
 import { env } from '@/backend/config/env';
 import {
-    DeleteObjectCommand,
-    GetObjectCommand,
-    PutObjectCommand,
-    S3Client,
+  DeleteObjectCommand,
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
@@ -52,7 +52,7 @@ export function buildS3Url(key: string): string {
  */
 export async function getPresignedUploadUrl(
   key: string,
-  contentType: string,
+  contentType: string,  
   expiresIn = 300
 ): Promise<string> {
   const command = new PutObjectCommand({

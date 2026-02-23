@@ -1,4 +1,4 @@
-import { deleteLucProcedure, getLucProcedureById, updateLucProcedure } from '@/backend/services/organization/lcu-procedures/lcu-service';
+import { deleteLucProcedure, getLucProcedureById, updateLucProcedure } from '@/backend/services/organization/lcu-service';
 import { getUserSession } from '@/lib/auth/server-session';
 import { NextRequest, NextResponse } from 'next/server';
 

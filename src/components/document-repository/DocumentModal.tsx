@@ -1,175 +1,333 @@
 'use client';
 
-import { X } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { Document } from '../../config/types/types';
-import { DUMMY_DOCUMENT_TYPES } from '../../lib/dummydata';
+import type { DocType, RepositoryDocument } from '@/config/types/repository';
+import { Loader2 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
-interface DocumentModalProps {
-  isOpen: boolean;
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import axios from 'axios';
+import { toast } from 'sonner';
+
+interface Props {
+  open: boolean;
   onClose: () => void;
-  onSave: (data: any) => void;
-  document: Document | null;
-  isDark: boolean
+  onSaved: () => void;
+  docTypes: DocType[];
+  document?: RepositoryDocument | null;
 }
 
-export default function DocumentModal({
-  isOpen,
-  onClose,
-  onSave,
-  document,
-  isDark
-}: DocumentModalProps) {
-  const [formData, setFormData] = useState({
-    doc_type_id: '',
-    doc_code: '',
-    title: '',
-    description: '',
-    status: 'DRAFT',
-    confidentiality: 'INTERNAL',
-    owner_role: '',
-    effective_date: '',
-    expiry_date: '',
-    keywords: '',
-    tags: '',
-    version_label: '',
-    change_log: '',
-  });
+const STATUS_OPTIONS = ['DRAFT', 'IN_REVIEW', 'APPROVED', 'OBSOLETE'];
+const CONFIDENTIALITY_OPTIONS = ['INTERNAL', 'PUBLIC', 'CONFIDENTIAL', 'RESTRICTED'];
+
+export default function DocumentFormModal({ open, onClose, onSaved, docTypes, document }: Props) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [saving, setSaving] = useState(false);
+
+  const [docTypeId, setDocTypeId] = useState('');
+  const [docCode, setDocCode] = useState('');
+  const [status, setStatus] = useState('DRAFT');
+  const [title, setTitle] = useState('');
+  const [confidentiality, setConfidentiality] = useState('INTERNAL');
+  const [ownerRole, setOwnerRole] = useState('');
+  const [effectiveDate, setEffectiveDate] = useState('');
+  const [expiryDate, setExpiryDate] = useState('');
+  const [description, setDescription] = useState('');
+  const [keywords, setKeywords] = useState('');
+  const [tags, setTags] = useState('');
+  const [versionLabel, setVersionLabel] = useState('');
+  const [changeLog, setChangeLog] = useState('');
+
+  const isEdit = !!document;
 
   useEffect(() => {
     if (document) {
-      setFormData({
-        doc_type_id: document.doc_type_id.toString(),
-        doc_code: document.doc_code,
-        title: document.title,
-        description: document.description || '',
-        status: document.status,
-        confidentiality: document.confidentiality,
-        owner_role: document.owner_role,
-        effective_date: document.effective_date || '',
-        expiry_date: document.expiry_date || '',
-        keywords: document.keywords || '',
-        tags: document.tags || '',
-        version_label: document.version_label,
-        change_log: document.change_log || '',
-      });
+      setDocTypeId(String(document.doc_type_id));
+      setDocCode(document.doc_code ?? '');
+      setStatus(document.status);
+      setTitle(document.title);
+      setConfidentiality(document.confidentiality);
+      setOwnerRole(document.owner_role ?? '');
+      setEffectiveDate(document.effective_date?.slice(0, 10) ?? '');
+      setExpiryDate(document.expiry_date?.slice(0, 10) ?? '');
+      setDescription(document.description ?? '');
+      setKeywords(document.keywords ?? '');
+      setTags(document.tags ?? '');
+      setVersionLabel('');
+      setChangeLog('');
     } else {
-      setFormData({
-        doc_type_id: '',
-        doc_code: '',
-        title: '',
-        description: '',
-        status: 'DRAFT',
-        confidentiality: 'INTERNAL',
-        owner_role: '',
-        effective_date: '',
-        expiry_date: '',
-        keywords: '',
-        tags: '',
-        version_label: '',
-        change_log: '',
-      });
+      setDocTypeId(''); setDocCode(''); setStatus('DRAFT'); setTitle('');
+      setConfidentiality('INTERNAL'); setOwnerRole(''); setEffectiveDate('');
+      setExpiryDate(''); setDescription(''); setKeywords(''); setTags('');
+      setVersionLabel(''); setChangeLog('');
     }
-  }, [document]);
+    if (fileRef.current) fileRef.current.value = '';
+  }, [document, open]);
 
-  const handleChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const selectedType = DUMMY_DOCUMENT_TYPES.find(
-      (t) => t.doc_type_id.toString() === formData.doc_type_id
-    );
-    
-    onSave({
-      ...formData,
-      doc_type_id: parseInt(formData.doc_type_id),
-      area: selectedType?.area || '',
-      category: selectedType?.category || '',
-      type_name: selectedType?.type_name || '',
-    });
-  };
+async function handleSave() {
+    setSaving(true);
+    try {
+        if (!isEdit) {
+            const fd = new FormData();
+            fd.append('doc_type_id', docTypeId);
+            if (docCode)        fd.append('doc_code', docCode);
+            fd.append('status', status);
+            fd.append('title', title);
+            fd.append('confidentiality', confidentiality);
+            if (ownerRole)      fd.append('owner_role', ownerRole);
+            if (effectiveDate)  fd.append('effective_date', effectiveDate);
+            if (expiryDate)     fd.append('expiry_date', expiryDate);
+            if (description)    fd.append('description', description);
+            if (keywords)       fd.append('keywords', keywords);
+            if (tags)           fd.append('tags', tags);
+            if (versionLabel)   fd.append('version_label', versionLabel);
+            if (changeLog)      fd.append('change_log', changeLog);
 
-  if (!isOpen) return null;
+            const file = fileRef.current?.files?.[0];
+            if (!file) {
+                toast.error('Please select a file');
+                setSaving(false);
+                return;
+            }
+            fd.append('file', file);
 
+            await axios.post(`/api/document/create`, fd, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+        } else {
+            const file = fileRef.current?.files?.[0];
+            if (file) {
+                const fd = new FormData();
+                fd.append('document_id', String(document!.document_id));
+                fd.append('file', file);
+                if (versionLabel) fd.append('version_label', versionLabel);
+                if (changeLog)    fd.append('change_log', changeLog);
+
+                await axios.post(`/api/document/upload_revision`, fd, {
+                    headers: { 'Content-Type': 'multipart/form-data' },
+                });
+            }
+
+            await axios.post(`/api/document/update`, {
+                document_id:     document!.document_id,
+                doc_type_id:     Number(docTypeId),
+                doc_code:        docCode || null,
+                status:          status as never,
+                title,
+                confidentiality: confidentiality as never,
+                owner_role:      ownerRole || null,
+                effective_date:  effectiveDate || null,
+                expiry_date:     expiryDate || null,
+                description:     description || null,
+                keywords:        keywords || null,
+                tags:            tags || null,
+            });
+        }
+
+        onSaved();
+        toast.success('Document saved successfully');
+        onClose();
+    } catch (e: unknown) {
+        toast.error('Error while saving');
+    } finally {
+        setSaving(false);
+    }
+}
   return (
-<div className={`fixed inset-0 flex items-center justify-center z-50 p-4 bg-black bg-opacity-50`}>
-  <div className={`rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-hidden border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
-    
-    <div className={`flex items-center justify-between p-6 border-b ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
-      <h2 className={`text-xl font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>
-        {document ? 'Edit Document' : 'New Document'}
-      </h2>
-      <button onClick={onClose} className={`${isDark ? 'text-gray-300 hover:text-white' : 'text-gray-400 hover:text-gray-600'} transition-colors`}>
-        <X className="w-6 h-6" />
-      </button>
-    </div>
+    <Dialog open={open} onOpenChange={(val) => !val && onClose()}>
+  <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[95vh] flex flex-col p-0 overflow-hidden rounded-lg">
+    <DialogHeader className="px-4 py-4 sm:px-6 border-b">
+      <DialogTitle className="text-lg sm:text-xl">{isEdit ? 'Edit Document' : 'New Document'}</DialogTitle>
+    </DialogHeader>
 
-    <form onSubmit={handleSubmit} className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="flex-1 overflow-y-auto px-4 py-5 sm:px-6 space-y-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Label className="text-xs sm:text-sm">Type <span className="text-red-500">*</span></Label>
+          <Select value={docTypeId} onValueChange={setDocTypeId}>
+            <SelectTrigger className="text-xs sm:text-sm">
+              <SelectValue placeholder="Select type..." />
+            </SelectTrigger>
+                <SelectContent>
+                  {docTypes.map((t) => (
+                    <SelectItem key={t.doc_type_id} value={String(t.doc_type_id)}>
+                      {t.doc_area ? `[${t.doc_area}] ` : ''}{t.doc_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-        <div>
-          <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Type *</label>
-          <select value={formData.doc_type_id} onChange={e => handleChange('doc_type_id', e.target.value)} required className={`w-full px-3 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:border-transparent ${isDark ? 'bg-slate-900 text-white border-slate-600' : 'bg-white text-gray-900 border-gray-300'}`}>
-            <option value="">Select...</option>
-            {DUMMY_DOCUMENT_TYPES.map(type => <option key={type.doc_type_id} value={type.doc_type_id}>{type.type_name}</option>)}
-          </select>
-        </div>
+            <div className="space-y-2">
+              <Label>Code</Label>
+              <Input
+                value={docCode}
+                onChange={(e) => setDocCode(e.target.value)}
+                placeholder="e.g. DOC-001"
+              />
+            </div>
 
-        <div>
-          <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Code</label>
-          <input type="text" value={formData.doc_code} onChange={e => handleChange('doc_code', e.target.value)} placeholder="LUC-XXX-001" className={`w-full px-3 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:border-transparent ${isDark ? 'bg-slate-900 text-white border-slate-600' : 'bg-white text-gray-900 border-gray-300'}`} />
-        </div>
+            <div className="sm:col-span-2 space-y-2">
+              <Label>Title <span className="text-red-500">*</span></Label>
+              <Input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                required
+              />
+            </div>
 
-        <div>
-          <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Status</label>
-          <select value={formData.status} onChange={e => handleChange('status', e.target.value)} className={`w-full px-3 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:border-transparent ${isDark ? 'bg-slate-900 text-white border-slate-600' : 'bg-white text-gray-900 border-gray-300'}`}>
-            <option value="DRAFT">DRAFT</option>
-            <option value="IN_REVIEW">IN REVIEW</option>
-            <option value="APPROVED">APPROVED</option>
-            <option value="OBSOLETE">OBSOLETE</option>
-          </select>
-        </div>
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <Select value={status} onValueChange={setStatus}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {STATUS_OPTIONS.map((s) => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-        <div>
-          <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Confidentiality</label>
-          <select value={formData.confidentiality} onChange={e => handleChange('confidentiality', e.target.value)} className={`w-full px-3 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:border-transparent ${isDark ? 'bg-slate-900 text-white border-slate-600' : 'bg-white text-gray-900 border-gray-300'}`}>
-            <option value="INTERNAL">INTERNAL</option>
-            <option value="PUBLIC">PUBLIC</option>
-            <option value="CONFIDENTIAL">CONFIDENTIAL</option>
-            <option value="RESTRICTED">RESTRICTED</option>
-          </select>
-        </div>
+            <div className="space-y-2">
+              <Label>Confidentiality</Label>
+              <Select value={confidentiality} onValueChange={setConfidentiality}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CONFIDENTIALITY_OPTIONS.map((c) => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-        <div className="md:col-span-2">
-          <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Title *</label>
-          <input type="text" value={formData.title} onChange={e => handleChange('title', e.target.value)} required className={`w-full px-3 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:border-transparent ${isDark ? 'bg-slate-900 text-white border-slate-600' : 'bg-white text-gray-900 border-gray-300'}`} />
-        </div>
+            <div className="space-y-2">
+              <Label>Owner (Role)</Label>
+              <Input
+                value={ownerRole}
+                onChange={(e) => setOwnerRole(e.target.value)}
+                placeholder="e.g. Compliance Manager"
+              />
+            </div>
 
-        <div className="md:col-span-2">
-          <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Description</label>
-          <textarea rows={3} value={formData.description} onChange={e => handleChange('description', e.target.value)} className={`w-full px-3 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:border-transparent ${isDark ? 'bg-slate-900 text-white border-slate-600' : 'bg-white text-gray-900 border-gray-300'}`} />
-        </div>
+            <div className="space-y-2">
+              <Label>Effective Date</Label>
+              <Input
+                type="date"
+                value={effectiveDate}
+                onChange={(e) => setEffectiveDate(e.target.value)}
+              />
+            </div>
 
-        {!document && (
-          <div className="md:col-span-2">
-            <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>File *</label>
-            <input type="file" required className={`w-full px-3 py-2 rounded-lg border ${isDark ? 'bg-slate-900 text-white border-slate-600' : 'bg-white text-gray-900 border-gray-300'}`} />
+            <div className="space-y-2">
+              <Label>Expiry Date</Label>
+              <Input
+                type="date"
+                value={expiryDate}
+                onChange={(e) => setExpiryDate(e.target.value)}
+              />
+            </div>
+
+            <div className="sm:col-span-2 space-y-2">
+              <Label>Description</Label>
+              <Textarea
+                rows={3}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Keywords</Label>
+              <Input
+                value={keywords}
+                onChange={(e) => setKeywords(e.target.value)}
+                placeholder="safety, sms, training"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Tags (JSON)</Label>
+              <Input
+                value={tags}
+                onChange={(e) => setTags(e.target.value)}
+                placeholder='["sms","training"]'
+                className="font-mono text-xs"
+              />
+            </div>
+
+            <div className="sm:col-span-2 space-y-2">
+              <Label>
+                {isEdit ? 'New Revision (Optional — uploaded to S3)' : 'File'}{' '}
+                {!isEdit && <span className="text-red-500">*</span>}
+              </Label>
+              <Input
+                ref={fileRef}
+                type="file"
+                required={!isEdit}
+                className="cursor-pointer"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Max size: 20 MB · Formats: PDF, DOCX, XLSX, JPG, PNG, TXT
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Version</Label>
+              <Input
+                value={versionLabel}
+                onChange={(e) => setVersionLabel(e.target.value)}
+                placeholder="v1.0"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Change Log</Label>
+              <Input
+                value={changeLog}
+                onChange={(e) => setChangeLog(e.target.value)}
+                placeholder="What's new in this version"
+              />
+            </div>
           </div>
-        )}
+        </div>
 
-      </div>
-    </form>
-
-    <div className={`flex items-center justify-end gap-3 p-6 border-t ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-gray-50 border-gray-200'}`}>
-      <button type="button" onClick={onClose} className={`px-4 py-2 rounded-lg border transition-colors ${isDark ? 'bg-slate-800 text-gray-300 border-slate-600 hover:bg-slate-700' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'}`}>Close</button>
-      <button onClick={handleSubmit} className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors">Save</button>
-    </div>
-
-  </div>
-</div>
-
+        <DialogFooter className="px-6 py-4 border-t gap-3">
+          <Button variant="outline" onClick={onClose} disabled={saving}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave} disabled={saving}>
+            {saving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              'Save'
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
