@@ -2,12 +2,12 @@
 
 import { Communication } from "@/config/types/communication";
 import {
-    flexRender,
-    getCoreRowModel,
-    getFilteredRowModel,
-    getPaginationRowModel,
-    getSortedRowModel,
-    useReactTable,
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
 } from "@tanstack/react-table";
 import { useState } from "react";
 import { getCommunicationColumns } from "../tables/CommunicationColumn";
@@ -108,7 +108,7 @@ export function CommunicationTable({
                   key={row.id}
                   className={`transition-colors ${
                     isDark
-                      ? "hover:bg-blue-500/[0.02]"
+                      ? "hover:bg-blue-500/2"
                       : "hover:bg-slate-50"
                   }`}
                 >
