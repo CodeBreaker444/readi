@@ -11,9 +11,8 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const ownerId = body.o_id || session.user.ownerId;
-    const clientId = body.client_id;
 
-    const result = await getModelList(ownerId, clientId);
+    const result = await getModelList(ownerId);
 
     return NextResponse.json(result);
   } catch (error: any) {
