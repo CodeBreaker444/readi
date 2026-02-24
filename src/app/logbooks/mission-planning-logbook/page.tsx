@@ -1,60 +1,159 @@
-'use client';
+"use client";
 
-import MissionPlanningFilters from '@/components/logbook/MissionPlanningFilters';
-import MissionPlanningTable from '@/components/logbook/MissionPlanningTable';
-import { getUserSession } from '@/lib/auth/server-session';
-import { FileText } from 'lucide-react';
-import { useState } from 'react';
+import { FilterPanel } from "@/components/logbook/FilterPanel";
+import { MissionLogbookTable } from "@/components/logbook/MissionLogbookTable";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useTheme } from "@/components/useTheme";
+import { ClientOption, EvaluationOption, FilterParams, MissionPlanningLogbookItem, PilotOption, PlanningOption } from "@/config/types/logbook";
+import axios from "axios";
+import { Loader2, RefreshCw } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 
-export default async function MissionPlanningLogbookPage() {
-  const session = await getUserSession();
-  const [filters, setFilters] = useState({
-    clientId: 0,
-    pilotId: 0,
-    evaluationId: 0,
-    planningId: 0,
-    dateStart: '',
-    dateEnd: '',
+interface FiltersState {
+  clients: ClientOption[];
+  pilots: PilotOption[];
+  evaluations: EvaluationOption[];
+  plannings: PlanningOption[];
+}
+
+export default function MissionPlanningLogbookPage() {
+  const { isDark } = useTheme();
+  const [data, setData] = useState<MissionPlanningLogbookItem[]>([]);
+  const [filters, setFilters] = useState<FiltersState>({
+    clients: [],
+    pilots: [],
+    evaluations: [],
+    plannings: [],
   });
+  const [loading, setLoading] = useState(false);
+  const [filtersLoading, setFiltersLoading] = useState(false);
 
- 
+  const fetchFilters = useCallback(async () => {
+    setFiltersLoading(true);
+    try {
+      const res = await axios.post("/api/logbooks/mission/filter", {});
+      const json = res.data;
+      if (json.code === 200) {
+        setFilters({
+          clients: json.clients?.data ?? [],
+          pilots: json.pilots?.data ?? [],
+          evaluations: json.evaluations?.data ?? [],
+          plannings: json.plannings?.data ?? [],
+        });
+      }
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to load filters");
+    } finally {
+      setFiltersLoading(false);
+    }
+  }, []);
 
-  return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <div className="p-2 bg-white dark:bg-blue-900 rounded-lg">
-            <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+  const fetchData = useCallback(async (params: Partial<FilterParams>) => {
+    setLoading(true);
+    try {
+      const res = await axios.post("/api/logbooks/mission/list", { ...params });
+      const json = res.data;
+      if (json.code === 200) {
+        setData(json.data ?? []);
+      } else {
+        toast.error(json.message ?? "Failed to load data");
+        setData([]);
+      }
+    } catch (e: any) {
+      toast.error(e?.message ?? "Network error");
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchFilters();
+    fetchData({});
+  }, [fetchFilters, fetchData]);
+
+ return (
+  <div className={`min-h-screen transition-colors duration-300 ${
+    isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-gray-900'
+  } font-sans`}>
+    
+    <div className={` top-0 z-10   backdrop-blur-md transition-colors ${
+      isDark 
+        ? 'bg-slate-900/80 border-slate-800 text-white' 
+        : 'bg-white/80 border-slate-200 text-slate-900 shadow-[0_1px_3px_rgba(0,0,0,0.06)]'
+    } px-6 py-5`}>
+      <div className="mx-auto max-w-[1600px]">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div>
+              <h1 className={`text-lg font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                Mission Planning Logbook
+              </h1>
+              <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                Browse and filter mission plan templates across evaluations and plannings
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-black dark:text-white">
-              Mission Planning Logbook
-            </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Track and manage mission planning templates
-            </p>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => fetchData({})}
+              disabled={loading}
+              className={`h-8 gap-1.5 text-xs transition-all ${
+                isDark 
+                  ? 'border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white' 
+                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              {loading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <RefreshCw className="h-3.5 w-3.5" />
+              )}
+              Refresh
+            </Button>
           </div>
-        </div>
-      </div>
-
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Filters
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <MissionPlanningFilters
-            ownerId={session?.user.ownerId!}
-            filters={filters}
-            onFiltersChange={setFilters}
-          />
-        </div>
-      </div>
-
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700">
-        <div className="p-6">
-          <MissionPlanningTable ownerId={session?.user.ownerId!} filters={filters} />
         </div>
       </div>
     </div>
-  );
+
+    <div className="mx-auto max-w-[1600px] space-y-4 px-6 py-5 animate-slide-up">
+      {filtersLoading ? (
+        <div className={`grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 rounded-xl border p-5 shadow-sm transition-colors ${
+          isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
+        }`}>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="space-y-2">
+              <Skeleton className={`h-3 w-16 ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`} />
+              <Skeleton className={`h-9 w-full ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`} />
+            </div>
+          ))}
+          <div className="flex items-end gap-2 sm:col-span-2">
+            <Skeleton className={`h-9 w-28 ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`} />
+            <Skeleton className={`h-9 w-28 ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`} />
+          </div>
+        </div>
+      ) : (
+        <FilterPanel
+          clients={filters.clients}
+          pilots={filters.pilots}
+          evaluations={filters.evaluations}
+          plannings={filters.plannings}
+          loading={loading}
+          onSearch={(params) => fetchData(params)}
+          isDark={isDark}
+        />
+      )}
+
+      <div className={` ${
+        isDark ? 'bg-slate-900 border-slate-800 ' : '  '
+      }`}>
+        <MissionLogbookTable data={data} loading={loading} isDark={isDark} />
+      </div>
+    </div>
+  </div>
+);
 }
