@@ -39,7 +39,7 @@ export const operationLogbookColumns: ColumnDef<OperationLogbookItem>[] = [
     accessorKey: "mission_id",
     header: "#",
     cell: ({ row }) => (
-      <span className="font-mono text-xs text-slate-400 dark:text-slate-500">
+      <span className="font-mono text-xs text-slate-400 dark:text-white">
         {String(row.getValue("mission_id")).padStart(4, "0")}
       </span>
     ),
@@ -64,7 +64,7 @@ export const operationLogbookColumns: ColumnDef<OperationLogbookItem>[] = [
         <span className="text-xs font-medium text-slate-800 dark:text-white">
           {row.original.date_start}
         </span>
-        <span className="text-[11px] text-slate-400 dark:text-slate-500">
+        <span className="text-[11px] text-slate-400 dark:text-white">
           {row.original.time_start}
         </span>
       </div>
@@ -80,7 +80,7 @@ export const operationLogbookColumns: ColumnDef<OperationLogbookItem>[] = [
         <span className="text-xs font-medium text-slate-800 dark:text-white">
           {row.original.date_end}
         </span>
-        <span className="text-[11px] text-slate-400 dark:text-slate-500">
+        <span className="text-[11px] text-slate-400 dark:text-white">
           {row.original.time_end}
         </span>
       </div>
@@ -155,7 +155,7 @@ export const operationLogbookColumns: ColumnDef<OperationLogbookItem>[] = [
             {code || "—"}
           </span>
           {desc && (
-            <span className="text-[10px] text-slate-400 dark:text-slate-500 truncate max-w-[120px]">
+            <span className="text-[10px] text-slate-400 dark:text-white truncate max-w-[120px]">
               {desc}
             </span>
           )}
@@ -171,7 +171,7 @@ export const operationLogbookColumns: ColumnDef<OperationLogbookItem>[] = [
       const val = (row.getValue("mission_status_desc") as string) || "";
       const color =
         statusColors[val.toUpperCase()] ??
-        "bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-700/50 dark:text-slate-400 dark:border-slate-600";
+        "bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-700/50 dark:text-white dark:border-slate-600";
       return (
         <Badge variant="outline" className={`text-[10px] border ${color}`}>
           {val || "—"}
@@ -187,7 +187,7 @@ export const operationLogbookColumns: ColumnDef<OperationLogbookItem>[] = [
       const val = (row.getValue("mission_result_desc") as string) || "";
       const color =
         resultColors[val.toUpperCase()] ??
-        "bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-700/50 dark:text-slate-400 dark:border-slate-600";
+        "bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-700/50 dark:text-white dark:border-slate-600";
       return val ? (
         <Badge variant="outline" className={`text-[10px] border ${color}`}>
           {val}
@@ -210,7 +210,7 @@ export const operationLogbookColumns: ColumnDef<OperationLogbookItem>[] = [
             {code}
           </span>
           {desc && (
-            <span className="text-[10px] text-slate-400 dark:text-slate-500 truncate max-w-[130px]">
+            <span className="text-[10px] text-slate-400 dark:text-white truncate max-w-[130px]">
               {desc}
             </span>
           )}

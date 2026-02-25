@@ -37,6 +37,7 @@ export async function addMissionType(ownerId: number, missionType: Omit<MissionT
   const { data: existing } = await supabase
     .from('pilot_mission_type')
     .select('type_code')
+    .eq('fk_owner_id',ownerId)
     .eq('type_code', missionType.mission_type_code)
     .eq('is_active', true)
     .single();
@@ -49,6 +50,7 @@ export async function addMissionType(ownerId: number, missionType: Omit<MissionT
     .from('pilot_mission_type')
     .insert({
       type_name: missionType.mission_type_name,
+      fk_owner_id: ownerId,
       type_code: missionType.mission_type_code,
       type_description: missionType.mission_type_label,
       is_active: true
