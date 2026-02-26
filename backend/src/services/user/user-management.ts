@@ -204,6 +204,10 @@ export async function createUser(userData: UserCreateData) {
 
       const activationLink = `${env.APP_URL}/auth/activate?o=${userData.owner_id}&email=${userData.email}&username=${userData.username}&id=${key}`;
 
+      console.log('activation link:',activationLink);
+      console.log('pass:',uid);
+      
+
       const emailResult = await sendUserActivationEmail(
         userData.email,
         userData.fullname,

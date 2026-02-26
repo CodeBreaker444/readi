@@ -13,6 +13,7 @@ export async function getMissionStatusList(ownerId: number) {
       is_final_status,
       is_active
     `)
+    .eq('fk_owner_id',ownerId)
     .eq('is_active', true)
     .order('status_order', { ascending: true });
 
@@ -60,6 +61,7 @@ export async function addMissionStatus(ownerId: number, statusData: {
       status_description: statusData.description || statusData.name,
       status_order: statusData.order || 0,
       is_final_status: statusData.isFinalStatus || false,
+      fk_owner_id:ownerId,
       is_active: true
     })
     .select()

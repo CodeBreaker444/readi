@@ -66,7 +66,7 @@ export function UserFormModal({ isOpen, onClose, mode, userData, onSubmit, isDar
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className={`max-w-2xl ${isDark ? 'bg-slate-800 text-white' : ''}`}>
+      <DialogContent className={`max-w-3xl ${isDark ? 'bg-slate-800 text-white' : ''}`}>
         <DialogHeader>
           <DialogTitle>{mode === 'add' ? 'Add New User' : 'Edit User'}</DialogTitle>
         </DialogHeader>
@@ -119,7 +119,7 @@ export function UserFormModal({ isOpen, onClose, mode, userData, onSubmit, isDar
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-36">
             <div>
               <Label htmlFor="role" className='pb-2'>Role *</Label>
               <Select
@@ -156,7 +156,7 @@ export function UserFormModal({ isOpen, onClose, mode, userData, onSubmit, isDar
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-36">
             <div>
               <Label htmlFor="is_viewer" className='pb-2'>Access Level</Label>
               <Select

@@ -17,6 +17,7 @@ export async function getMissionCategoryList(ownerId: number) {
       category_description,
       is_active
     `)
+    .eq('fk_owner_id', ownerId)
     .eq('is_active', true)
     .order('category_id', { ascending: true });
 
@@ -40,6 +41,7 @@ export async function addMissionCategory(ownerId: number, categoryData: { code: 
   const { data: existing } = await supabase
     .from('pilot_mission_category')
     .select('category_code')
+    .eq('fk_owner_id', ownerId)
     .eq('category_code', categoryData.code)
     .eq('is_active', true)
     .single();
@@ -51,6 +53,7 @@ export async function addMissionCategory(ownerId: number, categoryData: { code: 
   const { data, error } = await supabase
     .from('pilot_mission_category')
     .insert({
+      fk_owner_id: ownerId,
       category_code: categoryData.code,
       category_name: categoryData.name,
       category_description: categoryData.description || categoryData.name,

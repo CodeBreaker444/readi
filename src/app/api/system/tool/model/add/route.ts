@@ -49,6 +49,7 @@ export async function POST(req: NextRequest) {
     };
 
     const result = await addModel({
+      fk_owner_id: session.user.ownerId,
       factory_serie: d.model_code,
       factory_model: d.model_name,
       factory_type: d.manufacturer,

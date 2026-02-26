@@ -218,13 +218,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role }) => {
 
     if (isActive) {
       return isDark
-        ? 'bg-amber-500/15 text-amber-400 border-l-2 border-amber-400'
-        : 'bg-amber-50 text-amber-700 border-l-2 border-amber-500';
+        ? 'bg-violet-600/20 text-violet-400 border-l-2 border-violet-500'
+        : 'bg-violet-600 text-white border-l-2 border-violet-800'; // Using your requested bg-violet-600
     }
     if (isHovered) {
       return isDark
-        ? 'bg-slate-800/70 text-amber-400 border-l-2 border-amber-500/40'
-        : 'bg-amber-50/70 text-amber-600 border-l-2 border-amber-300';
+        ? 'bg-slate-800/70 text-violet-400 border-l-2 border-violet-500/40'
+        : 'bg-violet-500/10 text-violet-700 border-l-2 border-violet-300'; // Using your requested hover:bg-violet-500 logic
     }
     return isDark
       ? 'text-slate-400 border-l-2 border-transparent'
@@ -233,8 +233,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role }) => {
 
   const getIconClass = (href: string, isActive: boolean) => {
     const isHovered = hoveredItem === href;
-    if (isActive) return isDark ? 'text-amber-400' : 'text-amber-600';
-    if (isHovered) return isDark ? 'text-amber-400' : 'text-amber-500';
+    if (isActive) return isDark ? 'text-violet-400' : 'text-white';
+    if (isHovered) return isDark ? 'text-violet-400' : 'text-violet-600';
     return isDark ? 'text-slate-500' : 'text-slate-400';
   };
 
@@ -277,9 +277,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role }) => {
                       className="text-[0.45rem] transition-colors duration-150"
                       style={{
                         color: isActive
-                          ? isDark ? '#fbbf24' : '#d97706'
+                          ? isDark ? '#a78bfa' : '#ffffff'  
                           : isHovered
-                          ? '#f59e0b'
+                          ? '#8b5cf6'  
                           : isDark ? '#475569' : '#cbd5e1',
                       }}
                     >

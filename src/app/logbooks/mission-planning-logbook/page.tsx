@@ -87,6 +87,7 @@ export default function MissionPlanningLogbookPage() {
       <div className="mx-auto max-w-[1600px]">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
+            <div className="w-1 h-6 rounded-full bg-violet-600" />
             <div>
               <h1 className={`text-lg font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
                 Mission Planning Logbook

@@ -1,4 +1,3 @@
-// src/components/system/drone-tool/add-component-modal.tsx
 'use client';
 
 import { Button } from '@/components/ui/button';

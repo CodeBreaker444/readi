@@ -1,38 +1,21 @@
 import { getSPIKPIData } from '@/backend/services/dashboard/dashboard';
+import { getUserSession } from '@/lib/auth/server-session';
 import { NextRequest, NextResponse } from 'next/server';
-import z from 'zod';
-
-const SPIKPIDataSchema = z.object({
-  owner_id: z.number().int().positive(),
-  user_id: z.number().int().positive(),
-  user_timezone: z.string().optional(),
-  user_profile_code: z.string().optional(),
-});
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    console.log('API route received:', body); // Debug log
-    const validatedData = SPIKPIDataSchema.parse(body);
-    const result = await getSPIKPIData(validatedData);
-    console.log('API route returning:', result);
-    return NextResponse.json(result);
-  } catch (error: any) {
-    if (error.name === 'ZodError') {
-      return NextResponse.json(
-        { 
-          code: 0, 
-          status: 'ERROR', 
-          message: 'Validation failed', 
-          errors: error.errors 
-        },
-        { status: 400 }
-      );
+    const session = await getUserSession()
+    if(!session)
+    {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    
-    return NextResponse.json(
-      { code: 0, status: 'ERROR', message: error.message || 'Internal server error' },
-      { status: 500 }
-    );
-  }
+    const ownerId = session.user.ownerId
+    const userId = session.user.userId
+    const result = await getSPIKPIData({owner_id:ownerId,user_id: userId});
+    return NextResponse.json(result);
+
+  } catch (error: any) {
+      console.error('[GET /api/operation/communication/recipients]', error);
+    return NextResponse.json({ error: error?.message ?? 'Error' }, { status: 500 });
+}
 }
