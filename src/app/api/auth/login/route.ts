@@ -29,8 +29,6 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       )
     }
-   console.log('pass from db:',userData.password_hash);
-   console.log('pass from login:',password);
    
     const isPasswordValid = await bcrypt.compare(password, userData.password_hash);
 

@@ -1,8 +1,7 @@
 import { Operation } from "@/app/operations/table/page";
-import { PilotOption, ToolOption } from "@/config/types/operation";
 import { cn } from "@/lib/utils";
 import axios from "axios";
-import { FileText, Loader2, Paperclip, Trash2, Upload } from "lucide-react";
+import { CheckCircle2, ChevronLeft, ChevronRight, ClipboardCheck, Clock, FileText, Loader2, Paperclip, Settings, Trash2, Upload, User } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Button } from "../ui/button";
@@ -19,7 +18,6 @@ interface OperationFormProps {
   onSaved: (op: Operation) => void;
 }
 
-type StatusName = 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'ABORTED';
 
 interface MissionTypeOption {
   mission_type_id: number;
@@ -30,36 +28,46 @@ interface MissionCategoryOption {
   category_id: number;
   category_name: string;
 }
+ 
 
-interface OperationForm {
-  mission_name: string;
-  mission_code?: string;
-  mission_description: string;
-  location: string;
-  notes: string;
-  scheduled_start: string;
-  status_name: StatusName;
-  fk_pilot_user_id: string;
-  fk_tool_id: string;
-  fk_mission_type_id: string;
-  fk_mission_category_id: string;
-}
-
-const STEPS = ['Mission Details', 'Schedule', 'Mission Data', 'Pilot', 'Confirm'] as const;
+type StatusName = 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'ABORTED';
 type Step = 0 | 1 | 2 | 3 | 4;
 
-export function OperationDialog({ open, onClose, initial, onSaved }: OperationFormProps) {
-  const isEdit = !!initial;
-  const [isPending, startTransition] = useTransition();
-  const [step, setStep] = useState<Step>(0);
+interface PilotOption        { user_id: number; first_name: string; last_name: string }
+interface ToolOption         { tool_id: number; tool_name: string; tool_code: string }
+interface MissionTypeOption  { mission_type_id: number; type_name: string }
+interface MissionCategoryOption { category_id: number; category_name: string }
 
-  const [pilots, setPilots] = useState<PilotOption[]>([]);
-  const [tools, setTools] = useState<ToolOption[]>([]);
-  const [missionTypes, setMissionTypes] = useState<MissionTypeOption[]>([]);
-  const [missionCategories, setMissionCategories] = useState<MissionCategoryOption[]>([]);
-  const [loadingOptions, setLoadingOptions] = useState(false);
+interface OperationForm {
+    mission_name: string;
+    mission_code: string;
+    mission_description: string;
+    location: string;
+    notes: string;
+    scheduled_start: string;
+    status_name: StatusName;
+    fk_pilot_user_id: string;
+    fk_tool_id: string;
+    fk_mission_type_id: string;
+    fk_mission_category_id: string;
+}
 
-  const emptyForm: OperationForm = {
+interface OperationFormProps {
+    open: boolean;
+    onClose: () => void;
+    onSaved: (op: Operation) => void;
+    initial?: Operation | null;
+}
+
+const STEPS = [
+    { id: 0, label: 'Details',  icon: ClipboardCheck },
+    { id: 1, label: 'Schedule', icon: Clock },
+    { id: 2, label: 'Assets',   icon: Settings },
+    { id: 3, label: 'Pilot',    icon: User },
+    { id: 4, label: 'Review',   icon: CheckCircle2 },
+];
+
+const EMPTY_FORM: OperationForm = {
     mission_name: '',
     mission_code: '',
     mission_description: '',
@@ -71,392 +79,396 @@ export function OperationDialog({ open, onClose, initial, onSaved }: OperationFo
     fk_tool_id: '',
     fk_mission_type_id: '',
     fk_mission_category_id: '',
-  };
+};
 
-  const [form, setForm] = useState<OperationForm>(emptyForm);
+export function OperationDialog({ open, onClose, initial, onSaved }: OperationFormProps) {
+    const isEdit = !!initial;
+    const [isPending, startTransition] = useTransition();
+    const [step, setStep] = useState<Step>(0);
 
-  useEffect(() => {
-    if (!open) {
-      setStep(0);
-      return;
-    }
-    setLoadingOptions(true);
-    axios.get('/api/operation/options')
-      .then((res) => {
-        setPilots(res.data.pilots ?? []);
-        setTools(res.data.tools ?? []);
-        setMissionTypes(res.data.types ?? []);
-        setMissionCategories(res.data.categories ?? []);
-      })
-      .catch(() => toast.error('Failed to load form options'))
-      .finally(() => setLoadingOptions(false));
-  }, [open]);
+    const [pilots,           setPilots]           = useState<PilotOption[]>([]);
+    const [tools,            setTools]            = useState<ToolOption[]>([]);
+    const [missionTypes,     setMissionTypes]     = useState<MissionTypeOption[]>([]);
+    const [missionCategories,setMissionCategories]= useState<MissionCategoryOption[]>([]);
+    const [loadingOptions,   setLoadingOptions]   = useState(false);
+    const [form,             setForm]             = useState<OperationForm>(EMPTY_FORM);
 
-  useEffect(() => {
-    if (initial) {
-      setForm({
-        mission_name: initial.mission_name ?? '',
-        mission_code: initial.mission_code ?? '',
-        mission_description: initial.mission_description ?? '',
-        location: initial.location ?? '',
-        notes: initial.notes ?? '',
-        scheduled_start: initial.scheduled_start ?? '',
-        status_name: (initial.status_name as StatusName) ?? 'PLANNED',
-        fk_pilot_user_id: initial.fk_pilot_user_id?.toString() ?? '',
-        fk_tool_id: initial.fk_tool_id?.toString() ?? '',
-        fk_mission_type_id: (initial as any).fk_mission_type_id?.toString() ?? '',
-        fk_mission_category_id: (initial as any).fk_mission_category_id?.toString() ?? '',
-      });
-    } else {
-      setForm(emptyForm);
-    }
-  }, [initial, open]);
+    useEffect(() => {
+        if (!open) { setStep(0); return; }
+        setLoadingOptions(true);
+        axios.get('/api/operation/options')
+            .then((res) => {
+                setPilots(res.data.pilots ?? []);
+                setTools(res.data.tools ?? []);
+                setMissionTypes(res.data.types ?? []);
+                setMissionCategories(res.data.categories ?? []);
+            })
+            .catch(() => toast.error('Failed to load form options'))
+            .finally(() => setLoadingOptions(false));
+    }, [open]);
 
-  function toIsoString(val: string): string | undefined {
-    if (!val) return undefined;
-    const normalized = val.length === 16 ? `${val}:00.000Z` : val;
-    return isNaN(Date.parse(normalized)) ? undefined : normalized;
-  }
-
-  function handleSubmit() {
-    startTransition(async () => {
-      try {
-        const payload = {
-          mission_name: form.mission_name.trim(),
-          mission_code: form.mission_code?.trim() || undefined,
-          mission_description: form.mission_description || undefined,
-          location: form.location || undefined,
-          notes: form.notes || undefined,
-          scheduled_start: toIsoString(form.scheduled_start),
-          fk_pilot_user_id: form.fk_pilot_user_id ? parseInt(form.fk_pilot_user_id) : undefined,
-          fk_tool_id: form.fk_tool_id ? parseInt(form.fk_tool_id) : undefined,
-          fk_mission_type_id: form.fk_mission_type_id ? parseInt(form.fk_mission_type_id) : undefined,
-          fk_mission_category_id: form.fk_mission_category_id ? parseInt(form.fk_mission_category_id) : undefined,
-          status_name: form.status_name,
-        };
-
-        let saved: { data: Operation };
-        if (isEdit && initial) {
-          saved = await axios.put(`/api/operation/${initial.pilot_mission_id}`, payload);
+    useEffect(() => {
+        if (initial) {
+            setForm({
+                mission_name:           initial.mission_name        ?? '',
+                mission_code:           initial.mission_code        ?? '',
+                mission_description:    initial.mission_description ?? '',
+                location:               initial.location            ?? '',
+                notes:                  initial.notes               ?? '',
+                scheduled_start:        initial.scheduled_start     ?? '',
+                status_name:            (initial.status_name as StatusName) ?? 'PLANNED',
+                fk_pilot_user_id:       initial.fk_pilot_user_id?.toString() ?? '',
+                fk_tool_id:             initial.fk_tool_id?.toString()       ?? '',
+                fk_mission_type_id:     (initial as any).fk_mission_type_id?.toString()     ?? '',
+                fk_mission_category_id: (initial as any).fk_mission_category_id?.toString() ?? '',
+            });
         } else {
-          saved = await axios.post('/api/operation', payload);
+            setForm(EMPTY_FORM);
         }
-        onSaved(saved.data);
-        toast.success(`Operation ${isEdit ? 'updated' : 'created'} successfully`);
-        onClose();
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Something went wrong');
-      }
-    });
-  }
+    }, [initial, open]);
 
-  const selectedPilot = pilots.find((p) => p.user_id.toString() === form.fk_pilot_user_id);
-  const selectedTool = tools.find((t) => t.tool_id.toString() === form.fk_tool_id);
-  const selectedType = missionTypes.find((t) => t.mission_type_id.toString() === form.fk_mission_type_id);
-  const selectedCategory = missionCategories.find((c) => c.category_id.toString() === form.fk_mission_category_id);
+    function toIsoString(val: string): string | undefined {
+        if (!val) return undefined;
+        const normalized = val.length === 16 ? `${val}:00.000Z` : val;
+        return isNaN(Date.parse(normalized)) ? undefined : normalized;
+    }
 
-  return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-140 max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{isEdit ? 'Edit Operation' : 'New Operation'}</DialogTitle>
-          <DialogDescription>
-            {isEdit ? 'Update the operation details below.' : 'Fill in each step to create a new flight operation.'}
-          </DialogDescription>
-        </DialogHeader>
+    function handleSubmit() {
+        startTransition(async () => {
+            try {
+                const payload = {
+                    mission_name:           form.mission_name.trim(),
+                    mission_code:           form.mission_code?.trim()       || undefined,
+                    mission_description:    form.mission_description        || undefined,
+                    location:               form.location                   || undefined,
+                    notes:                  form.notes                      || undefined,
+                    scheduled_start:        toIsoString(form.scheduled_start),
+                    fk_pilot_user_id:       form.fk_pilot_user_id       ? parseInt(form.fk_pilot_user_id)       : undefined,
+                    fk_tool_id:             form.fk_tool_id             ? parseInt(form.fk_tool_id)             : undefined,
+                    fk_mission_type_id:     form.fk_mission_type_id     ? parseInt(form.fk_mission_type_id)     : undefined,
+                    fk_mission_category_id: form.fk_mission_category_id ? parseInt(form.fk_mission_category_id) : undefined,
+                    status_name:            form.status_name,
+                };
 
-        <div className="flex items-center gap-1 pb-2">
-          {STEPS.map((label, i) => (
-            <div key={label} className="flex items-center gap-1 flex-1">
-              <button
-                type="button"
-                onClick={() => setStep(i as Step)}
-                className={cn(
-                  'flex-1 rounded-md py-1.5 text-xs font-medium transition-colors',
-                  step === i
-                    ? 'bg-violet-600 text-white'
-                    : i < step
-                      ? 'bg-violet-100 text-violet-700'
-                      : 'bg-muted text-muted-foreground'
-                )}
-              >
-                {i + 1}. {label}
-              </button>
-              {i < STEPS.length - 1 && <div className="w-2 h-px bg-border shrink-0" />}
-            </div>
-          ))}
-        </div>
+                let saved: { data: Operation };
+                if (isEdit && initial) {
+                    saved = await axios.put(`/api/operation/${initial.pilot_mission_id}`, payload);
+                } else {
+                    saved = await axios.post('/api/operation', payload);
+                }
+                onSaved(saved.data);
+                toast.success(`Operation ${isEdit ? 'updated' : 'created'} successfully`);
+                onClose();
+            } catch (err) {
+                toast.error(err instanceof Error ? err.message : 'Something went wrong');
+            }
+        });
+    }
 
-        <div className="py-2 min-h-[260px]">
+    const selectedPilot    = pilots.find((p) => p.user_id.toString()           === form.fk_pilot_user_id);
+    const selectedTool     = tools.find((t) => t.tool_id.toString()             === form.fk_tool_id);
+    const selectedType     = missionTypes.find((t) => t.mission_type_id.toString()  === form.fk_mission_type_id);
+    const selectedCategory = missionCategories.find((c) => c.category_id.toString() === form.fk_mission_category_id);
 
-          {step === 0 && (
-            <div className="grid gap-4">
-              <div className="grid gap-1.5">
-                <Label htmlFor="mission_name">Mission Name <span className="text-red-500">*</span></Label>
-                <Input
-                  id="mission_name"
-                  placeholder="e.g. Survey Flight Alpha"
-                  value={form.mission_name}
-                  onChange={(e) => setForm((f) => ({ ...f, mission_name: e.target.value }))}
-                />
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="mission_code">Mission Code <span className="text-red-500">*</span></Label>
-                <Input
-                  id="mission_code"
-                  placeholder="e.g. SURVEY-001"
-                  value={form.mission_code}
-                  onChange={(e) => setForm((f) => ({ ...f, mission_code: e.target.value }))}
-                />
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="desc">Description</Label>
-                <Textarea
-                  id="desc"
-                  rows={3}
-                  placeholder="Describe the mission..."
-                  value={form.mission_description}
-                  onChange={(e) => setForm((f) => ({ ...f, mission_description: e.target.value }))}
-                />
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="location">Location</Label>
-                <Input
-                  id="location"
-                  placeholder="e.g. Grid A-7"
-                  value={form.location}
-                  onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
-                />
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="notes">Notes</Label>
-                <Textarea
-                  id="notes"
-                  rows={2}
-                  placeholder="Additional notes..."
-                  value={form.notes}
-                  onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-                />
-              </div>
-            </div>
-          )}
+    const canGoNext = () => {
+        if (step === 0) return !!form.mission_name.trim() && !!form.mission_code.trim();
+        if (step === 3) return !!form.fk_pilot_user_id;
+        return true;
+    };
 
-          {step === 1 && (
-            <div className="grid gap-4">
-              <div className="grid gap-1.5">
-                <Label htmlFor="scheduled_start">Scheduled Start</Label>
-                <Input
-                  id="scheduled_start"
-                  type="datetime-local"
-                  value={form.scheduled_start}
-                  onChange={(e) => setForm((f) => ({ ...f, scheduled_start: e.target.value }))}
-                />
-              </div>
-              <div className="grid gap-1.5">
-                <Label>Status</Label>
-                <Select
-                  value={form.status_name}
-                  onValueChange={(v) => setForm((f) => ({ ...f, status_name: v as StatusName }))}
-                >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="PLANNED">Planned</SelectItem>
-                    <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                    <SelectItem value="COMPLETED">Completed</SelectItem>
-                    <SelectItem value="CANCELLED">Cancelled</SelectItem>
-                    <SelectItem value="ABORTED">Aborted</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          )}
+    return (
+        <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+            <DialogContent className="max-w-2xl gap-0 p-0 overflow-hidden">
+                <DialogHeader className="px-6 pt-6 pb-4 border-b">
+                    <DialogTitle className="text-base font-semibold">
+                        {isEdit ? 'Edit Operation' : 'New Operation'}
+                    </DialogTitle>
+                    <DialogDescription className="text-xs text-muted-foreground">
+                        {isEdit ? 'Update the operation details below.' : 'Fill in each step to create a new flight operation.'}
+                    </DialogDescription>
+                </DialogHeader>
 
-          {step === 2 && (
-            <div className="grid gap-4">
-              <div className="grid gap-1.5">
-                <Label>Tool (Drone System)</Label>
-                <Select
-                  value={form.fk_tool_id}
-                  onValueChange={(v) => setForm((f) => ({ ...f, fk_tool_id: v }))}
-                  disabled={loadingOptions}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={loadingOptions ? 'Loading…' : 'Select tool'} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {tools.map((t) => (
-                      <SelectItem key={t.tool_id} value={t.tool_id.toString()}>
-                        {t.tool_name} ({t.tool_code})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid gap-1.5">
-                <Label>Mission Category</Label>
-                <Select
-                  value={form.fk_mission_category_id}
-                  onValueChange={(v) => setForm((f) => ({ ...f, fk_mission_category_id: v }))}
-                  disabled={loadingOptions}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={loadingOptions ? 'Loading…' : 'Select category'} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {missionCategories.map((c) => (
-                      <SelectItem key={c.category_id} value={c.category_id.toString()}>
-                        {c.category_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid gap-1.5">
-                <Label>Mission Type</Label>
-                <Select
-                  value={form.fk_mission_type_id}
-                  onValueChange={(v) => setForm((f) => ({ ...f, fk_mission_type_id: v }))}
-                  disabled={loadingOptions}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={loadingOptions ? 'Loading…' : 'Select type'} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {missionTypes.map((t) => (
-                      <SelectItem key={t.mission_type_id} value={t.mission_type_id.toString()}>
-                        {t.type_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          )}
-
-          {step === 3 && (
-            <div className="grid gap-4">
-              <div className="grid gap-1.5">
-                <Label>Pilot in Command <span className="text-red-500">*</span></Label>
-                <Select
-                  value={form.fk_pilot_user_id}
-                  onValueChange={(v) => setForm((f) => ({ ...f, fk_pilot_user_id: v }))}
-                  disabled={loadingOptions}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={loadingOptions ? 'Loading…' : 'Select pilot'} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {pilots.map((p) => (
-                      <SelectItem key={p.user_id} value={p.user_id.toString()}>
-                        {p.first_name} {p.last_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              {selectedPilot && (
-                <div className="rounded-md border bg-muted/30 px-4 py-3">
-                  <p className="text-xs text-muted-foreground mb-0.5">Selected Pilot</p>
-                  <p className="font-medium">{selectedPilot.first_name} {selectedPilot.last_name}</p>
+                <div className="px-6 pt-4 pb-2">
+                    <div className="flex items-center gap-0">
+                        {STEPS.map((s, i) => {
+                            const Icon   = s.icon;
+                            const done   = step > s.id;
+                            const active = step === s.id;
+                            return (
+                                <div key={s.id} className="flex items-center flex-1">
+                                    <div className="flex flex-col items-center gap-1 flex-1">
+                                        <button
+                                            type="button"
+                                            onClick={() => { if (done) setStep(s.id as Step); }}
+                                            className={cn(
+                                                'h-8 w-8 rounded-full flex items-center justify-center text-xs font-semibold transition-all',
+                                                done
+                                                    ? 'bg-emerald-600 text-white hover:bg-emerald-700 cursor-pointer'
+                                                    : active
+                                                        ? 'bg-violet-600 text-white ring-4 ring-violet-100 dark:ring-violet-900 cursor-default'
+                                                        : 'bg-muted text-muted-foreground cursor-default'
+                                            )}
+                                        >
+                                            {done ? <CheckCircle2 className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
+                                        </button>
+                                        <span className={cn(
+                                            'text-[10px] font-medium whitespace-nowrap',
+                                            active ? 'text-violet-600' : done ? 'text-emerald-600' : 'text-muted-foreground'
+                                        )}>
+                                            {s.label}
+                                        </span>
+                                    </div>
+                                    {i < STEPS.length - 1 && (
+                                        <div className={cn(
+                                            'h-0.5 flex-1 mt-[-14px] mx-1 transition-all',
+                                            done ? 'bg-emerald-400' : 'bg-muted'
+                                        )} />
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
                 </div>
-              )}
-            </div>
-          )}
 
-          {step === 4 && (
-            <div className="grid gap-3">
-              <div className="rounded-lg border bg-muted/20 p-4 space-y-2 text-sm">
-                <p className="font-semibold text-base mb-3">Mission Summary</p>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Mission Name</p>
-                    <p className="font-medium">{form.mission_name || '—'}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Location</p>
-                    <p className="font-medium">{form.location || '—'}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Scheduled Start</p>
-                    <p className="font-medium">{form.scheduled_start ? new Date(form.scheduled_start).toLocaleString() : '—'}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Pilot in Command</p>
-                    <p className="font-medium">
-                      {selectedPilot ? `${selectedPilot.first_name} ${selectedPilot.last_name}` : '—'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Tool (Drone)</p>
-                    <p className="font-medium">{selectedTool ? `${selectedTool.tool_name} (${selectedTool.tool_code})` : '—'}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Mission Type</p>
-                    <p className="font-medium">{selectedType?.type_name || '—'}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Mission Category</p>
-                    <p className="font-medium">{selectedCategory?.category_name || '—'}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Status</p>
-                    <p className="font-medium">{form.status_name}</p>
-                  </div>
+                <div className="px-6 py-5 min-h-[280px]">
+
+                    {step === 0 && (
+                        <div className="space-y-3">
+                            <SectionTitle>Mission Details</SectionTitle>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="grid gap-1.5">
+                                    <Label htmlFor="mission_name">Mission Name <span className="text-red-500">*</span></Label>
+                                    <Input id="mission_name" placeholder="e.g. Survey Flight Alpha"
+                                        value={form.mission_name}
+                                        onChange={(e) => setForm((f) => ({ ...f, mission_name: e.target.value }))} />
+                                </div>
+                                <div className="grid gap-1.5">
+                                    <Label htmlFor="mission_code">Mission Code <span className="text-red-500">*</span></Label>
+                                    <Input id="mission_code" placeholder="e.g. SURVEY-001"
+                                        value={form.mission_code}
+                                        onChange={(e) => setForm((f) => ({ ...f, mission_code: e.target.value }))} />
+                                </div>
+                            </div>
+                            <div className="grid gap-1.5">
+                                <Label htmlFor="desc">Description</Label>
+                                <Textarea id="desc" rows={2} placeholder="Describe the mission…"
+                                    value={form.mission_description}
+                                    onChange={(e) => setForm((f) => ({ ...f, mission_description: e.target.value }))} />
+                            </div>
+                            <div className="grid gap-1.5">
+                                <Label htmlFor="location">Location</Label>
+                                <Input id="location" placeholder="e.g. Grid A-7"
+                                    value={form.location}
+                                    onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))} />
+                            </div>
+                            <div className="grid gap-1.5">
+                                <Label htmlFor="notes">Notes</Label>
+                                <Textarea id="notes" rows={2} placeholder="Additional notes…"
+                                    value={form.notes}
+                                    onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
+                            </div>
+                        </div>
+                    )}
+
+                    {step === 1 && (
+                        <div className="space-y-3">
+                            <SectionTitle>Schedule & Status</SectionTitle>
+                            <div className="grid gap-1.5">
+                                <Label htmlFor="scheduled_start">Scheduled Start</Label>
+                                <Input id="scheduled_start" type="datetime-local"
+                                    value={form.scheduled_start}
+                                    onChange={(e) => setForm((f) => ({ ...f, scheduled_start: e.target.value }))} />
+                            </div>
+                            <div className="grid gap-1.5">
+                                <Label>Status</Label>
+                                <Select value={form.status_name}
+                                    onValueChange={(v) => setForm((f) => ({ ...f, status_name: v as StatusName }))}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="PLANNED">Planned</SelectItem>
+                                        <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                                        <SelectItem value="COMPLETED">Completed</SelectItem>
+                                        <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                                        <SelectItem value="ABORTED">Aborted</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                    )}
+
+                    {step === 2 && (
+                        <div className="space-y-3">
+                            <SectionTitle>Assets</SectionTitle>
+                            <div className="grid gap-1.5">
+                                <Label>Tool (Drone System)</Label>
+                                <Select value={form.fk_tool_id}
+                                    onValueChange={(v) => setForm((f) => ({ ...f, fk_tool_id: v }))}
+                                    disabled={loadingOptions}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder={loadingOptions ? 'Loading…' : 'Select tool'} />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {tools.map((t) => (
+                                            <SelectItem key={t.tool_id} value={t.tool_id.toString()}>
+                                                {t.tool_name} ({t.tool_code})
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="grid gap-1.5">
+                                <Label>Mission Category</Label>
+                                <Select value={form.fk_mission_category_id}
+                                    onValueChange={(v) => setForm((f) => ({ ...f, fk_mission_category_id: v }))}
+                                    disabled={loadingOptions}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder={loadingOptions ? 'Loading…' : 'Select category'} />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {missionCategories.map((c) => (
+                                            <SelectItem key={c.category_id} value={c.category_id.toString()}>
+                                                {c.category_name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="grid gap-1.5">
+                                <Label>Mission Type</Label>
+                                <Select value={form.fk_mission_type_id}
+                                    onValueChange={(v) => setForm((f) => ({ ...f, fk_mission_type_id: v }))}
+                                    disabled={loadingOptions}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder={loadingOptions ? 'Loading…' : 'Select type'} />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {missionTypes.map((t) => (
+                                            <SelectItem key={t.mission_type_id} value={t.mission_type_id.toString()}>
+                                                {t.type_name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                    )}
+
+                    {step === 3 && (
+                        <div className="space-y-3">
+                            <SectionTitle>Pilot In Command</SectionTitle>
+                            <div className="grid gap-1.5">
+                                <Label>Pilot in Command <span className="text-red-500">*</span></Label>
+                                <Select value={form.fk_pilot_user_id}
+                                    onValueChange={(v) => setForm((f) => ({ ...f, fk_pilot_user_id: v }))}
+                                    disabled={loadingOptions}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder={loadingOptions ? 'Loading…' : 'Select pilot'} />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {pilots.map((p) => (
+                                            <SelectItem key={p.user_id} value={p.user_id.toString()}>
+                                                {p.first_name} {p.last_name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            {selectedPilot && (
+                                <div className="rounded-md border bg-muted/30 px-4 py-3">
+                                    <p className="text-xs text-muted-foreground mb-0.5">Selected Pilot</p>
+                                    <p className="font-medium">{selectedPilot.first_name} {selectedPilot.last_name}</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {step === 4 && (
+                        <div className="space-y-3">
+                            <SectionTitle>Mission Summary</SectionTitle>
+                            <div className="rounded-lg border bg-muted/20 p-4 space-y-3 text-sm">
+                                <div className="grid grid-cols-2 gap-x-4 gap-y-2.5">
+                                    <ReviewRow label="Mission Name"  value={form.mission_name} />
+                                    <ReviewRow label="Mission Code"  value={form.mission_code} />
+                                    <ReviewRow label="Location"      value={form.location} />
+                                    <ReviewRow label="Status"        value={form.status_name} />
+                                    <ReviewRow label="Scheduled"     value={form.scheduled_start ? new Date(form.scheduled_start).toLocaleString() : undefined} />
+                                    <ReviewRow label="Pilot"         value={selectedPilot ? `${selectedPilot.first_name} ${selectedPilot.last_name}` : undefined} />
+                                    <ReviewRow label="Tool"          value={selectedTool ? `${selectedTool.tool_name} (${selectedTool.tool_code})` : undefined} />
+                                    <ReviewRow label="Type"          value={selectedType?.type_name} />
+                                    <ReviewRow label="Category"      value={selectedCategory?.category_name} />
+                                </div>
+                                {(form.mission_description || form.notes) && (
+                                    <div className="border-t pt-2.5 space-y-2">
+                                        {form.mission_description && (
+                                            <div>
+                                                <p className="text-xs text-muted-foreground">Description</p>
+                                                <p className="text-sm mt-0.5">{form.mission_description}</p>
+                                            </div>
+                                        )}
+                                        {form.notes && (
+                                            <div>
+                                                <p className="text-xs text-muted-foreground">Notes</p>
+                                                <p className="text-sm mt-0.5">{form.notes}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                            {!form.mission_name.trim() && (
+                                <p className="text-xs text-destructive">⚠ Mission name is required.</p>
+                            )}
+                            {!form.fk_pilot_user_id && (
+                                <p className="text-xs text-destructive">⚠ Pilot in Command is required.</p>
+                            )}
+                        </div>
+                    )}
                 </div>
-                {form.mission_description && (
-                  <div className="pt-1">
-                    <p className="text-xs text-muted-foreground">Description</p>
-                    <p>{form.mission_description}</p>
-                  </div>
-                )}
-                {form.notes && (
-                  <div>
-                    <p className="text-xs text-muted-foreground">Notes</p>
-                    <p>{form.notes}</p>
-                  </div>
-                )}
-              </div>
-              {!form.mission_name.trim() && (
-                <p className="text-xs text-destructive">Mission name is required.</p>
-              )}
-              {!form.fk_pilot_user_id && (
-                <p className="text-xs text-destructive">Pilot in Command is required.</p>
-              )}
-            </div>
-          )}
-        </div>
 
-        <DialogFooter className="flex justify-between gap-2 sm:justify-between">
-          <Button
-            variant="outline"
-            onClick={() => step === 0 ? onClose() : setStep((s) => (s - 1) as Step)}
-            disabled={isPending}
-          >
-            {step === 0 ? 'Cancel' : 'Previous'}
-          </Button>
+                <div className="flex items-center justify-between px-6 pb-6 pt-2 border-t bg-muted/20">
+                    <Button variant="outline" size="sm"
+                        onClick={() => step === 0 ? onClose() : setStep((s) => (s - 1) as Step)}
+                        disabled={isPending}
+                        className="gap-1">
+                        {step === 0
+                            ? 'Cancel'
+                            : <><ChevronLeft className="h-4 w-4" /> Previous</>}
+                    </Button>
 
-          {step < 4 ? (
-            <Button
-              onClick={() => setStep((s) => (s + 1) as Step)}
-              disabled={step === 0 && !form.mission_name.trim()}
-            >
-              Next
-            </Button>
-          ) : (
-            <Button
-              onClick={handleSubmit}
-              disabled={isPending || !form.mission_name.trim() || !form.fk_pilot_user_id}
-            >
-              {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isEdit ? 'Save Changes' : 'Create Operation'}
-            </Button>
-          )}
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
+                    {step < 4 ? (
+                        <Button size="sm"
+                            onClick={() => setStep((s) => (s + 1) as Step)}
+                            disabled={!canGoNext()}
+                            className="gap-1 bg-violet-600 hover:bg-violet-700 text-white">
+                            Next <ChevronRight className="h-4 w-4" />
+                        </Button>
+                    ) : (
+                        <Button size="sm"
+                            onClick={handleSubmit}
+                            disabled={isPending || !form.mission_name.trim() || !form.fk_pilot_user_id}
+                            className="gap-2 bg-violet-600 hover:bg-violet-700 text-white min-w-[140px]">
+                            {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                            {isEdit ? 'Save Changes' : 'Create Operation'}
+                        </Button>
+                    )}
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
 }
 
+
+function SectionTitle({ children }: { children: React.ReactNode }) {
+    return <h4 className="text-sm font-semibold text-foreground border-b pb-2 mb-3">{children}</h4>;
+}
+
+function ReviewRow({ label, value }: { label: string; value?: string }) {
+    return (
+        <div>
+            <p className="text-xs text-muted-foreground">{label}</p>
+            <p className="font-medium text-sm">{value || '—'}</p>
+        </div>
+    );
+}
 export function formatBytes(bytes?: number) {
   if (!bytes) return '';
   if (bytes < 1024) return `${bytes} B`;

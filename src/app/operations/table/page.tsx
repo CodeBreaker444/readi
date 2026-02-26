@@ -7,17 +7,21 @@ import {
   ChevronUp,
   Clock,
   Loader2,
+  MessageSquare,
   Paperclip,
   Pencil,
   Plus,
   RotateCcw,
   Search,
   Trash2,
+  Upload,
   Wrench,
   XCircle
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+import GeneralCommunicationDialog from '@/components/operation/GeneralCommunicationDialog';
+import ImportOperationDialog from '@/components/operation/ImportOperationDialog';
 import { AttachmentsDialog, DeleteDialog, formatDate, OperationDialog } from '@/components/operation/OperationDialogs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -111,10 +115,12 @@ interface FilterState {
   dateEnd: string;
 }
 export default function OperationsPage() {
-  const { isDark } = useTheme();
+   const { isDark } = useTheme();
   const [operations, setOperations] = useState<Operation[]>([]);
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);    
+  const [commOpen, setCommOpen] = useState(false);        
   const [editTarget, setEditTarget] = useState<Operation | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Operation | null>(null);
   const [attachTarget, setAttachTarget] = useState<Operation | null>(null);
@@ -161,7 +167,6 @@ export default function OperationsPage() {
     fetchOperations();
   }, [filters]);
 
-
   function toggleSort(field: SortField) {
     if (sortField === field) {
       setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
@@ -178,17 +183,17 @@ export default function OperationsPage() {
     return va.localeCompare(vb) * dir;
   });
 
-function handleSaved(op: Operation) {
-  setOperations((prev) => {
-    const idx = prev.findIndex((o) => o.pilot_mission_id === op.pilot_mission_id);
-    if (idx !== -1) {
-      const next = [...prev];
-      next[idx] = { ...next[idx], ...op };
-      return next;
-    }
-    return [op, ...prev];
-  });
-}
+  function handleSaved(op: Operation) {
+    setOperations((prev) => {
+      const idx = prev.findIndex((o) => o.pilot_mission_id === op.pilot_mission_id);
+      if (idx !== -1) {
+        const next = [...prev];
+        next[idx] = { ...next[idx], ...op };
+        return next;
+      }
+      return [op, ...prev];
+    });
+  }
 
   function handleDeleted(id: number) {
     setOperations((prev) => prev.filter((o) => o.pilot_mission_id !== id));
@@ -201,7 +206,7 @@ function handleSaved(op: Operation) {
     completed: operations.filter((o) => o.status_name === 'COMPLETED').length,
   };
 
-  return (
+   return (
     <TooltipProvider>
       <div className="min-h-screen bg-background">
         <div className="border-b bg-card px-6 py-5">
@@ -211,14 +216,35 @@ function handleSaved(op: Operation) {
                 <h1 className="text-xl font-semibold tracking-tight">Operations</h1>
                 <p className="text-sm text-muted-foreground">Pilot missions &amp; flight operations</p>
               </div>
-              <Button
-                onClick={() => setCreateOpen(true)}
-                size="sm"
-                className={isDark ? 'bg-violet-600 hover:bg-violet-500 text-white' : 'bg-violet-600 hover:bg-violet-700 text-white'}
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                New Operation
-              </Button>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCommOpen(true)}
+                  className="gap-1.5"
+                >
+                  <MessageSquare className="h-4 w-4" />
+                  Communication
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setImportOpen(true)}
+                  className="gap-1.5"
+                >
+                  <Upload className="h-4 w-4" />
+                  Import Operation
+                </Button>
+                <Button
+                  onClick={() => setCreateOpen(true)}
+                  size="sm"
+                  className={isDark ? 'bg-violet-600 hover:bg-violet-500 text-white' : 'bg-violet-600 hover:bg-violet-700 text-white'}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  New Operation
+                </Button>
+              </div>
             </div>
 
             <div className="mt-4 grid grid-cols-4 gap-3">
@@ -435,6 +461,10 @@ function handleSaved(op: Operation) {
           onClose={() => setAttachTarget(null)}
         />
       )}
+
+      <ImportOperationDialog open={importOpen} onClose={() => setImportOpen(false)} onSaved={handleSaved} />
+      <GeneralCommunicationDialog open={commOpen} onClose={() => setCommOpen(false)} />
+        
     </TooltipProvider>
   );
 }

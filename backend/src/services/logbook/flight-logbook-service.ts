@@ -1,15 +1,15 @@
 import { supabase } from '@/backend/database/database';
 import {
-    ClientOption,
-    DroneOption,
-    MissionCategoryOption,
-    MissionPlanOption,
-    MissionResultOption,
-    MissionStatusOption,
-    MissionTypeOption,
-    OperationFilterParams,
-    OperationLogbookItem,
-    PilotOption,
+  ClientOption,
+  DroneOption,
+  MissionCategoryOption,
+  MissionPlanOption,
+  MissionResultOption,
+  MissionStatusOption,
+  MissionTypeOption,
+  OperationFilterParams,
+  OperationLogbookItem,
+  PilotOption,
 } from '@/config/types/logbook';
 
  
@@ -130,7 +130,7 @@ export async function getOperationLogbookFilters(owner_id: number) {
         .eq("is_active", true),
 
       supabase
-        .from("pilot_mission_result")          // ← fix: was querying pilot_mission_status twice
+        .from("pilot_mission_result")          
         .select("result_id, result_name")
         .eq("is_active", true),
 

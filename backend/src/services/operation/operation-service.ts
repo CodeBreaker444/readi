@@ -282,6 +282,7 @@ export async function getPilotOptions(ownerId: number,userId:number) {
     .from('users')
     .select('user_id, first_name, last_name')
     .eq('fk_owner_id', ownerId)
+    .eq('user_role','PIC')
     .eq('user_active', 'Y')
     .order('first_name');
 
