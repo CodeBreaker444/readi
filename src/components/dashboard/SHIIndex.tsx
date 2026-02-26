@@ -1,4 +1,6 @@
 'use client';
+import { SessionUser } from '@/lib/auth/server-session';
+import { cn } from '@/lib/utils';
 import React, { useEffect, useState } from 'react';
 import { useTheme } from '../useTheme';
 import AreaGauges from './AreaGauges';
@@ -7,21 +9,11 @@ import IndicatorTrendChart from './IndicatorTrendChart';
 import SafetyHealthGauge from './SafetyHealthGauge';
 import SHITrendChart from './SHITrendChart';
 
-interface SHIData {
-  code: number;
-  safety_index: number;
-  data: Record<string, any[]>;
-}
+interface SHIData { code: number; safety_index: number; data: Record<string, any[]> }
+interface TrendData { code: number; labels: string[]; values: number[]; target?: number }
+interface shiIndexProps { user: SessionUser }
 
-interface TrendData {
-  code: number;
-  labels: string[];
-  values: number[];
-  target?: number;
-}
-
-
-const SHIIndex: React.FC = () => {
+const SHIIndex: React.FC<shiIndexProps> = (user) => {
   const { isDark } = useTheme();
   const [shiData, setSHIData] = useState<SHIData | null>(null);
   const [shiTrend, setSHITrend] = useState<TrendData | null>(null);
@@ -29,203 +21,130 @@ const SHIIndex: React.FC = () => {
   const [indicatorTrend, setIndicatorTrend] = useState<TrendData | null>(null);
   const [allIndicators, setAllIndicators] = useState<string[]>([]);
 
-useEffect(() => {
-  const loadDashboardData = async () => {
-    try {
-      const res = await fetch('/api/dashboard/getSPIKPIData', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          owner_id: 1, // Replace with actual session owner_id
-          user_id: 1,  // Replace with actual session user_id
-          user_timezone: 'UTC',
-          user_profile_code: 'ADMIN',
-        }),
-      });
-      
-      const payload = await res.json();
-      
-      if (payload.code === 1) {
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await fetch('/api/dashboard/getSPIKPIData', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
+        const payload = await res.json();
+        if (payload.code !== 1) return;
         setSHIData(payload);
-        
         const indicators = new Set<string>();
-        Object.values(payload.data).forEach((areaIndicators: any) => {
-          areaIndicators.forEach((ind: any) => {
-            indicators.add(ind.indicator_name);
-          });
-        });
-        
-        const sortedIndicators = Array.from(indicators).sort();
-        setAllIndicators(sortedIndicators);
-        
-        if (sortedIndicators.length > 0) {
-          setSelectedIndicator(sortedIndicators[0]);
-        }
-      }
-    } catch (error) {
-      console.error('Error loading dashboard data:', error);
-    }
-  };
+        Object.values(payload.data).forEach((arr: any) => arr.forEach((ind: any) => indicators.add(ind.indicator_name)));
+        const sorted = Array.from(indicators).sort();
+        setAllIndicators(sorted);
+        if (sorted.length > 0) setSelectedIndicator(sorted[0]);
+      } catch (e) { console.error(e); }
+    };
+    load();
+  }, []);
 
-  loadDashboardData();
-}, []);
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await fetch('/api/dashboard/getSHITrend', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ owner_id: user.user.ownerId, user_id: user.user.userId }) });
+        const data = await res.json();
+        if (data.code === 1) setSHITrend(data);
+      } catch (e) { console.error(e); }
+    };
+    load();
+  }, []);
 
-// Load SHI trend data
-useEffect(() => {
-  const loadSHITrend = async () => {
-    try {
-      const res = await fetch('/api/dashboard/getSHITrend', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          owner_id: 1, // Replace with actual session owner_id
-          user_id: 1,  // Replace with actual session user_id
-        }),
-      });
-      
-      const data = await res.json();
-      if (data.code === 1) {
-        setSHITrend(data);
-      }
-    } catch (error) {
-      console.error('Error loading SHI trend:', error);
-    }
-  };
+  useEffect(() => {
+    if (!selectedIndicator) return;
+    const load = async () => {
+      try {
+        const res = await fetch('/api/dashboard/getSPIKPITrend', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ owner_id: user.user.ownerId, user_id: user.user.userId, name: selectedIndicator }) });
+        const data = await res.json();
+        if (data.code === 1) setIndicatorTrend(data);
+      } catch (e) { console.error(e); }
+    };
+    load();
+  }, [selectedIndicator]);
 
-  loadSHITrend();
-}, []);
-
-// Load indicator trend when selection changes
-useEffect(() => {
-  if (!selectedIndicator) return;
-
-  const loadIndicatorTrend = async () => {
-    try {
-      const res = await fetch('/api/dashboard/getSPIKPITrend', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          owner_id: 1, // Replace with actual session owner_id
-          user_id: 1,  // Replace with actual session user_id
-          name: selectedIndicator,
-        }),
-      });
-      
-      const data = await res.json();
-      if (data.code === 1) {
-        setIndicatorTrend(data);
-      }
-    } catch (error) {
-      console.error('Error loading indicator trend:', error);
-    }
-  };
-
-  loadIndicatorTrend();
-}, [selectedIndicator]);
-
-  //   if (loading) {
-  //     return (
-  //       <div className={`flex items-center justify-center min-h-screen ${isDark ? 'bg-slate-900' : 'bg-gray-50'}`}>
-  //         <div className="text-center">
-  //           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-  //           <p className={`mt-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Loading SHI Dashboard...</p>
-  //         </div>
-  //       </div>
-  //     );
-  //   }
+  const card = cn('rounded-xl m-4 border', isDark ? 'bg-slate-800/80 border-slate-700/60' : 'bg-white border-gray-200');
+  const cardHeader = cn('px-5 py-4 border-b', isDark ? 'border-slate-700/60' : 'border-gray-100');
+  const cardTitle = cn('text-sm font-semibold mt-0.5', isDark ? 'text-white' : 'text-gray-800');
+  const cardEyebrow = cn('text-xs font-semibold uppercase tracking-widest', isDark ? 'text-slate-500' : 'text-gray-400');
+  const selectCls = cn(
+    'text-xs border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-violet-500/40',
+    isDark ? 'bg-slate-700 border-slate-600 text-slate-200' : 'bg-gray-50 border-gray-200 text-gray-700'
+  );
 
   return (
-    <div className={`p-4 sm:p-6 lg:p-8 ${isDark ? 'bg-slate-900' : 'bg-gray-50'}`}>
-      {/* Header */}
-      <div className="mb-6 lg:mb-8 flex items-center justify-between">
-        <div>
-          <h1 className={`text-2xl sm:text-3xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-            Safety Health Index (SHI) - EASA Model
-          </h1>
-          <p className={`mt-1 text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-            Monitoring safety performance indicators and key performance indicators
-          </p>
+    <div className={` min-h-screen ${isDark ? 'text-white' : 'text-gray-900 '}`}>
+
+      <div className={`top-0 z-10 backdrop-blur-md transition-colors ${isDark
+          ? "bg-slate-900/80 border-b border-slate-800 text-white"
+          : "bg-white/80 border-b border-slate-200 text-slate-900 shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
+        } px-6 py-4 mb-8`}>
+        <div className="mx-auto max-w-[1800px] flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-1 h-6 rounded-full bg-violet-600" />
+            <div>
+              <h1 className={`text-lg font-bold tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>
+                Safety Health Index
+              </h1>
+              <p className={`text-xs ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+                Monitoring safety performance & key performance indicators (EASA Model)
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Main SHI Gauge and Trend Chart */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 mb-4">
         <div className="lg:col-span-4">
-          {shiData && (
-            <SafetyHealthGauge
-              value={shiData.safety_index}
-              isDark={isDark}
-            />
-          )}
+          {shiData && <SafetyHealthGauge value={shiData.safety_index} isDark={isDark} />}
         </div>
-
         <div className="lg:col-span-8">
-          {shiTrend && (
-            <SHITrendChart
-              labels={shiTrend.labels}
-              values={shiTrend.values}
+          {shiTrend && <SHITrendChart labels={shiTrend.labels} values={shiTrend.values} isDark={isDark} />}
+        </div>
+      </div>
+
+      {shiData && (
+        <div className="mb-4">
+          <AreaGauges dataByArea={shiData.data} isDark={isDark} />
+        </div>
+      )}
+
+      {shiData && (
+        <div className="mb-4">
+          <IndicatorCards dataByArea={shiData.data} isDark={isDark} />
+        </div>
+      )}
+
+      <div className={cn(card)}>
+        <div className={cardHeader}>
+          <p className={cardEyebrow}>Trend Analysis</p>
+          <h2 className={cardTitle}>Indicator Trend</h2>
+        </div>
+        <div className="p-5">
+          <div className="mb-4">
+            <label className={cn('block text-xs font-medium mb-1.5', isDark ? 'text-slate-400' : 'text-gray-500')}>
+              Select Indicator
+            </label>
+            <select
+              value={selectedIndicator}
+              onChange={(e) => setSelectedIndicator(e.target.value)}
+              className={cn(selectCls, 'w-full md:w-72')}
+            >
+              {allIndicators.map((name) => (
+                <option key={name} value={name}>{name}</option>
+              ))}
+            </select>
+          </div>
+          {indicatorTrend && (
+            <IndicatorTrendChart
+              indicatorName={selectedIndicator}
+              labels={indicatorTrend.labels}
+              values={indicatorTrend.values}
+              target={indicatorTrend.target || 100}
               isDark={isDark}
             />
           )}
         </div>
       </div>
 
-      {/* Area Gauges */}
-      {shiData && (
-        <div className="mb-6">
-          <AreaGauges
-            dataByArea={shiData.data}
-            isDark={isDark}
-          />
-        </div>
-      )}
-
-      {/* Indicator Cards */}
-      {shiData && (
-        <div className="mb-6">
-          <IndicatorCards
-            dataByArea={shiData.data}
-            isDark={isDark}
-          />
-        </div>
-      )}
-
-      {/* Indicator Trend Selection and Chart */}
-      <div className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} rounded-lg shadow-sm border p-6`}>
-        <div className="mb-4">
-          <label
-            htmlFor="indicatorSelect"
-            className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
-          >
-            Indicator Trend:
-          </label>
-          <select
-            id="indicatorSelect"
-            value={selectedIndicator}
-            onChange={(e) => setSelectedIndicator(e.target.value)}
-            className={`w-full md:w-auto px-4 py-2 rounded-lg border ${isDark
-                ? 'bg-slate-700 border-slate-600 text-white'
-                : 'bg-white border-gray-300 text-gray-900'
-              } focus:outline-none focus:ring-2 focus:ring-blue-500`}
-          >
-            {allIndicators.map((name) => (
-              <option key={name} value={name}>
-                {name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {indicatorTrend && (
-          <IndicatorTrendChart
-            indicatorName={selectedIndicator}
-            labels={indicatorTrend.labels}
-            values={indicatorTrend.values}
-            target={indicatorTrend.target || 100}
-            isDark={isDark}
-          />
-        )}
-      </div>
     </div>
   );
 };

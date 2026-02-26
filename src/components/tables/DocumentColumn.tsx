@@ -4,8 +4,10 @@ import { getDownloadUrl } from '@/actions/repository';
 import { RepositoryDocument } from '@/config/types/repository';
 import { ColumnDef } from '@tanstack/react-table';
 import { format } from 'date-fns';
-import { ArrowUpDown, Download, History, Loader2, Pencil, Trash2 } from 'lucide-react';
+import { ArrowUpDown, Calendar, Download, DownloadCloud, History, Loader2, Pencil, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import { Badge } from '../ui/badge';
+import { Button } from '../ui/button';
 
 const STATUS_CLASSES: Record<string, string> = {
   DRAFT:     'bg-gray-100 text-gray-700',
@@ -87,163 +89,162 @@ export function getRepositoryColumns(actions: ColumnActions): ColumnDef<Reposito
     {
       id: 'doc_code',
       accessorKey: 'doc_code',
-      header: ({ column }) => (
-        <button
-          className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-gray-500 hover:text-gray-900"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Code <ArrowUpDown className="h-3 w-3" />
-        </button>
-      ),
+      header: "# Code",
       cell: ({ row }) => (
-        <span className="font-mono text-xs font-semibold text-gray-700">
+        <span className="font-mono text-xs font-semibold text-slate-400 dark:text-slate-500">
           {row.original.doc_code ?? '—'}
         </span>
       ),
       size: 90,
     },
-
     {
       id: 'title',
       accessorKey: 'title',
       header: ({ column }) => (
-        <button
-          className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-gray-500 hover:text-gray-900"
+        <Button
+          variant="ghost"
+          size="sm"
+          className="-ml-3 h-8 text-slate-400 hover:text-slate-800 dark:hover:text-white"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
-          Title <ArrowUpDown className="h-3 w-3" />
-        </button>
+          Title <ArrowUpDown className="ml-1.5 h-3 w-3" />
+        </Button>
       ),
       cell: ({ row }) => (
-        <div className="min-w-0">
-          <p className="truncate font-medium text-gray-900">{row.original.title}</p>
+        <div className="flex flex-col gap-0.5">
+          <span className="text-xs font-medium text-slate-800 dark:text-white">
+            {row.original.title}
+          </span>
           {row.original.description && (
-            <p className="mt-0.5 truncate text-xs text-gray-400">{row.original.description}</p>
+            <span className="text-[11px] text-slate-400 dark:text-slate-500 truncate max-w-[250px]">
+              {row.original.description}
+            </span>
           )}
         </div>
       ),
     },
-
     {
       id: 'type_name',
       accessorKey: 'type_name',
-      header: () => (
-        <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Type</span>
-      ),
+      header: "Type & Area",
       cell: ({ row }) => (
-        <div className="space-y-1">
-          <p className="text-sm text-gray-800">{row.original.type_name ?? '—'}</p>
-          <AreaBadge area={row.original.doc_area} />
+        <div className="flex flex-col gap-1.5">
+          <span className="text-xs text-slate-700 dark:text-slate-200">
+            {row.original.type_name ?? '—'}
+          </span>
+          <Badge
+            variant="outline"
+            className="w-fit text-[10px] border-slate-300 text-slate-600 dark:border-slate-600 dark:text-slate-300"
+          >
+            {row.original.doc_area}
+          </Badge>
         </div>
       ),
       size: 180,
     },
-
-    {
-      id: 'doc_area',
-      accessorKey: 'doc_area',
-      header: () => (
-        <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Area</span>
-      ),
-      cell: ({ row }) => <AreaBadge area={row.original.doc_area} />,
-      size: 110,
-      filterFn: (row, _, filterValue) => !filterValue || row.original.doc_area === filterValue,
-    },
-
-    {
-      id: 'doc_category',
-      accessorKey: 'doc_category',
-      header: () => (
-        <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Category</span>
-      ),
-      cell: ({ row }) => (
-        <span className="text-sm text-gray-700">{row.original.doc_category ?? '—'}</span>
-      ),
-      size: 120,
-    },
-
     {
       id: 'status',
       accessorKey: 'status',
-      header: ({ column }) => (
-        <button
-          className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-gray-500 hover:text-gray-900"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Status <ArrowUpDown className="h-3 w-3" />
-        </button>
-      ),
-      cell: ({ row }) => <StatusBadge status={row.original.status} />,
+      header: "Status",
+      cell: ({ row }) => {
+        const val = row.original.status || "";
+        const isActive = val.toLowerCase() === 'active' || val.toLowerCase() === 'published';
+        return (
+          <Badge 
+            variant="outline" 
+            className={`text-[10px] border ${
+              isActive 
+                ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30" 
+                : "bg-slate-100 text-slate-500 border-slate-200"
+            }`}
+          >
+            {val}
+          </Badge>
+        );
+      },
       size: 100,
-      filterFn: (row, _, filterValue) => !filterValue || row.original.status === filterValue,
     },
-
     {
       id: 'version_label',
       accessorKey: 'version_label',
-      header: () => (
-        <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Version</span>
-      ),
+      header: "Version",
       cell: ({ row }) => (
-        <div>
-          <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-mono text-gray-700">
-            {row.original.version_label ?? '—'}
+        <div className="flex flex-col gap-1">
+          <span className="w-fit rounded bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 text-[10px] font-mono font-bold text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+            v{row.original.version_label ?? '1.0'}
           </span>
           {row.original.file_name && (
-            <p className="mt-1 max-w-30 truncate text-xs text-gray-400">{row.original.file_name}</p>
+            <span className="text-[10px] text-slate-400 truncate max-w-[100px]">
+              {row.original.file_name}
+            </span>
           )}
         </div>
       ),
       size: 100,
     },
-
     {
       id: 'dates',
       header: () => (
-        <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Eff. / Expiry</span>
+        <div className="flex items-center gap-1">
+          <Calendar className="h-3 w-3" />
+          <span>Validity</span>
+        </div>
       ),
       cell: ({ row }) => (
-        <div className="text-xs">
-          <p className="text-gray-700">{fmtDate(row.original.effective_date)}</p>
+        <div className="flex flex-col gap-0.5 text-[11px]">
+          <div className="flex items-center gap-1 text-slate-700 dark:text-slate-200">
+            <span className="text-[9px] font-bold text-slate-400 uppercase">Eff:</span>
+            {fmtDate(row.original.effective_date)}
+          </div>
           {row.original.expiry_date && (
-            <p className="text-gray-400">{fmtDate(row.original.expiry_date)}</p>
+            <div className="flex items-center gap-1 text-slate-400">
+               <span className="text-[9px] font-bold text-slate-300 uppercase">Exp:</span>
+               {fmtDate(row.original.expiry_date)}
+            </div>
           )}
         </div>
       ),
       size: 140,
     },
-
     {
       id: 'actions',
-      header: () => (
-        <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Actions</span>
-      ),
+      header: () => <span className="text-xs font-semibold text-slate-400">Actions</span>,
       cell: ({ row }) => {
         const doc = row.original;
         return (
-          <div className="flex items-center justify-end gap-0.5">
-            {doc.file_path && <DownloadButton filePath={doc.file_path} />}
-            <button
+          <div className="flex items-center justify-end gap-1">
+            {doc.file_path && (
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-500 hover:text-violet-600">
+                 <DownloadCloud className="h-4 w-4" />
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
               title="Revision history"
               onClick={() => actions.onHistory(doc)}
-              className="rounded p-1.5 text-gray-500 hover:bg-gray-100 transition-colors"
+              className="h-7 w-7 text-slate-500 hover:bg-slate-100"
             >
-              <History className="h-4 w-4" />
-            </button>
-            <button
+              <History className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
               title="Edit"
               onClick={() => actions.onEdit(doc)}
-              className="rounded p-1.5 text-blue-600 hover:bg-blue-50 transition-colors"
+              className="h-7 w-7 text-slate-500 hover:text-blue-600 hover:bg-blue-50"
             >
-              <Pencil className="h-4 w-4" />
-            </button>
-            <button
+              <Pencil className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
               title="Delete"
               onClick={() => actions.onDelete(doc)}
-              className="rounded p-1.5 text-red-500 hover:bg-red-50 transition-colors"
+              className="h-7 w-7 text-slate-500 hover:text-red-600 hover:bg-red-50"
             >
-              <Trash2 className="h-4 w-4" />
-            </button>
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
           </div>
         );
       },

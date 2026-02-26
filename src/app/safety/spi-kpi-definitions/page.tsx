@@ -138,23 +138,35 @@ export default function SpiKpiDefinitionsPage() {
   return (
     <div className={`min-h-screen transition-colors duration-300 ${isDark ? 'bg-slate-900 text-white' : 'bg-slate-50 text-gray-900'
       } `}>
-      <div className={`top-0 z-10 backdrop-blur-md transition-colors ${isDark ? 'bg-slate-800/80 border-slate-700 text-white' : 'bg-gray-50/80 border-slate-200 text-gray-900'
-        }`}>
-        <div className="mx-auto px-6 py-5 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div>
-              <h1 className="text-xl font-bold tracking-tight uppercase tracking-widest text-xs mb-1 opacity-50">Safety Management</h1>
-              <h2 className="text-xl font-bold tracking-tight">SPI / KPI Definitions</h2>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Button onClick={openNew} className=" border-gray-100 text-white gap-2 shadow-lg shadow-blue-500/20">
-              <Plus className="w-4 h-4" /> New Indicator
-            </Button>
-          </div>
-        </div>
+     <div className={`top-0 z-10 backdrop-blur-md transition-colors ${
+  isDark
+    ? "bg-slate-900/80 border-b border-slate-800 text-white"
+    : "bg-white/80 border-b border-slate-200 text-slate-900 shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
+} px-6 py-4 mb-8`}>
+  <div className="mx-auto max-w-[1800px] flex items-center justify-between">
+    <div className="flex items-center gap-3">
+      <div className="w-1 h-6 rounded-full bg-violet-600" />
+      <div>
+        <h1 className={`text-lg font-bold tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>
+          SPI / KPI Definitions
+        </h1>
+        <p className={`text-xs ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+          Safety Management · Monitoring safety performance indicators
+        </p>
       </div>
+    </div>
+
+    <div className="flex items-center gap-3">
+      <Button 
+        onClick={openNew} 
+        className="h-8 gap-1.5 text-xs bg-violet-600 hover:bg-violet-500 text-white border-none shadow-sm shadow-violet-500/20"
+      >
+        <Plus className="w-3.5 h-3.5" /> 
+        New Indicator
+      </Button>
+    </div>
+  </div>
+</div>
 
       <div className="mx-auto px-6 py-8 space-y-6 animate-slide-up">
 

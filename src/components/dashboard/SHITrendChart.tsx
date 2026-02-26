@@ -1,4 +1,5 @@
 'use client';
+import { cn } from '@/lib/utils';
 import React, { useEffect, useRef } from 'react';
 
 interface SHITrendChartProps {
@@ -12,127 +13,66 @@ const SHITrendChart: React.FC<SHITrendChartProps> = ({ labels, values, isDark = 
 
   useEffect(() => {
     if (!chartRef.current || typeof window === 'undefined') return;
-
-    // Dynamically load ApexCharts
     const script = document.createElement('script');
     script.src = 'https://cdn.jsdelivr.net/npm/apexcharts';
     script.async = true;
-
     script.onload = () => {
       if (chartRef.current && (window as any).ApexCharts) {
         const chart = new (window as any).ApexCharts(chartRef.current, {
-          chart: {
-            type: 'line',
-            height: 300,
-            toolbar: { show: false },
-            background: 'transparent'
-          },
-          series: [{
-            name: 'Safety Health Index',
-            data: values
-          }],
+          chart: { type: 'line', height: 260, toolbar: { show: false }, background: 'transparent' },
+          series: [{ name: 'SHI', data: values }],
           xaxis: {
             categories: labels,
-            labels: { 
-              style: { 
-                colors: isDark ? '#9ca3af' : '#6b7280' 
-              } 
-            }
+            labels: { style: { colors: isDark ? '#64748b' : '#94a3b8', fontSize: '11px' } },
+            axisBorder: { show: false }, axisTicks: { show: false },
           },
           yaxis: {
-            min: 0,
-            max: 100,
-            tickAmount: 5,
-            title: { 
-              text: 'Index (%)',
-              style: {
-                color: isDark ? '#9ca3af' : '#6b7280'
-              }
-            },
-            labels: { 
-              style: { 
-                colors: isDark ? '#9ca3af' : '#6b7280' 
-              } 
-            }
+            min: 0, max: 100, tickAmount: 5,
+            labels: { style: { colors: isDark ? '#64748b' : '#94a3b8', fontSize: '11px' } },
           },
-          stroke: { 
-            curve: 'smooth', 
-            width: 3 
-          },
-          colors: ['#00b300'],
-          markers: { 
-            size: 8, 
-            colors: ['#0d6efd'], 
-            strokeColors: '#00b300',
-            strokeWidth: 2
-          },
+          stroke: { curve: 'smooth', width: 2.5 },
+          colors: ['#10b981'],
+          markers: { size: 5, colors: ['#10b981'], strokeColors: isDark ? '#1e293b' : '#fff', strokeWidth: 2 },
           tooltip: {
             theme: isDark ? 'dark' : 'light',
-            y: { 
-              formatter: (v: number) => v.toFixed(1) + '%' 
-            }
+            y: { formatter: (v: number) => v.toFixed(1) + '%' },
           },
           grid: {
-            borderColor: isDark ? '#374151' : '#e5e7eb',
-            row: { colors: ['transparent', 'transparent'] }
+            borderColor: isDark ? '#1e293b' : '#f1f5f9',
+            xaxis: { lines: { show: false } },
           },
           annotations: {
             yaxis: [
-              {
-                y: 70,
-                y2: 0,
-                borderColor: '#ff3300',
-                fillColor: 'rgba(255, 51, 51, 0.15)',
-                label: {
-                  text: 'Unsatisfactory',
-                  style: { color: '#fff', background: '#ff3300' }
-                }
-              },
-              {
-                y: 85,
-                y2: 70,
-                borderColor: '#ffcc00',
-                fillColor: 'rgba(255, 204, 0, 0.15)',
-                label: {
-                  text: 'Marginal',
-                  style: { color: '#333', background: '#ffcc00' }
-                }
-              },
-              {
-                y: 100,
-                y2: 85,
-                borderColor: '#00b300',
-                fillColor: 'rgba(0, 179, 0, 0.15)',
-                label: {
-                  text: 'Acceptable / Excellent',
-                  style: { color: '#fff', background: '#00b300' }
-                }
-              }
-            ]
-          }
+              { y: 70, y2: 0,   fillColor: 'rgba(239,68,68,0.08)',  borderColor: 'transparent' },
+              { y: 85, y2: 70,  fillColor: 'rgba(245,158,11,0.08)', borderColor: 'transparent' },
+              { y: 100, y2: 85, fillColor: 'rgba(16,185,129,0.08)', borderColor: 'transparent' },
+            ],
+          },
         });
-
         chart.render();
-
-        return () => {
-          chart.destroy();
-        };
+        return () => chart.destroy();
       }
     };
-
     document.body.appendChild(script);
-
-    return () => {
-      if (script.parentNode) script.parentNode.removeChild(script);
-    };
+    return () => { if (script.parentNode) script.parentNode.removeChild(script); };
   }, [labels, values, isDark]);
 
   return (
-    <div className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} rounded-lg shadow-sm border p-6`}>
-      <h5 className={`mb-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-        Monthly Safety Health Index (SHI) Trend
-      </h5>
-      <div ref={chartRef} style={{ height: '300px' }} />
+    <div className={cn(
+      'rounded-xl border h-full flex flex-col',
+      isDark ? 'bg-slate-800/80 border-slate-700/60' : 'bg-white border-gray-200'
+    )}>
+      <div className={cn('px-5 py-4 border-b', isDark ? 'border-slate-700/60' : 'border-gray-100')}>
+        <p className={cn('text-xs font-semibold uppercase tracking-widest', isDark ? 'text-slate-500' : 'text-gray-400')}>
+          Trend
+        </p>
+        <h2 className={cn('text-sm font-semibold mt-0.5', isDark ? 'text-white' : 'text-gray-800')}>
+          Monthly SHI Trend
+        </h2>
+      </div>
+      <div className="flex-1 p-5">
+        <div ref={chartRef} style={{ height: '260px' }} />
+      </div>
     </div>
   );
 };

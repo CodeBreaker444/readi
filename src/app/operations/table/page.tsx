@@ -115,12 +115,12 @@ interface FilterState {
   dateEnd: string;
 }
 export default function OperationsPage() {
-   const { isDark } = useTheme();
+  const { isDark } = useTheme();
   const [operations, setOperations] = useState<Operation[]>([]);
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
-  const [importOpen, setImportOpen] = useState(false);    
-  const [commOpen, setCommOpen] = useState(false);        
+  const [importOpen, setImportOpen] = useState(false);
+  const [commOpen, setCommOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Operation | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Operation | null>(null);
   const [attachTarget, setAttachTarget] = useState<Operation | null>(null);
@@ -206,48 +206,63 @@ export default function OperationsPage() {
     completed: operations.filter((o) => o.status_name === 'COMPLETED').length,
   };
 
-   return (
+  return (
     <TooltipProvider>
       <div className="min-h-screen bg-background">
-        <div className="border-b bg-card px-6 py-5">
+        <div className="border-b bg-card">
           <div className="mx-auto">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-xl font-semibold tracking-tight">Operations</h1>
-                <p className="text-sm text-muted-foreground">Pilot missions &amp; flight operations</p>
-              </div>
+            <div className={`top-0 z-10 backdrop-blur-md transition-colors ${isDark
+                ? "bg-slate-900/80 border-b border-slate-800 text-white"
+                : "bg-white/80 border-b border-slate-200 text-slate-900 shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
+              } px-6 py-4 mb-8`}>
+              <div className="mx-auto max-w-[1800px] flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-1 h-6 rounded-full bg-violet-600" />
+                  <div>
+                    <h1 className={`text-lg font-bold tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>
+                      Operations
+                    </h1>
+                    <p className={`text-xs ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+                      Pilot missions & flight operations
+                    </p>
+                  </div>
+                </div>
 
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCommOpen(true)}
-                  className="gap-1.5"
-                >
-                  <MessageSquare className="h-4 w-4" />
-                  Communication
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setImportOpen(true)}
-                  className="gap-1.5"
-                >
-                  <Upload className="h-4 w-4" />
-                  Import Operation
-                </Button>
-                <Button
-                  onClick={() => setCreateOpen(true)}
-                  size="sm"
-                  className={isDark ? 'bg-violet-600 hover:bg-violet-500 text-white' : 'bg-violet-600 hover:bg-violet-700 text-white'}
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  New Operation
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCommOpen(true)}
+                    className={`h-8 gap-1.5 text-xs ${isDark ? "border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                      }`}
+                  >
+                    <MessageSquare className="h-3.5 w-3.5" />
+                    Communication
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setImportOpen(true)}
+                    className={`h-8 gap-1.5 text-xs ${isDark ? "border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                      }`}
+                  >
+                    <Upload className="h-3.5 w-3.5" />
+                    Import
+                  </Button>
+
+                  <Button
+                    size="sm"
+                    onClick={() => setCreateOpen(true)}
+                    className="h-8 gap-1.5 text-xs bg-violet-600 hover:bg-violet-500 text-white border-none shadow-sm"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    New Operation
+                  </Button>
+                </div>
               </div>
             </div>
-
-            <div className="mt-4 grid grid-cols-4 gap-3">
+            <div className="mt-4 grid grid-cols-4 p-4 gap-3">
               {[
                 { label: 'Total', value: stats.total, color: 'text-foreground' },
                 { label: 'Planned', value: stats.planned, color: 'text-blue-600' },
@@ -464,7 +479,7 @@ export default function OperationsPage() {
 
       <ImportOperationDialog open={importOpen} onClose={() => setImportOpen(false)} onSaved={handleSaved} />
       <GeneralCommunicationDialog open={commOpen} onClose={() => setCommOpen(false)} />
-        
+
     </TooltipProvider>
   );
 }
