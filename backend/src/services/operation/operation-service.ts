@@ -277,7 +277,7 @@ export async function deleteOperationAttachment(attachmentId: number): Promise<v
   if (error) throw new Error(`Failed to delete attachment record: ${error.message}`);
 }
 
-export async function getPilotOptions(ownerId: number,userId:number) {
+export async function getPilotOptions(ownerId: number) {
   const { data, error } = await supabase
     .from('users')
     .select('user_id, first_name, last_name')

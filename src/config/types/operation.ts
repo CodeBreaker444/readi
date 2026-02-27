@@ -192,9 +192,53 @@ export interface UpdateMissionStatusPayload {
   pilot_id: number;
 }
 
-export interface ApiResponse<T> {
-  code: number;
-  message: string;
-  dataRows: number;
-  data: T;
+ 
+
+export type OperationCalenderStatus = 'Scheduled' | 'In Progress' | 'Completed' | 'Cancelled'
+
+export type OperationItem = {
+  pilot_mission_id: number
+  mission_name: string | null
+  mission_code: string | null
+  scheduled_start: string | null
+  scheduled_end: string | null
+  actual_start: string | null
+  actual_end: string | null
+  status_name: OperationCalenderStatus | null
+  fk_pilot_user_id: number | null
+  fk_tool_id: number | null
+  fk_mission_type_id: number | null
+  fk_mission_category_id: number | null
+  fk_planning_id: number | null
+  fk_owner_id: number
+  location: string | null
+  notes: string | null
+  pilot_name?: string | null
+  vehicle_code?: string | null
 }
+
+export type OperationCalendarEvent = {
+  id: string
+  title: string
+  start: string
+  end: string
+  color: string
+  status: OperationCalenderStatus | null
+  operation: OperationItem
+}
+
+export type CreateOperationCalendarInput = {
+  mission_name: string
+  scheduled_start: string
+  scheduled_end: string
+  fk_pilot_user_id: number
+  fk_tool_id?: number | null
+  fk_mission_type_id?: number | null
+  fk_mission_category_id?: number | null
+  fk_planning_id?: number | null
+  location?: string
+  notes?: string
+  status_name?: string
+}
+
+export type CalendarEvent = OperationCalendarEvent

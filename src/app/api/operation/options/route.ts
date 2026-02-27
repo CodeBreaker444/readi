@@ -10,7 +10,7 @@ export async function GET() {
 
     try {
         const [pilots, tools, types, categories] = await Promise.all([
-            getPilotOptions(ownerId, 0),
+            getPilotOptions(ownerId),
             getToolOptions(ownerId),
             getMissionTypeOptions(ownerId),
             getMissionCategoryOptions(ownerId),
