@@ -9,9 +9,11 @@ import MapLegend from "@/components/system/MapLegend";
 import ToolDetailModal from "@/components/system/ToolDetailModal";
 import ToolList from "@/components/system/ToolList";
 import { Button } from "@/components/ui/button";
+import { useTheme } from "@/components/useTheme";
 import type { Client, MapFiltersType, ToolsResponse } from "@/config/types/types";
 import { isDock, isValidCoord, matchSearch } from "@/lib/mapUtils";
 import axios from "axios";
+import { Loader2, Plus, RefreshCw } from "lucide-react";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -42,6 +44,7 @@ function saveFilters(f: MapFiltersType) {
 
 
 export default function DroneToolMapPage() {
+  const { isDark } = useTheme()
   const [allTools, setAllTools] = useState<ToolsResponse[]>([]);
   const [models, setModels] = useState([]);
   const [clients, setClients] = useState<Client[]>([]);
@@ -147,34 +150,86 @@ export default function DroneToolMapPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">Drone Tool Map</h1>
-            <p className="text-xs text-gray-500 mt-0.5">
-              Installed docks &amp; drone systems overview
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Button onClick={() => setShowAddTool(true)}>Add Tool</Button>
-            <Button onClick={() => setShowAddModel(true)}>Add Model</Button>
-            <Button onClick={() => setShowAddComponent(true)}>
-              Add Component
-            </Button>
-            <button
-              onClick={() => {
-                fetchToolData();
-                fetchModels();
-                fetchClients();
-              }}
-              disabled={loading}
-              className="px-3 py-1.5 text-sm rounded-lg border border-gray-300 hover:bg-gray-100 transition-colors disabled:opacity-50"
-            >
-              {loading ? "Loading…" : "↻ Reload"}
-            </button>
-          </div>
-        </div>
-      </header>
+<div
+  className={` top-0 z-10 backdrop-blur-md transition-colors ${
+    isDark
+      ? "bg-slate-900/80 border-b border-slate-800 text-white"
+      : "bg-white/80 border-b border-slate-200 text-slate-900 shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
+  } px-6 py-4`}
+>
+  <div className="mx-auto max-w-[1800px] flex items-center justify-between">
+    <div className="flex items-center gap-3">
+      <div className="w-1 h-6 rounded-full bg-violet-600" />
+      
+      <div>
+        <h1
+          className={`text-lg font-bold tracking-tight ${
+            isDark ? "text-white" : "text-slate-900"
+          }`}
+        >
+          Drone Tool Map
+        </h1>
+        <p className={`text-xs ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+          Installed docks & drone systems overview
+        </p>
+      </div>
+    </div>
+
+    <div className="flex items-center gap-2">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => {
+          fetchToolData();
+          fetchModels();
+          fetchClients();
+        }}
+        disabled={loading}
+        className={`h-8 gap-1.5 text-xs transition-all ${
+          isDark
+            ? "border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white"
+            : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+        }`}
+      >
+        {loading ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        ) : (
+          <RefreshCw className="h-3.5 w-3.5" />
+        )}
+        <span className="hidden xs:inline">Reload</span>
+      </Button>
+
+      <div className="flex gap-2 ml-2 border-l border-slate-200 dark:border-slate-700 pl-4">
+        <Button
+          size="sm"
+          onClick={() => setShowAddTool(true)}
+          className="h-8 gap-1.5 text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white transition-all shadow-sm"
+        >
+          <Plus size={14} />
+          <span className="hidden sm:inline">Add Tool</span>
+        </Button>
+
+        <Button
+          size="sm"
+          onClick={() => setShowAddModel(true)}
+          className="h-8 gap-1.5 text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white transition-all shadow-sm"
+        >
+          <Plus size={14} />
+          <span className="hidden sm:inline">Add Model</span>
+        </Button>
+
+        <Button
+          size="sm"
+          onClick={() => setShowAddComponent(true)}
+          className="h-8 gap-1.5 text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white transition-all shadow-sm"
+        >
+          <Plus size={14} />
+          <span className="hidden sm:inline">Add Component</span>
+        </Button>
+      </div>
+    </div>
+  </div>
+</div>
 
       <main className="max-w-7xl mx-auto px-4 py-4 space-y-4">
         <section className="bg-white rounded-xl border shadow-sm p-4">

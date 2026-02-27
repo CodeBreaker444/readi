@@ -3,6 +3,7 @@
 import { AssignmentForm, AssignmentModal } from '@/components/organization/AssignmentUi'
 import { getAssignmentColumns } from '@/components/tables/AssignmentColumn'
 import { TablePagination } from '@/components/tables/Pagination'
+import { Button } from '@/components/ui/button'
 import { useTheme } from '@/components/useTheme'
 import {
   flexRender,
@@ -82,29 +83,29 @@ export default function AssignmentPage() {
   })
 
 
-const handleCreate = async (form: FormData) => {
-  setSubmitting(true)
-  try {
-    const res = await axios.post('/api/organization/assignment', form)
-    
-    if (res.status === 201) {
-      const newItem = res.data?.data 
-      
-      if (newItem) {
-        setAssignments((prev) => [newItem, ...prev])
-        setAddOpen(false)
-        toast.success('Assignment created')
-      } else {
-        load()
+  const handleCreate = async (form: FormData) => {
+    setSubmitting(true)
+    try {
+      const res = await axios.post('/api/organization/assignment', form)
+
+      if (res.status === 201) {
+        const newItem = res.data?.data
+
+        if (newItem) {
+          setAssignments((prev) => [newItem, ...prev])
+          setAddOpen(false)
+          toast.success('Assignment created')
+        } else {
+          load()
+        }
       }
+    } catch (err: any) {
+      const msg = err.response?.data?.message ?? 'Creation failed'
+      toast.error(msg)
+    } finally {
+      setSubmitting(false)
     }
-  } catch (err: any) {
-    const msg = err.response?.data?.message ?? 'Creation failed'
-    toast.error(msg)
-  } finally {
-    setSubmitting(false)
   }
-}
 
   const handleUpdate = async (form: FormData) => {
     if (!editItem) return
@@ -149,16 +150,52 @@ const handleCreate = async (form: FormData) => {
 
   return (
     <div className={`min-h-screen ${isDark ? 'bg-slate-950 text-slate-300' : 'bg-slate-50 text-slate-700'}`}>
-      <div className="mx-auto px-6 py-10">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-          <h1 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Assignments</h1>
-          <div className="flex gap-2">
-            <button onClick={load} className={`h-9 px-4 rounded-lg border flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'} transition-all`}><HiRefresh className={loading ? 'animate-spin' : ''} /> Sync</button>
-            <button onClick={() => setAddOpen(true)} className="h-9 px-4 rounded-lg bg-blue-600 text-white flex items-center gap-2"><HiPlus /> Add Assignment</button>
+      <div className="mx-auto ">
+        <div className={` top-0 z-10 backdrop-blur-md transition-colors w-full ${isDark
+          ? "bg-slate-900/80 border-b border-slate-800 text-white"
+          : "bg-white/80 border-b border-slate-200 text-slate-900 shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
+          } px-6 py-4 mb-8`}>
+          <div className="mx-auto max-w-[1800px] flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-1 h-6 rounded-full bg-violet-600" />
+              <div>
+                <h1 className={`text-lg font-bold tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>
+                  Assignments
+                </h1>
+                <p className={`text-xs ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+                  Assign personnel and resources to operational tasks
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={load}
+                disabled={loading}
+                className={`h-8 gap-1.5 text-xs transition-all ${isDark
+                  ? "border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white"
+                  : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                  }`}
+              >
+                <HiRefresh className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+                Sync
+              </Button>
+
+              <Button
+                size="sm"
+                onClick={() => setAddOpen(true)}
+                className="h-8 gap-1.5 text-xs bg-violet-600 hover:bg-violet-500 text-white border-none shadow-sm shadow-violet-500/20"
+              >
+                <HiPlus className="h-3.5 w-3.5" />
+                Add Assignment
+              </Button>
+            </div>
           </div>
         </div>
 
-        <div className="relative mb-4">
+        <div className="relative mb-4 mx-3">
           <HiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             value={globalFilter ?? ''}
@@ -168,32 +205,35 @@ const handleCreate = async (form: FormData) => {
           />
         </div>
 
-        <div className={`rounded-xl border overflow-hidden shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+        <div className={`rounded-xl mx-3 border overflow-hidden shadow-sm ${isDark ? 'bg-gray-900 border-gray-700/60' : 'bg-white border-gray-200'}`}>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className={`${isDark ? 'bg-slate-800/50 text-slate-400' : 'bg-slate-50 text-slate-500'} border-b uppercase text-xs font-semibold`}>
+              <thead className={`border-b ${isDark ? 'bg-gray-800/60 border-gray-700/60' : 'bg-gray-50 border-gray-200'}`}>
                 {table.getHeaderGroups().map(hg => (
                   <tr key={hg.id}>
                     {hg.headers.map(header => (
-                      <th key={header.id} className="px-4 py-3 text-left">
+                      <th
+                        key={header.id}
+                        className={`px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
+                      >
                         {flexRender(header.column.columnDef.header, header.getContext())}
                       </th>
                     ))}
                   </tr>
                 ))}
               </thead>
-              <tbody className={`divide-y ${isDark ? 'divide-slate-800' : 'divide-slate-100'}`}>
+
+              <tbody className={`divide-y ${isDark ? 'divide-gray-700/60' : 'divide-gray-100'}`}>
                 {loading ? (
                   Array.from({ length: 5 }).map((_, rowIndex) => (
-                    <tr key={`skeleton-row-${rowIndex}`}>
+                    <tr key={`skeleton-row-${rowIndex}`} className={isDark ? 'bg-gray-900' : 'bg-white'}>
                       {Array.from({ length: 7 }).map((_, cellIndex) => (
-                        <td key={`skeleton-cell-${cellIndex}`} className="px-4 py-4">
+                        <td key={`skeleton-cell-${cellIndex}`} className="px-4 py-3.5">
                           <div
-                            className={`h-4 rounded animate-pulse ${isDark ? 'bg-slate-800' : 'bg-slate-200'
-                              }`}
+                            className={`h-3.5 rounded-full animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}
                             style={{
-                              width: cellIndex === 0 ? '20px' : cellIndex === 2 ? '80%' : '60%',
-                              opacity: 1 - cellIndex * 0.1,
+                              width: cellIndex === 0 ? '24px' : cellIndex === 2 ? '75%' : '55%',
+                              opacity: 1 - rowIndex * 0.15,
                             }}
                           />
                         </td>
@@ -204,8 +244,7 @@ const handleCreate = async (form: FormData) => {
                   table.getRowModel().rows.map((row) => (
                     <tr
                       key={row.id}
-                      className={`transition-colors ${isDark ? 'hover:bg-slate-800/40' : 'hover:bg-slate-50'
-                        }`}
+                      className={`transition-colors ${isDark ? 'bg-gray-900 hover:bg-gray-800/50' : 'bg-white hover:bg-gray-50/70'}`}
                     >
                       {row.getVisibleCells().map((cell) => (
                         <td key={cell.id} className="px-4 py-3">
@@ -216,11 +255,18 @@ const handleCreate = async (form: FormData) => {
                   ))
                 ) : (
                   <tr>
-                    <td
-                      colSpan={7}
-                      className="py-20 text-center text-slate-500 italic"
-                    >
-                      No results found.
+                    <td colSpan={7} className="py-20 text-center">
+                      <div className="flex flex-col items-center gap-3">
+                        <div className={`w-12 h-12 rounded-full flex items-center justify-center ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                          <svg xmlns="http://www.w3.org/2000/svg" className={`w-5 h-5 ${isDark ? 'text-gray-600' : 'text-gray-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className={`text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>No results found</p>
+                          <p className={`text-xs mt-0.5 ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>Try adjusting your filters or search</p>
+                        </div>
+                      </div>
                     </td>
                   </tr>
                 )}
@@ -228,8 +274,9 @@ const handleCreate = async (form: FormData) => {
             </table>
           </div>
         </div>
-
+          <div className='mx-2'>
         <TablePagination table={table} />
+          </div>
       </div>
 
 

@@ -2,20 +2,20 @@
 
 import { Button } from '@/components/ui/button';
 import {
-    Dialog,
-    DialogContent,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { CreateLucProcedurePayload, LucProcedure, LucProcedureStatus } from '@/config/types/lcuProcedures';
@@ -227,10 +227,10 @@ export function LcuEditModal({ open, procedure, onClose, onSave, saving }: EditM
           </div>
 
           <DialogFooter className="px-6 py-4 border-t border-slate-100 bg-slate-50">
-            <Button type="button" variant="outline" onClick={onClose} className="h-9 text-sm">
+            <Button type="button" variant="outline" onClick={onClose} className="h-9 text-sm cursor-pointer">
               Cancel
             </Button>
-            <Button type="submit" disabled={saving} className="h-9 text-sm gap-2">
+            <Button type="submit" disabled={saving} className="h-9 text-sm gap-2  bg-violet-600 hover:bg-violet-500 cursor-pointer">
               {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
               {saving ? 'Saving…' : 'Save Procedure'}
             </Button>

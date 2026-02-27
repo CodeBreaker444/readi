@@ -14,6 +14,7 @@ import { TicketStats } from '@/components/system/TicketUi';
 import { useMaintenanceLogbook } from '@/components/system/useMaintenance';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/components/useTheme';
+import { Plus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 export default function MaintenanceLogbookPage() {
@@ -72,28 +73,42 @@ export default function MaintenanceLogbookPage() {
         .animate-slide-up { animation: slide-up 0.3s ease; }
       `}</style>
 
-      <div className={`${isDark ? 'bg-slate-800 text-white' : 'bg-gray-50 text-gray-900 border-slate-200'} border-b px-6 py-5`}>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'} tracking-tight`}>
-              Maintenance Logbook
-            </h1>
-            <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'} mt-0.5`}>
-              Track and manage all maintenance tickets
-            </p>
+      <div
+        className={`top-0 z-10 backdrop-blur-md transition-colors ${isDark
+            ? "bg-slate-900/80 border-b border-slate-800 text-white"
+            : "bg-white/80 border-b border-slate-200 text-slate-900 shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
+          } px-6 py-4`}
+      >
+        <div className="mx-auto max-w-[1800px] flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-1 h-6 rounded-full bg-violet-600" />
+
+            <div>
+              <h1
+                className={`text-lg font-bold tracking-tight ${isDark ? "text-white" : "text-slate-900"
+                  }`}
+              >
+                Maintenance Logbook
+              </h1>
+              <p className={`text-xs ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+                Track and manage all maintenance tickets
+              </p>
+            </div>
           </div>
-          <Button
-            onClick={openNewTicketModal}
-            className={`inline-flex items-center gap-2   text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors shadow-sm ${isDark
-              ? 'bg-white hover:bg-white/90 text-black'
-              : ''
-              }`}
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            New Ticket
-          </Button>
+
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              onClick={openNewTicketModal}
+              className={`h-8 gap-1.5 text-xs font-semibold transition-all shadow-sm ${isDark
+                  ? "bg-white hover:bg-white/90 text-black"
+                  : "bg-violet-600 hover:bg-violet-700 text-white"
+                }`}
+            >
+              <Plus size={14} />
+              <span>New Ticket</span>
+            </Button>
+          </div>
         </div>
       </div>
 

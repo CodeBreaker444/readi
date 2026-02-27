@@ -35,27 +35,26 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useTheme } from '@/components/useTheme';
 import type {
   CreateLucProcedurePayload,
   LucProcedure,
   LucProcedureStatus,
 } from '@/config/types/lcuProcedures';
 
-// ─── Filter options ────────────────────────────────────────────────────────────
 const STATUS_FILTER_OPTIONS: { value: LucProcedureStatus | 'ALL'; label: string }[] = [
-  { value: 'ALL',        label: 'All Statuses' },
-  { value: 'EVALUATION', label: 'Evaluation'   },
-  { value: 'PLANNING',   label: 'Planning'     },
-  { value: 'MISSION',    label: 'Mission'      },
+  { value: 'ALL', label: 'All Statuses' },
+  { value: 'EVALUATION', label: 'Evaluation' },
+  { value: 'PLANNING', label: 'Planning' },
+  { value: 'MISSION', label: 'Mission' },
 ];
 
 const ACTIVE_FILTER_OPTIONS = [
   { value: 'ALL', label: 'All' },
-  { value: 'Y',   label: 'Active'   },
-  { value: 'N',   label: 'Inactive' },
+  { value: 'Y', label: 'Active' },
+  { value: 'N', label: 'Inactive' },
 ];
 
-// ─── Stat card ────────────────────────────────────────────────────────────────
 function StatCard({ label, value, colorClass, bgClass }: {
   label: string; value: number; colorClass: string; bgClass: string;
 }) {
@@ -67,33 +66,30 @@ function StatCard({ label, value, colorClass, bgClass }: {
   );
 }
 
-// ─── Sort icon ────────────────────────────────────────────────────────────────
 function SortIcon({ direction }: { direction: 'asc' | 'desc' | false }) {
-  if (direction === 'asc')  return <ChevronUp   className="h-3 w-3 ml-1 shrink-0" />;
-  if (direction === 'desc') return <ChevronDown  className="h-3 w-3 ml-1 shrink-0" />;
+  if (direction === 'asc') return <ChevronUp className="h-3 w-3 ml-1 shrink-0" />;
+  if (direction === 'desc') return <ChevronDown className="h-3 w-3 ml-1 shrink-0" />;
   return <ChevronsUpDown className="h-3 w-3 ml-1 shrink-0 opacity-40" />;
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
 export default function LucProceduresPage() {
+  const { isDark } = useTheme()
   const [procedures, setProcedures] = useState<LucProcedure[]>([]);
-  const [loading, setLoading]       = useState(true);
-  const [saving, setSaving]         = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-  const [showCreate, setShowCreate]     = useState(false);
-  const [editTarget, setEditTarget]     = useState<LucProcedure | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [editTarget, setEditTarget] = useState<LucProcedure | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<LucProcedure | null>(null);
 
-  const [globalFilter, setGlobalFilter]   = useState('');
+  const [globalFilter, setGlobalFilter] = useState('');
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [sorting, setSorting]             = useState<SortingState>([]);
+  const [sorting, setSorting] = useState<SortingState>([]);
 
-  // ── Fetch ───────────────────────────────────────────────────────────────────
   const loadProcedures = useCallback(async () => {
     try {
       setLoading(true);
       const res = await axios.get('/api/organization/luc-procedures');
-      // API returns { data: LucProcedure[], message, code, dataRows }
       setProcedures(res.data.data ?? []);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to load procedures');
@@ -104,7 +100,6 @@ export default function LucProceduresPage() {
 
   useEffect(() => { loadProcedures(); }, [loadProcedures]);
 
-  // ── CRUD ────────────────────────────────────────────────────────────────────
   const handleCreate = async (data: Partial<CreateLucProcedurePayload>) => {
     try {
       setSaving(true);
@@ -123,7 +118,6 @@ export default function LucProceduresPage() {
     if (!editTarget) return;
     try {
       setSaving(true);
-      // Use procedure_id (real PK) for the URL
       await axios.put(`/api/organization/luc-procedures/${editTarget.procedure_id}`, data);
       toast.success('Procedure updated successfully');
       setEditTarget(null);
@@ -147,7 +141,6 @@ export default function LucProceduresPage() {
     }
   };
 
-  // ── Table ───────────────────────────────────────────────────────────────────
   const columns = useMemo(
     () => getLucProcedureColumns(setEditTarget, setDeleteTarget),
     [],
@@ -163,7 +156,6 @@ export default function LucProceduresPage() {
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    // Search across code + name + description
     globalFilterFn: (row, _colId, filterValue: string) => {
       const q = filterValue.toLowerCase();
       return (
@@ -174,7 +166,6 @@ export default function LucProceduresPage() {
     },
   });
 
-  // ── Filter helpers ──────────────────────────────────────────────────────────
   const getColFilter = (colId: string) =>
     (columnFilters.find(f => f.id === colId)?.value as string) ?? 'ALL';
 
@@ -185,59 +176,71 @@ export default function LucProceduresPage() {
     });
   };
 
-  // ── Stats — derived from real field names ───────────────────────────────────
   const stats = useMemo(() => ({
-    total:      procedures.length,
-    active:     procedures.filter(p => p.procedure_active === 'Y').length,
+    total: procedures.length,
+    active: procedures.filter(p => p.procedure_active === 'Y').length,
     evaluation: procedures.filter(p => p.procedure_status === 'EVALUATION').length,
-    planning:   procedures.filter(p => p.procedure_status === 'PLANNING').length,
-    mission:    procedures.filter(p => p.procedure_status === 'MISSION').length,
+    planning: procedures.filter(p => p.procedure_status === 'PLANNING').length,
+    mission: procedures.filter(p => p.procedure_status === 'MISSION').length,
   }), [procedures]);
 
   const visibleCount = table.getRowModel().rows.length;
 
-  // ── Render ──────────────────────────────────────────────────────────────────
   return (
-    <div className="bg-slate-50 min-h-screen">
-      <div className="mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <div className=" min-h-screen">
 
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">LUC Procedures</h1>
-            <p className="text-sm text-slate-500 mt-0.5">
-              Manage light UAS operator certificate procedures
-            </p>
+      <div className={`top-0 z-10 backdrop-blur-md transition-colors w-full ${isDark
+          ? "bg-slate-900/80 border-b border-slate-800 text-white"
+          : "bg-white/80 border-b border-slate-200 text-slate-900 shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
+        } px-6 py-4 mb-8`}>
+        <div className="max-w-[1800px] flex items-center justify-between  mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-1 h-6 rounded-full bg-violet-600" />
+            <div>
+              <h1 className={`text-lg font-bold tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>
+                LUC Procedures
+              </h1>
+              <p className={`text-xs ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+                Manage light UAS operator certificate procedures
+              </p>
+            </div>
           </div>
+
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
               onClick={loadProcedures}
               disabled={loading}
-              className="h-9 gap-1.5"
+              className={`h-8 gap-1.5 text-xs transition-all ${isDark
+                  ? "border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white"
+                  : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                }`}
             >
               <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
-            <Button size="sm" className="h-9 gap-1.5" onClick={() => setShowCreate(true)}>
-              <Plus className="h-4 w-4" />
+
+            <Button
+              size="sm"
+              onClick={() => setShowCreate(true)}
+              className="h-8 gap-1.5 text-xs bg-violet-600 hover:bg-violet-500 text-white border-none shadow-sm shadow-violet-500/20"
+            >
+              <Plus className="h-3.5 w-3.5" />
               Add Procedure
             </Button>
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-          <StatCard label="Total"      value={stats.total}      colorClass="text-slate-700"   bgClass="bg-white"      />
-          <StatCard label="Active"     value={stats.active}     colorClass="text-emerald-700" bgClass="bg-emerald-50" />
-          <StatCard label="Evaluation" value={stats.evaluation} colorClass="text-violet-700"  bgClass="bg-violet-50"  />
-          <StatCard label="Planning"   value={stats.planning}   colorClass="text-sky-700"     bgClass="bg-sky-50"     />
-          <StatCard label="Mission"    value={stats.mission}    colorClass="text-amber-700"   bgClass="bg-amber-50"   />
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 m-6">
+          <StatCard label="Total" value={stats.total} colorClass="text-slate-700" bgClass="bg-white" />
+          <StatCard label="Active" value={stats.active} colorClass="text-emerald-700" bgClass="bg-emerald-50" />
+          <StatCard label="Evaluation" value={stats.evaluation} colorClass="text-violet-700" bgClass="bg-violet-50" />
+          <StatCard label="Planning" value={stats.planning} colorClass="text-sky-700" bgClass="bg-sky-50" />
+          <StatCard label="Mission" value={stats.mission} colorClass="text-amber-700" bgClass="bg-amber-50" />
         </div>
 
-        {/* Filters */}
-        <div className="bg-white rounded-xl border border-slate-100 shadow-sm px-4 py-3 flex flex-col sm:flex-row gap-3">
+        <div className="bg-white rounded-xl border border-slate-100 shadow-sm px-4 py-3 flex flex-col sm:flex-row gap-3 m-4">
           <div className="relative flex-1">
             <svg
               className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"
@@ -254,7 +257,6 @@ export default function LucProceduresPage() {
             />
           </div>
 
-          {/* Filter on procedure_status column */}
           <Select
             value={getColFilter('procedure_status')}
             onValueChange={val => setColFilter('procedure_status', val)}
@@ -269,7 +271,6 @@ export default function LucProceduresPage() {
             </SelectContent>
           </Select>
 
-          {/* Filter on procedure_active column */}
           <Select
             value={getColFilter('procedure_active')}
             onValueChange={val => setColFilter('procedure_active', val)}
@@ -285,7 +286,6 @@ export default function LucProceduresPage() {
           </Select>
         </div>
 
-        {/* Table */}
         <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
           <Table>
             <TableHeader>
@@ -360,8 +360,8 @@ export default function LucProceduresPage() {
               )}
             </TableBody>
           </Table>
-           
-{/* 
+
+          {/* 
           {!loading && (
             <div className="px-6 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
               <p className="text-xs text-slate-400">
@@ -384,7 +384,7 @@ export default function LucProceduresPage() {
             </div>
           )} */}
         </div>
-         <TablePagination table={table} />
+        <TablePagination table={table} />
       </div>
 
       <LcuEditModal

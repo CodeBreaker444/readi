@@ -3,6 +3,7 @@
 import { ChecklistForm, Modal } from '@/components/organization/ChecklistUi';
 import { getColumns } from '@/components/tables/CheckListColumn';
 import { TablePagination } from '@/components/tables/Pagination';
+import { Button } from '@/components/ui/button';
 import { useTheme } from '@/components/useTheme';
 import type { Checklist } from '@/config/types/checklist';
 import { flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, useReactTable } from '@tanstack/react-table';
@@ -125,31 +126,53 @@ export default function ChecklistPage() {
 
   return (
     <div className={`min-h-screen ${isDark ? 'bg-slate-950 text-slate-300' : 'bg-slate-100 text-slate-700'}`}>
-      <div className="mx-auto px-6 py-10">
+      <div className="mx-auto">
 
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-          <div className="flex items-center gap-3">
-            <div>
-              <h1 className={`text-xl font-bold leading-none ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                Checklists
-              </h1>
-
-              <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>
-                Manage and organize your checklist items
-              </p>
+        <div className={`top-0 z-10 backdrop-blur-md transition-colors w-full ${isDark
+            ? "bg-slate-900/80 border-b border-slate-800 text-white"
+            : "bg-white/80 border-b border-slate-200 text-slate-900 shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
+          } px-6 py-4 mb-8`}>
+          <div className="mx-auto max-w-[1800px] flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-1 h-6 rounded-full bg-violet-600" />
+              <div>
+                <h1 className={`text-lg font-bold tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>
+                  Checklists
+                </h1>
+                <p className={`text-xs ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+                  Manage and organize your operational checklist items
+                </p>
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button onClick={load} className={`h-9 px-4 rounded-lg border text-sm flex items-center gap-2 transition-all ${isDark ? 'border-slate-700 bg-slate-800 hover:bg-slate-700' : 'border-slate-200 bg-white hover:bg-slate-50'}`}>
-              <HiRefresh className={loading ? 'animate-spin' : ''} /> Refresh
-            </button>
-            <button onClick={() => setAddOpen(true)} className="h-9 px-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium flex items-center gap-2 shadow-md">
-              <HiPlus /> Add Checklist
-            </button>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={load}
+                disabled={loading}
+                className={`h-8 gap-1.5 text-xs transition-all ${isDark
+                    ? "border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white"
+                    : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                  }`}
+              >
+                <HiRefresh className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+
+              <Button
+                size="sm"
+                onClick={() => setAddOpen(true)}
+                className="h-8 gap-1.5 text-xs bg-violet-600 hover:bg-violet-500 text-white border-none shadow-sm shadow-violet-500/20"
+              >
+                <HiPlus className="h-3.5 w-3.5" />
+                Add Checklist
+              </Button>
+            </div>
           </div>
         </div>
 
-        <div className="relative mb-4">
+        <div className="relative mb-4 mx-3">
           <HiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             value={globalFilter ?? ''}
@@ -159,7 +182,7 @@ export default function ChecklistPage() {
           />
         </div>
 
-        <div className={`rounded-xl border overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
+        <div className={`rounded-xl mx-3 border overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
