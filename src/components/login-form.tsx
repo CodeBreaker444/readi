@@ -157,7 +157,7 @@ export function LoginForm() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="mb-2 h-12 w-full rounded-lg bg-gray-900 text-base font-medium text-white hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="mb-2 h-12 w-full rounded-lg bg-violet-500  text-base font-medium text-white hover:bg-violet-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {loading ? (
                     <span className="flex items-center justify-center">

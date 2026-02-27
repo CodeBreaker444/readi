@@ -92,13 +92,13 @@ const STATS = (data: any) => [
 
 const STATUS_STYLE: Record<string, string> = {
     Completed: 'bg-emerald-500/10 text-emerald-500 ring-1 ring-emerald-500/25',
-    Waiting:   'bg-yellow-500/10 text-yellow-500 ring-1 ring-yellow-500/25',
-    Left:      'bg-slate-500/10 text-slate-400 ring-1 ring-slate-500/25',
+    Waiting: 'bg-yellow-500/10 text-yellow-500 ring-1 ring-yellow-500/25',
+    Left: 'bg-slate-500/10 text-slate-400 ring-1 ring-slate-500/25',
 };
 
 export default function DashboardClient({ ownerId, userProfileCode, userId, initialData }: DashboardClientProps) {
     const { isDark } = useTheme();
-    const [data, setData]       = useState<any>(initialData || null);
+    const [data, setData] = useState<any>(initialData || null);
     const [loading, setLoading] = useState(!initialData);
 
     useEffect(() => {
@@ -155,9 +155,9 @@ export default function DashboardClient({ ownerId, userProfileCode, userId, init
         value: data.readi_mission_result_chart.series[i],
     })) || [];
 
-    const gridColor  = isDark ? '#1e293b' : '#f1f5f9';
-    const axisColor  = isDark ? '#475569' : '#94a3b8';
-    const tooltipBg  = isDark ? '#0f172a' : '#ffffff';
+    const gridColor = isDark ? '#1e293b' : '#f1f5f9';
+    const axisColor = isDark ? '#475569' : '#94a3b8';
+    const tooltipBg = isDark ? '#0f172a' : '#ffffff';
     const tooltipBdr = isDark ? '#1e293b' : '#e2e8f0';
 
     const card = cn(

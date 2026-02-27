@@ -6,6 +6,7 @@ import { MissionListItem, MissionTotal } from "./dashboard";
  * Get total mission statistics
  */
 export async function getReadiTotalMission(
+  ownerId: number,
   fkClientId: number,
   fkUserId: number,
   year: number
@@ -26,6 +27,7 @@ export async function getReadiTotalMission(
           status_code
         )
       `)
+      .eq('fk_owner_id', ownerId)
       .gte('actual_start', `${year}-01-01`)
       .lte('actual_start', `${year}-12-31`);
 
@@ -57,8 +59,8 @@ export async function getReadiTotalMission(
     }
 
     let clientName = 'All Clients';
-    let planningIds = missions.map(m => m.fk_planning_id).filter(Boolean);
-    
+    const planningIds = missions.map(m => m.fk_planning_id).filter(Boolean);
+
     if (fkClientId !== 0 && planningIds.length > 0) {
       const { data: planningData } = await supabase
         .from('planning')
@@ -70,6 +72,7 @@ export async function getReadiTotalMission(
             client_name
           )
         `)
+        .eq('fk_owner_id', ownerId)
         .in('planning_id', planningIds)
         .eq('fk_client_id', fkClientId)
         .limit(1)
@@ -87,8 +90,8 @@ export async function getReadiTotalMission(
     const total_meter = missions.reduce((sum, m) => sum + (m.distance_flown || 0), 0);
 
     const total_planned = missions.filter(m => {
-      const status = Array.isArray(m.pilot_mission_status) 
-        ? m.pilot_mission_status[0] 
+      const status = Array.isArray(m.pilot_mission_status)
+        ? m.pilot_mission_status[0]
         : m.pilot_mission_status;
       const statusCode = status?.status_code;
       return statusCode === 'PLANNED' || statusCode === 'SCHEDULED';
@@ -102,8 +105,9 @@ export async function getReadiTotalMission(
       const { data: planningData } = await supabase
         .from('planning')
         .select('fk_client_id')
+        .eq('fk_owner_id', ownerId)
         .in('planning_id', planningIds);
-      
+
       const uniqueClients = new Set(
         (planningData || []).map(p => p.fk_client_id).filter(Boolean)
       );
@@ -133,6 +137,7 @@ export async function getReadiTotalMission(
  * Get last or next mission list
  */
 export async function getReadiLastNextMissionList(
+  ownerId: number,
   fkClientId: number,
   fkUserId: number,
   isScheduledFuture: number,
@@ -168,7 +173,8 @@ export async function getReadiLastNextMissionList(
           result_id,
           result_type
         )
-      `);
+      `)
+      .eq('fk_owner_id', ownerId);
 
     if (fkUserId !== 0) {
       query = query.eq('fk_pilot_user_id', fkUserId);
@@ -194,12 +200,13 @@ export async function getReadiLastNextMissionList(
     }
 
     const planningIds = data.map(m => m.fk_planning_id).filter(Boolean);
-    let planningMap = new Map();
+    const planningMap = new Map();
 
     if (planningIds.length > 0) {
       let planningQuery = supabase
         .from('planning')
         .select('planning_id, fk_client_id')
+        .eq('fk_owner_id', ownerId)
         .in('planning_id', planningIds);
 
       if (fkClientId !== 0) {
@@ -207,7 +214,7 @@ export async function getReadiLastNextMissionList(
       }
 
       const { data: planningData } = await planningQuery;
-      
+
       (planningData || []).forEach(p => {
         planningMap.set(p.planning_id, p);
       });
@@ -223,11 +230,11 @@ export async function getReadiLastNextMissionList(
         const planning = planningMap.get(item.fk_planning_id);
         const users = Array.isArray(item.users) ? item.users[0] : item.users;
         const tool = Array.isArray(item.tool) ? item.tool[0] : item.tool;
-        const missionType = Array.isArray(item.pilot_mission_type) 
-          ? item.pilot_mission_type[0] 
+        const missionType = Array.isArray(item.pilot_mission_type)
+          ? item.pilot_mission_type[0]
           : item.pilot_mission_type;
-        const missionResult = Array.isArray(item.pilot_mission_result) 
-          ? item.pilot_mission_result[0] 
+        const missionResult = Array.isArray(item.pilot_mission_result)
+          ? item.pilot_mission_result[0]
           : item.pilot_mission_result;
 
         return {
@@ -237,16 +244,13 @@ export async function getReadiLastNextMissionList(
           fk_user_id: item.fk_pilot_user_id || 0,
           mission_id: item.pilot_mission_id,
           date: dateConversionUtcToLocal(item.actual_start, userTimezone),
-          pilot_name: users
-            ? `${users.first_name} ${users.last_name}`
-            : '',
+          pilot_name: users ? `${users.first_name} ${users.last_name}` : '',
           drone_code: tool?.tool_code || '',
           mission_type_desc: missionType?.type_name || '',
           mission_result_desc: missionResult?.result_type || '',
           mission_duration_min: item.flight_duration || 0,
         };
       });
-
   } catch (error) {
     console.error('Error in getReadiLastNextMissionList:', error);
     throw error;

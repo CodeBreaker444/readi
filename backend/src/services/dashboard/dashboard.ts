@@ -3,7 +3,6 @@ import { getChartReadiTotalMission, getChartReadiTotalMissionResult } from "./ch
 import { getReadiLastNextMissionList, getReadiTotalMission } from "./mission-queries";
 import { getPilotTotal } from "./pilot-queries";
 
-
 export interface DashboardRequestParams {
   owner_id: number;
   user_id: number;
@@ -63,32 +62,39 @@ export interface PilotTotal {
  */
 const normalizeStatus = (status: string): 'GREEN' | 'YELLOW' | 'RED' => {
   const statusUpper = String(status).toUpperCase().trim();
-  
-  if (statusUpper.includes('ABOVE') || 
-      statusUpper.includes('EXCELLENT') || 
-      statusUpper.includes('SUCCESS') ||
-      statusUpper.includes('TARGET') && statusUpper.includes('ABOVE')) {
+
+  if (
+    statusUpper.includes('ABOVE') ||
+    statusUpper.includes('EXCELLENT') ||
+    statusUpper.includes('SUCCESS') ||
+    (statusUpper.includes('TARGET') && statusUpper.includes('ABOVE'))
+  ) {
     return 'GREEN';
-  } 
-  
-  if (statusUpper.includes('ON TARGET') || 
-      statusUpper.includes('NORMAL') ||
-      statusUpper === 'YELLOW') {
+  }
+
+  if (
+    statusUpper.includes('ON TARGET') ||
+    statusUpper.includes('NORMAL') ||
+    statusUpper === 'YELLOW'
+  ) {
     return 'YELLOW';
   }
-  
-  if (statusUpper.includes('BELOW') || 
-      statusUpper.includes('POOR') || 
-      statusUpper.includes('ERROR') ||
-      statusUpper.includes('FAIL') ||
-      statusUpper === 'RED') {
+
+  if (
+    statusUpper.includes('BELOW') ||
+    statusUpper.includes('POOR') ||
+    statusUpper.includes('ERROR') ||
+    statusUpper.includes('FAIL') ||
+    statusUpper === 'RED'
+  ) {
     return 'RED';
   }
-  
+
   if (statusUpper === 'GREEN') return 'GREEN';
-  
+
   return 'YELLOW';
-}
+};
+
 /**
  * Get complete dashboard data
  */
@@ -108,17 +114,19 @@ export async function getDashboardData(params: DashboardRequestParams) {
       readiMissionChart,
       readiMissionResultChart,
     ] = await Promise.all([
-      isPilot ? getPilotTotal(user_id) : Promise.resolve(null),
+      // Pass owner_id to getPilotTotal
+      isPilot ? getPilotTotal(user_id, owner_id) : Promise.resolve(null),
 
-      getReadiTotalMission(0, pilotUserId, currentYear),
+      // Pass owner_id as first argument everywhere
+      getReadiTotalMission(owner_id, 0, pilotUserId, currentYear),
 
-      getReadiLastNextMissionList(0, pilotUserId, 0, 10, user_timezone),
+      getReadiLastNextMissionList(owner_id, 0, pilotUserId, 0, 10, user_timezone),
 
-      getReadiLastNextMissionList(0, pilotUserId, 1, 10, user_timezone),
+      getReadiLastNextMissionList(owner_id, 0, pilotUserId, 1, 10, user_timezone),
 
-      getChartReadiTotalMission(0, pilotUserId, currentYear),
+      getChartReadiTotalMission(owner_id, 0, pilotUserId, currentYear),
 
-      getChartReadiTotalMissionResult(0, pilotUserId, currentYear),
+      getChartReadiTotalMissionResult(owner_id, 0, pilotUserId, currentYear),
     ]);
 
     return {
@@ -136,15 +144,14 @@ export async function getDashboardData(params: DashboardRequestParams) {
 }
 
 interface SPIKPIDataInput {
-  owner_id: number,
-  user_id: number,
-  user_timezone?: string,
-  user_profile_code?: string,
+  owner_id: number;
+  user_id: number;
+  user_timezone?: string;
+  user_profile_code?: string;
 }
 
 export async function getSPIKPIData(input: SPIKPIDataInput) {
   try {
-    
     const { data: latestPeriodData, error: periodError } = await supabase
       .from('spi_kpi')
       .select('measurement_date')
@@ -152,7 +159,6 @@ export async function getSPIKPIData(input: SPIKPIDataInput) {
       .order('measurement_date', { ascending: false })
       .limit(1)
       .maybeSingle();
-
 
     if (periodError) {
       return {
@@ -193,9 +199,7 @@ export async function getSPIKPIData(input: SPIKPIDataInput) {
       .eq('fk_owner_id', input.owner_id)
       .eq('measurement_date', latestPeriod);
 
-    if (kpiError) {
-      throw new Error(kpiError.message);
-    }
+    if (kpiError) throw new Error(kpiError.message);
 
     if (!kpiRecords || kpiRecords.length === 0) {
       return {
@@ -214,11 +218,10 @@ export async function getSPIKPIData(input: SPIKPIDataInput) {
     const { data: definitions, error: defError } = await supabase
       .from('spi_kpi_definition')
       .select('definition_id, kpi_code, kpi_name, kpi_type, kpi_category, measurement_unit')
+      .eq('fk_owner_id', input.owner_id)
       .in('definition_id', definitionIds);
 
-    if (defError) {
-      throw new Error(defError.message);
-    }
+    if (defError) throw new Error(defError.message);
 
     const defMap = new Map(definitions?.map(d => [d.definition_id, d]) || []);
 
@@ -246,12 +249,12 @@ export async function getSPIKPIData(input: SPIKPIDataInput) {
     });
 
     const areaPriority: Record<string, number> = {
-      'OPERATIONS': 1,
-      'MAINTENANCE': 2,
-      'TRAINING': 3,
-      'SMS': 4,
-      'COMPLIANCE': 5,
-      'ICT': 6,
+      OPERATIONS: 1,
+      MAINTENANCE: 2,
+      TRAINING: 3,
+      SMS: 4,
+      COMPLIANCE: 5,
+      ICT: 6,
     };
 
     indicators.sort((a, b) => {
@@ -266,9 +269,7 @@ export async function getSPIKPIData(input: SPIKPIDataInput) {
 
     indicators.forEach(ind => {
       const area = ind.indicator_area;
-      if (!dataByArea[area]) {
-        dataByArea[area] = [];
-      }
+      if (!dataByArea[area]) dataByArea[area] = [];
       dataByArea[area].push(ind);
     });
 
@@ -305,12 +306,13 @@ export async function getSPIKPIData(input: SPIKPIDataInput) {
     };
   }
 }
+
 interface SPIKPITrendInput {
-  owner_id: number,
-  user_id: number,
-  user_timezone?: string,
-  user_profile_code?: string,
-  name: string,
+  owner_id: number;
+  user_id: number;
+  user_timezone?: string;
+  user_profile_code?: string;
+  name: string;
 }
 
 export async function getSPIKPITrend(input: SPIKPITrendInput) {
@@ -318,13 +320,12 @@ export async function getSPIKPITrend(input: SPIKPITrendInput) {
     const { data: definition, error: defError } = await supabase
       .from('spi_kpi_definition')
       .select('definition_id')
+      .eq('fk_owner_id', input.owner_id)
       .eq('kpi_name', input.name)
       .limit(1)
       .single();
 
-    if (defError || !definition) {
-      throw new Error('Indicator not found');
-    }
+    if (defError || !definition) throw new Error('Indicator not found');
 
     const { data: kpiData, error: kpiError } = await supabase
       .from('spi_kpi')
@@ -334,9 +335,7 @@ export async function getSPIKPITrend(input: SPIKPITrendInput) {
       .order('measurement_date', { ascending: true })
       .limit(12);
 
-    if (kpiError) {
-      throw new Error(kpiError.message);
-    }
+    if (kpiError) throw new Error(kpiError.message);
 
     const periodMap = new Map<string, { sum: number; count: number; targets: number[] }>();
 
@@ -365,37 +364,25 @@ export async function getSPIKPITrend(input: SPIKPITrendInput) {
       .forEach(([label, data]) => {
         labels.push(label);
         values.push(Math.round((data.sum / data.count) * 100) / 100);
-
         if (data.targets.length > 0) {
           target = data.targets[data.targets.length - 1];
         }
       });
 
-    return {
-      code: 1,
-      status: 'SUCCESS',
-      labels,
-      values,
-      target,
-    };
+    return { code: 1, status: 'SUCCESS', labels, values, target };
   } catch (error: any) {
     console.error('Error in getSPIKPITrend:', error);
-    return {
-      code: 0,
-      status: 'ERROR',
-      message: error.message,
-      labels: [],
-      values: [],
-      target: 100,
-    };
+    return { code: 0, status: 'ERROR', message: error.message, labels: [], values: [], target: 100 };
   }
 }
+
 interface SHITrendInput {
-  owner_id: number,
-  user_id: number,
-  user_timezone?: string,
-  user_profile_code?: string
+  owner_id: number;
+  user_id: number;
+  user_timezone?: string;
+  user_profile_code?: string;
 }
+
 export async function getSHITrend(input: SHITrendInput) {
   try {
     const { data: kpiData, error: kpiError } = await supabase
@@ -404,18 +391,10 @@ export async function getSHITrend(input: SHITrendInput) {
       .eq('fk_owner_id', input.owner_id)
       .order('measurement_date', { ascending: true });
 
-    if (kpiError) {
-      throw new Error(kpiError.message);
-    }
+    if (kpiError) throw new Error(kpiError.message);
 
     if (!kpiData || kpiData.length === 0) {
-      return {
-        code: 0,
-        status: 'ERROR',
-        message: 'No data available',
-        labels: [],
-        values: [],
-      };
+      return { code: 0, status: 'ERROR', message: 'No data available', labels: [], values: [] };
     }
 
     const periodMap = new Map<string, { green: number; yellow: number; total: number }>();
@@ -431,9 +410,7 @@ export async function getSHITrend(input: SHITrendInput) {
       const period = periodMap.get(label)!;
       period.total += 1;
 
-      // Normalize status before checking
       const normalizedStatus = normalizeStatus(record.status);
-
       if (normalizedStatus === 'GREEN') {
         period.green += 1;
       } else if (normalizedStatus === 'YELLOW') {
@@ -444,31 +421,18 @@ export async function getSHITrend(input: SHITrendInput) {
     const labels: string[] = [];
     const values: number[] = [];
 
-    const sortedPeriods = Array.from(periodMap.entries())
+    Array.from(periodMap.entries())
       .sort((a, b) => a[0].localeCompare(b[0]))
-      .slice(-12);
+      .slice(-12)
+      .forEach(([label, data]) => {
+        labels.push(label);
+        const score = (data.green + data.yellow * 0.5) / data.total;
+        values.push(Math.round(score * 1000) / 10);
+      });
 
-    sortedPeriods.forEach(([label, data]) => {
-      labels.push(label);
-      const score = (data.green + (data.yellow * 0.5)) / data.total;
-      const shi = Math.round(score * 1000) / 10;
-      values.push(shi);
-    });
-
-    return {
-      code: 1,
-      status: 'SUCCESS',
-      labels,
-      values,
-    };
+    return { code: 1, status: 'SUCCESS', labels, values };
   } catch (error: any) {
     console.error('Error in getSHITrend:', error);
-    return {
-      code: 0,
-      status: 'ERROR',
-      message: error.message,
-      labels: [],
-      values: [],
-    };
+    return { code: 0, status: 'ERROR', message: error.message, labels: [], values: [] };
   }
 }

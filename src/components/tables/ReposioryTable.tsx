@@ -145,26 +145,26 @@ export default function RepositoryTable() {
         setFilterStatus('all');
     }
 
-return (
-        <div className="flex flex-col min-h-screen w-full bg-background">
-            <div className={`sticky top-0 z-10 backdrop-blur-md transition-colors w-full ${
-                isDark
-                    ? "bg-slate-900/80 border-b border-slate-800 text-white"
-                    : "bg-white/80 border-b border-slate-200 text-slate-900 shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
-                } px-6 py-4`}>
+    return (
+        <div className={`flex flex-col min-h-screen w-full ${isDark ? 'bg-slate-950' : 'bg-gray-50'}`}>
+
+            <div className={`sticky top-0 z-10 backdrop-blur-md w-full px-6 py-4 transition-colors
+    ${isDark
+                    ? 'bg-slate-900/80 border-b border-slate-700/60 text-white'
+                    : 'bg-white/80 border-b border-gray-200 text-slate-900 shadow-[0_1px_3px_rgba(0,0,0,0.06)]'
+                }`}>
                 <div className="mx-auto max-w-[1800px] flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="w-1 h-6 rounded-full bg-violet-600" />
                         <div>
-                            <h1 className={`text-lg font-bold tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>
+                            <h1 className={`text-lg font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
                                 LUC Document Repository
                             </h1>
-                            <p className={`text-xs ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+                            <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
                                 Manage and track organizational compliance documents
                             </p>
                         </div>
                     </div>
-
                     <div className="flex items-center gap-3">
                         <Button
                             onClick={() => { setEditDoc(null); setFormOpen(true); }}
@@ -178,70 +178,97 @@ return (
             </div>
 
             <div className="w-full px-6 pt-8 pb-8 mx-auto max-w-[1800px] space-y-6">
-                
-                <div className="rounded-xl border bg-card p-4 shadow-sm">
+
+                <div className={`rounded-xl border p-4 shadow-sm
+      ${isDark ? 'bg-slate-800/80 border-slate-700/60' : 'bg-white border-gray-200'}`}>
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
                         <div className="relative lg:col-span-2">
-                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <Search className={`absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2
+            ${isDark ? 'text-slate-500' : 'text-gray-400'}`} />
                             <Input
                                 value={searchText}
                                 onChange={(e) => setSearchText(e.target.value)}
                                 placeholder="Search title, code, description..."
-                                className="pl-9"
+                                className={`pl-9 text-sm
+              ${isDark
+                                        ? 'bg-slate-700 border-slate-600 text-slate-200 placeholder:text-slate-500 focus:border-violet-500/60'
+                                        : 'bg-gray-50 border-gray-200 text-gray-900 placeholder:text-gray-400 focus:border-violet-500/60'
+                                    }`}
                             />
                         </div>
 
                         <Select value={filterArea} onValueChange={setFilterArea}>
-                            <SelectTrigger>
+                            <SelectTrigger className={`text-sm
+            ${isDark
+                                    ? 'bg-slate-700 border-slate-600 text-slate-200'
+                                    : 'bg-gray-50 border-gray-200 text-gray-700'
+                                }`}>
                                 <SelectValue placeholder="All Areas" />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className={isDark ? 'bg-slate-800 border-slate-700 text-slate-200' : ''}>
                                 <SelectItem value="all">All Areas</SelectItem>
                                 {AREA_OPTIONS.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
                             </SelectContent>
                         </Select>
 
                         <Select value={filterStatus} onValueChange={setFilterStatus}>
-                            <SelectTrigger>
+                            <SelectTrigger className={`text-sm
+            ${isDark
+                                    ? 'bg-slate-700 border-slate-600 text-slate-200'
+                                    : 'bg-gray-50 border-gray-200 text-gray-700'
+                                }`}>
                                 <SelectValue placeholder="All Statuses" />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className={isDark ? 'bg-slate-800 border-slate-700 text-slate-200' : ''}>
                                 <SelectItem value="all">All Statuses</SelectItem>
                                 {statusOptions.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                             </SelectContent>
                         </Select>
 
-                        <Button variant="outline" onClick={resetFilters} className="gap-2 text-xs h-9">
+                        <Button
+                            variant="outline"
+                            onClick={resetFilters}
+                            className={`gap-2 text-xs h-9
+            ${isDark
+                                    ? 'border-slate-600 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
+                                    : 'border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                                }`}
+                        >
                             <RotateCcw className="h-4 w-4" /> Reset
                         </Button>
                     </div>
                 </div>
 
-                <div className="rounded-md border bg-card shadow-sm overflow-hidden">
+                <div className={`rounded-xl border shadow-sm overflow-hidden
+      ${isDark ? 'bg-slate-800/80 border-slate-700/60' : 'bg-white border-gray-200'}`}>
                     <Table>
-                        <TableHeader className="bg-muted/50">
+                        <TableHeader className={isDark ? 'bg-slate-700/50' : 'bg-gray-50/80'}>
                             {table.getHeaderGroups().map((hg) => (
-                                <TableRow key={hg.id}>
+                                <TableRow key={hg.id} className={isDark ? 'border-slate-700/60' : 'border-gray-100'}>
                                     {hg.headers.map((header) => (
-                                        <TableHead key={header.id} style={{ width: header.getSize() }} className="text-xs uppercase font-semibold">
+                                        <TableHead
+                                            key={header.id}
+                                            style={{ width: header.getSize() }}
+                                            className={`text-xs uppercase font-semibold
+                    ${isDark ? 'text-slate-500' : 'text-gray-400'}`}
+                                        >
                                             {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                                         </TableHead>
                                     ))}
                                 </TableRow>
                             ))}
                         </TableHeader>
+
                         <TableBody>
                             {loading ? (
                                 Array.from({ length: 8 }).map((_, rowIndex) => (
-                                    <TableRow key={`skeleton-row-${rowIndex}`}>
+                                    <TableRow key={`skeleton-row-${rowIndex}`}
+                                        className={isDark ? 'border-slate-700/40' : 'border-gray-50'}>
                                         {columns.map((_, cellIndex) => (
                                             <TableCell key={`skeleton-cell-${cellIndex}`} className="py-4">
-                                                <Skeleton
-                                                    className={`h-4 rounded-md ${
-                                                        cellIndex === 0 ? "w-8" :
-                                                        cellIndex === 1 ? "w-24" :
-                                                        "w-[80%]"
-                                                    }`}
+                                                <Skeleton className={`h-4 rounded-md
+                      ${isDark ? 'bg-slate-700' : 'bg-gray-100'}
+                      ${cellIndex === 0 ? 'w-8' : cellIndex === 1 ? 'w-24' : 'w-[80%]'}`}
                                                 />
                                             </TableCell>
                                         ))}
@@ -250,17 +277,26 @@ return (
                             ) : table.getRowModel().rows.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={columns.length} className="h-72 text-center">
-                                        <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
+                                        <div className={`flex flex-col items-center justify-center gap-2
+                  ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
                                             <FilterX className="h-10 w-10 opacity-20" />
-                                            <p>No documents match your search criteria.</p>
+                                            <p className="text-sm">No documents match your search criteria.</p>
                                         </div>
                                     </TableCell>
                                 </TableRow>
                             ) : (
                                 table.getRowModel().rows.map((row) => (
-                                    <TableRow key={row.id} className="group transition-colors hover:bg-muted/30">
+                                    <TableRow
+                                        key={row.id}
+                                        className={`transition-colors
+                  ${isDark
+                                                ? 'border-slate-700/40 hover:bg-slate-700/30'
+                                                : 'border-gray-50 hover:bg-gray-50/80'
+                                            }`}
+                                    >
                                         {row.getVisibleCells().map((cell) => (
-                                            <TableCell key={cell.id} className="py-3">
+                                            <TableCell key={cell.id} className={`py-3 text-sm
+                    ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>
                                                 {flexRender(cell.column.columnDef.cell, cell.getContext())}
                                             </TableCell>
                                         ))}
@@ -270,20 +306,30 @@ return (
                         </TableBody>
                     </Table>
                 </div>
-                
+
                 <TablePagination table={table} />
             </div>
 
             <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
-                <AlertDialogContent>
+                <AlertDialogContent className={`${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-gray-200'}`}>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This will permanently delete <span className="font-semibold text-foreground">"{deleteTarget?.title}"</span> and remove its data from our servers. This action cannot be undone.
+                        <AlertDialogTitle className={isDark ? 'text-white' : 'text-gray-900'}>
+                            Are you absolutely sure?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription className={isDark ? 'text-slate-400' : 'text-gray-500'}>
+                            This will permanently delete{' '}
+                            <span className={`font-semibold ${isDark ? 'text-slate-200' : 'text-gray-900'}`}>
+                                "{deleteTarget?.title}"
+                            </span>{' '}
+                            and remove its data from our servers. This action cannot be undone.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel className={isDark
+                            ? 'bg-slate-700 border-slate-600 text-slate-200 hover:bg-slate-600'
+                            : 'border-gray-200 text-gray-700 hover:bg-gray-50'}>
+                            Cancel
+                        </AlertDialogCancel>
                         <AlertDialogAction
                             onClick={confirmDelete}
                             className="bg-red-600 text-white hover:bg-red-700"
@@ -301,7 +347,6 @@ return (
                 docTypes={docTypes}
                 document={editDoc}
             />
-            
             <HistoryModal
                 open={histOpen}
                 onClose={() => setHistOpen(false)}

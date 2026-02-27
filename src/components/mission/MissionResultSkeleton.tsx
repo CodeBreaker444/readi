@@ -5,10 +5,10 @@ interface MissionResultSkeletonProps {
 export default function MissionResultSkeleton({ isDark }: MissionResultSkeletonProps) {
   return (
     <div className={`rounded-xl sm:rounded-2xl shadow-xl border overflow-hidden ${isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'}`}>
-      <div className={`px-4 sm:px-6 lg:px-8 py-4 sm:py-5 border-b ${isDark ? 'bg-gray-800/50 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
+      {/* <div className={`px-4 sm:px-6 lg:px-8 py-4 sm:py-5 border-b ${isDark ? 'bg-gray-800/50 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
         <div className={`h-5 w-48 rounded-md animate-pulse ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`} />
         <div className={`h-3.5 w-64 rounded-md animate-pulse mt-2 ${isDark ? 'bg-gray-700/60' : 'bg-gray-100'}`} />
-      </div>
+      </div> */}
       <div className="p-4 sm:p-6 lg:p-8">
         <div className={`overflow-x-auto rounded-xl border shadow-sm animate-pulse ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
           <table className="w-full">

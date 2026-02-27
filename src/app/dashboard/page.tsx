@@ -19,6 +19,7 @@ export default async function DashboardPage() {
     user_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     user_profile_code: userProfileCode,
   });
+  
 
   return (
     <DashboardClient 

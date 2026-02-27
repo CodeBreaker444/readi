@@ -2,14 +2,15 @@ import { supabase } from "../../database/database";
 import { getCurrentYear } from "../../utils/date-utils";
 import { PilotTotal } from "./dashboard";
 
-export async function getPilotTotal(userId: number): Promise<PilotTotal> {
+export async function getPilotTotal(userId: number, ownerId: number): Promise<PilotTotal> {
   try {
     const currentYear = getCurrentYear();
 
     const { data, error } = await supabase
       .from('pilot_mission')
-      .select('pilot_mission_id, flight_duration, distance_flown, actual_start')
+      .select('pilot_mission_id, flight_duration, distance_flown, actual_start, fk_owner_id')
       .eq('fk_pilot_user_id', userId)
+      .eq('fk_owner_id', ownerId)
       .gte('actual_start', `${currentYear}-01-01`)
       .lte('actual_start', `${currentYear}-12-31`);
 

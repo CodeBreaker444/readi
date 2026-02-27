@@ -71,7 +71,7 @@ export default function OrganizationPage() {
         </div>
       </header>
 
-      <div className={`mx-8 my-7 rounded-2xl border shadow-2xl overflow-hidden transition-colors duration-300 ${isDark ? 'bg-[#111827] border-slate-800 shadow-black/40' : 'bg-white border-slate-200 shadow-slate-200/60'
+      <div className={`mx-8 my-7 rounded-md border shadow-sm overflow-hidden transition-colors duration-300 ${isDark ? 'bg-[#111827] border-slate-800 shadow-black/40' : 'bg-white border-slate-200 shadow-slate-200/60'
         }`}>
 
         <div className={`flex items-center justify-between px-6 py-4 border-b ${isDark ? 'bg-white/5 border-slate-800' : 'bg-slate-50/50 border-slate-100'
