@@ -123,3 +123,78 @@ export interface ToolOption {
   tool_name: string;
   tool_code: string;
 }
+
+
+export type MissionStatusCode = "00" | "05" | "10" | "99" | "101";
+
+export interface MissionLimitValues {
+  MISSION_LIMIT_ROUTE_ALTITUDE_MT: number;
+  MISSION_LIMIT_TAKE_OFF_ALTITUDE_MT: number;
+  MISSION_LIMIT_GO_TO_SAFE_ALTITUDE_MT: number;
+  MISSION_LIMIT_ROUTE_SPEED_MS: number;
+  MISSION_LIMIT_ON_RF_LINK_LOSS: string;
+}
+
+export interface MissionPlanningLimit {
+  MISSION_LIMIT_VALUES: MissionLimitValues;
+}
+
+export interface Mission {
+  mission_id: number;
+  fk_owner_id: number;
+  fk_vehicle_id: number;
+  fk_pic_id: number;
+  fk_status_id: number;
+  fk_mission_type_id: number;
+  fk_mission_category_id: number;
+  fk_result_id: number;
+  fk_client_id: number;
+  fk_mission_planning_id: number;
+  mission_status_code: MissionStatusCode;
+  mission_status_desc: string;
+  mission_type_desc: string;
+  mission_category_desc: string;
+  mission_result_desc: string;
+  mission_planning_code: string;
+  mission_planning_desc: string;
+  mission_planning_limit_json: string; 
+  pic_fullname: string;
+  client_name: string;
+  vehicle_code: string;
+  vehicle_desc: string;
+  date_start: string;
+  time_start: string;
+  date_end: string | null;
+  time_end: string | null;
+  flown_time: number | null;
+  flown_meter: number | null;
+  mission_notes: string | null;
+  mission_group_label: string | null;
+  mission_waypoint: string | null;
+  incident_flag: number;
+  rth_unplanned: number;
+  link_loss: number;
+  deviation_flag: number;
+}
+
+export interface MissionBoardData {
+  scheduled: Mission[];
+  in_progress: Mission[];
+  done: Mission[];
+}
+
+export interface UpdateMissionStatusPayload {
+  owner_id: number;
+  mission_id: number;
+  vehicle_id: number;
+  status_id: number;
+  workflow_mission_status: "_START" | "_END";
+  pilot_id: number;
+}
+
+export interface ApiResponse<T> {
+  code: number;
+  message: string;
+  dataRows: number;
+  data: T;
+}

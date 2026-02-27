@@ -139,6 +139,7 @@ export async function getPilotList(
       user_owner!inner (fk_owner_id)
     `
     )
+    .eq('user_role',"PIC")
     .eq("user_owner.fk_owner_id", ownerId)
     .eq("user_active", "Y");
 
