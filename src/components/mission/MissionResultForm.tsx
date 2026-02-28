@@ -1,5 +1,9 @@
 'use client';
 
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { MissionResult } from '@/config/types/types';
 import { useState } from 'react';
 
@@ -9,10 +13,7 @@ interface MissionResultFormProps {
 }
 
 export default function MissionResultForm({ onSubmit, isDark }: MissionResultFormProps) {
-  const [formData, setFormData] = useState({
-    code: '',
-    description: ''
-  });
+  const [formData, setFormData] = useState({ code: '', description: '' });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,52 +21,45 @@ export default function MissionResultForm({ onSubmit, isDark }: MissionResultFor
     setFormData({ code: '', description: '' });
   };
 
+  const inputClass = isDark ? 'bg-gray-800 border-gray-700 text-gray-100 placeholder:text-gray-500' : '';
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>
+    <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+      <div className="space-y-1.5">
+        <Label className={isDark ? 'text-gray-300' : 'text-gray-700'}>
           Code <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="text"
+        </Label>
+        <Input
           required
           maxLength={50}
-          className={`w-full px-4 py-2.5 rounded-lg border outline-none transition-all ${
-            isDark
-              ? 'bg-slate-900 border-slate-600 text-white focus:ring-blue-500'
-              : 'bg-white border-gray-300 text-gray-900 focus:ring-blue-500'
-          } focus:ring-2 focus:border-transparent`}
+          placeholder="e.g., SUCCESS"
           value={formData.code}
           onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
-          placeholder="e.g., SUCCESS"
+          className={`uppercase ${inputClass}`}
         />
       </div>
 
-      <div>
-        <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>
+      <div className="space-y-1.5">
+        <Label className={isDark ? 'text-gray-300' : 'text-gray-700'}>
           Description <span className="text-red-500">*</span>
-        </label>
-        <textarea
+        </Label>
+        <Textarea
           required
           maxLength={255}
           rows={3}
-          className={`w-full px-4 py-2.5 rounded-lg border outline-none transition-all ${
-            isDark
-              ? 'bg-slate-900 border-slate-600 text-white focus:ring-blue-500'
-              : 'bg-white border-gray-300 text-gray-900 focus:ring-blue-500'
-          } focus:ring-2 focus:border-transparent`}
+          placeholder="e.g., Mission completed successfully"
           value={formData.description}
           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-          placeholder="e.g., Mission completed successfully"
+          className={inputClass}
         />
       </div>
 
-      <button
+      <Button
         type="submit"
-        className="w-full px-4 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors"
+        className="w-full bg-violet-600 hover:bg-violet-700 text-white font-semibold shadow-md hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 mt-2"
       >
         Add Result
-      </button>
+      </Button>
     </form>
   );
 }

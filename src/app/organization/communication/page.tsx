@@ -3,6 +3,7 @@
 import { AddCommunicationForm, CommunicationModal } from "@/components/organization/AddCommunicationForm";
 import { CommunicationTable } from "@/components/organization/CommunicationTable";
 import { EditCommunicationModal } from "@/components/organization/EditCommunicationModal";
+import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/useTheme";
 import { Communication } from "@/config/types/communication";
 import axios from "axios";
@@ -88,46 +89,53 @@ export default function CommunicationPage() {
 
   return (
     <div
-      className={`min-h-screen transition-colors duration-300 ${
-        isDark ? "bg-slate-950 text-slate-300" : "bg-slate-50 text-slate-700"
-      }`}
+      className={`min-h-screen transition-colors duration-300 ${isDark ? "bg-slate-950 text-slate-300" : "bg-slate-50 text-slate-700"
+        }`}
     >
-      <div className="mx-auto px-6 py-10 space-y-8 animate-in fade-in duration-700">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className={`text-2xl font-bold tracking-tight leading-none ${isDark ? "text-white" : "text-slate-900"}`}>
-              Communication Protocols
-            </h1>
-            <p className={`text-sm mt-1.5 flex items-center gap-2 ${isDark ? "text-slate-500" : "text-slate-400"}`}>
-              Manage drone communication schemas
-            </p>
-          </div>
+      <div className="space-y-8 animate-in fade-in duration-700">
+        <div className={` top-0 z-10 backdrop-blur-md transition-colors w-full ${isDark
+            ? "bg-slate-900/80 border-b border-slate-800 text-white"
+            : "bg-white/80 border-b border-slate-200 text-slate-900 shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
+          } px-6 py-4 mb-8`}>
+          <div className="mx-auto max-w-[1800px] flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-1 h-6 rounded-full bg-violet-600" />
+              <div>
+                <h1 className={`text-lg font-bold tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>
+                  Communication Protocols
+                </h1>
+                <p className={`text-xs ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+                  Manage and track drone communication schemas
+                </p>
+              </div>
+            </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={fetchCommunications}
-              disabled={isLoading}
-              className={`h-9 px-4 rounded-lg border flex items-center gap-2 transition-all active:scale-95 ${
-                isDark
-                  ? "border-slate-700 bg-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-700"
-                  : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
-              }`}
-              title="Sync System"
-            >
-              <HiRefresh className={`text-base ${isLoading ? "animate-spin" : ""}`} />
-              Refresh
-            </button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={fetchCommunications}
+                disabled={isLoading}
+                className={`h-8 gap-1.5 text-xs transition-all ${isDark
+                    ? "border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white"
+                    : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                  }`}
+              >
+                <HiRefresh className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`} />
+                Refresh
+              </Button>
 
-            <button
-              onClick={() => setIsAddOpen(true)}
-              className="h-9 px-4 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-all active:scale-95 shadow-md shadow-blue-600/20 flex items-center gap-2"
-            >
-              <HiPlus className="text-lg" />
-              New Communication
-            </button>
+              <Button
+                size="sm"
+                onClick={() => setIsAddOpen(true)}
+                className="h-8 gap-1.5 text-xs bg-violet-600 hover:bg-violet-500 text-white border-none shadow-sm shadow-violet-500/20"
+              >
+                <HiPlus className="h-3.5 w-3.5" />
+                New Communication
+              </Button>
+            </div>
           </div>
         </div>
-
         <CommunicationModal
           open={isAddOpen}
           onClose={() => setIsAddOpen(false)}
@@ -147,7 +155,7 @@ export default function CommunicationPage() {
           isDark={isDark}
         />
 
-        <div className={`rounded-xl border p-6 transition-all ${isDark ? "bg-[#0c0f1a] border-slate-800 shadow-black/40" : "bg-white border-slate-200 shadow-sm"}`}>
+        <div className={`rounded-xl border mx-3 p-3 transition-all ${isDark ? "bg-[#0c0f1a] border-slate-800 shadow-black/40" : "bg-white border-slate-200 shadow-sm"}`}>
           <div className="flex items-center justify-between mb-6">
             <h2 className={`text-xs font-bold uppercase tracking-widest ${isDark ? "text-slate-500" : "text-slate-400"}`}>
               Operational Protocols

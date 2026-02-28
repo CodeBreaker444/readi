@@ -2,30 +2,50 @@
 
 import { useTheme } from '@/components/useTheme';
 import { Session } from '@/lib/auth/server-session';
+import {
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  useReactTable,
+} from '@tanstack/react-table';
 import axios from 'axios';
-import { Edit, Filter, Mail, Plus, Search, Trash2, User } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Filter, Plus, Search, User } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { TablePagination } from '../tables/Pagination';
+import { getUserColumns, UserData } from '../tables/userColumns';
 import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../ui/table';
 import { UserFormModal } from './UserFormModal';
 import { SkeletonRow, StatSkeleton } from './UserSkeleton';
-
-interface UserData {
-  user_id: number;
-  username: string;
-  fullname: string;
-  email: string;
-  active: number;
-  user_role: string;
-  user_unique_code: string;
-  is_viewer: string;
-  is_manager: string;
-}
 
 interface UserManagementProps {
   session: Session;
 }
 
+const STAT_CONFIG = [
+  { key: 'total', label: 'Total Users', accent: { dark: 'from-slate-800 to-slate-900 border-slate-700', light: 'from-white to-slate-50 border-slate-200' }, valueColor: { dark: 'text-white', light: 'text-slate-800' } },
+  { key: 'active', label: 'Active', accent: { dark: 'from-emerald-900/40 to-emerald-900/10 border-emerald-900/30', light: 'from-emerald-50 to-white border-emerald-100' }, valueColor: { dark: 'text-emerald-400', light: 'text-emerald-600' } },
+  { key: 'inactive', label: 'Inactive', accent: { dark: 'from-rose-900/40 to-rose-900/10 border-rose-900/30', light: 'from-rose-50 to-white border-rose-100' }, valueColor: { dark: 'text-rose-400', light: 'text-rose-600' } },
+  { key: 'managers', label: 'Managers', accent: { dark: 'from-violet-900/40 to-violet-900/10 border-violet-900/30', light: 'from-violet-50 to-white border-violet-100' }, valueColor: { dark: 'text-violet-400', light: 'text-violet-600' } },
+] as const;
 
 export default function UserManagement({ session }: UserManagementProps) {
   const { isDark } = useTheme();
@@ -38,355 +58,239 @@ export default function UserManagement({ session }: UserManagementProps) {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
+  useEffect(() => { fetchUsers(); }, []);
 
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/team/user/list', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
-      });
-
-      const data = await response.json();
-      if (data.code === 1 && data.data) {
-        setUsers(data.data);
-      }
-    } catch (error) {
-      console.error('Error fetching users:', error);
-    } finally {
-      setLoading(false);
-    }
+      const res = await fetch('/api/team/user/list',
+        {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+      const data = await res.json();
+      if (data.code === 1 && data.data) setUsers(data.data);
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
   };
 
-  const filteredUsers = users.filter((user) => {
-    const matchesSearch =
-      user.fullname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.username?.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesRole = roleFilter === 'ALL' || user.user_role === roleFilter;
-
-    const matchesStatus =
-      statusFilter === 'ALL' ||
-      (statusFilter === 'ACTIVE' && user.active === 1) ||
-      (statusFilter === 'INACTIVE' && user.active === 0);
-
-    return matchesSearch && matchesRole && matchesStatus;
-  });
-
-  const handleEdit = (user: UserData) => {
-    setSelectedUser(user);
-    setShowEditModal(true);
-  };
-
+  const handleEdit = (user: UserData) => { setSelectedUser(user); setShowEditModal(true); };
   const handleDelete = async (userId: number) => {
     try {
-      await fetch('/api/team/user/delete', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: userId }),
-      });
+      await fetch('/api/team/user/delete',
+        {
+          method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: userId })
+        });
       fetchUsers();
-    } catch (error) {
-      console.error('Error deleting user:', error);
-    }
+    } catch (e) { console.error(e); }
   };
 
   const handleAddUser = async (formData: any) => {
     try {
-      const response = await axios.post('/api/team/user/add', {
-        username: formData.username,
-        fullname: formData.fullname,
-        email: formData.email,
-        phone: formData.phone || '',
-        fk_client_id: 0,
-        profile: formData.fk_user_profile_id,
-        ownerTerritorialUnit: 0,
-        user_type: formData.user_type,
-        user_viewer: formData.is_viewer,
-        user_manager: formData.is_manager,
-        timezone: 'IST',
-      });
-
-      const data = await response.data;
-      if (data.code === 1) {
-        toast.success('User created successfully');
-        setShowAddModal(false);
-        fetchUsers();
-      } else {
-        toast.error(data.error || 'Failed to create user');
-      }
-    } catch (error) {
-      console.error('Error adding user:', error);
-      toast.error('Error creating user');
-    }
+      const res = await axios.post('/api/team/user/add',
+        {
+          username: formData.username,
+          fullname: formData.fullname,
+          email: formData.email,
+          phone: formData.phone || '',
+          fk_client_id: 0,
+          profile: formData.fk_user_profile_id,
+          ownerTerritorialUnit: 0,
+          user_type: formData.user_type,
+          user_viewer: formData.is_viewer,
+          user_manager: formData.is_manager,
+          timezone: 'IST'
+        });
+      const data = res.data;
+      if (data.code === 1) { toast.success('User created successfully'); setShowAddModal(false); fetchUsers(); }
+      else toast.error(data.error || 'Failed to create user');
+    } catch { toast.error('Error creating user'); }
   };
 
   const handleUpdateUser = async (formData: any) => {
     try {
-      const response = await axios.post('/api/team/user/update', {
-        data: JSON.stringify({
-          ...formData,
-          owner_id: session?.user.ownerId,
-          profile_id: formData.fk_user_profile_id,
-          user_viewer: formData.is_viewer,
-          user_manager: formData.is_manager,
-        }),
-      });
-
-      const data = await response.data;
-      if (data.code === 1) {
-        toast.success('User updated successfully');
-        setShowEditModal(false);
-        setSelectedUser(null);
-        fetchUsers();
-      } else {
-        toast.error(data.error || 'Failed to update user');
-      }
-    } catch (error) {
-      console.error('Error updating user:', error);
-      toast.error('Error updating user');
-    }
+      const res = await axios.post('/api/team/user/update',
+        {
+          data: JSON.stringify({
+            ...formData,
+            owner_id: session?.user.ownerId,
+            profile_id: formData.fk_user_profile_id,
+            user_viewer: formData.is_viewer,
+            user_manager: formData.is_manager
+          })
+        });
+      const data = res.data;
+      if (data.code === 1) { toast.success('User updated successfully'); setShowEditModal(false); setSelectedUser(null); fetchUsers(); }
+      else toast.error(data.error || 'Failed to update user');
+    } catch { toast.error('Error updating user'); }
   };
 
-  const uniqueRoles = [...new Set(users.map((u) => u.user_role))].filter(Boolean);
+  const uniqueRoles = useMemo(() => [...new Set(users.map((u) => u.user_role))].filter(Boolean), [users]);
 
-  const stats = {
+  const stats = useMemo(() => ({
     total: users.length,
     active: users.filter((u) => u.active === 1).length,
     inactive: users.filter((u) => u.active === 0).length,
     managers: users.filter((u) => u.is_manager === 'Y').length,
-  };
+  }), [users]);
+
+  const filteredData = useMemo(() => users.filter((user) => {
+    const s = searchTerm.toLowerCase();
+    const matchesSearch = user.fullname?.toLowerCase().includes(s) || user.email?.toLowerCase().includes(s) || user.username?.toLowerCase().includes(s);
+    const matchesRole = roleFilter === 'ALL' || user.user_role === roleFilter;
+    const matchesStatus = statusFilter === 'ALL' || (statusFilter === 'ACTIVE' && user.active === 1) || (statusFilter === 'INACTIVE' && user.active === 0);
+    return matchesSearch && matchesRole && matchesStatus;
+  }), [users, searchTerm, roleFilter, statusFilter]);
+
+    const columns = useMemo(() => getUserColumns({ isDark, onEdit: handleEdit, onDelete: handleDelete }), [isDark]);
+
+  const table = useReactTable({
+    data: filteredData,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    initialState: { pagination: { pageSize: 10 } },
+  });
 
   return (
-    <div className={`p-4 sm:p-6 lg:p-8 ${isDark ? 'bg-slate-900 text-white' : 'bg-gray-50 text-gray-900'}`}>
-      <div className="mb-6 lg:mb-8 flex items-center justify-between">
-        <div>
-          <h1 className={`text-2xl sm:text-3xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-            Team Management
-          </h1>
-          <p className={`mt-1 text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-            Manage users and roles within your organization.
-          </p>
-        </div>
-        <Button
-          onClick={() => setShowAddModal(true)}
-          className="px-4 py-2   text-white text-sm rounded-lg  flex items-center gap-2"
-        >
-          <Plus size={18} />
-          Add New User
-        </Button>
-      </div>
+    <div className={`min-h-screen ${isDark ? 'bg-slate-900 text-white' : 'bg-gray-50 text-gray-900'}`}>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        {loading ? (
-          <>
-            {[...Array(4)].map((_, idx) => (
-              <StatSkeleton key={idx} isDark={isDark} />
-            ))}
-          </>
-        ) : (
-          [
-            { label: 'Total Users', value: stats.total, color: 'blue' },
-            { label: 'Active', value: stats.active, color: 'green' },
-            { label: 'Inactive', value: stats.inactive, color: 'red' },
-            { label: 'Managers', value: stats.managers, color: 'purple' },
-          ].map((stat, idx) => (
-            <div
-              key={idx}
-              className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} rounded-lg shadow-sm border p-4`}
-            >
-              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{stat.label}</p>
-              <p className={`text-2xl font-bold mt-1 text-${stat.color}-500`}>{stat.value}</p>
+      <div className={`top-0 z-10 backdrop-blur-md transition-colors ${isDark ? 'bg-slate-900/80 border-b border-slate-800' : 'bg-white/80 border-b border-slate-200 shadow-[0_1px_3px_rgba(0,0,0,0.06)]'} px-6 py-4`}>
+        <div className="mx-auto max-w-[1800px] flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-1 h-6 rounded-full bg-violet-600" />
+            <div>
+              <h1 className={`text-lg font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>Team Management</h1>
+              <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Manage users and roles within your organization</p>
             </div>
-          ))
-        )}
-      </div>
-
-      {/* Filters */}
-      <div className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} rounded-lg shadow-sm border p-4 mb-6`}>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-              <Search size={16} className="inline mr-2" />
-              Search
-            </label>
-            <input
-              type="text"
-              placeholder="Search by name, email, username..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${isDark ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-300 bg-white'}`}
-            />
           </div>
-
-          <div>
-            <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-              <Filter size={16} className="inline mr-2" />
-              Role
-            </label>
-            <select
-              value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${isDark ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-300 bg-white'}`}
-            >
-              <option value="ALL">All Roles</option>
-              {uniqueRoles.map((role) => (
-                <option key={role} value={role}>
-                  {role}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-              Status
-            </label>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${isDark ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-300 bg-white'}`}
-            >
-              <option value="ALL">All Status</option>
-              <option value="ACTIVE">Active</option>
-              <option value="INACTIVE">Inactive</option>
-            </select>
-          </div>
+          <Button
+            size="sm"
+            onClick={() => setShowAddModal(true)}
+            className={`h-8 gap-1.5 text-xs font-semibold shadow-sm ${isDark ? 'bg-white hover:bg-white/90 text-black' : 'bg-violet-600 hover:bg-violet-700 text-white'}`}
+          >
+            <Plus size={14} />
+            <span>Add New User</span>
+          </Button>
         </div>
       </div>
 
-      {/* Table */}
-      <div className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} rounded-lg shadow-sm border overflow-hidden`}>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className={isDark ? 'bg-slate-700' : 'bg-gray-50'}>
-              <tr>
-                {['Name', 'Username', 'Email', 'Role', 'User Code', 'Status', 'Permissions', 'Actions'].map((col) => (
-                  <th
-                    key={col}
-                    className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gray-300' : 'text-gray-500'}`}
-                  >
-                    {col}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className={`${isDark ? 'bg-slate-800 divide-slate-700' : 'bg-white divide-gray-200'} divide-y`}>
+      <div className="p-4 space-y-4 max-w-[1800px] mx-auto">
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {loading
+            ? [...Array(4)].map((_, i) => <StatSkeleton key={i} isDark={isDark} />)
+            : STAT_CONFIG.map((cfg) => (
+              <div key={cfg.key} className={`relative overflow-hidden rounded-2xl border bg-gradient-to-br p-5 shadow-sm   ${isDark ? cfg.accent.dark : cfg.accent.light}`}>
+                <div className="absolute -right-4 -bottom-4 w-20 h-20 rounded-full opacity-10 bg-current" />
+                <p className={`text-[10px] font-bold uppercase tracking-widest ${isDark ? 'text-gray-400' : 'text-gray-400'}`}>{cfg.label}</p>
+                <p className={`text-4xl font-black mt-2 tabular-nums leading-none ${isDark ? cfg.valueColor.dark : cfg.valueColor.light}`}>
+                  {stats[cfg.key]}
+                </p>
+              </div>
+            ))
+          }
+        </div>
+
+        <div className={`rounded-xl border p-4 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+
+            <div className="space-y-1.5">
+              <Label className={`flex items-center gap-1.5 text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                <Search size={13} /> Search
+              </Label>
+              <Input
+                placeholder="Search by name, email, username…"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className={`h-8 text-sm ${isDark ? 'bg-gray-900 border-gray-700 text-gray-200 placeholder:text-gray-600' : ''}`}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className={`flex items-center gap-1.5 text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                <Filter size={13} /> Role
+              </Label>
+              <Select value={roleFilter} onValueChange={setRoleFilter}>
+                <SelectTrigger className={`h-8 text-sm ${isDark ? 'bg-gray-900 border-gray-700 text-gray-200' : ''}`}>
+                  <SelectValue placeholder="All Roles" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">All Roles</SelectItem>
+                  {uniqueRoles.map((role) => <SelectItem key={role} value={role}>{role}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Status</Label>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className={`h-8 text-sm ${isDark ? 'bg-gray-900 border-gray-700 text-gray-200' : ''}`}>
+                  <SelectValue placeholder="All Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">All Status</SelectItem>
+                  <SelectItem value="ACTIVE">Active</SelectItem>
+                  <SelectItem value="INACTIVE">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+          </div>
+        </div>
+
+        <div className={`rounded-xl border overflow-hidden shadow-sm ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+          <Table>
+            <TableHeader className={isDark ? 'bg-slate-700' : 'bg-gradient-to-r from-blue-50 to-indigo-50'}>
+              {table.getHeaderGroups().map((hg) => (
+                <TableRow key={hg.id} className={isDark ? 'border-slate-600 hover:bg-transparent' : 'hover:bg-transparent'}>
+                  {hg.headers.map((header) => (
+                    <TableHead key={header.id} className={isDark ? 'text-slate-300' : 'text-gray-700'}>
+                      {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              ))}
+            </TableHeader>
+
+            <TableBody>
               {loading ? (
-                [...Array(5)].map((_, idx) => <SkeletonRow key={idx} isDark={isDark} />)
-              ) : filteredUsers.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="px-6 py-8 text-center">
-                    <User size={48} className={`mx-auto mb-2 ${isDark ? 'text-gray-600' : 'text-gray-300'}`} />
-                    <p className={isDark ? 'text-gray-400' : 'text-gray-500'}>No users found</p>
-                  </td>
-                </tr>
+                [...Array(5)].map((_, i) => <SkeletonRow key={i} isDark={isDark} />)
+              ) : table.getRowModel().rows.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={columns.length}>
+                    <div className={`text-center py-14 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                      <User size={40} className="mx-auto mb-3 opacity-30" />
+                      <p className="text-sm font-medium">No users found</p>
+                      <p className="text-xs mt-1 opacity-60">Try adjusting your filters</p>
+                    </div>
+                  </TableCell>
+                </TableRow>
               ) : (
-                filteredUsers.map((user) => (
-                  <tr key={user.user_id} className={isDark ? 'hover:bg-slate-700' : 'hover:bg-gray-50'}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
-                          <User size={20} className="text-blue-600" />
-                        </div>
-                        <div className="ml-4">
-                          <div className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                            {user.fullname}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${isDark ? 'text-gray-300' : 'text-gray-500'}`}>
-                      {user.username}
-                    </td>
-                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${isDark ? 'text-gray-300' : 'text-gray-500'}`}>
-                      <div className="flex items-center">
-                        <Mail size={14} className="mr-2" />
-                        {user.email}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                        {user.user_role}
-                      </span>
-                    </td>
-                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${isDark ? 'text-gray-300' : 'text-gray-500'}`}>
-                      {user.user_unique_code}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.active === 1 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
-                      >
-                        {user.active === 1 ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex gap-1">
-                        {user.is_manager === 'Y' && (
-                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
-                            Manager
-                          </span>
-                        )}
-                        {user.is_viewer === 'Y' && (
-                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
-                            Viewer
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleEdit(user)}
-                          className={`p-2 rounded hover:bg-opacity-80 ${isDark ? 'text-blue-400 hover:bg-gray-700' : 'text-blue-600 hover:bg-blue-50'}`}
-                          title="Edit User"
-                        >
-                          <Edit size={18} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(user.user_id)}
-                          className={`p-2 rounded hover:bg-opacity-80 ${isDark ? 'text-red-400 hover:bg-gray-700' : 'text-red-600 hover:bg-red-50'}`}
-                          title="Delete User"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+                table.getRowModel().rows.map((row) => (
+                  <TableRow key={row.id} className={`transition-colors ${isDark ? 'border-slate-700 hover:bg-slate-700/50' : 'hover:bg-gray-50'}`}>
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    ))}
+                  </TableRow>
                 ))
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
+
+        <TablePagination table={table} />
       </div>
 
       {showAddModal && (
-        <UserFormModal
-          isOpen={showAddModal}
-          onClose={() => setShowAddModal(false)}
-          mode="add"
-          onSubmit={handleAddUser}
-          isDark={isDark}
-        />
+        <UserFormModal isOpen={showAddModal} onClose={() => setShowAddModal(false)} mode="add" onSubmit={handleAddUser} isDark={isDark} />
       )}
-
       {showEditModal && selectedUser && (
-        <UserFormModal
-          isOpen={showEditModal}
-          onClose={() => {
-            setShowEditModal(false);
-            setSelectedUser(null);
-          }}
-          mode="edit"
-          userData={selectedUser}
-          onSubmit={handleUpdateUser}
-          isDark={isDark}
-        />
+        <UserFormModal isOpen={showEditModal} onClose={() => { setShowEditModal(false); setSelectedUser(null); }} mode="edit" userData={selectedUser} onSubmit={handleUpdateUser} isDark={isDark} />
       )}
     </div>
   );

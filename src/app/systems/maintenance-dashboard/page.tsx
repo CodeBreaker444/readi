@@ -2,13 +2,17 @@
 
 import MaintenanceTable from "@/components/system/MaintenanceTable";
 import { MaintenanceTableSkeleton } from "@/components/tables/MaintenanceTableSkeleton";
+import { Button } from "@/components/ui/button";
+import { useTheme } from "@/components/useTheme";
 import { MaintenanceDrone } from "@/config/types/maintenance";
 import axios from "axios";
+import { Loader2, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 
 export default function MaintenancePage() {
+  const { isDark } = useTheme()
   const [data, setData] = useState<MaintenanceDrone[]>([]);
   const [loading, setLoading] = useState(false);
   const hasFetched = useRef(false);
@@ -42,40 +46,53 @@ export default function MaintenancePage() {
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="bg-white border-b border-slate-200 sticky top-0 z-10">
-        <div className="mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-bold text-slate-900 tracking-tight">
-              Maintenance Dashboard
-            </h1>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Drone systems &amp; component maintenance status
-            </p>
-          </div>
-          <button
-            onClick={fetchData}
-            disabled={loading}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors ${
-              loading
-                ? "border-slate-200 text-slate-400 cursor-not-allowed"
-                : "border-slate-300 text-slate-600 hover:bg-slate-50"
-            }`}
-          >
-            <svg
-              className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-              />
-            </svg>
-            {loading ? "Loading…" : "Refresh"}
-          </button>
-        </div>
+       <div
+  className={` top-0 z-10 backdrop-blur-md transition-colors ${
+    isDark
+      ? "bg-slate-900/80 border-b border-slate-800 text-white"
+      : "bg-white/80 border-b border-slate-200 text-slate-900 shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
+  } px-6 py-4`}
+>
+  <div className="mx-auto max-w-[1800px] flex items-center justify-between">
+    <div className="flex items-center gap-3">
+      <div className="w-1 h-6 rounded-full bg-violet-600" />
+      
+      <div>
+        <h1
+          className={`text-lg font-bold tracking-tight ${
+            isDark ? "text-white" : "text-slate-900"
+          }`}
+        >
+          Maintenance Dashboard
+        </h1>
+        <p className={`text-xs ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+          Drone systems & component maintenance status
+        </p>
+      </div>
+    </div>
+
+    <div className="flex items-center gap-2">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={fetchData}
+        disabled={loading}
+        className={`h-8 gap-1.5 text-xs transition-all ${
+          isDark
+            ? "border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white"
+            : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+        }`}
+      >
+        {loading ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        ) : (
+          <RefreshCw className="h-3.5 w-3.5" />
+        )}
+        <span>{loading ? "Loading..." : "Refresh"}</span>
+      </Button>
+    </div>
+  </div>
+</div>
       </div>
 
       <main className=" mx-auto px-4 sm:px-6 py-4">

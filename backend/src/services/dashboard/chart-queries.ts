@@ -5,6 +5,7 @@ import { ChartData, MissionResultChart } from "./dashboard";
  * Get mission chart data (missions per month per drone)
  */
 export async function getChartReadiTotalMission(
+  ownerId: number,
   fkClientId: number,
   fkUserId: number,
   year: number
@@ -22,6 +23,7 @@ export async function getChartReadiTotalMission(
           tool_code
         )
       `)
+      .eq('fk_owner_id', ownerId)
       .gte('actual_start', `${year}-01-01`)
       .lte('actual_start', `${year}-12-31`)
       .not('tool.tool_code', 'is', null);
@@ -41,19 +43,17 @@ export async function getChartReadiTotalMission(
 
     if (fkClientId !== 0 && filteredData.length > 0) {
       const planningIds = filteredData.map(m => m.fk_planning_id).filter(Boolean);
-      
+
       if (planningIds.length > 0) {
         const { data: planningData } = await supabase
           .from('planning')
           .select('planning_id')
+          .eq('fk_owner_id', ownerId)
           .in('planning_id', planningIds)
           .eq('fk_client_id', fkClientId);
 
         const validPlanningIds = new Set((planningData || []).map(p => p.planning_id));
-        
-        filteredData = filteredData.filter(m => 
-          validPlanningIds.has(m.fk_planning_id)
-        );
+        filteredData = filteredData.filter(m => validPlanningIds.has(m.fk_planning_id));
       }
     }
 
@@ -67,7 +67,7 @@ export async function getChartReadiTotalMission(
     filteredData.forEach((mission: any) => {
       const tool = Array.isArray(mission.tool) ? mission.tool[0] : mission.tool;
       const droneName = tool?.tool_code;
-      
+
       if (!droneName) return;
 
       const date = new Date(mission.actual_start);
@@ -92,10 +92,7 @@ export async function getChartReadiTotalMission(
   } catch (error) {
     console.error('Error in getChartReadiTotalMission:', error);
     return {
-      labels: [
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-      ],
+      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
       series: [],
     };
   }
@@ -105,6 +102,7 @@ export async function getChartReadiTotalMission(
  * Get mission result chart data
  */
 export async function getChartReadiTotalMissionResult(
+  ownerId: number,
   fkClientId: number,
   fkUserId: number,
   year: number
@@ -121,6 +119,7 @@ export async function getChartReadiTotalMissionResult(
           result_type
         )
       `)
+      .eq('fk_owner_id', ownerId)
       .gte('actual_start', `${year}-01-01`)
       .lte('actual_start', `${year}-12-31`);
 
@@ -139,38 +138,35 @@ export async function getChartReadiTotalMissionResult(
 
     if (fkClientId !== 0 && filteredData.length > 0) {
       const planningIds = filteredData.map(m => m.fk_planning_id).filter(Boolean);
-      
+
       if (planningIds.length > 0) {
         const { data: planningData } = await supabase
           .from('planning')
           .select('planning_id')
+          .eq('fk_owner_id', ownerId)
           .in('planning_id', planningIds)
           .eq('fk_client_id', fkClientId);
 
         const validPlanningIds = new Set((planningData || []).map(p => p.planning_id));
-        
-        filteredData = filteredData.filter(m => 
-          validPlanningIds.has(m.fk_planning_id)
-        );
+        filteredData = filteredData.filter(m => validPlanningIds.has(m.fk_planning_id));
       }
     }
 
     const resultMap = new Map<string, number>();
 
     filteredData.forEach((mission: any) => {
-      const result = Array.isArray(mission.pilot_mission_result) 
-        ? mission.pilot_mission_result[0] 
+      const result = Array.isArray(mission.pilot_mission_result)
+        ? mission.pilot_mission_result[0]
         : mission.pilot_mission_result;
       const resultType = result?.result_type || 'Unknown';
-      
+
       resultMap.set(resultType, (resultMap.get(resultType) || 0) + 1);
     });
 
     const labels: string[] = [];
     const series: number[] = [];
 
-    const sortedEntries = Array.from(resultMap.entries())
-      .sort((a, b) => b[1] - a[1]);
+    const sortedEntries = Array.from(resultMap.entries()).sort((a, b) => b[1] - a[1]);
 
     sortedEntries.forEach(([label, count]) => {
       labels.push(label);
@@ -180,9 +176,6 @@ export async function getChartReadiTotalMissionResult(
     return { labels, series };
   } catch (error) {
     console.error('Error in getChartReadiTotalMissionResult:', error);
-    return {
-      labels: [],
-      series: [],
-    };
+    return { labels: [], series: [] };
   }
 }

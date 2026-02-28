@@ -28,7 +28,7 @@ export async function POST(
       owner_id: parseInt(ownerId),
       user_id: session.user.userId,
       user_timezone: body?.user_timezone || 'UTC',
-      user_profile_code: body?.user_profile_code || '',
+      user_profile_code: session.user.role || '',
     });
 
     return NextResponse.json({

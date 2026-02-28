@@ -40,6 +40,7 @@ export async function getOperationLogbookList(
       )
     `
     )
+    .eq('fk_owner_id',params.owner_id)
     .eq("planning.fk_owner_id", params.owner_id);
 
   if (params.pic_id && params.pic_id !== 0) {

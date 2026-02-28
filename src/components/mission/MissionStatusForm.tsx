@@ -1,5 +1,10 @@
 'use client';
 
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Mission } from '@/config/types/types';
 import { useState } from 'react';
 
@@ -14,7 +19,7 @@ export default function MissionStatusForm({ onSubmit, isDark }: MissionStatusFor
     name: '',
     description: '',
     order: 0,
-    isFinalStatus: false
+    isFinalStatus: false,
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -23,104 +28,80 @@ export default function MissionStatusForm({ onSubmit, isDark }: MissionStatusFor
     setFormData({ code: '', name: '', description: '', order: 0, isFinalStatus: false });
   };
 
+  const inputClass = isDark ? 'bg-gray-800 border-gray-700 text-gray-100 placeholder:text-gray-500' : '';
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4 pt-2">
       <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>
+        <div className="space-y-1.5">
+          <Label className={isDark ? 'text-gray-300' : 'text-gray-700'}>
             Code <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
+          </Label>
+          <Input
             required
             maxLength={50}
-            className={`w-full px-4 py-2.5 rounded-lg border outline-none transition-all ${
-              isDark
-                ? 'bg-slate-900 border-slate-600 text-white focus:ring-blue-500'
-                : 'bg-white border-gray-300 text-gray-900 focus:ring-blue-500'
-            } focus:ring-2 focus:border-transparent`}
+            placeholder="e.g., PLANNED"
             value={formData.code}
             onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
-            placeholder="e.g., PLANNED"
+            className={`uppercase ${inputClass}`}
           />
         </div>
-
-        <div>
-          <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>
+        <div className="space-y-1.5">
+          <Label className={isDark ? 'text-gray-300' : 'text-gray-700'}>
             Name <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
+          </Label>
+          <Input
             required
             maxLength={100}
-            className={`w-full px-4 py-2.5 rounded-lg border outline-none transition-all ${
-              isDark
-                ? 'bg-slate-900 border-slate-600 text-white focus:ring-blue-500'
-                : 'bg-white border-gray-300 text-gray-900 focus:ring-blue-500'
-            } focus:ring-2 focus:border-transparent`}
+            placeholder="e.g., Planned"
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            placeholder="e.g., Planned"
+            className={inputClass}
           />
         </div>
       </div>
 
-      <div>
-        <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>
-          Description
-        </label>
-        <textarea
+      <div className="space-y-1.5">
+        <Label className={isDark ? 'text-gray-300' : 'text-gray-700'}>Description</Label>
+        <Textarea
           rows={3}
-          className={`w-full px-4 py-2.5 rounded-lg border outline-none transition-all ${
-            isDark
-              ? 'bg-slate-900 border-slate-600 text-white focus:ring-blue-500'
-              : 'bg-white border-gray-300 text-gray-900 focus:ring-blue-500'
-          } focus:ring-2 focus:border-transparent`}
+          placeholder="e.g., Mission is in planning phase"
           value={formData.description}
           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-          placeholder="e.g., Mission is in planning phase"
+          className={inputClass}
         />
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>
-            Order
-          </label>
-          <input
+        <div className="space-y-1.5">
+          <Label className={isDark ? 'text-gray-300' : 'text-gray-700'}>Order</Label>
+          <Input
             type="number"
             min="0"
-            className={`w-full px-4 py-2.5 rounded-lg border outline-none transition-all ${
-              isDark
-                ? 'bg-slate-900 border-slate-600 text-white focus:ring-blue-500'
-                : 'bg-white border-gray-300 text-gray-900 focus:ring-blue-500'
-            } focus:ring-2 focus:border-transparent`}
             value={formData.order}
             onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value) || 0 })}
+            className={inputClass}
           />
         </div>
-
-        <div className="flex items-end">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+        <div className="flex items-end pb-1">
+          <label className="flex items-center gap-2.5 cursor-pointer">
+            <Checkbox
               checked={formData.isFinalStatus}
-              onChange={(e) => setFormData({ ...formData, isFinalStatus: e.target.checked })}
+              onCheckedChange={(checked: boolean | "indeterminate") => setFormData({ ...formData, isFinalStatus: !!checked })}
             />
-            <span className={`text-sm font-medium ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>
+            <span className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
               Final Status
             </span>
           </label>
         </div>
       </div>
 
-      <button
+      <Button
         type="submit"
-        className="w-full px-4 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors"
+        className="w-full bg-violet-600 hover:bg-violet-700 text-white font-semibold shadow-md hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 mt-2"
       >
         Add Status
-      </button>
+      </Button>
     </form>
   );
 }

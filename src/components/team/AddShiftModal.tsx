@@ -317,7 +317,7 @@ const onSubmit = async (data: CreateShiftInput) => {
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="bg-violet-600 hover:bg-violet-500 cursor-pointer text-white"
             >
               {isSubmitting ? (
                 <>
