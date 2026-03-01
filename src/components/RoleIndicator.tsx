@@ -13,7 +13,6 @@ export const RoleIndicator: React.FC<{ role: Role | null }> = ({ role }) => {
     'TM': 'bg-amber-500',          
     'DC': 'bg-slate-500',          
     'SLA': 'bg-lime-500',          
-    'CLIENT': 'bg-gray-400',       
   };
 
   const activeColor = role ? roleColors[role] : 'bg-gray-200';

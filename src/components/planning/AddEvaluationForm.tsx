@@ -1,282 +1,254 @@
-'use client';
-import React, { useEffect, useState } from 'react';
+// 'use client';
 
-interface Client {
-  id: number;
-  name: string;
-}
+// import { Button } from '@/components/ui/button';
+// import {
+//   Form,
+//   FormControl,
+//   FormField,
+//   FormItem,
+//   FormLabel,
+//   FormMessage,
+// } from '@/components/ui/form';
+// import { Input } from '@/components/ui/input';
+// import {
+//   Select,
+//   SelectContent,
+//   SelectItem,
+//   SelectTrigger,
+//   SelectValue,
+// } from '@/components/ui/select';
+// import { useClients, useCreateEvaluation, useLucProcedures } from '@/lib/hooks';
+// import { createEvaluationSchema, type CreateEvaluationInput } from '@/lib/validation';
+// import { zodResolver } from '@hookform/resolvers/zod';
+// import { Loader2, PlusCircle } from 'lucide-react';
+// import { useForm } from 'react-hook-form';
+// import { toast } from 'sonner';
 
-interface LUCProcedure {
-  id: number;
-  name: string;
-}
+// interface AddEvaluationFormProps {
+//   onSuccess?: () => void;
+// }
 
-interface AddEvaluationFormData {
-  fk_client_id: number;
-  fk_luc_procedure_id: number;
-  evaluation_status: string;
-  evaluation_request_date: string;
-  evaluation_year: number;
-  evaluation_desc: string;
-  evaluation_offer: string;
-  evaluation_sale_manager: string;
-  evaluation_result: string;
-}
+// const currentYear = new Date().getFullYear();
 
-interface AddEvaluationFormProps {
-  onSubmit: (data: AddEvaluationFormData) => Promise<void>;
-  isDark?: boolean;
-}
+// export function AddEvaluationForm({  onSuccess }: AddEvaluationFormProps) {
+//   const { data: clients = [] } = useClients(ownerId);
+//   const { data: procedures = [] } = useLucProcedures(ownerId, 'EVALUATION');
+//   const createMutation = useCreateEvaluation();
 
-const AddEvaluationForm: React.FC<AddEvaluationFormProps> = ({ onSubmit, isDark = false }) => {
-  const currentYear = new Date().getFullYear();
-  
-  const [formData, setFormData] = useState<AddEvaluationFormData>({
-    fk_client_id: 0,
-    fk_luc_procedure_id: 0,
-    evaluation_status: 'NEW',
-    evaluation_request_date: new Date().toISOString().split('T')[0],
-    evaluation_year: currentYear,
-    evaluation_desc: '',
-    evaluation_offer: '',
-    evaluation_sale_manager: '',
-    evaluation_result: 'PROCESSING'
-  });
+//   const form = useForm<CreateEvaluationInput>({
+//     resolver: zodResolver(createEvaluationSchema),
+//     defaultValues: {
+//       fk_client_id: 0,
+//       fk_luc_procedure_id: 0,
+//       evaluation_status: 'NEW',
+//       evaluation_request_date: new Date().toISOString().split('T')[0],
+//       evaluation_year: currentYear,
+//       evaluation_desc: '',
+//       evaluation_offer: '',
+//       evaluation_sale_manager: '',
+//       evaluation_result: 'PROCESSING',
+//     },
+//   });
 
-  const [clients, setClients] = useState<Client[]>([]);
-  const [lucProcedures, setLUCProcedures] = useState<LUCProcedure[]>([]);
-  const [loading, setLoading] = useState(false);
+//   async function onSubmit(values: CreateEvaluationInput) {
+//     try {
+//       await createMutation.mutateAsync({ ...values, owner_id: ownerId, user_id: userId });
+//       toast.success('Evaluation request added successfully');
+//       form.reset();
+//       onSuccess?.();
+//     } catch (err) {
+//       toast.error(err instanceof Error ? err.message : 'Failed to create evaluation');
+//     }
+//   }
 
-  useEffect(() => {
-    loadClients();
-    loadLUCProcedures();
-  }, []);
+//   return (
+//     <Form {...form}>
+//       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+//         {/* Row 1: Client + LUC Procedure */}
+//         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+//           <FormField
+//             control={form.control}
+//             name="fk_client_id"
+//             render={({ field }) => (
+//               <FormItem>
+//                 <FormLabel>Client</FormLabel>
+//                 <Select
+//                   onValueChange={(v) => field.onChange(Number(v))}
+//                   value={field.value ? String(field.value) : ''}
+//                 >
+//                   <FormControl>
+//                     <SelectTrigger>
+//                       <SelectValue placeholder="Select Client" />
+//                     </SelectTrigger>
+//                   </FormControl>
+//                   <SelectContent>
+//                     {clients.map((c) => (
+//                       <SelectItem key={c.client_id} value={String(c.client_id)}>
+//                         {c.client_name}
+//                       </SelectItem>
+//                     ))}
+//                   </SelectContent>
+//                 </Select>
+//                 <FormMessage />
+//               </FormItem>
+//             )}
+//           />
 
-  const loadClients = async () => {
-    try {
-      const response = await fetch('/api/clients');
-      const data = await response.json();
-      setClients(data);
-    } catch (error) {
-      console.error('Error loading clients:', error);
-    }
-  };
+//           <FormField
+//             control={form.control}
+//             name="fk_luc_procedure_id"
+//             render={({ field }) => (
+//               <FormItem>
+//                 <FormLabel>LUC Procedure</FormLabel>
+//                 <Select
+//                   onValueChange={(v) => field.onChange(Number(v))}
+//                   value={field.value ? String(field.value) : ''}
+//                 >
+//                   <FormControl>
+//                     <SelectTrigger>
+//                       <SelectValue placeholder="Select LUC Procedure" />
+//                     </SelectTrigger>
+//                   </FormControl>
+//                   <SelectContent>
+//                     {procedures.map((p) => (
+//                       <SelectItem key={p.luc_procedure_id} value={String(p.luc_procedure_id)}>
+//                         {p.luc_procedure_desc} [{p.luc_procedure_ver}]
+//                       </SelectItem>
+//                     ))}
+//                   </SelectContent>
+//                 </Select>
+//                 <FormMessage />
+//               </FormItem>
+//             )}
+//           />
+//         </div>
 
-  const loadLUCProcedures = async () => {
-    try {
-      const response = await fetch('/api/luc-procedures?type=EVALUATION');
-      const data = await response.json();
-      setLUCProcedures(data);
-    } catch (error) {
-      console.error('Error loading LUC procedures:', error);
-    }
-  };
+//         {/* Row 2: Status, Request Date, Year */}
+//         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+//           <FormField
+//             control={form.control}
+//             name="evaluation_status"
+//             render={({ field }) => (
+//               <FormItem>
+//                 <FormLabel>Status</FormLabel>
+//                 <Select onValueChange={field.onChange} value={field.value}>
+//                   <FormControl>
+//                     <SelectTrigger>
+//                       <SelectValue />
+//                     </SelectTrigger>
+//                   </FormControl>
+//                   <SelectContent>
+//                     <SelectItem value="NEW">New Task</SelectItem>
+//                   </SelectContent>
+//                 </Select>
+//                 <FormMessage />
+//               </FormItem>
+//             )}
+//           />
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: name.includes('_id') || name === 'evaluation_year' ? parseInt(value) : value
-    }));
-  };
+//           <FormField
+//             control={form.control}
+//             name="evaluation_request_date"
+//             render={({ field }) => (
+//               <FormItem>
+//                 <FormLabel>Request Date</FormLabel>
+//                 <FormControl>
+//                   <Input type="date" {...field} />
+//                 </FormControl>
+//                 <FormMessage />
+//               </FormItem>
+//             )}
+//           />
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (formData.fk_client_id === 0) {
-      alert('Please select a client');
-      return;
-    }
-    
-    if (formData.fk_luc_procedure_id === 0) {
-      alert('Please select a LUC procedure');
-      return;
-    }
-    
-    setLoading(true);
-    try {
-      await onSubmit(formData);
-      
-      // Reset form
-      setFormData({
-        fk_client_id: 0,
-        fk_luc_procedure_id: 0,
-        evaluation_status: 'NEW',
-        evaluation_request_date: new Date().toISOString().split('T')[0],
-        evaluation_year: currentYear,
-        evaluation_desc: '',
-        evaluation_offer: '',
-        evaluation_sale_manager: '',
-        evaluation_result: 'PROCESSING'
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+//           <FormField
+//             control={form.control}
+//             name="evaluation_year"
+//             render={({ field }) => (
+//               <FormItem>
+//                 <FormLabel>Year Reference</FormLabel>
+//                 <Select
+//                   onValueChange={(v) => field.onChange(Number(v))}
+//                   value={String(field.value)}
+//                 >
+//                   <FormControl>
+//                     <SelectTrigger>
+//                       <SelectValue />
+//                     </SelectTrigger>
+//                   </FormControl>
+//                   <SelectContent>
+//                     {[currentYear - 1, currentYear, currentYear + 1, currentYear + 2].map((y) => (
+//                       <SelectItem key={y} value={String(y)}>
+//                         {y}
+//                       </SelectItem>
+//                     ))}
+//                   </SelectContent>
+//                 </Select>
+//                 <FormMessage />
+//               </FormItem>
+//             )}
+//           />
+//         </div>
 
-  const inputClass = `w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-    isDark 
-      ? 'bg-slate-700 border-slate-600 text-white' 
-      : 'bg-white border-gray-300 text-gray-900'
-  }`;
+//         {/* Row 3: Description, Offer, Sales Manager */}
+//         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+//           <FormField
+//             control={form.control}
+//             name="evaluation_desc"
+//             render={({ field }) => (
+//               <FormItem>
+//                 <FormLabel>Description</FormLabel>
+//                 <FormControl>
+//                   <Input placeholder="Evaluation description…" {...field} />
+//                 </FormControl>
+//                 <FormMessage />
+//               </FormItem>
+//             )}
+//           />
 
-  const labelClass = `block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`;
+//           <FormField
+//             control={form.control}
+//             name="evaluation_offer"
+//             render={({ field }) => (
+//               <FormItem>
+//                 <FormLabel>Offer Ref</FormLabel>
+//                 <FormControl>
+//                   <Input placeholder="Offer reference…" {...field} />
+//                 </FormControl>
+//                 <FormMessage />
+//               </FormItem>
+//             )}
+//           />
 
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label htmlFor="fk_client_id" className={labelClass}>
-            Client
-          </label>
-          <select
-            id="fk_client_id"
-            name="fk_client_id"
-            value={formData.fk_client_id}
-            onChange={handleChange}
-            required
-            className={inputClass}
-          >
-            <option value={0}>Select Client</option>
-            {clients.map(client => (
-              <option key={client.id} value={client.id}>
-                {client.name}
-              </option>
-            ))}
-          </select>
-        </div>
+//           <FormField
+//             control={form.control}
+//             name="evaluation_sale_manager"
+//             render={({ field }) => (
+//               <FormItem>
+//                 <FormLabel>Sales Manager</FormLabel>
+//                 <FormControl>
+//                   <Input placeholder="Sales manager name…" {...field} />
+//                 </FormControl>
+//                 <FormMessage />
+//               </FormItem>
+//             )}
+//           />
+//         </div>
 
-        <div>
-          <label htmlFor="fk_luc_procedure_id" className={labelClass}>
-            LUC Procedure
-          </label>
-          <select
-            id="fk_luc_procedure_id"
-            name="fk_luc_procedure_id"
-            value={formData.fk_luc_procedure_id}
-            onChange={handleChange}
-            required
-            className={inputClass}
-          >
-            <option value={0}>Select LUC Procedure for this Task</option>
-            {lucProcedures.map(procedure => (
-              <option key={procedure.id} value={procedure.id}>
-                {procedure.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-          <label htmlFor="evaluation_status" className={labelClass}>
-            Status
-          </label>
-          <select
-            id="evaluation_status"
-            name="evaluation_status"
-            value={formData.evaluation_status}
-            onChange={handleChange}
-            className={inputClass}
-          >
-            <option value="NEW">New Task</option>
-          </select>
-        </div>
-
-        <div>
-          <label htmlFor="evaluation_request_date" className={labelClass}>
-            Request Date
-          </label>
-          <input
-            type="date"
-            id="evaluation_request_date"
-            name="evaluation_request_date"
-            value={formData.evaluation_request_date}
-            onChange={handleChange}
-            required
-            className={inputClass}
-          />
-        </div>
-
-        <div>
-          <label htmlFor="evaluation_year" className={labelClass}>
-            Year Reference
-          </label>
-          <select
-            id="evaluation_year"
-            name="evaluation_year"
-            value={formData.evaluation_year}
-            onChange={handleChange}
-            className={inputClass}
-          >
-            <option value={currentYear - 1}>{currentYear - 1}</option>
-            <option value={currentYear}>{currentYear}</option>
-            <option value={currentYear + 1}>{currentYear + 1}</option>
-            <option value={currentYear + 2}>{currentYear + 2}</option>
-          </select>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-          <label htmlFor="evaluation_desc" className={labelClass}>
-            Description
-          </label>
-          <input
-            type="text"
-            id="evaluation_desc"
-            name="evaluation_desc"
-            value={formData.evaluation_desc}
-            onChange={handleChange}
-            className={inputClass}
-          />
-        </div>
-
-        <div>
-          <label htmlFor="evaluation_offer" className={labelClass}>
-            Offer Ref
-          </label>
-          <input
-            type="text"
-            id="evaluation_offer"
-            name="evaluation_offer"
-            value={formData.evaluation_offer}
-            onChange={handleChange}
-            className={inputClass}
-          />
-        </div>
-
-        <div>
-          <label htmlFor="evaluation_sale_manager" className={labelClass}>
-            Sales Manager
-          </label>
-          <input
-            type="text"
-            id="evaluation_sale_manager"
-            name="evaluation_sale_manager"
-            value={formData.evaluation_sale_manager}
-            onChange={handleChange}
-            className={inputClass}
-          />
-        </div>
-      </div>
-
-      <div className="flex justify-start">
-        <button
-          type="submit"
-          disabled={loading}
-          className={`px-6 py-2 rounded-lg font-medium transition-colors ${
-            loading
-              ? 'bg-gray-400 cursor-not-allowed'
-              : 'bg-blue-600 hover:bg-blue-700 text-white'
-          }`}
-        >
-          {loading ? 'Adding...' : 'Add New Evaluation'}
-        </button>
-      </div>
-    </form>
-  );
-};
-
-export default AddEvaluationForm;
+//         <div className="flex justify-end">
+//           <Button
+//             type="submit"
+//             disabled={createMutation.isPending}
+//             className="gap-2"
+//           >
+//             {createMutation.isPending ? (
+//               <Loader2 className="w-4 h-4 animate-spin" />
+//             ) : (
+//               <PlusCircle className="w-4 h-4" />
+//             )}
+//             Add New Evaluation
+//           </Button>
+//         </div>
+//       </form>
+//     </Form>
+//   );
+// }

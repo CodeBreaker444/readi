@@ -9,8 +9,7 @@ export type Role =
   | 'RM'
   | 'TM'
   | 'DC'
-  | 'SLA'
-  | 'CLIENT';
+  | 'SLA';
 
 export type Permission =
   | 'view_dashboard'
@@ -43,7 +42,6 @@ export const ROLE_PERMISSIONS: Record<Role, RolePermission[]> = {
   TM: ['view_dashboard', 'view_training', 'view_repository'],
   DC: ['view_repository'],
   SLA: ['view_dashboard', 'view_logs'],
-  CLIENT: ['view_dashboard', 'view_repository'],
 };
 export function roleHasPermission(role: Role | null | undefined, permission: Permission): boolean {
   if (!role) return false;

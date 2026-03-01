@@ -61,7 +61,7 @@ const EvaluationRequest: React.FC = () => {
         geojson: area.geoJSON,
       }));
 
-      const response = await axios.post('/api/evaluation/create', {
+      const response = await axios.post('/api/evaluation/new-req/create', {
         data: { ...formData, areas: areasData },
       });
 
@@ -113,7 +113,7 @@ const EvaluationRequest: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 mx-2">
         <div className={`rounded-xl shadow-sm border ${cardBg} overflow-hidden`}>
           <div className={`px-5 py-4 border-b ${dividerColor} flex items-center gap-3`}>
             <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-500/10 text-blue-500">

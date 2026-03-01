@@ -128,7 +128,8 @@ const configurationItems: SubNavItem[] = [
     href: '/team/personnel',
     subItems: [
       { name: 'Personnel', href: '/team/personnel' },
-      { name: 'Crew Shift', href: '/team/crew-shift' }
+      { name: 'Crew Shift', href: '/team/crew-shift' },
+      { name: 'Client', href: '/team/client' }
     ]
   },
   {

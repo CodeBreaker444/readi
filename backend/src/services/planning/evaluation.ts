@@ -24,14 +24,12 @@ interface EvaluationCreateData {
   }>;
 }
 
-export async function createEvaluation(
+export async function createNewEvaluationRequest(
   ownerId: number,
   userId: number,
   data: EvaluationCreateData
 ) {
   try {
-    console.log('Creating evaluation for owner:', ownerId, 'user:', userId);
-    console.log('Data received:', JSON.stringify(data, null, 2));
     
     const evaluationCode = await generateEvaluationCode(ownerId, data.evaluation_year);
 

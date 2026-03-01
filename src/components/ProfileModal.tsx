@@ -115,7 +115,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, isDark, us
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+<div className="fixed inset-0 bg-black/60 bg-opacity-50 flex items-center justify-center z-[9999] p-4">
       <div className={`w-full max-w-5xl max-h-[90vh] overflow-y-auto rounded-lg shadow-2xl ${isDark ? 'bg-slate-800' : 'bg-white'
         }`}>
         <div className={`flex items-center justify-between p-6 border-b ${isDark ? 'border-slate-700' : 'border-gray-200'
@@ -345,7 +345,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, isDark, us
 
                 <button
                   onClick={handleSubmit}
-                  className="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white py-2.5 px-4 rounded-lg transition-colors font-medium"
+                  className="w-full mt-6 bg-violet-600 hover:bg-violet-700 text-white py-2.5 px-4 rounded-lg transition-colors font-medium"
                 >
                   Update User Profile
                 </button>

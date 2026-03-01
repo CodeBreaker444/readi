@@ -1,25 +1,19 @@
-import { getClientsList } from '@/backend/utils/clientList';
+import { listClients } from '@/backend/services/client/client-service';
 import { getUserSession } from '@/lib/auth/server-session';
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(request: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
-    const session = await getUserSession();
-
-    if (!session?.user || (session.user.role !== 'ADMIN' && session.user.role !== 'SUPERADMIN')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const session = await getUserSession()
+   
+    if(!session)
+    {
+      return NextResponse.json({message:"Unauthorized"},{status:401})
     }
 
-    const ownerId = session.user.ownerId;
-    const result = await getClientsList(ownerId);
-
-
+    const result = await listClients(session.user.ownerId);
     return NextResponse.json(result);
-  } catch (error) {
-    console.error('API Error:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Internal server error' },
-      { status: 500 }
-    );
+  } catch {
+    return NextResponse.json({ code: 0, error: 'Internal server error' }, { status: 500 });
   }
 }
