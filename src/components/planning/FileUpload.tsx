@@ -52,7 +52,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
       formData.append('evaluation_id', evaluationId.toString());
       formData.append('client_id', clientId.toString());
 
-      const response = await axios.post('/api/evaluation/files/upload', formData, {
+      const response = await axios.post('/api/evaluation/new-req/files/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
@@ -75,7 +75,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
   const handleRemove = async (fileId: number) => {
     try {
-      const response = await axios.delete(`/api/evaluation/files/${fileId}`);
+      const response = await axios.delete(`/api/evaluation/new-req/files/${fileId}`);
       if (!response.data.success) throw new Error('Failed to remove file');
       onFileRemoved(fileId);
       toast.success('File removed successfully');

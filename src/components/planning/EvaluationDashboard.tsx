@@ -1,167 +1,164 @@
-'use client';
-import React, { useEffect, useState } from 'react';
-import AddEvaluationForm from './AddEvaluationForm';
-import CollapsibleForm from './CollapsibleForm';
-import DataTable from './DataTable';
+// 'use client';
 
-interface EvaluationDashboardProps {
-  isDark?: boolean;
-}
+// import { Button } from '@/components/ui/button';
+// import {
+//   Card,
+//   CardContent,
+//   CardDescription,
+//   CardHeader,
+//   CardTitle,
+// } from '@/components/ui/card';
+// import {
+//   Collapsible,
+//   CollapsibleContent,
+//   CollapsibleTrigger,
+// } from '@/components/ui/collapsible';
+// import { Separator } from '@/components/ui/separator';
+// import { Evaluation } from '@/config/types/evaluation';
+// import { cn } from '@/lib/utils';
+// import {
+//   BookOpen,
+//   ChevronDown,
+//   ClipboardList,
+//   PlusCircle,
+// } from 'lucide-react';
+// import { useState } from 'react';
+// import { Toaster } from 'sonner';
+// import { AddEvaluationForm } from './AddEvaluationForm';
+// import { EvaluationFilePanel } from './EvaluationFilePanel';
+// import { EvaluationTable } from './EvaluationTable';
 
-const EvaluationDashboard: React.FC<EvaluationDashboardProps> = ({ isDark = false }) => {
-  const [evaluations, setEvaluations] = useState<any[]>([]);
-  const [selectedEvaluations, setSelectedEvaluations] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+// interface EvaluationProps{
+//   isDark: boolean
+// }
 
-  useEffect(() => {
-    loadEvaluations();
-  }, []);
+// const EvaluationDashboard: React.FC<EvaluationProps> = ({ isDark }) => {
+//   const [addOpen, setAddOpen] = useState(false);
+//   const [editOpen, setEditOpen] = useState(false);
+//   const [selectedEvaluation, setSelectedEvaluation] = useState<Evaluation | null>(null);
 
-  const loadEvaluations = async () => {
-    try {
-      const response = await fetch('/api/evaluations/list');
-      const data = await response.json();
-      setEvaluations(data);
-    } catch (error) {
-      console.error('Error loading evaluations:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+//   function handleView(evaluation: Evaluation) {
+//     setSelectedEvaluation(evaluation);
+//     setEditOpen(true);
+//   }
 
-  const handleAddEvaluation = async (formData: any) => {
-    try {
-      const response = await fetch('/api/evaluations/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(formData)
-      });
+//   return (
+//     <>
+//       <Toaster position="top-right" richColors />
 
-      if (response.ok) {
-        alert('Evaluation added successfully!');
-        loadEvaluations();
-      } else {
-        alert('Error adding evaluation');
-      }
-    } catch (error) {
-      console.error('Error adding evaluation:', error);
-      alert('Error adding evaluation');
-    }
-  };
+//       <div className="min-h-screen bg-slate-50/60">
+//         <div className="border-b border-slate-200 bg-white px-6 py-4 sticky top-0 z-10">
+//           <div className="max-w-screen-2xl mx-auto flex items-center justify-between">
+//             <div className="flex items-center gap-3">
+//               <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-600 text-white">
+//                 <ClipboardList className="w-4 h-4" />
+//               </div>
+//               <div>
+//                 <h1 className="text-base font-semibold text-slate-900">
+//                   Evaluation Dashboard
+//                 </h1>
+//                 <p className="text-xs text-slate-500">Planning · Operational Scenario Requests</p>
+//               </div>
+//             </div>
+//             <Button
+//               size="sm"
+//               className="gap-2"
+//               onClick={() => setAddOpen((p) => !p)}
+//             >
+//               <PlusCircle className="w-4 h-4" />
+//               New Evaluation
+//             </Button>
+//           </div>
+//         </div>
 
-  const handleRowSelect = (selectedRows: any[]) => {
-    setSelectedEvaluations(selectedRows);
-  };
+//         <div className="max-w-screen-2xl mx-auto px-6 py-6 space-y-5">
 
-  const columns = [
-    { title: 'Code', data: 'evaluation_code' },
-    { title: 'Client', data: 'client_name' },
-    { title: 'Description', data: 'evaluation_desc' },
-    { title: 'Status', data: 'evaluation_status' },
-    { title: 'Request Date', data: 'evaluation_request_date' },
-    { title: 'Year', data: 'evaluation_year' },
-    { 
-      title: 'Result', 
-      data: 'evaluation_result',
-      render: (data: string) => {
-        const colorMap: Record<string, string> = {
-          'PROCESSING': 'bg-blue-100 text-blue-800',
-          'COMPLETED': 'bg-green-100 text-green-800',
-          'REJECTED': 'bg-red-100 text-red-800'
-        };
-        return `<span class="px-2 py-1 rounded text-xs ${colorMap[data] || 'bg-gray-100 text-gray-800'}">${data}</span>`;
-      }
-    }
-  ];
+//           <Collapsible open={addOpen} onOpenChange={setAddOpen}>
+//             <Card className="border-slate-200 shadow-sm">
+//               <CollapsibleTrigger asChild>
+//                 <CardHeader className="pb-3 cursor-pointer select-none hover:bg-slate-50/80 transition-colors rounded-t-xl">
+//                   <div className="flex items-center justify-between">
+//                     <div className="flex items-center gap-2">
+//                       <PlusCircle className="w-4 h-4 text-blue-600" />
+//                       <CardTitle className="text-sm font-semibold">
+//                         [GO.00.P01] Add Evaluation Request
+//                       </CardTitle>
+//                     </div>
+//                     <ChevronDown
+//                       className={cn(
+//                         'w-4 h-4 text-slate-400 transition-transform duration-200',
+//                         addOpen && 'rotate-180',
+//                       )}
+//                     />
+//                   </div>
+//                   <CardDescription className="text-xs mt-0.5">
+//                     Fill the form to add a new evaluation / operational scenario request
+//                   </CardDescription>
+//                 </CardHeader>
+//               </CollapsibleTrigger>
+//               <CollapsibleContent>
+//                 <Separator />
+//                 <CardContent className="pt-5">
+//                   <AddEvaluationForm
+//                     onSuccess={() => setAddOpen(false)}
+//                   />
+//                 </CardContent>
+//               </CollapsibleContent>
+//             </Card>
+//           </Collapsible>
 
-  return (
-    <div className={`min-h-screen ${isDark ? 'bg-slate-900' : 'bg-gray-50'}`}>
-      <div className="p-4 sm:p-6 lg:p-8">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className={`text-2xl sm:text-3xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-            Planning | Evaluation Dashboard
-          </h1>
-          <p className={`mt-1 text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-            Manage operational scenario evaluation requests
-          </p>
-        </div>
+//           <Card className="border-slate-200 shadow-sm">
+//             <CardHeader className="pb-3">
+//               <div className="flex items-center gap-2">
+//                 <BookOpen className="w-4 h-4 text-slate-500" />
+//                 <CardTitle className="text-sm font-semibold">
+//                   Evaluation — Operational Scenario Request Logbook
+//                 </CardTitle>
+//               </div>
+//               <CardDescription className="text-xs">
+//                 Registro delle Richieste Scenari Operativi
+//               </CardDescription>
+//             </CardHeader>
+//             <CardContent>
+//               <EvaluationTable  onView={handleView} />
+//             </CardContent>
+//           </Card>
 
-        {/* Add Evaluation Form */}
-        <div className="mb-6">
-          <CollapsibleForm
-            title="[GO.00.P01] Add Evaluation Request"
-            subtitle="Fill the form for adding a new evaluation request."
-            defaultOpen={false}
-            isDark={isDark}
-          >
-            <AddEvaluationForm 
-              onSubmit={handleAddEvaluation}
-              isDark={isDark}
-            />
-          </CollapsibleForm>
-        </div>
+//           {selectedEvaluation && !editOpen && (
+//             <Card className="border-slate-200 shadow-sm">
+//               <CardHeader className="pb-3">
+//                 <CardTitle className="text-sm font-semibold flex items-center gap-2">
+//                   Files —{' '}
+//                   <span className="font-mono text-xs text-slate-400">
+//                     EVAL_{selectedEvaluation.evaluation_id}
+//                   </span>{' '}
+//                   {selectedEvaluation.evaluation_desc}
+//                 </CardTitle>
+//               </CardHeader>
+//               <CardContent>
+//                 <EvaluationFilePanel
+//                   evaluationId={selectedEvaluation.evaluation_id}
+//                 />
+//               </CardContent>
+//             </Card>
+//           )}
+//         </div>
+//       </div>
 
-        {/* Evaluations Table */}
-        <div className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} rounded-lg shadow-sm border`}>
-          <div className={`p-4 border-b ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  Evaluation - Operational Scenario Request Logbook
-                </h2>
-                <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Operational Scenarios Request Log
-                </p>
-              </div>
+//       <EvaluationEditSheet
+//         evaluation={selectedEvaluation}
+//         open={editOpen}
+//         onOpenChange={(o) => {
+//           setEditOpen(o);
+//           if (!o && selectedEvaluation) {
+//           }
+//         }}
+//         onUpdated={(updated) => {
+//           setSelectedEvaluation(updated);
+//         }}
+//       />
+//     </>
+//   );
+// }
 
-              {selectedEvaluations.length > 0 && (
-                <div className="flex items-center space-x-2">
-                  <span className={`px-3 py-1 rounded-full text-sm ${
-                    isDark ? 'bg-blue-900 text-blue-200' : 'bg-blue-100 text-blue-800'
-                  }`}>
-                    {selectedEvaluations.length} selected
-                  </span>
-                  <div className="relative">
-                    <button
-                      className={`px-3 py-1 border rounded-lg text-sm ${
-                        isDark 
-                          ? 'border-slate-600 text-gray-300 hover:bg-slate-700' 
-                          : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                      }`}
-                    >
-                      Actions ▼
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="p-4">
-            {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-                <span className={`ml-3 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Loading evaluations...
-                </span>
-              </div>
-            ) : (
-              <DataTable
-                id="evaluationTableData"
-                columns={columns}
-                data={evaluations}
-                onRowSelect={handleRowSelect}
-                isDark={isDark}
-              />
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default EvaluationDashboard;
+// export default EvaluationDashboard

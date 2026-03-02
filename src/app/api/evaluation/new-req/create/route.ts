@@ -1,4 +1,4 @@
-import { createEvaluation } from '@/backend/services/planning/evaluation';
+import { createNewEvaluationRequest } from '@/backend/services/planning/evaluation';
 import { getUserSession } from '@/lib/auth/server-session';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     const ownerId = session.user.ownerId;
     const userId = session.user.userId;
     
-    const result = await createEvaluation(ownerId, userId, body.data);
+    const result = await createNewEvaluationRequest(ownerId, userId, body.data);
 
     return NextResponse.json(result);
   } catch (error) {
