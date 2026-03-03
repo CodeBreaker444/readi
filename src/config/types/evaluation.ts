@@ -42,7 +42,6 @@ export interface EvaluationFile {
 
 
 export interface CreateEvaluationInput {
-  fk_owner_id: number;
   fk_client_id: number;
   fk_luc_procedure_id: number;
   evaluation_status: EvaluationStatus;
@@ -52,7 +51,6 @@ export interface CreateEvaluationInput {
   evaluation_offer?: string;
   evaluation_sale_manager?: string;
   evaluation_result: EvaluationResult;
-  fk_user_id: number;
 }
 
 export interface UpdateEvaluationInput {

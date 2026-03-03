@@ -100,7 +100,6 @@ const AddPlanningForm: React.FC<AddPlanningFormProps> = ({ onSubmit, isDark = fa
     try {
       await onSubmit(formData);
       
-      // Reset form
       setFormData({
         fk_luc_procedure_id: 0,
         fk_evaluation_id: 0,

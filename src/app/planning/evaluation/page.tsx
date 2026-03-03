@@ -1,6 +1,6 @@
 'use client';
 
-// import EvaluationDashboard from "@/components/planning/EvaluationDashboard";
+import EvaluationDashboard from "@/components/planning/EvaluationDashboard";
 import { useTheme } from "@/components/useTheme";
 
 
@@ -9,7 +9,7 @@ export default function EvaluationPage() {
 
   return (
     <div className={`${isDark ? 'bg-slate-900' : 'bg-gray-50'}`}>
-      {/* <EvaluationDashboard isDark={isDark} /> */}
+      <EvaluationDashboard isDark={isDark} />
     </div>
   );
 }

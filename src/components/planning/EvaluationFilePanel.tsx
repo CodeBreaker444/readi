@@ -45,7 +45,6 @@ export function EvaluationFilePanel({
     const descRef = useRef<HTMLInputElement>(null);
     const verRef = useRef<HTMLInputElement>(null);
 
-    // Initial load only
     const fetchFiles = async () => {
         if (evaluationId <= 0) return;
         try {
@@ -63,7 +62,6 @@ export function EvaluationFilePanel({
         fetchFiles();
     }, [evaluationId]);
 
-    // ─── Handle Upload (Local State Update) ──────────────────────────────────
     async function handleUpload(e: React.FormEvent) {
         e.preventDefault();
         const file = fileInputRef.current?.files?.[0];
@@ -76,19 +74,16 @@ export function EvaluationFilePanel({
 
         try {
             setIsUploading(true);
-            // Assuming the API returns the new file object in res.data.data
             const res = await axios.post(`/api/evaluation/${evaluationId}/files`, fd, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
             
             const newFile = res.data.data;
 
-            // Update state locally by appending the new file
             setFiles((prev) => [...prev, newFile]);
             
             toast.success('File uploaded');
 
-            // Reset UI
             if (fileInputRef.current) fileInputRef.current.value = '';
             if (descRef.current) descRef.current.value = '';
         } catch (error) {
