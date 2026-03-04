@@ -1,15 +1,20 @@
-'use client';
+"use client";
 
-import PlanningDashboard from "@/components/planning/PlanningDashboard";
-import { useTheme } from "@/components/useTheme";
-
+import PlanningMissionContent from "@/components/planning/PlanningMissionContent";
+import { Suspense } from "react";
 
 export default function PlanningMissionPage() {
-  const { isDark } = useTheme();
-
   return (
-    <div className={`${isDark ? 'bg-slate-900' : 'bg-gray-50'}`}>
-      <PlanningDashboard isDark={isDark} />
-    </div>
+    <Suspense
+      fallback={
+        <div className="d-flex justify-content-center align-items-center vh-100">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+        </div>
+      }
+    >
+      <PlanningMissionContent />
+    </Suspense>
   );
 }

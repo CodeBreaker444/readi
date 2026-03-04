@@ -68,7 +68,7 @@ export function MissionLogbookTable({ data, loading, isDark }: LogbookTableProps
     const [globalFilter, setGlobalFilter] = useState("");
     const [pagination, setPagination] = useState({
         pageIndex: 0,
-        pageSize: 25
+        pageSize: 8
     });
 
     const columns = useMemo(() => getColumns(isDark), [isDark]);

@@ -1,170 +1,215 @@
-'use client';
-import { data } from '@/lib/mockdata';
-import React, { useEffect, useState } from 'react';
-import AddPlanningForm from './AddPlanningForm';
-import CollapsibleForm from './CollapsibleForm';
-import DataTable from './DataTable';
+"use client";
 
-interface PlanningDashboardProps {
-  isDark?: boolean;
-}
+import { Planning } from "@/config/types/evaluation-planning";
+import { cn } from "@/lib/utils";
+import axios from "axios";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
+import { getPlanningColumns } from "../tables/PlanningColumns";
+import AddPlanningForm, { AddPlanningFormData } from "./AddPlanningForm";
+import CollapsibleCard from "./CollapsibleCard";
+import PageHeader from "./PageHeader";
+import PlanningTableCard from "./PlanningTableCard";
 
-const PlanningDashboard: React.FC<PlanningDashboardProps> = ({ isDark = false }) => {
-  const [plannings, setPlannings] = useState<any[]>([]);
-  const [selectedPlannings, setSelectedPlannings] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useRouter } from "next/navigation";
 
-  useEffect(() => {
-    loadPlannings();
-  }, []);
-
-  const loadPlannings = async () => {
-    // try {
-    //   const response = await fetch('/api/planning/list');
-    //   const data = await response.json();
-      setPlannings(data.plannings);
-    // } catch (error) {
-    //   console.error('Error loading plannings:', error);
-    // } finally {
-    //   setLoading(false);
-    // }
-  };
-
-  const handleAddPlanning = async (formData: any) => {
-    try {
-      const response = await fetch('/api/planning/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(formData)
-      });
-
-      if (response.ok) {
-        alert('Planning added successfully!');
-        loadPlannings();
-      } else {
-        alert('Error adding planning');
-      }
-    } catch (error) {
-      console.error('Error adding planning:', error);
-      alert('Error adding planning');
-    }
-  };
-
-  const handleRowSelect = (selectedRows: any[]) => {
-    setSelectedPlannings(selectedRows);
-  };
-
-  const columns = [
-    { title: 'Code', data: 'planning_code' },
-    { title: 'Evaluation', data: 'evaluation_code' },
-    { title: 'Description', data: 'planning_desc' },
-    { title: 'Type', data: 'planning_type' },
-    { title: 'Status', data: 'planning_status' },
-    { title: 'Request Date', data: 'planning_request_date' },
-    { title: 'Year', data: 'planning_year' },
-    { title: 'Version', data: 'planning_ver' },
-    { 
-      title: 'Result', 
-      data: 'planning_result',
-      render: (data: string) => {
-        const colorMap: Record<string, string> = {
-          'PROGRESS': 'bg-blue-100 text-blue-800',
-          'COMPLETED': 'bg-green-100 text-green-800',
-          'REJECTED': 'bg-red-100 text-red-800'
-        };
-        return `<span class="px-2 py-1 rounded text-xs ${colorMap[data] || 'bg-gray-100 text-gray-800'}">${data}</span>`;
-      }
-    }
-  ];
-
-  return (
-    <div className={`min-h-screen ${isDark ? 'bg-slate-900' : 'bg-gray-50'}`}>
-      <div className="p-4 sm:p-6 lg:p-8">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className={`text-2xl sm:text-3xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-            Planning | Planning Dashboard
-          </h1>
-          <p className={`mt-1 text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-            Manage operational planning requests
-          </p>
-        </div>
-
-        {/* Add Planning Form */}
-        <div className="mb-6">
-          <CollapsibleForm
-            title="[GO.00.P01] Add Planning Request"
-            subtitle="Fill the form for adding a new planning."
-            defaultOpen={false}
-            isDark={isDark}
-          >
-            <AddPlanningForm 
-              onSubmit={handleAddPlanning}
-              isDark={isDark}
-            />
-          </CollapsibleForm>
-        </div>
-
-        {/* Plannings Table */}
-        <div className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} rounded-lg shadow-sm border`}>
-          <div className={`p-4 border-b ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  Planning - Operational Scenario Request Logbook
-                </h2>
-                <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Register of Operational Scenario Requests
-                </p>
-              </div>
-
-              {selectedPlannings.length > 0 && (
-                <div className="flex items-center space-x-2">
-                  <span className={`px-3 py-1 rounded-full text-sm ${
-                    isDark ? 'bg-blue-900 text-blue-200' : 'bg-blue-100 text-blue-800'
-                  }`}>
-                    {selectedPlannings.length} selected
-                  </span>
-                  <div className="relative">
-                    <button
-                      className={`px-3 py-1 border rounded-lg text-sm ${
-                        isDark 
-                          ? 'border-slate-600 text-gray-300 hover:bg-slate-700' 
-                          : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                      }`}
-                    >
-                      Actions ▼
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="p-4">
-            {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-                <span className={`ml-3 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Loading plannings...
-                </span>
-              </div>
-            ) : (
-              <DataTable
-                id="planningTableData"
-                columns={columns}
-                data={plannings}
-                onRowSelect={handleRowSelect}
-                isDark={isDark}
-              />
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+type PlanningProps = {
+  isDark: boolean;
 };
 
-export default PlanningDashboard;
+export default function PlanningDashboard({ isDark }: PlanningProps) {
+  const router = useRouter()
+  const [planningData, setPlanningData] = useState<Planning[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [globalFilter, setGlobalFilter] = useState("");
+  const [selectedRow, setSelectedRow] = useState<Planning | null>(null);
+
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [rowToDelete, setRowToDelete] = useState<Planning | null>(null);
+
+  const fetchPlanning = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get("/api/evaluation/planning");
+      setPlanningData(response.data.data || []);
+    } catch (err) {
+      console.error("fetchPlanning error:", err);
+      toast.error("Failed to fetch planning data");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchPlanning();
+  }, [fetchPlanning]);
+
+  const handleSubmit = async (form: AddPlanningFormData): Promise<void> => {
+    if (!form.fk_luc_procedure_id || !form.fk_evaluation_id) {
+      toast.error("Required fields are missing!");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const payload = {
+        fk_luc_procedure_id: Number(form.fk_luc_procedure_id),
+        fk_evaluation_id: Number(form.fk_evaluation_id),
+        fk_client_id: Number(form.fk_client_id),
+        planning_desc: form.planning_desc,
+        planning_status: form.planning_status,
+        planning_request_date: form.planning_request_date,
+        planning_year: Number(form.planning_year),
+        planning_type: form.planning_type,
+        planning_folder: form.planning_folder,
+        planning_result: "PROGRESS",
+      };
+
+      const response = await axios.post("/api/evaluation/planning", payload);
+
+      if (response.data.code === 1) {
+        toast.success("Planning request added successfully");
+        await fetchPlanning();
+      } else {
+        toast.error(response.data.message || "Error adding planning");
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Network error");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const triggerDeleteConfirm = useCallback((row: Planning) => {
+    setRowToDelete(row);
+    setDeleteDialogOpen(true);
+  }, []);
+
+  const handleDelete = async () => {
+    if (!rowToDelete) return;
+
+    const previousData = [...planningData];
+    const idToRemove = rowToDelete.planning_id;
+
+    try {
+      setPlanningData((prev) => prev.filter((p) => p.planning_id !== idToRemove));
+      if (selectedRow?.planning_id === idToRemove) setSelectedRow(null);
+      setDeleteDialogOpen(false);
+
+      const response = await axios.delete("/api/evaluation/planning", {
+        data: { planning_id: idToRemove },
+      });
+
+      if (response.data.code === 1) {
+        toast.success("Record deleted");
+      } else {
+        setPlanningData(previousData);
+        toast.error(response.data.message || "Error deleting");
+      }
+    } catch (err: any) {
+      setPlanningData(previousData);
+      toast.error(err.response?.data?.message || "Network error during deletion");
+    } finally {
+      setRowToDelete(null);
+    }
+  };
+
+  const handleOpen = (row: Planning) => {
+    router.push(
+      `/planning/planning-mission?c_id=${row.fk_client_id ?? 0}&e_id=${row.fk_evaluation_id}&p_id=${row.planning_id}`
+    );
+  };
+
+  const handleRowClick = useCallback((row: Planning) => {
+    setSelectedRow((prev) => (prev?.planning_id === row.planning_id ? null : row));
+  }, []);
+
+  const columns = useMemo(
+    () =>
+      getPlanningColumns({
+        isDark,
+        onDelete: triggerDeleteConfirm,
+        onOpen: handleOpen,
+        deleting: false,
+      }),
+    [isDark, triggerDeleteConfirm, handleOpen]
+  );
+
+  const bg = isDark ? "bg-slate-900" : "bg-slate-50";
+  const text = isDark ? "text-slate-100" : "text-slate-900";
+
+  return (
+    <div className={cn("min-h-screen transition-colors duration-200", bg, text)}>
+
+      <PageHeader
+        title="Planning Dashboard"
+        subtitle="Operational Scenario Request Logbook"
+        isDark={isDark}
+        selectedLabel={
+          selectedRow
+            ? `PLAN_${selectedRow.planning_year}_${selectedRow.planning_id} — ${selectedRow.planning_desc}`
+            : null
+        }
+        dropdownItems={[
+          { label: "Communications", onClick: () => console.log("Communications") },
+          { label: "Checklist", onClick: () => console.log("Checklist") },
+        ]}
+      />
+
+      <div className="mx-auto max-w-[1800px] px-6 py-6 space-y-6">
+        <CollapsibleCard
+          title="[GO.00.P01] Add Planning Request"
+          isDark={isDark}
+          defaultOpen={false}
+          collapsible
+        >
+          <AddPlanningForm isDark={isDark} onSubmit={handleSubmit} submitting={submitting} />
+        </CollapsibleCard>
+
+        <PlanningTableCard
+          data={planningData}
+          columns={columns}
+          loading={loading}
+          isDark={isDark}
+          globalFilter={globalFilter}
+          onGlobalFilterChange={setGlobalFilter}
+          selectedRowId={selectedRow?.planning_id ?? null}
+          onRowClick={handleRowClick}
+        />
+      </div>
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the planning request{" "}
+              <span className="font-bold text-destructive">
+                {rowToDelete ? `PLAN_${rowToDelete.planning_year}_${rowToDelete.planning_id}` : ""}
+              </span>.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Confirm Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
