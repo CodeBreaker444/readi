@@ -1,5 +1,6 @@
 'use client'
 
+import { ChecklistPreview } from '@/components/checklist/ChecklistUi';
 import { ChecklistForm, Modal } from '@/components/organization/ChecklistUi';
 import { getColumns } from '@/components/tables/CheckListColumn';
 import { TablePagination } from '@/components/tables/Pagination';
@@ -49,7 +50,7 @@ export default function ChecklistPage() {
     try {
       const res = await axios.get('/api/organization/checklist')
 
-      setChecklists(res.data.data ?? [])
+      setChecklists(res.data.result.data ?? [])
     } catch (error) {
       toast.error('Failed to load checklists')
       setChecklists([])
@@ -129,8 +130,8 @@ export default function ChecklistPage() {
       <div className="mx-auto">
 
         <div className={`top-0 z-10 backdrop-blur-md transition-colors w-full ${isDark
-            ? "bg-slate-900/80 border-b border-slate-800 text-white"
-            : "bg-white/80 border-b border-slate-200 text-slate-900 shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
+          ? "bg-slate-900/80 border-b border-slate-800 text-white"
+          : "bg-white/80 border-b border-slate-200 text-slate-900 shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
           } px-6 py-4 mb-8`}>
           <div className="mx-auto max-w-[1800px] flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -152,8 +153,8 @@ export default function ChecklistPage() {
                 onClick={load}
                 disabled={loading}
                 className={`h-8 gap-1.5 text-xs transition-all ${isDark
-                    ? "border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white"
-                    : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                  ? "border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white"
+                  : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
                   }`}
               >
                 <HiRefresh className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
@@ -226,10 +227,17 @@ export default function ChecklistPage() {
         <ChecklistForm initial={editInitial} onSubmit={handleUpdate} loading={submitting} submitLabel="Save Changes" isDark={isDark} />
       </Modal>
 
-      <Modal open={!!previewItem} title={`JSON Schema — ${previewItem?.checklist_code}`} onClose={() => setPreviewItem(null)} isDark={isDark}>
-        <pre className={`rounded-lg p-4 text-xs font-mono leading-relaxed overflow-x-auto max-h-[60vh] whitespace-pre-wrap ${isDark ? 'bg-slate-950 text-blue-400' : 'bg-slate-50 text-blue-700'}`}>
-          {previewItem?.checklist_json ? JSON.stringify(previewItem.checklist_json, null, 2) : '// No schema defined'}
-        </pre>
+      <Modal open={!!previewItem} title={`Preview — ${previewItem?.checklist_code}`} onClose={() => setPreviewItem(null)} isDark={isDark}>
+        {previewItem?.checklist_json && (
+          <ChecklistPreview
+            checklistJson={
+              typeof previewItem.checklist_json === 'string'
+                ? previewItem.checklist_json
+                : JSON.stringify(previewItem.checklist_json, null, 2)
+            }
+            isDark={isDark}
+          />
+        )}
       </Modal>
 
       <Modal open={!!confirmDelete} title="Delete Checklist" onClose={() => setConfirmDelete(null)} isDark={isDark}>
