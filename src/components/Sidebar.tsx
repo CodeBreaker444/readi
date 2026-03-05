@@ -44,7 +44,7 @@ const navigationItems: NavItem[] = [
     subItems: [
       { name: 'P00 – New Evaluation Request', href: '/planning/new-evaluation' },
       { name: 'P01 – Evaluation', href: '/planning/evaluation' },
-      { name: 'P02 – Planning Mission', href: '/planning/planning-mission' },
+      { name: 'P02 – Planning Dashboard', href: '/planning/planning-dashboard' },
       // { name: 'P03 – Test Mission', href: '/planning/test-mission' },
       { name: 'P04 – Mission Templates', href: '/planning/mission-template' }
     ]

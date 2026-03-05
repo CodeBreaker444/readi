@@ -1,21 +1,33 @@
-'use client';
-import React, { useEffect, useState } from 'react';
+"use client";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { Client } from "@/config/types/evaluation-planning";
+import { cn } from "@/lib/utils";
+import axios from "axios";
+import { Loader2 } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 interface LUCProcedure {
-  id: number;
-  name: string;
+  luc_procedure_id: number;
+  luc_procedure_desc: string;
+  luc_procedure_code: string;
 }
 
 interface Evaluation {
-  id: number;
-  code: string;
-  description: string;
+  evaluation_id: number;
+  evaluation_desc: string;
 }
 
-interface AddPlanningFormData {
+export interface AddPlanningFormData {
   fk_luc_procedure_id: number;
   fk_evaluation_id: number;
   planning_folder: string;
+  fk_client_id: number;
   planning_status: string;
   planning_request_date: string;
   planning_year: number;
@@ -28,22 +40,29 @@ interface AddPlanningFormData {
 interface AddPlanningFormProps {
   onSubmit: (data: AddPlanningFormData) => Promise<void>;
   isDark?: boolean;
+  submitting: boolean;
 }
 
-const AddPlanningForm: React.FC<AddPlanningFormProps> = ({ onSubmit, isDark = false }) => {
+const STATUS_OPTIONS = [
+  { value: "NEW", label: "New planning" },
+  { value: "PROCESSING", label: "Under planning" },
+  { value: "REQ_FEEDBACK", label: "Under Manager feedback" },
+  { value: "POSITIVE_RESULT", label: "Completed Positive" },
+  { value: "NEGATIVE_RESULT", label: "Completed Refused" },
+];
+
+const AddPlanningForm: React.FC<AddPlanningFormProps> = ({ isDark, onSubmit, submitting }) => {
   const currentYear = new Date().getFullYear();
-  
+  const [fetching, setFetching] = useState(true);
+  const yearOptions = [currentYear - 1, currentYear, currentYear + 1, currentYear + 2];
+  const [clients, setClients] = useState<Client[]>([]);
+
   const [formData, setFormData] = useState<AddPlanningFormData>({
-    fk_luc_procedure_id: 0,
-    fk_evaluation_id: 0,
-    planning_folder: '',
-    planning_status: 'NEW',
-    planning_request_date: new Date().toISOString().split('T')[0],
-    planning_year: currentYear,
-    planning_desc: '',
-    planning_type: '',
-    planning_ver: '1.0',
-    planning_result: 'PROGRESS'
+    fk_luc_procedure_id: 0, fk_evaluation_id: 0, fk_client_id: 0,
+    planning_folder: "",
+    planning_status: "NEW", planning_request_date: new Date().toISOString().split("T")[0],
+    planning_year: currentYear, planning_desc: "", planning_type: "",
+    planning_ver: "1.0", planning_result: "PROGRESS",
   });
 
   const [lucProcedures, setLUCProcedures] = useState<LUCProcedure[]>([]);
@@ -51,253 +70,196 @@ const AddPlanningForm: React.FC<AddPlanningFormProps> = ({ onSubmit, isDark = fa
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    loadLUCProcedures();
-    loadEvaluations();
+    const loadInitialData = async () => {
+      setFetching(true);
+      try {
+        await Promise.all([loadLUCProcedures(), loadEvaluations(), loadClients()]);
+      } finally {
+        setFetching(false);
+      }
+    };
+    loadInitialData();
   }, []);
 
   const loadLUCProcedures = async () => {
     try {
-      const response = await fetch('/api/luc-procedures?type=PLANNING');
-      const data = await response.json();
-      setLUCProcedures(data);
-    } catch (error) {
-      console.error('Error loading LUC procedures:', error);
-    }
+      const res = await axios.get("/api/evaluation/luc-procedures?type=PLANNING");
+      setLUCProcedures(res.data.data ?? []);
+    } catch (err) { toast.error("Error loading LUC procedures"); }
   };
+
+  const loadClients = async () => {
+    try {
+      const res = await axios.get("/api/client/list");
+      setClients(res.data.data ?? []);
+    } catch (err) { toast.error("Error loading clients"); }
+  };
+
 
   const loadEvaluations = async () => {
     try {
-      const response = await fetch('/api/evaluations');
-      const data = await response.json();
-      setEvaluations(data);
-    } catch (error) {
-      console.error('Error loading evaluations:', error);
-    }
+      const res = await axios.get("/api/evaluation");
+      setEvaluations(res.data.data?.data ?? []);
+    } catch (err) { toast.error("Error loading evaluations"); }
   };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: name.includes('_id') || name === 'planning_year' ? parseInt(value) : value
-    }));
-  };
+  const updateField = (name: string, value: string | number) =>
+    setFormData((prev) => ({ ...prev, [name]: value }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (formData.fk_luc_procedure_id === 0) {
-      alert('Please select a LUC procedure');
-      return;
-    }
-    
-    if (formData.fk_evaluation_id === 0) {
-      alert('Please select an evaluation');
-      return;
-    }
-    
+    if (formData.fk_luc_procedure_id === 0) { toast.error("Please select a LUC procedure"); return; }
+    if (formData.fk_evaluation_id === 0) { toast.error("Please select an evaluation"); return; }
     setLoading(true);
     try {
       await onSubmit(formData);
-      
-      // Reset form
       setFormData({
         fk_luc_procedure_id: 0,
         fk_evaluation_id: 0,
-        planning_folder: '',
-        planning_status: 'NEW',
-        planning_request_date: new Date().toISOString().split('T')[0],
-        planning_year: currentYear,
-        planning_desc: '',
-        planning_type: '',
-        planning_ver: '1.0',
-        planning_result: 'PROGRESS'
+        fk_client_id: 0,
+        planning_folder: "",
+        planning_status: "NEW", planning_request_date: new Date().toISOString().split("T")[0],
+        planning_year: currentYear, planning_desc: "", planning_type: "",
+        planning_ver: "1.0", planning_result: "PROGRESS"
       });
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
-  const inputClass = `w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-    isDark 
-      ? 'bg-slate-700 border-slate-600 text-white' 
-      : 'bg-white border-gray-300 text-gray-900'
-  }`;
-
-  const labelClass = `block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`;
+  const textMuted = isDark ? "text-slate-400" : "text-slate-500";
+  const labelCn = cn("text-xs font-medium", isDark ? "text-slate-300" : "text-slate-700");
+  const inputCn = cn(isDark
+    ? "bg-slate-700 border-slate-600 text-white placeholder:text-slate-400 focus-visible:ring-violet-500"
+    : "bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 focus-visible:ring-violet-500");
+  const selectTriggerCn = cn("h-9", isDark
+    ? "bg-slate-700 border-slate-600 text-white focus:ring-violet-500"
+    : "bg-white border-slate-300 text-slate-900 focus:ring-violet-500");
+  const selectContentCn = cn(isDark
+    ? "bg-slate-800 border-slate-700 text-white"
+    : "bg-white border-slate-200 text-slate-900");
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="px-5 py-5">
+      <p className={cn("text-xs mb-5", textMuted)}>Fill the form below to create a new planning request.</p>
+      <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-          <label htmlFor="fk_luc_procedure_id" className={labelClass}>
-            LUC Procedure
-          </label>
-          <select
-            id="fk_luc_procedure_id"
-            name="fk_luc_procedure_id"
-            value={formData.fk_luc_procedure_id}
-            onChange={handleChange}
-            required
-            className={inputClass}
-          >
-            <option value={0}>Select LUC Procedure for this Task</option>
-            {lucProcedures.map(procedure => (
-              <option key={procedure.id} value={procedure.id}>
-                {procedure.name}
-              </option>
-            ))}
-          </select>
+          <p className={cn("text-[11px] font-semibold uppercase tracking-wider mb-3", textMuted)}>Primary References</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label className={labelCn}>LUC Procedure <span className="text-red-400">*</span></Label>
+              <Select
+                disabled={fetching}
+                value={formData.fk_luc_procedure_id === 0 ? undefined : String(formData.fk_luc_procedure_id)}
+                onValueChange={(val) => updateField("fk_luc_procedure_id", parseInt(val))}
+              >
+                <SelectTrigger className={selectTriggerCn}>
+                  <SelectValue placeholder={fetching ? "Loading procedures..." : "Select LUC Procedure"} />
+                </SelectTrigger>
+                <SelectContent className={selectContentCn}>
+                  {lucProcedures.map((p) => (
+                    <SelectItem key={p.luc_procedure_id} value={String(p.luc_procedure_id)}>
+                      {p.luc_procedure_code} - {p.luc_procedure_desc}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className={labelCn}>Evaluation Code <span className="text-red-400">*</span></Label>
+              <Select
+                disabled={fetching}
+                value={formData.fk_evaluation_id === 0 ? undefined : String(formData.fk_evaluation_id)}
+                onValueChange={(val) => updateField("fk_evaluation_id", parseInt(val))}
+              >
+                <SelectTrigger className={selectTriggerCn}>
+                  <SelectValue placeholder={fetching ? "Loading evaluations..." : "Select Evaluation"} />
+                </SelectTrigger>
+                <SelectContent className={selectContentCn}>
+                  {evaluations.map((ev) => (
+                    <SelectItem key={ev.evaluation_id} value={String(ev.evaluation_id)}>
+                      {ev.evaluation_desc}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className={labelCn}>Client <span className="text-red-400">*</span></Label>
+              <Select
+                disabled={fetching}
+                value={formData.fk_client_id === 0 ? undefined : String(formData.fk_client_id)}
+                onValueChange={(val) => updateField("fk_client_id", parseInt(val))}
+              >
+                <SelectTrigger className={selectTriggerCn}>
+                  <SelectValue placeholder={fetching ? "Loading clients..." : "Select Client"} />
+                </SelectTrigger>
+                <SelectContent className={selectContentCn}>
+                  {clients.map((c) => (
+                    <SelectItem key={c.client_id} value={String(c.client_id)}>
+                      {c.client_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </div>
 
-        <div>
-          <label htmlFor="fk_evaluation_id" className={labelClass}>
-            Evaluation Code
-          </label>
-          <select
-            id="fk_evaluation_id"
-            name="fk_evaluation_id"
-            value={formData.fk_evaluation_id}
-            onChange={handleChange}
-            required
-            className={inputClass}
-          >
-            <option value={0}>Select the Evaluation for this Task</option>
-            {evaluations.map(evaluation => (
-              <option key={evaluation.id} value={evaluation.id}>
-                {evaluation.code} - {evaluation.description}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-          <label htmlFor="planning_folder" className={labelClass}>
-            Folder Docs
-          </label>
-          <input
-            type="text"
-            id="planning_folder"
-            name="planning_folder"
-            value={formData.planning_folder}
-            onChange={handleChange}
-            className={inputClass}
-          />
-        </div>
+        <Separator className={isDark ? "bg-slate-700" : "bg-slate-200"} />
 
         <div>
-          <label htmlFor="planning_status" className={labelClass}>
-            Status
-          </label>
-          <select
-            id="planning_status"
-            name="planning_status"
-            value={formData.planning_status}
-            onChange={handleChange}
-            className={inputClass}
-          >
-            <option value="NEW">New planning</option>
-            <option value="PROCESSING">Under planning</option>
-            <option value="REQ_FEEDBACK">Under Manager feedback</option>
-            <option value="POSITIVE_RESULT">Completed Positive</option>
-            <option value="NEGATIVE_RESULT">Completed Refused</option>
-          </select>
+          <p className={cn("text-[11px] font-semibold uppercase tracking-wider mb-3", textMuted)}>Planning Configuration</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="space-y-1.5">
+              <Label className={labelCn}>Folder Docs</Label>
+              <Input value={formData.planning_folder} onChange={(e) => updateField("planning_folder", e.target.value)} placeholder="Document folder path" className={cn("h-9", inputCn)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label className={labelCn}>Status</Label>
+              <Select value={formData.planning_status} onValueChange={(val) => updateField("planning_status", val)}>
+                <SelectTrigger className={selectTriggerCn}><SelectValue /></SelectTrigger>
+                <SelectContent className={selectContentCn}>
+                  {STATUS_OPTIONS.map((o) => (<SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className={labelCn}>Request Date <span className="text-red-400">*</span></Label>
+              <Input type="date" value={formData.planning_request_date} onChange={(e) => updateField("planning_request_date", e.target.value)} className={cn("h-9", inputCn)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label className={labelCn}>Year Reference</Label>
+              <Select value={String(formData.planning_year)} onValueChange={(val) => updateField("planning_year", parseInt(val))}>
+                <SelectTrigger className={selectTriggerCn}><SelectValue /></SelectTrigger>
+                <SelectContent className={selectContentCn}>{yearOptions.map((y) => (<SelectItem key={y} value={String(y)}>{y}</SelectItem>))}</SelectContent>
+              </Select>
+            </div>
+          </div>
         </div>
+
+        <Separator className={isDark ? "bg-slate-700" : "bg-slate-200"} />
 
         <div>
-          <label htmlFor="planning_request_date" className={labelClass}>
-            Request Date
-          </label>
-          <input
-            type="date"
-            id="planning_request_date"
-            name="planning_request_date"
-            value={formData.planning_request_date}
-            onChange={handleChange}
-            required
-            className={inputClass}
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div>
-          <label htmlFor="planning_year" className={labelClass}>
-            Year Reference
-          </label>
-          <select
-            id="planning_year"
-            name="planning_year"
-            value={formData.planning_year}
-            onChange={handleChange}
-            className={inputClass}
-          >
-            <option value={currentYear - 1}>{currentYear - 1}</option>
-            <option value={currentYear}>{currentYear}</option>
-            <option value={currentYear + 1}>{currentYear + 1}</option>
-            <option value={currentYear + 2}>{currentYear + 2}</option>
-          </select>
+          <p className={cn("text-[11px] font-semibold uppercase tracking-wider mb-3", textMuted)}>Details</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="space-y-1.5">
+              <Label className={labelCn}>Description</Label>
+              <Input value={formData.planning_desc} onChange={(e) => updateField("planning_desc", e.target.value)} placeholder="Planning description..." className={cn("h-9", inputCn)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label className={labelCn}>Type</Label>
+              <Input value={formData.planning_type} onChange={(e) => updateField("planning_type", e.target.value)} placeholder="e.g. STANDARD, CUSTOM" className={cn("h-9", inputCn)} />
+            </div>
+          </div>
         </div>
 
-        <div>
-          <label htmlFor="planning_desc" className={labelClass}>
-            Description
-          </label>
-          <input
-            type="text"
-            id="planning_desc"
-            name="planning_desc"
-            value={formData.planning_desc}
-            onChange={handleChange}
-            className={inputClass}
-          />
-        </div>
+        <Separator className={isDark ? "bg-slate-700" : "bg-slate-200"} />
 
-        <div>
-          <label htmlFor="planning_type" className={labelClass}>
-            Type
-          </label>
-          <input
-            type="text"
-            id="planning_type"
-            name="planning_type"
-            value={formData.planning_type}
-            onChange={handleChange}
-            className={inputClass}
-          />
+        <div className="flex justify-start">
+          <Button type="submit" disabled={loading || submitting} className="bg-violet-600 hover:bg-violet-700 text-white h-9 px-6">
+            {loading || submitting ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Adding...</>) : "Add New Planning"}
+          </Button>
         </div>
-
-        <div>
-          <label htmlFor="planning_ver" className={labelClass}>
-            Version
-          </label>
-          <input
-            type="text"
-            id="planning_ver"
-            name="planning_ver"
-            value={formData.planning_ver}
-            onChange={handleChange}
-            className={inputClass}
-          />
-        </div>
-      </div>
-
-      <div className="flex justify-start">
-        <button
-          type="submit"
-          disabled={loading}
-          className={`px-6 py-2 rounded-lg font-medium transition-colors ${
-            loading
-              ? 'bg-gray-400 cursor-not-allowed'
-              : 'bg-blue-600 hover:bg-blue-700 text-white'
-          }`}
-        >
-          {loading ? 'Adding...' : 'Add New Planning'}
-        </button>
-      </div>
-    </form>
+      </form>
+    </div>
   );
 };
 

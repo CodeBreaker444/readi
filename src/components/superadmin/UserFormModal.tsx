@@ -32,6 +32,7 @@ const ROLE_OPTIONS = [
 
 interface UserFormModalProps {
   isOpen: boolean;
+  clients: { client_id: number, client_name: string }[];
   onClose: () => void;
   mode: 'add' | 'edit';
   userData?: any;
@@ -39,13 +40,14 @@ interface UserFormModalProps {
   isDark: boolean;
 }
 
-export function UserFormModal({ isOpen, onClose, mode, userData, onSubmit, isDark }: UserFormModalProps) {
+export function UserFormModal({ isOpen, clients, onClose, mode, userData, onSubmit, isDark }: UserFormModalProps) {
   const [formData, setFormData] = useState(userData || {
     username: '',
     fullname: '',
     email: '',
     phone: '',
-    fk_user_profile_id: 9,
+    fk_user_profile_id: 0,
+    fk_client_id: 0,
     user_type: 'EMPLOYEE',
     is_viewer: 'N',
     is_manager: 'N',
@@ -118,6 +120,27 @@ export function UserFormModal({ isOpen, onClose, mode, userData, onSubmit, isDar
               />
             </div>
           </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="client">Assign Client</Label>
+              <Select
+                value={formData.fk_client_id?.toString()}
+                onValueChange={(value) => setFormData({ ...formData, fk_client_id: parseInt(value) })}
+              >
+                <SelectTrigger className={isDark ? 'bg-slate-900 border-slate-700' : ''}>
+                  <SelectValue placeholder="Select a Client" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">Select a Client</SelectItem>
+                  {clients.map((client) => (
+                    <SelectItem key={client.client_id} value={client.client_id.toString()}>
+                      {client.client_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            </div>
 
           <div className="grid grid-cols-2 gap-36">
             <div>
@@ -130,6 +153,7 @@ export function UserFormModal({ isOpen, onClose, mode, userData, onSubmit, isDar
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="0">Select a Role</SelectItem>
                   {ROLE_OPTIONS.map((role) => (
                     <SelectItem key={role.value} value={role.value.toString()}>
                       {role.label}

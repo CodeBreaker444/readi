@@ -1,7 +1,7 @@
- 
-// import { addEvaluationFile, getEvaluationFiles } from '@/backend/services/planning/evaluation-service';
+
+import { addEvaluationFile, deleteEvaluationFile, getEvaluationFiles } from '@/backend/services/planning/evaluation-service';
 import { getUserSession } from '@/lib/auth/server-session';
-import { buildS3Url, uploadFileToS3 } from '@/lib/s3Client';
+import { buildS3Url, deleteFileFromS3, uploadFileToS3 } from '@/lib/s3Client';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -10,11 +10,13 @@ interface Params { params: Promise<{ id: string }> }
 export async function GET(req: NextRequest, { params }: Params) {
   try {
     const { id } = await params
-     
-    
+    const session = await getUserSession()
+    if (!session) {
+      return NextResponse.json({ code: 0, message: 'Unauthorized' }, { status: 401 });
+    }
 
-    // const files = await getEvaluationFiles(id.data, ownerId.data);
-    // return NextResponse.json({ code: 1, dataRows: files.length, data: files });
+    const files = await getEvaluationFiles(Number(id), session.user.ownerId);
+    return NextResponse.json({ code: 1, dataRows: files.length, data: files });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
     return NextResponse.json({ code: 0, message }, { status: 500 });
@@ -25,9 +27,8 @@ export async function POST(req: NextRequest, { params }: Params) {
   try {
 
     const session = await getUserSession()
-    if(!session)
-    {
-        return NextResponse.json({message:'Unauthorized'}, { status:401 } )
+    if (!session) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
     }
 
     const { id } = await params
@@ -38,11 +39,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       return NextResponse.json({ code: 0, message: 'No file provided' }, { status: 400 });
     }
 
-    const ownerId = z.coerce
-      .number()
-      .int()
-      .positive()
-      .safeParse(formData.get('fk_owner_id'));
+ 
     const clientId = z.coerce
       .number()
       .int()
@@ -54,7 +51,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       .positive()
       .safeParse(formData.get('fk_user_id') ?? '1');
 
-    if (!ownerId.success || !clientId.success) {
+    if (!clientId.success) {
       return NextResponse.json(
         { code: 0, message: 'Missing owner_id or client_id' },
         { status: 400 },
@@ -68,60 +65,55 @@ export async function POST(req: NextRequest, { params }: Params) {
 
     const fileSizeMB = file.size / (1024 * 1024);
 
-    // const saved = await addEvaluationFile({
-    //   fk_owner_id: ownerId.data,
-    //   fk_user_id: userId.data ?? 1,
-    //   fk_client_id: clientId.data,
-    //   fk_evaluation_id: Number(id),
-    //   evaluation_file_desc: (formData.get('evaluation_file_desc') as string) ?? '',
-    //   evaluation_file_folder: key,           
-    //   evaluation_file_filename: file.name,
-    //   evaluation_file_filesize: parseFloat(fileSizeMB.toFixed(2)),
-    //   evaluation_file_ver: (formData.get('evaluation_file_ver') as string) ?? '1.0',
-    // });
+    const saved = await addEvaluationFile({
+      fk_owner_id: session.user.ownerId,
+      fk_user_id: userId.data ?? 1,
+      fk_client_id: clientId.data,
+      fk_evaluation_id: Number(id),
+      evaluation_file_desc: (formData.get('evaluation_file_desc') as string) ?? '',
+      evaluation_file_folder: key,           
+      evaluation_file_filename: file.name,
+      evaluation_file_filesize: parseFloat(fileSizeMB.toFixed(2)),
+      evaluation_file_ver: (formData.get('evaluation_file_ver') as string) ?? '1.0',
+    });
 
-    // return NextResponse.json(
-    //   {
-    //     code: 1,
-    //     message: 'File uploaded',
-    //     dataRows: 1,
-    //     data: saved,
-    //     param: {
-    //       fk_owner_id: ownerId.data,
-    //       fk_evaluation_id: id,
-    //       s3_url: s3Url,
-    //     },
-    //   },
-    //   { status: 201 },
-    // );
+    return NextResponse.json(
+      {
+        code: 1,
+        message: 'File uploaded',
+        dataRows: 1,
+        data: saved,
+        param: {
+          fk_owner_id: session.user.ownerId,
+          fk_evaluation_id: id,
+          s3_url: s3Url,
+        },
+      },
+      { status: 201 },
+    );
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
     return NextResponse.json({ code: 0, message }, { status: 500 });
   }
 }
 
-// DELETE /api/evaluations/[id]/files  body: { file_id, owner_id }
 export async function DELETE(req: NextRequest, { params }: Params) {
   try {
-    // const _id = z.coerce.number().int().positive().safeParse(params.id);
-    // if (!_id.success) {
-    //   return NextResponse.json({ code: 0, message: 'Invalid ID' }, { status: 400 });
-    // }
-
-    const body = await req.json();
-    const fileId = z.coerce.number().int().positive().safeParse(body.file_id);
-    const ownerId = z.coerce.number().int().positive().safeParse(body.owner_id);
-
-    if (!fileId.success || !ownerId.success) {
-      return NextResponse.json({ code: 0, message: 'Missing file_id or owner_id' }, { status: 400 });
+    const id = await params
+      const session = await getUserSession()
+    if (!session) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
     }
 
-    // const { file_folder } = await deleteEvaluationFile(fileId.data, ownerId.data);
+    const body = await req.json();
+
+
+    const { file_folder } = await deleteEvaluationFile(Number(id), session.user.ownerId);
 
     try {
-    //   await deleteFileFromS3(file_folder);
+        await deleteFileFromS3(file_folder);
     } catch {
-    //   console.warn('S3 delete failed for key:', file_folder);
+        console.warn('S3 delete failed for key:', file_folder);
     }
 
     return NextResponse.json({ code: 1, message: 'File deleted' });

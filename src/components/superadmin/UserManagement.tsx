@@ -50,6 +50,7 @@ const STAT_CONFIG = [
 export default function UserManagement({ session }: UserManagementProps) {
   const { isDark } = useTheme();
   const [users, setUsers] = useState<UserData[]>([]);
+  const [clients, setClients] = useState<{ client_id: number, client_name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
@@ -58,7 +59,23 @@ export default function UserManagement({ session }: UserManagementProps) {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
 
-  useEffect(() => { fetchUsers(); }, []);
+
+  useEffect(() => {
+    fetchUsers();
+    fetchClients();
+  }, []);
+
+  const fetchClients = async () => {
+    try {
+      const res = await axios.get('/api/client/list');
+      const data = res.data;
+      if (data.code === 1 && data.data) {
+        setClients(data.data);
+      }
+    } catch (e) {
+      console.error("Failed to fetch clients", e);
+    }
+  };
 
   const fetchUsers = async () => {
     try {
@@ -94,7 +111,7 @@ export default function UserManagement({ session }: UserManagementProps) {
           fullname: formData.fullname,
           email: formData.email,
           phone: formData.phone || '',
-          fk_client_id: 0,
+          fk_client_id: formData.fk_client_id,
           profile: formData.fk_user_profile_id,
           ownerTerritorialUnit: 0,
           user_type: formData.user_type,
@@ -143,7 +160,7 @@ export default function UserManagement({ session }: UserManagementProps) {
     return matchesSearch && matchesRole && matchesStatus;
   }), [users, searchTerm, roleFilter, statusFilter]);
 
-    const columns = useMemo(() => getUserColumns({ isDark, onEdit: handleEdit, onDelete: handleDelete }), [isDark]);
+  const columns = useMemo(() => getUserColumns({ isDark, onEdit: handleEdit, onDelete: handleDelete }), [isDark]);
 
   const table = useReactTable({
     data: filteredData,
@@ -287,10 +304,10 @@ export default function UserManagement({ session }: UserManagementProps) {
       </div>
 
       {showAddModal && (
-        <UserFormModal isOpen={showAddModal} onClose={() => setShowAddModal(false)} mode="add" onSubmit={handleAddUser} isDark={isDark} />
+        <UserFormModal isOpen={showAddModal} clients={clients} onClose={() => setShowAddModal(false)} mode="add" onSubmit={handleAddUser} isDark={isDark} />
       )}
       {showEditModal && selectedUser && (
-        <UserFormModal isOpen={showEditModal} onClose={() => { setShowEditModal(false); setSelectedUser(null); }} mode="edit" userData={selectedUser} onSubmit={handleUpdateUser} isDark={isDark} />
+        <UserFormModal isOpen={showEditModal}  clients={clients} onClose={() => { setShowEditModal(false); setSelectedUser(null); }} mode="edit" userData={selectedUser} onSubmit={handleUpdateUser} isDark={isDark} />
       )}
     </div>
   );
