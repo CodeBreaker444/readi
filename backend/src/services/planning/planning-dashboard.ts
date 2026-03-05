@@ -1,5 +1,6 @@
 import { supabase } from "@/backend/database/database";
 import { DroneTool, MissionTemplate, PilotUser, PlanningLogbookRow, PlanningTestLogbookRow, RepositoryFile } from "@/config/types/evaluation-planning";
+import { deleteFileFromS3, getPresignedDownloadUrl } from "@/lib/s3Client";
 
 
 type CreatePlanning = {
@@ -388,15 +389,70 @@ export async function addMissionPlanningLogbook(params: {
 }
 
 export async function deleteMissionPlanningLogbook(
+  ownerId: number,
   missionPlanningId: number
-) {
-  const { error } = await supabase
+): Promise<{ deletedId: number; hadTestEntries: boolean }> {
+  const { data: existing, error: fetchError } = await supabase
+    .from("planning_logbook")
+    .select(
+      "mission_planning_id, mission_planning_code, mission_planning_folder"
+    )
+    .eq("mission_planning_id", missionPlanningId)
+    .eq("fk_owner_id", ownerId)
+    .single();
+
+  if (fetchError || !existing) {
+    throw new Error(
+      "Mission planning logbook entry not found or access denied"
+    );
+  }
+
+  const { data: relatedTests } = await supabase
+    .from("planning_test_logbook")
+    .select("test_id, mission_test_s3_key")
+    .eq("fk_mission_planning_id", missionPlanningId)
+    .eq("fk_owner_id", ownerId);
+
+  const hadTestEntries = (relatedTests?.length ?? 0) > 0;
+
+  if (hadTestEntries) {
+    for (const test of relatedTests!) {
+      if (test.mission_test_s3_key) {
+        try {
+          await deleteFileFromS3(test.mission_test_s3_key);
+        } catch (s3Err) {
+          console.error(
+            `Failed to delete S3 file for test ${test.test_id}:`,
+            s3Err
+          );
+        }
+      }
+    }
+
+    const { error: testDeleteError } = await supabase
+      .from("planning_test_logbook")
+      .delete()
+      .eq("fk_mission_planning_id", missionPlanningId)
+      .eq("fk_owner_id", ownerId);
+
+    if (testDeleteError) {
+      throw new Error(
+        `Failed to delete related test entries: ${testDeleteError.message}`
+      );
+    }
+  }
+
+  const { error: deleteError } = await supabase
     .from("planning_logbook")
     .delete()
-    .eq("mission_planning_id", missionPlanningId);
+    .eq("mission_planning_id", missionPlanningId)
+    .eq("fk_owner_id", ownerId);
 
-  if (error) throw new Error(error.message);
-  return { deleted: true };
+  if (deleteError) {
+    throw new Error(`deleteMissionPlanningLogbook: ${deleteError.message}`);
+  }
+
+  return { deletedId: missionPlanningId, hadTestEntries };
 }
 
  
@@ -417,18 +473,25 @@ export async function movePlanningToTesting(
 
 export async function getRepositoryList(
   ownerId: number,
-  repositoryType: string
+  repositoryType: string,
+  planningId?: number
 ): Promise<RepositoryFile[]> {
-  const { data, error } = await supabase
+  let query = supabase
     .from("repository_file")
     .select("*")
     .eq("fk_owner_id", ownerId)
-    .eq("file_category", repositoryType)
-    .order("file_id", { ascending: false });
+    .eq("file_category", repositoryType);
+
+  if (planningId) {
+    query = query.contains("file_metadata", { planning_id: planningId });
+  }
+
+  const { data, error } = await query.order("file_id", { ascending: false });
 
   if (error || !data) return [];
   return data as RepositoryFile[];
 }
+
 
 export async function createCommunication(params: {
   fk_owner_id: number;
@@ -511,12 +574,11 @@ export async function getPilotList(ownerId: number): Promise<PilotUser[]> {
       last_name,
       email,
       user_role,
-      user_owner!inner (fk_owner_id)
+      user_active
     `
     )
-    .eq("user_owner.fk_owner_id", ownerId)
+    .eq("fk_owner_id", ownerId)
     .eq("user_role", "PIC")
-    .eq("user_active", "Y")
     .order("last_name", { ascending: true });
 
   if (error || !data) return [];
@@ -524,8 +586,10 @@ export async function getPilotList(ownerId: number): Promise<PilotUser[]> {
   return data.map((row: any) => ({
     user_id: row.user_id,
     fullname: `${row.first_name} ${row.last_name}`,
+    username: row.username,
     email: row.email,
     pilot_status_desc: row.user_role,
+    userActive: row.user_active
   })) as PilotUser[];
 }
 
@@ -541,4 +605,57 @@ export async function getMissionTemplateList(
 
   if (error || !data) return [];
   return data as MissionTemplate[];
+}
+
+export async function getMissionTestRepositoryFiles(
+  ownerId: number,
+  planningId: number
+) {
+  const { data, error } = await supabase
+    .from("planning_test_logbook")
+    .select(
+      `
+      test_id,
+      test_code,
+      mission_test_filename,
+      mission_test_filesize,
+      mission_test_s3_key,
+      mission_test_result,
+      created_at
+    `
+    )
+    .eq("fk_owner_id", ownerId)
+    .eq("fk_planning_id", planningId)
+    .not("mission_test_s3_key", "is", null)
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error(`getMissionTestRepositoryFiles: ${error.message}`);
+
+  const files = [];
+  for (const row of data ?? []) {
+    let documentUrl = "#";
+    if (row.mission_test_s3_key) {
+      try {
+        documentUrl = await getPresignedDownloadUrl(
+          row.mission_test_s3_key,
+          900
+        );
+      } catch {
+        documentUrl = "#";
+      }
+    }
+
+    files.push({
+      file_id: row.test_id,
+      repository_filename: row.mission_test_filename ?? "",
+      repository_filename_description: `Test ${row.test_code ?? ""} — ${row.mission_test_result === "success" ? "Positive" : "Negative"}`,
+      repository_filesize: row.mission_test_filesize
+        ? `${row.mission_test_filesize} MB`
+        : "",
+      document_url: documentUrl,
+      last_update: row.created_at ?? "",
+    });
+  }
+
+  return files;
 }

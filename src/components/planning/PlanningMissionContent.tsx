@@ -15,7 +15,7 @@ import {
   Card,
   CardContent,
   CardHeader,
-  CardTitle
+  CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronDown, ChevronUp } from "lucide-react";
@@ -24,6 +24,7 @@ import { useCallback, useEffect, useState } from "react";
 import EditPlanningRequestCard from "./EditPlanningRequestCard";
 import MissionPlanningLogbookAddNew from "./MissionPlanningLogbookAddNew";
 import MissionPlanningLogbookTable from "./MissionPlanningLogbookTable";
+import MissionTestLogbookModal from "./MissionTestLogbookModal";
 import RepositoryFilesCard from "./RepositoryFilesCard";
 import TaskCompletionSection from "./TaskCompletionSection";
 
@@ -40,7 +41,7 @@ import Breadcrumbs from "../Breadcrumbs";
 import { useTheme } from "../useTheme";
 
 export default function PlanningMissionContent() {
-  const { isDark } = useTheme()
+  const { isDark } = useTheme();
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -65,6 +66,9 @@ export default function PlanningMissionContent() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [idToDelete, setIdToDelete] = useState<number | null>(null);
 
+  const [testModalOpen, setTestModalOpen] = useState(false);
+  const [testModalRow, setTestModalRow] = useState<PlanningLogbookRow | null>(null);
+
   useEffect(() => {
     if (!c_id || !e_id || !p_id) {
       router.replace("/planning-dashboard");
@@ -75,13 +79,24 @@ export default function PlanningMissionContent() {
     if (!p_id) return;
     setLoading(true);
     try {
-      const [planningRes, logbookRes, toolsRes, repoLogbookRes, repoTestRes] = await Promise.all([
-        axios.post("/api/evaluation/planning/planning-data", { e_id: p_id }),
-        axios.post("/api/evaluation/planning/logbook", { p_id }),
-        axios.post("/api/evaluation/planning/drone", { client_id: c_id, active: "ALL", status: "ALL" }),
-        axios.post("/api/evaluation/planning/repository", { id: p_id, repository_type: "mission_planning_logbook" }),
-        axios.post("/api/evaluation/planning/repository", { id: p_id, repository_type: "mission_planning_test_logbook" })
-      ]);
+      const [planningRes, logbookRes, toolsRes, repoLogbookRes, repoTestRes] =
+        await Promise.all([
+          axios.post("/api/evaluation/planning/planning-data", { e_id: p_id }),
+          axios.post("/api/evaluation/planning/logbook", { p_id }),
+          axios.post("/api/evaluation/planning/drone", {
+            client_id: c_id,
+            active: "ALL",
+            status: "ALL",
+          }),
+          axios.post("/api/evaluation/planning/repository", {
+            id: p_id,
+            repository_type: "mission_planning_logbook",
+          }),
+          axios.post("/api/evaluation/planning/repository", {
+            id: p_id,
+            repository_type: "mission_planning_test_logbook",
+          }),
+        ]);
 
       setPlanningData(planningRes.data.data ?? null);
       setLogbookList(logbookRes.data.data ?? []);
@@ -89,7 +104,11 @@ export default function PlanningMissionContent() {
 
       const rawTaskJson = planningRes.data.data?.planning_json;
       if (rawTaskJson) {
-        try { setTaskData(JSON.parse(rawTaskJson)); } catch { setTaskData(null); }
+        try {
+          setTaskData(JSON.parse(rawTaskJson));
+        } catch {
+          setTaskData(null);
+        }
       }
 
       setRepoLogbookFiles(repoLogbookRes.data.data ?? []);
@@ -106,7 +125,6 @@ export default function PlanningMissionContent() {
     loadPageData();
   }, [loadPageData]);
 
-
   const handleOpenRow = (missionPlanningId: number) => {
     setOpenedRowId(missionPlanningId);
     setShowAddNewMission(true);
@@ -120,15 +138,15 @@ export default function PlanningMissionContent() {
 
   const handleDeleteLogbook = async () => {
     if (idToDelete === null) return;
-
     const previousList = [...logbookList];
-
     try {
-      setLogbookList((prev) => prev.filter(item => item.mission_planning_id !== idToDelete));
+      setLogbookList((prev) =>
+        prev.filter((item) => item.mission_planning_id !== idToDelete)
+      );
       if (openedRowId === idToDelete) setOpenedRowId(null);
-
-      await axios.post('/api/evaluation/planning/delete-mission-planning', { missionPlanningId: idToDelete });
-
+      await axios.post("/api/evaluation/planning/delete-mission-planning", {
+        missionPlanningId: idToDelete,
+      });
       toast.success("Logbook entry deleted successfully");
     } catch (err) {
       setLogbookList(previousList);
@@ -144,28 +162,29 @@ export default function PlanningMissionContent() {
     formData: FormData
   ): Promise<{ success: boolean }> => {
     try {
-      const res = await axios.post("/api/evaluation/planning/add-mission-planning", formData);
+      const res = await axios.post(
+        "/api/evaluation/planning/add-mission-planning",
+        formData
+      );
       const newEntry = res.data.data;
-
       if (newEntry) {
         setLogbookList((prev) => [newEntry, ...prev]);
       } else {
         await loadPageData();
       }
-
       setOpenedRowId(null);
       toast.success("Mission added successfully");
-
       return { success: true };
     } catch (err: any) {
       console.error("Add failed:", err);
       toast.error("Failed to add mission.");
-
       return { success: false };
     }
   };
 
-  const handleUpdatePlanning = async (formData: Record<string, unknown>): Promise<{ success: boolean }> => {
+  const handleUpdatePlanning = async (
+    formData: Record<string, unknown>
+  ): Promise<{ success: boolean }> => {
     try {
       await axios.post("/api/evaluation/planning/update-planning", formData);
       await loadPageData();
@@ -178,69 +197,103 @@ export default function PlanningMissionContent() {
   };
 
   const handleManageLogbook = (row: PlanningLogbookRow) => {
-    router.push(`/planning-mission-detail?c_id=${c_id}&e_id=${e_id}&p_id=${p_id}&mp_id=${row.mission_planning_id}`);
+    router.push(
+      `/planning-mission?c_id=${c_id}&e_id=${e_id}&p_id=${p_id}&mp_id=${row.mission_planning_id}`
+    );
+  };
+
+  const handleOpenTestLogbook = (row: PlanningLogbookRow) => {
+    setTestModalRow(row);
+    setTestModalOpen(true);
+  };
+
+  const handleTestModalStatusChanged = () => {
+    loadPageData();
   };
 
   const ToggleIcon = ({ show }: { show: boolean }) =>
-    show ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />;
+    show ? (
+      <ChevronUp className="h-4 w-4" />
+    ) : (
+      <ChevronDown className="h-4 w-4" />
+    );
 
   if (loading) {
     return (
       <div className="container mx-auto p-6 space-y-4">
-        <Skeleton className="h-6 w-64" /><Skeleton className="h-8 w-48" />
-        <div className="grid grid-cols-2 gap-4"><Skeleton className="h-64" /><Skeleton className="h-64" /></div>
+        <Skeleton className="h-6 w-64" />
+        <Skeleton className="h-8 w-48" />
+        <div className="grid grid-cols-2 gap-4">
+          <Skeleton className="h-64" />
+          <Skeleton className="h-64" />
+        </div>
         <Skeleton className="h-96" />
       </div>
     );
   }
 
-
   const breadcrumbItems = [
-    { label: "Mission Planning Dashboard", href: "/planning/planning-dashboard" },
+    {
+      label: "Mission Planning Dashboard",
+      href: "/planning/planning-dashboard",
+    },
     { label: "Planning Mission", href: "#" },
   ];
 
   return (
     <div className="w-full px-6 space-y-4">
-      <div className={` top-0 py-2 z-10 backdrop-blur-md transition-all -mx-6 mt-0 mb-6 px-6 py-4",
-  ${isDark
-          ? 'bg-slate-900/80 border-b border-slate-800'
-          : 'bg-white/80 border-b border-slate-200 shadow-[0_1px_3px_rgba(0,0,0,0.06)]'}
-`}>
-        <div className="mx-auto   flex items-center justify-between gap-4">
+      <div
+        className={`top-0 py-2 z-10 backdrop-blur-md transition-all -mx-6 mt-0 mb-6 px-6 py-4 ${
+          isDark
+            ? "bg-slate-900/80 border-b border-slate-800"
+            : "bg-white/80 border-b border-slate-200 shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
+        }`}
+      >
+        <div className="mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-1 h-8 rounded-full bg-violet-600" />
-
             <div>
-              <h1 className={`
-          text-lg font-bold tracking-tight flex items-center gap-2",
-          ${isDark ? 'text-white' : 'text-slate-900'}
-        `}>
-                Mission Planning Data
+              <h1
+                className={`text-lg font-bold tracking-tight flex items-center gap-2 ${
+                  isDark ? "text-white" : "text-slate-900"
+                }`}
+              >
+                Mission Mission
                 {planningData?.planning_code && (
-                  <span className={`font-normal text-sm opacity-70", 
-              ${isDark ? 'text-slate-400' : 'text-slate-500'}
-            `}>
+                  <span
+                    className={`font-normal text-sm opacity-70 ${
+                      isDark ? "text-slate-400" : "text-slate-500"
+                    }`}
+                  >
                     &nbsp;— {planningData.planning_code}
                   </span>
                 )}
               </h1>
-              <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+              <p
+                className={`text-xs ${
+                  isDark ? "text-slate-500" : "text-slate-400"
+                }`}
+              >
                 Manage mission logbooks and operational planning parameters
               </p>
             </div>
           </div>
-
         </div>
       </div>
-      
+
       <Breadcrumbs items={breadcrumbItems} isDark={isDark} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-base">Edit Mission Planning Request</CardTitle>
-            <Button variant="ghost" size="sm" onClick={() => setShowEditPlanning(!showEditPlanning)}>
+            <CardTitle className="text-base">
+              Edit Mission Planning Request
+            </CardTitle>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowEditPlanning(!showEditPlanning)}
+            >
               <ToggleIcon show={showEditPlanning} />
             </Button>
           </CardHeader>
@@ -259,8 +312,14 @@ export default function PlanningMissionContent() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-base">Mission Planning Logbook Add New</CardTitle>
-            <Button variant="ghost" size="sm" onClick={() => setShowAddNewMission(!showAddNewMission)}>
+            <CardTitle className="text-base">
+              Mission Planning Logbook Add New
+            </CardTitle>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowAddNewMission(!showAddNewMission)}
+            >
               <ToggleIcon show={showAddNewMission} />
             </Button>
           </CardHeader>
@@ -282,7 +341,11 @@ export default function PlanningMissionContent() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-base">Mission Planning Logbook</CardTitle>
-          <Button variant="ghost" size="sm" onClick={() => setShowLogbookTable(!showLogbookTable)}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowLogbookTable(!showLogbookTable)}
+          >
             <ToggleIcon show={showLogbookTable} />
           </Button>
         </CardHeader>
@@ -294,6 +357,7 @@ export default function PlanningMissionContent() {
               onOpen={handleOpenRow}
               onDelete={confirmDelete}
               onManage={handleManageLogbook}
+              onTestLogbook={handleOpenTestLogbook}
             />
           </CardContent>
         )}
@@ -304,13 +368,20 @@ export default function PlanningMissionContent() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-base">Repository Files</CardTitle>
-          <Button variant="ghost" size="sm" onClick={() => setShowRepoFiles(!showRepoFiles)}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowRepoFiles(!showRepoFiles)}
+          >
             <ToggleIcon show={showRepoFiles} />
           </Button>
         </CardHeader>
         {showRepoFiles && (
           <CardContent className="p-0">
-            <RepositoryFilesCard logbookFiles={repoLogbookFiles} testFiles={repoTestFiles} />
+            <RepositoryFilesCard
+              logbookFiles={repoLogbookFiles}
+              testFiles={repoTestFiles}
+            />
           </CardContent>
         )}
       </Card>
@@ -320,18 +391,33 @@ export default function PlanningMissionContent() {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the mission logbook entry.
+              This action cannot be undone. This will permanently delete the
+              mission logbook entry.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteLogbook} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogAction
+              onClick={handleDeleteLogbook}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
+      {testModalRow && (
+        <MissionTestLogbookModal
+          open={testModalOpen}
+          onOpenChange={setTestModalOpen}
+          missionPlanningId={testModalRow.mission_planning_id}
+          planningId={p_id}
+          evaluationId={e_id}
+          missionPlanningActive={testModalRow.mission_planning_active ?? "N"}
+          onStatusChanged={handleTestModalStatusChanged}
+        />
+      )}
     </div>
   );
 }

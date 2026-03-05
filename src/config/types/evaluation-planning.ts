@@ -193,4 +193,45 @@ export interface TaskItem {
   completed: boolean;
 }
 
- 
+
+export interface MissionTestRow {
+  test_id: number;
+  fk_planning_id: number;
+  fk_mission_planning_id: number;
+  fk_evaluation_id: number;
+  fk_pic_id: number;
+  fk_observer_id: number;
+  fk_owner_id: number;
+  test_code: string;
+  mission_test_date_start: string;
+  mission_test_date_end: string;
+  mission_test_result: string;
+  mission_test_folder?: string;
+  mission_test_filename?: string;
+  mission_test_filesize?: number;
+  mission_test_s3_key?: string;
+  mission_test_s3_url?: string;
+  document_url?: string;
+  created_at: string;
+  pic_name?: string;
+  observer_name?: string;
+}
+export interface MissionTestCreateInput {
+  fk_mission_planning_id: number;
+  fk_planning_id: number;
+  fk_evaluation_id: number;
+  fk_pic_id: number;
+  fk_observer_id: number;
+  mission_test_code: string;
+  mission_test_date_start: string;
+  mission_test_date_end: string;
+  mission_test_result: string;
+}
+
+export interface PilotUser {
+  user_id: number;
+  username: string;
+  first_name: string;
+  last_name: string;
+  userActive: string;
+}

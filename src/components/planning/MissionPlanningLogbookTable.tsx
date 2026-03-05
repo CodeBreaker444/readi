@@ -3,23 +3,24 @@
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 import { PlanningLogbookRow } from "@/config/types/evaluation-planning";
 import {
-    flexRender,
-    getCoreRowModel,
-    getFilteredRowModel,
-    getSortedRowModel,
-    useReactTable,
-    type SortingState,
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getSortedRowModel,
+  useReactTable,
+  type SortingState,
 } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
+import { TablePagination } from "../tables/Pagination";
 import { getLogbookColumns } from "../tables/PlanningLogbookColumns";
 
 interface MissionPlanningLogbookTableProps {
@@ -28,6 +29,7 @@ interface MissionPlanningLogbookTableProps {
   onOpen: (id: number) => void;
   onDelete: (id: number) => void;
   onManage: (row: PlanningLogbookRow) => void;
+  onTestLogbook?: (row: PlanningLogbookRow) => void;
 }
 
 export default function MissionPlanningLogbookTable({
@@ -36,22 +38,20 @@ export default function MissionPlanningLogbookTable({
   onOpen,
   onDelete,
   onManage,
+  onTestLogbook,
 }: MissionPlanningLogbookTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
 
   const columns = useMemo(
-    () => getLogbookColumns({ openedRowId, onOpen, onDelete, onManage }),
-    [openedRowId, onOpen, onDelete, onManage]
+    () => getLogbookColumns({ openedRowId, onOpen, onDelete, onManage, onTestLogbook }),
+    [openedRowId, onOpen, onDelete, onManage, onTestLogbook]
   );
 
   const table = useReactTable({
     data,
     columns,
-    state: {
-      sorting,
-      globalFilter,
-    },
+    state: { sorting, globalFilter },
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
     getCoreRowModel: getCoreRowModel(),
@@ -61,7 +61,6 @@ export default function MissionPlanningLogbookTable({
 
   return (
     <div className="space-y-3">
-      {/* Search + count */}
       <div className="flex items-center justify-between">
         <Input
           placeholder="Search logbook..."
@@ -75,7 +74,6 @@ export default function MissionPlanningLogbookTable({
         </Badge>
       </div>
 
-      {/* Table */}
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -103,8 +101,7 @@ export default function MissionPlanningLogbookTable({
               </TableRow>
             ) : (
               table.getRowModel().rows.map((row) => {
-                const isOpened =
-                  openedRowId === row.original.mission_planning_id;
+                const isOpened = openedRowId === row.original.mission_planning_id;
                 return (
                   <TableRow
                     key={row.id}
@@ -123,6 +120,7 @@ export default function MissionPlanningLogbookTable({
           </TableBody>
         </Table>
       </div>
+      <TablePagination table={table}/>
     </div>
   );
 }
