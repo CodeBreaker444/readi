@@ -1,5 +1,5 @@
 import { supabase } from "@/backend/database/database";
-import { DroneTool, MissionTemplate, PilotUser, PlanningLogbookRow, PlanningTestLogbookRow, RepositoryFile } from "@/config/types/evaluation-planning";
+import { DroneTool, FileType, MissionTemplate, PilotUser, PlanningLogbookRow, PlanningTestLogbookRow, RepositoryFile } from "@/config/types/evaluation-planning";
 import { deleteFileFromS3, getPresignedDownloadUrl } from "@/lib/s3Client";
 
 
@@ -376,7 +376,9 @@ export async function addMissionPlanningLogbook(params: {
   fk_tool_id: number | null;
   mission_planning_filename: string;
   mission_planning_filesize: number;
-  mission_planning_folder: string;  
+  mission_planning_folder: string;
+  mission_planning_s3_key: string;
+  mission_planning_s3_url: string;
 }) {
   const { data, error } = await supabase
     .from("planning_logbook")
@@ -658,4 +660,52 @@ export async function getMissionTestRepositoryFiles(
   }
 
   return files;
+}
+
+ 
+export async function deleteRepositoryFile(
+  fileId: number,
+  fileType: FileType,
+  s3Key: string | null,
+  ownerId: number
+) {
+  if (s3Key) {
+    try {
+      await deleteFileFromS3(s3Key);
+    } catch (err) {
+      console.error(`S3 delete failed for key ${s3Key}:`, err);
+    }
+  }
+
+  if (fileType === "mission_planning_logbook") {
+    const { error } = await supabase
+      .from("planning_logbook")
+      .update({
+        mission_planning_filename: null,
+        mission_planning_filesize: null,
+        mission_planning_folder: null,
+        mission_planning_s3_key: null,
+        mission_planning_s3_url: null,
+      })
+      .eq("mission_planning_id", fileId)
+      .eq("fk_owner_id", ownerId);
+
+    if (error) throw new Error(`Database error (logbook): ${error.message}`);
+  } 
+  
+  else if (fileType === "mission_planning_test_logbook") {
+    const { error } = await supabase
+      .from("planning_test_logbook")
+      .update({
+        mission_test_filename: null,
+        mission_test_filesize: null,
+        mission_test_s3_key: null,
+      })
+      .eq("test_id", fileId)
+      .eq("fk_owner_id", ownerId);
+
+    if (error) throw new Error(`Database error (test_logbook): ${error.message}`);
+  }
+
+  return { success: true };
 }

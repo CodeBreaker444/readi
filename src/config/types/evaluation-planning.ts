@@ -172,15 +172,17 @@ export interface MissionTemplate {
   mission_planning_active: string;
 }
 
+export type FileType = "mission_planning_logbook" | "mission_planning_test_logbook";
+
 export interface RepositoryFile {
   file_id: number;
-  fk_owner_id: number;
-  file_category: string;
   repository_filename: string;
-  repository_filename_description: string;
-  repository_filesize: string;
-  document_url: string;
-  last_update: string;
+  repository_filename_description?: string;
+  repository_filesize?: string;
+  repository_folder?: string;
+  document_url?: string;
+  s3_url?: string;
+  last_update?: string;
 }
 
 export interface TaskData {

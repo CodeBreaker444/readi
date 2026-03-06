@@ -1,4 +1,5 @@
-import { getMissionTestRepositoryFiles, getRepositoryList } from "@/backend/services/planning/planning-dashboard";
+import { getMissionPlanningLogbookFiles } from "@/backend/services/planning/evaluation";
+import { getMissionTestRepositoryFiles } from "@/backend/services/planning/planning-dashboard";
 import { getUserSession } from "@/lib/auth/server-session";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -39,7 +40,7 @@ export async function POST(request: Request) {
     if (repository_type === "mission_planning_test_logbook" && id) {
       data = await getMissionTestRepositoryFiles(ownerId, id);
     } else {
-      data = await getRepositoryList(ownerId, repository_type, id);
+      data = await getMissionPlanningLogbookFiles(ownerId, id);
     }
 
     return NextResponse.json({

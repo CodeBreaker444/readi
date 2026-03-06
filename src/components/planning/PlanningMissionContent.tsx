@@ -55,18 +55,19 @@ export default function PlanningMissionContent() {
   const [taskData, setTaskData] = useState<TaskData | null>(null);
   const [repoLogbookFiles, setRepoLogbookFiles] = useState<RepositoryFile[]>([]);
   const [repoTestFiles, setRepoTestFiles] = useState<RepositoryFile[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [initialLoad, setInitialLoad] = useState<boolean>(true);
   const [openedRowId, setOpenedRowId] = useState<number | null>(null);
 
-  const [showEditPlanning, setShowEditPlanning] = useState(true);
-  const [showAddNewMission, setShowAddNewMission] = useState(true);
-  const [showLogbookTable, setShowLogbookTable] = useState(true);
-  const [showRepoFiles, setShowRepoFiles] = useState(true);
+  const [showEditPlanning, setShowEditPlanning] = useState<boolean>(true);
+  const [showAddNewMission, setShowAddNewMission] = useState<boolean>(true);
+  const [showLogbookTable, setShowLogbookTable] = useState<boolean>(true);
+  const [showRepoFiles, setShowRepoFiles] = useState<boolean>(true);
 
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
   const [idToDelete, setIdToDelete] = useState<number | null>(null);
 
-  const [testModalOpen, setTestModalOpen] = useState(false);
+  const [testModalOpen, setTestModalOpen] = useState<boolean>(false);
   const [testModalRow, setTestModalRow] = useState<PlanningLogbookRow | null>(null);
 
   useEffect(() => {
@@ -77,7 +78,7 @@ export default function PlanningMissionContent() {
 
   const loadPageData = useCallback(async () => {
     if (!p_id) return;
-    setLoading(true);
+    if (initialLoad) setLoading(true);
     try {
       const [planningRes, logbookRes, toolsRes, repoLogbookRes, repoTestRes] =
         await Promise.all([
@@ -118,8 +119,9 @@ export default function PlanningMissionContent() {
       toast.error("Failed to load mission data.");
     } finally {
       setLoading(false);
+      setInitialLoad(false);
     }
-  }, [p_id, c_id]);
+  }, [p_id, c_id, initialLoad]);
 
   useEffect(() => {
     loadPageData();
@@ -145,7 +147,7 @@ export default function PlanningMissionContent() {
       );
       if (openedRowId === idToDelete) setOpenedRowId(null);
       await axios.post("/api/evaluation/planning/delete-mission-planning", {
-        missionPlanningId: idToDelete,
+        mission_planning_id: idToDelete,
       });
       toast.success("Logbook entry deleted successfully");
     } catch (err) {
@@ -162,16 +164,11 @@ export default function PlanningMissionContent() {
     formData: FormData
   ): Promise<{ success: boolean }> => {
     try {
-      const res = await axios.post(
+      await axios.post(
         "/api/evaluation/planning/add-mission-planning",
         formData
       );
-      const newEntry = res.data.data;
-      if (newEntry) {
-        setLogbookList((prev) => [newEntry, ...prev]);
-      } else {
-        await loadPageData();
-      }
+      await loadPageData();
       setOpenedRowId(null);
       toast.success("Mission added successfully");
       return { success: true };
@@ -218,7 +215,7 @@ export default function PlanningMissionContent() {
       <ChevronDown className="h-4 w-4" />
     );
 
-  if (loading) {
+  if (loading && initialLoad) {
     return (
       <div className="container mx-auto p-6 space-y-4">
         <Skeleton className="h-6 w-64" />
@@ -243,36 +240,32 @@ export default function PlanningMissionContent() {
   return (
     <div className="w-full px-6 space-y-4">
       <div
-        className={`top-0 py-2 z-10 backdrop-blur-md transition-all -mx-6 mt-0 mb-6 px-6 py-4 ${
-          isDark
-            ? "bg-slate-900/80 border-b border-slate-800"
-            : "bg-white/80 border-b border-slate-200 shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
-        }`}
+        className={`top-0 py-2 z-10 backdrop-blur-md transition-all -mx-6 mt-0 mb-6 px-6 py-4 ${isDark
+          ? "bg-slate-900/80 border-b border-slate-800"
+          : "bg-white/80 border-b border-slate-200 shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
+          }`}
       >
         <div className="mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-1 h-8 rounded-full bg-violet-600" />
             <div>
               <h1
-                className={`text-lg font-bold tracking-tight flex items-center gap-2 ${
-                  isDark ? "text-white" : "text-slate-900"
-                }`}
+                className={`text-lg font-bold tracking-tight flex items-center gap-2 ${isDark ? "text-white" : "text-slate-900"
+                  }`}
               >
                 Mission Mission
                 {planningData?.planning_code && (
                   <span
-                    className={`font-normal text-sm opacity-70 ${
-                      isDark ? "text-slate-400" : "text-slate-500"
-                    }`}
+                    className={`font-normal text-sm opacity-70 ${isDark ? "text-slate-400" : "text-slate-500"
+                      }`}
                   >
                     &nbsp;— {planningData.planning_code}
                   </span>
                 )}
               </h1>
               <p
-                className={`text-xs ${
-                  isDark ? "text-slate-500" : "text-slate-400"
-                }`}
+                className={`text-xs ${isDark ? "text-slate-500" : "text-slate-400"
+                  }`}
               >
                 Manage mission logbooks and operational planning parameters
               </p>
@@ -381,6 +374,7 @@ export default function PlanningMissionContent() {
             <RepositoryFilesCard
               logbookFiles={repoLogbookFiles}
               testFiles={repoTestFiles}
+              onFileDeleted={loadPageData}
             />
           </CardContent>
         )}
@@ -399,7 +393,7 @@ export default function PlanningMissionContent() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteLogbook}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-red-500 text-destructive-foreground hover:bg-red-500/90"
             >
               Delete
             </AlertDialogAction>

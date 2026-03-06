@@ -1,7 +1,7 @@
 
 import { addMissionPlanningLogbook } from "@/backend/services/planning/planning-dashboard";
 import { getUserSession } from "@/lib/auth/server-session";
-import { uploadFileToS3 } from "@/lib/s3Client";
+import { buildS3Url, uploadFileToS3 } from "@/lib/s3Client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -60,6 +60,7 @@ export async function POST(request: Request) {
     let filename = "";
     let filesize = 0;
     let s3Key = "";
+    let s3Url = "";
 
     if (file && file.size > 0) {
       filename = file.name;
@@ -71,6 +72,7 @@ export async function POST(request: Request) {
       );
 
       await uploadFileToS3(s3Key, file);
+      s3Url = buildS3Url(s3Key);
     }
 
     let limitJson: Record<string, unknown> | null = null;
@@ -82,22 +84,24 @@ export async function POST(request: Request) {
       }
     }
 
-    const data = await addMissionPlanningLogbook({
-      fk_planning_id: parsed.data.fk_planning_id,
-      fk_evaluation_id: parsed.data.fk_evaluation_id,
-      fk_client_id: parsed.data.fk_client_id,
-      fk_owner_id: session.user.ownerId,
-      fk_user_id: session.user.userId,
-      mission_planning_code: parsed.data.mission_planning_code,
-      mission_planning_desc: parsed.data.mission_planning_desc,
-      mission_planning_limit_json: limitJson,
-      mission_planning_active: parsed.data.mission_planning_active,
-      mission_planning_ver: parsed.data.mission_planning_ver,
-      fk_tool_id: parsed.data.mission_planning_tool || null,
-      mission_planning_filename: filename,
-      mission_planning_filesize: filesize,
-      mission_planning_folder: s3Key,  
-    });
+   const data = await addMissionPlanningLogbook({
+  fk_planning_id: parsed.data.fk_planning_id,
+  fk_evaluation_id: parsed.data.fk_evaluation_id,
+  fk_client_id: parsed.data.fk_client_id,
+  fk_owner_id: session.user.ownerId,
+  fk_user_id: session.user.userId,
+  mission_planning_code: parsed.data.mission_planning_code,
+  mission_planning_desc: parsed.data.mission_planning_desc,
+  mission_planning_limit_json: limitJson,
+  mission_planning_active: parsed.data.mission_planning_active,
+  mission_planning_ver: parsed.data.mission_planning_ver,
+  fk_tool_id: parsed.data.mission_planning_tool || null,
+  mission_planning_filename: filename,
+  mission_planning_filesize: filesize,
+  mission_planning_folder: s3Key ? s3Key.substring(0, s3Key.lastIndexOf("/")) : "",
+  mission_planning_s3_key: s3Key,
+  mission_planning_s3_url: s3Url,
+});
 
     return NextResponse.json({ code: 1, message: "Success", data });
   } catch (err: any) {

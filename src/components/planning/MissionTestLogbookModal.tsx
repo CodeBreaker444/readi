@@ -388,7 +388,7 @@ export default function MissionTestLogbookModal({
                                     </div>
 
                                     <div className="mt-8 flex justify-end border-t pt-6">
-                                        <Button onClick={handleAddTest} disabled={submitting} size="lg" className="bg-violet-600 hover:bg-violet-700 px-12 transition-all">
+                                        <Button onClick={handleAddTest} disabled={submitting} size="lg" className="bg-violet-600 hover:bg-violet-700 cursor-pointer px-12 transition-all">
                                             {submitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Adding Test...</> : "Add Test Entry"}
                                         </Button>
                                     </div>
@@ -454,7 +454,7 @@ export default function MissionTestLogbookModal({
                                         variant="default"
                                         size="sm"
                                         disabled={updatingStatus}
-                                        className={`cursor-pointer shadow-md transition-all duration-300 ${activeStatus === "N"
+                                        className={`cursor-pointer   ${activeStatus === "N"
                                                 ? "bg-emerald-600 hover:bg-emerald-700 text-white"
                                                 : "bg-amber-500 hover:bg-amber-600 text-white"
                                             }`}
@@ -481,7 +481,7 @@ export default function MissionTestLogbookModal({
                     </div>
 
                     <DialogFooter className="p-4 bg-muted/20 border-t">
-                        <Button variant="secondary" className="px-8" onClick={() => handleClose(false)}>
+                        <Button variant="secondary" className="px-8 cursor-pointer bg-violet-600 hover:bg-violet-700 text-white" onClick={() => handleClose(false)}>
                             Finished
                         </Button>
                     </DialogFooter>

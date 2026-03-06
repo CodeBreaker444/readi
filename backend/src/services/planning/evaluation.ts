@@ -1,4 +1,6 @@
 import { supabase } from "@/backend/database/database";
+import { RepositoryFile } from "@/config/types/evaluation-planning";
+import { getPresignedDownloadUrl } from "@/lib/s3Client";
 
 interface EvaluationCreateData {
   client_id: number;
@@ -157,4 +159,62 @@ export async function getEvaluationFileList(evaluationId: number, ownerId: numbe
     console.error('Error fetching files:', error);
     throw new Error('Failed to fetch evaluation files');
   }
+}
+
+export async function getMissionPlanningLogbookFiles(
+  ownerId: number,
+  planningId?: number
+): Promise<RepositoryFile[]> {
+  let query = supabase
+    .from("planning_logbook")
+    .select(
+      `
+      mission_planning_id,
+      mission_planning_code,
+      mission_planning_desc,
+      mission_planning_filename,
+      mission_planning_filesize,
+      mission_planning_s3_key,
+      mission_planning_s3_url,
+      created_at
+    `
+    )
+    .eq("fk_owner_id", ownerId)
+    .not("mission_planning_s3_key", "is", null)
+    .neq("mission_planning_s3_key", "");
+
+  if (planningId) {
+    query = query.eq("fk_planning_id", planningId);
+  }
+
+  const { data, error } = await query.order("created_at", { ascending: false });
+  if (error || !data) return [];
+
+  const files: RepositoryFile[] = [];
+  for (const row of data) {
+    let documentUrl = row.mission_planning_s3_url ?? "#";
+
+    if (row.mission_planning_s3_key) {
+      try {
+        documentUrl = await getPresignedDownloadUrl(row.mission_planning_s3_key, 900);
+      } catch {
+        documentUrl = row.mission_planning_s3_url ?? "#";
+      }
+    }
+
+    files.push({
+      file_id: row.mission_planning_id,
+      repository_filename: row.mission_planning_filename ?? "",
+      repository_filename_description: `${row.mission_planning_code ?? ""} — ${row.mission_planning_desc ?? ""}`,
+      repository_filesize: row.mission_planning_filesize
+        ? `${(row.mission_planning_filesize / 1024).toFixed(1)} KB`
+        : "",
+      repository_folder: row.mission_planning_s3_key ?? "",
+      document_url: documentUrl,
+      s3_url: row.mission_planning_s3_url ?? "",
+      last_update: row.created_at ?? "",
+    });
+  }
+
+  return files;
 }
