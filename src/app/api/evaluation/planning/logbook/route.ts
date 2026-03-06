@@ -24,7 +24,6 @@ export async function POST(request: Request) {
 
         const { p_id } = parsed.data;
         const data = await getPlanningLogbookList(session.user.ownerId, p_id);
-        console.log('logbook:', data);
 
         return NextResponse.json({ code: 1, message: "Success", data, dataRows: data.length });
     } catch (err: any) {

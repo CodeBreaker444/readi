@@ -172,6 +172,19 @@ export interface MissionTemplate {
   mission_planning_active: string;
 }
 
+export interface CommunicationRow {
+  communication_id: number;
+  fk_user_id: number;
+  fk_owner_id: number;
+  communication_code: string | null;
+  communication_desc: string | null;
+  communication_json: Record<string, unknown> | null;
+  communication_ver: number | null;
+  communication_active: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export type FileType = "mission_planning_logbook" | "mission_planning_test_logbook";
 
 export interface RepositoryFile {

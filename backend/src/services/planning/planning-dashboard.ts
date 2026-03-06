@@ -709,3 +709,86 @@ export async function deleteRepositoryFile(
 
   return { success: true };
 }
+
+
+export async function addCommunicationGeneral(params: {
+  fk_owner_id: number;
+  subject: string;
+  message: string;
+  communication_type: string;
+  communication_level: string;
+  priority: string;
+  status: string;
+  sent_by_user_id: number;
+  recipients: number[];
+  fk_client_id: number | null;
+  fk_planning_id: number | null;
+  fk_evaluation_id: number | null;
+  communication_to: number[];
+  communication_file_name: string | null;
+  communication_file_key: string | null;
+  communication_file_url: string | null;
+}): Promise<number> {
+  const { data, error } = await supabase
+    .from("communication_general")
+    .insert({
+      fk_owner_id: params.fk_owner_id,
+      subject: params.subject,
+      message: params.message,
+      communication_type: params.communication_type,
+      communication_level: params.communication_level,
+      priority: params.priority,
+      status: params.status,
+      sent_by_user_id: params.sent_by_user_id,
+      recipients: params.recipients,
+      fk_client_id: params.fk_client_id,
+      fk_planning_id: params.fk_planning_id,
+      fk_evaluation_id: params.fk_evaluation_id,
+      communication_to: params.communication_to,
+      communication_file_name: params.communication_file_name,
+      communication_file_key: params.communication_file_key,
+      communication_file_url: params.communication_file_url,
+    })
+    .select("communication_id")
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data.communication_id;
+}
+ 
+ export async function getUsers(params: {
+  fk_owner_id: number;
+}): Promise<{ user_id: number; first_name: string; email: string;  }[]> {
+  const { data, error } = await supabase
+    .from("users")
+    .select("user_id, first_name, email")
+    .eq("fk_owner_id", params.fk_owner_id)
+    .eq("user_active", "Y");
+
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
+export async function getPlanningTasksJson(ownerId: number, planningId: number) {
+  const { data, error } = await supabase
+    .from("planning")
+    .select("planning_id, planning_json")
+    .eq("fk_owner_id", ownerId)
+    .eq("planning_id", planningId)
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  const raw = (data as any)?.planning_json;
+  const planning_json =
+    raw === null || raw === undefined
+      ? null
+      : typeof raw === "string"
+      ? raw
+      : JSON.stringify(raw);
+
+  return {
+    planning_id: (data as any)?.planning_id,
+    planning_json,
+  };
+}

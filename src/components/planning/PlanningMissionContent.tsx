@@ -26,19 +26,19 @@ import MissionPlanningLogbookAddNew from "./MissionPlanningLogbookAddNew";
 import MissionPlanningLogbookTable from "./MissionPlanningLogbookTable";
 import MissionTestLogbookModal from "./MissionTestLogbookModal";
 import RepositoryFilesCard from "./RepositoryFilesCard";
-import TaskCompletionSection from "./TaskCompletionSection";
 
 import type {
   DroneTool,
   PlanningData,
   PlanningLogbookRow,
-  RepositoryFile,
-  TaskData,
+  RepositoryFile
 } from "@/config/types/evaluation-planning";
 import axios from "axios";
 import { toast } from "sonner";
 import Breadcrumbs from "../Breadcrumbs";
 import { useTheme } from "../useTheme";
+import CommunicationSection from "./CommunicationSection";
+import { PlanningTaskTableSection } from "./PlanningTaskTableSection";
 
 export default function PlanningMissionContent() {
   const { isDark } = useTheme();
@@ -52,7 +52,8 @@ export default function PlanningMissionContent() {
   const [planningData, setPlanningData] = useState<PlanningData | null>(null);
   const [logbookList, setLogbookList] = useState<PlanningLogbookRow[]>([]);
   const [droneTools, setDroneTools] = useState<DroneTool[]>([]);
-  const [taskData, setTaskData] = useState<TaskData | null>(null);
+  const [taskJsonRaw, setTaskJsonRaw] = useState<string | null>(null);
+  const [taskJsonParsed, setTaskJsonParsed] = useState<any>(null);
   const [repoLogbookFiles, setRepoLogbookFiles] = useState<RepositoryFile[]>([]);
   const [repoTestFiles, setRepoTestFiles] = useState<RepositoryFile[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -79,41 +80,52 @@ export default function PlanningMissionContent() {
   const loadPageData = useCallback(async () => {
     if (!p_id) return;
     if (initialLoad) setLoading(true);
+
     try {
-      const [planningRes, logbookRes, toolsRes, repoLogbookRes, repoTestRes] =
-        await Promise.all([
-          axios.post("/api/evaluation/planning/planning-data", { e_id: p_id }),
-          axios.post("/api/evaluation/planning/logbook", { p_id }),
-          axios.post("/api/evaluation/planning/drone", {
-            client_id: c_id,
-            active: "ALL",
-            status: "ALL",
-          }),
-          axios.post("/api/evaluation/planning/repository", {
-            id: p_id,
-            repository_type: "mission_planning_logbook",
-          }),
-          axios.post("/api/evaluation/planning/repository", {
-            id: p_id,
-            repository_type: "mission_planning_test_logbook",
-          }),
-        ]);
+      const [
+        planningRes,
+        tasksRes,
+        logbookRes,
+        toolsRes,
+        repoLogbookRes,
+        repoTestRes,
+      ] = await Promise.all([
+        axios.post("/api/evaluation/planning/planning-data", { e_id: p_id }),
+        axios.post("/api/evaluation/planning/tasks", { planning_id: p_id }),
+        axios.post("/api/evaluation/planning/logbook", { p_id }),
+        axios.post("/api/evaluation/planning/drone", {
+          client_id: c_id,
+          active: "ALL",
+          status: "ALL",
+        }),
+        axios.post("/api/evaluation/planning/repository", {
+          id: p_id,
+          repository_type: "mission_planning_logbook",
+        }),
+        axios.post("/api/evaluation/planning/repository", {
+          id: p_id,
+          repository_type: "mission_planning_test_logbook",
+        }),
+      ]);
 
       setPlanningData(planningRes.data.data ?? null);
       setLogbookList(logbookRes.data.data ?? []);
       setDroneTools(toolsRes.data.data ?? []);
-
-      const rawTaskJson = planningRes.data.data?.planning_json;
-      if (rawTaskJson) {
-        try {
-          setTaskData(JSON.parse(rawTaskJson));
-        } catch {
-          setTaskData(null);
-        }
-      }
-
       setRepoLogbookFiles(repoLogbookRes.data.data ?? []);
       setRepoTestFiles(repoTestRes.data.data ?? []);
+
+      const raw = tasksRes.data?.data?.planning_json ?? null;
+      setTaskJsonRaw(raw);
+
+      if (raw) {
+        try {
+          setTaskJsonParsed(JSON.parse(raw));
+        } catch {
+          setTaskJsonParsed(null);
+        }
+      } else {
+        setTaskJsonParsed(null);
+      }
     } catch (err: any) {
       console.error("Failed to load page data:", err);
       toast.error("Failed to load mission data.");
@@ -276,6 +288,13 @@ export default function PlanningMissionContent() {
 
       <Breadcrumbs items={breadcrumbItems} isDark={isDark} />
 
+
+      <CommunicationSection
+        clientId={c_id}
+        planningId={p_id}
+        evaluationId={e_id}
+      />
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -356,8 +375,14 @@ export default function PlanningMissionContent() {
         )}
       </Card>
 
-      <TaskCompletionSection taskData={taskData} planningId={p_id} />
-
+      <PlanningTaskTableSection
+        isDark={isDark}
+        planningId={p_id}
+        rawJson={taskJsonRaw}
+        parsed={taskJsonParsed}
+        onMoveToTesting={loadPageData}
+      />
+      
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-base">Repository Files</CardTitle>
