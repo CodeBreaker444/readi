@@ -172,15 +172,30 @@ export interface MissionTemplate {
   mission_planning_active: string;
 }
 
+export interface CommunicationRow {
+  communication_id: number;
+  fk_user_id: number;
+  fk_owner_id: number;
+  communication_code: string | null;
+  communication_desc: string | null;
+  communication_json: Record<string, unknown> | null;
+  communication_ver: number | null;
+  communication_active: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type FileType = "mission_planning_logbook" | "mission_planning_test_logbook";
+
 export interface RepositoryFile {
   file_id: number;
-  fk_owner_id: number;
-  file_category: string;
   repository_filename: string;
-  repository_filename_description: string;
-  repository_filesize: string;
-  document_url: string;
-  last_update: string;
+  repository_filename_description?: string;
+  repository_filesize?: string;
+  repository_folder?: string;
+  document_url?: string;
+  s3_url?: string;
+  last_update?: string;
 }
 
 export interface TaskData {
@@ -193,4 +208,45 @@ export interface TaskItem {
   completed: boolean;
 }
 
- 
+
+export interface MissionTestRow {
+  test_id: number;
+  fk_planning_id: number;
+  fk_mission_planning_id: number;
+  fk_evaluation_id: number;
+  fk_pic_id: number;
+  fk_observer_id: number;
+  fk_owner_id: number;
+  test_code: string;
+  mission_test_date_start: string;
+  mission_test_date_end: string;
+  mission_test_result: string;
+  mission_test_folder?: string;
+  mission_test_filename?: string;
+  mission_test_filesize?: number;
+  mission_test_s3_key?: string;
+  mission_test_s3_url?: string;
+  document_url?: string;
+  created_at: string;
+  pic_name?: string;
+  observer_name?: string;
+}
+export interface MissionTestCreateInput {
+  fk_mission_planning_id: number;
+  fk_planning_id: number;
+  fk_evaluation_id: number;
+  fk_pic_id: number;
+  fk_observer_id: number;
+  mission_test_code: string;
+  mission_test_date_start: string;
+  mission_test_date_end: string;
+  mission_test_result: string;
+}
+
+export interface PilotUser {
+  user_id: number;
+  username: string;
+  first_name: string;
+  last_name: string;
+  userActive: string;
+}

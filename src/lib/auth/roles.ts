@@ -57,6 +57,7 @@ export const ROUTE_PERMISSIONS: Record<string, Permission> = {
   '/planning/new-evaluation': 'view_planning',
   '/planning/evaluation': 'view_planning',
   '/planning/planning-mission': 'view_planning',
+  '/planning/planning-dashboard': 'view_planning',
   '/planning/mission-template': 'view_planning',
   '/operations/table': 'view_operations',
   '/operations/daily-board': 'view_operations',

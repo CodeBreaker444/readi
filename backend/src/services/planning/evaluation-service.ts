@@ -1,5 +1,6 @@
 import { supabase } from "@/backend/database/database";
 import { Client, CreateEvaluationInput, Evaluation, EvaluationFile, LucProcedure, UpdateEvaluationInput } from "@/config/types/evaluation";
+import { deleteFileFromS3 } from "@/lib/s3Client";
 
 /**
  * Fetch all evaluations for an owner, joining client, user and luc_procedure.
@@ -271,4 +272,32 @@ export async function getLucProcedureList(
     luc_procedure_ver: row.procedure_version as string ?? '1.0',
     luc_procedure_sector: row.procedure_status as string ?? '',
   }));
+}
+
+
+export async function deleteLogbookFile(
+  missionPlanningId: number,
+  s3Key: string
+) {
+  if (s3Key) {
+    try {
+      await deleteFileFromS3(s3Key);
+    } catch (err) {
+      console.error("S3 delete failed:", err);
+    }
+  }
+
+  const { error } = await supabase
+    .from("planning_logbook")
+    .update({
+      mission_planning_filename: null,
+      mission_planning_filesize: null,
+      mission_planning_folder: null,
+      mission_planning_s3_key: null,
+      mission_planning_s3_url: null,
+    })
+    .eq("mission_planning_id", missionPlanningId);
+
+  if (error) throw new Error(error.message);
+  return { success: true };
 }

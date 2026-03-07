@@ -1,71 +1,25 @@
-"use client";
-
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { PlanningLogbookRow } from "@/config/types/evaluation-planning";
+import type { PlanningLogbookRow } from "@/config/types/evaluation-planning";
 import { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, FolderOpen, Settings, Trash2 } from "lucide-react";
+import { ArrowUpDown, ClipboardList, Trash2 } from "lucide-react";
 
-interface LogbookColumnActions {
+interface LogbookColumnsOptions {
   openedRowId: number | null;
   onOpen: (id: number) => void;
   onDelete: (id: number) => void;
   onManage: (row: PlanningLogbookRow) => void;
+  onTestLogbook?: (row: PlanningLogbookRow) => void;
 }
 
-export function getLogbookColumns(
-  actions: LogbookColumnActions
-): ColumnDef<PlanningLogbookRow>[] {
+export function getLogbookColumns({
+  openedRowId,
+  onOpen,
+  onDelete,
+  onManage,
+  onTestLogbook,
+}: LogbookColumnsOptions): ColumnDef<PlanningLogbookRow>[] {
   return [
-    {
-      accessorKey: "mission_planning_id",
-      header: ({ column }) => (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Mission Plan
-          <ArrowUpDown className="ml-1 h-3 w-3" />
-        </Button>
-      ),
-      cell: ({ row }) => (
-        <span className="font-medium">MPLAN_{row.original.mission_planning_id}</span>
-      ),
-    },
-    {
-      accessorKey: "fk_evaluation_id",
-      header: ({ column }) => (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Evaluation
-          <ArrowUpDown className="ml-1 h-3 w-3" />
-        </Button>
-      ),
-      cell: ({ row }) => `EVAL_${row.original.fk_evaluation_id}`,
-    },
-    {
-      accessorKey: "fk_planning_id",
-      header: ({ column }) => (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Plan
-          <ArrowUpDown className="ml-1 h-3 w-3" />
-        </Button>
-      ),
-      cell: ({ row }) => `PLAN_${row.original.fk_planning_id}`,
-    },
-    {
-      accessorKey: "planning_desc",
-      header: "Plan Desc",
-      cell: ({ row }) => row.original.planning_desc || "—",
-    },
     {
       accessorKey: "mission_planning_code",
       header: ({ column }) => (
@@ -74,86 +28,77 @@ export function getLogbookColumns(
           size="sm"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
-          Mission Code
+          Code
           <ArrowUpDown className="ml-1 h-3 w-3" />
         </Button>
+      ),
+      cell: ({ row }) => (
+        <span className="font-mono text-sm">
+          {row.original.mission_planning_code || "—"}
+        </span>
       ),
     },
     {
       accessorKey: "mission_planning_desc",
-      header: "Mission Description",
-    },
-    {
-      accessorKey: "mission_planning_ver",
-      header: "Version",
+      header: "Description",
+      cell: ({ row }) => (
+        <span className="text-sm truncate max-w-[200px] block">
+          {row.original.mission_planning_desc || "—"}
+        </span>
+      ),
     },
     {
       accessorKey: "mission_planning_active",
-      header: "Active",
+      header: "Status",
       cell: ({ row }) => {
-        const isActive = row.original.mission_planning_active === "Y";
+        const active = row.original.mission_planning_active;
         return (
-          <Badge variant={isActive ? "default" : "secondary"}>
-            {isActive ? "Yes" : "No"}
+          <Badge
+            variant={active === "Y" ? "default" : "secondary"}
+            className={
+              active === "Y"
+                ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                : "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200"
+            }
+          >
+            {active === "Y" ? "Active" : "Hold"}
           </Badge>
         );
       },
     },
     {
-      id: "drone_system",
-      header: "Drone System",
-      cell: ({ row }) => {
-        const { tool_code, tool_desc } = row.original;
-        return tool_code ? `${tool_code} ${tool_desc}` : "—";
-      },
-    },
-    {
-      accessorKey: "tot_test",
-      header: () => <div className="text-center">N. Mission Test</div>,
+      accessorKey: "mission_planning_ver",
+      header: "Version",
       cell: ({ row }) => (
-        <div className="text-center">
-          <Badge variant="outline">{row.original.tot_test || 0}</Badge>
-        </div>
+        <span className="text-sm">{row.original.mission_planning_ver ?? "—"}</span>
       ),
     },
     {
       id: "actions",
-      header: () => <div className="text-center">Actions</div>,
+      header: "Actions",
       cell: ({ row }) => {
-        const isOpened = actions.openedRowId === row.original.mission_planning_id;
+        return (
+          <div className="flex items-center gap-1">
 
-        if (!isOpened) {
-          return (
-            <div className="text-center">
+            {onTestLogbook && (
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => actions.onOpen(row.original.mission_planning_id)}
+                onClick={() => onTestLogbook(row.original)}
+                title="Mission Test Logbook"
               >
-                <FolderOpen className="mr-1 h-3 w-3" />
-                Open
+                <ClipboardList className="h-4 w-4 mr-1" />
+                Tests
               </Button>
-            </div>
-          );
-        }
-
-        return (
-          <div className="flex items-center justify-center gap-1">
+            )}
             <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => actions.onDelete(row.original.mission_planning_id)}
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-destructive hover:text-destructive"
+              onClick={() => onDelete(row.original.mission_planning_id)}
+              title="Delete"
             >
-              <Trash2 className="mr-1 h-3 w-3" />
-              Delete
-            </Button>
-            <Button
-              variant="default"
-              size="sm"
-              onClick={() => actions.onManage(row.original)}
-            >
-              <Settings className="mr-1 h-3 w-3" />
-              Manage
+              <Trash2 className="h-4 w-4" />
             </Button>
           </div>
         );

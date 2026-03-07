@@ -2,109 +2,265 @@
 
 import { Badge } from "@/components/ui/badge";
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RepositoryFile } from "@/config/types/evaluation-planning";
-import { FolderOpen } from "lucide-react";
+import { getFileDownloadUrl } from "@/lib/get-download-url";
+import axios from "axios";
+import { Download, FolderOpen, Loader2, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from "../ui/alert-dialog";
+import { Button } from "../ui/button";
 
 interface RepositoryFilesCardProps {
   logbookFiles: RepositoryFile[];
   testFiles: RepositoryFile[];
+  onFileDeleted?: () => void;
+  isDark: boolean;
 }
 
 function FileTable({
   files,
   label,
+  fileType,
+  onFileDeleted,
+  isDark,
 }: {
   files: RepositoryFile[];
   label: string;
+  fileType: "mission_planning_logbook" | "mission_planning_test_logbook";
+  onFileDeleted?: () => void;
+  isDark: boolean;
 }) {
+  const [downloading, setDownloading] = useState<number | null>(null);
+  const [deleting, setDeleting] = useState<number | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [fileToDelete, setFileToDelete] = useState<RepositoryFile | null>(null);
+
+  const handleDownload = async (file: RepositoryFile) => {
+    try {
+      setDownloading(file.file_id);
+      const key = file.repository_folder || "";
+      if (!key) {
+        toast.error("No file key available.");
+        return;
+      }
+      const url = await getFileDownloadUrl(key);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = file.repository_filename || "download";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error("Download failed:", err);
+      toast.error("Failed to download file.");
+    } finally {
+      setDownloading(null);
+    }
+  };
+
+  const confirmDelete = (file: RepositoryFile) => {
+    setFileToDelete(file);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!fileToDelete) return;
+    try {
+      setDeleting(fileToDelete.file_id);
+      setDeleteDialogOpen(false);
+      await axios.post("/api/evaluation/planning/delete-repository-file", {
+        file_id: fileToDelete.file_id,
+        file_type: fileType,
+        s3_key: fileToDelete.repository_folder || "",
+      });
+      toast.success("File deleted successfully.");
+      onFileDeleted?.();
+    } catch (err) {
+      console.error("Delete failed:", err);
+      toast.error("Failed to delete file.");
+    } finally {
+      setDeleting(null);
+      setFileToDelete(null);
+    }
+  };
+
   return (
-    <div className="rounded-md border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Type</TableHead>
-            <TableHead>Description</TableHead>
-            <TableHead>Filename</TableHead>
-            <TableHead className="text-center">File Size</TableHead>
-            <TableHead>Last Action</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {files.length === 0 ? (
-            <TableRow>
-              <TableCell
-                colSpan={5}
-                className="h-16 text-center text-muted-foreground"
-              >
-                No files found.
-              </TableCell>
+    <>
+      <div className={`rounded-md border ${isDark ? "border-slate-800" : ""}`}>
+        <Table>
+          <TableHeader className={isDark ? "bg-slate-900/50" : "bg-slate-50/50"}>
+            <TableRow className={isDark ? "border-slate-800 hover:bg-transparent" : ""}>
+              <TableHead className={isDark ? "text-slate-400" : ""}>Type</TableHead>
+              <TableHead className={isDark ? "text-slate-400" : ""}>Description</TableHead>
+              <TableHead className={isDark ? "text-slate-400" : ""}>Filename</TableHead>
+              <TableHead className={`text-center ${isDark ? "text-slate-400" : ""}`}>File Size</TableHead>
+              <TableHead className={isDark ? "text-slate-400" : ""}>Last Action</TableHead>
+              <TableHead className={`text-center ${isDark ? "text-slate-400" : ""}`}>Actions</TableHead>
             </TableRow>
-          ) : (
-            files.map((file) => (
-              <TableRow key={file.file_id}>
-                <TableCell>{label}</TableCell>
-                <TableCell>
-                  {file.repository_filename_description || ""}
+          </TableHeader>
+          <TableBody>
+            {files.length === 0 ? (
+              <TableRow className={isDark ? "border-slate-800 hover:bg-transparent" : ""}>
+                <TableCell
+                  colSpan={6}
+                  className={`h-16 text-center ${isDark ? "text-slate-500" : "text-muted-foreground"}`}
+                >
+                  No files found.
                 </TableCell>
-                <TableCell>
-                  <a
-                    href={file.document_url || "#"}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary underline"
-                  >
-                    {file.repository_filename}
-                  </a>
-                </TableCell>
-                <TableCell className="text-center">
-                  {file.repository_filesize || ""}
-                </TableCell>
-                <TableCell>{file.last_update || ""}</TableCell>
               </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
-    </div>
+            ) : (
+              files.map((file) => (
+                <TableRow key={file.file_id} className={isDark ? "border-slate-800 hover:bg-slate-800/40" : ""}>
+                  <TableCell className={isDark ? "text-slate-300" : ""}>{label}</TableCell>
+                  <TableCell className={isDark ? "text-slate-300" : ""}>
+                    {file.repository_filename_description || ""}
+                  </TableCell>
+                  <TableCell className={isDark ? "text-slate-300 font-mono text-[11px]" : ""}>
+                    {file.repository_filename}
+                  </TableCell>
+                  <TableCell className={`text-center ${isDark ? "text-slate-400" : ""}`}>
+                    {file.repository_filesize || ""}
+                  </TableCell>
+                  <TableCell className={isDark ? "text-slate-400" : ""}>
+                    {file.last_update || ""}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <div className="flex items-center justify-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className={isDark ? "border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200" : ""}
+                        disabled={downloading === file.file_id}
+                        onClick={() => handleDownload(file)}
+                      >
+                        {downloading === file.file_id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Download className="h-4 w-4" />
+                        )}
+                        <span className="sr-only">Download</span>
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className={isDark ? "bg-red-950/50 text-red-400 border border-red-900/50 hover:bg-red-900/50" : ""}
+                        disabled={deleting === file.file_id}
+                        onClick={() => confirmDelete(file)}
+                      >
+                        {deleting === file.file_id ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent className={isDark ? "bg-slate-900 border-slate-800" : ""}>
+          <AlertDialogHeader>
+            <AlertDialogTitle className={isDark ? "text-slate-100" : ""}>Delete this file?</AlertDialogTitle>
+            <AlertDialogDescription className={isDark ? "text-slate-400" : ""}>
+              This will permanently delete{" "}
+              <strong className={isDark ? "text-slate-200" : ""}>{fileToDelete?.repository_filename}</strong> from storage.
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className={isDark ? "bg-slate-800 border-slate-700 text-slate-300" : ""}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-red-600 text-white hover:bg-red-700"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
 
 export default function RepositoryFilesCard({
   logbookFiles = [],
   testFiles = [],
+  onFileDeleted,
+  isDark,
 }: RepositoryFilesCardProps) {
   return (
     <div className="p-4">
-      <Tabs defaultValue="logbook">
-        <TabsList>
-          <TabsTrigger value="logbook" className="gap-1">
-            <FolderOpen className="h-3 w-3" />
+      <Tabs defaultValue="logbook" className="w-full">
+        <TabsList className={isDark ? "bg-slate-950 border border-slate-800" : ""}>
+          <TabsTrigger 
+            value="logbook" 
+            className={`gap-1.5 ${isDark ? "data-[state=active]:bg-slate-800 data-[state=active]:text-slate-100 text-slate-400" : ""}`}
+          >
+            <FolderOpen className="h-3.5 w-3.5" />
             Mission Planning Files
-            <Badge variant="secondary" className="ml-1">
+            <Badge 
+              variant={isDark ? "outline" : "secondary"} 
+              className={`ml-1 text-[10px] px-1 ${isDark ? "border-slate-700 text-slate-400" : ""}`}
+            >
               {logbookFiles.length}
             </Badge>
           </TabsTrigger>
-          <TabsTrigger value="test" className="gap-1">
-            <FolderOpen className="h-3 w-3" />
+          <TabsTrigger 
+            value="test" 
+            className={`gap-1.5 ${isDark ? "data-[state=active]:bg-slate-800 data-[state=active]:text-slate-100 text-slate-400" : ""}`}
+          >
+            <FolderOpen className="h-3.5 w-3.5" />
             Mission Planning Test Files
-            <Badge variant="secondary" className="ml-1">
+            <Badge 
+              variant={isDark ? "outline" : "secondary"} 
+              className={`ml-1 text-[10px] px-1 ${isDark ? "border-slate-700 text-slate-400" : ""}`}
+            >
               {testFiles.length}
             </Badge>
           </TabsTrigger>
         </TabsList>
         <TabsContent value="logbook" className="mt-4">
-          <FileTable files={logbookFiles} label="Mission Planning Files" />
+          <FileTable
+            files={logbookFiles}
+            label="Mission Planning Files"
+            fileType="mission_planning_logbook"
+            onFileDeleted={onFileDeleted}
+            isDark={isDark}
+          />
         </TabsContent>
         <TabsContent value="test" className="mt-4">
-          <FileTable files={testFiles} label="Mission Planning Test Files" />
+          <FileTable
+            files={testFiles}
+            label="Mission Planning Test Files"
+            fileType="mission_planning_test_logbook"
+            onFileDeleted={onFileDeleted}
+            isDark={isDark}
+          />
         </TabsContent>
       </Tabs>
     </div>

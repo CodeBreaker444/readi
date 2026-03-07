@@ -1,5 +1,6 @@
 import { supabase } from "@/backend/database/database";
-import { DroneTool, MissionTemplate, PilotUser, PlanningLogbookRow, PlanningTestLogbookRow, RepositoryFile } from "@/config/types/evaluation-planning";
+import { DroneTool, FileType, MissionTemplate, PilotUser, PlanningLogbookRow, PlanningTestLogbookRow, RepositoryFile } from "@/config/types/evaluation-planning";
+import { deleteFileFromS3, getPresignedDownloadUrl } from "@/lib/s3Client";
 
 
 type CreatePlanning = {
@@ -375,7 +376,9 @@ export async function addMissionPlanningLogbook(params: {
   fk_tool_id: number | null;
   mission_planning_filename: string;
   mission_planning_filesize: number;
-  mission_planning_folder: string;  
+  mission_planning_folder: string;
+  mission_planning_s3_key: string;
+  mission_planning_s3_url: string;
 }) {
   const { data, error } = await supabase
     .from("planning_logbook")
@@ -388,47 +391,94 @@ export async function addMissionPlanningLogbook(params: {
 }
 
 export async function deleteMissionPlanningLogbook(
-  missionPlanningId: number
-) {
-  const { error } = await supabase
-    .from("planning_logbook")
-    .delete()
-    .eq("mission_planning_id", missionPlanningId);
-
-  if (error) throw new Error(error.message);
-  return { deleted: true };
-}
-
- 
-
-export async function movePlanningToTesting(
   ownerId: number,
-  planningId: number
-) {
-  const { error } = await supabase
-    .from("planning")
-    .update({ planning_status: "TESTING" })
-    .eq("planning_id", planningId)
+  missionPlanningId: number
+): Promise<{ deletedId: number; hadTestEntries: boolean }> {
+  const { data: existing, error: fetchError } = await supabase
+    .from("planning_logbook")
+    .select(
+      "mission_planning_id, mission_planning_code, mission_planning_folder"
+    )
+    .eq("mission_planning_id", missionPlanningId)
+    .eq("fk_owner_id", ownerId)
+    .single();
+
+  if (fetchError || !existing) {
+    throw new Error(
+      "Mission planning logbook entry not found or access denied"
+    );
+  }
+
+  const { data: relatedTests } = await supabase
+    .from("planning_test_logbook")
+    .select("test_id, mission_test_s3_key")
+    .eq("fk_mission_planning_id", missionPlanningId)
     .eq("fk_owner_id", ownerId);
 
-  if (error) throw new Error(error.message);
-  return { moved: true };
+  const hadTestEntries = (relatedTests?.length ?? 0) > 0;
+
+  if (hadTestEntries) {
+    for (const test of relatedTests!) {
+      if (test.mission_test_s3_key) {
+        try {
+          await deleteFileFromS3(test.mission_test_s3_key);
+        } catch (s3Err) {
+          console.error(
+            `Failed to delete S3 file for test ${test.test_id}:`,
+            s3Err
+          );
+        }
+      }
+    }
+
+    const { error: testDeleteError } = await supabase
+      .from("planning_test_logbook")
+      .delete()
+      .eq("fk_mission_planning_id", missionPlanningId)
+      .eq("fk_owner_id", ownerId);
+
+    if (testDeleteError) {
+      throw new Error(
+        `Failed to delete related test entries: ${testDeleteError.message}`
+      );
+    }
+  }
+
+  const { error: deleteError } = await supabase
+    .from("planning_logbook")
+    .delete()
+    .eq("mission_planning_id", missionPlanningId)
+    .eq("fk_owner_id", ownerId);
+
+  if (deleteError) {
+    throw new Error(`deleteMissionPlanningLogbook: ${deleteError.message}`);
+  }
+
+  return { deletedId: missionPlanningId, hadTestEntries };
 }
+
 
 export async function getRepositoryList(
   ownerId: number,
-  repositoryType: string
+  repositoryType: string,
+  planningId?: number
 ): Promise<RepositoryFile[]> {
-  const { data, error } = await supabase
+  let query = supabase
     .from("repository_file")
     .select("*")
     .eq("fk_owner_id", ownerId)
-    .eq("file_category", repositoryType)
-    .order("file_id", { ascending: false });
+    .eq("file_category", repositoryType);
+
+  if (planningId) {
+    query = query.contains("file_metadata", { planning_id: planningId });
+  }
+
+  const { data, error } = await query.order("file_id", { ascending: false });
 
   if (error || !data) return [];
   return data as RepositoryFile[];
 }
+
 
 export async function createCommunication(params: {
   fk_owner_id: number;
@@ -511,12 +561,11 @@ export async function getPilotList(ownerId: number): Promise<PilotUser[]> {
       last_name,
       email,
       user_role,
-      user_owner!inner (fk_owner_id)
+      user_active
     `
     )
-    .eq("user_owner.fk_owner_id", ownerId)
+    .eq("fk_owner_id", ownerId)
     .eq("user_role", "PIC")
-    .eq("user_active", "Y")
     .order("last_name", { ascending: true });
 
   if (error || !data) return [];
@@ -524,8 +573,10 @@ export async function getPilotList(ownerId: number): Promise<PilotUser[]> {
   return data.map((row: any) => ({
     user_id: row.user_id,
     fullname: `${row.first_name} ${row.last_name}`,
+    username: row.username,
     email: row.email,
     pilot_status_desc: row.user_role,
+    userActive: row.user_active
   })) as PilotUser[];
 }
 
@@ -541,4 +592,438 @@ export async function getMissionTemplateList(
 
   if (error || !data) return [];
   return data as MissionTemplate[];
+}
+
+export async function getMissionTestRepositoryFiles(
+  ownerId: number,
+  planningId: number
+) {
+  const { data, error } = await supabase
+    .from("planning_test_logbook")
+    .select(
+      `
+      test_id,
+      test_code,
+      mission_test_filename,
+      mission_test_filesize,
+      mission_test_s3_key,
+      mission_test_result,
+      created_at
+    `
+    )
+    .eq("fk_owner_id", ownerId)
+    .eq("fk_planning_id", planningId)
+    .not("mission_test_s3_key", "is", null)
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error(`getMissionTestRepositoryFiles: ${error.message}`);
+
+  const files = [];
+  for (const row of data ?? []) {
+    let documentUrl = "#";
+    if (row.mission_test_s3_key) {
+      try {
+        documentUrl = await getPresignedDownloadUrl(
+          row.mission_test_s3_key,
+          900
+        );
+      } catch {
+        documentUrl = "#";
+      }
+    }
+
+    files.push({
+      file_id: row.test_id,
+      repository_filename: row.mission_test_filename ?? "",
+      repository_filename_description: `Test ${row.test_code ?? ""} — ${row.mission_test_result === "success" ? "Positive" : "Negative"}`,
+      repository_filesize: row.mission_test_filesize
+        ? `${row.mission_test_filesize} MB`
+        : "",
+      document_url: documentUrl,
+      last_update: row.created_at ?? "",
+    });
+  }
+
+  return files;
+}
+
+ 
+export async function deleteRepositoryFile(
+  fileId: number,
+  fileType: FileType,
+  s3Key: string | null,
+  ownerId: number
+) {
+  if (s3Key) {
+    try {
+      await deleteFileFromS3(s3Key);
+    } catch (err) {
+      console.error(`S3 delete failed for key ${s3Key}:`, err);
+    }
+  }
+
+  if (fileType === "mission_planning_logbook") {
+    const { error } = await supabase
+      .from("planning_logbook")
+      .update({
+        mission_planning_filename: null,
+        mission_planning_filesize: null,
+        mission_planning_folder: null,
+        mission_planning_s3_key: null,
+        mission_planning_s3_url: null,
+      })
+      .eq("mission_planning_id", fileId)
+      .eq("fk_owner_id", ownerId);
+
+    if (error) throw new Error(`Database error (logbook): ${error.message}`);
+  } 
+  
+  else if (fileType === "mission_planning_test_logbook") {
+    const { error } = await supabase
+      .from("planning_test_logbook")
+      .update({
+        mission_test_filename: null,
+        mission_test_filesize: null,
+        mission_test_s3_key: null,
+      })
+      .eq("test_id", fileId)
+      .eq("fk_owner_id", ownerId);
+
+    if (error) throw new Error(`Database error (test_logbook): ${error.message}`);
+  }
+
+  return { success: true };
+}
+
+
+export async function addCommunicationGeneral(params: {
+  fk_owner_id: number;
+  subject: string;
+  message: string;
+  communication_type: string;
+  communication_level: string;
+  priority: string;
+  status: string;
+  sent_by_user_id: number;
+  recipients: number[];
+  fk_client_id: number | null;
+  fk_planning_id: number | null;
+  fk_evaluation_id: number | null;
+  communication_to: number[];
+  communication_file_name: string | null;
+  communication_file_key: string | null;
+  communication_file_url: string | null;
+}): Promise<number> {
+  const { data, error } = await supabase
+    .from("communication_general")
+    .insert({
+      fk_owner_id: params.fk_owner_id,
+      subject: params.subject,
+      message: params.message,
+      communication_type: params.communication_type,
+      communication_level: params.communication_level,
+      priority: params.priority,
+      status: params.status,
+      sent_by_user_id: params.sent_by_user_id,
+      recipients: params.recipients,
+      fk_client_id: params.fk_client_id,
+      fk_planning_id: params.fk_planning_id,
+      fk_evaluation_id: params.fk_evaluation_id,
+      communication_to: params.communication_to,
+      communication_file_name: params.communication_file_name,
+      communication_file_key: params.communication_file_key,
+      communication_file_url: params.communication_file_url,
+    })
+    .select("communication_id")
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data.communication_id;
+}
+ 
+ export async function getUsers(params: {
+  fk_owner_id: number;
+}): Promise<{ user_id: number; first_name: string; email: string;  }[]> {
+  const { data, error } = await supabase
+    .from("users")
+    .select("user_id, first_name, email")
+    .eq("fk_owner_id", params.fk_owner_id)
+    .eq("user_active", "Y");
+
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
+
+export async function getCommunicationsByPlanning(
+  ownerId: number,
+  planningId: number
+) {
+  const { data, error } = await supabase
+    .from("communication_general")
+    .select(
+      `
+      communication_id,
+      subject,
+      message,
+      communication_type,
+      communication_level,
+      priority,
+      status,
+      sent_by_user_id,
+      recipients,
+      communication_to,
+      fk_client_id,
+      fk_planning_id,
+      fk_evaluation_id,
+      communication_file_name,
+      communication_file_key,
+      communication_file_url,
+      sent_at,
+      read_at,
+      sender:sent_by_user_id ( user_id, first_name, last_name )
+    `
+    )
+    .eq("fk_owner_id", ownerId)
+    .eq("fk_planning_id", planningId)
+    .order("sent_at", { ascending: false });
+
+  if (error) throw new Error(error.message);
+
+  return (data ?? []).map((row: any) => {
+    const sender = Array.isArray(row.sender) ? row.sender[0] : row.sender;
+    return {
+      communication_id: row.communication_id,
+      subject: row.subject ?? "",
+      message: row.message ?? "",
+      communication_type: row.communication_type ?? "",
+      communication_level: row.communication_level ?? "info",
+      priority: row.priority ?? "normal",
+      status: row.status ?? "sent",
+      sent_by_user_id: row.sent_by_user_id,
+      sender_name: sender
+        ? `${sender.first_name ?? ""} ${sender.last_name ?? ""}`.trim()
+        : "",
+      recipients: row.recipients ?? [],
+      communication_to: row.communication_to ?? [],
+      fk_client_id: row.fk_client_id,
+      fk_planning_id: row.fk_planning_id,
+      fk_evaluation_id: row.fk_evaluation_id,
+      communication_file_name: row.communication_file_name,
+      communication_file_key: row.communication_file_key,
+      communication_file_url: row.communication_file_url,
+      sent_at: row.sent_at ?? "",
+      read_at: row.read_at ?? null,
+    };
+  });
+}
+
+ 
+export async function getChecklistById(
+  ownerId: number,
+  checklistId: number
+) {
+  const { data, error } = await supabase
+    .from("checklist")
+    .select("checklist_id, checklist_code, checklist_desc, checklist_json, checklist_ver, checklist_active")
+    .eq("fk_owner_id", ownerId)
+    .eq("checklist_id", checklistId)
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  return {
+    checklist_id: data.checklist_id,
+    checklist_code: data.checklist_code ?? "",
+    checklist_desc: data.checklist_desc ?? "",
+    checklist_json: data.checklist_json ?? null,
+    checklist_ver: data.checklist_ver ?? 0,
+    checklist_active: data.checklist_active ?? "N",
+  };
+}
+
+
+export async function getChecklistList(
+  ownerId: number
+): Promise<{ checklist_id: number; checklist_code: string; checklist_desc: string }[]> {
+  const { data, error } = await supabase
+    .from("checklist")
+    .select("checklist_id, checklist_code, checklist_desc")
+    .eq("fk_owner_id", ownerId)
+    .eq("checklist_active", "Y")
+    .order("checklist_code", { ascending: true });
+
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((row: any) => ({
+    checklist_id: row.checklist_id,
+    checklist_code: row.checklist_code ?? "",
+    checklist_desc: row.checklist_desc ?? "",
+  }));
+}
+
+ 
+export async function addChecklistTaskToPlanning(
+  ownerId: number,
+  planningId: number,
+  checklistId: number,
+  taskTitle: string,
+  taskDescription: string
+) {
+  const { data: planning, error: fetchErr } = await supabase
+    .from("planning")
+    .select("planning_id, planning_json")
+    .eq("fk_owner_id", ownerId)
+    .eq("planning_id", planningId)
+    .single();
+
+  if (fetchErr) throw new Error(fetchErr.message);
+
+  let planningJson: any;
+  const raw = (planning as any)?.planning_json;
+  if (raw) {
+    try {
+      planningJson = typeof raw === "string" ? JSON.parse(raw) : raw;
+    } catch {
+      planningJson = { tasks: [] };
+    }
+  } else {
+    planningJson = { tasks: [] };
+  }
+
+  if (!Array.isArray(planningJson.tasks)) {
+    planningJson.tasks = [];
+  }
+
+  const { data: checklist, error: clErr } = await supabase
+    .from("checklist")
+    .select("checklist_id, checklist_code, checklist_desc")
+    .eq("checklist_id", checklistId)
+    .eq("fk_owner_id", ownerId)
+    .single();
+
+  if (clErr) throw new Error(`Checklist not found: ${clErr.message}`);
+
+  const existingIds = planningJson.tasks
+    .map((t: any) => Number(t?.task_id ?? t?.id ?? 0))
+    .filter((n: number) => !isNaN(n));
+  const nextId = existingIds.length > 0 ? Math.max(...existingIds) + 1 : 1;
+
+  const newTask = {
+    task_id: nextId,
+    title: taskTitle,
+    task_title: taskTitle,
+    name: taskTitle,
+    description: taskDescription,
+    task_completed: false,
+    completed: false,
+    checklist: [
+      {
+        checklist_id: checklist.checklist_id,
+        checklist_code: checklist.checklist_code ?? "",
+        checklist_name: checklist.checklist_desc ?? "",
+        checklist_completed: false,
+        completed: false,
+      },
+    ],
+  };
+
+  planningJson.tasks.push(newTask);
+
+  const { error: updateErr } = await supabase
+    .from("planning")
+    .update({ planning_json: planningJson })
+    .eq("planning_id", planningId)
+    .eq("fk_owner_id", ownerId);
+
+  if (updateErr) throw new Error(updateErr.message);
+
+  return { task_id: nextId, checklist_id: checklistId };
+}
+
+
+export async function getChecklistsByPlanning(
+  ownerId: number,
+  planningId: number
+) {
+  const { data, error } = await supabase
+    .from("checklist")
+    .select(
+      "checklist_id, checklist_code, checklist_desc, checklist_json, checklist_ver, checklist_active, created_at, updated_at"
+    )
+    .eq("fk_owner_id", ownerId)
+    .eq("fk_planning_id", planningId)
+    .order("checklist_id", { ascending: true });
+
+  if (error) throw new Error(error.message);
+
+  return (data ?? []).map((row: any) => ({
+    checklist_id: row.checklist_id,
+    checklist_code: row.checklist_code ?? "",
+    checklist_desc: row.checklist_desc ?? "",
+    checklist_json: row.checklist_json ?? null,
+    checklist_ver: row.checklist_ver ?? 1.0,
+    checklist_active: row.checklist_active ?? "N",
+    created_at: row.created_at ?? "",
+    updated_at: row.updated_at ?? "",
+  }));
+}
+
+ 
+export async function addChecklistToPlanning(params: {
+  fk_owner_id: number;
+  fk_user_id: number;
+  fk_planning_id: number;
+  checklist_code: string;
+  checklist_desc: string;
+  checklist_json: Record<string, unknown>;
+  checklist_ver: string;
+  checklist_active: string;
+}) {
+  const { data, error } = await supabase
+    .from("checklist")
+    .insert({
+      fk_owner_id: params.fk_owner_id,
+      fk_user_id: params.fk_user_id,
+      fk_planning_id: params.fk_planning_id,
+      checklist_code: params.checklist_code,
+      checklist_desc: params.checklist_desc,
+      checklist_json: params.checklist_json,
+      checklist_ver: parseFloat(params.checklist_ver) || 1.0,
+      checklist_active: params.checklist_active || "Y",
+    })
+    .select("checklist_id")
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+ 
+export async function movePlanningToTesting(
+  ownerId: number,
+  planningId: number
+) {
+  const { data: existing, error: fetchErr } = await supabase
+    .from("planning")
+    .select("planning_id, planning_status")
+    .eq("fk_owner_id", ownerId)
+    .eq("planning_id", planningId)
+    .single();
+
+  if (fetchErr || !existing) {
+    throw new Error("Planning not found or access denied");
+  }
+
+  if (existing.planning_status === "TESTING") {
+    throw new Error("Planning is already in TESTING status");
+  }
+
+  const { error } = await supabase
+    .from("planning")
+    .update({ planning_status: "TESTING" })
+    .eq("planning_id", planningId)
+    .eq("fk_owner_id", ownerId);
+
+  if (error) throw new Error(error.message);
+  return { moved: true, planning_id: planningId };
 }
