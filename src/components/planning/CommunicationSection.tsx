@@ -3,20 +3,20 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-    Dialog,
-    DialogContent,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import axios from "axios";
@@ -155,19 +155,18 @@ export default function CommunicationSection({
   };
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-end">
-        <Button
-          size="sm"
-          onClick={() => {
-            resetForm();
-            setSendDialogOpen(true);
-          }}
-          className="bg-violet-500 hover:bg-violet-600"
-        >
-          <Send className="h-4 w-4 mr-1" /> Add Communication
-        </Button>
-      </div>
+    <>
+      <Button
+        size="sm"
+        onClick={() => {
+          resetForm();
+          setSendDialogOpen(true);
+        }}
+        className="bg-violet-600 hover:bg-violet-700 text-white gap-1.5 h-8"
+      >
+        <Send className="h-4 w-4" />
+        Add Communication
+      </Button>
 
       <Dialog open={sendDialogOpen} onOpenChange={setSendDialogOpen}>
         <DialogContent className="max-w-lg">
@@ -291,6 +290,6 @@ export default function CommunicationSection({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }

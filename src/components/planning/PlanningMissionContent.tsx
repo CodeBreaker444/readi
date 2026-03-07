@@ -37,7 +37,6 @@ import axios from "axios";
 import { toast } from "sonner";
 import Breadcrumbs from "../Breadcrumbs";
 import { useTheme } from "../useTheme";
-import CommunicationSection from "./CommunicationSection";
 import { PlanningTaskTableSection } from "./PlanningTaskTableSection";
 
 export default function PlanningMissionContent() {
@@ -52,8 +51,6 @@ export default function PlanningMissionContent() {
   const [planningData, setPlanningData] = useState<PlanningData | null>(null);
   const [logbookList, setLogbookList] = useState<PlanningLogbookRow[]>([]);
   const [droneTools, setDroneTools] = useState<DroneTool[]>([]);
-  const [taskJsonRaw, setTaskJsonRaw] = useState<string | null>(null);
-  const [taskJsonParsed, setTaskJsonParsed] = useState<any>(null);
   const [repoLogbookFiles, setRepoLogbookFiles] = useState<RepositoryFile[]>([]);
   const [repoTestFiles, setRepoTestFiles] = useState<RepositoryFile[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -84,14 +81,12 @@ export default function PlanningMissionContent() {
     try {
       const [
         planningRes,
-        tasksRes,
         logbookRes,
         toolsRes,
         repoLogbookRes,
         repoTestRes,
       ] = await Promise.all([
         axios.post("/api/evaluation/planning/planning-data", { e_id: p_id }),
-        axios.post("/api/evaluation/planning/tasks", { planning_id: p_id }),
         axios.post("/api/evaluation/planning/logbook", { p_id }),
         axios.post("/api/evaluation/planning/drone", {
           client_id: c_id,
@@ -114,18 +109,7 @@ export default function PlanningMissionContent() {
       setRepoLogbookFiles(repoLogbookRes.data.data ?? []);
       setRepoTestFiles(repoTestRes.data.data ?? []);
 
-      const raw = tasksRes.data?.data?.planning_json ?? null;
-      setTaskJsonRaw(raw);
 
-      if (raw) {
-        try {
-          setTaskJsonParsed(JSON.parse(raw));
-        } catch {
-          setTaskJsonParsed(null);
-        }
-      } else {
-        setTaskJsonParsed(null);
-      }
     } catch (err: any) {
       console.error("Failed to load page data:", err);
       toast.error("Failed to load mission data.");
@@ -288,23 +272,17 @@ export default function PlanningMissionContent() {
 
       <Breadcrumbs items={breadcrumbItems} isDark={isDark} />
 
-
-      <CommunicationSection
-        clientId={c_id}
-        planningId={p_id}
-        evaluationId={e_id}
-      />
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Card>
+        <Card className={isDark ? "bg-slate-900 border-slate-800" : "bg-white"}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-base">
+            <CardTitle className={`text-base ${isDark ? "text-slate-100" : "text-slate-900"}`}>
               Edit Mission Planning Request
             </CardTitle>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setShowEditPlanning(!showEditPlanning)}
+              className={isDark ? "hover:bg-slate-800 text-slate-400" : ""}
             >
               <ToggleIcon show={showEditPlanning} />
             </Button>
@@ -312,6 +290,7 @@ export default function PlanningMissionContent() {
           {showEditPlanning && (
             <CardContent className="p-0">
               <EditPlanningRequestCard
+                isDark={isDark}
                 planningData={planningData}
                 clinetId={c_id}
                 evaluationId={e_id}
@@ -322,15 +301,16 @@ export default function PlanningMissionContent() {
           )}
         </Card>
 
-        <Card>
+        <Card className={isDark ? "bg-slate-900 border-slate-800" : "bg-white"}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-base">
+            <CardTitle className={`text-base ${isDark ? "text-slate-100" : "text-slate-900"}`}>
               Mission Planning Logbook Add New
             </CardTitle>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setShowAddNewMission(!showAddNewMission)}
+              className={isDark ? "hover:bg-slate-800 text-slate-400" : ""}
             >
               <ToggleIcon show={showAddNewMission} />
             </Button>
@@ -338,6 +318,7 @@ export default function PlanningMissionContent() {
           {showAddNewMission && (
             <CardContent className="p-0">
               <MissionPlanningLogbookAddNew
+                isDark={isDark}
                 planningId={p_id}
                 evaluationId={e_id}
                 clientId={c_id}
@@ -350,13 +331,16 @@ export default function PlanningMissionContent() {
         </Card>
       </div>
 
-      <Card>
+      <Card className={isDark ? "bg-slate-900 border-slate-800" : "bg-white"}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-base">Mission Planning Logbook</CardTitle>
+          <CardTitle className={`text-base ${isDark ? "text-slate-100" : "text-slate-900"}`}>
+            Mission Planning Logbook
+          </CardTitle>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setShowLogbookTable(!showLogbookTable)}
+            className={isDark ? "hover:bg-slate-800 text-slate-400" : ""}
           >
             <ToggleIcon show={showLogbookTable} />
           </Button>
@@ -364,6 +348,7 @@ export default function PlanningMissionContent() {
         {showLogbookTable && (
           <CardContent>
             <MissionPlanningLogbookTable
+              isDark={isDark}
               data={logbookList}
               openedRowId={openedRowId}
               onOpen={handleOpenRow}
@@ -375,21 +360,25 @@ export default function PlanningMissionContent() {
         )}
       </Card>
 
+
       <PlanningTaskTableSection
         isDark={isDark}
         planningId={p_id}
-        rawJson={taskJsonRaw}
-        parsed={taskJsonParsed}
+        clientId={c_id}
+        evaluationId={e_id}
         onMoveToTesting={loadPageData}
       />
-      
-      <Card>
+
+      <Card className={isDark ? "bg-slate-900 border-slate-800" : ""}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-base">Repository Files</CardTitle>
+          <CardTitle className={`text-base ${isDark ? "text-slate-100" : ""}`}>
+            Repository Files
+          </CardTitle>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setShowRepoFiles(!showRepoFiles)}
+            className={isDark ? "hover:bg-slate-800 text-slate-400" : ""}
           >
             <ToggleIcon show={showRepoFiles} />
           </Button>
@@ -400,25 +389,35 @@ export default function PlanningMissionContent() {
               logbookFiles={repoLogbookFiles}
               testFiles={repoTestFiles}
               onFileDeleted={loadPageData}
+              isDark={isDark}
             />
           </CardContent>
         )}
       </Card>
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className={isDark ? "bg-slate-900 border-slate-800" : ""}>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className={isDark ? "text-slate-100" : ""}>
+              Are you absolutely sure?
+            </AlertDialogTitle>
+            <AlertDialogDescription className={isDark ? "text-slate-400" : ""}>
               This action cannot be undone. This will permanently delete the
-              mission logbook entry.
+              mission logbook entry and all associated data.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel
+              className={isDark ? "bg-slate-800 border-slate-700 text-slate-300" : ""}
+            >
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleDeleteLogbook}
-              className="bg-red-500 text-destructive-foreground hover:bg-red-500/90"
+              onClick={(e) => {
+                e.preventDefault();
+                handleDeleteLogbook();
+              }}
+              className="bg-red-600 text-white hover:bg-red-700 disabled:opacity-70"
             >
               Delete
             </AlertDialogAction>
@@ -428,6 +427,7 @@ export default function PlanningMissionContent() {
 
       {testModalRow && (
         <MissionTestLogbookModal
+          isDark={isDark}
           open={testModalOpen}
           onOpenChange={setTestModalOpen}
           missionPlanningId={testModalRow.mission_planning_id}

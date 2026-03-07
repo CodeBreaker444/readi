@@ -457,21 +457,6 @@ export async function deleteMissionPlanningLogbook(
   return { deletedId: missionPlanningId, hadTestEntries };
 }
 
- 
-
-export async function movePlanningToTesting(
-  ownerId: number,
-  planningId: number
-) {
-  const { error } = await supabase
-    .from("planning")
-    .update({ planning_status: "TESTING" })
-    .eq("planning_id", planningId)
-    .eq("fk_owner_id", ownerId);
-
-  if (error) throw new Error(error.message);
-  return { moved: true };
-}
 
 export async function getRepositoryList(
   ownerId: number,
@@ -769,26 +754,276 @@ export async function addCommunicationGeneral(params: {
   return data ?? [];
 }
 
-export async function getPlanningTasksJson(ownerId: number, planningId: number) {
+
+export async function getCommunicationsByPlanning(
+  ownerId: number,
+  planningId: number
+) {
   const { data, error } = await supabase
+    .from("communication_general")
+    .select(
+      `
+      communication_id,
+      subject,
+      message,
+      communication_type,
+      communication_level,
+      priority,
+      status,
+      sent_by_user_id,
+      recipients,
+      communication_to,
+      fk_client_id,
+      fk_planning_id,
+      fk_evaluation_id,
+      communication_file_name,
+      communication_file_key,
+      communication_file_url,
+      sent_at,
+      read_at,
+      sender:sent_by_user_id ( user_id, first_name, last_name )
+    `
+    )
+    .eq("fk_owner_id", ownerId)
+    .eq("fk_planning_id", planningId)
+    .order("sent_at", { ascending: false });
+
+  if (error) throw new Error(error.message);
+
+  return (data ?? []).map((row: any) => {
+    const sender = Array.isArray(row.sender) ? row.sender[0] : row.sender;
+    return {
+      communication_id: row.communication_id,
+      subject: row.subject ?? "",
+      message: row.message ?? "",
+      communication_type: row.communication_type ?? "",
+      communication_level: row.communication_level ?? "info",
+      priority: row.priority ?? "normal",
+      status: row.status ?? "sent",
+      sent_by_user_id: row.sent_by_user_id,
+      sender_name: sender
+        ? `${sender.first_name ?? ""} ${sender.last_name ?? ""}`.trim()
+        : "",
+      recipients: row.recipients ?? [],
+      communication_to: row.communication_to ?? [],
+      fk_client_id: row.fk_client_id,
+      fk_planning_id: row.fk_planning_id,
+      fk_evaluation_id: row.fk_evaluation_id,
+      communication_file_name: row.communication_file_name,
+      communication_file_key: row.communication_file_key,
+      communication_file_url: row.communication_file_url,
+      sent_at: row.sent_at ?? "",
+      read_at: row.read_at ?? null,
+    };
+  });
+}
+
+ 
+export async function getChecklistById(
+  ownerId: number,
+  checklistId: number
+) {
+  const { data, error } = await supabase
+    .from("checklist")
+    .select("checklist_id, checklist_code, checklist_desc, checklist_json, checklist_ver, checklist_active")
+    .eq("fk_owner_id", ownerId)
+    .eq("checklist_id", checklistId)
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  return {
+    checklist_id: data.checklist_id,
+    checklist_code: data.checklist_code ?? "",
+    checklist_desc: data.checklist_desc ?? "",
+    checklist_json: data.checklist_json ?? null,
+    checklist_ver: data.checklist_ver ?? 0,
+    checklist_active: data.checklist_active ?? "N",
+  };
+}
+
+
+export async function getChecklistList(
+  ownerId: number
+): Promise<{ checklist_id: number; checklist_code: string; checklist_desc: string }[]> {
+  const { data, error } = await supabase
+    .from("checklist")
+    .select("checklist_id, checklist_code, checklist_desc")
+    .eq("fk_owner_id", ownerId)
+    .eq("checklist_active", "Y")
+    .order("checklist_code", { ascending: true });
+
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((row: any) => ({
+    checklist_id: row.checklist_id,
+    checklist_code: row.checklist_code ?? "",
+    checklist_desc: row.checklist_desc ?? "",
+  }));
+}
+
+ 
+export async function addChecklistTaskToPlanning(
+  ownerId: number,
+  planningId: number,
+  checklistId: number,
+  taskTitle: string,
+  taskDescription: string
+) {
+  const { data: planning, error: fetchErr } = await supabase
     .from("planning")
     .select("planning_id, planning_json")
     .eq("fk_owner_id", ownerId)
     .eq("planning_id", planningId)
     .single();
 
+  if (fetchErr) throw new Error(fetchErr.message);
+
+  let planningJson: any;
+  const raw = (planning as any)?.planning_json;
+  if (raw) {
+    try {
+      planningJson = typeof raw === "string" ? JSON.parse(raw) : raw;
+    } catch {
+      planningJson = { tasks: [] };
+    }
+  } else {
+    planningJson = { tasks: [] };
+  }
+
+  if (!Array.isArray(planningJson.tasks)) {
+    planningJson.tasks = [];
+  }
+
+  const { data: checklist, error: clErr } = await supabase
+    .from("checklist")
+    .select("checklist_id, checklist_code, checklist_desc")
+    .eq("checklist_id", checklistId)
+    .eq("fk_owner_id", ownerId)
+    .single();
+
+  if (clErr) throw new Error(`Checklist not found: ${clErr.message}`);
+
+  const existingIds = planningJson.tasks
+    .map((t: any) => Number(t?.task_id ?? t?.id ?? 0))
+    .filter((n: number) => !isNaN(n));
+  const nextId = existingIds.length > 0 ? Math.max(...existingIds) + 1 : 1;
+
+  const newTask = {
+    task_id: nextId,
+    title: taskTitle,
+    task_title: taskTitle,
+    name: taskTitle,
+    description: taskDescription,
+    task_completed: false,
+    completed: false,
+    checklist: [
+      {
+        checklist_id: checklist.checklist_id,
+        checklist_code: checklist.checklist_code ?? "",
+        checklist_name: checklist.checklist_desc ?? "",
+        checklist_completed: false,
+        completed: false,
+      },
+    ],
+  };
+
+  planningJson.tasks.push(newTask);
+
+  const { error: updateErr } = await supabase
+    .from("planning")
+    .update({ planning_json: planningJson })
+    .eq("planning_id", planningId)
+    .eq("fk_owner_id", ownerId);
+
+  if (updateErr) throw new Error(updateErr.message);
+
+  return { task_id: nextId, checklist_id: checklistId };
+}
+
+
+export async function getChecklistsByPlanning(
+  ownerId: number,
+  planningId: number
+) {
+  const { data, error } = await supabase
+    .from("checklist")
+    .select(
+      "checklist_id, checklist_code, checklist_desc, checklist_json, checklist_ver, checklist_active, created_at, updated_at"
+    )
+    .eq("fk_owner_id", ownerId)
+    .eq("fk_planning_id", planningId)
+    .order("checklist_id", { ascending: true });
+
   if (error) throw new Error(error.message);
 
-  const raw = (data as any)?.planning_json;
-  const planning_json =
-    raw === null || raw === undefined
-      ? null
-      : typeof raw === "string"
-      ? raw
-      : JSON.stringify(raw);
+  return (data ?? []).map((row: any) => ({
+    checklist_id: row.checklist_id,
+    checklist_code: row.checklist_code ?? "",
+    checklist_desc: row.checklist_desc ?? "",
+    checklist_json: row.checklist_json ?? null,
+    checklist_ver: row.checklist_ver ?? 1.0,
+    checklist_active: row.checklist_active ?? "N",
+    created_at: row.created_at ?? "",
+    updated_at: row.updated_at ?? "",
+  }));
+}
 
-  return {
-    planning_id: (data as any)?.planning_id,
-    planning_json,
-  };
+ 
+export async function addChecklistToPlanning(params: {
+  fk_owner_id: number;
+  fk_user_id: number;
+  fk_planning_id: number;
+  checklist_code: string;
+  checklist_desc: string;
+  checklist_json: Record<string, unknown>;
+  checklist_ver: string;
+  checklist_active: string;
+}) {
+  const { data, error } = await supabase
+    .from("checklist")
+    .insert({
+      fk_owner_id: params.fk_owner_id,
+      fk_user_id: params.fk_user_id,
+      fk_planning_id: params.fk_planning_id,
+      checklist_code: params.checklist_code,
+      checklist_desc: params.checklist_desc,
+      checklist_json: params.checklist_json,
+      checklist_ver: parseFloat(params.checklist_ver) || 1.0,
+      checklist_active: params.checklist_active || "Y",
+    })
+    .select("checklist_id")
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+ 
+export async function movePlanningToTesting(
+  ownerId: number,
+  planningId: number
+) {
+  const { data: existing, error: fetchErr } = await supabase
+    .from("planning")
+    .select("planning_id, planning_status")
+    .eq("fk_owner_id", ownerId)
+    .eq("planning_id", planningId)
+    .single();
+
+  if (fetchErr || !existing) {
+    throw new Error("Planning not found or access denied");
+  }
+
+  if (existing.planning_status === "TESTING") {
+    throw new Error("Planning is already in TESTING status");
+  }
+
+  const { error } = await supabase
+    .from("planning")
+    .update({ planning_status: "TESTING" })
+    .eq("planning_id", planningId)
+    .eq("fk_owner_id", ownerId);
+
+  if (error) throw new Error(error.message);
+  return { moved: true, planning_id: planningId };
 }

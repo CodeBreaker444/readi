@@ -13,16 +13,26 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RepositoryFile } from "@/config/types/evaluation-planning";
 import { getFileDownloadUrl } from "@/lib/get-download-url";
 import axios from "axios";
-import { Download, FolderOpen, Loader2 } from "lucide-react";
+import { Download, FolderOpen, Loader2, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../ui/alert-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from "../ui/alert-dialog";
 import { Button } from "../ui/button";
 
 interface RepositoryFilesCardProps {
   logbookFiles: RepositoryFile[];
   testFiles: RepositoryFile[];
   onFileDeleted?: () => void;
+  isDark: boolean;
 }
 
 function FileTable({
@@ -30,11 +40,13 @@ function FileTable({
   label,
   fileType,
   onFileDeleted,
+  isDark,
 }: {
   files: RepositoryFile[];
   label: string;
   fileType: "mission_planning_logbook" | "mission_planning_test_logbook";
   onFileDeleted?: () => void;
+  isDark: boolean;
 }) {
   const [downloading, setDownloading] = useState<number | null>(null);
   const [deleting, setDeleting] = useState<number | null>(null);
@@ -92,45 +104,50 @@ function FileTable({
 
   return (
     <>
-      <div className="rounded-md border">
+      <div className={`rounded-md border ${isDark ? "border-slate-800" : ""}`}>
         <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Type</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead>Filename</TableHead>
-              <TableHead className="text-center">File Size</TableHead>
-              <TableHead>Last Action</TableHead>
-              <TableHead className="text-center">Actions</TableHead>
+          <TableHeader className={isDark ? "bg-slate-900/50" : "bg-slate-50/50"}>
+            <TableRow className={isDark ? "border-slate-800 hover:bg-transparent" : ""}>
+              <TableHead className={isDark ? "text-slate-400" : ""}>Type</TableHead>
+              <TableHead className={isDark ? "text-slate-400" : ""}>Description</TableHead>
+              <TableHead className={isDark ? "text-slate-400" : ""}>Filename</TableHead>
+              <TableHead className={`text-center ${isDark ? "text-slate-400" : ""}`}>File Size</TableHead>
+              <TableHead className={isDark ? "text-slate-400" : ""}>Last Action</TableHead>
+              <TableHead className={`text-center ${isDark ? "text-slate-400" : ""}`}>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {files.length === 0 ? (
-              <TableRow>
+              <TableRow className={isDark ? "border-slate-800 hover:bg-transparent" : ""}>
                 <TableCell
                   colSpan={6}
-                  className="h-16 text-center text-muted-foreground"
+                  className={`h-16 text-center ${isDark ? "text-slate-500" : "text-muted-foreground"}`}
                 >
                   No files found.
                 </TableCell>
               </TableRow>
             ) : (
               files.map((file) => (
-                <TableRow key={file.file_id}>
-                  <TableCell>{label}</TableCell>
-                  <TableCell>
+                <TableRow key={file.file_id} className={isDark ? "border-slate-800 hover:bg-slate-800/40" : ""}>
+                  <TableCell className={isDark ? "text-slate-300" : ""}>{label}</TableCell>
+                  <TableCell className={isDark ? "text-slate-300" : ""}>
                     {file.repository_filename_description || ""}
                   </TableCell>
-                  <TableCell>{file.repository_filename}</TableCell>
-                  <TableCell className="text-center">
+                  <TableCell className={isDark ? "text-slate-300 font-mono text-[11px]" : ""}>
+                    {file.repository_filename}
+                  </TableCell>
+                  <TableCell className={`text-center ${isDark ? "text-slate-400" : ""}`}>
                     {file.repository_filesize || ""}
                   </TableCell>
-                  <TableCell>{file.last_update || ""}</TableCell>
+                  <TableCell className={isDark ? "text-slate-400" : ""}>
+                    {file.last_update || ""}
+                  </TableCell>
                   <TableCell className="text-center">
                     <div className="flex items-center justify-center gap-2">
                       <Button
                         variant="outline"
                         size="sm"
+                        className={isDark ? "border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200" : ""}
                         disabled={downloading === file.file_id}
                         onClick={() => handleDownload(file)}
                       >
@@ -144,10 +161,15 @@ function FileTable({
                       <Button
                         variant="destructive"
                         size="sm"
+                        className={isDark ? "bg-red-950/50 text-red-400 border border-red-900/50 hover:bg-red-900/50" : ""}
                         disabled={deleting === file.file_id}
                         onClick={() => confirmDelete(file)}
                       >
-                        {deleting === file.file_id ? "..." : "Delete"}
+                        {deleting === file.file_id ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
                       </Button>
                     </div>
                   </TableCell>
@@ -159,20 +181,22 @@ function FileTable({
       </div>
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className={isDark ? "bg-slate-900 border-slate-800" : ""}>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete this file?</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className={isDark ? "text-slate-100" : ""}>Delete this file?</AlertDialogTitle>
+            <AlertDialogDescription className={isDark ? "text-slate-400" : ""}>
               This will permanently delete{" "}
-              <strong>{fileToDelete?.repository_filename}</strong> from storage.
+              <strong className={isDark ? "text-slate-200" : ""}>{fileToDelete?.repository_filename}</strong> from storage.
               This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel className={isDark ? "bg-slate-800 border-slate-700 text-slate-300" : ""}>
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
-              className="bg-red-500 text-destructive-foreground hover:bg-red-500/90"
+              className="bg-red-600 text-white hover:bg-red-700"
             >
               Delete
             </AlertDialogAction>
@@ -182,26 +206,40 @@ function FileTable({
     </>
   );
 }
+
 export default function RepositoryFilesCard({
   logbookFiles = [],
   testFiles = [],
   onFileDeleted,
+  isDark,
 }: RepositoryFilesCardProps) {
   return (
     <div className="p-4">
-      <Tabs defaultValue="logbook">
-        <TabsList>
-          <TabsTrigger value="logbook" className="gap-1">
-            <FolderOpen className="h-3 w-3" />
+      <Tabs defaultValue="logbook" className="w-full">
+        <TabsList className={isDark ? "bg-slate-950 border border-slate-800" : ""}>
+          <TabsTrigger 
+            value="logbook" 
+            className={`gap-1.5 ${isDark ? "data-[state=active]:bg-slate-800 data-[state=active]:text-slate-100 text-slate-400" : ""}`}
+          >
+            <FolderOpen className="h-3.5 w-3.5" />
             Mission Planning Files
-            <Badge variant="secondary" className="ml-1">
+            <Badge 
+              variant={isDark ? "outline" : "secondary"} 
+              className={`ml-1 text-[10px] px-1 ${isDark ? "border-slate-700 text-slate-400" : ""}`}
+            >
               {logbookFiles.length}
             </Badge>
           </TabsTrigger>
-          <TabsTrigger value="test" className="gap-1">
-            <FolderOpen className="h-3 w-3" />
+          <TabsTrigger 
+            value="test" 
+            className={`gap-1.5 ${isDark ? "data-[state=active]:bg-slate-800 data-[state=active]:text-slate-100 text-slate-400" : ""}`}
+          >
+            <FolderOpen className="h-3.5 w-3.5" />
             Mission Planning Test Files
-            <Badge variant="secondary" className="ml-1">
+            <Badge 
+              variant={isDark ? "outline" : "secondary"} 
+              className={`ml-1 text-[10px] px-1 ${isDark ? "border-slate-700 text-slate-400" : ""}`}
+            >
               {testFiles.length}
             </Badge>
           </TabsTrigger>
@@ -212,6 +250,7 @@ export default function RepositoryFilesCard({
             label="Mission Planning Files"
             fileType="mission_planning_logbook"
             onFileDeleted={onFileDeleted}
+            isDark={isDark}
           />
         </TabsContent>
         <TabsContent value="test" className="mt-4">
@@ -220,6 +259,7 @@ export default function RepositoryFilesCard({
             label="Mission Planning Test Files"
             fileType="mission_planning_test_logbook"
             onFileDeleted={onFileDeleted}
+            isDark={isDark}
           />
         </TabsContent>
       </Tabs>

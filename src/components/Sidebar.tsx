@@ -220,12 +220,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role }) => {
     if (isActive) {
       return isDark
         ? 'bg-violet-600/20 text-violet-400 border-l-2 border-violet-500'
-        : 'bg-violet-600 text-white border-l-2 border-violet-800'; // Using your requested bg-violet-600
+        : 'bg-violet-600 text-white border-l-2 border-violet-800';  
     }
     if (isHovered) {
       return isDark
         ? 'bg-slate-800/70 text-violet-400 border-l-2 border-violet-500/40'
-        : 'bg-violet-500/10 text-violet-700 border-l-2 border-violet-300'; // Using your requested hover:bg-violet-500 logic
+        : 'bg-violet-500/10 text-violet-700 border-l-2 border-violet-300';  
     }
     return isDark
       ? 'text-slate-400 border-l-2 border-transparent'

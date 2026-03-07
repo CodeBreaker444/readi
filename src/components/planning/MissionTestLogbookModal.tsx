@@ -16,9 +16,8 @@ import {
     Dialog,
     DialogContent,
     DialogDescription,
-    DialogFooter,
     DialogHeader,
-    DialogTitle,
+    DialogTitle
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,12 +38,13 @@ import {
 } from "@/components/ui/table";
 import type { MissionTestRow, PilotUser } from "@/config/types/evaluation-planning";
 import axios from "axios";
-import { Loader2, Pause, Play, Trash2 } from "lucide-react";
+import { Loader2, Pause, Play, Plus, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Skeleton } from "../ui/skeleton";
 
 interface MissionTestLogbookModalProps {
+    isDark: boolean
     open: boolean;
     onOpenChange: (open: boolean) => void;
     missionPlanningId: number;
@@ -55,6 +55,7 @@ interface MissionTestLogbookModalProps {
 }
 
 export default function MissionTestLogbookModal({
+    isDark,
     open,
     onOpenChange,
     missionPlanningId,
@@ -234,208 +235,195 @@ export default function MissionTestLogbookModal({
     };
 
     return (
-
         <>
             <Dialog open={open} onOpenChange={handleClose}>
-                <DialogContent className="max-w-[95vw] lg:max-w-screen-xl h-[90vh] flex flex-col p-0 overflow-hidden">
+                <DialogContent className={`max-w-[95vw] lg:max-w-screen-xl h-[90vh] flex flex-col p-0 overflow-hidden ${isDark ? "bg-slate-900 border-slate-800" : ""}`}>
 
-                    <DialogHeader className="p-6 border-b bg-muted/20">
+                    <DialogHeader className={`p-6 border-b ${isDark ? "bg-slate-950/50 border-slate-800" : "bg-muted/20"}`}>
                         <div className="flex justify-between items-center">
                             <div>
-                                <DialogTitle className="text-xl font-bold tracking-tight">Mission Test Logbook</DialogTitle>
-                                <DialogDescription className="text-sm">
+                                <DialogTitle className={`text-xl font-bold tracking-tight ${isDark ? "text-slate-100" : ""}`}>
+                                    Mission Test Logbook
+                                </DialogTitle>
+                                <DialogDescription className={`text-sm ${isDark ? "text-slate-400" : ""}`}>
                                     [GO.00.P03] Mission Test — Manage tests for mission planning #{missionPlanningId}
                                 </DialogDescription>
                             </div>
-                            <div className={`px-4 py-1 rounded-sm text-xs font-semibold ${activeStatus === 'N' ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'}`}>
+                            <Badge variant="outline" className={`px-4 py-1 rounded-sm text-xs font-semibold border-none ${activeStatus === 'N'
+                                ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                                : 'bg-green-100 text-green-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                }`}>
                                 {activeStatus === 'N' ? 'On Hold' : 'Active'}
-                            </div>
+                            </Badge>
                         </div>
                     </DialogHeader>
 
                     <div className="flex-1 overflow-y-auto p-6 space-y-8">
                         {loading ? (
                             <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
-                                <div className="rounded-xl border p-6 space-y-6">
-                                    <div className="flex items-center gap-2 border-b pb-4">
+
+                                <div className={`rounded-xl border p-6 space-y-6 ${isDark ? "bg-slate-900/50 border-slate-800" : "bg-card"}`}>
+                                    <div className={`flex items-center gap-2 border-b pb-4 ${isDark ? "border-slate-800" : ""}`}>
                                         <Skeleton className="h-2 w-2 rounded-full" />
                                         <Skeleton className="h-6 w-48" />
                                     </div>
+
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                                         {[...Array(6)].map((_, i) => (
                                             <div key={i} className="space-y-2">
                                                 <Skeleton className="h-4 w-24" />
-                                                <Skeleton className="h-11 w-full" />
+                                                <Skeleton className="h-11 w-full rounded-md" />
                                             </div>
                                         ))}
                                         <div className="space-y-2 lg:col-span-2">
                                             <Skeleton className="h-4 w-32" />
-                                            <Skeleton className="h-11 w-full" />
+                                            <Skeleton className="h-11 w-full rounded-md" />
                                         </div>
                                     </div>
-                                    <div className="mt-8 flex justify-end border-t pt-6">
-                                        <Skeleton className="h-11 w-40" />
+
+                                    <div className={`mt-8 flex justify-end border-t pt-6 ${isDark ? "border-slate-800" : ""}`}>
+                                        <Skeleton className="h-12 w-44 rounded-md" />
                                     </div>
                                 </div>
 
-                                <div className="rounded-xl border overflow-hidden">
-                                    <div className="bg-muted/30 px-6 py-4 border-b">
+                                <div className={`rounded-xl border overflow-hidden ${isDark ? "bg-slate-900/50 border-slate-800" : "bg-card"}`}>
+                                    <div className={`px-6 py-4 border-b ${isDark ? "bg-slate-950/50 border-slate-800" : "bg-muted/30"}`}>
                                         <Skeleton className="h-5 w-40" />
                                     </div>
+
                                     <div className="p-0">
+                                        <div className={`flex items-center justify-between px-6 py-3 border-b ${isDark ? "bg-slate-950/30 border-slate-800" : "bg-muted/10"}`}>
+                                            <Skeleton className="h-4 w-20" />
+                                            <Skeleton className="h-4 w-32" />
+                                            <Skeleton className="h-4 w-24" />
+                                            <Skeleton className="h-4 w-16" />
+                                            <Skeleton className="h-4 w-8" />
+                                        </div>
+
                                         {[...Array(5)].map((_, i) => (
-                                            <div key={i} className="flex items-center justify-between p-4 border-b last:border-0">
-                                                <Skeleton className="h-4 w-24" />
-                                                <Skeleton className="h-4 w-32" />
+                                            <div key={i} className={`flex items-center justify-between px-6 py-5 border-b last:border-0 ${isDark ? "border-slate-800" : ""}`}>
+                                                <Skeleton className="h-5 w-24" />
+                                                <div className="space-y-2">
+                                                    <Skeleton className="h-4 w-32" />
+                                                    <Skeleton className="h-3 w-24" />
+                                                </div>
                                                 <Skeleton className="h-4 w-40" />
-                                                <Skeleton className="h-6 w-16 rounded-full" />
-                                                <Skeleton className="h-8 w-8 rounded-md" />
+                                                <Skeleton className="h-6 w-20 rounded-full" />
+                                                <Skeleton className="h-9 w-9 rounded-md" />
                                             </div>
                                         ))}
                                     </div>
+                                </div>
+
+                                <div className="flex justify-start pt-4">
+                                    <Skeleton className="h-10 w-48 rounded-md" />
                                 </div>
                             </div>
                         ) : (
                             <div className="max-w-7xl mx-auto space-y-8">
 
-                                <section className="rounded-xl border bg-card text-card-foreground shadow-sm p-6">
-                                    <div className="flex items-center gap-2 mb-6 border-b pb-4">
+                                <section className={`rounded-xl border shadow-sm p-6 ${isDark ? "bg-slate-900/50 border-slate-800" : "bg-card"}`}>
+                                    <div className={`flex items-center gap-2 mb-6 border-b pb-4 ${isDark ? "border-slate-800" : ""}`}>
                                         <h4 className="text-md font-semibold uppercase tracking-tight text-muted-foreground">Add New Test Entry</h4>
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                                        <div className="space-y-2 lg:col-span-1">
-                                            <Label className="text-sm font-medium">Pilot in Command</Label>
+                                        <div className="space-y-2">
+                                            <Label className={isDark ? "text-white" : ""}>Pilot in Command</Label>
                                             <Select value={form.fk_pic_id} onValueChange={(val) => handleFieldChange("fk_pic_id", val)}>
-                                                <SelectTrigger className="h-11"><SelectValue placeholder="Select PiC" /></SelectTrigger>
-                                                <SelectContent>
+                                                <SelectTrigger className={`h-11 ${isDark ? "bg-slate-950 border-slate-800" : ""}`}>
+                                                    <SelectValue placeholder="Select PiC" />
+                                                </SelectTrigger>
+                                                <SelectContent className={isDark ? "bg-slate-900 border-slate-800 text-white" : ""}>
                                                     {pilots.map((p) => (
                                                         <SelectItem key={p.user_id} value={String(p.user_id)}>
                                                             <div className="flex items-center gap-2">
-                                                                <span className="relative flex h-2 w-2">
-                                                                    <span
-                                                                        className={`absolute inline-flex h-full w-full rounded-full opacity-75 ${p.userActive ? "animate-ping bg-emerald-400" : "bg-slate-300"
-                                                                            }`}
-                                                                    />
-                                                                    <span
-                                                                        className={`relative inline-flex rounded-full h-2 w-2 ${p.userActive ? "bg-emerald-500" : "bg-slate-400"
-                                                                            }`}
-                                                                    />
-                                                                </span>
-
-                                                                <span className={p.userActive ? "font-medium" : "text-muted-foreground"}>
-                                                                    {p.fullname}
-                                                                </span>
-
-                                                                {!p.userActive && (
-                                                                    <span className="text-[10px] uppercase tracking-tighter opacity-50 ml-auto">
-                                                                        (Unavailable)
-                                                                    </span>
-                                                                )}
+                                                                <span className={`h-2 w-2 rounded-full ${p.userActive ? "bg-emerald-500 animate-pulse" : "bg-slate-400"}`} />
+                                                                {p.fullname}
                                                             </div>
                                                         </SelectItem>
                                                     ))}
                                                 </SelectContent>
                                             </Select>
-                                            {errors.fk_pic_id && <p className="text-xs text-destructive">{errors.fk_pic_id}</p>}
-                                        </div>
-
-                                        <div className="space-y-2 lg:col-span-1">
-                                            <Label className="text-sm font-medium">Observer</Label>
-                                            <Select value={form.fk_observer_id} onValueChange={(val) => handleFieldChange("fk_observer_id", val)}>
-                                                <SelectTrigger className="h-11"><SelectValue placeholder="Select Observer" /></SelectTrigger>
-                                                <SelectContent>
-                                                    {pilots.map((p) => (
-                                                        <SelectItem key={p.user_id} value={String(p.user_id)}>
-                                                            {p.fullname}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                            {errors.fk_observer_id && <p className="text-xs text-destructive">{errors.fk_observer_id}</p>}
                                         </div>
 
                                         <div className="space-y-2">
-                                            <Label className="text-sm font-medium">Test Code</Label>
-                                            <Input className="h-11 font-mono" value={form.mission_test_code} onChange={(e) => handleFieldChange("mission_test_code", e.target.value)} placeholder="e.g. TST-001" />
+                                            <Label className={isDark ? "text-slate-300" : ""}>Test Code</Label>
+                                            <Input
+                                                className={`h-11 font-mono ${isDark ? "bg-slate-950 border-slate-800 text-white" : ""}`}
+                                                value={form.mission_test_code}
+                                                onChange={(e) => handleFieldChange("mission_test_code", e.target.value)}
+                                                placeholder="TST-001"
+                                            />
                                         </div>
 
                                         <div className="space-y-2">
-                                            <Label className="text-sm font-medium">Test Result</Label>
+                                            <Label className={isDark ? "text-slate-300" : ""}>Test Result</Label>
                                             <Select value={form.mission_test_result} onValueChange={(val) => handleFieldChange("mission_test_result", val)}>
-                                                <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="error">Negative</SelectItem>
+                                                <SelectTrigger className={`h-11 ${isDark ? "bg-slate-950 border-slate-800 text-white" : ""}`}><SelectValue /></SelectTrigger>
+                                                <SelectContent className={isDark ? "bg-slate-900 border-slate-800 text-white" : ""}>
                                                     <SelectItem value="success">Positive</SelectItem>
+                                                    <SelectItem value="error">Negative</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                         </div>
 
                                         <div className="space-y-2">
-                                            <Label className="text-sm font-medium">Start Date</Label>
-                                            <Input type="date" className="h-11" value={form.mission_test_date_start} onChange={(e) => handleFieldChange("mission_test_date_start", e.target.value)} />
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <Label className="text-sm font-medium">End Date</Label>
-                                            <Input type="date" className="h-11" value={form.mission_test_date_end} onChange={(e) => handleFieldChange("mission_test_date_end", e.target.value)} />
+                                            <Label className={isDark ? "text-slate-300" : ""}>End Date</Label>
+                                            <Input type="date" className={`h-11 ${isDark ? "bg-slate-950 border-slate-800 text-white" : ""}`} value={form.mission_test_date_end} onChange={(e) => handleFieldChange("mission_test_date_end", e.target.value)} />
                                         </div>
 
                                         <div className="space-y-2 lg:col-span-2">
-                                            <Label className="text-sm font-medium">Mission Planning Test File</Label>
-                                            <Input type="file" className="h-11 cursor-pointer pt-2" ref={fileInputRef} name="mission_planning_test_file" />
+                                            <Label className={isDark ? "text-slate-300" : ""}>Test Artifact (Log/File)</Label>
+                                            <Input type="file" className={`h-11 cursor-pointer pt-2 ${isDark ? "bg-slate-950 border-slate-800 file:text-white" : ""}`} ref={fileInputRef} />
                                         </div>
                                     </div>
 
-                                    <div className="mt-8 flex justify-end border-t pt-6">
-                                        <Button onClick={handleAddTest} disabled={submitting} size="lg" className="bg-violet-600 hover:bg-violet-700 cursor-pointer px-12 transition-all">
-                                            {submitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Adding Test...</> : "Add Test Entry"}
+                                    <div className={`mt-8 flex justify-end border-t pt-6 ${isDark ? "border-slate-800" : ""}`}>
+                                        <Button onClick={handleAddTest} disabled={submitting} size="lg" className="bg-violet-600 hover:bg-violet-700 text-white px-12 transition-all">
+                                            {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />} Add Test Entry
                                         </Button>
                                     </div>
                                 </section>
 
-                                <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
-                                    <div className="bg-muted/30 px-6 py-4 border-b">
+                                <div className={`rounded-xl border shadow-sm overflow-hidden ${isDark ? "bg-slate-900/50 border-slate-800" : "bg-card"}`}>
+                                    <div className={`bg-muted/30 px-6 py-4 border-b ${isDark ? "bg-slate-950/50 border-slate-800" : ""}`}>
                                         <h4 className="font-semibold text-muted-foreground">Historical Test Logs</h4>
                                     </div>
                                     <Table>
-                                        <TableHeader className="bg-muted/10">
-                                            <TableRow>
-                                                <TableHead className="font-bold">Test Code</TableHead>
-                                                <TableHead className="font-bold">Staff (PiC / Obs)</TableHead>
-                                                <TableHead className="font-bold text-center">Duration</TableHead>
-                                                <TableHead className="font-bold">Result</TableHead>
-                                                <TableHead className="font-bold">Artifacts</TableHead>
-                                                <TableHead className="text-right">Actions</TableHead>
+                                        <TableHeader className={isDark ? "bg-slate-950/30 text-white" : "bg-muted/10"}>
+                                            <TableRow className={isDark ? "border-slate-800" : ""}>
+                                                <TableHead className={`${isDark ? "border-slate-800 text-white" : ""}  `}>Test Code</TableHead>
+                                                <TableHead className={`${isDark ? "border-slate-800 text-white" : ""}  `}>Staff (PiC / Obs)</TableHead>
+                                                <TableHead className={`${isDark ? "border-slate-800 text-white" : ""}  `}>Duration</TableHead>
+                                                <TableHead className={`${isDark ? "border-slate-800 text-white" : ""}  `}>Result</TableHead>
+                                                <TableHead className={`${isDark ? "border-slate-800 text-white" : ""}  `}>Actions</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
                                             {tests.length === 0 ? (
                                                 <TableRow>
-                                                    <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
-                                                        No mission tests have been logged for this planning ID.
+                                                    <TableCell colSpan={5} className="h-32 text-center text-muted-foreground">
+                                                        No mission tests have been logged.
                                                     </TableCell>
                                                 </TableRow>
                                             ) : (
                                                 tests.map((test) => (
-                                                    <TableRow key={test.test_id} className="hover:bg-muted/50 transition-colors">
-                                                        <TableCell className="font-mono font-medium text-violet-600">{test.test_code}</TableCell>
+                                                    <TableRow key={test.test_id} className={`transition-colors ${isDark ? "border-slate-800 hover:bg-slate-800/40" : "hover:bg-muted/50"}`}>
+                                                        <TableCell className="font-mono font-medium text-violet-500">{test.test_code}</TableCell>
                                                         <TableCell>
                                                             <div className="flex flex-col">
-                                                                <span className="text-sm font-medium">{test.pic_name}</span>
-                                                                <span className="text-xs text-muted-foreground">Obs: {test.observer_name}</span>
+                                                                <span className={`text-sm font-medium ${isDark ? "text-slate-200" : ""}`}>{test.pic_name}</span>
+                                                                <span className="text-xs text-muted-foreground italic">Obs: {test.observer_name}</span>
                                                             </div>
                                                         </TableCell>
-                                                        <TableCell className="text-center text-sm">
-                                                            {test.mission_test_date_start} <span className="text-muted-foreground mx-1">→</span> {test.mission_test_date_end}
+                                                        <TableCell className="text-center text-xs text-slate-500">
+                                                            {test.mission_test_date_start} <span className="mx-1">→</span> {test.mission_test_date_end}
                                                         </TableCell>
                                                         <TableCell>
-                                                            <Badge variant={test.mission_test_result === "success" ? "default" : "destructive"} className={test.mission_test_result === "success" ? "bg-emerald-500 hover:bg-emerald-600" : ""}>
+                                                            <Badge className={test.mission_test_result === "success" ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-red-500/10 text-red-500 border-red-500/20"} variant="outline">
                                                                 {test.mission_test_result === "success" ? "Positive" : "Negative"}
                                                             </Badge>
-                                                        </TableCell>
-                                                        <TableCell className="text-xs text-muted-foreground italic max-w-[150px] truncate">
-                                                            {test.mission_test_filename ?? "No file"}
                                                         </TableCell>
                                                         <TableCell className="text-right">
                                                             <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={() => confirmDeleteTest(test.test_id)}>
@@ -449,59 +437,42 @@ export default function MissionTestLogbookModal({
                                     </Table>
                                 </div>
 
-                                <div className="flex justify-start pt-4">
+                                <div className="flex justify-between items-center pt-4 border-t border-dashed">
                                     <Button
-                                        variant="default"
+                                        variant="outline"
                                         size="sm"
                                         disabled={updatingStatus}
-                                        className={`cursor-pointer   ${activeStatus === "N"
-                                                ? "bg-emerald-600 hover:bg-emerald-700 text-white"
-                                                : "bg-amber-500 hover:bg-amber-600 text-white"
+                                        className={`transition-all ${activeStatus === "N"
+                                            ? "border-emerald-600/50 text-emerald-600 hover:bg-emerald-600/10"
+                                            : "border-amber-500/50 text-amber-500 hover:bg-amber-500/10"
                                             }`}
                                         onClick={handleToggleActive}
                                     >
-                                        {updatingStatus ? (
-                                            <>
-                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                                Updating...
-                                            </>
-                                        ) : activeStatus === "N" ? (
-                                            <>
-                                                <Play className="mr-2 h-4 w-4" /> Activate Mission
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Pause className="mr-2 h-4 w-4" /> Put on Hold
-                                            </>
-                                        )}
+                                        {updatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : activeStatus === "N" ? <Play className="mr-2 h-4 w-4" /> : <Pause className="mr-2 h-4 w-4" />}
+                                        {activeStatus === "N" ? "Activate Mission" : "Put on Hold"}
+                                    </Button>
+
+                                    <Button variant="secondary" className="px-8 bg-violet-600 hover:bg-violet-700 text-white" onClick={() => handleClose(false)}>
+                                        Finish & Close
                                     </Button>
                                 </div>
                             </div>
                         )}
                     </div>
-
-                    <DialogFooter className="p-4 bg-muted/20 border-t">
-                        <Button variant="secondary" className="px-8 cursor-pointer bg-violet-600 hover:bg-violet-700 text-white" onClick={() => handleClose(false)}>
-                            Finished
-                        </Button>
-                    </DialogFooter>
                 </DialogContent>
             </Dialog>
 
             <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-                <AlertDialogContent>
+                <AlertDialogContent className={isDark ? "bg-slate-900 border-slate-800" : ""}>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete the test entry.
+                        <AlertDialogTitle className={isDark ? "text-slate-100" : ""}>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription className={isDark ? "text-slate-400" : ""}>
+                            This action cannot be undone. This will permanently delete the test entry and associated file artifacts.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={handleDeleteTest}
-                            className="bg-red-500 text-destructive-foreground hover:bg-red-500/90"
-                        >
+                        <AlertDialogCancel className={isDark ? "bg-slate-800 border-slate-700 text-slate-300" : ""}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteTest} className="bg-red-600 hover:bg-red-700 text-white">
                             Delete
                         </AlertDialogAction>
                     </AlertDialogFooter>

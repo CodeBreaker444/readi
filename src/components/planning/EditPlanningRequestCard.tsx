@@ -4,16 +4,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { PlanningData } from "@/config/types/evaluation-planning";
 import { useEffect, useState } from "react";
 
 interface EditPlanningRequestCardProps {
+  isDark: boolean;
   planningData: PlanningData | null;
   clinetId: number;
   evaluationId: number;
@@ -38,6 +39,7 @@ interface PlanningForm {
 }
 
 export default function EditPlanningRequestCard({
+  isDark,
   planningData,
   clinetId,
   evaluationId,
@@ -91,30 +93,32 @@ export default function EditPlanningRequestCard({
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setSubmitting(true);
-  try {
-    await onUpdate(form as unknown as Record<string, unknown>);
-  } finally {
-    setSubmitting(false);
-  }
-};
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      await onUpdate(form as unknown as Record<string, unknown>);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+  const labelColor = isDark ? "text-slate-400" : "text-slate-700";
+  const inputBg = isDark ? "bg-slate-950 border-slate-800 text-slate-200" : "bg-white";
 
   return (
-    <div className="p-4 space-y-4">
+    <div className={`p-4 space-y-4 ${isDark ? "bg-slate-900/50" : "bg-transparent"}`}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="planning_status">Status</Label>
+            <Label htmlFor="planning_status" className={labelColor}>Status</Label>
             <Select
               value={form.planning_status}
               onValueChange={(val) => handleSelectChange("planning_status", val)}
             >
-              <SelectTrigger id="planning_status">
+              <SelectTrigger id="planning_status" className={inputBg}>
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className={isDark ? "bg-slate-900 border-slate-800 text-slate-200" : ""}>
                 <SelectItem value="NEW">New Task</SelectItem>
                 <SelectItem value="PROGRESS">In Progress</SelectItem>
                 <SelectItem value="REVIEW">Feedback Request</SelectItem>
@@ -124,15 +128,15 @@ const handleSubmit = async (e: React.FormEvent) => {
             </Select>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="planning_result">Result</Label>
+            <Label htmlFor="planning_result" className={labelColor}>Result</Label>
             <Select
               value={form.planning_result}
               onValueChange={(val) => handleSelectChange("planning_result", val)}
             >
-              <SelectTrigger id="planning_result">
+              <SelectTrigger id="planning_result" className={inputBg}>
                 <SelectValue placeholder="Select result" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className={isDark ? "bg-slate-900 border-slate-800 text-slate-200" : ""}>
                 <SelectItem value="PROGRESS">In Progress</SelectItem>
                 <SelectItem value="RESULT_POSITIVE">Completed Positive</SelectItem>
                 <SelectItem value="RESULT_NEGATIVE">Completed Refused</SelectItem>
@@ -141,38 +145,61 @@ const handleSubmit = async (e: React.FormEvent) => {
           </div>
         </div>
 
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="space-y-2">
-            <Label>Client</Label>
-            <Input value={form.client_name} readOnly className="bg-muted" />
+            <Label className={labelColor}>Client</Label>
+            <Input
+              value={form.client_name}
+              readOnly
+              className={isDark ? "bg-slate-800 border-slate-700 text-slate-400" : "bg-muted"}
+            />
           </div>
           <div className="space-y-2">
-            <Label>Request Date</Label>
+            <Label className={labelColor}>Request Date</Label>
             <Input
               type="date"
               name="planning_request_date"
               value={form.planning_request_date}
               onChange={handleChange}
+              className={inputBg}
             />
           </div>
           <div className="space-y-2">
-            <Label>Year Reference</Label>
-            <Input name="planning_year" value={form.planning_year} onChange={handleChange} />
+            <Label className={labelColor}>Year Reference</Label>
+            <Input
+              name="planning_year"
+              value={form.planning_year}
+              onChange={handleChange}
+              className={inputBg}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className={labelColor}>Description</Label>
+            <Input
+              name="planning_desc"
+              value={form.planning_desc}
+              onChange={handleChange}
+              className={inputBg}
+            />
           </div>
         </div>
 
-        <div className="grid grid-cols-4 gap-4 items-end">
-          <div className="space-y-2">
-            <Label>Description</Label>
-            <Input name="planning_desc" value={form.planning_desc} onChange={handleChange} />
+        <div className="flex justify-between items-end gap-4">
+          <div className="space-y-2 flex-1">
+            <Label className={labelColor}>Type</Label>
+            <Input
+              name="planning_type"
+              value={form.planning_type}
+              onChange={handleChange}
+              className={inputBg}
+            />
           </div>
-          <div className="space-y-2">
-            <Label>Type</Label>
-            <Input name="planning_type" value={form.planning_type} onChange={handleChange} />
-          </div>
-          <div />
-          <div>
-            <Button type="submit" disabled={submitting} className="w-full bg-violet-500 hover:bg-violet-600 cursor-pointer">
+          <div className="w-full md:w-1/4">
+            <Button
+              type="submit"
+              disabled={submitting}
+              className="w-full bg-violet-600 hover:bg-violet-700 text-white transition-colors"
+            >
               {submitting ? "Updating..." : "Update"}
             </Button>
           </div>
