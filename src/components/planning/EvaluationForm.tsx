@@ -25,13 +25,13 @@ interface LUCProcedure {
   name: string;
 }
 
-interface EvaluationFormData {
+export interface EvaluationFormData {
   client_id: number;
   fk_luc_procedure_id: number;
   evaluation_status: string;
   evaluation_request_date: string;
   evaluation_year: number;
-  evaluation_desc: string;
+  evaluation_description: string;
   evaluation_offer: string;
   evaluation_sale_manager: string;
   evaluation_result: string;
@@ -51,7 +51,7 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, isDark }) => 
     evaluation_status: 'NEW',
     evaluation_request_date: new Date().toISOString().split('T')[0],
     evaluation_year: currentYear,
-    evaluation_desc: '',
+    evaluation_description: '',
     evaluation_offer: '',
     evaluation_sale_manager: '',
     evaluation_result: 'PROCESSING',
@@ -70,7 +70,11 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, isDark }) => 
     try {
       const response = await axios.get('/api/client/list');
       if (!response.data) { toast.error('Failed to load clients'); return; }
-      setClients(response.data.clients || []);
+      const clientList = (response.data.data || []).map((c: any) => ({
+        id: c.client_id,
+        name: c.client_name,
+      }));
+      setClients(clientList);
     } catch (error) {
       console.error('Error loading clients:', error);
       toast.error('Failed to load clients');
@@ -90,8 +94,20 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, isDark }) => 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData.client_id === 0) { alert('Please select a client'); return; }
-    if (formData.fk_luc_procedure_id === 0) { alert('Please select a LUC procedure'); return; }
+
+    if (formData.client_id === 0) {
+      toast.error('Please select a client');
+      return;
+    }
+    if (formData.fk_luc_procedure_id === 0) {
+      toast.error('Please select a LUC procedure');
+      return;
+    }
+    if (!formData.evaluation_description.trim()) {
+      toast.error('Please enter a description');
+      return;
+    }
+
     setLoading(true);
     try {
       await onSubmit(formData);
@@ -206,8 +222,8 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, isDark }) => 
           rows={4}
           placeholder="Enter evaluation description..."
           className={`cursor-text resize-none ${inputClass}`}
-          value={formData.evaluation_desc}
-          onChange={(e) => setFormData(prev => ({ ...prev, evaluation_desc: e.target.value }))}
+          value={formData.evaluation_description}
+          onChange={(e) => setFormData(prev => ({ ...prev, evaluation_description: e.target.value }))}
           required
         />
       </div>
@@ -240,7 +256,7 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, isDark }) => 
         <Button
           type="submit"
           disabled={loading}
-          className="cursor-pointer w-full md:w-auto  bg-violet-600 hover:bg-violet-500 text-white font-medium px-6 py-2.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="cursor-pointer w-full md:w-auto bg-violet-600 hover:bg-violet-500 text-white font-medium px-6 py-2.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? (
             <span className="flex items-center gap-2">

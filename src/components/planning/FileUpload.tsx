@@ -40,7 +40,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
   const handleUpload = async () => {
     if (!selectedFile || !description) {
-      alert('Please provide a description and select a file');
+      toast.error('Please provide a description and select a file');
       return;
     }
     setUploading(true);
@@ -196,7 +196,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
               disabled={!canUpload}
               className={`cursor-pointer w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
                 canUpload
-                  ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow'
+                  ? 'bg-violet-600 hover:bg-violet-700 text-white shadow-sm hover:shadow'
                   : 'bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500'
               } ${!canUpload ? (isDark ? 'bg-gray-700 text-gray-500' : 'bg-gray-200 text-gray-400') : ''}`}
             >

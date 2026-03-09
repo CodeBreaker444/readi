@@ -1,5 +1,5 @@
 import { supabase } from "@/backend/database/database";
-import { Client, CreateEvaluationInput, Evaluation, EvaluationFile, LucProcedure, UpdateEvaluationInput } from "@/config/types/evaluation";
+import { Client, Evaluation, EvaluationFile, LucProcedure } from "@/config/types/evaluation";
 import { deleteFileFromS3 } from "@/lib/s3Client";
 
 /**
@@ -13,137 +13,50 @@ export async function getEvaluationList(ownerId: number): Promise<Evaluation[]> 
       fk_owner_id,
       fk_client_id,
       fk_luc_procedure_id,
+      evaluation_code,
+      evaluation_name,
+      evaluation_description,
+      evaluation_type,
       evaluation_status,
       evaluation_result,
-      evaluation_request_date,
       evaluation_year,
-      evaluation_desc,
-      evaluation_offer,
-      evaluation_sale_manager,
-      evaluation_folder,
-      evaluation_json,
-      evaluation_polygon,
-      data_create,
-      last_update,
-      client:client_id ( client_name, client_code ),
-      luc_procedure:luc_procedure_id ( luc_procedure_code, luc_procedure_ver ),
-      users:fk_user_id ( user_name:username, user_profile_code )
+      evaluation_active,
+      evaluation_metadata,
+      scheduled_date,
+      coordinates,
+      created_by_user_id,
+      created_at,
+      updated_at,
+      client:fk_client_id ( client_name ),
+      luc_procedure:fk_luc_procedure_id ( procedure_code, procedure_version ),
+      creator:created_by_user_id ( username )
     `)
     .eq('fk_owner_id', ownerId)
     .order('evaluation_id', { ascending: false });
 
   if (error) throw new Error(`getEvaluationList: ${error.message}`);
 
-  return (data ?? []).map((row: Record<string, unknown>) => ({
-    ...row,
-    client_name: (row.client as { client_name?: string } | null)?.client_name ?? '',
-    luc_procedure_code: (row.luc_procedure as { luc_procedure_code?: string } | null)?.luc_procedure_code ?? '',
-    luc_procedure_ver: (row.luc_procedure as { luc_procedure_ver?: string } | null)?.luc_procedure_ver ?? '',
-    user_name: (row.users as { user_name?: string } | null)?.user_name ?? '',
-    user_profile_code: (row.users as { user_profile_code?: string } | null)?.user_profile_code ?? '',
-  })) as Evaluation[];
-}
+  return (data ?? []).map((row: any) => {
+    const metadata =
+      typeof row.evaluation_metadata === 'string'
+        ? JSON.parse(row.evaluation_metadata)
+        : row.evaluation_metadata ?? {};
 
-/**
- * Fetch a single evaluation by id.
- */
-export async function getEvaluationById(
-  evaluationId: number,
-  ownerId: number,
-): Promise<Evaluation | null> {
-  const { data, error } = await supabase
-    .from('evaluation')
-    .select(`
-      *,
-      client:client_id ( client_name, client_code ),
-      luc_procedure:luc_procedure_id ( luc_procedure_code, luc_procedure_ver ),
-      users:fk_user_id ( user_name:username, user_profile_code )
-    `)
-    .eq('evaluation_id', evaluationId)
-    .eq('fk_owner_id', ownerId)
-    .single();
+    return {
+      ...row,
+      client_name: row.client?.client_name ?? '',
+      luc_procedure_code: row.luc_procedure?.procedure_code ?? '',
+      luc_procedure_ver: row.luc_procedure?.procedure_version ?? '',
+      user_name: row.creator?.username ?? '',
 
-  if (error) {
-    if (error.code === 'PGRST116') return null; // not found
-    throw new Error(`getEvaluationById: ${error.message}`);
-  }
+      evaluation_desc: row.evaluation_description ?? '',
+      evaluation_request_date: row.scheduled_date ?? '',
+      last_update: row.updated_at ?? '',
 
-  if (!data) return null;
-
-  return {
-    ...data,
-    client_name: (data.client as { client_name?: string } | null)?.client_name ?? '',
-    luc_procedure_code: (data.luc_procedure as { luc_procedure_code?: string } | null)?.luc_procedure_code ?? '',
-    luc_procedure_ver: (data.luc_procedure as { luc_procedure_ver?: string } | null)?.luc_procedure_ver ?? '',
-    user_name: (data.users as { user_name?: string } | null)?.user_name ?? '',
-    user_profile_code: (data.users as { user_profile_code?: string } | null)?.user_profile_code ?? '',
-  } as Evaluation;
-}
-
-/**
- * Insert a new evaluation record.
- */
-export async function createEvaluation(
-  input: CreateEvaluationInput,
-  ownerId: number,
-  userId: number,
-): Promise<Evaluation> {
-  const now = new Date().toISOString().split('T')[0];
-
-  const { data, error } = await supabase
-    .from('evaluation')
-    .insert({
-      fk_owner_id: ownerId,
-      fk_client_id: input.fk_client_id,
-      fk_luc_procedure_id: input.fk_luc_procedure_id,
-      evaluation_status: input.evaluation_status,
-      evaluation_result: input.evaluation_result,
-      evaluation_request_date: input.evaluation_request_date,
-      evaluation_year: input.evaluation_year,
-      evaluation_desc: input.evaluation_desc ?? '',
-      evaluation_offer: input.evaluation_offer ?? '',
-      evaluation_sale_manager: input.evaluation_sale_manager ?? '',
-      evaluation_folder: '',
-      fk_user_id: userId,
-      data_create: now,
-      last_update: now,
-    })
-    .select()
-    .single();
-
-  if (error) throw new Error(`createEvaluation: ${error.message}`);
-  return data as Evaluation;
-}
-
-/**
- * Update an existing evaluation.
- */
-export async function updateEvaluation(
-  input: UpdateEvaluationInput,
-): Promise<Evaluation> {
-  const { data, error } = await supabase
-    .from('evaluation')
-    .update({
-      fk_client_id: input.fk_client_id,
-      fk_luc_procedure_id: input.fk_luc_procedure_id,
-      evaluation_status: input.evaluation_status,
-      evaluation_result: input.evaluation_result,
-      evaluation_request_date: input.evaluation_request_date,
-      evaluation_year: input.evaluation_year,
-      evaluation_desc: input.evaluation_desc ?? '',
-      evaluation_offer: input.evaluation_offer ?? '',
-      evaluation_sale_manager: input.evaluation_sale_manager ?? '',
-      evaluation_folder: input.evaluation_folder ?? '',
-      fk_evaluation_code: input.fk_evaluation_code,
-      last_update: new Date().toISOString().split('T')[0],
-    })
-    .eq('evaluation_id', input.evaluation_id)
-    .eq('fk_owner_id', input.fk_owner_id)
-    .select()
-    .single();
-
-  if (error) throw new Error(`updateEvaluation: ${error.message}`);
-  return data as Evaluation;
+      evaluation_offer: metadata.offer ?? '',
+      evaluation_sale_manager: metadata.sale_manager ?? '',
+    };
+  }) as Evaluation[];
 }
 
 /**

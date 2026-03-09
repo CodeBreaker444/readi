@@ -22,27 +22,40 @@ export type Permission =
   | 'view_repository'
   | 'view_logs'
   | 'view_planning'
+  | 'view_planning_advanced'   
   | 'view_logbooks'
   | 'view_notifications'
   | 'manage_users'
-  | 'add_company';  
+  | 'add_company';
 
 type WildcardPermission = '*';
 export type RolePermission = Permission | WildcardPermission;
 
 export const ROLE_PERMISSIONS: Record<Role, RolePermission[]> = {
-  SUPERADMIN: ['*'], 
-  ADMIN: ['view_dashboard','view_pilot_dashboard','view_operations','view_compliance','view_training','view_safety_mgmt','view_config','view_repository','view_logs','view_planning','view_logbooks','view_notifications','manage_users'],
-  PIC: ['view_pilot_dashboard', 'view_operations', 'view_repository', 'view_logbooks'],
-  OPM: ['view_dashboard', 'view_operations', 'view_logs', 'view_repository', 'view_planning', 'view_logbooks'],
-  SM: ['view_dashboard', 'view_safety_mgmt', 'view_repository', 'view_notifications'],
-  AM: ['view_dashboard', 'view_logs', 'view_repository', 'view_logbooks'],
+  SUPERADMIN: ['*'],
+  ADMIN: [
+    'view_dashboard', 'view_pilot_dashboard', 'view_operations', 'view_compliance',
+    'view_training', 'view_safety_mgmt', 'view_config', 'view_repository', 'view_logs',
+    'view_planning', 'view_planning_advanced', 'view_logbooks', 'view_notifications',
+    'manage_users', 'add_company',
+  ],
+  PIC: [
+    'view_pilot_dashboard',
+    'view_planning',        
+    'view_operations',
+    'view_notifications',
+    'view_repository',
+  ],
+  OPM: ['view_dashboard', 'view_operations', 'view_logs', 'view_repository', 'view_planning', 'view_planning_advanced', 'view_logbooks','view_config'],
+  SM:  ['view_dashboard', 'view_safety_mgmt', 'view_repository', 'view_notifications','view_config'],
+  AM:  ['view_dashboard', 'view_logs', 'view_repository', 'view_logbooks','view_config'],
   CMM: ['view_dashboard', 'view_compliance', 'view_repository', 'view_logbooks'],
-  RM: ['view_operations', 'view_logs'],
-  TM: ['view_dashboard', 'view_training', 'view_repository'],
-  DC: ['view_repository'],
-  SLA: ['view_dashboard', 'view_logs'],
+  RM:  ['view_operations', 'view_logs'],
+  TM:  ['view_dashboard', 'view_training', 'view_repository'],
+  DC:  ['view_repository','view_config'],
+  SLA: ['view_dashboard', 'view_logs','view_config'],
 };
+
 export function roleHasPermission(role: Role | null | undefined, permission: Permission): boolean {
   if (!role) return false;
   const perms = ROLE_PERMISSIONS[role];
@@ -54,8 +67,8 @@ export function roleHasPermission(role: Role | null | undefined, permission: Per
 export const ROUTE_PERMISSIONS: Record<string, Permission> = {
   '/dashboard': 'view_dashboard',
   '/dashboard/safety-health': 'view_dashboard',
-  '/planning/new-evaluation': 'view_planning',
-  '/planning/evaluation': 'view_planning',
+  '/planning/new-evaluation': 'view_planning_advanced',  
+  '/planning/evaluation': 'view_planning_advanced',       
   '/planning/planning-mission': 'view_planning',
   '/planning/planning-dashboard': 'view_planning',
   '/planning/mission-template': 'view_planning',
@@ -87,30 +100,30 @@ export const ROUTE_PERMISSIONS: Record<string, Permission> = {
 
 export function canAccessRoute(role: Role | null | undefined, pathname: string): boolean {
   if (!role) return false;
-  if (role === 'ADMIN') return true;
-  
+  if (role === 'SUPERADMIN' || role === 'ADMIN') return true;
+
   const requiredPermission = ROUTE_PERMISSIONS[pathname];
   if (!requiredPermission) return false;
-  
+
   return roleHasPermission(role, requiredPermission);
 }
 
 export function getAccessibleRoutes(role: Role | null | undefined): string[] {
   if (!role) return [];
-  if (role === 'ADMIN') return Object.keys(ROUTE_PERMISSIONS);
-  
+  if (role === 'SUPERADMIN' || role === 'ADMIN') return Object.keys(ROUTE_PERMISSIONS);
+
   return Object.entries(ROUTE_PERMISSIONS)
     .filter(([_, permission]) => roleHasPermission(role, permission))
-    .map(([route, _]) => route);
+    .map(([route]) => route);
 }
 
 export function getDefaultRoute(role: Role | null | undefined): string {
   if (!role) return '/auth/login';
-  
+
   if (roleHasPermission(role, 'view_dashboard')) return '/dashboard';
   if (roleHasPermission(role, 'view_pilot_dashboard')) return '/dashboard';
   if (roleHasPermission(role, 'view_operations')) return '/operations/table';
   if (roleHasPermission(role, 'view_repository')) return '/document-repository';
-  
+
   return '/auth/login';
 }
