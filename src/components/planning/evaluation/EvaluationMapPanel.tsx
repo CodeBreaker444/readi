@@ -11,25 +11,21 @@ interface Props {
   } | null;
 }
 
- 
 function normaliseToFeatureCollection(raw: any): { type: string; features: any[] } | null {
   if (!raw) return null;
 
   if (raw.type === 'FeatureCollection' && Array.isArray(raw.features)) {
     return raw.features.length > 0 ? raw : null;
   }
-
   if (raw.type === 'Feature' && raw.geometry) {
     return { type: 'FeatureCollection', features: [raw] };
   }
-
   if (raw.type === 'Polygon' || raw.type === 'MultiPolygon') {
     return {
       type: 'FeatureCollection',
       features: [{ type: 'Feature', properties: {}, geometry: raw }],
     };
   }
-
   if (Array.isArray(raw)) {
     const features = raw
       .map((item: any) => {
@@ -42,8 +38,25 @@ function normaliseToFeatureCollection(raw: any): { type: string; features: any[]
       .filter(Boolean);
     return features.length > 0 ? { type: 'FeatureCollection', features } : null;
   }
-
   return null;
+}
+
+/**
+ * Ensures Leaflet CSS is loaded exactly once.
+ * Without this, the map tiles and controls have no positioning
+ * and overflow their container.
+ */
+function ensureLeafletCSS() {
+  const LEAFLET_CSS_ID = 'leaflet-css';
+  if (document.getElementById(LEAFLET_CSS_ID)) return;
+
+  const link = document.createElement('link');
+  link.id = LEAFLET_CSS_ID;
+  link.rel = 'stylesheet';
+  link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+  link.integrity = 'sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=';
+  link.crossOrigin = '';
+  document.head.appendChild(link);
 }
 
 export function EvaluationMapPanel({ evaluationId, polygonData }: Props) {
@@ -61,12 +74,20 @@ export function EvaluationMapPanel({ evaluationId, polygonData }: Props) {
 
     setNoPolygon(false);
     let cancelled = false;
-
     const features = normalised.features;
 
     async function init() {
       try {
+        ensureLeafletCSS();
+
         const { default: L } = await import('leaflet');
+
+        delete (L.Icon.Default.prototype as any)._getIconUrl;
+        L.Icon.Default.mergeOptions({
+          iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+          iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+          shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+        });
 
         if (cancelled || !mapContainerRef.current) return;
 
@@ -178,7 +199,8 @@ export function EvaluationMapPanel({ evaluationId, polygonData }: Props) {
   return (
     <div
       ref={mapContainerRef}
-      className="h-[30vh] min-h-64 border border-slate-200 rounded-lg z-0"
+      style={{ position: 'relative', overflow: 'hidden', zIndex: 0 }}
+      className="h-[30vh] min-h-64 border border-slate-200 rounded-lg"
     />
   );
 }

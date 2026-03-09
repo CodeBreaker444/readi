@@ -14,7 +14,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { EvaluationFile } from '@/config/types/evaluation';
 import { ColumnDef } from '@tanstack/react-table';
-import { Download, Trash2 } from 'lucide-react';
+import { Download, FileWarning, Trash2 } from 'lucide-react';
 
 export const getEvaluationFileColumns = (
   evaluationId: number,
@@ -33,11 +33,23 @@ export const getEvaluationFileColumns = (
     header: () => <span className="text-xs font-semibold text-slate-500">Filename</span>,
     cell: ({ row }) => {
       const file = row.original;
+      const url = file.download_url;
+
+      if (!url) {
+        return (
+          <span className="text-xs text-slate-400 flex items-center gap-1">
+            <FileWarning className="w-3 h-3 shrink-0" />
+            {file.evaluation_file_filename}
+          </span>
+        );
+      }
+
       return (
         <a
-          href={`/api/evaluation/${evaluationId}/files/download?key=${encodeURIComponent(file.evaluation_file_folder)}`}
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
           className="text-xs text-blue-600 hover:underline flex items-center gap-1"
-          download={file.evaluation_file_filename}
         >
           <Download className="w-3 h-3 shrink-0" />
           {file.evaluation_file_filename}
@@ -60,19 +72,6 @@ export const getEvaluationFileColumns = (
     ),
     size: 80,
   },
-  // {
-  //   accessorKey: 'evaluation_file_filesize',
-  //   header: () => <span className="text-xs font-semibold text-slate-500">Size</span>,
-  //   cell: ({ getValue }) => {
-  //     const size = getValue() as number;
-  //     return (
-  //       <span className="text-xs text-slate-500">
-  //         {size ? `${size.toFixed(2)} MB` : '—'}
-  //       </span>
-  //     );
-  //   },
-  //   size: 80,
-  // },
   {
     accessorKey: 'last_update',
     header: () => <span className="text-xs font-semibold text-slate-500">Modified</span>,

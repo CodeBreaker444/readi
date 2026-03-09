@@ -19,6 +19,7 @@ interface FileUploadProps {
   onFileAdded: (file: EvaluationFile) => void;
   onFileRemoved: (fileId: number) => void;
   isDark?: boolean;
+  disabled?: boolean;
 }
 
 const FileUpload: React.FC<FileUploadProps> = ({
@@ -28,6 +29,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
   onFileAdded,
   onFileRemoved,
   isDark = false,
+  disabled = false,
 }) => {
   const [description, setDescription] = useState('');
   const [version, setVersion] = useState('1.0');
@@ -35,10 +37,20 @@ const FileUpload: React.FC<FileUploadProps> = ({
   const [uploading, setUploading] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (disabled) {
+      e.preventDefault();
+      toast.error('Please create an evaluation request first before uploading files');
+      e.target.value = '';
+      return;
+    }
     if (e.target.files && e.target.files[0]) setSelectedFile(e.target.files[0]);
   };
 
   const handleUpload = async () => {
+    if (disabled) {
+      toast.error('Please create an evaluation request first before uploading files');
+      return;
+    }
     if (!selectedFile || !description) {
       toast.error('Please provide a description and select a file');
       return;
@@ -89,17 +101,17 @@ const FileUpload: React.FC<FileUploadProps> = ({
     isDark
       ? 'bg-gray-800 border-gray-600 text-gray-100 placeholder:text-gray-500'
       : 'bg-white border-gray-300 text-gray-900 placeholder:text-gray-400'
-  }`;
+  } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`;
 
   const labelClass = `block text-xs font-semibold uppercase tracking-wider mb-1.5 ${
     isDark ? 'text-gray-400' : 'text-gray-500'
   }`;
 
-  const canUpload = !uploading && !!selectedFile && !!description;
+  const canUpload = !uploading && !disabled && !!selectedFile && !!description;
 
   return (
     <div className="space-y-5">
-        {files.length > 0 && (
+      {files.length > 0 && (
         <div className={`rounded-xl border ${isDark ? 'border-gray-700/60 bg-gray-900/50' : 'border-gray-200 bg-gray-50'} p-4`}>
           <h3 className={`text-sm font-semibold mb-3 flex items-center gap-2 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
             <FileText size={15} className={isDark ? 'text-blue-400' : 'text-blue-600'} />
@@ -157,9 +169,19 @@ const FileUpload: React.FC<FileUploadProps> = ({
               type="text"
               id="file-description"
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={(e) => {
+                if (disabled) {
+                  toast.error('Please create an evaluation request first before uploading files');
+                  return;
+                }
+                setDescription(e.target.value);
+              }}
+              onFocus={() => {
+                if (disabled) toast.error('Please create an evaluation request first before uploading files');
+              }}
               className={`${inputClass} cursor-text`}
               placeholder="Enter description"
+              readOnly={disabled}
             />
           </div>
 
@@ -169,9 +191,13 @@ const FileUpload: React.FC<FileUploadProps> = ({
               type="text"
               id="file-version"
               value={version}
-              onChange={(e) => setVersion(e.target.value)}
+              onChange={(e) => {
+                if (disabled) return;
+                setVersion(e.target.value);
+              }}
               className={`${inputClass} cursor-text`}
               placeholder="1.0"
+              readOnly={disabled}
             />
           </div>
 
@@ -181,6 +207,12 @@ const FileUpload: React.FC<FileUploadProps> = ({
               type="file"
               id="file-input"
               onChange={handleFileChange}
+              onClick={(e) => {
+                if (disabled) {
+                  e.preventDefault();
+                  toast.error('Please create an evaluation request first before uploading files');
+                }
+              }}
               className={`${inputClass} cursor-pointer file:mr-3 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-medium ${
                 isDark
                   ? 'file:bg-gray-700 file:text-gray-300 hover:file:bg-gray-600'
@@ -197,8 +229,10 @@ const FileUpload: React.FC<FileUploadProps> = ({
               className={`cursor-pointer w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
                 canUpload
                   ? 'bg-violet-600 hover:bg-violet-700 text-white shadow-sm hover:shadow'
-                  : 'bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500'
-              } ${!canUpload ? (isDark ? 'bg-gray-700 text-gray-500' : 'bg-gray-200 text-gray-400') : ''}`}
+                  : isDark
+                    ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+              }`}
             >
               {uploading ? (
                 <>
@@ -218,7 +252,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
           </div>
         </div>
 
-        {selectedFile && (
+        {selectedFile && !disabled && (
           <p className={`mt-3 text-xs flex items-center gap-1.5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
             <FileText size={12} />
             {selectedFile.name} <span className="opacity-60">({(selectedFile.size / 1024).toFixed(2)} KB)</span>
