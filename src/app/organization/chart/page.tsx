@@ -77,7 +77,7 @@ export default function OrganizationPage() {
         <div className={`flex items-center justify-between px-6 py-4 border-b ${isDark ? 'bg-white/5 border-slate-800' : 'bg-slate-50/50 border-slate-100'
           }`}>
           <div className="flex items-center gap-3.5">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
+            <div className={`w-9 h-9 rounded-md   flex items-center justify-center ${isDark ? 'text-slate-100' : 'text-slate-900'} `}>
               <MdOutlineAccountTree size={18} />
             </div>
             <div>

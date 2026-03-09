@@ -24,20 +24,12 @@ export interface Evaluation {
   luc_procedure_ver?: string;
   data_create?: string;
   last_update?: string;
-}
+  polygon_data?: {
+    type: string;
+    features: any[];
+  } | null;
+  area_sqm?: number;
 
-export interface EvaluationFile {
-  evaluation_file_id: number;
-  fk_evaluation_id: number;
-  fk_owner_id: number;
-  fk_client_id: number;
-  fk_user_id: number;
-  evaluation_file_desc: string;
-  evaluation_file_folder: string;
-  evaluation_file_filename: string;
-  evaluation_file_filesize: number;
-  evaluation_file_ver: string;
-  last_update?: string;
 }
 
 
@@ -94,4 +86,51 @@ export interface LucProcedure {
 
 
 
- 
+export interface EvaluationFile {
+  evaluation_file_id: number;
+  fk_evaluation_id: number;
+  evaluation_file_filename: string;
+  evaluation_file_desc: string;
+  evaluation_file_ver: string;
+  evaluation_file_folder: string;
+  evaluation_file_filesize: number;
+  last_update: string;
+  button_delete?: string;
+  button_show?: string;
+  download_url:string
+}
+
+export interface EvaluationTask {
+  task_id: number;
+  task_name: string;
+  task_description: string;
+  task_status: 'pending' | 'in_progress' | 'completed' | 'skipped';
+  task_type: 'assignment' | 'checklist' | 'communication';
+  assignment_id?: number;
+  assignment_code?: string;
+  checklist_id?: number;
+  checklist_code?: string;
+  communication_id?: number;
+  communication_code?: string;
+  completed_at?: string;
+  completed_by?: string;
+}
+
+export interface EvaluationPolygonArea {
+  name: string;
+  area_m2?: number;
+  geojson: GeoJSON.Feature;
+}
+
+export interface EvaluationUpdatePayload {
+  evaluation_id: number;
+  fk_owner_id: number;
+  fk_client_id: number;
+  evaluation_request_date?: string;
+  evaluation_year?: number;
+  evaluation_desc?: string;
+  evaluation_offer?: string;
+  evaluation_sale_manager?: string;
+  evaluation_status?: EvaluationStatus;
+  evaluation_result?: EvaluationResult;
+}

@@ -135,7 +135,7 @@ const configurationItems: SubNavItem[] = [
   {
     name: 'Company',
     href: '/company',
-    subItems: [{ name: 'Company List', href: '/company' }]
+    subItems: [{ name: 'Company Directory', href: '/company' }]
   }
 ];
 
@@ -179,9 +179,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role }) => {
 
   const filteredConfigurationItems = configurationItems
     .map((configItem) => {
-      if (configItem.name === 'Superadmin') {
-        if (!roleHasPermission(role, 'manage_users')) return null;
-      }
 
       const visibleSubItems =
         configItem.subItems?.filter((sub) => {
@@ -198,6 +195,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role }) => {
       return { ...configItem, subItems: visibleSubItems };
     })
     .filter(Boolean) as typeof configurationItems;
+
 
   const toggleExpand = (href: string) => {
     setExpandedItems((prev) =>

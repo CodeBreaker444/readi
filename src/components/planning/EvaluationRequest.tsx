@@ -30,7 +30,7 @@ interface EvaluationFormData {
   evaluation_status: string;
   evaluation_request_date: string;
   evaluation_year: number;
-  evaluation_desc: string;
+  evaluation_description: string;
   evaluation_offer: string;
   evaluation_sale_manager: string;
   evaluation_result: string;
@@ -42,7 +42,6 @@ const EvaluationRequest: React.FC = () => {
   const [evaluationId, setEvaluationId] = useState<number | null>(null);
   const [clientId, setClientId] = useState<number | null>(null);
   const [files, setFiles] = useState<EvaluationFile[]>([]);
-  const [showFileUpload, setShowFileUpload] = useState(false);
 
   const handleAreasChange = (areas: DrawnArea[]) => setDrawnAreas(areas);
 
@@ -73,7 +72,6 @@ const EvaluationRequest: React.FC = () => {
       const result = response.data;
       setEvaluationId(result.evaluation_id);
       setClientId(formData.client_id);
-      setShowFileUpload(true);
       toast.success('Evaluation request created successfully');
     } catch (error) {
       console.error('Error creating evaluation:', error);
@@ -102,7 +100,7 @@ const EvaluationRequest: React.FC = () => {
           <div className="flex items-center gap-3">
             <div className="w-1 h-6 rounded-full bg-violet-600" />
             <div>
-              <h1 className={`text-sm font-bold tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>
+              <h1 className={`font-semibold text-base ${isDark ? "text-white" : "text-slate-900"}`}>
                 Planning · New Evaluation Request
               </h1>
               <p className={`text-[11px] ${isDark ? "text-slate-500" : "text-slate-400"}`}>
@@ -150,7 +148,7 @@ const EvaluationRequest: React.FC = () => {
         </div>
       </div>
 
-      {showFileUpload && evaluationId && clientId && (
+      {  evaluationId && clientId && (
         <div className={`rounded-xl shadow-sm border ${cardBg} overflow-hidden`}>
           <div className={`px-5 py-4 border-b ${dividerColor} flex items-center gap-3`}>
             <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-violet-500/10 text-violet-500">
