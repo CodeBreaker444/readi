@@ -30,6 +30,7 @@ import { toast } from 'sonner';
 import { EditEvaluationForm } from './EditEvaluationForm';
 import { EvaluationDetailFilePanel } from './EvaluationDetailFilePanel';
 import { EvaluationMapPanel } from './EvaluationMapPanel';
+import { EvaluationDetailSkeleton } from './EvaluationSkeleton';
 
 
 export const EvaluationDetailContent = () => {
@@ -58,31 +59,34 @@ export const EvaluationDetailContent = () => {
     const evaluationId = Number(params.e_id);
     const clientId = Number(params.c_id);
 
-  useEffect(() => {
-    const eId = Number(params.e_id);
-    const cId = Number(params.c_id);
+    useEffect(() => {
+        const eId = Number(params.e_id);
+        const cId = Number(params.c_id);
 
-    if (!params.e_id || !params.c_id || isNaN(eId) || isNaN(cId)) {
-        toast.error('Invalid parameters – redirecting to dashboard');
-        router.replace('/planning/evaluation');
-        return;
-    }
-
-    async function fetchEvaluation() {
-        try {
-            setIsLoading(true);
-            const res = await axios.get(`/api/evaluation/${eId}`);
-            setEvaluation(res.data.data);
-        } catch {
-            toast.error('Failed to load evaluation data');
-        } finally {
-            setIsLoading(false);
+        if (!params.e_id || !params.c_id || isNaN(eId) || isNaN(cId)) {
+            toast.error('Invalid parameters – redirecting to dashboard');
+            router.replace('/planning/evaluation');
+            return;
         }
+
+        async function fetchEvaluation() {
+            try {
+                setIsLoading(true);
+                const res = await axios.get(`/api/evaluation/${eId}`);
+                setEvaluation(res.data.data);
+            } catch {
+                toast.error('Failed to load evaluation data');
+            } finally {
+                setIsLoading(false);
+            }
+        }
+
+        fetchEvaluation();
+    }, [searchParams]);
+
+    if (isLoading) {
+        return <EvaluationDetailSkeleton />
     }
-
-    fetchEvaluation();
-}, [searchParams]);
-
 
     return (
         <>
@@ -129,7 +133,7 @@ export const EvaluationDetailContent = () => {
                                                 <Pencil className="w-4 h-4 text-violet-500" />
                                                 <CardTitle className="text-sm font-semibold">
                                                     Edit Evaluation Request
-                                                    
+
                                                 </CardTitle>
                                             </div>
                                             <ChevronDown
@@ -169,7 +173,7 @@ export const EvaluationDetailContent = () => {
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <EvaluationMapPanel evaluationId={evaluationId}  polygonData={evaluation?.polygon_data ?? null} />
+                                <EvaluationMapPanel evaluationId={evaluationId} polygonData={evaluation?.polygon_data ?? null} />
                             </CardContent>
                         </Card>
                     </div>
