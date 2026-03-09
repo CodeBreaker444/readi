@@ -1,6 +1,6 @@
 'use client';
 import axios from 'axios';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useTheme } from '../useTheme';
 import AreaTable from './AreaTable';
@@ -33,7 +33,6 @@ interface EvaluationFormData {
   evaluation_description: string;
   evaluation_offer: string;
   evaluation_sale_manager: string;
-  evaluation_result: string;
 }
 
 const EvaluationRequest: React.FC = () => {
@@ -42,6 +41,8 @@ const EvaluationRequest: React.FC = () => {
   const [evaluationId, setEvaluationId] = useState<number | null>(null);
   const [clientId, setClientId] = useState<number | null>(null);
   const [files, setFiles] = useState<EvaluationFile[]>([]);
+
+  const fileUploadRef = useRef<HTMLDivElement>(null);
 
   const handleAreasChange = (areas: DrawnArea[]) => setDrawnAreas(areas);
 
@@ -72,7 +73,14 @@ const EvaluationRequest: React.FC = () => {
       const result = response.data;
       setEvaluationId(result.evaluation_id);
       setClientId(formData.client_id);
-      toast.success('Evaluation request created successfully');
+      toast.success('Evaluation request created — you can now upload files');
+
+      setTimeout(() => {
+        fileUploadRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+      }, 150);
     } catch (error) {
       console.error('Error creating evaluation:', error);
       toast.error(error instanceof Error ? error.message : 'Error creating evaluation request');
@@ -91,19 +99,22 @@ const EvaluationRequest: React.FC = () => {
   const dividerColor = isDark ? 'border-gray-700/60' : 'border-gray-200';
 
   return (
-    <div className={`min-h-screen  ${bg} transition-colors duration-200`}>
-      <div className={`top-0 z-10 backdrop-blur-md transition-colors ${isDark
-          ? "bg-slate-900/80 border-b border-slate-800 text-white"
-          : "bg-white/80 border-b border-slate-200 text-slate-900 shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
-        } px-6 py-4 mb-8`}>
+    <div className={`min-h-screen ${bg} transition-colors duration-200`}>
+      <div
+        className={`top-0 z-10 backdrop-blur-md transition-colors ${
+          isDark
+            ? 'bg-slate-900/80 border-b border-slate-800 text-white'
+            : 'bg-white/80 border-b border-slate-200 text-slate-900 shadow-[0_1px_3px_rgba(0,0,0,0.06)]'
+        } px-6 py-4 mb-8`}
+      >
         <div className="mx-auto max-w-[1800px] flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-1 h-6 rounded-full bg-violet-600" />
             <div>
-              <h1 className={`font-semibold text-base ${isDark ? "text-white" : "text-slate-900"}`}>
+              <h1 className={`font-semibold text-base ${isDark ? 'text-white' : 'text-slate-900'}`}>
                 Planning · New Evaluation Request
               </h1>
-              <p className={`text-[11px] ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+              <p className={`text-[11px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                 Create a new operational scenario evaluation request
               </p>
             </div>
@@ -148,31 +159,30 @@ const EvaluationRequest: React.FC = () => {
         </div>
       </div>
 
-      {  evaluationId && clientId && (
-        <div className={`rounded-xl shadow-sm border ${cardBg} overflow-hidden`}>
-          <div className={`px-5 py-4 border-b ${dividerColor} flex items-center gap-3`}>
-            <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-violet-500/10 text-violet-500">
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-              </svg>
-            </span>
-            <div>
-              <h2 className={`text-base font-semibold ${headingColor}`}>Evaluation Files</h2>
-              <p className={`text-xs ${subColor}`}>Upload supporting documents for this evaluation</p>
-            </div>
-          </div>
-          <div className="p-5">
-            <FileUpload
-              evaluationId={evaluationId}
-              clientId={clientId}
-              files={files}
-              onFileAdded={handleFileAdded}
-              onFileRemoved={handleFileRemoved}
-              isDark={isDark}
-            />
+      <div ref={fileUploadRef} className={`rounded-xl shadow-sm border ${cardBg} overflow-hidden mx-2 mb-6`}>
+        <div className={`px-5 py-4 border-b ${dividerColor} flex items-center gap-3`}>
+          <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-violet-500/10 text-violet-500">
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+            </svg>
+          </span>
+          <div>
+            <h2 className={`text-base font-semibold ${headingColor}`}>Evaluation Files</h2>
+            <p className={`text-xs ${subColor}`}>Upload supporting documents for this evaluation</p>
           </div>
         </div>
-      )}
+        <div className="p-5">
+          <FileUpload
+            evaluationId={evaluationId ?? 0}
+            clientId={clientId ?? 0}
+            files={files}
+            onFileAdded={handleFileAdded}
+            onFileRemoved={handleFileRemoved}
+            isDark={isDark}
+            disabled={!evaluationId}
+          />
+        </div>
+      </div>
     </div>
   );
 };
