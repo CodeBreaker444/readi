@@ -18,13 +18,14 @@ interface ClientLayoutWrapperProps {
 
 const ClientLayoutWrapper: React.FC<ClientLayoutWrapperProps> = ({
   children,
-  sessionPromise
+  sessionPromise,
 }) => {
   const pathname = usePathname();
   const isAuthPage = pathname?.startsWith('/auth');
   const { isDark, toggleTheme } = useTheme();
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
 
   useEffect(() => {
     sessionPromise.then((sess) => {
@@ -35,6 +36,8 @@ const ClientLayoutWrapper: React.FC<ClientLayoutWrapperProps> = ({
 
   const role: Role | null = session?.user?.role ?? null;
   const userData: SessionUser | null = session?.user ?? null;
+
+  const toggleSidebar = () => setSidebarCollapsed((prev) => !prev);
 
   return (
     <RouteLoadingProvider>
@@ -48,7 +51,12 @@ const ClientLayoutWrapper: React.FC<ClientLayoutWrapperProps> = ({
           {!loading && <RoleIndicator role={role} />}
 
           <div className="hidden lg:block">
-            <Sidebar isDark={isDark} role={role} />
+            <Sidebar
+              isDark={isDark}
+              role={role}
+              isCollapsed={sidebarCollapsed}
+              onToggleCollapse={toggleSidebar}
+            />
           </div>
 
           <MobileSidebar isDark={isDark} role={role} />
@@ -57,7 +65,9 @@ const ClientLayoutWrapper: React.FC<ClientLayoutWrapperProps> = ({
             <TopBar isDark={isDark} toggleTheme={toggleTheme} userData={userData} />
 
             <main
-              className={`relative flex-1 overflow-y-auto ${isDark ? 'bg-slate-900' : 'bg-gray-50'}`}
+              className={`relative flex-1 overflow-y-auto ${
+                isDark ? 'bg-slate-900' : 'bg-gray-50'
+              }`}
             >
               {children}
               <RouteLoadingOverlay variant="main" isDark={isDark} />
