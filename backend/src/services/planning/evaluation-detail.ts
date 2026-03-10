@@ -1,6 +1,7 @@
 import { supabase } from '@/backend/database/database';
- 
-import { Evaluation, EvaluationFile, EvaluationTask } from '@/config/types/evaluation';
+
+import { Evaluation, EvaluationFile, EvaluationTask, SendAssignmentPayload, SendAssignmentResult } from '@/config/types/evaluation';
+import { ProcedureSteps } from '@/config/types/lcuProcedures';
 import { deleteFileFromS3, getPresignedDownloadUrl, uploadFileToS3 } from '@/lib/s3Client';
 
  
@@ -365,85 +366,217 @@ export async function deleteEvaluationFile(
   return { success: true };
 }
 
+async function fetchChecklistJsonMap(
+  ownerId: number,
+  codes: string[],
+): Promise<Map<string, object>> {
+  const map = new Map<string, object>();
+  if (codes.length === 0) return map;
+
+  const { data, error } = await supabase
+    .from('checklist')
+    .select('checklist_code, checklist_json')
+    .eq('fk_owner_id', ownerId)
+    .in('checklist_code', codes);
+
+  if (error) {
+    console.warn('[fetchChecklistJsonMap] warning:', error.message);
+    return map;
+  }
+
+  for (const row of data ?? []) {
+    if (!row.checklist_code) continue;
+    const json =
+      typeof row.checklist_json === 'string'
+        ? JSON.parse(row.checklist_json)
+        : row.checklist_json;
+    if (json) map.set(row.checklist_code, json);
+  }
+
+  return map;
+}
+
+function buildTasksFromActions(
+  rows: Record<string, unknown>[],
+  checklistJsonMap: Map<string, object>,
+): { tasks: EvaluationTask[]; allCompleted: boolean } {
+  const tasks: EvaluationTask[] = rows.map((r) => {
+    const type = r.action_type as EvaluationTask['task_type'];
+    const code = r.action_code as string;
+    return {
+      task_id:        r.action_id    as number,
+      task_code:      code,
+      task_name:      r.action_title as string,
+      task_type:      type,
+      task_status:    r.action_status as EvaluationTask['task_status'],
+      task_order:     r.action_order as number,
+      checklist_json: type === 'checklist' ? (checklistJsonMap.get(code) ?? null) : null,
+    };
+  });
+
+  const allCompleted =
+    tasks.length > 0 &&
+    tasks.every((t) => t.task_status === 'completed' || t.task_status === 'skipped');
+
+  return { tasks, allCompleted };
+}
+
 
 export async function getEvaluationTasks(
   ownerId: number,
   evaluationId: number,
 ): Promise<{ tasks: EvaluationTask[]; allCompleted: boolean }> {
-  const { data: evalCheck } = await supabase
+
+  const { data: evalRow, error: evalErr } = await supabase
     .from('evaluation')
-    .select('evaluation_id')
+    .select('evaluation_id, fk_luc_procedure_id')
     .eq('evaluation_id', evaluationId)
     .eq('fk_owner_id', ownerId)
     .single();
 
-  if (!evalCheck) throw new Error('Evaluation not found or access denied');
+  if (evalErr || !evalRow) throw new Error('Evaluation not found or access denied');
 
-  const { data, error } = await supabase
+  const { data: existing, error: existErr } = await supabase
     .from('evaluation_action')
     .select('*')
     .eq('fk_evaluation_id', evaluationId)
     .order('action_order', { ascending: true });
 
-  if (error) throw new Error(`getEvaluationTasks: ${error.message}`);
+  if (existErr) throw new Error(`getEvaluationTasks (fetch existing): ${existErr.message}`);
 
-  const tasks: EvaluationTask[] = (data ?? []).map((row) => ({
-    task_id: row.action_id,
-    task_name: row.action_title,
-    task_description: row.action_description ?? '',
-    task_status: mapActionStatusToTaskStatus(row.action_status),
-    task_type: mapActionTypeToTaskType(row.action_type),
-    assignment_id: row.action_type === 'assignment' ? row.action_id : undefined,
-    assignment_code: row.action_type === 'assignment' ? row.action_code : undefined,
-    checklist_id: row.action_type === 'checklist' ? row.action_id : undefined,
-    checklist_code: row.action_type === 'checklist' ? row.action_code : undefined,
-    communication_id: row.action_type === 'communication' ? row.action_id : undefined,
-    communication_code: row.action_type === 'communication' ? row.action_code : undefined,
-    completed_at: row.completed_date ?? undefined,
-    completed_by: row.assigned_to_user_id ? String(row.assigned_to_user_id) : undefined,
-  }));
+  if ((existing?.length ?? 0) > 0) {
+    const checklistCodes = existing!
+      .filter((r) => r.action_type === 'checklist' && r.action_code)
+      .map((r) => r.action_code as string);
 
-  const allCompleted =
-    tasks.length > 0 && tasks.every((t) => t.task_status === 'completed');
+    const checklistJsonMap = await fetchChecklistJsonMap(ownerId, checklistCodes);
+    return buildTasksFromActions(existing!, checklistJsonMap);
+  }
 
-  return { tasks, allCompleted };
+  const procedureId = (evalRow as any).fk_luc_procedure_id as number | null;
+  if (!procedureId) return { tasks: [], allCompleted: false };
+
+  const { data: procData, error: procErr } = await supabase
+    .from('luc_procedure')
+    .select('procedure_steps')
+    .eq('procedure_id', procedureId)
+    .single();
+
+  if (procErr) throw new Error(`getEvaluationTasks (fetch procedure): ${procErr.message}`);
+
+  const steps = procData?.procedure_steps as ProcedureSteps | null;
+
+  if (!steps?.tasks || !Array.isArray(steps.tasks) || steps.tasks.length === 0) {
+    return { tasks: [], allCompleted: false };
+  }
+
+  const seedRows: Record<string, unknown>[] = [];
+  let order = 1;
+
+  for (const procTask of steps.tasks) {
+    if (Array.isArray(procTask.checklist)) {
+      for (const cl of procTask.checklist) {
+        seedRows.push({
+          fk_evaluation_id: evaluationId,
+          action_code:      cl.checklist_code  || `CL_${order}`,
+          action_title:     cl.checklist_name  || procTask.title || 'Checklist item',
+          action_type:      'checklist',
+          action_status:    'pending',
+          action_order:     order++,
+          dependencies: {
+            procedure_task_id:    procTask.task_id,
+            procedure_item_id:    cl.checklist_id,
+            procedure_task_title: procTask.title,
+          },
+        });
+      }
+    }
+
+    if (Array.isArray(procTask.assignment)) {
+      for (const asg of procTask.assignment) {
+        seedRows.push({
+          fk_evaluation_id: evaluationId,
+          action_code:      asg.assignment_code  || `ASG_${order}`,
+          action_title:     asg.assignment_name  || procTask.title || 'Assignment item',
+          action_type:      'assignment',
+          action_status:    'pending',
+          action_order:     order++,
+          dependencies: {
+            procedure_task_id:          procTask.task_id,
+            procedure_item_id:          asg.assignment_id,
+            procedure_task_title:       procTask.title,
+            default_assignment_message: asg.assignment_message ?? '',
+            assignment_role:            asg.assignment_role ?? '',
+          },
+        });
+      }
+    }
+
+    if (Array.isArray(procTask.communication)) {
+      for (const comm of procTask.communication) {
+        seedRows.push({
+          fk_evaluation_id: evaluationId,
+          action_code:      comm.communication_code  || `COMM_${order}`,
+          action_title:     comm.communication_name  || procTask.title || 'Communication item',
+          action_type:      'communication',
+          action_status:    'pending',
+          action_order:     order++,
+          dependencies: {
+            procedure_task_id:    procTask.task_id,
+            procedure_item_id:    comm.communication_id,
+            procedure_task_title: procTask.title,
+          },
+        });
+      }
+    }
+  }
+
+  if (seedRows.length === 0) return { tasks: [], allCompleted: false };
+
+  const { error: insertErr } = await supabase.from('evaluation_action').insert(seedRows);
+  if (insertErr) throw new Error(`getEvaluationTasks (seed actions): ${insertErr.message}`);
+
+  const { data: seeded, error: seededErr } = await supabase
+    .from('evaluation_action')
+    .select('*')
+    .eq('fk_evaluation_id', evaluationId)
+    .order('action_order', { ascending: true });
+
+  if (seededErr) throw new Error(`getEvaluationTasks (re-fetch seeded): ${seededErr.message}`);
+
+  const checklistCodes = (seeded ?? [])
+    .filter((r) => r.action_type === 'checklist' && r.action_code)
+    .map((r) => r.action_code as string);
+
+  const checklistJsonMap = await fetchChecklistJsonMap(ownerId, checklistCodes);
+  return buildTasksFromActions(seeded ?? [], checklistJsonMap);
 }
+
 
 export async function updateEvaluationTask(
   ownerId: number,
   evaluationId: number,
-  taskId: number,
-  taskStatus: string,
+  actionId: number,
+  newStatus: 'pending' | 'in_progress' | 'completed' | 'skipped',
 ): Promise<{ success: boolean; message?: string }> {
-  const { data: evalCheck } = await supabase
+
+  const { data: evalRow } = await supabase
     .from('evaluation')
     .select('evaluation_id')
     .eq('evaluation_id', evaluationId)
     .eq('fk_owner_id', ownerId)
     .single();
 
-  if (!evalCheck) {
-    return { success: false, message: 'Evaluation not found or access denied' };
-  }
-
-  const actionStatus = mapTaskStatusToActionStatus(taskStatus);
-  const updateData: Record<string, unknown> = { action_status: actionStatus };
-
-  if (taskStatus === 'completed') {
-    updateData.completed_date = new Date().toISOString().split('T')[0];
-  } else {
-    updateData.completed_date = null;
-  }
+  if (!evalRow) return { success: false, message: 'Evaluation not found or access denied' };
 
   const { error } = await supabase
     .from('evaluation_action')
-    .update(updateData)
-    .eq('action_id', taskId)
+    .update({ action_status: newStatus })
+    .eq('action_id', actionId)
     .eq('fk_evaluation_id', evaluationId);
 
-  if (error) {
-    return { success: false, message: `Task update failed: ${error.message}` };
-  }
+  if (error) return { success: false, message: `updateEvaluationTask: ${error.message}` };
+
   return { success: true };
 }
 
@@ -500,7 +633,47 @@ export async function moveEvaluationToPlanning(
   };
 }
 
- 
+export async function sendEvaluationCommunication(
+  ownerId: number,
+  evaluationId: number,
+  params: {
+    to_user_id: number;
+    from_user_id: number;
+    message: string;
+    subject?: string;
+  },
+): Promise<{ success: boolean; message?: string }> {
+  const { data: evalCheck } = await supabase
+    .from('evaluation')
+    .select('evaluation_id')
+    .eq('evaluation_id', evaluationId)
+    .eq('fk_owner_id', ownerId)
+    .single();
+
+  if (!evalCheck) {
+    return { success: false, message: 'Evaluation not found or access denied' };
+  }
+
+  const { error: commError } = await supabase
+    .from('communication_general')
+    .insert({
+      fk_owner_id: ownerId,
+      subject: params.subject ?? `Evaluation #${evaluationId} Communication`,
+      message: params.message,
+      communication_type: 'evaluation',
+      status: 'sent',
+      sent_by_user_id: params.from_user_id,
+      recipients: [params.to_user_id],
+      sent_at: new Date().toISOString(),
+    });
+
+  if (commError) {
+    return { success: false, message: `Communication save failed: ${commError.message}` };
+  }
+
+  return { success: true };
+}
+
 
 export async function getEvaluationList(ownerId: number): Promise<Evaluation[]> {
   const { data, error } = await supabase
@@ -517,50 +690,85 @@ export async function getEvaluationList(ownerId: number): Promise<Evaluation[]> 
   })) as Evaluation[];
 }
  
+ 
+export async function sendAssignment(
+  payload: SendAssignmentPayload,
+): Promise<SendAssignmentResult> {
+  const {
+    evaluationId, ownerId, fromUserUuid,
+    taskId, taskCode, taskName, toUserId, message,
+  } = payload;
 
-function mapActionStatusToTaskStatus(
-  actionStatus: string | null,
-): EvaluationTask['task_status'] {
-  switch (actionStatus?.toLowerCase()) {
-    case 'completed':
-    case 'done':
-      return 'completed';
-    case 'in_progress':
-    case 'progress':
-    case 'active':
-      return 'in_progress';
-    case 'skipped':
-    case 'cancelled':
-      return 'skipped';
-    default:
-      return 'pending';
-  }
-}
+  const { data: evalRow } = await supabase
+    .from('evaluation')
+    .select('evaluation_id, evaluation_code')
+    .eq('evaluation_id', evaluationId)
+    .eq('fk_owner_id', ownerId)
+    .single();
 
-function mapTaskStatusToActionStatus(taskStatus: string): string {
-  switch (taskStatus) {
-    case 'completed':
-      return 'completed';
-    case 'in_progress':
-      return 'in_progress';
-    case 'skipped':
-      return 'skipped';
-    default:
-      return 'pending';
+  if (!evalRow) {
+    return { success: false, message: 'Evaluation not found or access denied' };
   }
-}
 
-function mapActionTypeToTaskType(
-  actionType: string | null,
-): EvaluationTask['task_type'] {
-  switch (actionType?.toLowerCase()) {
-    case 'assignment':
-      return 'assignment';
-    case 'checklist':
-      return 'checklist';
-    case 'communication':
-      return 'communication';
-    default:
-      return 'assignment';
+  let fromUserId: number;
+  try {
+    fromUserId =  fromUserUuid
+  } catch (e: any) {
+    return { success: false, message: e.message };
   }
+
+  const subject = `[Assignment] ${taskName} — Evaluation ${evalRow.evaluation_code ?? evaluationId}`;
+
+  const { error: msgErr } = await supabase.from('messages').insert({
+    from_user_id:    fromUserId,   
+    to_user_id:      toUserId,
+    message_subject: subject,
+    message_body:    message,
+    message_type:    'assignment',
+  });
+
+  if (msgErr) {
+    return { success: false, message: `Failed to send message: ${msgErr.message}` };
+  }
+
+  const { error: asgErr } = await supabase.from('assignment').insert({
+    fk_user_id:      toUserId,
+    fk_owner_id:     ownerId,
+    assignment_code: taskCode,
+    assignment_desc: taskName,
+    assignment_json: {
+      evaluation_id: evaluationId,
+      task_id:       taskId,
+      task_code:     taskCode,
+      task_name:     taskName,
+      from_user_id:  fromUserId,
+      message,
+    },
+    assignment_ver:    1,
+    assignment_active: 'Y',
+  });
+
+  if (asgErr) {
+    console.warn('[sendAssignment] assignment insert warning:', asgErr.message);
+  }
+
+  const { error: notifErr } = await supabase.from('notification').insert({
+    fk_user_id:           toUserId,
+    notification_type:    'assignment',
+    notification_title:   'New Assignment',
+    notification_message: subject,
+    notification_data: {
+      evaluation_id: evaluationId,
+      task_id:       taskId,
+      task_code:     taskCode,
+      from_user_id:  fromUserId,
+    },
+    priority: 'normal',
+  });
+
+  if (notifErr) {
+    console.warn('[sendAssignment] notification insert warning:', notifErr.message);
+  }
+
+  return { success: true, message: 'Assignment sent' };
 }

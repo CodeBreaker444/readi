@@ -60,10 +60,15 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, isDark }) => 
   const [clients, setClients] = useState<Client[]>([]);
   const [lucProcedures, setLUCProcedures] = useState<LUCProcedure[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isDataLoading, setIsDataLoading] = useState(true);
 
   useEffect(() => {
-    loadClients();
-    loadLUCProcedures();
+    const fetchData = async () => {
+      setIsDataLoading(true);
+      await Promise.all([loadClients(), loadLUCProcedures()]);
+      setIsDataLoading(false);
+    };
+    fetchData();
   }, []);
 
   const loadClients = async () => {
@@ -129,9 +134,14 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, isDark }) => 
           <Select
             value={formData.client_id ? String(formData.client_id) : undefined}
             onValueChange={(value) => setFormData(prev => ({ ...prev, client_id: Number(value) }))}
+            disabled={isDataLoading}
           >
             <SelectTrigger className={`cursor-pointer ${inputClass} ${isDark ? 'bg-gray-800 border-gray-700 text-gray-100' : ''}`}>
-              <SelectValue placeholder="Select Client" />
+              {isDataLoading ? (
+                <span className="text-gray-400 animate-pulse">Loading clients...</span>
+              ) : (
+                <SelectValue placeholder="Select Client" />
+              )}
             </SelectTrigger>
             <SelectContent className={isDark ? 'bg-gray-800 border-gray-700 text-gray-100' : ''}>
               {clients.map(client => (
@@ -150,9 +160,14 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, isDark }) => 
           <Select
             value={formData.fk_luc_procedure_id ? String(formData.fk_luc_procedure_id) : undefined}
             onValueChange={(value) => setFormData(prev => ({ ...prev, fk_luc_procedure_id: Number(value) }))}
+            disabled={isDataLoading}
           >
             <SelectTrigger className={`cursor-pointer ${inputClass}`}>
-              <SelectValue placeholder="Select LUC Procedure" />
+              {isDataLoading ? (
+                <span className="text-gray-400 animate-pulse">Loading procedures...</span>
+              ) : (
+                <SelectValue placeholder="Select LUC Procedure" />
+              )}
             </SelectTrigger>
             <SelectContent className={isDark ? 'bg-gray-800 border-gray-700 text-gray-100' : ''}>
               {lucProcedures.map(procedure => (
