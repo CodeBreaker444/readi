@@ -42,7 +42,7 @@ export default function ToolDetailModal({ open, tool, onClose }: Props) {
   const fetchComponents = async (toolId: number) => {
     setLoadingComponents(true);
     try {
-      const res = await fetch("/api/system/tool/component/list", {
+      const res = await fetch("/api/system/component/list", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tool_id: toolId }),

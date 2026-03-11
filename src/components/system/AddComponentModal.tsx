@@ -70,7 +70,7 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
         fk_client_id: formData.fk_client_id ? Number(formData.fk_client_id) : null,
       };
 
-      const response = await axios.post('/api/system/tool/component/add', payload);
+      const response = await axios.post('/api/system/component/add', payload);
 
       if (response.data.code === 1) {
         toast.success('Component added successfully');
@@ -112,9 +112,9 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="grid grid-cols-12 gap-3 overflow-visible">
             <div className="col-span-3 min-w-0">
-              <Label className='pb-2'>Tool *</Label>
+              <Label className='pb-2'>System *</Label>
               <Select value={formData.fk_tool_id} onValueChange={(v) => handleChange('fk_tool_id', v)}>
-                <SelectTrigger className="w-full truncate"><SelectValue placeholder="Select Tool" /></SelectTrigger>
+                <SelectTrigger className="w-full truncate"><SelectValue placeholder="Select System" /></SelectTrigger>
                 <SelectContent className="z-50 max-h-60 overflow-y-auto">
                   {tools.map((tool: any) => (
                     <SelectItem key={tool.tool_id} value={tool.tool_id.toString()}>
@@ -141,7 +141,7 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
               </Select>
             </div>
             <div className="col-span-3 min-w-0">
-              <Label className='pb-2'>Tool Model</Label>
+              <Label className='pb-2'>System Model</Label>
               <Select value={formData.fk_tool_model_id} onValueChange={(v) => handleChange('fk_tool_model_id', v)}>
                 <SelectTrigger className="w-full truncate"><SelectValue placeholder="Select Model" /></SelectTrigger>
                 <SelectContent>
@@ -198,7 +198,7 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
                 <SelectContent>
                   <SelectItem value="0">None</SelectItem>
                   {clients.map((c: any) => (
-                    <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>
+                    <SelectItem key={c.client_id} value={c.client_id.toString()}>{c.client_name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -207,7 +207,7 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-            <Button type="submit" disabled={loading}>{loading ? 'Adding...' : 'Add Component'}</Button>
+            <Button type="submit" className='bg-violet-600 hover:bg-violet-700' disabled={loading}>{loading ? 'Adding...' : 'Add Component'}</Button>
           </div>
         </form>
       </DialogContent>

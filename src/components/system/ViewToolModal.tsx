@@ -7,28 +7,28 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Badge } from '../ui/badge';
 
-interface ViewToolModalProps {
+interface ViewSystemModalProps {
   open: boolean;
   toolId: number;
   onClose: () => void;
 }
 
-export default function ViewToolModal({ open, toolId, onClose }: ViewToolModalProps) {
+export default function ViewSystemModal({ open, toolId, onClose }: ViewSystemModalProps) {
   const [loading, setLoading] = useState(false);
-  const [toolData, setToolData] = useState<any>(null);
+  const [toolData, setSystemData] = useState<any>(null);
   const [components, setComponents] = useState([]);
 
   useEffect(() => {
     if (open && toolId) {
-      fetchToolDetails();
+      fetchSystemDetails();
       fetchComponents();
     }
   }, [open, toolId]);
 
-  const fetchToolDetails = async () => {
+  const fetchSystemDetails = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/system/tool/list', {
+      const response = await fetch('/api/system/list', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({}),
@@ -37,7 +37,7 @@ export default function ViewToolModal({ open, toolId, onClose }: ViewToolModalPr
       const result = await response.json();
       if (result.code === 1) {
         const tool = result.data.find((t: any) => t.tool_id === toolId);
-        setToolData(tool);
+        setSystemData(tool);
       }
     } catch (error) {
       toast.error('Error fetching tool details');
@@ -49,7 +49,7 @@ export default function ViewToolModal({ open, toolId, onClose }: ViewToolModalPr
 
   const fetchComponents = async () => {
     try {
-      const response = await fetch('/api/system/tool/component/list', {
+      const response = await fetch('/api/system/component/list', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tool_id: toolId }),
@@ -80,7 +80,7 @@ export default function ViewToolModal({ open, toolId, onClose }: ViewToolModalPr
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Tool Details - {toolData.tool_code}</DialogTitle>
+          <DialogTitle>System Details - {toolData.tool_code}</DialogTitle>
         </DialogHeader>
 
         <Tabs defaultValue="general" className="w-full">
@@ -93,20 +93,8 @@ export default function ViewToolModal({ open, toolId, onClose }: ViewToolModalPr
           <TabsContent value="general" className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-sm font-medium text-gray-500">Tool Code</p>
+                <p className="text-sm font-medium text-gray-500">System Code</p>
                 <p className="text-base">{toolData.tool_code}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">Serial Number</p>
-                <p className="text-base">{toolData.tool_serialnumber || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">Model</p>
-                <p className="text-base">{toolData.factory_model || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">Manufacturer</p>
-                <p className="text-base">{toolData.factory_type || 'N/A'}</p>
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-500">Status</p>
@@ -123,10 +111,6 @@ export default function ViewToolModal({ open, toolId, onClose }: ViewToolModalPr
               <div>
                 <p className="text-sm font-medium text-gray-500">Client</p>
                 <p className="text-base">{toolData.client_name || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">Purchase Date</p>
-                <p className="text-base">{toolData.tool_purchase_date || 'N/A'}</p>
               </div>
               <div className="col-span-2">
                 <p className="text-sm font-medium text-gray-500">Description</p>
@@ -156,16 +140,8 @@ export default function ViewToolModal({ open, toolId, onClose }: ViewToolModalPr
           <TabsContent value="specifications" className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-sm font-medium text-gray-500">Vendor</p>
-                <p className="text-base">{toolData.tool_vendor || 'N/A'}</p>
-              </div>
-              <div>
                 <p className="text-sm font-medium text-gray-500">GCS Type</p>
                 <p className="text-base">{toolData.tool_gcs_type || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">Streaming Type</p>
-                <p className="text-base">{toolData.tool_streaming_type || 'N/A'}</p>
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-500">C2 Platform</p>
@@ -178,14 +154,6 @@ export default function ViewToolModal({ open, toolId, onClose }: ViewToolModalPr
               <div>
                 <p className="text-sm font-medium text-gray-500">Longitude</p>
                 <p className="text-base">{toolData.tool_longitude || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">Guarantee Days</p>
-                <p className="text-base">{toolData.tool_guarantee_day || 'N/A'}</p>
-              </div>
-              <div className="col-span-2">
-                <p className="text-sm font-medium text-gray-500">Streaming URL</p>
-                <p className="text-base break-all">{toolData.tool_streaming_url || 'N/A'}</p>
               </div>
             </div>
           </TabsContent>

@@ -2,7 +2,7 @@
 
 import AddComponentModal from '@/components/system/AddComponentModal';
 import AddModelModal from '@/components/system/AddModelModal';
-import AddToolModal from '@/components/system/AddToolModal';
+import AddSystemModal from '@/components/system/AddSystemModal';
 import DataTable from '@/components/system/DataTable';
 import UpdateStatusModal from '@/components/system/UpdateStatusModal';
 import ViewToolModal from '@/components/system/ViewToolModal';
@@ -38,7 +38,7 @@ export default function DroneToolPage() {
   const fetchToolData = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/system/tool/list', {
+      const response = await fetch('/api/system/list', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ active: 'ALL', status: 'ALL' }),
@@ -60,7 +60,7 @@ export default function DroneToolPage() {
   };
   const fetchModels = async () => {
     try {
-      const response = await fetch('/api/system/tool/model/list', {
+      const response = await fetch('/api/system/model/list', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({}),
@@ -75,8 +75,15 @@ export default function DroneToolPage() {
 
   const fetchClients = async () => {
     try {
+
       const response = await axios.get('/api/client/list');
-      if (response.data?.clients) setClients(response.data.clients);
+      if(!response.data.data)
+      {
+        toast.error("Failed to load Clients");
+        return
+      }
+      setClients(response.data.data ?? []);
+
     } catch (error) {
       console.error('Error fetching clients:', error);
     }
@@ -95,7 +102,7 @@ export default function DroneToolPage() {
   const handleDelete = async (toolId: number) => {
 
     try {
-      const response = await fetch(`/api/system/tool/${toolId}/delete`, {
+      const response = await fetch(`/api/system/${toolId}/delete`, {
         method: 'POST',
       });
 
@@ -117,6 +124,7 @@ export default function DroneToolPage() {
       onView: handleView,
       onUpdateStatus: handleUpdateStatus,
       onDelete: handleDelete,
+      isDark
     }),
     []
   );
@@ -165,7 +173,7 @@ export default function DroneToolPage() {
             onClick={() => setShowAddTool(true)}
             className="h-8 gap-1.5 text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white transition-all shadow-sm"
           >
-            <Plus size={14} /> Add Tool
+            <Plus size={14} /> Add System
           </Button>
           
           <Button 
@@ -201,7 +209,7 @@ export default function DroneToolPage() {
   </div>
 
       {showAddTool && (
-        <AddToolModal
+        <AddSystemModal
           open={showAddTool}
           onClose={() => setShowAddTool(false)}
           onSuccess={() => { setShowAddTool(false); fetchToolData(); }}

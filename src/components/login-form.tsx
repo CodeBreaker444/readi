@@ -11,64 +11,30 @@ import { toast } from 'sonner'
 
 export function LoginForm() {
   const searchParams = useSearchParams()
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-  })
+  const [formData, setFormData] = useState({ email: '', password: '' })
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    if (searchParams.get('activated') === 'true') {
-      toast.success(`Account activated successfully!`)
-    }
-
+    if (searchParams.get('activated') === 'true') toast.success('Account activated successfully!')
     const error = searchParams.get('error')
-    if (error === 'invalid_link') {
-      toast.error('Invalid activation link. Please contact administrator.')
-    } else if (error === 'activation_failed') {
-      toast.error('Activation failed. The link may have expired or already been used.')
-    } else if (error === 'activation_error') {
-      toast.error('An error occurred during activation. Please try again or contact administrator.')
-    }
+    if (error === 'invalid_link') toast.error('Invalid activation link.')
+    else if (error === 'activation_failed') toast.error('Activation failed. Link may have expired.')
+    else if (error === 'activation_error') toast.error('Activation error. Please try again.')
   }, [searchParams])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-
     try {
-      const response = await axios.post('/api/auth/login', {
-        email: formData.email,
-        password: formData.password
-      })
-
+      const response = await axios.post('/api/auth/login', formData)
       const result = response.data
-
-      if (!result.success) {
-        toast.error(result.error || 'Login failed')
-        return
-      }
-
+      if (!result.success) { toast.error(result.error || 'Login failed'); return }
       toast.success(result.message || 'Login successful!')
-
-      if (result.redirect) {
-        window.location.href = result.redirect
-        return
-      }
-
-      if (result.data) {
-        const defaultRoute = getDefaultRoute(result.data.role)
-        window.location.href = defaultRoute
-      }
+      if (result.redirect) { window.location.href = result.redirect; return }
+      if (result.data) window.location.href = getDefaultRoute(result.data.role)
     } catch (err: any) {
-      console.error('Login error:', err)
-
-      if (err.response?.data?.error) {
-        toast.error(err.response.data.error)
-      } else {
-        toast.error(err.message || 'Login failed. Please try again.')
-      }
+      toast.error(err.response?.data?.error || err.message || 'Login failed.')
     } finally {
       setLoading(false)
     }
@@ -76,106 +42,136 @@ export function LoginForm() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: value,
-    }))
+    setFormData(prev => ({ ...prev, [name]: value }))
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
-      <div className="absolute inset-0 z-0">
-        <Image
-          src="/readi_login.png"
-          alt="Control Center Background"
-          fill
-          className="object-cover"
-          priority
-        />
-        <div className="absolute inset-0 bg-gray-900/50"></div>
+    <div
+      className="min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-slate-50"
+      style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}
+    >
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute -top-48 -right-48 w-[500px] h-[500px] rounded-full" style={{ background: 'radial-gradient(circle, #ede9fe 0%, transparent 70%)', opacity: 0.5 }} />
+        <div className="absolute -bottom-48 -left-48 w-[500px] h-[500px] rounded-full" style={{ background: 'radial-gradient(circle, #ede9fe 0%, transparent 70%)', opacity: 0.4 }} />
       </div>
 
-      <div className="relative z-10 w-full max-w-md px-4">
-        <div className="mb-8 flex flex-col items-center justify-center gap-4">
-          <Image
-            src="/logo-sm.png"
-            alt="ReADI logo"
-            width={200}
-            height={60}
-            className="h-16 w-auto"
-          />
-        </div>
+      <div className="relative z-10 w-full max-w-4xl mx-6 flex items-center gap-12">
 
-        <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-2xl p-8">
-          <form className="w-full" onSubmit={handleSubmit}>
-            <p className="mb-7 text-center text-base text-gray-600">
-              Please login to continue to your account
-            </p>
-
-            <div className="flex flex-col gap-4">
-              <div className="relative">
-                <CiMail className="absolute left-4 top-[35%] h-4 w-4 text-gray-400" />
-                <input
-                  type="email"
-                  name="email"
-                  placeholder="Email"
-                  required
-                  className="h-12 w-full rounded-lg border border-gray-300 bg-white pl-10 pr-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
-                  value={formData.email}
-                  onChange={handleChange}
-                  disabled={loading}
-                />
-              </div>
-
-              <div className="relative">
-                <CiLock className="absolute left-4 top-[35%] h-4 w-4 text-gray-400" />
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  name="password"
-                  placeholder="Password"
-                  required
-                  className="h-12 w-full rounded-lg border border-gray-300 bg-white pl-10 pr-12 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
-                  value={formData.password}
-                  onChange={handleChange}
-                  disabled={loading}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                  disabled={loading}
-                >
-                  {showPassword ? (
-                    <EyeOffIcon className="h-5 w-5" />
-                  ) : (
-                    <EyeIcon className="h-5 w-5" />
-                  )}
-                </button>
-              </div>
-
-              <div className="button-section">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="mb-2 h-12 w-full rounded-lg bg-violet-500  text-base font-medium text-white hover:bg-violet-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {loading ? (
-                    <span className="flex items-center justify-center">
-                      <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
-                      Signing in...
-                    </span>
-                  ) : (
-                    'Sign in'
-                  )}
-                </button>
-              </div>
+        <div className="hidden lg:flex flex-col flex-1">
+          <div className="flex items-center gap-2.5 mb-10">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #7c3aed, #5b21b6)' }}>
+              <Image src="/logo-sm.png" alt="ReADI" width={18} height={18} className="object-contain brightness-0 invert" />
             </div>
-          </form>
+            <div>
+              <p className="text-slate-900 font-bold text-sm leading-none">ReADI</p>
+              <p className="text-slate-400 text-[0.55rem] tracking-[0.16em] uppercase mt-0.5">Drone Control</p>
+            </div>
+          </div>
+
+          <h1 className="text-4xl font-bold text-slate-900 leading-tight tracking-tight mb-4">
+            Full fleet.<br />
+            <span className="text-violet-600">Zero</span> blind spots.
+          </h1>
+
+          <p className="text-slate-500 text-sm leading-relaxed mb-10 max-w-xs">
+            Real-time mission planning, safety management, and drone operations — unified in one command interface.
+          </p>
+
+          {/* <div className="space-y-0">
+            {[
+              { label: 'Active missions tracked', val: '340+' },
+              { label: 'Safety incidents prevented', val: '1,200+' },
+              { label: 'Fleet uptime', val: '99.1%' },
+            ].map(({ label, val }) => (
+              <div key={label} className="flex items-center justify-between py-3 border-b border-slate-200">
+                <span className="text-xs text-slate-400">{label}</span>
+                <span className="text-xs font-semibold text-slate-700">{val}</span>
+              </div>
+            ))}
+          </div> */}
+
+          <div className="flex items-center gap-2 mt-8">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <span className="text-xs text-slate-400">All systems operational</span>
+          </div>
         </div>
 
-        <p className="mt-6 text-center text-sm text-white/80">
-          Contact your administrator for account access
-        </p>
+        <div className="flex-1 max-w-[380px] w-full mx-auto lg:mx-0">
+
+          <div className="lg:hidden flex items-center gap-2.5 justify-center mb-8">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #7c3aed, #5b21b6)' }}>
+              <Image src="/logo-sm.png" alt="ReADI" width={18} height={18} className="object-contain brightness-0 invert" />
+            </div>
+            <p className="text-slate-900 font-bold text-base">ReADI</p>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-slate-200 p-8" style={{ boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}>
+
+            <div className="mb-6">
+              <h2 className="text-xl font-bold text-slate-900 mb-1">Welcome back</h2>
+              <p className="text-slate-400 text-sm">Sign in to your account</p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1.5">Email address</label>
+                <div className="group relative">
+                  <CiMail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-violet-500 transition-colors" />
+                  <input
+                    type="email"
+                    name="email"
+                    placeholder="name@company.com"
+                    required
+                    className="w-full h-10 pl-9 pr-4 text-sm text-slate-800 placeholder:text-slate-300 rounded-lg border border-slate-200 bg-white focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none transition-all duration-150"
+                    value={formData.email}
+                    onChange={handleChange}
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1.5">Password</label>
+                <div className="group relative">
+                  <CiLock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-violet-500 transition-colors" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    name="password"
+                    placeholder="••••••••"
+                    required
+                    className="w-full h-10 pl-9 pr-10 text-sm text-slate-800 rounded-lg border border-slate-200 bg-white focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none transition-all duration-150"
+                    value={formData.password}
+                    onChange={handleChange}
+                    disabled={loading}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-slate-400 hover:text-violet-500 transition-colors"
+                    disabled={loading}
+                  >
+                    {showPassword ? <EyeOffIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full h-10 rounded-lg text-white text-sm font-semibold transition-all duration-150 active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2"
+                style={{ background: 'linear-gradient(135deg, #7c3aed, #6d28d9)', boxShadow: '0 2px 12px rgba(124,58,237,0.25)' }}
+              >
+                {loading ? <><Loader2Icon className="h-4 w-4 animate-spin" /> Signing in…</> : 'Sign in'}
+              </button>
+            </form>
+
+            <p className="text-xs text-slate-400 text-center mt-6">
+              Need access?{' '}
+              <span className="text-slate-600 font-medium">Contact your administrator</span>
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   )

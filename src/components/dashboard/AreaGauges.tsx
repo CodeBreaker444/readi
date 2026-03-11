@@ -23,9 +23,9 @@ const AreaGauges: React.FC<AreaGaugesProps> = ({ dataByArea, isDark = false }) =
     const raphaelScript = document.createElement('script');
     raphaelScript.src   = 'https://cdnjs.cloudflare.com/ajax/libs/raphael/2.3.0/raphael.min.js';
     raphaelScript.async = true;
-    const script = document.createElement('script');
-    script.src   = 'https://cdnjs.cloudflare.com/ajax/libs/justgage/1.4.0/justgage.min.js';
-    script.async = true;
+    const script        = document.createElement('script');
+    script.src          = 'https://cdnjs.cloudflare.com/ajax/libs/justgage/1.4.0/justgage.min.js';
+    script.async        = true;
     raphaelScript.onload = () => {
       script.onload = () => {
         if (containerRef.current && (window as any).JustGage) {
@@ -64,17 +64,27 @@ const AreaGauges: React.FC<AreaGaugesProps> = ({ dataByArea, isDark = false }) =
   }, [dataByArea]);
 
   return (
-    <div className={cn(
-      'rounded-xl border',
-      isDark ? 'bg-slate-800/80 border-slate-700/60' : 'bg-white border-gray-200'
-    )}>
-      <div className={cn('px-5 py-4 border-b', isDark ? 'border-slate-700/60' : 'border-gray-100')}>
-        <p className={cn('text-xs font-semibold uppercase tracking-widest', isDark ? 'text-slate-500' : 'text-gray-400')}>
-          Breakdown
-        </p>
-        <h2 className={cn('text-sm font-semibold mt-0.5', isDark ? 'text-white' : 'text-gray-800')}>
-          Safety Score by Area
-        </h2>
+    <div className={cn('rounded-xl border', isDark ? 'bg-slate-800/80 border-slate-700/60' : 'bg-white border-gray-200')}>
+
+      {/* Header */}
+      <div className={cn('px-5 py-4 border-b flex items-center justify-between', isDark ? 'border-slate-700/60' : 'border-gray-100')}>
+        <div>
+          <p className={cn('text-xs font-semibold uppercase tracking-widest mb-0.5', isDark ? 'text-slate-500' : 'text-gray-400')}>Breakdown</p>
+          <h2 className={cn('text-sm font-semibold', isDark ? 'text-white' : 'text-gray-800')}>Safety Score by Area</h2>
+        </div>
+        {/* Zone legend */}
+        <div className="hidden sm:flex items-center gap-4">
+          {[
+            { color: 'bg-emerald-500', label: '≥85%' },
+            { color: 'bg-yellow-500',  label: '70–84%' },
+            { color: 'bg-red-500',     label: '<70%' },
+          ].map(({ color, label }) => (
+            <div key={label} className="flex items-center gap-1.5">
+              <span className={cn('h-2 w-2 rounded-sm shrink-0', color)} />
+              <span className={cn('text-[10px]', isDark ? 'text-slate-500' : 'text-gray-400')}>{label}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div ref={containerRef} className="p-5 grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -83,21 +93,33 @@ const AreaGauges: React.FC<AreaGaugesProps> = ({ dataByArea, isDark = false }) =
           const id    = `gauge_area_${area.replace(/\W+/g, '_')}`;
           const color = idx >= 85 ? 'text-emerald-500' : idx >= 70 ? 'text-yellow-500' : 'text-red-500';
           const dot   = idx >= 85 ? 'bg-emerald-500' : idx >= 70 ? 'bg-yellow-500' : 'bg-red-500';
+          const barBg = idx >= 85 ? 'bg-emerald-500' : idx >= 70 ? 'bg-yellow-500' : 'bg-red-500';
 
           return (
-            <div key={area} className={cn(
-              'rounded-lg p-4 flex flex-col items-center gap-1',
-              isDark ? 'bg-slate-700/50' : 'bg-gray-50'
-            )}>
-              <div className="flex items-center gap-1.5 mb-1">
+            <div key={area} className={cn('rounded-xl border p-4 flex flex-col items-center gap-2', isDark ? 'bg-slate-700/40 border-slate-700/60' : 'bg-gray-50 border-gray-100')}>
+              {/* Area label */}
+              <div className="flex items-center gap-1.5 self-stretch">
                 <span className={cn('h-1.5 w-1.5 rounded-full shrink-0', dot)} />
-                <span className={cn('text-[11px] font-semibold uppercase tracking-wide truncate max-w-[100px]',
-                  isDark ? 'text-slate-300' : 'text-gray-600')}>
+                <span className={cn('text-[11px] font-semibold uppercase tracking-wide truncate', isDark ? 'text-slate-300' : 'text-gray-600')}>
                   {area}
                 </span>
               </div>
-              <div id={id} style={{ width: '140px', height: '95px' }} />
-              <span className={cn('text-lg font-bold tabular-nums', color)}>{idx}%</span>
+
+              {/* Gauge */}
+              <div id={id} style={{ width: '130px', height: '88px' }} />
+
+              {/* Score */}
+              <span className={cn('text-xl font-bold tabular-nums', color)}>{idx}%</span>
+
+              {/* Mini progress */}
+              <div className={cn('h-1 w-full rounded-full overflow-hidden', isDark ? 'bg-slate-700' : 'bg-gray-200')}>
+                <div className={cn('h-full rounded-full transition-all', barBg)} style={{ width: `${idx}%` }} />
+              </div>
+
+              {/* Indicator count */}
+              <span className={cn('text-[10px]', isDark ? 'text-slate-500' : 'text-gray-400')}>
+                {indicators.length} indicator{indicators.length !== 1 ? 's' : ''}
+              </span>
             </div>
           );
         })}
