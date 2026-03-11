@@ -4,6 +4,9 @@ import AddComponentModal from '@/components/system/AddComponentModal';
 import AddModelModal from '@/components/system/AddModelModal';
 import AddSystemModal from '@/components/system/AddSystemModal';
 import DataTable from '@/components/system/DataTable';
+import EditComponentModal from '@/components/system/EditComponentModal';
+import EditModelModal from '@/components/system/EditModelModal';
+import EditSystemModal from '@/components/system/EditSystemModal';
 import UpdateStatusModal from '@/components/system/UpdateStatusModal';
 import ViewToolModal from '@/components/system/ViewToolModal';
 import { systemCreateColumns } from '@/components/tables/systemColumn';
@@ -24,6 +27,9 @@ export default function DroneToolPage() {
   const [showAddComponent, setShowAddComponent] = useState<boolean>(false);
   const [showViewTool, setShowViewTool] = useState<boolean>(false);
   const [showUpdateStatus, setShowUpdateStatus] = useState(false);
+  const [showEditSystem, setShowEditSystem] = useState(false);
+  const [showEditModel, setShowEditModel] = useState(false);
+  const [showEditComponent, setShowEditComponent] = useState(false);
   const [selectedToolId, setSelectedToolId] = useState<number | null>(null);
   const [models, setModels] = useState([]);
   const [clients, setClients] = useState([]);
@@ -99,6 +105,21 @@ export default function DroneToolPage() {
     setShowUpdateStatus(true);
   };
 
+  const handleEditSystem = (toolId: number) => {
+    setSelectedToolId(toolId);
+    setShowEditSystem(true);
+  };
+
+  const handleEditModel = (toolId: number) => {
+    setSelectedToolId(toolId);
+    setShowEditModel(true);
+  };
+
+  const handleEditComponent = (toolId: number) => {
+    setSelectedToolId(toolId);
+    setShowEditComponent(true);
+  };
+
   const handleDelete = async (toolId: number) => {
 
     try {
@@ -124,9 +145,12 @@ export default function DroneToolPage() {
       onView: handleView,
       onUpdateStatus: handleUpdateStatus,
       onDelete: handleDelete,
+      onEditSystem: handleEditSystem,
+      onEditModel: handleEditModel,
+      onEditComponent: handleEditComponent,
       isDark
     }),
-    []
+    [isDark]
   );
 
   return (
@@ -261,6 +285,36 @@ export default function DroneToolPage() {
             setSelectedToolId(null);
             fetchToolData();
           }}
+        />
+      )}
+
+      {showEditSystem && (
+        <EditSystemModal
+          open={showEditSystem}
+          toolId={selectedToolId}
+          onClose={() => { setShowEditSystem(false); setSelectedToolId(null); }}
+          onSuccess={() => { setShowEditSystem(false); setSelectedToolId(null); fetchToolData(); }}
+          clients={clients}
+        />
+      )}
+
+      {showEditModel && (
+        <EditModelModal
+          open={showEditModel}
+          toolId={selectedToolId}
+          onClose={() => { setShowEditModel(false); setSelectedToolId(null); }}
+          onSuccess={() => { setShowEditModel(false); setSelectedToolId(null); fetchModels(); }}
+        />
+      )}
+
+      {showEditComponent && (
+        <EditComponentModal
+          open={showEditComponent}
+          toolId={selectedToolId}
+          onClose={() => { setShowEditComponent(false); setSelectedToolId(null); }}
+          onSuccess={() => { setShowEditComponent(false); setSelectedToolId(null); }}
+          models={models}
+          clients={clients}
         />
       )}
     </div>

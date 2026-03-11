@@ -283,6 +283,24 @@ export async function addModel(modelData: any) {
 }
 
 
+export async function updateModel(modelId: number, modelData: any) {
+  const { data, error } = await supabase
+    .from('tool_model')
+    .update({
+      manufacturer: modelData.manufacturer,
+      model_code: modelData.model_code,
+      model_name: modelData.model_name,
+      ...(modelData.model_type ? { model_description: modelData.model_type } : {}),
+    })
+    .eq('model_id', modelId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return { code: 1, message: 'Model updated successfully', data };
+}
+
+
 export async function getComponentList(ownerId: number, toolId?: number) {
   let toolQuery = supabase
     .from('tool')

@@ -1,4 +1,4 @@
-import { updateSystemStatus } from "@/backend/services/system/tool/tool-service";
+import { updateSystemStatus } from "@/backend/services/system/system-service";
 import { getUserSession } from "@/lib/auth/server-session";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
