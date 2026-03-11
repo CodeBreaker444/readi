@@ -23,8 +23,12 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
   const [formData, setFormData] = useState({
     fk_tool_id: '',
     component_type: '',
+    component_code: '',
+    component_desc: '',
     fk_tool_model_id: '',
     component_sn: '',
+    cc_platform: '',
+    gcs_type: '',
     component_activation_date: '',
     component_purchase_date: '',
     component_vendor: '',
@@ -38,8 +42,12 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
       setFormData({
         fk_tool_id: '',
         component_type: '',
+        component_code: '',
+        component_desc: '',
         fk_tool_model_id: '',
         component_sn: '',
+        cc_platform: '',
+        gcs_type: '',
         component_activation_date: '',
         component_purchase_date: '',
         component_vendor: '',
@@ -60,8 +68,12 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
       const payload = {
         fk_tool_id: Number(formData.fk_tool_id),
         component_type: formData.component_type,
+        component_code: formData.component_code || null,
+        component_desc: formData.component_desc || null,
         fk_tool_model_id: formData.fk_tool_model_id ? Number(formData.fk_tool_model_id) : null,
         component_sn: formData.component_sn,
+        cc_platform: formData.cc_platform || null,
+        gcs_type: formData.gcs_type || null,
         component_activation_date: formData.component_activation_date || null,
         component_purchase_date: formData.component_purchase_date || null,
         component_vendor: formData.component_vendor || null,
@@ -77,8 +89,12 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
         setFormData({
           fk_tool_id: '',
           component_type: '',
+          component_code: '',
+          component_desc: '',
           fk_tool_model_id: '',
           component_sn: '',
+          cc_platform: '',
+          gcs_type: '',
           component_activation_date: '',
           component_purchase_date: '',
           component_vendor: '',
@@ -118,7 +134,7 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
                 <SelectContent className="z-50 max-h-60 overflow-y-auto">
                   {tools.map((tool: any) => (
                     <SelectItem key={tool.tool_id} value={tool.tool_id.toString()}>
-                      {tool.tool_code} - {tool.factory_model}
+                      {tool.tool_code} 
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -140,8 +156,19 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
                 </SelectContent>
               </Select>
             </div>
+            <div className="col-span-3">
+              <Label className='pb-2'>Code</Label>
+              <Input value={formData.component_code} onChange={(e) => handleChange('component_code', e.target.value)} placeholder="e.g. BATT-01" />
+            </div>
+            <div className="col-span-3">
+              <Label className='pb-2'>Serial Number</Label>
+              <Input value={formData.component_sn} onChange={(e) => handleChange('component_sn', e.target.value)} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-12 gap-3 overflow-visible">
             <div className="col-span-3 min-w-0">
-              <Label className='pb-2'>System Model</Label>
+              <Label className='pb-2'>Brand / Model</Label>
               <Select value={formData.fk_tool_model_id} onValueChange={(v) => handleChange('fk_tool_model_id', v)}>
                 <SelectTrigger className="w-full truncate"><SelectValue placeholder="Select Model" /></SelectTrigger>
                 <SelectContent>
@@ -153,9 +180,35 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
                 </SelectContent>
               </Select>
             </div>
+            <div className="col-span-9">
+              <Label className='pb-2'>Description</Label>
+              <Input value={formData.component_desc} onChange={(e) => handleChange('component_desc', e.target.value)} placeholder="Component description" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-12 gap-3 overflow-visible">
             <div className="col-span-3">
-              <Label className='pb-2'>Serial Number</Label>
-              <Input value={formData.component_sn} onChange={(e) => handleChange('component_sn', e.target.value)} />
+              <Label className='pb-2'>CL Platform</Label>
+              <Select value={formData.cc_platform} onValueChange={(v) => handleChange('cc_platform', v)}>
+                <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_FLYTBASE">Flytbase</SelectItem>
+                  <SelectItem value="_VOTIX">Votix</SelectItem>
+                  <SelectItem value="_FLIGHTHUB">DJI FlightHub</SelectItem>
+                  <SelectItem value="_APP">APP on GCS</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="col-span-3">
+              <Label className='pb-2'>GCS</Label>
+              <Select value={formData.gcs_type} onValueChange={(v) => handleChange('gcs_type', v)}>
+                <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_DOCK">Docking Station</SelectItem>
+                  <SelectItem value="_RC">Remote Control</SelectItem>
+                  <SelectItem value="_GCS">Ground Control Station</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 

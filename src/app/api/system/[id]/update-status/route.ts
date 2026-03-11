@@ -1,4 +1,4 @@
-import { updateToolStatus } from "@/backend/services/system/tool/tool-service";
+import { updateSystemStatus } from "@/backend/services/system/tool/tool-service";
 import { getUserSession } from "@/lib/auth/server-session";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
@@ -34,7 +34,7 @@ export async function POST(
             );
         }
 
-        const result = await updateToolStatus(Number(id), parsedData.data);
+        const result = await updateSystemStatus(Number(id), parsedData.data);
 
         return NextResponse.json(result);
     } catch (error: any) {
