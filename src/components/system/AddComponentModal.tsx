@@ -226,7 +226,7 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
               <Input value={formData.component_vendor} onChange={(e) => handleChange('component_vendor', e.target.value)} />
             </div>
             <div className="col-span-3">
-              <Label>Guarantee (days)</Label>
+              <Label className='pb-2'>Guarantee (days)</Label>
               <Input type="number" value={formData.component_guarantee_day} onChange={(e) => handleChange('component_guarantee_day', e.target.value)} />
             </div>
           </div>

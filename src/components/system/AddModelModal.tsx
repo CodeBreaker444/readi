@@ -179,13 +179,11 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-5">
-
-          {/* Identification */}
           <div>
             <p className="text-sm font-medium text-muted-foreground mb-2">Identification</p>
             <div className="grid grid-cols-12 gap-3">
               <div className="col-span-3">
-                <Label className="pb-2">Type *</Label>
+                <Label className="pb-2">Component Type *</Label>
                 <Select value={formData.model_type} onValueChange={(v) => handleChange('model_type', v)}>
                   <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                   <SelectContent>
@@ -214,12 +212,11 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
             </div>
           </div>
 
-          {/* Classification & Weight */}
           <div>
             <p className="text-sm font-medium text-muted-foreground mb-2">Classification & Weight</p>
             <div className="grid grid-cols-12 gap-3">
               <div className="col-span-3">
-                <Label className="pb-2">Tool Type *</Label>
+                <Label className="pb-2">System Type *</Label>
                 <Select value={formData.tool_type_id} onValueChange={(v) => handleChange('tool_type_id', v)}>
                   <SelectTrigger><SelectValue placeholder="Select tool type" /></SelectTrigger>
                   <SelectContent>
