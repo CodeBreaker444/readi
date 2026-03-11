@@ -1,4 +1,4 @@
-import { addSystem } from '@/backend/services/system/tool/tool-service';
+import { addSystem } from '@/backend/services/system/system-service';
 import { getUserSession } from '@/lib/auth/server-session';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -10,8 +10,6 @@ const toolSchema = z.object({
   tool_active:      z.string().default('Y'),
   clientId:         z.number().positive().optional().nullable(), 
   location:         z.string().optional().nullable(),
-  ccPlatform:       z.string().optional().nullable(),
-  gcsType:          z.string().optional().nullable(),
   latitude:         z.number().optional().nullable(),
   longitude:        z.number().optional().nullable(),
   activationDate:   z.string().optional().nullable(),
@@ -25,7 +23,7 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData();
     const body = JSON.parse(formData.get('data') as string);
-    const file = formData.get('file') as File | null;
+    const files = formData.getAll('files').filter((f): f is File => f instanceof File && f.size > 0);
     const ownerId = session.user.ownerId;
 
     const toValidate = { ...body, clientId: body.fk_client_id ?? body.clientId };
@@ -45,13 +43,11 @@ export async function POST(request: NextRequest) {
       tool_description: data.tool_description,
       tool_active:      data.tool_active,
       location:         data.location,
-      ccPlatform:       data.ccPlatform,
-      gcsType:          data.gcsType,
       latitude:         data.latitude,
       longitude:        data.longitude,
       activationDate:   data.activationDate,
       clientId:         data.clientId,
-      file,             
+      files,
     });
 
     return NextResponse.json(result);

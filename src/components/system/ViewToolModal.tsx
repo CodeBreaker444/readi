@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -64,139 +65,145 @@ export default function ViewSystemModal({ open, toolId, onClose }: ViewSystemMod
     }
   };
 
-  if (loading || !toolData) {
-    return (
-      <Dialog open={open} onOpenChange={onClose}>
-        <DialogContent>
-          <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>System Details - {toolData.tool_code}</DialogTitle>
+          <DialogTitle>
+            {loading ? <Skeleton className="h-6 w-48" /> : `System Details - ${toolData?.tool_code || 'Loading...'}`}
+          </DialogTitle>
         </DialogHeader>
 
-        <Tabs defaultValue="general" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="general">General Info</TabsTrigger>
-            <TabsTrigger value="specifications">Specifications</TabsTrigger>
-            <TabsTrigger value="components">Components</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="general" className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm font-medium text-gray-500">System Code</p>
-                <p className="text-base">{toolData.tool_code}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">Status</p>
-                <Badge variant={toolData.tool_status === 'OPERATIONAL' ? 'default' : 'secondary'}>
-                  {toolData.tool_status}
-                </Badge>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">Active</p>
-                <Badge variant={toolData.active === 'Y' ? 'default' : 'destructive'}>
-                  {toolData.active === 'Y' ? 'Yes' : 'No'}
-                </Badge>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">Client</p>
-                <p className="text-base">{toolData.client_name || 'N/A'}</p>
-              </div>
-              <div className="col-span-2">
-                <p className="text-sm font-medium text-gray-500">Description</p>
-                <p className="text-base">{toolData.tool_desc || 'N/A'}</p>
+        {loading ? (
+          <div className="space-y-6">
+            <Skeleton className="h-10 w-full" />
+            <div className="grid grid-cols-2 gap-6">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="space-y-2">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-6 w-full" />
+                </div>
+              ))}
+              <div className="col-span-2 space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-12 w-full" />
               </div>
             </div>
+          </div>
+        ) : (
+          <>
+            <Tabs defaultValue="general" className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="general">General Info</TabsTrigger>
+                <TabsTrigger value="specifications">Specifications</TabsTrigger>
+                <TabsTrigger value="components">Components</TabsTrigger>
+              </TabsList>
 
-            <div className="border-t pt-4">
-              <h3 className="text-lg font-semibold mb-3">Flight Statistics</h3>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600">Total Missions</p>
-                  <p className="text-2xl font-bold">{toolData.tot_mission ?? 0}</p>
+              <TabsContent value="general" className="space-y-4 pt-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">System Code</p>
+                    <p className="text-base font-semibold">{toolData?.tool_code || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Status</p>
+                    <Badge variant={toolData?.tool_status === 'OPERATIONAL' ? 'default' : 'secondary'}>
+                      {toolData?.tool_status || 'UNKNOWN'}
+                    </Badge>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Active</p>
+                    <Badge variant={toolData?.active === 'Y' ? 'default' : 'destructive'}>
+                      {toolData?.active === 'Y' ? 'Yes' : 'No'}
+                    </Badge>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Client</p>
+                    <p className="text-base">{toolData?.client_name || 'N/A'}</p>
+                  </div>
+                  <div className="col-span-2 border-t pt-2">
+                    <p className="text-sm font-medium text-gray-500">Description</p>
+                    <p className="text-sm text-gray-700">
+                      {toolData?.tool_desc || 'No description provided.'}
+                    </p>
+                  </div>
                 </div>
-                <div className="bg-green-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600">Flight Time</p>
-                  <p className="text-2xl font-bold">{Math.round((toolData.tot_flown_time || 0) / 60)} min</p>
-                </div>
-                <div className="bg-purple-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600">Distance</p>
-                  <p className="text-2xl font-bold">{((toolData.tot_flown_meter || 0) / 1000).toFixed(2)} km</p>
-                </div>
-              </div>
-            </div>
-          </TabsContent>
 
-          <TabsContent value="specifications" className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm font-medium text-gray-500">GCS Type</p>
-                <p className="text-base">{toolData.tool_gcs_type || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">C2 Platform</p>
-                <p className="text-base">{toolData.tool_ccPlatform || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">Latitude</p>
-                <p className="text-base">{toolData.tool_latitude || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">Longitude</p>
-                <p className="text-base">{toolData.tool_longitude || 'N/A'}</p>
-              </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="components">
-            {components.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                No components found for this tool
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {components.map((component: any) => (
-                  <div key={component.tool_component_id} className="border rounded-lg p-4">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-semibold">{component.factory_model}</h4>
-                        <p className="text-sm text-gray-500">{component.component_type}</p>
-                      </div>
-                      <Badge variant={component.component_status === 'OPERATIONAL' ? 'default' : 'secondary'}>
-                        {component.component_status}
-                      </Badge>
+                <div className="border-t pt-4">
+                  <h3 className="text-lg font-semibold mb-3">Flight Statistics</h3>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="bg-blue-50 p-4 rounded-lg">
+                      <p className="text-sm text-gray-600">Total Missions</p>
+                      <p className="text-2xl font-bold">{toolData?.tot_mission ?? 0}</p>
                     </div>
-                    <div className="mt-2 grid grid-cols-3 gap-2 text-sm">
-                      <div>
-                        <span className="text-gray-500">Code:</span> {component.factory_serie}
-                      </div>
-                      <div>
-                        <span className="text-gray-500">Serial:</span> {component.component_sn || 'N/A'}
-                      </div>
-                      <div>
-                        <span className="text-gray-500">Usage:</span> {component.component_cycles || 0} / {component.component_total_cycles || 'N/A'} hrs
-                      </div>
+                    <div className="bg-green-50 p-4 rounded-lg">
+                      <p className="text-sm text-gray-600">Flight Time</p>
+                      <p className="text-2xl font-bold">{Math.round((toolData?.tot_flown_time || 0) / 60)} min</p>
+                    </div>
+                    <div className="bg-purple-50 p-4 rounded-lg">
+                      <p className="text-sm text-gray-600">Distance</p>
+                      <p className="text-2xl font-bold">{((toolData?.tot_flown_meter || 0) / 1000).toFixed(2)} km</p>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
+                </div>
+              </TabsContent>
 
-        <div className="flex justify-end">
-          <Button onClick={onClose}>Close</Button>
-        </div>
+              <TabsContent value="specifications" className="space-y-4 pt-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">GCS Type</p>
+                    <p className="text-base">{toolData?.tool_gcs_type || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">C2 Platform</p>
+                    <p className="text-base">{toolData?.tool_ccPlatform || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Latitude</p>
+                    <p className="text-base">{toolData?.tool_latitude || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Longitude</p>
+                    <p className="text-base">{toolData?.tool_longitude || 'N/A'}</p>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="components" className="pt-4">
+                {components.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500 border rounded-lg border-dashed">
+                    No components found for this tool
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {components.map((component: any) => (
+                      <div key={component.tool_component_id} className="border rounded-lg p-4 shadow-sm">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h4 className="font-semibold">{component.factory_model}</h4>
+                            <p className="text-sm text-gray-500">{component.component_type}</p>
+                          </div>
+                          <Badge variant={component.component_status === 'OPERATIONAL' ? 'default' : 'secondary'}>
+                            {component.component_status}
+                          </Badge>
+                        </div>
+                        <div className="mt-2 grid grid-cols-3 gap-2 text-sm">
+                          <div><span className="text-gray-500">Code:</span> {component.factory_serie}</div>
+                          <div><span className="text-gray-500">Serial:</span> {component.component_sn || 'N/A'}</div>
+                          <div><span className="text-gray-500">Usage:</span> {component.component_cycles || 0} hrs</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
+
+            <div className="flex justify-end mt-6">
+              <Button variant="outline" onClick={onClose}>Close</Button>
+            </div>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );

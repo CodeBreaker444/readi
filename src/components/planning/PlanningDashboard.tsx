@@ -6,8 +6,6 @@ import axios from "axios";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { getPlanningColumns } from "../tables/PlanningColumns";
-import AddPlanningForm, { AddPlanningFormData } from "./AddPlanningForm";
-import CollapsibleCard from "./CollapsibleCard";
 import PageHeader from "./PageHeader";
 import PlanningTableCard from "./PlanningTableCard";
 
@@ -31,7 +29,6 @@ export default function PlanningDashboard({ isDark }: PlanningProps) {
   const router = useRouter()
   const [planningData, setPlanningData] = useState<Planning[]>([]);
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
   const [globalFilter, setGlobalFilter] = useState("");
   const [selectedRow, setSelectedRow] = useState<Planning | null>(null);
 
@@ -55,42 +52,7 @@ export default function PlanningDashboard({ isDark }: PlanningProps) {
     fetchPlanning();
   }, [fetchPlanning]);
 
-  const handleSubmit = async (form: AddPlanningFormData): Promise<void> => {
-    if (!form.fk_luc_procedure_id || !form.fk_evaluation_id) {
-      toast.error("Required fields are missing!");
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      const payload = {
-        fk_luc_procedure_id: Number(form.fk_luc_procedure_id),
-        fk_evaluation_id: Number(form.fk_evaluation_id),
-        fk_client_id: Number(form.fk_client_id),
-        planning_desc: form.planning_desc,
-        planning_status: form.planning_status,
-        planning_request_date: form.planning_request_date,
-        planning_year: Number(form.planning_year),
-        planning_type: form.planning_type,
-        planning_folder: form.planning_folder,
-        planning_result: "PROGRESS",
-      };
-
-      const response = await axios.post("/api/evaluation/planning", payload);
-
-      if (response.data.code === 1) {
-        toast.success("Planning request added successfully");
-        await fetchPlanning();
-      } else {
-        toast.error(response.data.message || "Error adding planning");
-      }
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Network error");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
+   
   const triggerDeleteConfirm = useCallback((row: Planning) => {
     setRowToDelete(row);
     setDeleteDialogOpen(true);
@@ -168,15 +130,6 @@ export default function PlanningDashboard({ isDark }: PlanningProps) {
       />
 
       <div className="mx-auto max-w-[1800px] px-6 py-6 space-y-6">
-        <CollapsibleCard
-          title="[GO.00.P01] Add Planning Request"
-          isDark={isDark}
-          defaultOpen={false}
-          collapsible
-        >
-          <AddPlanningForm isDark={isDark} onSubmit={handleSubmit} submitting={submitting} />
-        </CollapsibleCard>
-
         <PlanningTableCard
           data={planningData}
           columns={columns}

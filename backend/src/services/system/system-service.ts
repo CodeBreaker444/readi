@@ -1,6 +1,27 @@
 import { supabase } from '@/backend/database/database';
 import { buildS3Url, getPresignedDownloadUrl, uploadFileToS3 } from '@/lib/s3Client';
 
+export interface StoredFile {
+  filename: string;
+  filekey: string;
+  fileurl: string;
+  filesize: number;
+  uploaded_at: string;
+}
+
+export interface AddSystemInput {
+  fk_owner_id: number;
+  tool_code: string;
+  tool_name?: string;
+  tool_description?: string | null;
+  tool_active?: string;
+  location?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  activationDate?: string | null;
+  clientId?: number | null;
+  files?: File[];
+}
 
 export async function getSystemList(
   ownerId: number,
@@ -12,16 +33,14 @@ export async function getSystemList(
     .select('*')
     .eq('fk_owner_id', ownerId);
 
-  if (active !== 'ALL') {
-    query = query.eq('tool_active', active);
-  }
+  if (active !== 'ALL') query = query.eq('tool_active', active);
 
   const { data, error } = await query.order('tool_id', { ascending: false });
   if (error) throw error;
 
   const clientIds = [
     ...new Set(
-      (data || []).map((t) => t.tool_metadata?.clientId).filter(Boolean) as number[]
+      (data || []).map((t) => t.tool_metadata?.clientId).filter(Boolean) as number[],
     ),
   ];
 
@@ -32,10 +51,11 @@ export async function getSystemList(
       .select('client_id, client_name')
       .in('client_id', clientIds);
 
-    clientMap = clients?.reduce((acc, c) => {
-      acc[c.client_id] = c.client_name;
-      return acc;
-    }, {} as Record<number, string>) || {};
+    clientMap =
+      clients?.reduce(
+        (acc, c) => { acc[c.client_id] = c.client_name; return acc; },
+        {} as Record<number, string>,
+      ) ?? {};
   }
 
   const toolIds = (data || []).map((t) => t.tool_id);
@@ -69,16 +89,23 @@ export async function getSystemList(
     data: await Promise.all(
       filtered.map(async (item) => {
         const metaClientId = item.tool_metadata?.clientId;
-        const filekey = item.filekey || null;
 
-        let fileDownloadUrl: string | null = null;
-        if (filekey) {
-          try {
-            fileDownloadUrl = await getPresignedDownloadUrl(filekey, 1800);
-          } catch {
-            fileDownloadUrl = null;
-          }
-        }
+        const storedFiles: StoredFile[] = item.tool_metadata?.files ?? [];
+        const filesWithUrls = await Promise.all(
+          storedFiles.map(async (f: StoredFile) => {
+            let downloadUrl = '#';
+            if (f.filekey) {
+              try {
+                downloadUrl = await getPresignedDownloadUrl(f.filekey, 1800);
+              } catch {
+                downloadUrl = '#';
+              }
+            }
+            return { ...f, download_url: downloadUrl };
+          }),
+        );
+
+        const primaryDownloadUrl = filesWithUrls[0]?.download_url ?? null;
 
         return {
           tool_id: item.tool_id,
@@ -90,25 +117,36 @@ export async function getSystemList(
           location: item.location || '',
           date_activation: item.tool_metadata?.activationDate || '',
           client_name: clientMap[metaClientId] || '',
-          tool_ccPlatform: item.tool_metadata?.ccPlatform || '',
           tool_latitude: item.tool_metadata?.latitude,
           tool_longitude: item.tool_metadata?.longitude,
-          tool_gcs_type: item.tool_metadata?.gcsType || '',
           tool_status: item.tool_metadata?.status || 'OPERATIONAL',
           tot_mission: missionData[item.tool_id]?.count || 0,
           tot_flown_time: missionData[item.tool_id]?.time || 0,
           tot_flown_meter: missionData[item.tool_id]?.distance || 0,
           tool_maintenance_logbook: item.tool_metadata?.maintenanceLogbook || 'N',
-          file_key: filekey,
-          file_download_url: fileDownloadUrl,
+          files: filesWithUrls,               
+          file_count: filesWithUrls.length,
+          file_key: item.filekey ?? null,
+          file_download_url: primaryDownloadUrl,
         };
-      })
+      }),
     ),
   };
 }
 
+const sanitizeFilename = (original: string): string => {
+  return original
+    .normalize('NFD')                        
+    .replace(/[\u0300-\u036f]/g, '')          
+    .replace(/[^\x20-\x7E]/g, '_')           
+    .replace(/['"\\/:*?<>|()[\]{},;@!]/g, '_')  
+    .replace(/\s+/g, '_')                    
+    .replace(/_+/g, '_')                     
+    .replace(/^_|_$/g, '')                    
+    || 'file';                               
+}
 
-export async function addSystem(toolData: any) {
+export async function addSystem(toolData: AddSystemInput) {
   const { data: existing } = await supabase
     .from('tool')
     .select('tool_id')
@@ -118,35 +156,47 @@ export async function addSystem(toolData: any) {
 
   if (existing) throw new Error('Tool code already exists for this owner');
 
-  let filekey: string | null = null;
-  let fileurl: string | null = null;
+  const filesToUpload: File[] = Array.isArray(toolData.files)
+    ? toolData.files.filter((f) => f instanceof File && f.size > 0)
+    : [];
 
-  if (toolData.file instanceof File && toolData.file.size > 0) {
-    filekey = `system/${toolData.fk_owner_id}/${toolData.tool_code}/${Date.now()}_${toolData.file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
-    await uploadFileToS3(filekey, toolData.file);
-    fileurl = buildS3Url(filekey);
+  const uploadedFiles: StoredFile[] = [];
+
+  for (const f of filesToUpload) {
+      const safeFilename = sanitizeFilename(f.name)
+    const key = `system/${toolData.fk_owner_id}/${toolData.tool_code}/${Date.now()}_${safeFilename}`;
+    await uploadFileToS3(key, f);
+    const url = buildS3Url(key);
+    uploadedFiles.push({
+      filename: f.name,
+      filekey: key,
+      fileurl: url,
+      filesize: f.size,
+      uploaded_at: new Date().toISOString(),
+    });
   }
+
+  const primaryFile = uploadedFiles[0] ?? null;
 
   const { data, error } = await supabase
     .from('tool')
     .insert({
       fk_owner_id: toolData.fk_owner_id,
-      fk_tool_type_id: toolData.fk_tool_type_id || 1,
+      fk_tool_type_id: 1,
       tool_code: toolData.tool_code,
       tool_name: toolData.tool_name || toolData.tool_code,
       tool_description: toolData.tool_description || null,
       location: toolData.location || null,
       tool_active: toolData.tool_active || 'Y',
-      filekey,
-      fileurl,
+      filekey: primaryFile?.filekey ?? null,
+      fileurl: primaryFile?.fileurl ?? null,
       tool_metadata: {
         clientId: toolData.clientId || null,
-        ccPlatform: toolData.ccPlatform || null,
-        gcsType: toolData.gcsType || null,
         latitude: toolData.latitude || null,
         longitude: toolData.longitude || null,
         activationDate: toolData.activationDate || null,
         maintenanceLogbook: 'N',
+        files: uploadedFiles,
       },
     })
     .select()
@@ -176,10 +226,8 @@ export async function updateTool(toolId: number, toolData: any) {
       tool_metadata: {
         ...current?.tool_metadata,
         clientId: toolData.fk_client_id,
-        ccPlatform: toolData.tool_ccPlatform,
         latitude: toolData.tool_latitude,
         longitude: toolData.tool_longitude,
-        gcsType: toolData.tool_gcs_type,
         activationDate: toolData.date_activation || null,
         status: toolData.tool_status,
         maintenanceLogbook: toolData.tool_maintenance_logbook,
@@ -280,6 +328,24 @@ export async function addModel(modelData: any) {
 
   if (error) throw error;
   return { code: 1, message: 'Model added successfully', data };
+}
+
+
+export async function updateModel(modelId: number, modelData: any) {
+  const { data, error } = await supabase
+    .from('tool_model')
+    .update({
+      manufacturer: modelData.manufacturer,
+      model_code: modelData.model_code,
+      model_name: modelData.model_name,
+      ...(modelData.model_type ? { model_description: modelData.model_type } : {}),
+    })
+    .eq('model_id', modelId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return { code: 1, message: 'Model updated successfully', data };
 }
 
 

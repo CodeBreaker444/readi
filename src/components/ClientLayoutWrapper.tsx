@@ -50,7 +50,7 @@ const ClientLayoutWrapper: React.FC<ClientLayoutWrapperProps> = ({
         <div className={`flex h-screen ${isDark ? 'bg-slate-900' : 'bg-gray-50'}`}>
           {!loading && <RoleIndicator role={role} />}
 
-          <div className="hidden lg:block">
+          <div className="hidden lg:block ">
             <Sidebar
               isDark={isDark}
               role={role}

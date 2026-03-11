@@ -13,7 +13,6 @@ import { toast } from 'sonner';
 const INITIAL_FORM = {
   tool_code: '', tool_description: '',
   tool_status: 'OPERATIONAL', tool_active: 'Y', fk_model_id: '', fk_client_id: '',
-  gcsType: '', ccPlatform: '',
   latitude: '', longitude: '', purchase_date: '', activation_date: '',
   location: '',
 };
@@ -26,36 +25,34 @@ export default function AddSystemModal({ open, onClose, onSuccess, models, clien
   const { isDark } = useTheme();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState(INITIAL_FORM);
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
 
-  useEffect(() => { if (open) { setFormData(INITIAL_FORM); setFile(null); } }, [open]);
+  useEffect(() => { if (open) { setFormData(INITIAL_FORM); setFiles([]); } }, [open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault(); setLoading(true);
-  try {
-    const formPayload = new FormData();
-    const payload = {
-      tool_code: formData.tool_code,
-      tool_name: formData.tool_code,
-      tool_description: formData.tool_description,
-      tool_active: formData.tool_active,
-      fk_client_id: formData.fk_client_id ? Number(formData.fk_client_id) : null,
-      location: formData.location || null,
-      ccPlatform: formData.ccPlatform || null,
-      gcsType: formData.gcsType || null,
-      latitude: formData.latitude ? Number(formData.latitude) : null,
-      longitude: formData.longitude ? Number(formData.longitude) : null,
-      activationDate: formData.activation_date || null,
-    };
-    formPayload.append('data', JSON.stringify(payload));
-    if (file) formPayload.append('file', file);
+    e.preventDefault(); setLoading(true);
+    try {
+      const formPayload = new FormData();
+      const payload = {
+        tool_code: formData.tool_code,
+        tool_name: formData.tool_code,
+        tool_description: formData.tool_description,
+        tool_active: formData.tool_active,
+        fk_client_id: formData.fk_client_id ? Number(formData.fk_client_id) : null,
+        location: formData.location || null,
+        latitude: formData.latitude ? Number(formData.latitude) : null,
+        longitude: formData.longitude ? Number(formData.longitude) : null,
+        activationDate: formData.activation_date || null,
+      };
+      formPayload.append('data', JSON.stringify(payload));
+      files.forEach(f => formPayload.append('files', f));
 
-    const res = await fetch('/api/system/add', { method: 'POST', body: formPayload });
-    const result = await res.json();
-    if (result.code === 1) { toast.success('Tool added successfully'); onSuccess(); }
-    else toast.error(result.message || 'Failed to add tool');
-  } catch { toast.error('Error adding tool'); } finally { setLoading(false); }
-};
+      const res = await fetch('/api/system/add', { method: 'POST', body: formPayload });
+      const result = await res.json();
+      if (result.code === 1) { toast.success('System added successfully'); onSuccess(); }
+      else toast.error(result.message || 'Failed to add tool');
+    } catch { toast.error('Error adding tool'); } finally { setLoading(false); }
+  };
 
   const handleChange = (field: string, value: string) => setFormData(prev => ({ ...prev, [field]: value }));
 
@@ -89,26 +86,8 @@ export default function AddSystemModal({ open, onClose, onSuccess, models, clien
           </div>
 
           <div>
-            <p className={sectionLabelCls}>Platform & Location</p>
+            <p className={sectionLabelCls}>Location</p>
             <div className="grid grid-cols-12 gap-3">
-              <div className="col-span-3"><Label className={labelCls}>C2 Platform</Label>
-                <Select value={formData.ccPlatform} onValueChange={v => handleChange('ccPlatform', v)}>
-                  <SelectTrigger className={selectTriggerCls}><SelectValue placeholder="Select Type" /></SelectTrigger>
-                  <SelectContent className={selectContentCls}>
-                    <SelectItem value="_FLYTBASE">Flytbase</SelectItem><SelectItem value="_VOTIX">Votix</SelectItem>
-                    <SelectItem value="_FLIGHTHUB">DJI FlightHub</SelectItem><SelectItem value="_APP">APP on GCS</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="col-span-3"><Label className={labelCls}>GCS</Label>
-                <Select value={formData.gcsType} onValueChange={v => handleChange('gcsType', v)}>
-                  <SelectTrigger className={selectTriggerCls}><SelectValue placeholder="Select Type" /></SelectTrigger>
-                  <SelectContent className={selectContentCls}>
-                    <SelectItem value="_DOCK">Docking Station</SelectItem><SelectItem value="_RC">Remote Control</SelectItem>
-                    <SelectItem value="_GCS">Ground Control Station</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
               <div className="col-span-3"><Label className={labelCls}>Latitude</Label>
                 <Input className={inputCls} value={formData.latitude} onChange={e => handleChange('latitude', e.target.value)} />
               </div>
@@ -164,20 +143,25 @@ export default function AddSystemModal({ open, onClose, onSuccess, models, clien
             </div>
           </div>
           <div>
-  <p className={sectionLabelCls}>Documentation</p>
-  <div className="grid grid-cols-12 gap-3">
-    <div className="col-span-6">
-      <Label className={labelCls}>Attach File (manual, certificate, etc.)</Label>
-      <Input
-        type="file"
-        className={inputCls}
-        onChange={e => setFile(e.target.files?.[0] ?? null)}
-        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-      />
-      {file && <p className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{file.name}</p>}
-    </div>
-  </div>
-</div>
+            <p className={sectionLabelCls}>Documentation</p>
+            <div className="grid grid-cols-12 gap-3">
+              <div className="col-span-6">
+                <Label className={labelCls}>Attach Files (manual, certificate, etc.)</Label>
+                <Input
+                  type="file"
+                  multiple
+                  className={inputCls}
+                  onChange={e => setFiles(Array.from(e.target.files ?? []))}
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                />
+                {files.length > 0 && (
+                  <ul className={`mt-1 space-y-0.5 text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+                    {files.map((f, i) => <li key={i}>{f.name}</li>)}
+                  </ul>
+                )}
+              </div>
+            </div>
+          </div>
 
           <div className={`flex justify-end gap-2 pt-2 border-t ${isDark ? 'border-slate-700/60' : 'border-gray-100'}`}>
             <Button type="button" variant="outline" onClick={onClose}

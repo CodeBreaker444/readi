@@ -309,7 +309,6 @@ export default function DroneToolMapPage() {
           onSuccess={() => setShowAddComponent(false)}
           tools={allTools as any[]}
           models={models}
-          clients={clients as any[]}
         />
       )}
 

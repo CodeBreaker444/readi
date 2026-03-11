@@ -3,7 +3,7 @@ import { getPilotList } from "@/backend/services/planning/planning-dashboard";
 import { getUserSession } from "@/lib/auth/server-session";
 import { NextResponse } from "next/server";
 
-export async function POST(request: Request) {
+export async function GET(request: Request) {
     try {
         const session = await getUserSession()
         if (!session) {

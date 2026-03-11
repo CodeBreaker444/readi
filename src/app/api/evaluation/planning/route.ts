@@ -1,5 +1,5 @@
 
-import { addPlanning, deletePlanning, getPlanningData, getPlanningList, updatePlanning } from "@/backend/services/planning/planning-dashboard";
+import { addPlanningWithAssignment, deletePlanning, getPlanningData, getPlanningList, updatePlanning } from "@/backend/services/planning/planning-dashboard";
 import { getUserSession } from "@/lib/auth/server-session";
 import { NextRequest, NextResponse } from "next/server";
 import z from "zod";
@@ -26,45 +26,89 @@ export async function GET(req: NextRequest) {
     }
 }
 
-const createPlanningSchema = z.object({
-  fk_evaluation_id: z.number().int().positive("Evaluation is required"),
-  fk_client_id: z.number().int().positive(),
-  fk_luc_procedure_id: z.number().int().positive("Procedure is required"),
-  planning_desc: z.string().min(1, "Description is required").max(500),
-  planning_status: z.enum([
-    "NEW",
-    "PROCESSING",
-    "REQ_FEEDBACK",
-    "POSITIVE_RESULT",
-    "NEGATIVE_RESULT",
-  ]),
+
+const addEvaluationPlanningSchema = z.object({
+  fk_evaluation_id: z.number().int().positive("Evaluation ID is required"),
+  fk_client_id: z.number().int().positive("Client ID is required"),
+  fk_luc_procedure_id: z.number().int().positive("LUC Procedure is required"),
+  /** PIC / pilot assigned to this planning (assigned_to) */
+  assigned_to_user_id: z
+    .number()
+    .int()
+    .positive("Pilot in Command is required"),
+  planning_desc: z
+    .string()
+    .min(1, "Description is required")
+    .max(500, "Description too long"),
+  planning_status: z
+    .enum([
+      "NEW",
+      "PROCESSING",
+      "REQ_FEEDBACK",
+      "POSITIVE_RESULT",
+      "NEGATIVE_RESULT",
+    ])
+    .default("NEW"),
   planning_request_date: z.string().min(1, "Request date is required"),
-  planning_year: z.number().int().min(2020).max(2030),
+  planning_year: z
+    .number()
+    .int()
+    .min(2020, "Year too far in past")
+    .max(2035, "Year too far in future"),
   planning_type: z.string().max(100).optional().default(""),
   planning_folder: z.string().max(255).optional().default(""),
-  planning_result: z.string().max(50).default("PROGRESS"),
+  planning_result: z.string().max(50).optional().default("PROGRESS"),
 });
 
+
 export async function POST(req: NextRequest) {
-    try {
-        const session = await getUserSession()
-        if (!session) {
-            return NextResponse.json({ code: 0, message: 'Unauthorized' }, { status: 401 });
-        }
-
-        const body = await req.json();
-        const parsed = createPlanningSchema.safeParse(body);
-        if (!parsed.success)
-            return NextResponse.json({ code: 0, message: "Validation failed", errors: parsed.error.flatten().fieldErrors }, { status: 400 });
-
-        const data = await addPlanning(parsed.data, session.user.userId, session.user.ownerId);
-        return NextResponse.json({ code: 1, message: "Planning added", data });
-    } catch (err: any) {
-        return NextResponse.json({ code: 0, message: err.message }, { status: 500 });
+  try {
+    const session = await getUserSession();
+    if (!session) {
+      return NextResponse.json(
+        { code: 0, message: "Unauthorized" },
+        { status: 401 }
+      );
     }
+
+    const body = await req.json();
+    const parsed = addEvaluationPlanningSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        {
+          code: 0,
+          message: "Validation failed",
+          errors: parsed.error.flatten().fieldErrors,
+        },
+        { status: 400 }
+      );
+    }
+
+    const data = await addPlanningWithAssignment(
+      {
+        ...parsed.data,
+        assigned_by_user_id: session.user.userId, 
+        assigned_to_user_id: parsed.data.assigned_to_user_id,  
+      },
+      session.user.userId,
+      session.user.ownerId
+    );
+
+    return NextResponse.json({
+      code: 1,
+      message: "Planning created successfully",
+      data,
+    });
+  } catch (err: any) {
+    return NextResponse.json(
+      { code: 0, message: err.message ?? "Internal server error" },
+      { status: 500 }
+    );
+  }
 }
 
-const updatePlanningSchema = createPlanningSchema.extend({
+const updatePlanningSchema = addEvaluationPlanningSchema.extend({
   planning_id: z.number().int().positive("Planning ID is required"),
 });
 

@@ -1,9 +1,19 @@
 import { supabase } from "@/backend/database/database";
 import { DroneTool, FileType, MissionTemplate, PilotUser, PlanningLogbookRow, PlanningTestLogbookRow, RepositoryFile } from "@/config/types/evaluation-planning";
 import { deleteFileFromS3, getPresignedDownloadUrl } from "@/lib/s3Client";
+ 
 
+export type UpdatePlanning = {
+ planning_id: number;
+  fk_evaluation_id: number;
+  fk_client_id?: number;
+  planning_desc: string;
+  planning_status: string;
+  planning_request_date: string;
+  planning_type: string;
+};
 
-type CreatePlanning = {
+type CreatePlanningInput = {
   fk_evaluation_id: number;
   fk_client_id?: number;
   fk_luc_procedure_id: number;
@@ -17,22 +27,43 @@ type CreatePlanning = {
   planning_request_date: string;
   planning_year: number;
   planning_type?: string;
-  planning_ver?: string;
   planning_folder?: string;
-  planning_result: string;
-};
-
-export type UpdatePlanning = {
- planning_id: number;
-  fk_evaluation_id: number;
-  fk_client_id?: number;
-  planning_desc: string;
-  planning_status: string;
-  planning_request_date: string;
-  planning_type: string;
+  planning_result?: string;
+  assigned_by_user_id?: number;
+  assigned_to_user_id?: number;
 };
 
 
+export async function addPlanningWithAssignment(
+  input: CreatePlanningInput,
+  userId: number,
+  ownerId: number
+) {
+  const { data: inserted, error } = await supabase
+    .from("planning")
+    .insert({
+      fk_owner_id: ownerId,
+      created_by_user_id: userId,
+      fk_client_id: input.fk_client_id ?? null,
+      fk_evaluation_id: input.fk_evaluation_id,
+      planning_description: input.planning_desc,
+      planning_name: input.planning_desc,
+      planning_status: input.planning_status,
+      planning_type: input.planning_type ?? "",
+      planned_date: input.planning_request_date,
+      assigned_to_user_id: input.assigned_to_user_id ?? null,
+    })
+    .select("planning_id, created_by_user_id, assigned_to_user_id")
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  return {
+    planning_id: inserted.planning_id,
+    assigned_by_user_id: userId,
+    assigned_to_user_id: inserted.assigned_to_user_id ?? null,
+  };
+}
 export async function getPlanningList(ownerId: number) {
   const { data, error } = await supabase
     .from("planning")
@@ -52,14 +83,16 @@ export async function getPlanningList(ownerId: number) {
       created_at,
       updated_at,
       created_by_user_id,
+      assigned_to_user_id,
       client:fk_client_id ( client_id, client_name ),
       evaluation:fk_evaluation_id (
         evaluation_id,
         evaluation_code,
         evaluation_metadata
       ),
-      user:created_by_user_id ( user_id, first_name, last_name, user_role )
-    `
+      created_by_user:created_by_user_id ( user_id, first_name, last_name, user_role ),
+      assigned_to_user:assigned_to_user_id ( user_id, first_name, last_name, user_role )
+      `
     )
     .eq("fk_owner_id", ownerId)
     .order("planning_id", { ascending: false });
@@ -67,58 +100,57 @@ export async function getPlanningList(ownerId: number) {
   if (error) throw new Error(error.message);
 
   const mapped = (data ?? []).map((row: any) => {
+    const client         = Array.isArray(row.client)           ? row.client[0]           : row.client;
+    const evaluation     = Array.isArray(row.evaluation)       ? row.evaluation[0]       : row.evaluation;
+    const createdByUser  = Array.isArray(row.created_by_user)  ? row.created_by_user[0]  : row.created_by_user;
+    const assignedToUser = Array.isArray(row.assigned_to_user) ? row.assigned_to_user[0] : row.assigned_to_user;
+
     let procedureId: number | null = null;
-    const evalMeta = row.evaluation?.evaluation_metadata;
+    const evalMeta = evaluation?.evaluation_metadata;
     if (evalMeta) {
       try {
-        const meta =
-          typeof evalMeta === "string" ? JSON.parse(evalMeta) : evalMeta;
+        const meta = typeof evalMeta === "string" ? JSON.parse(evalMeta) : evalMeta;
         procedureId = meta.procedure_id ?? null;
-      } catch {
-        // ignore parse errors
-      }
+      } catch { /* ignore */ }
     }
 
     return {
-      planning_id: row.planning_id,
-      fk_owner_id: row.fk_owner_id,
-      fk_client_id: row.client?.client_id ?? row.fk_client_id ?? null,
-      fk_evaluation_id: row.evaluation?.evaluation_id ?? 0,
-      fk_user_id: row.user?.user_id ?? 0,
-      fk_pic_id: row.user?.user_id ?? 0,
-      planning_code: row.planning_code ?? "",
-      planning_name: row.planning_name ?? "",
-      planning_desc: row.planning_description ?? "",
-      planning_status: row.planning_status ?? "",
-      planning_type: row.planning_type ?? "",
-      planning_request_date: row.planned_date ?? "",
-      planning_year: new Date().getFullYear(),
-      planning_ver: "1.0",
-      planning_folder: "",
-      planning_result: "PROGRESS",
-      planning_active: row.planning_active ?? "Y",
-      last_update: row.updated_at ?? row.created_at ?? "",
-      client_name: row.client?.client_name ?? "",
-      user_fullname: row.user
-        ? `${row.user.first_name ?? ""} ${row.user.last_name ?? ""}`.trim()
+      planning_id:          row.planning_id,
+      fk_owner_id:          row.fk_owner_id,
+      fk_client_id:         client?.client_id         ?? row.fk_client_id   ?? null,
+      fk_evaluation_id:     evaluation?.evaluation_id  ?? 0,
+      assigned_to_user_id:  row.assigned_to_user_id   ?? null,
+      planning_code:        row.planning_code          ?? "",
+      planning_name:        row.planning_name          ?? "",
+      planning_desc:        row.planning_description   ?? "",
+      planning_status:      row.planning_status        ?? "",
+      planning_type:        row.planning_type          ?? "",
+      planning_request_date: row.planned_date          ?? "",
+      planning_year:        new Date().getFullYear(),
+      planning_ver:         "1.0",
+      planning_folder:      "",
+      planning_result:      "PROGRESS",
+      planning_active:      row.planning_active        ?? "Y",
+      last_update:          row.updated_at ?? row.created_at ?? "",
+      client_name:          client?.client_name        ?? "",
+      user_fullname: createdByUser
+        ? `${createdByUser.first_name ?? ""} ${createdByUser.last_name ?? ""}`.trim()
         : "",
-      user_profile_code: row.user?.user_role ?? "",
+      user_profile_code: createdByUser?.user_role ?? "",
+      pic_data: assignedToUser
+        ? {
+            fullname: `${assignedToUser.first_name ?? ""} ${assignedToUser.last_name ?? ""}`.trim(),
+            user_profile_code: assignedToUser.user_role ?? "",
+          }
+        : null,
       luc_procedure_code: "",
-      luc_procedure_ver: "",
-      _procedure_id: procedureId,
-      pic_data: {
-        fullname: row.user
-          ? `${row.user.first_name ?? ""} ${row.user.last_name ?? ""}`.trim()
-          : "",
-        user_profile_code: row.user?.user_role ?? "",
-      },
+      luc_procedure_ver:  "",
+      _procedure_id:      procedureId,
     };
   });
 
   const procedureIds = [
-    ...new Set(
-      mapped.map((m: any) => m._procedure_id).filter(Boolean)
-    ),
+    ...new Set(mapped.map((m: any) => m._procedure_id).filter(Boolean)),
   ] as number[];
 
   if (procedureIds.length > 0) {
@@ -138,7 +170,7 @@ export async function getPlanningList(ownerId: number) {
       if (row._procedure_id && procMap.has(row._procedure_id)) {
         const proc = procMap.get(row._procedure_id)!;
         row.luc_procedure_code = proc.code;
-        row.luc_procedure_ver = proc.ver;
+        row.luc_procedure_ver  = proc.ver;
       }
     }
   }
@@ -163,12 +195,14 @@ export async function getPlanningData(ownerId: number, planningId: number) {
       planning_status,
       planned_date,
       planning_active,
+      assigned_to_user_id,
       created_at,
       updated_at,
       client:fk_client_id ( client_id, client_name ),
       evaluation:fk_evaluation_id ( evaluation_id, evaluation_metadata ),
-      user:created_by_user_id ( user_id, first_name, last_name, user_role )
-    `
+      created_by_user:created_by_user_id ( user_id, first_name, last_name, user_role ),
+      assigned_to_user:assigned_to_user_id ( user_id, first_name, last_name, user_role )
+      `
     )
     .eq("fk_owner_id", ownerId)
     .eq("planning_id", planningId)
@@ -176,16 +210,16 @@ export async function getPlanningData(ownerId: number, planningId: number) {
 
   if (error) throw new Error(error.message);
 
-  const client = Array.isArray(data.client) ? data.client[0] : data.client;
-  const evaluation = Array.isArray(data.evaluation) ? data.evaluation[0] : data.evaluation;
+  const client         = Array.isArray(data.client)           ? data.client[0]           : data.client;
+  const evaluation     = Array.isArray(data.evaluation)       ? data.evaluation[0]       : data.evaluation;
+  const assignedToUser = Array.isArray(data.assigned_to_user) ? data.assigned_to_user[0] : data.assigned_to_user;
 
   let lucCode = "";
-  let lucVer = "";
+  let lucVer  = "";
   const evalMeta = evaluation?.evaluation_metadata;
   if (evalMeta) {
     try {
-      const meta =
-        typeof evalMeta === "string" ? JSON.parse(evalMeta) : evalMeta;
+      const meta = typeof evalMeta === "string" ? JSON.parse(evalMeta) : evalMeta;
       if (meta.procedure_id) {
         const { data: proc } = await supabase
           .from("luc_procedure")
@@ -194,56 +228,38 @@ export async function getPlanningData(ownerId: number, planningId: number) {
           .single();
         if (proc) {
           lucCode = proc.procedure_code ?? "";
-          lucVer = proc.procedure_version ?? "";
+          lucVer  = proc.procedure_version ?? "";
         }
       }
-    } catch {
-      // ignore
-    }
+    } catch { /* ignore */ }
   }
 
-return {
-    planning_id: data.planning_id,
-    fk_owner_id: data.fk_owner_id,
-    fk_client_id: client?.client_id ?? data.fk_client_id ?? 0,
-    fk_evaluation_id: evaluation?.evaluation_id ?? 0,
-    planning_code: data.planning_code ?? "",
-    planning_desc: data.planning_description ?? "",
-    planning_status: data.planning_status ?? "",
-    planning_type: data.planning_type ?? "",
-    planning_request_date: data.planned_date ?? "",
-    planning_active: data.planning_active ?? "Y",
-    last_update: data.updated_at ?? "",
-    client_name: client?.client_name ?? "",
-    luc_procedure_code: lucCode,
-    luc_procedure_ver: lucVer,
+  return {
+    planning_id:          data.planning_id,
+    fk_owner_id:          data.fk_owner_id,
+    fk_client_id:         client?.client_id    ?? data.fk_client_id ?? 0,
+    fk_evaluation_id:     evaluation?.evaluation_id ?? 0,
+    assigned_to_user_id:  data.assigned_to_user_id ?? null,
+    planning_code:        data.planning_code   ?? "",
+    planning_desc:        data.planning_description ?? "",
+    planning_status:      data.planning_status ?? "",
+    planning_type:        data.planning_type   ?? "",
+    planning_request_date: data.planned_date   ?? "",
+    planning_active:      data.planning_active ?? "Y",
+    last_update:          data.updated_at      ?? "",
+    client_name:          client?.client_name  ?? "",
+    luc_procedure_code:   lucCode,
+    luc_procedure_ver:    lucVer,
+    pic_data: assignedToUser
+      ? {
+          fullname: `${assignedToUser.first_name ?? ""} ${assignedToUser.last_name ?? ""}`.trim(),
+          user_profile_code: assignedToUser.user_role ?? "",
+        }
+      : null,
   };
 }
 
-export async function addPlanning(
-  input: CreatePlanning,
-  userId: number,
-  ownerId: number
-) {
-  const { data: inserted, error } = await supabase
-    .from("planning")
-    .insert({
-      fk_owner_id: ownerId,
-      created_by_user_id: userId,
-      fk_client_id: input.fk_client_id,
-      fk_evaluation_id: input.fk_evaluation_id,
-      planning_description: input.planning_desc,
-      planning_name: input.planning_desc,
-      planning_status: input.planning_status,
-      planning_type: input.planning_type ?? "",
-      planned_date: input.planning_request_date,
-    })
-    .select("planning_id")
-    .single();
-
-  if (error) throw new Error(error.message);
-  return inserted;
-}
+ 
 
 export async function updatePlanning(payload: UpdatePlanning) {
   const { planning_id, ...updates } = payload;
