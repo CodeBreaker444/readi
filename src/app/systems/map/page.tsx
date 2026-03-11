@@ -2,7 +2,7 @@
 
 import AddComponentModal from "@/components/system/AddComponentModal";
 import AddModelModal from "@/components/system/AddModelModal";
-import AddToolModal from "@/components/system/AddToolModal";
+import AddSystemModal from "@/components/system/AddSystemModal";
 import type { DroneMapHandle } from "@/components/system/DroneMap";
 import MapFilters from "@/components/system/MapFilters";
 import MapLegend from "@/components/system/MapLegend";
@@ -67,7 +67,7 @@ export default function DroneToolMapPage() {
   const fetchToolData = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch("/api/system/tool/list", {
+      const response = await fetch("/api/system/list", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ active: "ALL", status: "ALL" }),
@@ -76,10 +76,10 @@ export default function DroneToolMapPage() {
       if (result.code === 1) {
         setAllTools(result.data);
       } else {
-        toast.error(result.message || "Failed to fetch tool data");
+        toast.error(result.message || "Failed to fetch system data");
       }
     } catch (error) {
-      toast.error("Error fetching tool data");
+      toast.error("Error fetching system data");
       console.error(error);
     } finally {
       setLoading(false);
@@ -88,7 +88,7 @@ export default function DroneToolMapPage() {
 
   const fetchModels = useCallback(async () => {
     try {
-      const response = await fetch("/api/system/tool/model/list", {
+      const response = await fetch("/api/system/model/list", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
@@ -279,7 +279,7 @@ export default function DroneToolMapPage() {
 
 
       {showAddTool && (
-        <AddToolModal
+        <AddSystemModal
           open={showAddTool}
           onClose={() => setShowAddTool(false)}
           onSuccess={() => {

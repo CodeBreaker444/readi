@@ -1,4 +1,4 @@
-import { getToolList } from '@/backend/services/system/tool/tool-service';
+import { getSystemList } from '@/backend/services/system/tool/tool-service';
 import { getUserSession } from '@/lib/auth/server-session';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -13,9 +13,8 @@ export async function POST(request: NextRequest) {
     const ownerId = body.o_id || session.user.ownerId;
     const clientId = body.client_id;
     const active = body.active || 'ALL';
-    const status = body.status || 'ALL';
 
-    const result = await getToolList(ownerId, clientId, active, status);
+    const result = await getSystemList(ownerId, clientId, active);
 
     return NextResponse.json(result);
   } catch (error: any) {

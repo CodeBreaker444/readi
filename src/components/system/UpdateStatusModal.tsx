@@ -27,7 +27,7 @@ export default function UpdateStatusModal({ open, toolId, onClose, onSuccess }: 
     setLoading(true);
 
     try {
-      const response = await fetch(`/api/system/tool/${toolId}/update-status`, {
+      const response = await fetch(`/api/system/${toolId}/update-status`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
@@ -90,7 +90,7 @@ export default function UpdateStatusModal({ open, toolId, onClose, onSuccess }: 
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" className='bg-violet-600 hover:bg-violet-700' disabled={loading}>
               {loading ? 'Updating...' : 'Update Status'}
             </Button>
           </div>

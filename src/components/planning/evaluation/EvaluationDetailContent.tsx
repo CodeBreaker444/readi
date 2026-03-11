@@ -1,6 +1,7 @@
 'use client';
 
 import Breadcrumbs from '@/components/Breadcrumbs';
+import { Button } from '@/components/ui/button';
 import {
     Card,
     CardContent,
@@ -15,25 +16,31 @@ import {
 } from '@/components/ui/collapsible';
 import { Separator } from '@/components/ui/separator';
 import { useTheme } from '@/components/useTheme';
-import { Evaluation } from '@/config/types/evaluation';
+import { Evaluation, EvaluationTask } from '@/config/types/evaluation';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
 import {
     ChevronDown,
+    ClipboardList,
     FileText,
     Map,
-    Pencil
+    MessageSquarePlus,
+    Pencil,
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { FC, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { EditEvaluationForm } from './EditEvaluationForm';
+import { EvaluationCommunicationModal } from './EvaluationCommunicationModal';
 import { EvaluationDetailFilePanel } from './EvaluationDetailFilePanel';
 import { EvaluationMapPanel } from './EvaluationMapPanel';
 import { EvaluationDetailSkeleton } from './EvaluationSkeleton';
+import { TaskCompletionTable } from './TaskCompletionTable';
+interface props{
+    ownerId:number
+}
 
-
-export const EvaluationDetailContent = () => {
+export const EvaluationDetailContent:FC<props> = ({ownerId}) => {
     const { isDark } = useTheme()
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -41,7 +48,10 @@ export const EvaluationDetailContent = () => {
     const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [editOpen, setEditOpen] = useState(true);
-    const [allTasksCompleted, setAllTasksCompleted] = useState(false);
+    const [taskTableKey, setTaskTableKey] = useState(0);
+
+    const [commModalOpen, setCommModalOpen] = useState(false);
+    const [commModalTask, setCommModalTask] = useState<EvaluationTask | null>(null);
 
     const params = {
         e_id: searchParams.get('e_id') ?? '',
@@ -53,7 +63,7 @@ export const EvaluationDetailContent = () => {
             label: "Evaluation",
             href: "/planning/evaluation",
         },
-        { label: "Evaluation Detial", href: "#" },
+        { label: "Evaluation Detail", href: "#" },
     ];
 
     const evaluationId = Number(params.e_id);
@@ -84,6 +94,20 @@ export const EvaluationDetailContent = () => {
         fetchEvaluation();
     }, [searchParams]);
 
+    function handleOpenTaskAction(task: EvaluationTask) {
+        setCommModalTask(task);
+        setCommModalOpen(true);
+    }
+
+    function handleNewCommunication() {
+        setCommModalTask(null);
+        setCommModalOpen(true);
+    }
+
+    function handleCommSent() {
+        setTaskTableKey((k) => k + 1);
+    }
+
     if (isLoading) {
         return <EvaluationDetailSkeleton />
     }
@@ -105,7 +129,7 @@ export const EvaluationDetailContent = () => {
                             </div>
                         </div>
 
-                        {/* <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2">
                             <Button
                                 size="sm"
                                 variant="outline"
@@ -115,7 +139,7 @@ export const EvaluationDetailContent = () => {
                                 <MessageSquarePlus className="h-3.5 w-3.5" />
                                 New Communication
                             </Button>
-                        </div> */}
+                        </div>
                     </div>
                 </div>
                 <div className='m-4 '>
@@ -133,7 +157,6 @@ export const EvaluationDetailContent = () => {
                                                 <Pencil className="w-4 h-4 text-violet-500" />
                                                 <CardTitle className="text-sm font-semibold">
                                                     Edit Evaluation Request
-
                                                 </CardTitle>
                                             </div>
                                             <ChevronDown
@@ -178,7 +201,7 @@ export const EvaluationDetailContent = () => {
                         </Card>
                     </div>
 
-                    {/* <Card className="border-slate-200 shadow-sm">
+                    <Card className="border-slate-200 shadow-sm">
                         <CardHeader className="pb-3">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
@@ -187,25 +210,20 @@ export const EvaluationDetailContent = () => {
                                         Task Completion
                                     </CardTitle>
                                 </div>
-                                {allTasksCompleted && (
-                                    <Button
-                                        size="sm"
-                                        className="gap-1.5 bg-emerald-600 hover:bg-emerald-700"
-                                        onClick={handleMoveToPlanning}
-                                    >
-                                        <MoveRight className="h-3.5 w-3.5" />
-                                        Move to Planning
-                                    </Button>
-                                )}
                             </div>
+                            <CardDescription className="text-xs">
+                                Assignments, checklists and communications required for this evaluation
+                            </CardDescription>
                         </CardHeader>
                         <CardContent>
                             <TaskCompletionTable
+                                key={taskTableKey}
                                 evaluationId={evaluationId}
-                                onAllCompleted={setAllTasksCompleted}
+                                ownerId={ownerId}
+                                onAllCompleted={()=>{}}
                             />
                         </CardContent>
-                    </Card> */}
+                    </Card>
 
                     <Card className="border-slate-200 shadow-sm">
                         <CardHeader className="pb-3">
@@ -223,6 +241,14 @@ export const EvaluationDetailContent = () => {
                     </Card>
                 </div>
             </div>
+
+            <EvaluationCommunicationModal
+                evaluationId={evaluationId}
+                open={commModalOpen}
+                task={commModalTask}
+                onClose={() => setCommModalOpen(false)}
+                onSent={handleCommSent}
+            />
         </>
     );
 }

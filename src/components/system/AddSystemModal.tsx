@@ -11,11 +11,10 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 const INITIAL_FORM = {
-  tool_type: 'AIRCRAFT', tool_code: '', tool_serial_number: '', tool_description: '',
+  tool_code: '', tool_description: '',
   tool_status: 'OPERATIONAL', tool_active: 'Y', fk_model_id: '', fk_client_id: '',
-  vendor: '', gcsType: '', streamingType: 'WEB_RTC', streamingUrl: '', ccPlatform: '',
-  latitude: '', longitude: '', purchase_date: '', activation_date: '', guarantee_days: '',
-  purchase_price: '', warranty_expiry: '', last_calibration_date: '', next_calibration_date: '',
+  gcsType: '', ccPlatform: '',
+  latitude: '', longitude: '', purchase_date: '', activation_date: '',
   location: '',
 };
 
@@ -23,37 +22,41 @@ interface AddToolModalProps {
   open: boolean; onClose: () => void; onSuccess: () => void; models: any[]; clients: any[];
 }
 
-export default function AddToolModal({ open, onClose, onSuccess, models, clients }: AddToolModalProps) {
+export default function AddSystemModal({ open, onClose, onSuccess, models, clients }: AddToolModalProps) {
   const { isDark } = useTheme();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState(INITIAL_FORM);
-  useEffect(() => { if (open) setFormData(INITIAL_FORM); }, [open]);
+  const [file, setFile] = useState<File | null>(null);
+
+  useEffect(() => { if (open) { setFormData(INITIAL_FORM); setFile(null); } }, [open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault(); setLoading(true);
-    try {
-      const payload = {
-        tool_code: formData.tool_code, tool_serial_number: formData.tool_serial_number,
-        tool_name: formData.tool_code, tool_description: formData.tool_description,
-        tool_active: formData.tool_active,
-        fk_model_id: formData.fk_model_id ? Number(formData.fk_model_id) : null,
-        fk_client_id: formData.fk_client_id ? Number(formData.fk_client_id) : null,
-        purchase_date: formData.purchase_date || null, purchase_price: formData.purchase_price ? Number(formData.purchase_price) : null,
-        warranty_expiry: formData.warranty_expiry || null, last_calibration_date: formData.last_calibration_date || null,
-        next_calibration_date: formData.next_calibration_date || null, location: formData.location || null,
-        ccPlatform: formData.ccPlatform || null, gcsType: formData.gcsType || null,
-        streamingType: formData.streamingType || null, streamingUrl: formData.streamingUrl || null,
-        vendor: formData.vendor || null, latitude: formData.latitude ? Number(formData.latitude) : null,
-        longitude: formData.longitude ? Number(formData.longitude) : null,
-        guaranteeDays: formData.guarantee_days ? Number(formData.guarantee_days) : null,
-        activationDate: formData.activation_date || null,
-      };
-      const res = await fetch('/api/system/tool/add', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-      const result = await res.json();
-      if (result.code === 1) { toast.success('Tool added successfully'); onSuccess(); }
-      else toast.error(result.message || 'Failed to add tool');
-    } catch { toast.error('Error adding tool'); } finally { setLoading(false); }
-  };
+  e.preventDefault(); setLoading(true);
+  try {
+    const formPayload = new FormData();
+    const payload = {
+      tool_code: formData.tool_code,
+      tool_name: formData.tool_code,
+      tool_description: formData.tool_description,
+      tool_active: formData.tool_active,
+      fk_client_id: formData.fk_client_id ? Number(formData.fk_client_id) : null,
+      location: formData.location || null,
+      ccPlatform: formData.ccPlatform || null,
+      gcsType: formData.gcsType || null,
+      latitude: formData.latitude ? Number(formData.latitude) : null,
+      longitude: formData.longitude ? Number(formData.longitude) : null,
+      activationDate: formData.activation_date || null,
+    };
+    formPayload.append('data', JSON.stringify(payload));
+    if (file) formPayload.append('file', file);
+
+    const res = await fetch('/api/system/add', { method: 'POST', body: formPayload });
+    const result = await res.json();
+    if (result.code === 1) { toast.success('Tool added successfully'); onSuccess(); }
+    else toast.error(result.message || 'Failed to add tool');
+  } catch { toast.error('Error adding tool'); } finally { setLoading(false); }
+};
+
   const handleChange = (field: string, value: string) => setFormData(prev => ({ ...prev, [field]: value }));
 
   const inputCls = isDark
@@ -69,37 +72,15 @@ export default function AddToolModal({ open, onClose, onSuccess, models, clients
       <DialogContent className={`max-w-225! w-[90vw] max-h-[90vh] overflow-y-auto
         ${isDark ? 'bg-slate-800 border-slate-700' : ''}`}>
         <DialogHeader className={`border-b pb-3 ${isDark ? 'border-slate-700/60' : 'border-gray-100'}`}>
-          <DialogTitle className={isDark ? 'text-white' : ''}>Add New Tool</DialogTitle>
+          <DialogTitle className={isDark ? 'text-white' : ''}>Add New System</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-5">
 
           <div>
             <p className={sectionLabelCls}>Basic Information</p>
             <div className="grid grid-cols-12 gap-3">
-              <div className="col-span-2"><Label className={labelCls}>Type</Label>
-                <Select value={formData.tool_type} onValueChange={v => handleChange('tool_type', v)}>
-                  <SelectTrigger className={selectTriggerCls}><SelectValue /></SelectTrigger>
-                  <SelectContent className={selectContentCls}>
-                    <SelectItem value="AIRCRAFT">Aircraft</SelectItem><SelectItem value="DRONE">Drone</SelectItem>
-                    <SelectItem value="CAMERA">Camera</SelectItem><SelectItem value="SENSOR">Sensor</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="col-span-2"><Label className={labelCls}>Serial Number *</Label>
-                <Input className={inputCls} value={formData.tool_serial_number} onChange={e => handleChange('tool_serial_number', e.target.value)} required />
-              </div>
               <div className="col-span-2"><Label className={labelCls}>Code *</Label>
                 <Input className={inputCls} value={formData.tool_code} onChange={e => handleChange('tool_code', e.target.value)} required />
-              </div>
-              <div className="col-span-3"><Label className={labelCls}>Brand-Model-Version</Label>
-                <Select value={formData.fk_model_id} onValueChange={v => handleChange('fk_model_id', v)}>
-                  <SelectTrigger className={selectTriggerCls}><SelectValue placeholder="Select Model" /></SelectTrigger>
-                  <SelectContent className={selectContentCls}>
-                    {models.length > 0 ? models.map((m: any) => (
-                      <SelectItem key={m.tool_model_id} value={m.tool_model_id.toString()}>{m.factory_model} - {m.factory_type}</SelectItem>
-                    )) : <div className={`px-2 py-1.5 text-sm ${isDark ? 'text-slate-500' : 'text-muted-foreground'}`}>No models available</div>}
-                  </SelectContent>
-                </Select>
               </div>
               <div className="col-span-3"><Label className={labelCls}>Description</Label>
                 <Input className={inputCls} value={formData.tool_description} onChange={e => handleChange('tool_description', e.target.value)} />
@@ -140,12 +121,6 @@ export default function AddToolModal({ open, onClose, onSuccess, models, clients
           <div>
             <p className={sectionLabelCls}>Purchase & Activation</p>
             <div className="grid grid-cols-12 gap-3">
-              <div className="col-span-3"><Label className={labelCls}>Vendor</Label>
-                <Input className={inputCls} value={formData.vendor} onChange={e => handleChange('vendor', e.target.value)} />
-              </div>
-              <div className="col-span-3"><Label className={labelCls}>Purchase Date</Label>
-                <Input type="date" className={inputCls} value={formData.purchase_date} onChange={e => handleChange('purchase_date', e.target.value)} />
-              </div>
               <div className="col-span-3"><Label className={labelCls}>Activation Date</Label>
                 <Input type="date" className={inputCls} value={formData.activation_date} onChange={e => handleChange('activation_date', e.target.value)} />
               </div>
@@ -163,9 +138,7 @@ export default function AddToolModal({ open, onClose, onSuccess, models, clients
           <div>
             <p className={sectionLabelCls}>Status & Assignment</p>
             <div className="grid grid-cols-12 gap-3">
-              <div className="col-span-3"><Label className={labelCls}>Guarantee Days</Label>
-                <Input type="number" className={inputCls} value={formData.guarantee_days} onChange={e => handleChange('guarantee_days', e.target.value)} />
-              </div>
+
               <div className="col-span-3"><Label className={labelCls}>Status</Label>
                 <Select value={formData.tool_status} onValueChange={v => handleChange('tool_status', v)}>
                   <SelectTrigger className={selectTriggerCls}><SelectValue /></SelectTrigger>
@@ -181,7 +154,7 @@ export default function AddToolModal({ open, onClose, onSuccess, models, clients
                   <SelectTrigger className={selectTriggerCls}><SelectValue placeholder="Select" /></SelectTrigger>
                   <SelectContent className={selectContentCls}>
                     <SelectItem value="0">None</SelectItem>
-                    {clients.map((c: any) => (<SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>))}
+                    {clients.map((c: any) => (<SelectItem key={c.client_id} value={c.client_id.toString()}>{c.client_name}</SelectItem>))}
                   </SelectContent>
                 </Select>
               </div>
@@ -190,48 +163,28 @@ export default function AddToolModal({ open, onClose, onSuccess, models, clients
               </div>
             </div>
           </div>
-
           <div>
-            <p className={sectionLabelCls}>Streaming</p>
-            <div className="grid grid-cols-12 gap-3">
-              <div className="col-span-4"><Label className={labelCls}>Streaming Type</Label>
-                <Select value={formData.streamingType} onValueChange={v => handleChange('streamingType', v)}>
-                  <SelectTrigger className={selectTriggerCls}><SelectValue /></SelectTrigger>
-                  <SelectContent className={selectContentCls}>
-                    <SelectItem value="WEB_RTC">WEB_RTC</SelectItem><SelectItem value="RTSP">RTSP</SelectItem><SelectItem value="RTSPS">RTSPS</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="col-span-8"><Label className={labelCls}>Streaming URL</Label>
-                <Input className={inputCls} value={formData.streamingUrl} onChange={e => handleChange('streamingUrl', e.target.value)} />
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <p className={sectionLabelCls}>Warranty & Calibration</p>
-            <div className="grid grid-cols-12 gap-3">
-              <div className="col-span-3"><Label className={labelCls}>Purchase Price</Label>
-                <Input type="number" step="0.01" className={inputCls} value={formData.purchase_price} onChange={e => handleChange('purchase_price', e.target.value)} />
-              </div>
-              <div className="col-span-3"><Label className={labelCls}>Warranty Expiry</Label>
-                <Input type="date" className={inputCls} value={formData.warranty_expiry} onChange={e => handleChange('warranty_expiry', e.target.value)} />
-              </div>
-              <div className="col-span-3"><Label className={labelCls}>Last Calibration</Label>
-                <Input type="date" className={inputCls} value={formData.last_calibration_date} onChange={e => handleChange('last_calibration_date', e.target.value)} />
-              </div>
-              <div className="col-span-3"><Label className={labelCls}>Next Calibration</Label>
-                <Input type="date" className={inputCls} value={formData.next_calibration_date} onChange={e => handleChange('next_calibration_date', e.target.value)} />
-              </div>
-            </div>
-          </div>
+  <p className={sectionLabelCls}>Documentation</p>
+  <div className="grid grid-cols-12 gap-3">
+    <div className="col-span-6">
+      <Label className={labelCls}>Attach File (manual, certificate, etc.)</Label>
+      <Input
+        type="file"
+        className={inputCls}
+        onChange={e => setFile(e.target.files?.[0] ?? null)}
+        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+      />
+      {file && <p className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{file.name}</p>}
+    </div>
+  </div>
+</div>
 
           <div className={`flex justify-end gap-2 pt-2 border-t ${isDark ? 'border-slate-700/60' : 'border-gray-100'}`}>
             <Button type="button" variant="outline" onClick={onClose}
               className={isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : ''}>Cancel</Button>
             <Button type="submit" disabled={loading}
               className="bg-violet-600 hover:bg-violet-500 text-white">
-              {loading ? 'Adding...' : 'Add Tool'}
+              {loading ? 'Adding...' : 'Add System'}
             </Button>
           </div>
         </form>

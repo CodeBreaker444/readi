@@ -23,10 +23,10 @@ interface AddModelModalProps {
 
 const INITIAL_FORM = {
   tool_type_id: '',
-  model_code: '',        
-  model_name: '',        
-  manufacturer: '',     
-  model_type: '',       
+  model_code: '',
+  model_name: '',
+  manufacturer: '',
+  model_type: '',
   version: '',
   max_flight_time: '',
   max_speed: '',
@@ -45,7 +45,7 @@ const INITIAL_FORM = {
   maintenance_cycle_flight: '',
   phase_out: 'N',
   guarantee_years: '',
-  specifications: '',    
+  specifications: '',
 };
 
 export default function AddModelModal({ open, onClose, onSuccess }: AddModelModalProps) {
@@ -62,7 +62,7 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
 
   const fetchToolTypes = async () => {
     try {
-      const response = await fetch('/api/system/tool/type/list', {
+      const response = await fetch('/api/system/type/list', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ active: 'Y' }),
@@ -79,63 +79,78 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
     }
   };
 
+  const handleChange = (field: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  // When cycle type changes, clear unrelated fields
+  const handleCycleChange = (value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      maintenance_cycle: value,
+      maintenance_cycle_hour: '',
+      maintenance_cycle_day: '',
+      maintenance_cycle_flight: '',
+    }));
+  };
+
+  const handleCycleInput = (field: string, value: string, max: number) => {
+    const num = Number(value);
+    if (value === '' || (num >= 0 && num <= max)) {
+      handleChange(field, value);
+    }
+  };
+
+  const showHours    = formData.maintenance_cycle === 'HOURS'   || formData.maintenance_cycle === 'MIXED';
+  const showDays     = formData.maintenance_cycle === 'DAYS'    || formData.maintenance_cycle === 'MIXED';
+  const showFlights  = formData.maintenance_cycle === 'FLIGHTS' || formData.maintenance_cycle === 'MIXED';
+  const showNone     = formData.maintenance_cycle === 'NONE';
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.tool_type_id) {
-      toast.error('Please select a tool type');
-      return;
-    }
-    if (!formData.model_code.trim()) {
-      toast.error('Model code (Serie) is required');
-      return;
-    }
-    if (!formData.model_name.trim()) {
-      toast.error('Model name is required');
-      return;
-    }
-    if (!formData.manufacturer.trim()) {
-      toast.error('Manufacturer (Brand) is required');
-      return;
-    }
+    if (!formData.tool_type_id) { toast.error('Please select a tool type'); return; }
+    if (!formData.model_code.trim()) { toast.error('Model code (Serie) is required'); return; }
+    if (!formData.model_name.trim()) { toast.error('Model name is required'); return; }
+    if (!formData.manufacturer.trim()) { toast.error('Manufacturer (Brand) is required'); return; }
 
     setLoading(true);
 
     try {
       const extendedSpecs = [
-        formData.version && `Version: ${formData.version}`,
-        formData.mtom && `MTOM: ${formData.mtom} kg`,
-        formData.wind_min && `Wind Min: ${formData.wind_min} m/s`,
-        formData.wind_max && `Wind Max: ${formData.wind_max} m/s`,
-        formData.temp_min && `Temp Min: ${formData.temp_min} °C`,
-        formData.temp_max && `Temp Max: ${formData.temp_max} °C`,
-        formData.endurance_min && `Endurance Min: ${formData.endurance_min} min`,
-        formData.endurance_max && `Endurance Max: ${formData.endurance_max} min`,
-        formData.maintenance_cycle && `Maintenance Cycle: ${formData.maintenance_cycle}`,
-        formData.maintenance_cycle_hour && `Maint. Hours: ${formData.maintenance_cycle_hour}`,
-        formData.maintenance_cycle_day && `Maint. Days: ${formData.maintenance_cycle_day}`,
+        formData.version              && `Version: ${formData.version}`,
+        formData.mtom                 && `MTOM: ${formData.mtom} kg`,
+        formData.wind_min             && `Wind Min: ${formData.wind_min} m/s`,
+        formData.wind_max             && `Wind Max: ${formData.wind_max} m/s`,
+        formData.temp_min             && `Temp Min: ${formData.temp_min} °C`,
+        formData.temp_max             && `Temp Max: ${formData.temp_max} °C`,
+        formData.endurance_min        && `Endurance Min: ${formData.endurance_min} min`,
+        formData.endurance_max        && `Endurance Max: ${formData.endurance_max} min`,
+        formData.maintenance_cycle    && `Maintenance Cycle: ${formData.maintenance_cycle}`,
+        formData.maintenance_cycle_hour   && `Maint. Hours: ${formData.maintenance_cycle_hour}`,
+        formData.maintenance_cycle_day    && `Maint. Days: ${formData.maintenance_cycle_day}`,
         formData.maintenance_cycle_flight && `Maint. Flights: ${formData.maintenance_cycle_flight}`,
-        formData.phase_out === 'Y' && `Phase-out: Yes`,
-        formData.guarantee_years && `Guarantee: ${formData.guarantee_years} years`,
+        formData.phase_out === 'Y'    && `Phase-out: Yes`,
+        formData.guarantee_years      && `Guarantee: ${formData.guarantee_years} years`,
         formData.specifications,
       ]
         .filter(Boolean)
         .join('\n');
 
       const payload = {
-        tool_type_id: formData.tool_type_id,
-        model_code: formData.model_code.trim(),
-        model_name: formData.model_name.trim(),
-        manufacturer: formData.manufacturer.trim(),
-        model_type: formData.model_type || undefined,
-        specifications: extendedSpecs || undefined,
+        tool_type_id:    formData.tool_type_id,
+        model_code:      formData.model_code.trim(),
+        model_name:      formData.model_name.trim(),
+        manufacturer:    formData.manufacturer.trim(),
+        model_type:      formData.model_type || undefined,
+        specifications:  extendedSpecs || undefined,
         max_flight_time: formData.max_flight_time ? Number(formData.max_flight_time) : undefined,
-        max_speed: formData.max_speed ? Number(formData.max_speed) : undefined,
-        max_altitude: formData.max_altitude ? Number(formData.max_altitude) : undefined,
-        weight: formData.weight ? Number(formData.weight) : undefined,
+        max_speed:       formData.max_speed       ? Number(formData.max_speed)       : undefined,
+        max_altitude:    formData.max_altitude    ? Number(formData.max_altitude)    : undefined,
+        weight:          formData.weight          ? Number(formData.weight)          : undefined,
       };
 
-      const response = await fetch('/api/system/tool/model/add', {
+      const response = await fetch('/api/system/model/add', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -156,32 +171,21 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
     }
   };
 
-  const handleChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  };
-
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="!max-w-[900px] w-[90vw] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add New Tool Model</DialogTitle>
+          <DialogTitle>Add New System Model</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <p className="text-sm font-medium text-muted-foreground mb-2">
-              Identification
-            </p>
+            <p className="text-sm font-medium text-muted-foreground mb-2">Identification</p>
             <div className="grid grid-cols-12 gap-3">
               <div className="col-span-3">
-                <Label className="pb-2">Type *</Label>
-                <Select
-                  value={formData.model_type}
-                  onValueChange={(v) => handleChange('model_type', v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select" />
-                  </SelectTrigger>
+                <Label className="pb-2">Component Type *</Label>
+                <Select value={formData.model_type} onValueChange={(v) => handleChange('model_type', v)}>
+                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="BATTERY">Battery</SelectItem>
                     <SelectItem value="RC">Remote Control</SelectItem>
@@ -195,204 +199,120 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
               </div>
               <div className="col-span-3">
                 <Label className="pb-2">Brand (Manufacturer) *</Label>
-                <Input
-                  value={formData.manufacturer}
-                  onChange={(e) => handleChange('manufacturer', e.target.value)}
-                  required
-                />
+                <Input value={formData.manufacturer} onChange={(e) => handleChange('manufacturer', e.target.value)} required />
               </div>
               <div className="col-span-3">
                 <Label className="pb-2">Serie (Model Code) *</Label>
-                <Input
-                  value={formData.model_code}
-                  onChange={(e) => handleChange('model_code', e.target.value)}
-                  required
-                />
+                <Input value={formData.model_code} onChange={(e) => handleChange('model_code', e.target.value)} required />
               </div>
               <div className="col-span-3">
                 <Label className="pb-2">Model (Name) *</Label>
-                <Input
-                  value={formData.model_name}
-                  onChange={(e) => handleChange('model_name', e.target.value)}
-                  required
-                />
+                <Input value={formData.model_name} onChange={(e) => handleChange('model_name', e.target.value)} required />
               </div>
             </div>
           </div>
 
           <div>
-            <p className="text-sm font-medium text-muted-foreground mb-2">
-              Classification & Weight
-            </p>
+            <p className="text-sm font-medium text-muted-foreground mb-2">Classification & Weight</p>
             <div className="grid grid-cols-12 gap-3">
               <div className="col-span-3">
-                <Label className="pb-2">Tool Type *</Label>
-                <Select
-                  value={formData.tool_type_id}
-                  onValueChange={(v) => handleChange('tool_type_id', v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select tool type" />
-                  </SelectTrigger>
+                <Label className="pb-2">System Type *</Label>
+                <Select value={formData.tool_type_id} onValueChange={(v) => handleChange('tool_type_id', v)}>
+                  <SelectTrigger><SelectValue placeholder="Select tool type" /></SelectTrigger>
                   <SelectContent>
                     {toolTypes.length > 0 ? (
                       toolTypes.map((type: any) => (
-                        <SelectItem
-                          key={type.tool_type_id}
-                          value={type.tool_type_id.toString()}
-                        >
+                        <SelectItem key={type.tool_type_id} value={type.tool_type_id.toString()}>
                           {type.tool_type_name}
                         </SelectItem>
                       ))
                     ) : (
-                      <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                        No tool types available
-                      </div>
+                      <div className="px-2 py-1.5 text-sm text-muted-foreground">No tool types available</div>
                     )}
                   </SelectContent>
                 </Select>
               </div>
               <div className="col-span-3">
                 <Label className="pb-2">Version</Label>
-                <Input
-                  value={formData.version}
-                  onChange={(e) => handleChange('version', e.target.value)}
-                />
+                <Input value={formData.version} onChange={(e) => handleChange('version', e.target.value)} />
               </div>
               <div className="col-span-3">
                 <Label className="pb-2">MTOM (kg)</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={formData.mtom}
-                  onChange={(e) => handleChange('mtom', e.target.value)}
-                />
+                <Input type="number" step="0.01" value={formData.mtom} onChange={(e) => handleChange('mtom', e.target.value)} />
               </div>
               <div className="col-span-3">
                 <Label className="pb-2">Weight (kg)</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={formData.weight}
-                  onChange={(e) => handleChange('weight', e.target.value)}
-                />
+                <Input type="number" step="0.01" value={formData.weight} onChange={(e) => handleChange('weight', e.target.value)} />
               </div>
             </div>
           </div>
 
+          {/* Operating Conditions */}
           <div>
-            <p className="text-sm font-medium text-muted-foreground mb-2">
-              Operating Conditions
-            </p>
+            <p className="text-sm font-medium text-muted-foreground mb-2">Operating Conditions</p>
             <div className="grid grid-cols-12 gap-3">
               <div className="col-span-3">
                 <Label className="pb-2">Wind Min (m/s)</Label>
-                <Input
-                  type="number"
-                  step="0.1"
-                  value={formData.wind_min}
-                  onChange={(e) => handleChange('wind_min', e.target.value)}
-                />
+                <Input type="number" step="0.1" value={formData.wind_min} onChange={(e) => handleChange('wind_min', e.target.value)} />
               </div>
               <div className="col-span-3">
                 <Label className="pb-2">Wind Max (m/s)</Label>
-                <Input
-                  type="number"
-                  step="0.1"
-                  value={formData.wind_max}
-                  onChange={(e) => handleChange('wind_max', e.target.value)}
-                />
+                <Input type="number" step="0.1" value={formData.wind_max} onChange={(e) => handleChange('wind_max', e.target.value)} />
               </div>
               <div className="col-span-3">
                 <Label className="pb-2">Temp Min (°C)</Label>
-                <Input
-                  type="number"
-                  step="0.1"
-                  value={formData.temp_min}
-                  onChange={(e) => handleChange('temp_min', e.target.value)}
-                />
+                <Input type="number" step="0.1" value={formData.temp_min} onChange={(e) => handleChange('temp_min', e.target.value)} />
               </div>
               <div className="col-span-3">
                 <Label className="pb-2">Temp Max (°C)</Label>
-                <Input
-                  type="number"
-                  step="0.1"
-                  value={formData.temp_max}
-                  onChange={(e) => handleChange('temp_max', e.target.value)}
-                />
+                <Input type="number" step="0.1" value={formData.temp_max} onChange={(e) => handleChange('temp_max', e.target.value)} />
               </div>
             </div>
           </div>
 
+          {/* Performance */}
           <div>
-            <p className="text-sm font-medium text-muted-foreground mb-2">
-              Performance
-            </p>
+            <p className="text-sm font-medium text-muted-foreground mb-2">Performance</p>
             <div className="grid grid-cols-12 gap-3">
               <div className="col-span-3">
                 <Label className="pb-2">Endurance Min (min)</Label>
-                <Input
-                  type="number"
-                  value={formData.endurance_min}
-                  onChange={(e) => handleChange('endurance_min', e.target.value)}
-                />
+                <Input type="number" value={formData.endurance_min} onChange={(e) => handleChange('endurance_min', e.target.value)} />
               </div>
               <div className="col-span-3">
                 <Label className="pb-2">Endurance Max (min)</Label>
-                <Input
-                  type="number"
-                  value={formData.endurance_max}
-                  onChange={(e) => handleChange('endurance_max', e.target.value)}
-                />
+                <Input type="number" value={formData.endurance_max} onChange={(e) => handleChange('endurance_max', e.target.value)} />
               </div>
               <div className="col-span-3">
                 <Label className="pb-2">Max Speed (km/h)</Label>
-                <Input
-                  type="number"
-                  value={formData.max_speed}
-                  onChange={(e) => handleChange('max_speed', e.target.value)}
-                />
+                <Input type="number" value={formData.max_speed} onChange={(e) => handleChange('max_speed', e.target.value)} />
               </div>
               <div className="col-span-3">
                 <Label className="pb-2">Max Altitude (m)</Label>
-                <Input
-                  type="number"
-                  value={formData.max_altitude}
-                  onChange={(e) => handleChange('max_altitude', e.target.value)}
-                />
+                <Input type="number" value={formData.max_altitude} onChange={(e) => handleChange('max_altitude', e.target.value)} />
               </div>
             </div>
           </div>
 
+          {/* Maintenance */}
           <div>
-            <p className="text-sm font-medium text-muted-foreground mb-2">
-              Maintenance
-            </p>
-            <div className="grid grid-cols-12 gap-3">
+            <p className="text-sm font-medium text-muted-foreground mb-2">Maintenance</p>
+            <div className="grid grid-cols-12 gap-3 items-end">
+
               <div className="col-span-3">
                 <Label className="pb-2">Phase-out</Label>
-                <Select
-                  value={formData.phase_out}
-                  onValueChange={(v) => handleChange('phase_out', v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                <Select value={formData.phase_out} onValueChange={(v) => handleChange('phase_out', v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="N">No</SelectItem>
                     <SelectItem value="Y">Yes</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+
               <div className="col-span-3">
                 <Label className="pb-2">Maintenance Cycle</Label>
-                <Select
-                  value={formData.maintenance_cycle}
-                  onValueChange={(v) => handleChange('maintenance_cycle', v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select" />
-                  </SelectTrigger>
+                <Select value={formData.maintenance_cycle} onValueChange={handleCycleChange}>
+                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="HOURS">Hours</SelectItem>
                     <SelectItem value="DAYS">Days</SelectItem>
@@ -402,54 +322,81 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
                   </SelectContent>
                 </Select>
               </div>
-              <div className="col-span-2">
-                <Label className="pb-2">Hours</Label>
-                <Input
-                  type="number"
-                  value={formData.maintenance_cycle_hour}
-                  onChange={(e) => handleChange('maintenance_cycle_hour', e.target.value)}
-                />
-              </div>
-              <div className="col-span-2">
-                <Label className="pb-2">Days</Label>
-                <Input
-                  type="number"
-                  value={formData.maintenance_cycle_day}
-                  onChange={(e) => handleChange('maintenance_cycle_day', e.target.value)}
-                />
-              </div>
-              <div className="col-span-2">
-                <Label className="pb-2">Flights</Label>
-                <Input
-                  type="number"
-                  value={formData.maintenance_cycle_flight}
-                  onChange={(e) => handleChange('maintenance_cycle_flight', e.target.value)}
-                />
-              </div>
+
+              {/* NONE — just a readonly badge */}
+              {showNone && (
+                <div className="col-span-6 flex items-end">
+                  <span className="inline-flex items-center px-3 py-2 rounded-md bg-muted text-muted-foreground text-sm">
+                    No maintenance cycle required
+                  </span>
+                </div>
+              )}
+
+              {/* HOURS only */}
+              {showHours && (
+                <div className="col-span-2">
+                  <Label className="pb-2">
+                    Hours <span className="text-xs text-muted-foreground">(0–24)</span>
+                  </Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={24}
+                    value={formData.maintenance_cycle_hour}
+                    onChange={(e) => handleCycleInput('maintenance_cycle_hour', e.target.value, 24)}
+                    placeholder="0–24"
+                  />
+                </div>
+              )}
+
+              {/* DAYS only */}
+              {showDays && (
+                <div className="col-span-2">
+                  <Label className="pb-2">
+                    Days <span className="text-xs text-muted-foreground">(0–30)</span>
+                  </Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={30}
+                    value={formData.maintenance_cycle_day}
+                    onChange={(e) => handleCycleInput('maintenance_cycle_day', e.target.value, 30)}
+                    placeholder="0–30"
+                  />
+                </div>
+              )}
+
+              {/* FLIGHTS only */}
+              {showFlights && (
+                <div className="col-span-2">
+                  <Label className="pb-2">
+                    Flights <span className="text-xs text-muted-foreground">(0–10)</span>
+                  </Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={10}
+                    value={formData.maintenance_cycle_flight}
+                    onChange={(e) => handleCycleInput('maintenance_cycle_flight', e.target.value, 10)}
+                    placeholder="0–10"
+                  />
+                </div>
+              )}
+
             </div>
           </div>
 
+          {/* Guarantee & Notes */}
           <div>
-            <p className="text-sm font-medium text-muted-foreground mb-2">
-              Guarantee & Notes
-            </p>
+            <p className="text-sm font-medium text-muted-foreground mb-2">Guarantee & Notes</p>
             <div className="grid grid-cols-12 gap-3">
               <div className="col-span-3">
                 <Label className="pb-2">Guarantee (years)</Label>
-                <Input
-                  type="number"
-                  step="0.1"
-                  value={formData.guarantee_years}
-                  onChange={(e) => handleChange('guarantee_years', e.target.value)}
-                />
+                <Input type="number" step="0.1" value={formData.guarantee_years} onChange={(e) => handleChange('guarantee_years', e.target.value)} />
               </div>
               <div className="col-span-3">
                 <Label className="pb-2">Max Flight Time (min)</Label>
-                <Input
-                  type="number"
-                  value={formData.max_flight_time}
-                  onChange={(e) => handleChange('max_flight_time', e.target.value)}
-                />
+                <Input type="number" value={formData.max_flight_time} onChange={(e) => handleChange('max_flight_time', e.target.value)} />
               </div>
               <div className="col-span-6">
                 <Label className="pb-2">Additional Specifications</Label>
@@ -464,16 +411,16 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
+            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
             <Button
               type="submit"
+              className="bg-violet-600 hover:bg-violet-700"
               disabled={loading || !formData.tool_type_id}
             >
               {loading ? 'Adding...' : 'Add Model'}
             </Button>
           </div>
+
         </form>
       </DialogContent>
     </Dialog>

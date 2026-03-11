@@ -101,19 +101,13 @@ export interface EvaluationFile {
 }
 
 export interface EvaluationTask {
-  task_id: number;
-  task_name: string;
-  task_description: string;
-  task_status: 'pending' | 'in_progress' | 'completed' | 'skipped';
-  task_type: 'assignment' | 'checklist' | 'communication';
-  assignment_id?: number;
-  assignment_code?: string;
-  checklist_id?: number;
-  checklist_code?: string;
-  communication_id?: number;
-  communication_code?: string;
-  completed_at?: string;
-  completed_by?: string;
+  task_id:        number;
+  task_code:      string;
+  task_name:      string;
+  task_type:      'checklist' | 'assignment' | 'communication';
+  task_status:    'pending' | 'in_progress' | 'completed' | 'skipped';
+  task_order:     number;
+  checklist_json: object | null;
 }
 
 export interface EvaluationPolygonArea {
@@ -133,4 +127,20 @@ export interface EvaluationUpdatePayload {
   evaluation_sale_manager?: string;
   evaluation_status?: EvaluationStatus;
   evaluation_result?: EvaluationResult;
+}
+
+export interface SendAssignmentPayload {
+  evaluationId: number;
+  ownerId:      number;
+  fromUserUuid:number
+  taskId:       number;
+  taskCode:     string;
+  taskName:     string;
+  toUserId:     number;    
+  message:      string;
+}
+
+export interface SendAssignmentResult {
+  success: boolean;
+  message?: string;
 }

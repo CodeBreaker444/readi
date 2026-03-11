@@ -1,4 +1,4 @@
-import { deleteTool } from '@/backend/services/system/tool/tool-service';
+import { deleteSystem } from '@/backend/services/system/tool/tool-service';
 import { getUserSession } from '@/lib/auth/server-session';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -13,7 +13,7 @@ export async function POST(
     }
 
     const { id } = await params;
-    const result = await deleteTool(session.user.ownerId, Number(id));
+    const result = await deleteSystem(session.user.ownerId, Number(id));
 
     return NextResponse.json(result);
   } catch (error: any) {

@@ -746,7 +746,7 @@ export async function addCommunicationGeneral(params: {
 }): Promise<{ user_id: number; first_name: string; email: string;  }[]> {
   const { data, error } = await supabase
     .from("users")
-    .select("user_id, first_name, email")
+    .select("user_id, first_name, last_name ,email")
     .eq("fk_owner_id", params.fk_owner_id)
     .eq("user_active", "Y");
 

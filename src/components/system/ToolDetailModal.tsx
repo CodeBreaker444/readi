@@ -9,10 +9,14 @@ interface ComponentRow {
   tool_component_id: number;
   fk_tool_id: number;
   component_type: string | null;
+  component_code: string | null;
+  component_desc: string | null;
   component_sn: string | null;
   component_status: string;
   component_cycles: number | null;
   component_total_cycles: number | null;
+  cc_platform: string | null;
+  gcs_type: string | null;
   factory_serie: string | null;
   factory_model: string | null;
 }
@@ -42,7 +46,7 @@ export default function ToolDetailModal({ open, tool, onClose }: Props) {
   const fetchComponents = async (toolId: number) => {
     setLoadingComponents(true);
     try {
-      const res = await fetch("/api/system/tool/component/list", {
+      const res = await fetch("/api/system/component/list", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tool_id: toolId }),
@@ -67,7 +71,6 @@ export default function ToolDetailModal({ open, tool, onClose }: Props) {
 
   const cardBg = isDark ? "bg-slate-800 border-slate-700" : "bg-white";
   const headerBg = isDark ? "bg-slate-800 border-slate-700/60" : "bg-white border-b";
-  const bodyText = isDark ? "text-slate-300" : "text-gray-700";
   const muteText = isDark ? "text-slate-500" : "text-gray-500";
   const borderCls = isDark ? "border-slate-700/60" : "border-gray-200";
 
@@ -190,6 +193,9 @@ export default function ToolDetailModal({ open, tool, onClose }: Props) {
                           {comp.factory_model ?? comp.component_type}
                         </h4>
                         <p className={`text-sm ${muteText}`}>{comp.component_type}</p>
+                        {comp.component_desc && (
+                          <p className={`text-xs mt-0.5 ${muteText}`}>{comp.component_desc}</p>
+                        )}
                       </div>
                       <span className={`text-xs px-2 py-0.5 rounded
                         ${comp.component_status === "OPERATIONAL"
@@ -200,9 +206,15 @@ export default function ToolDetailModal({ open, tool, onClose }: Props) {
                       </span>
                     </div>
                     <div className={`mt-2 grid grid-cols-3 gap-2 text-sm ${muteText}`}>
-                      <div><span className={`font-medium ${isDark ? "text-slate-400" : "text-gray-700"}`}>Code:</span> {comp.factory_serie ?? "—"}</div>
-                      <div><span className={`font-medium ${isDark ? "text-slate-400" : "text-gray-700"}`}>Serial:</span> {comp.component_sn ?? "—"}</div>
+                      <div><span className={`font-medium ${isDark ? "text-slate-400" : "text-gray-700"}`}>Code:</span> {comp.component_code ?? comp.factory_serie ?? "—"}</div>
+                      <div><span className={`font-medium ${isDark ? "text-slate-400" : "text-gray-700"}`}>S/N:</span> {comp.component_sn ?? "—"}</div>
                       <div><span className={`font-medium ${isDark ? "text-slate-400" : "text-gray-700"}`}>Usage:</span> {comp.component_cycles ?? 0} / {comp.component_total_cycles ?? "—"} hrs</div>
+                      {comp.cc_platform && (
+                        <div><span className={`font-medium ${isDark ? "text-slate-400" : "text-gray-700"}`}>CL Platform:</span> {comp.cc_platform.replace('_', '')}</div>
+                      )}
+                      {comp.gcs_type && (
+                        <div><span className={`font-medium ${isDark ? "text-slate-400" : "text-gray-700"}`}>GCS:</span> {comp.gcs_type.replace('_', '')}</div>
+                      )}
                     </div>
                   </div>
                 ))}
