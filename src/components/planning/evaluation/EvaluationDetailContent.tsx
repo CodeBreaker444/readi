@@ -94,11 +94,7 @@ export const EvaluationDetailContent:FC<props> = ({ownerId}) => {
         fetchEvaluation();
     }, [searchParams]);
 
-    function handleOpenTaskAction(task: EvaluationTask) {
-        setCommModalTask(task);
-        setCommModalOpen(true);
-    }
-
+ 
     function handleNewCommunication() {
         setCommModalTask(null);
         setCommModalOpen(true);

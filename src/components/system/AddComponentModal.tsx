@@ -9,16 +9,28 @@ import axios from 'axios';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
+const COMPONENT_TYPES = [
+  { value: 'DRONE', label: 'Drone (Aircraft)' },
+  { value: 'DOCK', label: 'Dock' },
+  { value: 'BATTERY', label: 'Battery' },
+  { value: 'PROPELLER', label: 'Propeller' },
+  { value: 'CAMERA', label: 'Camera' },
+  { value: 'GIMBAL', label: 'Gimbal' },
+  { value: 'GPS', label: 'GPS' },
+  { value: 'CONTROLLER', label: 'Controller' },
+  { value: 'SENSOR', label: 'Sensor' },
+  { value: 'OTHER', label: 'Other' },
+];
+
 interface AddComponentModalProps {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
   tools: any[];
   models: any[];
-  clients: any[];
 }
 
-export default function AddComponentModal({ open, onClose, onSuccess, tools, models, clients }: AddComponentModalProps) {
+export default function AddComponentModal({ open, onClose, onSuccess, tools, models }: AddComponentModalProps) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     fk_tool_id: '',
@@ -145,14 +157,9 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
               <Select value={formData.component_type} onValueChange={(v) => handleChange('component_type', v)}>
                 <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="BATTERY">Battery</SelectItem>
-                  <SelectItem value="PROPELLER">Propeller</SelectItem>
-                  <SelectItem value="CAMERA">Camera</SelectItem>
-                  <SelectItem value="GIMBAL">Gimbal</SelectItem>
-                  <SelectItem value="GPS">GPS</SelectItem>
-                  <SelectItem value="CONTROLLER">Controller</SelectItem>
-                  <SelectItem value="SENSOR">Sensor</SelectItem>
-                  <SelectItem value="OTHER">Other</SelectItem>
+                  {COMPONENT_TYPES.map((t) => (
+                    <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -241,18 +248,6 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
                   <SelectItem value="NOT_OPERATIONAL">Not Operational</SelectItem>
                   <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
                   <SelectItem value="DECOMMISSIONED">Decommissioned</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="col-span-3 min-w-0">
-              <Label className='pb-2'>Client</Label>
-              <Select value={formData.fk_client_id} onValueChange={(v) => handleChange('fk_client_id', v)}>
-                <SelectTrigger className="w-full truncate"><SelectValue placeholder="Select" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0">None</SelectItem>
-                  {clients.map((c: any) => (
-                    <SelectItem key={c.client_id} value={c.client_id.toString()}>{c.client_name}</SelectItem>
-                  ))}
                 </SelectContent>
               </Select>
             </div>
