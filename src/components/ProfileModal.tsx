@@ -45,9 +45,9 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, isDark, us
           email: data.user.email || '',
           phone: data.user.phone || '',
           timezone: data.user.user_timezone || 'IST',
-          department: 'Global', // TODO: Add to database
-          client: '', // TODO: Add to database
-          profile: '', // TODO: Add to database
+          department: 'Global',  
+          client: '', 
+          profile: '', 
           type: data.user.user_type || '',
           signature: data.user.users_profile?.user_signature || ''
         });

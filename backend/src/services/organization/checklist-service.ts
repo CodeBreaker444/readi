@@ -71,6 +71,40 @@ export async function getChecklistById(
     }
 }
 
+export async function saveChecklistResult(
+  evaluationId: number,
+  taskId: number,
+  checklistData: Record<string, unknown>,
+): Promise<{ updated: boolean }> {
+  const { data: actionRow, error } = await supabase
+    .from('evaluation_action')
+    .select('dependencies')
+    .eq('action_id', taskId)
+    .eq('fk_evaluation_id', evaluationId)
+    .single();
+
+  if (error || !actionRow) return { updated: false };
+
+  const existing =
+    typeof actionRow.dependencies === 'string'
+      ? JSON.parse(actionRow.dependencies)
+      : actionRow.dependencies ?? {};
+
+  const { error: updateError } = await supabase
+    .from('evaluation_action')
+    .update({
+      dependencies: {
+        ...existing,
+        checklist_result: checklistData,
+        checklist_result_at: new Date().toISOString(),
+      },
+    })
+    .eq('action_id', taskId)
+    .eq('fk_evaluation_id', evaluationId);
+
+  if (updateError) throw new Error(updateError.message);
+  return { updated: true };
+}
 
 export async function createChecklist(
     payload: ChecklistCreatePayload

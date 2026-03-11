@@ -94,7 +94,7 @@ export default function MissionTestLogbookModal({
                 axios.post("/api/evaluation/mission/list", {
                     mission_planning_id: missionPlanningId,
                 }),
-                axios.post("/api/evaluation/planning/pilot"),
+                axios.get("/api/evaluation/planning/pilot"),
             ]);
             setTests(testsRes.data.data ?? []);
             setPilots(pilotsRes.data.data ?? []);

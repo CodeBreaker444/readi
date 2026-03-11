@@ -1,4 +1,5 @@
 'use client';
+ 
 
 import Breadcrumbs from '@/components/Breadcrumbs';
 import { Button } from '@/components/ui/button';
@@ -36,12 +37,13 @@ import { EvaluationDetailFilePanel } from './EvaluationDetailFilePanel';
 import { EvaluationMapPanel } from './EvaluationMapPanel';
 import { EvaluationDetailSkeleton } from './EvaluationSkeleton';
 import { TaskCompletionTable } from './TaskCompletionTable';
-interface props{
-    ownerId:number
+
+interface Props {
+    ownerId: number;
 }
 
-export const EvaluationDetailContent:FC<props> = ({ownerId}) => {
-    const { isDark } = useTheme()
+export const EvaluationDetailContent: FC<Props> = ({ ownerId }) => {
+    const { isDark } = useTheme();
     const searchParams = useSearchParams();
     const router = useRouter();
 
@@ -58,16 +60,13 @@ export const EvaluationDetailContent:FC<props> = ({ownerId}) => {
         c_id: searchParams.get('c_id') ?? '',
     };
 
-    const breadcrumbItems = [
-        {
-            label: "Evaluation",
-            href: "/planning/evaluation",
-        },
-        { label: "Evaluation Detail", href: "#" },
-    ];
-
     const evaluationId = Number(params.e_id);
     const clientId = Number(params.c_id);
+
+    const breadcrumbItems = [
+        { label: 'Evaluation', href: '/planning/evaluation' },
+        { label: 'Evaluation Detail', href: '#' },
+    ];
 
     useEffect(() => {
         const eId = Number(params.e_id);
@@ -94,7 +93,6 @@ export const EvaluationDetailContent:FC<props> = ({ownerId}) => {
         fetchEvaluation();
     }, [searchParams]);
 
- 
     function handleNewCommunication() {
         setCommModalTask(null);
         setCommModalOpen(true);
@@ -104,19 +102,18 @@ export const EvaluationDetailContent:FC<props> = ({ownerId}) => {
         setTaskTableKey((k) => k + 1);
     }
 
-    if (isLoading) {
-        return <EvaluationDetailSkeleton />
-    }
+    if (isLoading) return <EvaluationDetailSkeleton />;
 
     return (
         <>
             <div className="min-h-screen bg-slate-50/60">
+                {/* ── Sticky header ─────────────────────────────────────────── */}
                 <div className="border-b border-slate-200 bg-white py-3 sticky top-0 z-10">
                     <div className="mx-4 flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <div className="w-1 h-6 rounded-full bg-violet-600" />
                             <div>
-                                <h1 className="text-base font-semibold text-slate-900 flex items-center gap-2">
+                                <h1 className="text-base font-semibold text-slate-900">
                                     Evaluation Detail
                                 </h1>
                                 <p className="text-xs text-slate-500 leading-none mt-0.5">
@@ -124,7 +121,6 @@ export const EvaluationDetailContent:FC<props> = ({ownerId}) => {
                                 </p>
                             </div>
                         </div>
-
                         <div className="flex items-center gap-2">
                             <Button
                                 size="sm"
@@ -138,11 +134,13 @@ export const EvaluationDetailContent:FC<props> = ({ownerId}) => {
                         </div>
                     </div>
                 </div>
-                <div className='m-4 '>
+
+                <div className="m-4">
                     <Breadcrumbs items={breadcrumbItems} isDark={isDark} />
                 </div>
 
-                <div className=" px-6 py-6 space-y-5  ">
+                <div className="px-6 py-6 space-y-5">
+                    {/* ── Edit + Map row ─────────────────────────────────────── */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                         <Collapsible open={editOpen} onOpenChange={setEditOpen}>
                             <Card className="border-slate-200 shadow-sm">
@@ -192,31 +190,34 @@ export const EvaluationDetailContent:FC<props> = ({ownerId}) => {
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <EvaluationMapPanel evaluationId={evaluationId} polygonData={evaluation?.polygon_data ?? null} />
+                                <EvaluationMapPanel
+                                    evaluationId={evaluationId}
+                                    polygonData={evaluation?.polygon_data ?? null}
+                                />
                             </CardContent>
                         </Card>
                     </div>
 
                     <Card className="border-slate-200 shadow-sm">
                         <CardHeader className="pb-3">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <ClipboardList className="w-4 h-4 text-blue-500" />
-                                    <CardTitle className="text-sm font-semibold">
-                                        Task Completion
-                                    </CardTitle>
-                                </div>
+                            <div className="flex items-center gap-2">
+                                <ClipboardList className="w-4 h-4 text-blue-500" />
+                                <CardTitle className="text-sm font-semibold">
+                                    Task Completion
+                                </CardTitle>
                             </div>
                             <CardDescription className="text-xs">
-                                Assignments, checklists and communications required for this evaluation
+                                Assignments, checklists and communications required for
+                                this evaluation
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
                             <TaskCompletionTable
                                 key={taskTableKey}
                                 evaluationId={evaluationId}
+                                clientId={clientId}     
                                 ownerId={ownerId}
-                                onAllCompleted={()=>{}}
+                                onAllCompleted={() => {}}
                             />
                         </CardContent>
                     </Card>
@@ -247,4 +248,4 @@ export const EvaluationDetailContent:FC<props> = ({ownerId}) => {
             />
         </>
     );
-}
+};

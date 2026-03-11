@@ -6,30 +6,33 @@ import { toast } from 'sonner';
 
 import { ChecklistRenderer } from '@/components/checklist/ChecklistRenderer';
 import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
 } from '@/components/ui/dialog';
 import { EvaluationTask } from '@/config/types/evaluation';
 
 interface Props {
   open: boolean;
   task: EvaluationTask;
+  evaluationId?: number;
   onClose: () => void;
   onComplete: (data: any) => void;
 }
 
-export function ChecklistTaskModal({ open, task, onClose, onComplete }: Props) {
+export function ChecklistTaskModal({ open, task, evaluationId, onClose, onComplete }: Props) {
 
   async function handleSurveyComplete(survey: any) {
     try {
       await axios.post('/api/organization/checklist/result', {
         checklist_data: survey.data,
         checklist_code: task.task_code,
+        evaluation_id: evaluationId,
+        task_id: task.task_id,
       });
-      toast.success('Checklist saved');
       onComplete(survey.data);
+      toast.success('Checklist saved');
     } catch {
       toast.error('Failed to save checklist result');
     }
