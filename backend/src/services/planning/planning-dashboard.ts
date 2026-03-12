@@ -1,10 +1,11 @@
 import { supabase } from "@/backend/database/database";
+import { EvaluationTask } from '@/config/types/evaluation';
 import { DroneTool, FileType, MissionTemplate, PilotUser, PlanningLogbookRow, PlanningTestLogbookRow, RepositoryFile } from "@/config/types/evaluation-planning";
+import { ProcedureSteps } from '@/config/types/lcuProcedures';
 import { deleteFileFromS3, getPresignedDownloadUrl } from "@/lib/s3Client";
- 
 
 export type UpdatePlanning = {
- planning_id: number;
+  planning_id: number;
   fk_evaluation_id: number;
   fk_client_id?: number;
   planning_desc: string;
@@ -19,11 +20,11 @@ type CreatePlanningInput = {
   fk_luc_procedure_id: number;
   planning_desc: string;
   planning_status:
-    | "NEW"
-    | "PROCESSING"
-    | "REQ_FEEDBACK"
-    | "POSITIVE_RESULT"
-    | "NEGATIVE_RESULT";
+  | "NEW"
+  | "PROCESSING"
+  | "REQ_FEEDBACK"
+  | "POSITIVE_RESULT"
+  | "NEGATIVE_RESULT";
   planning_request_date: string;
   planning_year: number;
   planning_type?: string;
@@ -100,9 +101,9 @@ export async function getPlanningList(ownerId: number) {
   if (error) throw new Error(error.message);
 
   const mapped = (data ?? []).map((row: any) => {
-    const client         = Array.isArray(row.client)           ? row.client[0]           : row.client;
-    const evaluation     = Array.isArray(row.evaluation)       ? row.evaluation[0]       : row.evaluation;
-    const createdByUser  = Array.isArray(row.created_by_user)  ? row.created_by_user[0]  : row.created_by_user;
+    const client = Array.isArray(row.client) ? row.client[0] : row.client;
+    const evaluation = Array.isArray(row.evaluation) ? row.evaluation[0] : row.evaluation;
+    const createdByUser = Array.isArray(row.created_by_user) ? row.created_by_user[0] : row.created_by_user;
     const assignedToUser = Array.isArray(row.assigned_to_user) ? row.assigned_to_user[0] : row.assigned_to_user;
 
     let procedureId: number | null = null;
@@ -115,37 +116,37 @@ export async function getPlanningList(ownerId: number) {
     }
 
     return {
-      planning_id:          row.planning_id,
-      fk_owner_id:          row.fk_owner_id,
-      fk_client_id:         client?.client_id         ?? row.fk_client_id   ?? null,
-      fk_evaluation_id:     evaluation?.evaluation_id  ?? 0,
-      assigned_to_user_id:  row.assigned_to_user_id   ?? null,
-      planning_code:        row.planning_code          ?? "",
-      planning_name:        row.planning_name          ?? "",
-      planning_desc:        row.planning_description   ?? "",
-      planning_status:      row.planning_status        ?? "",
-      planning_type:        row.planning_type          ?? "",
-      planning_request_date: row.planned_date          ?? "",
-      planning_year:        new Date().getFullYear(),
-      planning_ver:         "1.0",
-      planning_folder:      "",
-      planning_result:      "PROGRESS",
-      planning_active:      row.planning_active        ?? "Y",
-      last_update:          row.updated_at ?? row.created_at ?? "",
-      client_name:          client?.client_name        ?? "",
+      planning_id: row.planning_id,
+      fk_owner_id: row.fk_owner_id,
+      fk_client_id: client?.client_id ?? row.fk_client_id ?? null,
+      fk_evaluation_id: evaluation?.evaluation_id ?? 0,
+      assigned_to_user_id: row.assigned_to_user_id ?? null,
+      planning_code: row.planning_code ?? "",
+      planning_name: row.planning_name ?? "",
+      planning_desc: row.planning_description ?? "",
+      planning_status: row.planning_status ?? "",
+      planning_type: row.planning_type ?? "",
+      planning_request_date: row.planned_date ?? "",
+      planning_year: new Date().getFullYear(),
+      planning_ver: "1.0",
+      planning_folder: "",
+      planning_result: "PROGRESS",
+      planning_active: row.planning_active ?? "Y",
+      last_update: row.updated_at ?? row.created_at ?? "",
+      client_name: client?.client_name ?? "",
       user_fullname: createdByUser
         ? `${createdByUser.first_name ?? ""} ${createdByUser.last_name ?? ""}`.trim()
         : "",
       user_profile_code: createdByUser?.user_role ?? "",
       pic_data: assignedToUser
         ? {
-            fullname: `${assignedToUser.first_name ?? ""} ${assignedToUser.last_name ?? ""}`.trim(),
-            user_profile_code: assignedToUser.user_role ?? "",
-          }
+          fullname: `${assignedToUser.first_name ?? ""} ${assignedToUser.last_name ?? ""}`.trim(),
+          user_profile_code: assignedToUser.user_role ?? "",
+        }
         : null,
       luc_procedure_code: "",
-      luc_procedure_ver:  "",
-      _procedure_id:      procedureId,
+      luc_procedure_ver: "",
+      _procedure_id: procedureId,
     };
   });
 
@@ -170,7 +171,7 @@ export async function getPlanningList(ownerId: number) {
       if (row._procedure_id && procMap.has(row._procedure_id)) {
         const proc = procMap.get(row._procedure_id)!;
         row.luc_procedure_code = proc.code;
-        row.luc_procedure_ver  = proc.ver;
+        row.luc_procedure_ver = proc.ver;
       }
     }
   }
@@ -210,12 +211,12 @@ export async function getPlanningData(ownerId: number, planningId: number) {
 
   if (error) throw new Error(error.message);
 
-  const client         = Array.isArray(data.client)           ? data.client[0]           : data.client;
-  const evaluation     = Array.isArray(data.evaluation)       ? data.evaluation[0]       : data.evaluation;
+  const client = Array.isArray(data.client) ? data.client[0] : data.client;
+  const evaluation = Array.isArray(data.evaluation) ? data.evaluation[0] : data.evaluation;
   const assignedToUser = Array.isArray(data.assigned_to_user) ? data.assigned_to_user[0] : data.assigned_to_user;
 
   let lucCode = "";
-  let lucVer  = "";
+  let lucVer = "";
   const evalMeta = evaluation?.evaluation_metadata;
   if (evalMeta) {
     try {
@@ -228,38 +229,38 @@ export async function getPlanningData(ownerId: number, planningId: number) {
           .single();
         if (proc) {
           lucCode = proc.procedure_code ?? "";
-          lucVer  = proc.procedure_version ?? "";
+          lucVer = proc.procedure_version ?? "";
         }
       }
     } catch { /* ignore */ }
   }
 
   return {
-    planning_id:          data.planning_id,
-    fk_owner_id:          data.fk_owner_id,
-    fk_client_id:         client?.client_id    ?? data.fk_client_id ?? 0,
-    fk_evaluation_id:     evaluation?.evaluation_id ?? 0,
-    assigned_to_user_id:  data.assigned_to_user_id ?? null,
-    planning_code:        data.planning_code   ?? "",
-    planning_desc:        data.planning_description ?? "",
-    planning_status:      data.planning_status ?? "",
-    planning_type:        data.planning_type   ?? "",
-    planning_request_date: data.planned_date   ?? "",
-    planning_active:      data.planning_active ?? "Y",
-    last_update:          data.updated_at      ?? "",
-    client_name:          client?.client_name  ?? "",
-    luc_procedure_code:   lucCode,
-    luc_procedure_ver:    lucVer,
+    planning_id: data.planning_id,
+    fk_owner_id: data.fk_owner_id,
+    fk_client_id: client?.client_id ?? data.fk_client_id ?? 0,
+    fk_evaluation_id: evaluation?.evaluation_id ?? 0,
+    assigned_to_user_id: data.assigned_to_user_id ?? null,
+    planning_code: data.planning_code ?? "",
+    planning_desc: data.planning_description ?? "",
+    planning_status: data.planning_status ?? "",
+    planning_type: data.planning_type ?? "",
+    planning_request_date: data.planned_date ?? "",
+    planning_active: data.planning_active ?? "Y",
+    last_update: data.updated_at ?? "",
+    client_name: client?.client_name ?? "",
+    luc_procedure_code: lucCode,
+    luc_procedure_ver: lucVer,
     pic_data: assignedToUser
       ? {
-          fullname: `${assignedToUser.first_name ?? ""} ${assignedToUser.last_name ?? ""}`.trim(),
-          user_profile_code: assignedToUser.user_role ?? "",
-        }
+        fullname: `${assignedToUser.first_name ?? ""} ${assignedToUser.last_name ?? ""}`.trim(),
+        user_profile_code: assignedToUser.user_role ?? "",
+      }
       : null,
   };
 }
 
- 
+
 
 export async function updatePlanning(payload: UpdatePlanning) {
   const { planning_id, ...updates } = payload;
@@ -663,7 +664,7 @@ export async function getMissionTestRepositoryFiles(
   return files;
 }
 
- 
+
 export async function deleteRepositoryFile(
   fileId: number,
   fileType: FileType,
@@ -692,8 +693,8 @@ export async function deleteRepositoryFile(
       .eq("fk_owner_id", ownerId);
 
     if (error) throw new Error(`Database error (logbook): ${error.message}`);
-  } 
-  
+  }
+
   else if (fileType === "mission_planning_test_logbook") {
     const { error } = await supabase
       .from("planning_test_logbook")
@@ -756,10 +757,10 @@ export async function addCommunicationGeneral(params: {
   if (error) throw new Error(error.message);
   return data.communication_id;
 }
- 
- export async function getUsers(params: {
+
+export async function getUsers(params: {
   fk_owner_id: number;
-}): Promise<{ user_id: number; first_name: string; email: string;  }[]> {
+}): Promise<{ user_id: number; first_name: string; email: string; }[]> {
   const { data, error } = await supabase
     .from("users")
     .select("user_id, first_name, last_name ,email")
@@ -834,30 +835,6 @@ export async function getCommunicationsByPlanning(
   });
 }
 
- 
-export async function getChecklistById(
-  ownerId: number,
-  checklistId: number
-) {
-  const { data, error } = await supabase
-    .from("checklist")
-    .select("checklist_id, checklist_code, checklist_desc, checklist_json, checklist_ver, checklist_active")
-    .eq("fk_owner_id", ownerId)
-    .eq("checklist_id", checklistId)
-    .single();
-
-  if (error) throw new Error(error.message);
-
-  return {
-    checklist_id: data.checklist_id,
-    checklist_code: data.checklist_code ?? "",
-    checklist_desc: data.checklist_desc ?? "",
-    checklist_json: data.checklist_json ?? null,
-    checklist_ver: data.checklist_ver ?? 0,
-    checklist_active: data.checklist_active ?? "N",
-  };
-}
-
 
 export async function getChecklistList(
   ownerId: number
@@ -877,7 +854,7 @@ export async function getChecklistList(
   }));
 }
 
- 
+
 export async function addChecklistTaskToPlanning(
   ownerId: number,
   planningId: number,
@@ -957,64 +934,8 @@ export async function addChecklistTaskToPlanning(
 }
 
 
-export async function getChecklistsByPlanning(
-  ownerId: number,
-  planningId: number
-) {
-  const { data, error } = await supabase
-    .from("checklist")
-    .select(
-      "checklist_id, checklist_code, checklist_desc, checklist_json, checklist_ver, checklist_active, created_at, updated_at"
-    )
-    .eq("fk_owner_id", ownerId)
-    .eq("fk_planning_id", planningId)
-    .order("checklist_id", { ascending: true });
 
-  if (error) throw new Error(error.message);
 
-  return (data ?? []).map((row: any) => ({
-    checklist_id: row.checklist_id,
-    checklist_code: row.checklist_code ?? "",
-    checklist_desc: row.checklist_desc ?? "",
-    checklist_json: row.checklist_json ?? null,
-    checklist_ver: row.checklist_ver ?? 1.0,
-    checklist_active: row.checklist_active ?? "N",
-    created_at: row.created_at ?? "",
-    updated_at: row.updated_at ?? "",
-  }));
-}
-
- 
-export async function addChecklistToPlanning(params: {
-  fk_owner_id: number;
-  fk_user_id: number;
-  fk_planning_id: number;
-  checklist_code: string;
-  checklist_desc: string;
-  checklist_json: Record<string, unknown>;
-  checklist_ver: string;
-  checklist_active: string;
-}) {
-  const { data, error } = await supabase
-    .from("checklist")
-    .insert({
-      fk_owner_id: params.fk_owner_id,
-      fk_user_id: params.fk_user_id,
-      fk_planning_id: params.fk_planning_id,
-      checklist_code: params.checklist_code,
-      checklist_desc: params.checklist_desc,
-      checklist_json: params.checklist_json,
-      checklist_ver: parseFloat(params.checklist_ver) || 1.0,
-      checklist_active: params.checklist_active || "Y",
-    })
-    .select("checklist_id")
-    .single();
-
-  if (error) throw new Error(error.message);
-  return data;
-}
-
- 
 export async function movePlanningToTesting(
   ownerId: number,
   planningId: number
@@ -1042,4 +963,235 @@ export async function movePlanningToTesting(
 
   if (error) throw new Error(error.message);
   return { moved: true, planning_id: planningId };
+}
+
+
+
+async function fetchChecklistJsonMap(
+  ownerId: number,
+  codes: string[],
+): Promise<Map<string, object>> {
+  const map = new Map<string, object>();
+  if (codes.length === 0) return map;
+
+  const { data, error } = await supabase
+    .from('checklist')
+    .select('checklist_code, checklist_json')
+    .eq('fk_owner_id', ownerId)
+    .in('checklist_code', codes);
+
+  if (error) return map;
+
+  for (const row of data ?? []) {
+    if (!row.checklist_code) continue;
+    const json =
+      typeof row.checklist_json === 'string'
+        ? JSON.parse(row.checklist_json)
+        : row.checklist_json;
+    if (json) map.set(row.checklist_code, json);
+  }
+
+  return map;
+}
+
+type StoredTask = Omit<EvaluationTask, 'checklist_json'>;
+
+export async function getPlanningTasks(
+  ownerId: number,
+  planningId: number,
+): Promise<{ tasks: EvaluationTask[]; allCompleted: boolean }> {
+  const { data: planningBase, error: planningErr } = await supabase
+    .from('planning')
+    .select('planning_id, fk_evaluation_id')
+    .eq('planning_id', planningId)
+    .eq('fk_owner_id', ownerId)
+    .single();
+
+  if (planningErr) throw new Error(`getPlanningTasks (base): ${planningErr.message}`);
+  if (!planningBase) throw new Error('Planning not found or access denied');
+
+  const { data: planningJsonRow, error: jsonErr } = await supabase
+    .from('planning')
+    .select('planning_json')
+    .eq('planning_id', planningId)
+    .eq('fk_owner_id', ownerId)
+    .single();
+
+  let planningJson: Record<string, any> = {};
+  if (!jsonErr && planningJsonRow) {
+    const raw = (planningJsonRow as any).planning_json;
+    if (raw) {
+      planningJson = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    }
+  } else if (jsonErr) {
+    console.warn('[getPlanningTasks] planning_json fetch error:', jsonErr.message);
+  }
+
+  if (Array.isArray(planningJson.procedure_tasks) && planningJson.procedure_tasks.length > 0) {
+    const stored = planningJson.procedure_tasks as StoredTask[];
+    const checklistCodes = stored
+      .filter((t) => t.task_type === 'checklist')
+      .map((t) => t.task_code);
+    const checklistJsonMap = await fetchChecklistJsonMap(ownerId, checklistCodes);
+
+    const tasks: EvaluationTask[] = stored.map((t) => ({
+      ...t,
+      checklist_json: t.task_type === 'checklist' ? (checklistJsonMap.get(t.task_code) ?? null) : null,
+    }));
+
+    const allCompleted =
+      tasks.length > 0 &&
+      tasks.every((t) => t.task_status === 'completed' || t.task_status === 'skipped');
+
+    return { tasks, allCompleted };
+  }
+
+  const evaluationId = (planningBase as any).fk_evaluation_id as number | null;
+  if (!evaluationId) return { tasks: [], allCompleted: false };
+
+  const { data: evaluation } = await supabase
+    .from('evaluation')
+    .select('fk_luc_procedure_id, evaluation_metadata')
+    .eq('evaluation_id', evaluationId)
+    .eq('fk_owner_id', ownerId)
+    .single();
+
+  let procedureId: number | null = (evaluation as any)?.fk_luc_procedure_id ?? null;
+  if (!procedureId && evaluation?.evaluation_metadata) {
+    const meta =
+      typeof evaluation.evaluation_metadata === 'string'
+        ? JSON.parse(evaluation.evaluation_metadata)
+        : evaluation.evaluation_metadata;
+    procedureId = meta?.procedure_id ?? null;
+  }
+
+  if (!procedureId) return { tasks: [], allCompleted: false };
+
+  const { data: procData } = await supabase
+    .from('luc_procedure')
+    .select('procedure_steps')
+    .eq('procedure_id', procedureId)
+    .single();
+
+  const steps = procData?.procedure_steps as ProcedureSteps | null;
+
+  if (!steps?.tasks || !Array.isArray(steps.tasks) || (steps.tasks as any[]).length === 0) {
+    return { tasks: [], allCompleted: false };
+  }
+
+  const newTasks: StoredTask[] = [];
+  let order = 1;
+  let taskId = 1;
+
+  for (const procTask of steps.tasks as any[]) {
+    if (Array.isArray(procTask.checklist)) {
+      for (const cl of procTask.checklist) {
+        newTasks.push({
+          task_id: taskId++,
+          task_code: cl.checklist_code || `CL_${order}`,
+          task_name: cl.checklist_name || procTask.title || 'Checklist item',
+          task_type: 'checklist',
+          task_status: 'pending',
+          task_order: order++,
+        });
+      }
+    }
+
+    if (Array.isArray(procTask.assignment)) {
+      for (const asg of procTask.assignment) {
+        newTasks.push({
+          task_id: taskId++,
+          task_code: asg.assignment_code || `ASG_${order}`,
+          task_name: asg.assignment_name || procTask.title || 'Assignment item',
+          task_type: 'assignment',
+          task_status: 'pending',
+          task_order: order++,
+        });
+      }
+    }
+
+    if (Array.isArray(procTask.communication)) {
+      for (const comm of procTask.communication) {
+        newTasks.push({
+          task_id: taskId++,
+          task_code: comm.communication_code || `COMM_${order}`,
+          task_name: comm.communication_name || procTask.title || 'Communication item',
+          task_type: 'communication',
+          task_status: 'pending',
+          task_order: order++,
+        });
+      }
+    }
+  }
+
+  if (newTasks.length === 0) return { tasks: [], allCompleted: false };
+
+  planningJson.procedure_tasks = newTasks;
+
+  await supabase
+    .from('planning')
+    .update({ planning_json: planningJson })
+    .eq('planning_id', planningId)
+    .eq('fk_owner_id', ownerId);
+
+  const checklistCodes = newTasks.filter((t) => t.task_type === 'checklist').map((t) => t.task_code);
+  const checklistJsonMap = await fetchChecklistJsonMap(ownerId, checklistCodes);
+
+  const tasks: EvaluationTask[] = newTasks.map((t) => ({
+    ...t,
+    checklist_json: t.task_type === 'checklist' ? (checklistJsonMap.get(t.task_code) ?? null) : null,
+  }));
+
+  return { tasks, allCompleted: false };
+}
+
+export async function updatePlanningTask(
+  ownerId: number,
+  planningId: number,
+  taskId: number,
+  newStatus: 'pending' | 'in_progress' | 'completed' | 'skipped',
+): Promise<{ success: boolean; message?: string }> {
+  const { data: planningBase, error: baseErr } = await supabase
+    .from('planning')
+    .select('planning_id')
+    .eq('planning_id', planningId)
+    .eq('fk_owner_id', ownerId)
+    .single();
+
+  if (baseErr) return { success: false, message: `updatePlanningTask (base): ${baseErr.message}` };
+  if (!planningBase) return { success: false, message: 'Planning not found or access denied' };
+
+  const { data: jsonRow, error: jsonErr } = await supabase
+    .from('planning')
+    .select('planning_json')
+    .eq('planning_id', planningId)
+    .eq('fk_owner_id', ownerId)
+    .single();
+
+  if (jsonErr) return { success: false, message: `updatePlanningTask (read json): ${jsonErr.message}` };
+
+  let planningJson: Record<string, any> = {};
+  const raw = (jsonRow as any)?.planning_json;
+  if (raw) {
+    planningJson = typeof raw === 'string' ? JSON.parse(raw) : raw;
+  }
+
+  if (!Array.isArray(planningJson.procedure_tasks)) {
+    return { success: false, message: 'Planning tasks not initialised — fetch tasks first' };
+  }
+
+  const idx = (planningJson.procedure_tasks as StoredTask[]).findIndex((t) => t.task_id === taskId);
+  if (idx === -1) return { success: false, message: `Task ${taskId} not found` };
+
+  planningJson.procedure_tasks[idx].task_status = newStatus;
+
+  const { error: updateErr } = await supabase
+    .from('planning')
+    .update({ planning_json: planningJson })
+    .eq('planning_id', planningId)
+    .eq('fk_owner_id', ownerId);
+
+  if (updateErr) return { success: false, message: `updatePlanningTask (update): ${updateErr.message}` };
+
+  return { success: true };
 }

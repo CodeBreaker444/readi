@@ -283,7 +283,7 @@ export async function updateSystemStatus(toolId: number, statusData: any) {
 export async function getModelList(ownerId: number) {
   const { data, error } = await supabase
     .from('tool_model')
-    .select('model_id, model_code, model_name, manufacturer, fk_tool_type_id, specifications')
+    .select('model_id, model_code, model_name, manufacturer, fk_tool_type_id, specifications, model_description')
     .eq('model_active', 'Y')
     .eq('specifications->>fk_owner_id', String(ownerId))
     .order('model_id', { ascending: false });
@@ -300,9 +300,105 @@ export async function getModelList(ownerId: number) {
       factory_name: item.manufacturer,
       factory_serie: item.model_code,
       factory_model: item.model_name,
+      model_type: item.model_description || '',
       specifications: item.specifications,
     })),
   };
+}
+
+
+export async function deleteModel(ownerId: number, modelId: number) {
+  // Check if any active tool (system) uses this model directly
+  const { data: toolsUsing } = await supabase
+    .from('tool')
+    .select('tool_id, tool_code')
+    .eq('fk_model_id', modelId)
+    .eq('fk_owner_id', ownerId)
+    .eq('tool_active', 'Y');
+
+  // Check if any component metadata references this model
+  const { data: ownerTools } = await supabase
+    .from('tool')
+    .select('tool_id')
+    .eq('fk_owner_id', ownerId);
+
+  const toolIds = (ownerTools || []).map((t: any) => t.tool_id);
+  let componentsUsing: any[] = [];
+
+  if (toolIds.length > 0) {
+    const { data: comps } = await supabase
+      .from('tool_component')
+      .select('component_id, component_code, component_name, component_type, component_metadata')
+      .in('fk_tool_id', toolIds)
+      .eq('component_active', 'Y');
+
+    componentsUsing = (comps || []).filter(
+      (c: any) => c.component_metadata?.fk_tool_model_id == modelId,
+    );
+  }
+
+  const systemCount = toolsUsing?.length || 0;
+  const componentCount = componentsUsing.length;
+
+  if (systemCount > 0 || componentCount > 0) {
+    return {
+      code: 0,
+      message: `Cannot delete: model is used by ${systemCount} system(s) and ${componentCount} component(s). Please reassign them first.`,
+      usedBy: {
+        systems: (toolsUsing || []).map((t: any) => ({ id: t.tool_id, code: t.tool_code })),
+        components: componentsUsing.map((c: any) => ({
+          id: c.component_id,
+          code: c.component_code || c.component_name || `#${c.component_id}`,
+          type: c.component_type,
+        })),
+      },
+    };
+  }
+
+  const { error } = await supabase
+    .from('tool_model')
+    .update({ model_active: 'N' })
+    .eq('model_id', modelId);
+
+  if (error) throw error;
+  return { code: 1, message: 'Model deleted successfully' };
+}
+
+
+export async function deleteComponent(ownerId: number, componentId: number, force: boolean = false) {
+  const { data: comp, error: compError } = await supabase
+    .from('tool_component')
+    .select('component_id, fk_tool_id, component_code, component_name, component_type')
+    .eq('component_id', componentId)
+    .single();
+
+  if (compError || !comp) throw new Error('Component not found');
+
+  // Verify ownership via the attached tool
+  const { data: tool } = await supabase
+    .from('tool')
+    .select('tool_id, tool_code')
+    .eq('tool_id', comp.fk_tool_id)
+    .eq('fk_owner_id', ownerId)
+    .maybeSingle();
+
+  if (!tool) throw new Error('Component not found or unauthorized');
+
+  if (!force) {
+    return {
+      code: 2,
+      message: `Component is attached to system "${tool.tool_code}". Detach it from the system before deleting, or confirm to force delete.`,
+      system_code: tool.tool_code,
+    };
+  }
+
+  const { error } = await supabase
+    .from('tool_component')
+    .update({ component_active: 'N' })
+    .eq('component_id', componentId);
+
+  if (error) throw error;
+  return { code: 1, message: 'Component deleted successfully' };
 }
 
 

@@ -5,7 +5,6 @@ import React, { useEffect, useState } from 'react';
 import { GrSystem } from "react-icons/gr";
 import {
   HiChevronDown,
-  HiChevronLeft,
   HiChevronRight,
   HiOutlineBell,
   HiOutlineBookOpen,
@@ -18,6 +17,7 @@ import {
   HiOutlineTemplate,
   HiOutlineUsers
 } from 'react-icons/hi';
+import { TbLayoutSidebarFilled } from "react-icons/tb";
 import { Permission, Role, roleHasPermission, ROUTE_PERMISSIONS } from '../lib/auth/roles';
 
 interface SubNavItem {
@@ -468,7 +468,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
           {!isCollapsed && (
             <button
               onClick={onToggleCollapse}
-              className={`
+              className={`cursor-pointer
                 p-1 rounded-md transition-all duration-150
                 ${
                   isDark
@@ -478,7 +478,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
               `}
               title="Collapse sidebar"
             >
-              <HiChevronLeft size={16} />
+              <TbLayoutSidebarFilled  size={20} />
             </button>
           )}
         </div>
@@ -488,7 +488,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
         <div className="flex justify-center pt-2 pb-1">
           <button
             onClick={onToggleCollapse}
-            className={`
+            className={`cursor-pointer
               p-1 rounded-md transition-all duration-150
               ${
                 isDark
@@ -498,7 +498,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
             `}
             title="Expand sidebar"
           >
-            <HiChevronRight size={16} />
+            <TbLayoutSidebarFilled  size={20} />
           </button>
         </div>
       )}

@@ -107,7 +107,6 @@ export const EvaluationDetailContent: FC<Props> = ({ ownerId }) => {
     return (
         <>
             <div className="min-h-screen bg-slate-50/60">
-                {/* ── Sticky header ─────────────────────────────────────────── */}
                 <div className="border-b border-slate-200 bg-white py-3 sticky top-0 z-10">
                     <div className="mx-4 flex items-center justify-between">
                         <div className="flex items-center gap-3">
@@ -140,7 +139,6 @@ export const EvaluationDetailContent: FC<Props> = ({ ownerId }) => {
                 </div>
 
                 <div className="px-6 py-6 space-y-5">
-                    {/* ── Edit + Map row ─────────────────────────────────────── */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                         <Collapsible open={editOpen} onOpenChange={setEditOpen}>
                             <Card className="border-slate-200 shadow-sm">

@@ -53,9 +53,6 @@ export function ChecklistTaskModal({ open, task, evaluationId, onClose, onComple
               </DialogTitle>
               <p className="mt-0.5 font-mono text-xs text-slate-400">{task.task_code}</p>
             </div>
-            <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border border-emerald-200 text-emerald-700 bg-emerald-50">
-              Checklist
-            </span>
           </div>
         </DialogHeader>
         <div className="px-6 py-4">
