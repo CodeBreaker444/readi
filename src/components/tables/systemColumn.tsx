@@ -1,14 +1,7 @@
 import { SystemFile } from '@/components/system/FilesDownloadModal';
 import { Button } from '@/components/ui/button';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { ColumnDef } from '@tanstack/react-table';
-import { ChevronDown, FileDown, Paperclip } from 'lucide-react';
+import { FileDown, Paperclip } from 'lucide-react';
 
 
 export interface DroneToolData {
@@ -27,11 +20,8 @@ export interface DroneToolData {
 
 interface ColumnActions {
     onView: (toolId: number) => void;
-    onUpdateStatus: (toolId: number) => void;
     onDelete: (toolId: number) => void;
-    onEditSystem: (toolId: number) => void;
-    onEditModel: (toolId: number) => void;
-    onEditComponent: (toolId: number) => void;
+    onEditSystem: (tool: DroneToolData) => void;
     onViewFiles: (tool: DroneToolData) => void;
     isDark: boolean;
 }
@@ -39,11 +29,8 @@ interface ColumnActions {
 
 export const systemCreateColumns = ({
     onView,
-    onUpdateStatus,
     onDelete,
     onEditSystem,
-    onEditModel,
-    onEditComponent,
     onViewFiles,
     isDark,
 }: ColumnActions): ColumnDef<DroneToolData>[] => {
@@ -209,6 +196,7 @@ export const systemCreateColumns = ({
                     >
                         View
                     </Button>
+                    
                     <Button
                         size="sm"
                         variant="outline"
@@ -217,70 +205,10 @@ export const systemCreateColumns = ({
                                 ? 'border-gray-700 text-gray-300 hover:bg-gray-800'
                                 : ''
                         }
-                        onClick={() => onUpdateStatus(row.original.tool_id)}
+                        onClick={() => onEditSystem(row.original)}
                     >
-                        Status
+                        Edit
                     </Button>
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                className={`gap-1 ${
-                                    isDark
-                                        ? 'border-gray-700 text-gray-300 hover:bg-gray-800'
-                                        : ''
-                                }`}
-                            >
-                                Edit <ChevronDown className="h-3 w-3" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent
-                            align="end"
-                            className={
-                                isDark
-                                    ? 'bg-slate-800 border-slate-700 text-slate-200'
-                                    : ''
-                            }
-                        >
-                            <DropdownMenuItem
-                                className={
-                                    isDark
-                                        ? 'hover:bg-slate-700 focus:bg-slate-700'
-                                        : ''
-                                }
-                                onClick={() => onEditSystem(row.original.tool_id)}
-                            >
-                                Edit System
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator
-                                className={isDark ? 'bg-slate-700' : ''}
-                            />
-                            <DropdownMenuItem
-                                className={
-                                    isDark
-                                        ? 'hover:bg-slate-700 focus:bg-slate-700'
-                                        : ''
-                                }
-                                onClick={() => onEditComponent(row.original.tool_id)}
-                            >
-                                Edit Component
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator
-                                className={isDark ? 'bg-slate-700' : ''}
-                            />
-                            <DropdownMenuItem
-                                className={
-                                    isDark
-                                        ? 'hover:bg-slate-700 focus:bg-slate-700'
-                                        : ''
-                                }
-                                onClick={() => onEditModel(row.original.tool_id)}
-                            >
-                                Edit Model
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
                     <Button
                         size="sm"
                         variant="destructive"
