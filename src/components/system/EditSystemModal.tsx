@@ -19,12 +19,13 @@ interface EditSystemModalProps {
   onSuccess: () => void;
   clients: any[];
   models?: any[];
+  tools?: any[];
 }
 
 const EMPTY_FORM = {
   tool_code: '', tool_desc: '',
   tool_status: 'OPERATIONAL', tool_active: 'Y',
-  fk_client_id: '', tool_ccPlatform: '', tool_gcs_type: '',
+  fk_client_id: '',
   tool_latitude: '', tool_longitude: '',
   date_activation: '', location: '',
   tool_maintenance_logbook: 'N',
@@ -43,7 +44,7 @@ const STATUS_STYLES_DARK: Record<string, string> = {
   DECOMMISSIONED: 'bg-gray-800 text-gray-400 border border-gray-700',
 };
 
-export default function EditSystemModal({ open, toolId, onClose, onSuccess, clients, models = [] }: EditSystemModalProps) {
+export default function EditSystemModal({ open, toolId, onClose, onSuccess, clients, models = [], tools = [] }: EditSystemModalProps) {
   const { isDark } = useTheme();
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(false);
@@ -78,8 +79,6 @@ export default function EditSystemModal({ open, toolId, onClose, onSuccess, clie
             tool_status: tool.tool_status || 'OPERATIONAL',
             tool_active: tool.active || 'Y',
             fk_client_id: tool.fk_client_id ? String(tool.fk_client_id) : '',
-            tool_ccPlatform: tool.tool_ccPlatform || '',
-            tool_gcs_type: tool.tool_gcs_type || '',
             tool_latitude: tool.tool_latitude != null ? String(tool.tool_latitude) : '',
             tool_longitude: tool.tool_longitude != null ? String(tool.tool_longitude) : '',
             date_activation: tool.date_activation || '',
@@ -138,8 +137,6 @@ export default function EditSystemModal({ open, toolId, onClose, onSuccess, clie
         tool_status: formData.tool_status,
         tool_active: formData.tool_active,
         fk_client_id: formData.fk_client_id ? Number(formData.fk_client_id) : null,
-        tool_ccPlatform: formData.tool_ccPlatform || null,
-        tool_gcs_type: formData.tool_gcs_type || null,
         tool_latitude: formData.tool_latitude ? Number(formData.tool_latitude) : null,
         tool_longitude: formData.tool_longitude ? Number(formData.tool_longitude) : null,
         date_activation: formData.date_activation || null,
@@ -244,31 +241,8 @@ export default function EditSystemModal({ open, toolId, onClose, onSuccess, clie
               </div>
 
               <div>
-                <p className={sectionLabelCls}>Platform & Location</p>
+                <p className={sectionLabelCls}>  Location</p>
                 <div className="grid grid-cols-12 gap-3">
-                  <div className="col-span-3">
-                    <Label className={labelCls}>C2 Platform</Label>
-                    <Select value={formData.tool_ccPlatform} onValueChange={v => handleChange('tool_ccPlatform', v)}>
-                      <SelectTrigger className={selectTriggerCls}><SelectValue placeholder="Select Type" /></SelectTrigger>
-                      <SelectContent className={selectContentCls}>
-                        <SelectItem value="_FLYTBASE">Flytbase</SelectItem>
-                        <SelectItem value="_VOTIX">Votix</SelectItem>
-                        <SelectItem value="_FLIGHTHUB">DJI FlightHub</SelectItem>
-                        <SelectItem value="_APP">APP on GCS</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="col-span-3">
-                    <Label className={labelCls}>GCS</Label>
-                    <Select value={formData.tool_gcs_type} onValueChange={v => handleChange('tool_gcs_type', v)}>
-                      <SelectTrigger className={selectTriggerCls}><SelectValue placeholder="Select Type" /></SelectTrigger>
-                      <SelectContent className={selectContentCls}>
-                        <SelectItem value="_DOCK">Docking Station</SelectItem>
-                        <SelectItem value="_RC">Remote Control</SelectItem>
-                        <SelectItem value="_GCS">Ground Control Station</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
                   <div className="col-span-3">
                     <Label className={labelCls}>Latitude</Label>
                     <Input className={inputCls} value={formData.tool_latitude} onChange={e => handleChange('tool_latitude', e.target.value)} />
@@ -343,7 +317,6 @@ export default function EditSystemModal({ open, toolId, onClose, onSuccess, clie
                 </div>
               </div>
 
-              {/* Components Table */}
               <div className={`border-t pt-4 ${isDark ? 'border-slate-700/60' : 'border-gray-100'}`}>
                 <p className={sectionLabelCls}>Attached Components ({components.length})</p>
                 {components.length === 0 ? (
@@ -440,7 +413,6 @@ export default function EditSystemModal({ open, toolId, onClose, onSuccess, clie
         </DialogContent>
       </Dialog>
 
-      {/* Detach confirm dialog */}
       <Dialog open={!!detachConfirm} onOpenChange={() => setDetachConfirm(null)}>
         <DialogContent className={`max-w-sm ${isDark ? 'bg-slate-800 border-slate-700' : ''}`}>
           <DialogHeader>
@@ -473,7 +445,6 @@ export default function EditSystemModal({ open, toolId, onClose, onSuccess, clie
         </DialogContent>
       </Dialog>
 
-      {/* Edit component nested modal */}
       {editComponentId && (
         <EditComponentModal
           open={!!editComponentId}
@@ -483,6 +454,7 @@ export default function EditSystemModal({ open, toolId, onClose, onSuccess, clie
           onSuccess={() => { setEditComponentId(null); fetchComponents(); }}
           models={models}
           clients={clients}
+          tools={tools}
         />
       )}
     </>

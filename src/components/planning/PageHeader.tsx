@@ -32,7 +32,7 @@ export default function PageHeader({
           <div>
             <h1
               className={cn(
-                "text-lg font-bold tracking-tight",
+                "font-semibold text-base tracking-tight",
                 isDark ? "text-white" : "text-slate-900"
               )}
             >

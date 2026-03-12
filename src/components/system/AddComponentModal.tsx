@@ -195,7 +195,7 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
 
           <div className="grid grid-cols-12 gap-3 overflow-visible">
             <div className="col-span-3">
-              <Label className='pb-2'>CL Platform</Label>
+              <Label className='pb-2'>C2 Platform</Label>
               <Select value={formData.cc_platform} onValueChange={(v) => handleChange('cc_platform', v)}>
                 <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                 <SelectContent>

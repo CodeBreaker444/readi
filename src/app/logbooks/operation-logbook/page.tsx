@@ -120,7 +120,7 @@ export default function OperationLogbookPage() {
               <div className="w-1 h-6 rounded-full bg-violet-600" />
             <div>
               <h1
-                className={`text-lg font-bold tracking-tight ${
+                className={`font-semibold text-base tracking-tight ${
                   isDark ? "text-white" : "text-slate-900"
                 }`}
               >

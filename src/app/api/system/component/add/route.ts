@@ -13,7 +13,8 @@ const ComponentSchema = z.object({
   component_vendor: z.string().optional().nullable(),
   component_guarantee_day: z.number().optional().nullable(),
   component_status: z.string().default('OPERATIONAL'),
-  fk_client_id: z.number().optional().nullable(),
+  cc_platform: z.string(),
+  gcs_type: z.string()
 });
 
 export async function POST(req: NextRequest) {
@@ -45,8 +46,9 @@ export async function POST(req: NextRequest) {
       component_vendor: d.component_vendor,
       component_guarantee_day: d.component_guarantee_day,
       component_status: d.component_status,
-      fk_client_id: d.fk_client_id,
       fk_tool_model_id: d.fk_tool_model_id,
+      cc_platform: d.cc_platform,
+      gcs_type: d.gcs_type
     });
 
     return NextResponse.json(result);

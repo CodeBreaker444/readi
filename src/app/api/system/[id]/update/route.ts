@@ -9,8 +9,6 @@ const schema = z.object({
   tool_status:             z.string().optional().nullable(),
   tool_active:             z.string().default('Y'),
   fk_client_id:            z.number().optional().nullable(),
-  tool_ccPlatform:         z.string().optional().nullable(),
-  tool_gcs_type:           z.string().optional().nullable(),
   tool_latitude:           z.number().optional().nullable(),
   tool_longitude:          z.number().optional().nullable(),
   date_activation:         z.string().optional().nullable(),
