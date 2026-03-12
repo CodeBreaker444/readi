@@ -17,6 +17,7 @@ interface EditComponentModalProps {
   onSuccess: () => void;
   models: any[];
   clients: any[];
+  initialComponentId?: number | null;
 }
 
 const EMPTY_FORM = {
@@ -37,7 +38,7 @@ const EMPTY_FORM = {
 };
 
 export default function EditComponentModal({
-  open, toolId, onClose, onSuccess, models, clients,
+  open, toolId, onClose, onSuccess, models, clients, initialComponentId,
 }: EditComponentModalProps) {
   const { isDark } = useTheme();
   const [loading, setLoading] = useState(false);
@@ -47,14 +48,62 @@ export default function EditComponentModal({
   const [formData, setFormData] = useState(EMPTY_FORM);
 
   useEffect(() => {
-    if (open && toolId) {
-      fetchComponents();
+    if (open) {
+      if (initialComponentId) {
+        fetchAllComponentsAndSelect(initialComponentId);
+      } else if (toolId) {
+        fetchComponents();
+      } else {
+        setComponents([]);
+        setSelectedComponentId('');
+        setFormData(EMPTY_FORM);
+      }
     } else {
       setComponents([]);
       setSelectedComponentId('');
       setFormData(EMPTY_FORM);
     }
-  }, [open, toolId]);
+  }, [open, toolId, initialComponentId]);
+
+  const fetchAllComponentsAndSelect = async (componentId: number) => {
+    setFetching(true);
+    try {
+      const res = await fetch('/api/system/component/list', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      const result = await res.json();
+      if (result.code === 1) {
+        const allComps: any[] = result.data || [];
+        setComponents(allComps);
+        const comp = allComps.find(c => c.tool_component_id === componentId);
+        if (comp) {
+          setSelectedComponentId(String(componentId));
+          setFormData({
+            fk_tool_id: String(comp.fk_tool_id || ''),
+            component_type: comp.component_type || '',
+            component_code: comp.component_code || '',
+            component_desc: comp.component_desc || '',
+            fk_tool_model_id: comp.fk_tool_model_id ? String(comp.fk_tool_model_id) : '',
+            component_sn: comp.component_sn || '',
+            cc_platform: comp.cc_platform || '',
+            gcs_type: comp.gcs_type || '',
+            component_activation_date: comp.component_activation_date?.split('T')[0] || '',
+            component_purchase_date: comp.component_purchase_date?.split('T')[0] || '',
+            component_vendor: comp.component_vendor || '',
+            component_guarantee_day: comp.component_guarantee_day ? String(comp.component_guarantee_day) : '',
+            component_status: comp.component_status || 'OPERATIONAL',
+            fk_client_id: comp.fk_client_id ? String(comp.fk_client_id) : '',
+          });
+        }
+      }
+    } catch {
+      toast.error('Error loading component');
+    } finally {
+      setFetching(false);
+    }
+  };
 
   const fetchComponents = async () => {
     setFetching(true);

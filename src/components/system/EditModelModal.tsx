@@ -15,6 +15,7 @@ interface EditModelModalProps {
   toolId: number | null;
   onClose: () => void;
   onSuccess: () => void;
+  initialModelId?: number | null;
 }
 
 const EMPTY_FORM = {
@@ -24,7 +25,7 @@ const EMPTY_FORM = {
   model_type: '',
 };
 
-export default function EditModelModal({ open, toolId, onClose, onSuccess }: EditModelModalProps) {
+export default function EditModelModal({ open, toolId, onClose, onSuccess, initialModelId }: EditModelModalProps) {
   const { isDark } = useTheme();
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(false);
@@ -33,14 +34,22 @@ export default function EditModelModal({ open, toolId, onClose, onSuccess }: Edi
   const [formData, setFormData] = useState(EMPTY_FORM);
 
   useEffect(() => {
-    if (open && toolId) {
-      fetchModelsForTool();
+    if (open) {
+      if (initialModelId) {
+        fetchAllModelsAndSelect(initialModelId);
+      } else if (toolId) {
+        fetchModelsForTool();
+      } else {
+        setAllModels([]);
+        setSelectedModelId('');
+        setFormData(EMPTY_FORM);
+      }
     } else {
       setAllModels([]);
       setSelectedModelId('');
       setFormData(EMPTY_FORM);
     }
-  }, [open, toolId]);
+  }, [open, toolId, initialModelId]);
 
   const fetchModelsForTool = async () => {
     setFetching(true);
@@ -77,6 +86,36 @@ export default function EditModelModal({ open, toolId, onClose, onSuccess }: Edi
       }
     } catch {
       toast.error('Error loading models');
+    } finally {
+      setFetching(false);
+    }
+  };
+
+  const fetchAllModelsAndSelect = async (modelId: number) => {
+    setFetching(true);
+    try {
+      const modelRes = await fetch('/api/system/model/list', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      const modelResult = await modelRes.json();
+      if (modelResult.code === 1) {
+        const models: any[] = modelResult.data || [];
+        setAllModels(models);
+        const model = models.find(m => m.tool_model_id === modelId);
+        if (model) {
+          setSelectedModelId(String(modelId));
+          setFormData({
+            factory_type: model.factory_type || '',
+            factory_serie: model.factory_serie || '',
+            factory_model: model.factory_model || '',
+            model_type: model.model_type || '',
+          });
+        }
+      }
+    } catch {
+      toast.error('Error loading model');
     } finally {
       setFetching(false);
     }
