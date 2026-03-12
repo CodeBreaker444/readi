@@ -17,10 +17,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { FC, useCallback, useEffect, useState } from "react";
 import EditPlanningRequestCard from "./EditPlanningRequestCard";
 import MissionPlanningLogbookAddNew from "./MissionPlanningLogbookAddNew";
 import MissionPlanningLogbookTable from "./MissionPlanningLogbookTable";
@@ -33,13 +32,17 @@ import type {
   PlanningLogbookRow,
   RepositoryFile
 } from "@/config/types/evaluation-planning";
+import { SessionUser } from "@/lib/auth/server-session";
 import axios from "axios";
 import { toast } from "sonner";
 import Breadcrumbs from "../Breadcrumbs";
 import { useTheme } from "../useTheme";
+import { PlanningMissionSkeleton } from "./PlanningMissionSkeleton";
 import { PlanningTaskTableSection } from "./PlanningTaskTableSection";
-
-export default function PlanningMissionContent() {
+interface PlanningMissionProps{
+  user:SessionUser
+}
+export const PlanningMissionContent:FC<PlanningMissionProps> = ({ user })=> {
   const { isDark } = useTheme();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -213,15 +216,7 @@ export default function PlanningMissionContent() {
 
   if (loading && initialLoad) {
     return (
-      <div className="container mx-auto p-6 space-y-4">
-        <Skeleton className="h-6 w-64" />
-        <Skeleton className="h-8 w-48" />
-        <div className="grid grid-cols-2 gap-4">
-          <Skeleton className="h-64" />
-          <Skeleton className="h-64" />
-        </div>
-        <Skeleton className="h-96" />
-      </div>
+      <PlanningMissionSkeleton />
     );
   }
 
@@ -366,7 +361,7 @@ export default function PlanningMissionContent() {
         planningId={p_id}
         clientId={c_id}
         evaluationId={e_id}
-        onMoveToTesting={loadPageData}
+        ownerId={user.ownerId}
       />
 
       <Card className={isDark ? "bg-slate-900 border-slate-800" : ""}>

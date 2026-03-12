@@ -1,20 +1,16 @@
-"use client";
 
-import PlanningMissionContent from "@/components/planning/PlanningMissionContent";
+import { PlanningMissionContent } from "@/components/planning/PlanningMissionContent";
+import { PlanningMissionSkeleton } from "@/components/planning/PlanningMissionSkeleton";
+import { getUserSession } from "@/lib/auth/server-session";
 import { Suspense } from "react";
 
-export default function PlanningMissionPage() {
+export default async function PlanningMissionPage() {
+  const session = await getUserSession()
   return (
     <Suspense
-      fallback={
-        <div className="d-flex justify-content-center align-items-center vh-100">
-          <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Loading...</span>
-          </div>
-        </div>
-      }
+      fallback={<PlanningMissionSkeleton />}
     >
-      <PlanningMissionContent />
+      <PlanningMissionContent  user={session?.user!}/>
     </Suspense>
   );
 }
