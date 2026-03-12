@@ -325,6 +325,7 @@ export default function EditComponentModal({
                   </div>
                 </div>
 
+                {formData.component_type === 'DRONE' && (
                 <div className="grid grid-cols-12 gap-3">
                   <div className="col-span-3">
                     <Label className={labelCls}>C2 Platform</Label>
@@ -349,6 +350,10 @@ export default function EditComponentModal({
                       </SelectContent>
                     </Select>
                   </div>
+                </div>
+                )}
+
+                <div className="grid grid-cols-12 gap-3">
                   <div className="col-span-3">
                     <Label className={labelCls}>Status *</Label>
                     <Select value={formData.component_status} onValueChange={v => handleChange('component_status', v)}>

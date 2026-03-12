@@ -193,6 +193,7 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
             </div>
           </div>
 
+          {formData.component_type === 'DRONE' && (
           <div className="grid grid-cols-12 gap-3 overflow-visible">
             <div className="col-span-3">
               <Label className='pb-2'>C2 Platform</Label>
@@ -218,6 +219,7 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
               </Select>
             </div>
           </div>
+          )}
 
           <div className="grid grid-cols-12 gap-3 overflow-visible">
             <div className="col-span-3">
