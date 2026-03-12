@@ -9,7 +9,7 @@ import EditModelModal from '@/components/system/EditModelModal';
 import EditSystemModal from '@/components/system/EditSystemModal';
 import { FilesDownloadModal, SystemFile } from '@/components/system/FilesDownloadModal';
 import ViewToolModal from '@/components/system/ViewToolModal';
-import { DroneToolData, getComponentColumns, getModelColumns, systemCreateColumns } from '@/components/tables/systemColumn';
+import { DroneToolData, getComponentColumns, getModelColumns, systemCreateColumns } from '@/components/tables/SystemColumn';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -247,7 +247,6 @@ export default function DroneToolPage() {
                     setDeleteConfirm(null);
                     fetchModels();
                 } else {
-                    // Model is in use — update dialog to show warning instead of closing
                     const { systems = [], components = [] } = result.usedBy || {};
                     setDeleteConfirm(prev => prev ? {
                         ...prev,
@@ -268,7 +267,6 @@ export default function DroneToolPage() {
                     setDeleteConfirm(null);
                     fetchAllComponents();
                 } else if (result.code === 2) {
-                    // Component still attached — update dialog to show detach option
                     setDeleteConfirm(prev => prev ? {
                         ...prev,
                         warning: result.message,
@@ -288,7 +286,6 @@ export default function DroneToolPage() {
         }
     };
 
-    // Tool code map for component table
     const toolCodeMap = useMemo(() => {
         const map: Record<number, string> = {};
         toolData.forEach(t => { map[t.tool_id] = t.tool_code; });
@@ -345,7 +342,7 @@ const modelColumns = useMemo(
                     <div className="flex items-center gap-3">
                         <div className="w-1 h-6 rounded-full bg-violet-600" />
                         <div>
-                            <h1 className={`text-lg font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                            <h1 className={`font-semibold text-base tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
                                 Drone System List
                             </h1>
                             <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>

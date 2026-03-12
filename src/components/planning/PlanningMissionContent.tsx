@@ -241,7 +241,7 @@ export const PlanningMissionContent:FC<PlanningMissionProps> = ({ user })=> {
             <div className="w-1 h-8 rounded-full bg-violet-600" />
             <div>
               <h1
-                className={`text-lg font-bold tracking-tight flex items-center gap-2 ${isDark ? "text-white" : "text-slate-900"
+                className={`font-semibold text-base tracking-tight flex items-center gap-2 ${isDark ? "text-white" : "text-slate-900"
                   }`}
               >
                 Mission Mission

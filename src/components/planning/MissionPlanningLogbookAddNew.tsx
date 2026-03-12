@@ -187,7 +187,7 @@ export default function MissionPlanningLogbookAddNew({
               type="file"
               ref={fileInputRef}
               name="mission_planning_file"
-              className={`${inputStyle} file:text-white file:font-medium cursor-pointer file:border-0 file:bg-transparent`}
+              className={`${inputStyle} file:text-black file:font-medium cursor-pointer file:border-0 file:bg-transparent`}
             />
           </div>
           <div className="flex justify-end">

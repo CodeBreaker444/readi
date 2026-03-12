@@ -2,22 +2,22 @@
 
 import { Button } from '@/components/ui/button';
 import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
-import { ClientData } from '../tables/clientColumn';
+import { ClientData } from '../tables/ClientColumn';
 
 const PAYMENT_TERMS = [
   'Net 15',

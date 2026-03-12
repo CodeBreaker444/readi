@@ -14,7 +14,7 @@ import { Filter, Plus, Search, User } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { TablePagination } from '../tables/Pagination';
-import { getUserColumns, UserData } from '../tables/userColumns';
+import { getUserColumns, UserData } from '../tables/UserColumns';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
@@ -179,7 +179,7 @@ export default function UserManagement({ session }: UserManagementProps) {
           <div className="flex items-center gap-3">
             <div className="w-1 h-6 rounded-full bg-violet-600" />
             <div>
-              <h1 className={`text-lg font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>Team Management</h1>
+              <h1 className={`font-semibold text-base tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>Team Management</h1>
               <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Manage users and roles within your organization</p>
             </div>
           </div>

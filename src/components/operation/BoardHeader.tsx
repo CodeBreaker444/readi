@@ -45,7 +45,7 @@ export function BoardHeader({ onRefresh, isRefreshing, isDark }: Props) {
       
       <div>
         <h1
-          className={`text-lg font-bold tracking-tight ${
+          className={`font-semibold text-base tracking-tight ${
             isDark ? "text-white" : "text-slate-900"
           }`}
         >

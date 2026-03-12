@@ -162,7 +162,7 @@ export default function DroneToolMapPage() {
 
             <div>
               <h1
-                className={`text-lg font-bold tracking-tight ${isDark ? "text-white" : "text-slate-900"
+                className={`font-semibold text-base tracking-tight ${isDark ? "text-white" : "text-slate-900"
                   }`}
               >
                 Drone Tool Map

@@ -192,7 +192,7 @@ export default function NotificationsPage() {
             <div className="w-1 h-6 rounded-full bg-violet-600" />
             <div>
               <div className="flex items-center gap-2">
-                <h1 className={`text-lg font-bold tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>
+                <h1 className={`font-semibold text-base tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>
                   Notifications
                 </h1>
                 {unreadCount > 0 && (

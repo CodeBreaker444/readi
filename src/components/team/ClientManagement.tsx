@@ -2,35 +2,35 @@
 
 import { useTheme } from '@/components/useTheme';
 import {
-    flexRender,
-    getCoreRowModel,
-    getFilteredRowModel,
-    getPaginationRowModel,
-    useReactTable,
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  useReactTable,
 } from '@tanstack/react-table';
 import axios from 'axios';
 import { Building2, Filter, Plus, Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { ClientData, getClientColumns } from '../tables/clientColumn';
+import { ClientData, getClientColumns } from '../tables/ClientColumn';
 import { TablePagination } from '../tables/Pagination';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '../ui/select';
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '../ui/table';
 import { ClientFormModal } from './ClientFormModal';
 import { ClientSkeletonRow, ClientStatSkeleton } from './ClientStatSkeleton';
@@ -200,7 +200,7 @@ export default function ClientManagement() {
           <div className="flex items-center gap-3">
             <div className="w-1 h-6 rounded-full bg-violet-600" />
             <div>
-              <h1 className={`text-lg font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>Client Management</h1>
+              <h1 className={`font-semibold text-base tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>Client Management</h1>
               <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Manage clients and their contracts</p>
             </div>
           </div>
