@@ -8,7 +8,6 @@ import EditComponentModal from '@/components/system/EditComponentModal';
 import EditModelModal from '@/components/system/EditModelModal';
 import EditSystemModal from '@/components/system/EditSystemModal';
 import { FilesDownloadModal, SystemFile } from '@/components/system/FilesDownloadModal';
-import UpdateStatusModal from '@/components/system/UpdateStatusModal';
 import ViewToolModal from '@/components/system/ViewToolModal';
 import { DroneToolData, getComponentColumns, getModelColumns, systemCreateColumns } from '@/components/tables/systemColumn';
 import { Button } from '@/components/ui/button';
@@ -36,6 +35,7 @@ interface DeleteConfirm {
     warning: string;
     canDelete: boolean;
     usedBy?: { systems: any[]; components: any[] };
+    attachedSystemCode?: string;
 }
 
 export default function DroneToolPage() {
@@ -48,7 +48,6 @@ export default function DroneToolPage() {
     const [showAddModel, setShowAddModel] = useState(false);
     const [showAddComponent, setShowAddComponent] = useState(false);
     const [showViewTool, setShowViewTool] = useState(false);
-    const [showUpdateStatus, setShowUpdateStatus] = useState(false);
     const [showEditSystem, setShowEditSystem] = useState(false);
     const [showEditModel, setShowEditModel] = useState(false);
     const [showEditComponent, setShowEditComponent] = useState(false);
@@ -65,6 +64,7 @@ export default function DroneToolPage() {
 
     const [deleteConfirm, setDeleteConfirm] = useState<DeleteConfirm | null>(null);
     const [deleting, setDeleting] = useState(false);
+    const [detachingComponent, setDetachingComponent] = useState(false);
 
     const [filesModal, setFilesModal] = useState<{
         open: boolean;
@@ -152,10 +152,7 @@ export default function DroneToolPage() {
     };
 
     const handleView = (toolId: number) => { setSelectedToolId(toolId); setShowViewTool(true); };
-    const handleUpdateStatus = (toolId: number) => { setSelectedToolId(toolId); setShowUpdateStatus(true); };
-    const handleEditSystem = (toolId: number) => { setSelectedToolId(toolId); setShowEditSystem(true); };
-    const handleEditModel = (toolId: number) => { setSelectedToolId(toolId); setDirectModelId(null); setShowEditModel(true); };
-    const handleEditComponent = (toolId: number) => { setSelectedToolId(toolId); setDirectComponentId(null); setShowEditComponent(true); };
+    const handleEditSystem = (tool: DroneToolData) => { setSelectedToolId(tool.tool_id); setShowEditSystem(true); };
 
     const handleDelete = async (toolId: number) => {
         const tool = toolData.find(t => t.tool_id === toolId);
@@ -179,28 +176,15 @@ export default function DroneToolPage() {
         setShowEditModel(true);
     };
 
-    const handleDeleteModel = async (modelId: number, modelName: string) => {
-        try {
-            const res = await fetch(`/api/system/model/${modelId}/delete`, { method: 'POST' });
-            const result = await res.json();
-            if (result.code === 1) {
-                toast.success('Model deleted successfully');
-                fetchModels();
-            } else if (result.code === 0) {
-                const { systems = [], components = [] } = result.usedBy || {};
-                setDeleteConfirm({
-                    open: true,
-                    type: 'model',
-                    id: modelId,
-                    name: modelName,
-                    warning: result.message,
-                    canDelete: false,
-                    usedBy: { systems, components },
-                });
-            }
-        } catch {
-            toast.error('Error deleting model');
-        }
+    const handleDeleteModel = (modelId: number, modelName: string) => {
+        setDeleteConfirm({
+            open: true,
+            type: 'model',
+            id: modelId,
+            name: modelName,
+            warning: 'This model will be permanently removed from the platform.',
+            canDelete: true,
+        });
     };
 
     const handleEditComponentDirect = (componentId: number) => {
@@ -209,31 +193,34 @@ export default function DroneToolPage() {
         setShowEditComponent(true);
     };
 
-    const handleDeleteComponent = async (componentId: number, componentName: string) => {
+    const handleDeleteComponent = (componentId: number, componentName: string) => {
+        setDeleteConfirm({
+            open: true,
+            type: 'component',
+            id: componentId,
+            name: componentName,
+            warning: 'This component will be permanently removed from the platform.',
+            canDelete: true,
+        });
+    };
+
+    const handleDetachFromSystem = async () => {
+        if (!deleteConfirm) return;
+        setDetachingComponent(true);
         try {
-            const res = await fetch(`/api/system/component/${componentId}/delete`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ force: false }),
-            });
+            const res = await fetch(`/api/system/component/${deleteConfirm.id}/detach`, { method: 'POST' });
             const result = await res.json();
             if (result.code === 1) {
-                toast.success('Component deleted successfully');
+                toast.success('Component detached from system');
+                setDeleteConfirm(null);
                 fetchAllComponents();
-            } else if (result.code === 2) {
-                setDeleteConfirm({
-                    open: true,
-                    type: 'component',
-                    id: componentId,
-                    name: componentName,
-                    warning: result.message,
-                    canDelete: true,
-                });
             } else {
-                toast.error(result.message || 'Failed to delete component');
+                toast.error(result.message || 'Failed to detach component');
             }
         } catch {
-            toast.error('Error deleting component');
+            toast.error('Error detaching component');
+        } finally {
+            setDetachingComponent(false);
         }
     };
 
@@ -246,29 +233,58 @@ export default function DroneToolPage() {
                 const result = await res.json();
                 if (result.code === 1) {
                     toast.success('System deactivated successfully');
+                    setDeleteConfirm(null);
                     fetchToolData();
                 } else {
                     toast.error(result.message || 'Failed to delete system');
+                    setDeleteConfirm(null);
+                }
+            } else if (deleteConfirm.type === 'model') {
+                const res = await fetch(`/api/system/model/${deleteConfirm.id}/delete`, { method: 'POST' });
+                const result = await res.json();
+                if (result.code === 1) {
+                    toast.success('Model deleted successfully');
+                    setDeleteConfirm(null);
+                    fetchModels();
+                } else {
+                    // Model is in use — update dialog to show warning instead of closing
+                    const { systems = [], components = [] } = result.usedBy || {};
+                    setDeleteConfirm(prev => prev ? {
+                        ...prev,
+                        warning: result.message,
+                        canDelete: false,
+                        usedBy: { systems, components },
+                    } : null);
                 }
             } else if (deleteConfirm.type === 'component') {
                 const res = await fetch(`/api/system/component/${deleteConfirm.id}/delete`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ force: true }),
+                    body: JSON.stringify({ force: false }),
                 });
                 const result = await res.json();
                 if (result.code === 1) {
                     toast.success('Component deleted successfully');
+                    setDeleteConfirm(null);
                     fetchAllComponents();
+                } else if (result.code === 2) {
+                    // Component still attached — update dialog to show detach option
+                    setDeleteConfirm(prev => prev ? {
+                        ...prev,
+                        warning: result.message,
+                        canDelete: false,
+                        attachedSystemCode: result.system_code,
+                    } : null);
                 } else {
                     toast.error(result.message || 'Failed to delete component');
+                    setDeleteConfirm(null);
                 }
             }
         } catch {
             toast.error('Error during delete');
+            setDeleteConfirm(null);
         } finally {
             setDeleting(false);
-            setDeleteConfirm(null);
         }
     };
 
@@ -283,11 +299,8 @@ export default function DroneToolPage() {
         () =>
             systemCreateColumns({
                 onView: handleView,
-                onUpdateStatus: handleUpdateStatus,
                 onDelete: handleDelete,
                 onEditSystem: handleEditSystem,
-                onEditModel: handleEditModel,
-                onEditComponent: handleEditComponent,
                 onViewFiles: handleViewFiles,
                 isDark,
             }),
@@ -431,17 +444,11 @@ const modelColumns = useMemo(
                     onClose={() => { setShowViewTool(false); setSelectedToolId(null); }} />
             )}
 
-            {showUpdateStatus && selectedToolId && (
-                <UpdateStatusModal open={showUpdateStatus} toolId={selectedToolId}
-                    onClose={() => { setShowUpdateStatus(false); setSelectedToolId(null); }}
-                    onSuccess={() => { setShowUpdateStatus(false); setSelectedToolId(null); fetchToolData(); }} />
-            )}
-
             {showEditSystem && (
                 <EditSystemModal open={showEditSystem} toolId={selectedToolId}
                     onClose={() => { setShowEditSystem(false); setSelectedToolId(null); }}
                     onSuccess={() => { setShowEditSystem(false); setSelectedToolId(null); fetchToolData(); }}
-                    clients={clients} />
+                    clients={clients} models={models} />
             )}
 
             {showEditModel && (
@@ -467,8 +474,15 @@ const modelColumns = useMemo(
                     <DialogContent className={`max-w-lg ${isDark ? 'bg-slate-800 border-slate-700' : ''}`}>
                         <DialogHeader>
                             <DialogTitle className={`flex items-center gap-2 ${isDark ? 'text-white' : ''}`}>
-                                <AlertTriangle className={`h-5 w-5 ${deleteConfirm.canDelete ? 'text-amber-500' : 'text-red-500'}`} />
-                                {deleteConfirm.canDelete ? 'Confirm Delete' : 'Cannot Delete'}
+                                <AlertTriangle className={`h-5 w-5 ${
+                                    deleteConfirm.canDelete ? 'text-amber-500'
+                                    : deleteConfirm.attachedSystemCode ? 'text-amber-500'
+                                    : 'text-red-500'
+                                }`} />
+                                {deleteConfirm.canDelete
+                                    ? `Delete ${deleteConfirm.type === 'model' ? 'Model' : deleteConfirm.type === 'component' ? 'Component' : 'System'}`
+                                    : deleteConfirm.attachedSystemCode ? 'Component Attached to System'
+                                    : 'Cannot Delete'}
                             </DialogTitle>
                         </DialogHeader>
 
@@ -512,6 +526,30 @@ const modelColumns = useMemo(
                                     )}
                                 </div>
                             )}
+
+                            {deleteConfirm.type === 'component' && deleteConfirm.attachedSystemCode && (
+                                <div className={`rounded-lg p-3 text-xs space-y-2 ${isDark ? 'bg-slate-700/50 border border-slate-600' : 'bg-slate-50 border border-slate-200'}`}>
+                                    <p className={`font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                                        Attached to system:
+                                        <span className={`ml-2 px-2 py-0.5 rounded font-semibold ${isDark ? 'bg-violet-900/40 text-violet-300' : 'bg-violet-50 text-violet-700'}`}>
+                                            {deleteConfirm.attachedSystemCode}
+                                        </span>
+                                    </p>
+                                    <p className={isDark ? 'text-slate-400' : 'text-slate-500'}>
+                                        Detach the component from this system first, then you can delete it from the platform.
+                                    </p>
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        disabled={detachingComponent}
+                                        onClick={handleDetachFromSystem}
+                                        className={`mt-1 ${isDark ? 'border-slate-500 text-slate-300 hover:bg-slate-600' : 'border-slate-300 hover:bg-slate-100'}`}
+                                    >
+                                        {detachingComponent ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+                                        {detachingComponent ? 'Detaching...' : `Detach from ${deleteConfirm.attachedSystemCode}`}
+                                    </Button>
+                                </div>
+                            )}
                         </div>
 
                         <DialogFooter className="gap-2">
@@ -519,7 +557,7 @@ const modelColumns = useMemo(
                                 className={isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : ''}>
                                 {deleteConfirm.canDelete ? 'Cancel' : 'Close'}
                             </Button>
-                            {deleteConfirm.canDelete && (
+                            {deleteConfirm.canDelete && !deleteConfirm.attachedSystemCode && (
                                 <Button variant="destructive" disabled={deleting} onClick={handleConfirmDelete}>
                                     {deleting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
                                     {deleting ? 'Deleting...' : 'Confirm Delete'}

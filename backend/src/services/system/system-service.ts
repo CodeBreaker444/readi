@@ -254,32 +254,6 @@ export async function deleteSystem(ownerId: number, toolId: number) {
 }
 
 
-export async function updateSystemStatus(toolId: number, statusData: any) {
-  const { data: current, error: fetchError } = await supabase
-    .from('tool')
-    .select('tool_metadata')
-    .eq('tool_id', toolId)
-    .single();
-
-  if (fetchError) throw fetchError;
-
-  const { data, error } = await supabase
-    .from('tool')
-    .update({
-      tool_metadata: {
-        ...current?.tool_metadata,
-        status: statusData.tool_status_to,
-      },
-    })
-    .eq('tool_id', toolId)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return { code: 1, message: 'Tool status updated successfully', data };
-}
-
-
 export async function getModelList(ownerId: number) {
   const { data, error } = await supabase
     .from('tool_model')
@@ -368,7 +342,7 @@ export async function deleteModel(ownerId: number, modelId: number) {
 export async function deleteComponent(ownerId: number, componentId: number, force: boolean = false) {
   const { data: comp, error: compError } = await supabase
     .from('tool_component')
-    .select('component_id, fk_tool_id, component_code, component_name, component_type')
+    .select('component_id, fk_tool_id, component_code, component_name, component_type, component_metadata')
     .eq('component_id', componentId)
     .single();
 
@@ -384,10 +358,13 @@ export async function deleteComponent(ownerId: number, componentId: number, forc
 
   if (!tool) throw new Error('Component not found or unauthorized');
 
-  if (!force) {
+  // If already logically detached from system, allow deletion without warning
+  const isDetached = comp.component_metadata?.system_detached === true;
+
+  if (!force && !isDetached) {
     return {
       code: 2,
-      message: `Component is attached to system "${tool.tool_code}". Detach it from the system before deleting, or confirm to force delete.`,
+      message: `Component is attached to system "${tool.tool_code}". Detach it from the system before deleting.`,
       system_code: tool.tool_code,
     };
   }
@@ -399,6 +376,36 @@ export async function deleteComponent(ownerId: number, componentId: number, forc
 
   if (error) throw error;
   return { code: 1, message: 'Component deleted successfully' };
+}
+
+
+export async function detachComponent(ownerId: number, componentId: number) {
+  const { data: comp, error: compError } = await supabase
+    .from('tool_component')
+    .select('component_id, fk_tool_id, component_metadata')
+    .eq('component_id', componentId)
+    .single();
+
+  if (compError || !comp) throw new Error('Component not found');
+
+  const { data: tool } = await supabase
+    .from('tool')
+    .select('tool_id')
+    .eq('tool_id', comp.fk_tool_id)
+    .eq('fk_owner_id', ownerId)
+    .maybeSingle();
+
+  if (!tool) throw new Error('Component not found or unauthorized');
+
+  const updatedMetadata = { ...(comp.component_metadata || {}), system_detached: true };
+
+  const { error } = await supabase
+    .from('tool_component')
+    .update({ component_metadata: updatedMetadata })
+    .eq('component_id', componentId);
+
+  if (error) throw error;
+  return { code: 1, message: 'Component detached from system successfully' };
 }
 
 
@@ -459,33 +466,40 @@ export async function getComponentList(ownerId: number, toolId?: number) {
   if (toolError) throw toolError;
 
   const toolIds = (ownerTools || []).map((t) => t.tool_id);
+
+  const selectFields = `
+    component_id,
+    fk_tool_id,
+    component_code,
+    component_name,
+    component_type,
+    component_description,
+    serial_number,
+    component_active,
+    installation_date,
+    expected_lifespan_hours,
+    current_usage_hours,
+    last_replacement_date,
+    next_replacement_date,
+    component_metadata
+  `;
+
   if (toolIds.length === 0) {
     return { code: 1, message: 'Success', dataRows: 0, data: [] };
   }
 
-  const { data, error } = await supabase
+  const { data: rawData, error } = await supabase
     .from('tool_component')
-    .select(`
-        component_id,
-        fk_tool_id,
-        component_code,
-        component_name,
-        component_type,
-        component_description,
-        serial_number,
-        component_active,
-        installation_date,
-        expected_lifespan_hours,
-        current_usage_hours,
-        last_replacement_date,
-        next_replacement_date,
-        component_metadata
-      `)
+    .select(selectFields)
     .in('fk_tool_id', toolIds)
     .eq('component_active', 'Y')
     .order('component_id', { ascending: false });
 
   if (error) throw error;
+
+  const data = (toolId && toolId !== 0)
+    ? (rawData || []).filter(item => item.component_metadata?.system_detached !== true)
+    : (rawData || []);
 
   return {
     code: 1,
@@ -553,6 +567,15 @@ export async function addComponent(componentData: any) {
 
 
 export async function updateComponent(componentId: number, componentData: any) {
+  // Fetch existing metadata to preserve system_detached flag and other fields
+  const { data: existing } = await supabase
+    .from('tool_component')
+    .select('component_metadata')
+    .eq('component_id', componentId)
+    .single();
+
+  const existingMeta = existing?.component_metadata || {};
+
   const { data, error } = await supabase
     .from('tool_component')
     .update({
@@ -560,11 +583,22 @@ export async function updateComponent(componentId: number, componentData: any) {
       component_name: componentData.component_name || componentData.component_type,
       component_type: componentData.component_type,
       component_code: componentData.component_code || null,
-      component_description: componentData.component_vendor || null,
+      component_description: componentData.component_desc || null,
       serial_number: componentData.component_sn || null,
       installation_date: componentData.component_activation_date || null,
       expected_lifespan_hours: componentData.component_total_cycles || null,
       current_usage_hours: componentData.component_cycles || 0,
+      component_metadata: {
+        ...existingMeta,
+        cc_platform: componentData.cc_platform || null,
+        gcs_type: componentData.gcs_type || null,
+        component_status: componentData.component_status || 'OPERATIONAL',
+        fk_client_id: componentData.fk_client_id || null,
+        fk_tool_model_id: componentData.fk_tool_model_id || null,
+        component_purchase_date: componentData.component_purchase_date || null,
+        component_guarantee_day: componentData.component_guarantee_day || null,
+        component_vendor: componentData.component_vendor || null,
+      },
     })
     .eq('component_id', componentId)
     .select()
