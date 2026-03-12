@@ -17,6 +17,7 @@ interface EditComponentModalProps {
   onSuccess: () => void;
   models: any[];
   clients: any[];
+  tools: any[];
   initialComponentId?: number | null;
 }
 
@@ -34,11 +35,10 @@ const EMPTY_FORM = {
   component_vendor: '',
   component_guarantee_day: '',
   component_status: 'OPERATIONAL',
-  fk_client_id: '',
 };
 
 export default function EditComponentModal({
-  open, toolId, onClose, onSuccess, models, clients, initialComponentId,
+  open, toolId, onClose, onSuccess, models, clients, tools, initialComponentId,
 }: EditComponentModalProps) {
   const { isDark } = useTheme();
   const [loading, setLoading] = useState(false);
@@ -94,7 +94,6 @@ export default function EditComponentModal({
             component_vendor: comp.component_vendor || '',
             component_guarantee_day: comp.component_guarantee_day ? String(comp.component_guarantee_day) : '',
             component_status: comp.component_status || 'OPERATIONAL',
-            fk_client_id: comp.fk_client_id ? String(comp.fk_client_id) : '',
           });
         }
       }
@@ -142,7 +141,6 @@ export default function EditComponentModal({
         component_vendor: comp.component_vendor || '',
         component_guarantee_day: comp.component_guarantee_day ? String(comp.component_guarantee_day) : '',
         component_status: comp.component_status || 'OPERATIONAL',
-        fk_client_id: comp.fk_client_id ? String(comp.fk_client_id) : '',
       });
     }
   };
@@ -166,7 +164,6 @@ export default function EditComponentModal({
         component_vendor: formData.component_vendor || null,
         component_guarantee_day: formData.component_guarantee_day ? Number(formData.component_guarantee_day) : null,
         component_status: formData.component_status,
-        fk_client_id: formData.fk_client_id ? Number(formData.fk_client_id) : null,
       };
 
       const res = await fetch(`/api/system/component/${selectedComponentId}/update`, {
@@ -267,11 +264,26 @@ export default function EditComponentModal({
             {selectedComponentId && (
               <>
                 <div className="grid grid-cols-12 gap-3">
+                  <div className="col-span-3 min-w-0">
+                    <Label className={labelCls}>System</Label>
+                    <Select value={formData.fk_tool_id} onValueChange={v => handleChange('fk_tool_id', v)}>
+                      <SelectTrigger className={`w-full truncate ${selectTriggerCls}`}><SelectValue placeholder="Select System" /></SelectTrigger>
+                      <SelectContent className={`z-50 max-h-60 overflow-y-auto ${selectContentCls}`}>
+                        {tools.map((tool: any) => (
+                          <SelectItem key={tool.tool_id} value={tool.tool_id.toString()}>
+                            {tool.tool_code}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div className="col-span-3">
                     <Label className={labelCls}>Component Type *</Label>
                     <Select value={formData.component_type} onValueChange={v => handleChange('component_type', v)}>
                       <SelectTrigger className={selectTriggerCls}><SelectValue placeholder="Select type" /></SelectTrigger>
                       <SelectContent className={selectContentCls}>
+                        <SelectItem value="DRONE">Drone (Aircraft)</SelectItem>
+                        <SelectItem value="DOCK">Dock</SelectItem>
                         <SelectItem value="BATTERY">Battery</SelectItem>
                         <SelectItem value="PROPELLER">Propeller</SelectItem>
                         <SelectItem value="CAMERA">Camera</SelectItem>
@@ -285,13 +297,16 @@ export default function EditComponentModal({
                   </div>
                   <div className="col-span-3">
                     <Label className={labelCls}>Code</Label>
-                    <Input className={inputCls} value={formData.component_code} onChange={e => handleChange('component_code', e.target.value)} />
+                    <Input className={inputCls} value={formData.component_code} onChange={e => handleChange('component_code', e.target.value)} placeholder="e.g. BATT-01" />
                   </div>
                   <div className="col-span-3">
                     <Label className={labelCls}>Serial Number</Label>
                     <Input className={inputCls} value={formData.component_sn} onChange={e => handleChange('component_sn', e.target.value)} />
                   </div>
-                  <div className="col-span-3">
+                </div>
+
+                <div className="grid grid-cols-12 gap-3">
+                  <div className="col-span-3 min-w-0">
                     <Label className={labelCls}>Brand / Model</Label>
                     <Select value={formData.fk_tool_model_id} onValueChange={v => handleChange('fk_tool_model_id', v)}>
                       <SelectTrigger className={`w-full truncate ${selectTriggerCls}`}><SelectValue placeholder="Select Model" /></SelectTrigger>
@@ -304,12 +319,9 @@ export default function EditComponentModal({
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
-
-                <div className="grid grid-cols-12 gap-3">
                   <div className="col-span-9">
                     <Label className={labelCls}>Description</Label>
-                    <Input className={inputCls} value={formData.component_desc} onChange={e => handleChange('component_desc', e.target.value)} />
+                    <Input className={inputCls} value={formData.component_desc} onChange={e => handleChange('component_desc', e.target.value)} placeholder="Component description" />
                   </div>
                 </div>
 
@@ -346,18 +358,6 @@ export default function EditComponentModal({
                         <SelectItem value="NOT_OPERATIONAL">Not Operational</SelectItem>
                         <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
                         <SelectItem value="DECOMMISSIONED">Decommissioned</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="col-span-3">
-                    <Label className={labelCls}>Client</Label>
-                    <Select value={formData.fk_client_id} onValueChange={v => handleChange('fk_client_id', v)}>
-                      <SelectTrigger className={`w-full truncate ${selectTriggerCls}`}><SelectValue placeholder="Select" /></SelectTrigger>
-                      <SelectContent className={selectContentCls}>
-                        <SelectItem value="0">None</SelectItem>
-                        {clients.map((c: any) => (
-                          <SelectItem key={c.client_id} value={c.client_id.toString()}>{c.client_name}</SelectItem>
-                        ))}
                       </SelectContent>
                     </Select>
                   </div>

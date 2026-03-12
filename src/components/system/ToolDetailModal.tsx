@@ -210,7 +210,7 @@ export default function ToolDetailModal({ open, tool, onClose }: Props) {
                       <div><span className={`font-medium ${isDark ? "text-slate-400" : "text-gray-700"}`}>S/N:</span> {comp.component_sn ?? "—"}</div>
                       <div><span className={`font-medium ${isDark ? "text-slate-400" : "text-gray-700"}`}>Usage:</span> {comp.component_cycles ?? 0} / {comp.component_total_cycles ?? "—"} hrs</div>
                       {comp.cc_platform && (
-                        <div><span className={`font-medium ${isDark ? "text-slate-400" : "text-gray-700"}`}>CL Platform:</span> {comp.cc_platform.replace('_', '')}</div>
+                        <div><span className={`font-medium ${isDark ? "text-slate-400" : "text-gray-700"}`}>C2 Platform:</span> {comp.cc_platform.replace('_', '')}</div>
                       )}
                       {comp.gcs_type && (
                         <div><span className={`font-medium ${isDark ? "text-slate-400" : "text-gray-700"}`}>GCS:</span> {comp.gcs_type.replace('_', '')}</div>

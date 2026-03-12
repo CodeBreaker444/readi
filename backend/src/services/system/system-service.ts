@@ -270,12 +270,17 @@ export async function getModelList(ownerId: number) {
     dataRows: data?.length || 0,
     data: (data || []).map((item) => ({
       tool_model_id: item.model_id,
+      fk_tool_type_id: item.fk_tool_type_id,
       factory_type: item.manufacturer,
       factory_name: item.manufacturer,
       factory_serie: item.model_code,
       factory_model: item.model_name,
       model_type: item.model_description || '',
       specifications: item.specifications,
+      max_flight_time: item.specifications?.max_flight_time ?? null,
+      max_speed: item.specifications?.max_speed ?? null,
+      max_altitude: item.specifications?.max_altitude ?? null,
+      weight: item.specifications?.weight ?? null,
     })),
   };
 }
@@ -435,13 +440,30 @@ export async function addModel(modelData: any) {
 
 
 export async function updateModel(modelId: number, modelData: any) {
+  const { data: existing } = await supabase
+    .from('tool_model')
+    .select('specifications')
+    .eq('model_id', modelId)
+    .single();
+
+  const updatedSpecs = {
+    ...(existing?.specifications || {}),
+    ...(modelData.max_flight_time !== undefined ? { max_flight_time: modelData.max_flight_time } : {}),
+    ...(modelData.max_speed !== undefined ? { max_speed: modelData.max_speed } : {}),
+    ...(modelData.max_altitude !== undefined ? { max_altitude: modelData.max_altitude } : {}),
+    ...(modelData.weight !== undefined ? { weight: modelData.weight } : {}),
+    ...(modelData.notes !== undefined ? { notes: modelData.notes } : {}),
+  };
+
   const { data, error } = await supabase
     .from('tool_model')
     .update({
       manufacturer: modelData.manufacturer,
       model_code: modelData.model_code,
       model_name: modelData.model_name,
-      ...(modelData.model_type ? { model_description: modelData.model_type } : {}),
+      ...(modelData.model_type !== undefined ? { model_description: modelData.model_type } : {}),
+      ...(modelData.fk_tool_type_id ? { fk_tool_type_id: modelData.fk_tool_type_id } : {}),
+      specifications: updatedSpecs,
     })
     .eq('model_id', modelId)
     .select()
@@ -477,10 +499,6 @@ export async function getComponentList(ownerId: number, toolId?: number) {
     serial_number,
     component_active,
     installation_date,
-    expected_lifespan_hours,
-    current_usage_hours,
-    last_replacement_date,
-    next_replacement_date,
     component_metadata
   `;
 
@@ -522,10 +540,6 @@ export async function getComponentList(ownerId: number, toolId?: number) {
       fk_tool_model_id: item.component_metadata?.fk_tool_model_id || null,
       cc_platform: item.component_metadata?.cc_platform || '',
       gcs_type: item.component_metadata?.gcs_type || '',
-      component_cycles: item.current_usage_hours,
-      component_total_cycles: item.expected_lifespan_hours,
-      last_replacement_date: item.last_replacement_date,
-      next_replacement_date: item.next_replacement_date,
       factory_serie: item.component_code,
       factory_model: item.component_name,
     })),
@@ -544,14 +558,11 @@ export async function addComponent(componentData: any) {
       component_description: componentData.component_desc || componentData.component_vendor || null,
       serial_number: componentData.component_sn || null,
       installation_date: componentData.component_activation_date || null,
-      expected_lifespan_hours: componentData.component_total_cycles || null,
-      current_usage_hours: componentData.component_cycles || 0,
       component_active: 'Y',
       component_metadata: {
         cc_platform: componentData.cc_platform || null,
         gcs_type: componentData.gcs_type || null,
         component_status: componentData.component_status || 'OPERATIONAL',
-        fk_client_id: componentData.fk_client_id || null,
         fk_tool_model_id: componentData.fk_tool_model_id || null,
         component_purchase_date: componentData.component_purchase_date || null,
         component_guarantee_day: componentData.component_guarantee_day || null,
@@ -567,7 +578,6 @@ export async function addComponent(componentData: any) {
 
 
 export async function updateComponent(componentId: number, componentData: any) {
-  // Fetch existing metadata to preserve system_detached flag and other fields
   const { data: existing } = await supabase
     .from('tool_component')
     .select('component_metadata')
@@ -586,14 +596,11 @@ export async function updateComponent(componentId: number, componentData: any) {
       component_description: componentData.component_desc || null,
       serial_number: componentData.component_sn || null,
       installation_date: componentData.component_activation_date || null,
-      expected_lifespan_hours: componentData.component_total_cycles || null,
-      current_usage_hours: componentData.component_cycles || 0,
       component_metadata: {
         ...existingMeta,
         cc_platform: componentData.cc_platform || null,
         gcs_type: componentData.gcs_type || null,
         component_status: componentData.component_status || 'OPERATIONAL',
-        fk_client_id: componentData.fk_client_id || null,
         fk_tool_model_id: componentData.fk_tool_model_id || null,
         component_purchase_date: componentData.component_purchase_date || null,
         component_guarantee_day: componentData.component_guarantee_day || null,

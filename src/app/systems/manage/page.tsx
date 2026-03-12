@@ -460,7 +460,7 @@ const modelColumns = useMemo(
                     initialComponentId={directComponentId}
                     onClose={() => { setShowEditComponent(false); setSelectedToolId(null); setDirectComponentId(null); }}
                     onSuccess={() => { setShowEditComponent(false); setSelectedToolId(null); setDirectComponentId(null); fetchAllComponents(); }}
-                    models={models} clients={clients} />
+                    models={models} clients={clients} tools={tools} />
             )}
 
             <FilesDownloadModal open={filesModal.open} toolCode={filesModal.toolCode} files={filesModal.files}
