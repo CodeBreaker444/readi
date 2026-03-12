@@ -1,155 +1,210 @@
 import { supabase } from '@/backend/database/database';
-import { existsSync, mkdirSync } from 'fs';
-import { writeFile } from 'fs/promises';
-import { join } from 'path';
+import { BUCKET, deleteFileFromS3, getPresignedDownloadUrl, s3 } from '@/lib/s3Client';
+import { PutObjectCommand } from '@aws-sdk/client-s3';
 
+function buildAvatarS3Key(ownerId: number, userId: number, originalName: string): string {
+  const ext = originalName.split('.').pop() ?? 'png';
+  return `avatars/${ownerId}/${userId}/${Date.now()}.${ext}`;
+}
 
-interface UserProfileData {
-  firstName: string;
-  lastName: string;
+export interface ProfileData {
+  fullName: string;
+  email: string;
+  phone: string;
+  user_timezone: string;
+  user_type: string;
+  avatar_url: string | null;
+  users_profile: {
+    user_signature: string | null;
+    bio: string | null;
+    address: string | null;
+    city: string | null;
+    state: string | null;
+    postal_code: string | null;
+    profile_picture: string | null;
+    profile_picture_s3_key: string | null;
+  } | null;
+}
+
+export interface UpdateProfileParams {
+  fullname: string;
   email: string;
   phone: string;
   timezone: string;
 }
 
-export async function updateUserProfile(
-  userId: number,
-  ownerId: number,
-  profileData: UserProfileData,
-  avatarFile?: File | null
-) {
-  try {
-    let profilePicturePath: string | null = null;
+export async function getProfile(userId: number): Promise<ProfileData> {
+  const { data, error } = await supabase
+    .from('users')
+    .select(
+      `
+      user_id,
+      first_name,
+      last_name,
+      email,
+      phone,
+      user_timezone,
+      user_type,
+      users_profile!fk_user_id (
+        profile_picture,
+        user_signature,
+        bio,
+        address,
+        city,
+        state,
+        postal_code
+      )
+    `,
+    )
+    .eq('user_id', userId)
+    .single();
 
-    if (avatarFile) {
-      const buffer = Buffer.from(await avatarFile.arrayBuffer());
-      const extension = avatarFile.name.substring(avatarFile.name.lastIndexOf('.') + 1);
-      
-      const validTypes = ['gif', 'jpeg', 'jpg', 'png', 'GIF', 'JPEG', 'JPG', 'PNG'];
-      if (!validTypes.includes(extension)) {
-        throw new Error('Invalid file format. Please upload .gif, .jpeg, .jpg, or .png');
+  if (error || !data) throw new Error('Profile not found');
+
+  const profile = Array.isArray(data.users_profile)
+    ? data.users_profile[0]
+    : data.users_profile;
+
+  let avatarUrl: string | null = null;
+  if (profile?.profile_picture) {
+    const pic = profile.profile_picture;
+    if (pic.startsWith('avatars/') || pic.startsWith('profiles/')) {
+      try {
+        avatarUrl = await getPresignedDownloadUrl(pic, 3600); // 1 hour
+      } catch {
+        avatarUrl = null;
       }
-
-      const uploadDir = join(process.cwd(), 'public', 'uploads', 'avatars', String(ownerId));
-      if (!existsSync(uploadDir)) {
-        mkdirSync(uploadDir, { recursive: true });
-      }
-
-      const filename = `${userId}_${Date.now()}.${extension}`;
-      const filePath = join(uploadDir, filename);
-      await writeFile(filePath, buffer);
-      
-      profilePicturePath = `/uploads/avatars/${ownerId}/${filename}`;
+    } else {
+      avatarUrl = pic;
     }
-
-    // Update users table
-    const userUpdateData: any = {
-      first_name: profileData.firstName,
-      last_name: profileData.lastName,
-      email: profileData.email,
-      phone: profileData.phone,
-      user_timezone: profileData.timezone,
-      updated_at: new Date().toISOString()
-    };
-
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .update(userUpdateData)
-      .eq('user_id', userId)
-      .eq('fk_owner_id', ownerId)
-      .select()
-      .single();
-
-    if (userError) throw userError;
-
-    // Update or insert users_profile
-    if (profilePicturePath) {
-      const { data: existingProfile } = await supabase
-        .from('users_profile')
-        .select('profile_id')
-        .eq('fk_user_id', userId)
-        .single();
-
-      if (existingProfile) {
-        // Update existing profile
-        const { error: profileError } = await supabase
-          .from('users_profile')
-          .update({
-            profile_picture: profilePicturePath,
-            updated_at: new Date().toISOString()
-          })
-          .eq('fk_user_id', userId);
-
-        if (profileError) throw profileError;
-      } else {
-        // Insert new profile
-        const { error: profileError } = await supabase
-          .from('users_profile')
-          .insert({
-            fk_user_id: userId,
-            profile_picture: profilePicturePath
-          });
-
-        if (profileError) throw profileError;
-      }
-    }
-
-    return {
-      updateResult: true,
-      param: {
-        firstName: userData.first_name,
-        lastName: userData.last_name,
-        email: userData.email,
-        phone: userData.phone,
-        timezone: userData.user_timezone,
-        profilePicture: profilePicturePath
-      },
-      message: 'Profile updated successfully'
-    };
-  } catch (error) {
-    console.error('Error updating user profile:', error);
-    throw new Error('Failed to update user profile');
   }
+
+  const fullName = [data.first_name, data.last_name].filter(Boolean).join(' ');
+
+  return {
+    fullName,
+    email: data.email ?? '',
+    phone: data.phone ?? '',
+    user_timezone: data.user_timezone ?? 'IST',
+    user_type: data.user_type ?? '',
+    avatar_url: avatarUrl,
+    users_profile: profile
+      ? {
+          user_signature: profile.user_signature ?? null,
+          bio: profile.bio ?? null,
+          address: profile.address ?? null,
+          city: profile.city ?? null,
+          state: profile.state ?? null,
+          postal_code: profile.postal_code ?? null,
+          profile_picture: profile.profile_picture ?? null,
+          profile_picture_s3_key: profile.profile_picture?.startsWith('avatars/')
+            ? profile.profile_picture
+            : null,
+        }
+      : null,
+  };
 }
 
-export async function getUserProfile(userId: number, ownerId: number) {
-  try {
-    const { data, error } = await supabase
-      .from('users')
-      .select(`
-        *,
-        users_profile (
-          profile_picture,
-          bio,
-          address,
-          city,
-          state,
-          postal_code,
-          date_of_birth,
-          emergency_contact,
-          emergency_phone,
-          certifications,
-          skills,
-          user_signature,
-          user_primary_certification
-        )
-      `)
-      .eq('user_id', userId)
-      .eq('fk_owner_id', ownerId)
+export async function updateProfile(
+  userId: number,
+  ownerId: number,
+  params: UpdateProfileParams,
+  avatarFile?: File | null,
+): Promise<{ success: boolean; message?: string; avatarUrl?: string | null }> {
+  const nameParts = params.fullname.trim().split(/\s+/);
+  const firstName = nameParts[0] ?? '';
+  const lastName = nameParts.slice(1).join(' ') || null;
+
+  const { error: userErr } = await supabase
+    .from('users')
+    .update({
+      first_name: firstName,
+      last_name: lastName,
+      email: params.email,
+      phone: params.phone,
+      user_timezone: params.timezone,
+    })
+    .eq('user_id', userId);
+
+  if (userErr) {
+    return { success: false, message: `Failed to update user: ${userErr.message}` };
+  }
+
+  let newAvatarUrl: string | null = null;
+  if (avatarFile) {
+    const { data: oldProfile } = await supabase
+      .from('users_profile')
+      .select('profile_picture')
+      .eq('fk_user_id', userId)
       .single();
 
-    if (error) throw error;
-
-    return {
-      success: true,
-      user: {
-        ...data,
-        fullName: `${data.first_name} ${data.last_name}`,
-        profilePicture: data.users_profile?.profile_picture
+    if (oldProfile?.profile_picture?.startsWith('avatars/')) {
+      try {
+        await deleteFileFromS3(oldProfile.profile_picture);
+      } catch {
+        // Non-fatal: old file may already be gone
       }
-    };
-  } catch (error) {
-    console.error('Error fetching user profile:', error);
-    throw new Error('Failed to fetch user profile');
+    }
+
+    const s3Key = buildAvatarS3Key(ownerId, userId, avatarFile.name);
+    const buffer = Buffer.from(await avatarFile.arrayBuffer());
+
+    await s3.send(
+      new PutObjectCommand({
+        Bucket: BUCKET,
+        Key: s3Key,
+        Body: buffer,
+        ContentType: avatarFile.type || 'image/png',
+        ServerSideEncryption: 'AES256',
+      }),
+    );
+
+    const { error: profileErr } = await supabase
+      .from('users_profile')
+      .upsert(
+        {
+          fk_user_id: userId,
+          profile_picture: s3Key,
+        },
+        { onConflict: 'fk_user_id' },
+      );
+
+    if (profileErr) {
+      return {
+        success: false,
+        message: `Avatar uploaded but DB update failed: ${profileErr.message}`,
+      };
+    }
+
+    try {
+      newAvatarUrl = await getPresignedDownloadUrl(s3Key, 3600);
+    } catch {
+      newAvatarUrl = null;
+    }
   }
+
+  return { success: true, avatarUrl: newAvatarUrl };
+}
+
+export async function getAvatarPresignedUrl(
+  userId: number,
+): Promise<string | null> {
+  const { data } = await supabase
+    .from('users_profile')
+    .select('profile_picture')
+    .eq('fk_user_id', userId)
+    .single();
+
+  if (!data?.profile_picture) return null;
+
+  const pic = data.profile_picture;
+  if (pic.startsWith('avatars/') || pic.startsWith('profiles/')) {
+    try {
+      return await getPresignedDownloadUrl(pic, 3600);
+    } catch {
+      return null;
+    }
+  }
+
+  return pic;
 }

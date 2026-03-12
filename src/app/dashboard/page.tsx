@@ -16,7 +16,7 @@ export default async function DashboardPage() {
   const dashboardData = await getDashboardData({
     owner_id: ownerId,
     user_id: userId,
-    user_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    user_timezone: session.user.timezone || 'UTC',
     user_profile_code: userProfileCode,
   });
   

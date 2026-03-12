@@ -91,8 +91,19 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
               className={`flex items-center space-x-3 p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-slate-700' : 'hover:bg-gray-100'
                 }`}
             >
-              <div className="w-9 h-9 bg-linear-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                <User size={18} className="text-white" />
+              <div className="w-9 h-9 overflow-hidden bg-linear-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center border-2 border-transparent">
+                {userData?.avatar ? (
+                  <img
+                    src={userData.avatar}
+                    alt={userData?.username || 'Profile'}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                ) : (
+                  <User size={18} className="text-white" />
+                )}
               </div>
               <div className="hidden md:block text-left">
                 <p className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-800'}`}>

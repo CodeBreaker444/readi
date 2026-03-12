@@ -1,70 +1,129 @@
-import { getUserProfile, updateUserProfile } from '@/backend/services/user/user-profile';
+ 
+import { getProfile, updateProfile } from '@/backend/services/user/user-profile';
 import { getUserSession } from '@/lib/auth/server-session';
 import { NextRequest, NextResponse } from 'next/server';
+import z from 'zod';
 
-export async function POST(request: NextRequest) {
+const updateProfileSchema = z.object({
+  fullname: z
+    .string()
+    .min(1, 'Full name is required')
+    .max(200, 'Full name too long'),
+  email: z.string().email('Invalid email address'),
+  phone: z.string().max(50, 'Phone number too long').optional().default(''),
+  timezone: z
+    .string()
+    .max(64, 'Timezone too long')
+    .optional()
+    .default('IST'),
+});
+
+export async function GET() {
   try {
     const session = await getUserSession();
-    
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!session) {
+      return NextResponse.json(
+        { success: false, message: 'Unauthorized' },
+        { status: 401 },
+      );
     }
 
-    const formData = await request.formData();
-    const fullname = formData.get('fullname') as string;
-    const email = formData.get('email') as string;
-    const phone = formData.get('phone') as string;
-    const timezone = formData.get('timezone') as string;
-    const avatar = formData.get('avatar') as File | null;
+    const user = await getProfile(session.user.userId);
 
-    const nameParts = fullname.trim().split(' ');
-    const firstName = nameParts[0] || '';
-    const lastName = nameParts.slice(1).join(' ') || '';
-
-    const userId = session.user.userId;
-    const ownerId = session.user.ownerId;
-
-    const result = await updateUserProfile(
-      userId,
-      ownerId,
-    {
-        firstName,
-        lastName,
-        email,
-        phone,
-        timezone,
-    },
-      avatar
-    );
-
-    return NextResponse.json(result);
-  } catch (error) {
-    console.error('API Error:', error);
+    return NextResponse.json({ success: true, user });
+  } catch (err: any) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Internal server error' },
-      { status: 500 }
+      { success: false, message: err.message ?? 'Server error' },
+      { status: 500 },
     );
   }
 }
-export async function GET(request: NextRequest) {
+
+export async function POST(req: NextRequest) {
   try {
     const session = await getUserSession();
-    
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!session) {
+      return NextResponse.json(
+        { success: false, message: 'Unauthorized' },
+        { status: 401 },
+      );
     }
 
-    const userId = session.user.userId;
-    const ownerId = session.user.ownerId;
+    const formData = await req.formData();
 
-    const result = await getUserProfile(userId, ownerId);
+    const rawFields = {
+      fullname: formData.get('fullname') as string | null,
+      email: formData.get('email') as string | null,
+      phone: formData.get('phone') as string | null,
+      timezone: formData.get('timezone') as string | null,
+    };
 
-    return NextResponse.json(result);
-  } catch (error) {
-    console.error('API Error:', error);
+    const validated = updateProfileSchema.parse({
+      fullname: rawFields.fullname ?? '',
+      email: rawFields.email ?? '',
+      phone: rawFields.phone ?? '',
+      timezone: rawFields.timezone ?? 'IST',
+    });
+
+    const avatarEntry = formData.get('avatar');
+    let avatarFile: File | null = null;
+    if (avatarEntry && avatarEntry instanceof File && avatarEntry.size > 0) {
+      const maxSize = 10 * 1024 * 1024;  
+      if (avatarEntry.size > maxSize) {
+        return NextResponse.json(
+          { success: false, message: 'Avatar file must be under 10MB' },
+          { status: 400 },
+        );
+      }
+
+      const allowedTypes = [
+        'image/jpeg',
+        'image/png',
+        'image/webp',
+        'image/gif',
+      ];
+      if (!allowedTypes.includes(avatarEntry.type)) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: 'Avatar must be JPEG, PNG, WebP, or GIF',
+          },
+          { status: 400 },
+        );
+      }
+
+      avatarFile = avatarEntry;
+    }
+
+    const result = await updateProfile(
+      session.user.userId,
+      session.user.ownerId,
+      validated,
+      avatarFile,
+    );
+
+    if (!result.success) {
+      return NextResponse.json(
+        { success: false, message: result.message },
+        { status: 422 },
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      updateResult: true,
+      avatarUrl: result.avatarUrl ?? null,
+    });
+  } catch (err: any) {
+    if (err.name === 'ZodError') {
+      return NextResponse.json(
+        { success: false, errors: err.flatten().fieldErrors },
+        { status: 400 },
+      );
+    }
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Internal server error' },
-      { status: 500 }
+      { success: false, message: err.message ?? 'Server error' },
+      { status: 500 },
     );
   }
 }

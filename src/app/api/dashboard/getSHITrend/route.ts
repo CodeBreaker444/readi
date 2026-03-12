@@ -1,34 +1,21 @@
 import { getSHITrend } from '@/backend/services/dashboard/dashboard';
+import { getUserSession } from '@/lib/auth/server-session';
 import { NextRequest, NextResponse } from 'next/server';
-import z from 'zod';
 
-const SHITrendSchema = z.object({
-  owner_id: z.number().int().positive(),
-  user_id: z.number().int().positive(),
-  user_timezone: z.string().optional(),
-  user_profile_code: z.string().optional(),
-});
-
-export async function POST(req: NextRequest) {
+export async function POST(_req: NextRequest) {
   try {
-    const body = await req.json();
-    const validatedData = SHITrendSchema.parse(body);
-    const result = await getSHITrend(validatedData);
-    
+    const session = await getUserSession();
+    if (!session) {
+      return NextResponse.json({ code: 0, status: 'ERROR', message: 'Unauthorized' }, { status: 401 });
+    }
+
+    const result = await getSHITrend({
+      owner_id: session.user.ownerId,
+      user_id: session.user.userId,
+    });
+
     return NextResponse.json(result);
   } catch (error: any) {
-    if (error.name === 'ZodError') {
-      return NextResponse.json(
-        { 
-          code: 0, 
-          status: 'ERROR', 
-          message: 'Validation failed', 
-          errors: error.errors 
-        },
-        { status: 400 }
-      );
-    }
-    
     return NextResponse.json(
       { code: 0, status: 'ERROR', message: error.message || 'Internal server error' },
       { status: 500 }
