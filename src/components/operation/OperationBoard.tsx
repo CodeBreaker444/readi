@@ -8,6 +8,7 @@ import { Mission, MissionBoardData } from '../../config/types/operation';
 import { useTheme } from "../useTheme";
 import { BoardHeader } from "./BoardHeader";
 import { KanbanColumn } from "./KanbanColumn";
+import { MaintenanceCycleModal } from "./MaintenanceCycleModal";
 import { MissionDetailSheet } from "./MissionDetailSheet";
 
 type ColumnId = "scheduled" | "in_progress" | "done";
@@ -57,6 +58,7 @@ export function OperationBoard() {
     const [refreshing, setRefreshing] = useState(false);
     const [dragOverColumn, setDragOverColumn] = useState<ColumnId | null>(null);
     const [selectedMission, setSelectedMission] = useState<Mission | null>(null);
+    const [completedMission, setCompletedMission] = useState<Mission | null>(null);
     const dragMeta = useRef<{
         missionId: number;
         sourceColumn: ColumnId;
@@ -131,9 +133,11 @@ export function OperationBoard() {
             vehicle_id: mission.fk_vehicle_id,
             status_id: COLUMN_STATUS_MAP[target],
             workflow_mission_status: workflow,
+            pilot_id: mission.fk_pic_id, 
         });
 
         if (result.status === 422) {
+            toast.error('Failed to Change the status!')
             setBoard((prev) => ({
                 ...prev,
                 [target]: prev[target].filter((m) => m.mission_id !== missionId),
@@ -152,6 +156,10 @@ export function OperationBoard() {
                 target === "in_progress" ? "Mission started" : "Mission completed",
                 { description: `Mission #${missionId} moved to ${target.replace("_", " ")}` }
             );
+
+            if (target === "done" && mission) {
+                setCompletedMission(mission);
+            }
         }
     };
 
@@ -189,6 +197,19 @@ export function OperationBoard() {
                 onClose={() => setSelectedMission(null)}
                 isDark={isDark}
             />
+
+            {completedMission && (
+                <MaintenanceCycleModal
+                    open={!!completedMission}
+                    onClose={() => {
+                        setCompletedMission(null);
+                        loadBoard(true);
+                    }}
+                    toolId={completedMission.fk_vehicle_id}
+                    missionId={completedMission.mission_id}
+                    isDark={isDark}
+                />
+            )}
         </div>
     );
 }

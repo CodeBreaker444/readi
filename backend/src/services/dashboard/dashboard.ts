@@ -114,10 +114,8 @@ export async function getDashboardData(params: DashboardRequestParams) {
       readiMissionChart,
       readiMissionResultChart,
     ] = await Promise.all([
-      // Pass owner_id to getPilotTotal
       isPilot ? getPilotTotal(user_id, owner_id) : Promise.resolve(null),
 
-      // Pass owner_id as first argument everywhere
       getReadiTotalMission(owner_id, 0, pilotUserId, currentYear),
 
       getReadiLastNextMissionList(owner_id, 0, pilotUserId, 0, 10, user_timezone),

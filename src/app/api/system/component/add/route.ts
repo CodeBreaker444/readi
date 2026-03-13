@@ -6,6 +6,8 @@ import { z } from 'zod';
 const ComponentSchema = z.object({
   fk_tool_id: z.number().positive(),
   component_type: z.string().min(1, "Type is required"),
+  component_code: z.string().optional().nullable(),
+  component_desc: z.string().optional().nullable(),
   fk_tool_model_id: z.number().optional().nullable(),
   component_sn: z.string().optional().nullable(),
   component_activation_date: z.string().optional().nullable(),
@@ -13,8 +15,12 @@ const ComponentSchema = z.object({
   component_vendor: z.string().optional().nullable(),
   component_guarantee_day: z.number().optional().nullable(),
   component_status: z.string().default('OPERATIONAL'),
-  cc_platform: z.string(),
-  gcs_type: z.string()
+  cc_platform: z.string().optional().nullable(),
+  gcs_type: z.string().optional().nullable(),
+  maintenance_cycle: z.string().optional().nullable(),
+  maintenance_cycle_hour: z.number().optional().nullable(),
+  maintenance_cycle_day: z.number().optional().nullable(),
+  maintenance_cycle_flight: z.number().optional().nullable(),
 });
 
 export async function POST(req: NextRequest) {
@@ -40,6 +46,8 @@ export async function POST(req: NextRequest) {
     const result = await addComponent({
       fk_tool_id: d.fk_tool_id,
       component_type: d.component_type,
+      component_code: d.component_code,
+      component_desc: d.component_desc,
       component_sn: d.component_sn,
       component_activation_date: d.component_activation_date,
       component_purchase_date: d.component_purchase_date,
@@ -48,7 +56,11 @@ export async function POST(req: NextRequest) {
       component_status: d.component_status,
       fk_tool_model_id: d.fk_tool_model_id,
       cc_platform: d.cc_platform,
-      gcs_type: d.gcs_type
+      gcs_type: d.gcs_type,
+      maintenance_cycle: d.maintenance_cycle,
+      maintenance_cycle_hour: d.maintenance_cycle_hour,
+      maintenance_cycle_day: d.maintenance_cycle_day,
+      maintenance_cycle_flight: d.maintenance_cycle_flight,
     });
 
     return NextResponse.json(result);

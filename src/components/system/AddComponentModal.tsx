@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import axios from 'axios';
+import { RotateCcw } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -30,47 +31,91 @@ interface AddComponentModalProps {
   models: any[];
 }
 
+const INITIAL_FORM = {
+  fk_tool_id: '',
+  component_type: '',
+  component_code: '',
+  component_desc: '',
+  fk_tool_model_id: '',
+  component_sn: '',
+  cc_platform: '',
+  gcs_type: '',
+  component_activation_date: '',
+  component_purchase_date: '',
+  component_vendor: '',
+  component_guarantee_day: '',
+  component_status: 'OPERATIONAL',
+  fk_client_id: '',
+  maintenance_cycle: '',
+  maintenance_cycle_hour: '',
+  maintenance_cycle_day: '',
+  maintenance_cycle_flight: '',
+};
+
 export default function AddComponentModal({ open, onClose, onSuccess, tools, models }: AddComponentModalProps) {
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    fk_tool_id: '',
-    component_type: '',
-    component_code: '',
-    component_desc: '',
-    fk_tool_model_id: '',
-    component_sn: '',
-    cc_platform: '',
-    gcs_type: '',
-    component_activation_date: '',
-    component_purchase_date: '',
-    component_vendor: '',
-    component_guarantee_day: '',
-    component_status: 'OPERATIONAL',
-    fk_client_id: '',
-  });
+  const [formData, setFormData] = useState(INITIAL_FORM);
 
   useEffect(() => {
     if (open) {
-      setFormData({
-        fk_tool_id: '',
-        component_type: '',
-        component_code: '',
-        component_desc: '',
-        fk_tool_model_id: '',
-        component_sn: '',
-        cc_platform: '',
-        gcs_type: '',
-        component_activation_date: '',
-        component_purchase_date: '',
-        component_vendor: '',
-        component_guarantee_day: '',
-        component_status: 'OPERATIONAL',
-        fk_client_id: '',
-      });
+      setFormData(INITIAL_FORM);
     }
   }, [open]);
 
+  const handleChange = (field: string, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
 
+  const handleModelSelect = (modelId: string) => {
+    handleChange('fk_tool_model_id', modelId);
+    const model = models.find(m => String(m.tool_model_id) === modelId);
+    if (model) {
+      setFormData(prev => ({
+        ...prev,
+        fk_tool_model_id: modelId,
+        maintenance_cycle: model.maintenance_cycle || '',
+        maintenance_cycle_hour: model.maintenance_cycle_hour != null ? String(model.maintenance_cycle_hour) : '',
+        maintenance_cycle_day: model.maintenance_cycle_day != null ? String(model.maintenance_cycle_day) : '',
+        maintenance_cycle_flight: model.maintenance_cycle_flight != null ? String(model.maintenance_cycle_flight) : '',
+      }));
+    }
+  };
+
+  const handleResetMaintenanceToModel = () => {
+    const model = models.find(m => String(m.tool_model_id) === formData.fk_tool_model_id);
+    if (model) {
+      setFormData(prev => ({
+        ...prev,
+        maintenance_cycle: model.maintenance_cycle || '',
+        maintenance_cycle_hour: model.maintenance_cycle_hour != null ? String(model.maintenance_cycle_hour) : '',
+        maintenance_cycle_day: model.maintenance_cycle_day != null ? String(model.maintenance_cycle_day) : '',
+        maintenance_cycle_flight: model.maintenance_cycle_flight != null ? String(model.maintenance_cycle_flight) : '',
+      }));
+      toast.info('Maintenance cycle reset to model defaults');
+    }
+  };
+
+  const handleCycleChange = (value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      maintenance_cycle: value,
+      maintenance_cycle_hour: '',
+      maintenance_cycle_day: '',
+      maintenance_cycle_flight: '',
+    }));
+  };
+
+  const handleCycleInput = (field: string, value: string, max: number) => {
+    const num = Number(value);
+    if (value === '' || (num >= 0 && num <= max)) {
+      handleChange(field, value);
+    }
+  };
+
+  const showHours = formData.maintenance_cycle === 'HOURS' || formData.maintenance_cycle === 'MIXED';
+  const showDays = formData.maintenance_cycle === 'DAYS' || formData.maintenance_cycle === 'MIXED';
+  const showFlights = formData.maintenance_cycle === 'FLIGHTS' || formData.maintenance_cycle === 'MIXED';
+  const showNone = formData.maintenance_cycle === 'NONE';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,28 +137,17 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
         component_guarantee_day: formData.component_guarantee_day ? Number(formData.component_guarantee_day) : null,
         component_status: formData.component_status,
         fk_client_id: formData.fk_client_id ? Number(formData.fk_client_id) : null,
+        maintenance_cycle: formData.maintenance_cycle || null,
+        maintenance_cycle_hour: formData.maintenance_cycle_hour ? Number(formData.maintenance_cycle_hour) : null,
+        maintenance_cycle_day: formData.maintenance_cycle_day ? Number(formData.maintenance_cycle_day) : null,
+        maintenance_cycle_flight: formData.maintenance_cycle_flight ? Number(formData.maintenance_cycle_flight) : null,
       };
 
       const response = await axios.post('/api/system/component/add', payload);
 
       if (response.data.code === 1) {
         toast.success('Component added successfully');
-        setFormData({
-          fk_tool_id: '',
-          component_type: '',
-          component_code: '',
-          component_desc: '',
-          fk_tool_model_id: '',
-          component_sn: '',
-          cc_platform: '',
-          gcs_type: '',
-          component_activation_date: '',
-          component_purchase_date: '',
-          component_vendor: '',
-          component_guarantee_day: '',
-          component_status: 'OPERATIONAL',
-          fk_client_id: '',
-        });
+        setFormData(INITIAL_FORM);
         onSuccess();
       } else {
         toast.error(response.data.message || 'Failed to add component');
@@ -126,10 +160,6 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
     }
   };
 
-  const handleChange = (field: string, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="!max-w-[900px] w-[90vw] max-h-[90vh] overflow-y-auto">
@@ -140,20 +170,20 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="grid grid-cols-12 gap-3 overflow-visible">
             <div className="col-span-3 min-w-0">
-              <Label className='pb-2'>System *</Label>
+              <Label className="pb-2">System *</Label>
               <Select value={formData.fk_tool_id} onValueChange={(v) => handleChange('fk_tool_id', v)}>
                 <SelectTrigger className="w-full truncate"><SelectValue placeholder="Select System" /></SelectTrigger>
                 <SelectContent className="z-50 max-h-60 overflow-y-auto">
                   {tools.map((tool: any) => (
                     <SelectItem key={tool.tool_id} value={tool.tool_id.toString()}>
-                      {tool.tool_code} 
+                      {tool.tool_code}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="col-span-3">
-              <Label className='pb-2'>Component Type *</Label>
+              <Label className="pb-2">Component Type *</Label>
               <Select value={formData.component_type} onValueChange={(v) => handleChange('component_type', v)}>
                 <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
                 <SelectContent>
@@ -164,19 +194,19 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
               </Select>
             </div>
             <div className="col-span-3">
-              <Label className='pb-2'>Code</Label>
+              <Label className="pb-2">Code</Label>
               <Input value={formData.component_code} onChange={(e) => handleChange('component_code', e.target.value)} placeholder="e.g. BATT-01" />
             </div>
             <div className="col-span-3">
-              <Label className='pb-2'>Serial Number</Label>
+              <Label className="pb-2">Serial Number</Label>
               <Input value={formData.component_sn} onChange={(e) => handleChange('component_sn', e.target.value)} />
             </div>
           </div>
 
           <div className="grid grid-cols-12 gap-3 overflow-visible">
             <div className="col-span-3 min-w-0">
-              <Label className='pb-2'>Brand / Model</Label>
-              <Select value={formData.fk_tool_model_id} onValueChange={(v) => handleChange('fk_tool_model_id', v)}>
+              <Label className="pb-2">Brand / Model</Label>
+              <Select value={formData.fk_tool_model_id} onValueChange={handleModelSelect}>
                 <SelectTrigger className="w-full truncate"><SelectValue placeholder="Select Model" /></SelectTrigger>
                 <SelectContent>
                   {models.map((m: any) => (
@@ -188,59 +218,120 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
               </Select>
             </div>
             <div className="col-span-9">
-              <Label className='pb-2'>Description</Label>
+              <Label className="pb-2">Description</Label>
               <Input value={formData.component_desc} onChange={(e) => handleChange('component_desc', e.target.value)} placeholder="Component description" />
             </div>
           </div>
 
-          <div className="grid grid-cols-12 gap-3 overflow-visible">
-            <div className="col-span-3">
-              <Label className='pb-2'>C2 Platform</Label>
-              <Select value={formData.cc_platform} onValueChange={(v) => handleChange('cc_platform', v)}>
-                <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="_FLYTBASE">Flytbase</SelectItem>
-                  <SelectItem value="_VOTIX">Votix</SelectItem>
-                  <SelectItem value="_FLIGHTHUB">DJI FlightHub</SelectItem>
-                  <SelectItem value="_APP">APP on GCS</SelectItem>
-                </SelectContent>
-              </Select>
+          {formData.component_type === 'DRONE' && (
+            <div className="grid grid-cols-12 gap-3 overflow-visible">
+              <div className="col-span-3">
+                <Label className="pb-2">C2 Platform</Label>
+                <Select value={formData.cc_platform} onValueChange={(v) => handleChange('cc_platform', v)}>
+                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_FLYTBASE">Flytbase</SelectItem>
+                    <SelectItem value="_VOTIX">Votix</SelectItem>
+                    <SelectItem value="_FLIGHTHUB">DJI FlightHub</SelectItem>
+                    <SelectItem value="_APP">APP on GCS</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="col-span-3">
+                <Label className="pb-2">GCS</Label>
+                <Select value={formData.gcs_type} onValueChange={(v) => handleChange('gcs_type', v)}>
+                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_DOCK">Docking Station</SelectItem>
+                    <SelectItem value="_RC">Remote Control</SelectItem>
+                    <SelectItem value="_GCS">Ground Control Station</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div className="col-span-3">
-              <Label className='pb-2'>GCS</Label>
-              <Select value={formData.gcs_type} onValueChange={(v) => handleChange('gcs_type', v)}>
-                <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="_DOCK">Docking Station</SelectItem>
-                  <SelectItem value="_RC">Remote Control</SelectItem>
-                  <SelectItem value="_GCS">Ground Control Station</SelectItem>
-                </SelectContent>
-              </Select>
+          )}
+
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm font-medium text-muted-foreground">Maintenance Cycle</p>
+              {formData.fk_tool_model_id && (
+                <button
+                  type="button"
+                  onClick={handleResetMaintenanceToModel}
+                  className="inline-flex items-center gap-1 text-xs text-violet-600 hover:text-violet-500 transition-colors"
+                >
+                  <RotateCcw className="h-3 w-3" />
+                  Reset to model defaults
+                </button>
+              )}
+            </div>
+            <div className="grid grid-cols-12 gap-3 items-end">
+              <div className="col-span-3">
+                <Label className="pb-2">Cycle Type</Label>
+                <Select value={formData.maintenance_cycle} onValueChange={handleCycleChange}>
+                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="HOURS">Hours</SelectItem>
+                    <SelectItem value="DAYS">Days</SelectItem>
+                    <SelectItem value="FLIGHTS">Flights</SelectItem>
+                    <SelectItem value="MIXED">Mixed</SelectItem>
+                    <SelectItem value="NONE">None</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {showNone && (
+                <div className="col-span-9 flex items-end">
+                  <span className="inline-flex items-center px-3 py-2 rounded-md bg-muted text-muted-foreground text-sm">
+                    No maintenance cycle required
+                  </span>
+                </div>
+              )}
+              {showHours && (
+                <div className="col-span-2">
+                  <Label className="pb-2">Hours <span className="text-xs text-muted-foreground">(0–24)</span></Label>
+                  <Input type="number" min={0} max={24} value={formData.maintenance_cycle_hour}
+                    onChange={(e) => handleCycleInput('maintenance_cycle_hour', e.target.value, 24)} placeholder="0–24" />
+                </div>
+              )}
+              {showDays && (
+                <div className="col-span-2">
+                  <Label className="pb-2">Days <span className="text-xs text-muted-foreground">(0–30)</span></Label>
+                  <Input type="number" min={0} max={30} value={formData.maintenance_cycle_day}
+                    onChange={(e) => handleCycleInput('maintenance_cycle_day', e.target.value, 30)} placeholder="0–30" />
+                </div>
+              )}
+              {showFlights && (
+                <div className="col-span-2">
+                  <Label className="pb-2">Flights <span className="text-xs text-muted-foreground">(0–10)</span></Label>
+                  <Input type="number" min={0} max={10} value={formData.maintenance_cycle_flight}
+                    onChange={(e) => handleCycleInput('maintenance_cycle_flight', e.target.value, 10)} placeholder="0–10" />
+                </div>
+              )}
             </div>
           </div>
 
           <div className="grid grid-cols-12 gap-3 overflow-visible">
             <div className="col-span-3">
-              <Label className='pb-2'>Activation Date</Label>
+              <Label className="pb-2">Activation Date</Label>
               <Input type="date" value={formData.component_activation_date} onChange={(e) => handleChange('component_activation_date', e.target.value)} />
             </div>
             <div className="col-span-3">
-              <Label className='pb-2'>Purchase Date</Label>
+              <Label className="pb-2">Purchase Date</Label>
               <Input type="date" value={formData.component_purchase_date} onChange={(e) => handleChange('component_purchase_date', e.target.value)} />
             </div>
             <div className="col-span-3">
-              <Label className='pb-2'>Vendor</Label>
+              <Label className="pb-2">Vendor</Label>
               <Input value={formData.component_vendor} onChange={(e) => handleChange('component_vendor', e.target.value)} />
             </div>
             <div className="col-span-3">
-              <Label className='pb-2'>Guarantee (days)</Label>
+              <Label className="pb-2">Guarantee (days)</Label>
               <Input type="number" value={formData.component_guarantee_day} onChange={(e) => handleChange('component_guarantee_day', e.target.value)} />
             </div>
           </div>
 
           <div className="grid grid-cols-12 gap-3 overflow-visible">
             <div className="col-span-3">
-              <Label className='pb-2'>Status *</Label>
+              <Label className="pb-2">Status *</Label>
               <Select value={formData.component_status} onValueChange={(v) => handleChange('component_status', v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -255,7 +346,7 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-            <Button type="submit" className='bg-violet-600 hover:bg-violet-700' disabled={loading}>{loading ? 'Adding...' : 'Add Component'}</Button>
+            <Button type="submit" className="bg-violet-600 hover:bg-violet-700" disabled={loading}>{loading ? 'Adding...' : 'Add Component'}</Button>
           </div>
         </form>
       </DialogContent>

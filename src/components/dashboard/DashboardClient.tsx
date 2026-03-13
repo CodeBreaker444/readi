@@ -1,11 +1,11 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { Clock, Navigation, Plane, TrendingDown, TrendingUp, Users } from 'lucide-react';
+import { Clock, Navigation, Plane, TrendingUp, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import {
-    Bar, BarChart, CartesianGrid, Cell, Legend,
-    Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis
+  Bar, BarChart, CartesianGrid, Cell, Legend,
+  Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis
 } from 'recharts';
 import { useTheme } from '../useTheme';
 import DashboardSkeleton from './DashboardSkeleton';
@@ -31,61 +31,51 @@ const STATS = (data: any) => [
   {
     label: 'Total Missions',
     value: data?.readi_mission_total?.total_mission?.toString() || '0',
-    trend: 'up' as const,
-    pct: '+12%',
     icon: Plane,
     accent: '#6366f1',
     iconBg: 'bg-indigo-500/10',
     iconColor: 'text-indigo-500',
-    footer: 'from last month',
-    footerColor: 'text-emerald-500',
+    footer: `${new Date().getFullYear()} year`,
+    footerColor: 'text-slate-400',
   },
   {
     label: 'Logged Drones',
     value: data?.readi_mission_total?.total_drones_used?.toString() || '0',
-    trend: 'up' as const,
-    pct: '+8%',
     icon: Navigation,
     accent: '#06b6d4',
     iconBg: 'bg-cyan-500/10',
     iconColor: 'text-cyan-500',
-    footer: 'from last month',
-    footerColor: 'text-emerald-500',
+    footer: `${new Date().getFullYear()} year`,
+    footerColor: 'text-slate-400',
   },
   {
     label: 'Hours Flown',
     value: data?.pilot_total?.total_hours?.toString() || data?.readi_mission_total?.total_hours?.toString() || '0',
-    trend: 'down' as const,
-    pct: '-3%',
     icon: Clock,
     accent: '#ec4899',
     iconBg: 'bg-pink-500/10',
     iconColor: 'text-pink-500',
-    footer: 'from last month',
-    footerColor: 'text-red-400',
+    footer: `${new Date().getFullYear()} year`,
+    footerColor: 'text-slate-400',
   },
   {
     label: 'Km Flown',
     value: Math.round((data?.pilot_total?.total_distance || data?.readi_mission_total?.total_meter || 0) / 1000).toString(),
-    trend: 'up' as const,
-    pct: '+15%',
     icon: TrendingUp,
     accent: '#f59e0b',
     iconBg: 'bg-amber-500/10',
     iconColor: 'text-amber-500',
-    footer: 'from last month',
-    footerColor: 'text-emerald-500',
+    footer: `${new Date().getFullYear()} year`,
+    footerColor: 'text-slate-400',
   },
   {
     label: 'Customers Served',
-    value: '48',
-    trend: 'up' as const,
-    pct: null,
+    value: data?.readi_mission_total?.total_clients_served?.toString() || '0',
     icon: Users,
     accent: '#f97316',
     iconBg: 'bg-orange-500/10',
     iconColor: 'text-orange-500',
-    footer: '2026 year',
+    footer: `${new Date().getFullYear()} year`,
     footerColor: 'text-slate-400',
   },
 ];
@@ -200,7 +190,6 @@ export default function DashboardClient({ ownerId, userProfileCode, userId, init
         </div>
       </div>
 
-      {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
         {stats.map((s, i) => {
           const Icon = s.icon;
@@ -221,14 +210,15 @@ export default function DashboardClient({ ownerId, userProfileCode, userId, init
                 {s.value}
               </div>
 
-              <div className="flex items-center gap-1.5">
+              {/* <div className="flex items-center gap-1.5">
                 {s.trend === 'up'
                   ? <TrendingUp className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
                   : <TrendingDown className="h-3.5 w-3.5 text-red-400 shrink-0" />}
                 <span className={cn('text-xs font-medium', s.footerColor)}>
                   {s.pct ? `${s.pct} ${s.footer}` : s.footer}
                 </span>
-              </div>
+              </div> */}
+              {/* TODO  */}
             </div>
           );
         })}

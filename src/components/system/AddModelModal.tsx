@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
 interface AddModelModalProps {
@@ -21,12 +21,27 @@ interface AddModelModalProps {
   onSuccess: () => void;
 }
 
+const AIRCRAFT_SUBTYPES = [
+  { value: 'MULTIROTOR',    label: 'Multirotor / Drone' },
+  { value: 'FIXED_WING',   label: 'Fixed Wing' },
+  { value: 'VTOL',         label: 'VTOL' },
+  { value: 'HELICOPTER',   label: 'Helicopter' },
+  { value: 'SINGLE_ROTOR', label: 'Single Rotor' },
+];
+
+const DOCK_SUBTYPES = [
+  { value: 'INDOOR',    label: 'Indoor Dock' },
+  { value: 'OUTDOOR',   label: 'Outdoor Dock' },
+  { value: 'MOBILE',    label: 'Mobile Dock' },
+  { value: 'PORTABLE',  label: 'Portable Dock' },
+];
+
 const INITIAL_FORM = {
-  tool_type_id: '',
+  model_category: '',
+  model_subtype: '',
   model_code: '',
   model_name: '',
   manufacturer: '',
-  model_type: '',
   version: '',
   max_flight_time: '',
   max_speed: '',
@@ -50,40 +65,22 @@ const INITIAL_FORM = {
 
 export default function AddModelModal({ open, onClose, onSuccess }: AddModelModalProps) {
   const [loading, setLoading] = useState(false);
-  const [toolTypes, setToolTypes] = useState<any[]>([]);
   const [formData, setFormData] = useState(INITIAL_FORM);
 
   useEffect(() => {
     if (open) {
       setFormData(INITIAL_FORM);
-      fetchToolTypes();
     }
   }, [open]);
-
-  const fetchToolTypes = async () => {
-    try {
-      const response = await fetch('/api/system/type/list', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ active: 'Y' }),
-      });
-      const result = await response.json();
-      if (result.code === 1) {
-        setToolTypes(result.data ?? []);
-      } else {
-        toast.error('Failed to fetch tool types');
-      }
-    } catch (error) {
-      console.error('Error fetching tool types:', error);
-      toast.error('Error fetching tool types');
-    }
-  };
 
   const handleChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  // When cycle type changes, clear unrelated fields
+  const handleCategoryChange = (value: string) => {
+    setFormData((prev) => ({ ...prev, model_category: value, model_subtype: '' }));
+  };
+
   const handleCycleChange = (value: string) => {
     setFormData((prev) => ({
       ...prev,
@@ -106,10 +103,17 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
   const showFlights  = formData.maintenance_cycle === 'FLIGHTS' || formData.maintenance_cycle === 'MIXED';
   const showNone     = formData.maintenance_cycle === 'NONE';
 
+  const subtypeOptions = formData.model_category === 'AIRCRAFT'
+    ? AIRCRAFT_SUBTYPES
+    : formData.model_category === 'DOCK'
+    ? DOCK_SUBTYPES
+    : [];
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.tool_type_id) { toast.error('Please select a tool type'); return; }
+    if (!formData.model_category) { toast.error('Please select a component type'); return; }
+    if (!formData.model_subtype)   { toast.error('Please select a sub-type'); return; }
     if (!formData.model_code.trim()) { toast.error('Model code (Serie) is required'); return; }
     if (!formData.model_name.trim()) { toast.error('Model name is required'); return; }
     if (!formData.manufacturer.trim()) { toast.error('Manufacturer (Brand) is required'); return; }
@@ -117,6 +121,8 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
     setLoading(true);
 
     try {
+      const combinedModelType = `${formData.model_category}_${formData.model_subtype}`;
+
       const extendedSpecs = [
         formData.version              && `Version: ${formData.version}`,
         formData.mtom                 && `MTOM: ${formData.mtom} kg`,
@@ -138,11 +144,10 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
         .join('\n');
 
       const payload = {
-        tool_type_id:    formData.tool_type_id,
         model_code:      formData.model_code.trim(),
         model_name:      formData.model_name.trim(),
         manufacturer:    formData.manufacturer.trim(),
-        model_type:      formData.model_type || undefined,
+        model_type:      combinedModelType,
         specifications:  extendedSpecs || undefined,
         max_flight_time: formData.max_flight_time ? Number(formData.max_flight_time) : undefined,
         max_speed:       formData.max_speed       ? Number(formData.max_speed)       : undefined,
@@ -184,16 +189,26 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
             <div className="grid grid-cols-12 gap-3">
               <div className="col-span-3">
                 <Label className="pb-2">Component Type *</Label>
-                <Select value={formData.model_type} onValueChange={(v) => handleChange('model_type', v)}>
-                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                <Select value={formData.model_category} onValueChange={handleCategoryChange}>
+                  <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="BATTERY">Battery</SelectItem>
-                    <SelectItem value="RC">Remote Control</SelectItem>
-                    <SelectItem value="DOCK">Docking Station</SelectItem>
-                    <SelectItem value="PAYLOAD">Payload</SelectItem>
-                    <SelectItem value="FTS">Flight Termination System</SelectItem>
-                    <SelectItem value="PARACHUTE">Parachute</SelectItem>
-                    <SelectItem value="OTHER">Other</SelectItem>
+                    <SelectItem value="AIRCRAFT">Aircraft</SelectItem>
+                    <SelectItem value="DOCK">Dock</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="col-span-3">
+                <Label className="pb-2">Sub-Type *</Label>
+                <Select
+                  value={formData.model_subtype}
+                  onValueChange={(v) => handleChange('model_subtype', v)}
+                  disabled={!formData.model_category}
+                >
+                  <SelectTrigger><SelectValue placeholder={formData.model_category ? 'Select sub-type' : 'Select type first'} /></SelectTrigger>
+                  <SelectContent>
+                    {subtypeOptions.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -205,6 +220,8 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
                 <Label className="pb-2">Serie (Model Code) *</Label>
                 <Input value={formData.model_code} onChange={(e) => handleChange('model_code', e.target.value)} required />
               </div>
+            </div>
+            <div className="grid grid-cols-12 gap-3 mt-3">
               <div className="col-span-3">
                 <Label className="pb-2">Model (Name) *</Label>
                 <Input value={formData.model_name} onChange={(e) => handleChange('model_name', e.target.value)} required />
@@ -215,32 +232,15 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
           <div>
             <p className="text-sm font-medium text-muted-foreground mb-2">Classification & Weight</p>
             <div className="grid grid-cols-12 gap-3">
-              <div className="col-span-3">
-                <Label className="pb-2">System Type *</Label>
-                <Select value={formData.tool_type_id} onValueChange={(v) => handleChange('tool_type_id', v)}>
-                  <SelectTrigger><SelectValue placeholder="Select tool type" /></SelectTrigger>
-                  <SelectContent>
-                    {toolTypes.length > 0 ? (
-                      toolTypes.map((type: any) => (
-                        <SelectItem key={type.tool_type_id} value={type.tool_type_id.toString()}>
-                          {type.tool_type_name}
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <div className="px-2 py-1.5 text-sm text-muted-foreground">No tool types available</div>
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="col-span-3">
+              <div className="col-span-4">
                 <Label className="pb-2">Version</Label>
                 <Input value={formData.version} onChange={(e) => handleChange('version', e.target.value)} />
               </div>
-              <div className="col-span-3">
+              <div className="col-span-4">
                 <Label className="pb-2">MTOM (kg)</Label>
                 <Input type="number" step="0.01" value={formData.mtom} onChange={(e) => handleChange('mtom', e.target.value)} />
               </div>
-              <div className="col-span-3">
+              <div className="col-span-4">
                 <Label className="pb-2">Weight (kg)</Label>
                 <Input type="number" step="0.01" value={formData.weight} onChange={(e) => handleChange('weight', e.target.value)} />
               </div>
@@ -323,7 +323,6 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
                 </Select>
               </div>
 
-              {/* NONE — just a readonly badge */}
               {showNone && (
                 <div className="col-span-6 flex items-end">
                   <span className="inline-flex items-center px-3 py-2 rounded-md bg-muted text-muted-foreground text-sm">
@@ -332,7 +331,6 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
                 </div>
               )}
 
-              {/* HOURS only */}
               {showHours && (
                 <div className="col-span-2">
                   <Label className="pb-2">
@@ -349,7 +347,6 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
                 </div>
               )}
 
-              {/* DAYS only */}
               {showDays && (
                 <div className="col-span-2">
                   <Label className="pb-2">
@@ -366,7 +363,6 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
                 </div>
               )}
 
-              {/* FLIGHTS only */}
               {showFlights && (
                 <div className="col-span-2">
                   <Label className="pb-2">
@@ -415,7 +411,7 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
             <Button
               type="submit"
               className="bg-violet-600 hover:bg-violet-700"
-              disabled={loading || !formData.tool_type_id}
+              disabled={loading}
             >
               {loading ? 'Adding...' : 'Add Model'}
             </Button>

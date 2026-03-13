@@ -4,20 +4,23 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
 const schema = z.object({
-  fk_tool_id:                 z.number(),
-  component_type:             z.string().min(1),
-  component_code:             z.string().optional().nullable(),
-  component_desc:             z.string().optional().nullable(),
-  fk_tool_model_id:           z.number().optional().nullable(),
-  component_sn:               z.string().optional().nullable(),
-  cc_platform:                z.string().optional().nullable(),
-  gcs_type:                   z.string().optional().nullable(),
-  component_activation_date:  z.string().optional().nullable(),
-  component_purchase_date:    z.string().optional().nullable(),
-  component_vendor:           z.string().optional().nullable(),
-  component_guarantee_day:    z.number().optional().nullable(),
-  component_status:           z.string().optional(),
-  fk_client_id:               z.number().optional().nullable(),
+  fk_tool_id: z.number().positive(),
+  component_type: z.string().min(1),
+  component_code: z.string().optional().nullable(),
+  component_desc: z.string().optional().nullable(),
+  fk_tool_model_id: z.number().optional().nullable(),
+  component_sn: z.string().optional().nullable(),
+  component_activation_date: z.string().optional().nullable(),
+  component_purchase_date: z.string().optional().nullable(),
+  component_vendor: z.string().optional().nullable(),
+  component_guarantee_day: z.number().optional().nullable(),
+  component_status: z.string().default('OPERATIONAL'),
+  cc_platform: z.string().optional().nullable(),
+  gcs_type: z.string().optional().nullable(),
+  maintenance_cycle: z.string().optional().nullable(),
+  maintenance_cycle_hour: z.number().optional().nullable(),
+  maintenance_cycle_day: z.number().optional().nullable(),
+  maintenance_cycle_flight: z.number().optional().nullable(),
 });
 
 export async function POST(
@@ -41,10 +44,7 @@ export async function POST(
       );
     }
 
-    const result = await updateComponent(Number(id), {
-      ...parsed.data,
-      component_name: parsed.data.component_code || parsed.data.component_type,
-    });
+    const result = await updateComponent(Number(id), parsed.data);
     return NextResponse.json(result);
   } catch (error: any) {
     return NextResponse.json({ code: 0, status: 'ERROR', message: error.message }, { status: 500 });

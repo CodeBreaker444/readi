@@ -19,12 +19,34 @@ interface EditModelModalProps {
   initialModelId?: number | null;
 }
 
+const AIRCRAFT_SUBTYPES = [
+  { value: 'MULTIROTOR',    label: 'Multirotor / Drone' },
+  { value: 'FIXED_WING',   label: 'Fixed Wing' },
+  { value: 'VTOL',         label: 'VTOL' },
+  { value: 'HELICOPTER',   label: 'Helicopter' },
+  { value: 'SINGLE_ROTOR', label: 'Single Rotor' },
+];
+
+const DOCK_SUBTYPES = [
+  { value: 'INDOOR',   label: 'Indoor Dock' },
+  { value: 'OUTDOOR',  label: 'Outdoor Dock' },
+  { value: 'MOBILE',   label: 'Mobile Dock' },
+  { value: 'PORTABLE', label: 'Portable Dock' },
+];
+
+function splitModelType(modelType: string): { category: string; subtype: string } {
+  if (!modelType) return { category: '', subtype: '' };
+  const idx = modelType.indexOf('_');
+  if (idx === -1) return { category: modelType, subtype: '' };
+  return { category: modelType.slice(0, idx), subtype: modelType.slice(idx + 1) };
+}
+
 const EMPTY_FORM = {
-  tool_type_id: '',
+  model_category: '',
+  model_subtype: '',
   model_code: '',
   model_name: '',
   manufacturer: '',
-  model_type: '',
   version: '',
   max_flight_time: '',
   max_speed: '',
@@ -51,13 +73,11 @@ export default function EditModelModal({ open, toolId, onClose, onSuccess, initi
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(false);
   const [allModels, setAllModels] = useState<any[]>([]);
-  const [toolTypes, setToolTypes] = useState<any[]>([]);
   const [selectedModelId, setSelectedModelId] = useState<string>('');
   const [formData, setFormData] = useState(EMPTY_FORM);
 
   useEffect(() => {
     if (open) {
-      fetchToolTypes();
       if (initialModelId) {
         fetchAllModelsAndSelect(initialModelId);
       } else if (toolId) {
@@ -73,20 +93,6 @@ export default function EditModelModal({ open, toolId, onClose, onSuccess, initi
       setFormData(EMPTY_FORM);
     }
   }, [open, toolId, initialModelId]);
-
-  const fetchToolTypes = async () => {
-    try {
-      const response = await fetch('/api/system/type/list', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ active: 'Y' }),
-      });
-      const result = await response.json();
-      if (result.code === 1) setToolTypes(result.data ?? []);
-    } catch {
-      console.error('Error fetching tool types');
-    }
-  };
 
   const fetchModelsForTool = async () => {
     setFetching(true);
@@ -194,13 +200,14 @@ export default function EditModelModal({ open, toolId, onClose, onSuccess, initi
     const specs = model.specifications || {};
     const notes = typeof specs.notes === 'string' ? specs.notes : '';
     const parsed = notes ? parseNotes(notes) : {};
+    const { category, subtype } = splitModelType(model.model_type || '');
 
     setFormData({
-      tool_type_id: model.fk_tool_type_id ? String(model.fk_tool_type_id) : '',
+      model_category: category,
+      model_subtype: subtype,
       manufacturer: model.factory_type || '',
       model_code: model.factory_serie || '',
       model_name: model.factory_model || '',
-      model_type: model.model_type || '',
       version: model.version || parsed.version || '',
       max_flight_time: model.max_flight_time ? String(model.max_flight_time) : (specs.max_flight_time ? String(specs.max_flight_time) : ''),
       max_speed: model.max_speed ? String(model.max_speed) : (specs.max_speed ? String(specs.max_speed) : ''),
@@ -232,6 +239,9 @@ export default function EditModelModal({ open, toolId, onClose, onSuccess, initi
   const handleChange = (field: string, value: string) =>
     setFormData(prev => ({ ...prev, [field]: value }));
 
+  const handleCategoryChange = (value: string) =>
+    setFormData(prev => ({ ...prev, model_category: value, model_subtype: '' }));
+
   const handleCycleChange = (value: string) => {
     setFormData(prev => ({
       ...prev,
@@ -252,15 +262,25 @@ export default function EditModelModal({ open, toolId, onClose, onSuccess, initi
   const showFlights = formData.maintenance_cycle === 'FLIGHTS' || formData.maintenance_cycle === 'MIXED';
   const showNone    = formData.maintenance_cycle === 'NONE';
 
+  const subtypeOptions = formData.model_category === 'AIRCRAFT'
+    ? AIRCRAFT_SUBTYPES
+    : formData.model_category === 'DOCK'
+    ? DOCK_SUBTYPES
+    : [];
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedModelId) { toast.error('Please select a model'); return; }
+    if (!formData.model_category) { toast.error('Please select a component type'); return; }
+    if (!formData.model_subtype)   { toast.error('Please select a sub-type'); return; }
     if (!formData.manufacturer.trim()) { toast.error('Manufacturer (Brand) is required'); return; }
     if (!formData.model_code.trim()) { toast.error('Model code (Serie) is required'); return; }
     if (!formData.model_name.trim()) { toast.error('Model name is required'); return; }
 
     setLoading(true);
     try {
+      const combinedModelType = `${formData.model_category}_${formData.model_subtype}`;
+
       const extendedSpecs = [
         formData.version              && `Version: ${formData.version}`,
         formData.mtom                 && `MTOM: ${formData.mtom} kg`,
@@ -282,11 +302,10 @@ export default function EditModelModal({ open, toolId, onClose, onSuccess, initi
         .join('\n');
 
       const payload = {
-        tool_type_id:    formData.tool_type_id || undefined,
         manufacturer:    formData.manufacturer.trim(),
         model_code:      formData.model_code.trim(),
         model_name:      formData.model_name.trim(),
-        model_type:      formData.model_type || null,
+        model_type:      combinedModelType || null,
         notes:           extendedSpecs || null,
         max_flight_time: formData.max_flight_time ? Number(formData.max_flight_time) : null,
         max_speed:       formData.max_speed       ? Number(formData.max_speed)       : null,
@@ -371,16 +390,28 @@ export default function EditModelModal({ open, toolId, onClose, onSuccess, initi
                   <div className="grid grid-cols-12 gap-3">
                     <div className="col-span-3">
                       <Label className={labelCls}>Component Type *</Label>
-                      <Select value={formData.model_type} onValueChange={v => handleChange('model_type', v)}>
-                        <SelectTrigger className={selectTriggerCls}><SelectValue placeholder="Select" /></SelectTrigger>
+                      <Select value={formData.model_category} onValueChange={handleCategoryChange}>
+                        <SelectTrigger className={selectTriggerCls}><SelectValue placeholder="Select type" /></SelectTrigger>
                         <SelectContent className={selectContentCls}>
-                          <SelectItem value="BATTERY">Battery</SelectItem>
-                          <SelectItem value="RC">Remote Control</SelectItem>
-                          <SelectItem value="DOCK">Docking Station</SelectItem>
-                          <SelectItem value="PAYLOAD">Payload</SelectItem>
-                          <SelectItem value="FTS">Flight Termination System</SelectItem>
-                          <SelectItem value="PARACHUTE">Parachute</SelectItem>
-                          <SelectItem value="OTHER">Other</SelectItem>
+                          <SelectItem value="AIRCRAFT">Aircraft</SelectItem>
+                          <SelectItem value="DOCK">Dock</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="col-span-3">
+                      <Label className={labelCls}>Sub-Type *</Label>
+                      <Select
+                        value={formData.model_subtype}
+                        onValueChange={v => handleChange('model_subtype', v)}
+                        disabled={!formData.model_category}
+                      >
+                        <SelectTrigger className={selectTriggerCls}>
+                          <SelectValue placeholder={formData.model_category ? 'Select sub-type' : 'Select type first'} />
+                        </SelectTrigger>
+                        <SelectContent className={selectContentCls}>
+                          {subtypeOptions.map(opt => (
+                            <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -392,6 +423,8 @@ export default function EditModelModal({ open, toolId, onClose, onSuccess, initi
                       <Label className={labelCls}>Serie (Model Code) *</Label>
                       <Input className={inputCls} value={formData.model_code} onChange={e => handleChange('model_code', e.target.value)} required />
                     </div>
+                  </div>
+                  <div className="grid grid-cols-12 gap-3 mt-3">
                     <div className="col-span-3">
                       <Label className={labelCls}>Model (Name) *</Label>
                       <Input className={inputCls} value={formData.model_name} onChange={e => handleChange('model_name', e.target.value)} required />
@@ -403,32 +436,15 @@ export default function EditModelModal({ open, toolId, onClose, onSuccess, initi
                 <div>
                   <p className={sectionLabelCls}>Classification & Weight</p>
                   <div className="grid grid-cols-12 gap-3">
-                    <div className="col-span-3">
-                      <Label className={labelCls}>System Type *</Label>
-                      <Select value={formData.tool_type_id} onValueChange={v => handleChange('tool_type_id', v)}>
-                        <SelectTrigger className={selectTriggerCls}><SelectValue placeholder="Select tool type" /></SelectTrigger>
-                        <SelectContent className={selectContentCls}>
-                          {toolTypes.length > 0 ? (
-                            toolTypes.map((type: any) => (
-                              <SelectItem key={type.tool_type_id} value={type.tool_type_id.toString()}>
-                                {type.tool_type_name}
-                              </SelectItem>
-                            ))
-                          ) : (
-                            <div className="px-2 py-1.5 text-sm text-muted-foreground">No tool types available</div>
-                          )}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="col-span-3">
+                    <div className="col-span-4">
                       <Label className={labelCls}>Version</Label>
                       <Input className={inputCls} value={formData.version} onChange={e => handleChange('version', e.target.value)} />
                     </div>
-                    <div className="col-span-3">
+                    <div className="col-span-4">
                       <Label className={labelCls}>MTOM (kg)</Label>
                       <Input type="number" step="0.01" className={inputCls} value={formData.mtom} onChange={e => handleChange('mtom', e.target.value)} />
                     </div>
-                    <div className="col-span-3">
+                    <div className="col-span-4">
                       <Label className={labelCls}>Weight (kg)</Label>
                       <Input type="number" step="0.01" className={inputCls} value={formData.weight} onChange={e => handleChange('weight', e.target.value)} />
                     </div>

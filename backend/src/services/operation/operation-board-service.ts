@@ -1,5 +1,6 @@
  import { supabase } from "@/backend/database/database";
 import { Mission, MissionBoardData, UpdateMissionStatusPayload } from "@/config/types/operation";
+import { getToolMaintenanceStatus } from "./maintenance-cycle-service";
 
 
 function buildMissionSelect() {
@@ -113,6 +114,25 @@ export async function getMissionBoard(
     if (mission.mission_status_code === "00") scheduled.push(mission);
     else if (mission.mission_status_code === "05") in_progress.push(mission);
     else if (mission.mission_status_code === "10") done.push(mission);
+  }
+
+  // Attach maintenance status per vehicle
+  const allMissions = [...scheduled, ...in_progress, ...done];
+  const uniqueToolIds = [...new Set(allMissions.map(m => m.fk_vehicle_id).filter(Boolean))];
+
+  const statusMap: Record<number, string> = {};
+  await Promise.all(
+    uniqueToolIds.map(async (toolId) => {
+      try {
+        statusMap[toolId] = await getToolMaintenanceStatus(toolId);
+      } catch {
+        statusMap[toolId] = "OK";
+      }
+    })
+  );
+
+  for (const m of allMissions) {
+    m.maintenance_status = (statusMap[m.fk_vehicle_id] as Mission['maintenance_status']) ?? "OK";
   }
 
   return { scheduled, in_progress, done };

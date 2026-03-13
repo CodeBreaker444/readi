@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ ownerId: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getUserSession();
@@ -22,10 +22,10 @@ export async function POST(
 
   
     const body = await request.json();
-    const { ownerId } = await params;
+    const { id } = await params;
 
     const dashboardData = await getDashboardData({
-      owner_id: parseInt(ownerId),
+      owner_id: parseInt(id),
       user_id: session.user.userId,
       user_timezone: body?.user_timezone || 'UTC',
       user_profile_code: session.user.role || '',

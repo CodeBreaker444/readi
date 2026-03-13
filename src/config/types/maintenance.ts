@@ -182,3 +182,37 @@ export interface NewTicketForm {
   assigned_to: number;
   note: string;
 }
+
+export interface ComponentMaintenanceInfo {
+  component_id: number;
+  component_type: string | null;
+  component_code: string | null;
+  serial_number: string | null;
+  total_hours: number;
+  total_flights: number;
+  days_since_maintenance: number | null;
+  maintenance_cycle_hour: number;
+  maintenance_cycle_flight: number;
+  maintenance_cycle_day: number;
+  maintenance_cycle_type: string;
+  last_maintenance_date: string | null;
+  status: "OK" | "ALERT" | "DUE";
+  trigger: string[];
+}
+
+export interface ComponentInfo {
+  component_id: number;
+  component_type: string | null;
+  component_code: string | null;
+  serial_number: string | null;
+  total_hours: number;
+  total_flights: number;
+  days_since_maintenance: number | null;
+  maintenance_cycle_hour: number;
+  maintenance_cycle_flight: number;
+  maintenance_cycle_day: number;
+  maintenance_cycle_type: string;
+  status: "OK" | "ALERT" | "DUE";
+  trigger: string[];
+}
+ 

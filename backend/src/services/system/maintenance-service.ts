@@ -1,10 +1,10 @@
 import { supabase } from "@/backend/database/database";
 import {
-    MaintenanceComponent,
-    MaintenanceDashboardQuery,
-    MaintenanceDrone,
-    MaintenanceModel,
-    MaintenanceStatus,
+  MaintenanceComponent,
+  MaintenanceDashboardQuery,
+  MaintenanceDrone,
+  MaintenanceModel,
+  MaintenanceStatus,
 } from "@/config/types/maintenance";
 
 function daysBetween(from: Date, to: Date): number {
@@ -91,7 +91,6 @@ export async function getMaintenanceDashboard(
     .select(`
       tool_id,
       tool_code,
-      tool_serial_number,
       fk_owner_id,
       fk_model_id,
       tool_model (
