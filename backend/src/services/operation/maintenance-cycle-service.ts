@@ -120,25 +120,24 @@ export async function getComponentsForMaintenanceCycle(
     const limitDay = Number(comp.maintenance_cycle_day ?? 0);
     const cycleType = comp.maintenance_cycle || "NONE";
 
-    // Skiping components with no limits configured
-    if (limitHour === 0 && limitFlight === 0 && limitDay === 0) continue;
-
     // CURRENT accumulated usage from dedicated columns
     const currentHours = Number(comp.current_maintenance_hours ?? 0);
     const currentFlights = Number(comp.current_maintenance_flights ?? 0);
 
-    // Days: auto-calculate from last_maintenance_date  
+    // Days: auto-calculate from last_maintenance_date
     const lastMaintDate = comp.last_maintenance_date || null;
     const currentDays = lastMaintDate
       ? daysBetween(new Date(lastMaintDate), new Date())
       : Number(comp.current_maintenance_days ?? 0);
 
-    const { status, trigger } = computeComponentStatus(
-      currentHours,
-      currentFlights,
-      currentDays,
-      { hour: limitHour, flight: limitFlight, day: limitDay }
-    );
+    const hasLimits = limitHour > 0 || limitFlight > 0 || limitDay > 0;
+    const { status, trigger } = hasLimits
+      ? computeComponentStatus(currentHours, currentFlights, currentDays, {
+          hour: limitHour,
+          flight: limitFlight,
+          day: limitDay,
+        })
+      : { status: "OK" as const, trigger: [] };
 
     if (status === "DUE") worstStatus = "DUE";
     else if (status === "ALERT" && worstStatus !== "DUE") worstStatus = "ALERT";
@@ -169,7 +168,6 @@ export async function getComponentsForMaintenanceCycle(
     components,
   };
 }
-
  
 
 export async function updateComponentMaintenanceCycle(

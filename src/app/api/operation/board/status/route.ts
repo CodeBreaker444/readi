@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const result = await updateMissionStatus({...parsed.data, owner_id:session.user.ownerId, pilot_id: session.user.userId});
+    const result = await updateMissionStatus({...parsed.data, owner_id:session.user.ownerId});
     return NextResponse.json(result, { status: result.code === 1 ? 200 : 422 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
