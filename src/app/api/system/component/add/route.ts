@@ -13,8 +13,8 @@ const ComponentSchema = z.object({
   component_vendor: z.string().optional().nullable(),
   component_guarantee_day: z.number().optional().nullable(),
   component_status: z.string().default('OPERATIONAL'),
-  cc_platform: z.string().optional(),
-  gcs_type: z.string().optional()
+  cc_platform: z.string().optional().nullable(),
+  gcs_type: z.string().optional().nullable()
 });
 
 export async function POST(req: NextRequest) {

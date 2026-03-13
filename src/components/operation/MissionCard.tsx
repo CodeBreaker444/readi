@@ -6,7 +6,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Mission, MissionStatusCode } from "@/config/types/operation";
 import { cn } from "@/lib/utils";
-import { Calendar, CheckCircle2, Clock, Crosshair, Gauge, Tag, User } from "lucide-react";
+import { Calendar, CheckCircle2, Clock, Crosshair, Gauge, Tag, User, Wrench } from "lucide-react";
 import { MissionLimitsPanel } from "./MissionLimitsPanel";
 
 interface MissionCardProps {
@@ -50,6 +50,33 @@ const statusConfig: Record<
     darkColor: "bg-slate-500/10 text-slate-400 border-slate-500/30",
     lightColor: "bg-slate-100 text-slate-500 border-slate-200",
     dot: "bg-slate-400",
+  },
+};
+
+const maintenanceStatusConfig: Record<
+  string,
+  { label: string; darkDot: string; lightDot: string; darkBg: string; lightBg: string }
+> = {
+  OK: {
+    label: "Maintenance OK",
+    darkDot: "bg-emerald-400",
+    lightDot: "bg-emerald-500",
+    darkBg: "bg-emerald-500/10 border-emerald-500/30",
+    lightBg: "bg-emerald-50 border-emerald-200",
+  },
+  ALERT: {
+    label: "Maintenance Alert",
+    darkDot: "bg-amber-400 animate-pulse",
+    lightDot: "bg-amber-500 animate-pulse",
+    darkBg: "bg-amber-500/10 border-amber-500/30",
+    lightBg: "bg-amber-50 border-amber-200",
+  },
+  DUE: {
+    label: "Maintenance Due",
+    darkDot: "bg-rose-400",
+    lightDot: "bg-rose-500",
+    darkBg: "bg-rose-500/10 border-rose-500/30",
+    lightBg: "bg-rose-50 border-rose-200",
   },
 };
 
@@ -106,6 +133,25 @@ export function MissionCard({ mission, draggable, onDragStart, onViewDetails , i
         <div>
           <p className={`text-[13px] font-semibold leading-tight ${isDark ? "text-slate-100" : "text-slate-800"}`}>
             {mission.vehicle_code}
+            {mission.maintenance_status && mission.maintenance_status !== "OK" && (() => {
+              const mCfg = maintenanceStatusConfig[mission.maintenance_status];
+              return (
+                <TooltipProvider delayDuration={200}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className={cn(
+                        "ml-1.5 inline-flex items-center gap-1 rounded-full border px-1.5 py-0 text-[9px] font-medium align-middle cursor-default",
+                        isDark ? mCfg.darkBg : mCfg.lightBg
+                      )}>
+                        <Wrench className="h-2.5 w-2.5" />
+                        <span className={cn("h-1.5 w-1.5 rounded-full", isDark ? mCfg.darkDot : mCfg.lightDot)} />
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="text-xs">{mCfg.label}</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              );
+            })()}
             {mission.vehicle_desc && (
               <span className={`font-normal ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                 {" "}— {mission.vehicle_desc}

@@ -8,7 +8,7 @@ const ModelSchema = z.object({
   model_code: z.string().min(1, "Model code is required"),
   model_name: z.string().min(1, "Model name is required"),
   manufacturer: z.string().min(1, "Manufacturer is required"),
-  tool_type_id: z.string().min(1, "Tool type ID is required"),
+  tool_type_id: z.string().optional(),
   model_type: z.string().optional(),
   specifications: z.string().optional(),
   max_flight_time: z.number().optional(),
@@ -20,7 +20,7 @@ const ModelSchema = z.object({
 export async function POST(req: NextRequest) {
   try {
     const session = await getUserSession();
-    if (!session?.user || (session.user.role !== 'ADMIN' && session.user.role !== 'SUPERADMIN')) {
+    if (!session?.user) {
       return NextResponse.json({ status: 'ERROR', message: 'Unauthorized' }, { status: 401 });
     }
 
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
       factory_type: d.manufacturer,
       factory_desc: d.model_type,
       technical_specs: specsJson,
-      fk_tool_type_id: Number(d.tool_type_id),
+      fk_tool_type_id: d.tool_type_id ? Number(d.tool_type_id) : undefined,
     });
 
     return NextResponse.json(result);

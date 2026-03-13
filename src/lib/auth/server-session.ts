@@ -17,6 +17,7 @@ export interface SessionUser {
   role: Role;
   phone?: string;
   userActive: 'Y' | 'N';
+  timezone?: string
   avatar?: string | null;
 }
 
@@ -78,6 +79,7 @@ export const getUserSession = cache(async (): Promise<Session | null> => {
         user_role,
         auth_user_id,
         fk_owner_id,
+        user_timezone,
         users_profile!fk_user_id (
           profile_picture
         )

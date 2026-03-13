@@ -175,6 +175,7 @@ export interface Mission {
   rth_unplanned: number;
   link_loss: number;
   deviation_flag: number;
+  maintenance_status?: 'OK' | 'ALERT' | 'DUE';
 }
 
 export interface MissionBoardData {

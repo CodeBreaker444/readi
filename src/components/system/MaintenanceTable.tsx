@@ -1,19 +1,19 @@
 "use client";
 
 import type {
-    MaintenanceComponent,
-    MaintenanceDrone,
-    MaintenanceStatus,
+  MaintenanceComponent,
+  MaintenanceDrone,
+  MaintenanceStatus,
 } from "@/config/types/maintenance";
 import {
-    ColumnDef,
-    ExpandedState,
-    flexRender,
-    getCoreRowModel,
-    getExpandedRowModel,
-    getFilteredRowModel,
-    getPaginationRowModel,
-    useReactTable,
+  ColumnDef,
+  ExpandedState,
+  flexRender,
+  getCoreRowModel,
+  getExpandedRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  useReactTable,
 } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
 import { TablePagination } from "../tables/Pagination";
@@ -208,14 +208,6 @@ const columns: ColumnDef<MaintenanceDrone>[] = [
         </span>
       );
     },
-  },
-  {
-    id: "serial",
-    header: "Serial",
-    accessorFn: (row) => row.serial_number ?? "—",
-    cell: ({ getValue }) => (
-      <span className="text-xs font-mono text-slate-500">{getValue() as string}</span>
-    ),
   },
   {
     id: "last_maintenance",
