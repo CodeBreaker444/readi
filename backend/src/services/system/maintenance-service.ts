@@ -264,7 +264,6 @@ export async function getMaintenanceDashboard(
     return {
       tool_id: toolId,
       code: String(tool.tool_code ?? `#${toolId}`),
-      serial_number: tool.tool_serial_number as string | null,
       last_maintenance: lastMaint,
       total_hours: Math.round(stats.totalHours * 100) / 100,
       total_flights: stats.totalFlights,
