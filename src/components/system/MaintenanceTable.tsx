@@ -290,8 +290,7 @@ export default function MaintenanceTable({ data }: { data: MaintenanceDrone[] })
       if (search) {
         const q = search.toLowerCase();
         return (
-          d.code.toLowerCase().includes(q) ||
-          (d.serial_number ?? "").toLowerCase().includes(q)
+          d.code.toLowerCase().includes(q) 
         );
       }
       return true;

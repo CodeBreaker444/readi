@@ -277,7 +277,7 @@ export async function deleteAttachment(attachmentId: number): Promise<void> {
 export async function getDroneList(ownerId: number): Promise<DroneOption[]> {
   const { data, error } = await supabase
     .from('tool')
-    .select('tool_id, tool_code, tool_name, tool_serial_number, fk_status_id')
+    .select('tool_id, tool_code, tool_name, fk_status_id')
     .eq('fk_owner_id', ownerId)
     .eq('tool_active', 'Y')
     .order('tool_code');
