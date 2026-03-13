@@ -12,7 +12,7 @@ import axios from 'axios';
 import { Building2, Filter, Plus, Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { ClientData, getClientColumns } from '../tables/ClientColumn';
+import { ClientData, getClientColumns } from '../tables/clientColumn';
 import { TablePagination } from '../tables/Pagination';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';

@@ -14,7 +14,7 @@ import { Filter, Plus, Search, User } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { TablePagination } from '../tables/Pagination';
-import { getUserColumns, UserData } from '../tables/UserColumns';
+import { getUserColumns, UserData } from '../tables/userColumns';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
