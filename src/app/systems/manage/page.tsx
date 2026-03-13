@@ -9,7 +9,7 @@ import EditModelModal from '@/components/system/EditModelModal';
 import EditSystemModal from '@/components/system/EditSystemModal';
 import { FilesDownloadModal, SystemFile } from '@/components/system/FilesDownloadModal';
 import ViewToolModal from '@/components/system/ViewToolModal';
-import { DroneToolData, getComponentColumns, getModelColumns, systemCreateColumns } from '@/components/tables/SystemColumn';
+import { DroneToolData, getComponentColumns, getModelColumns, systemCreateColumns } from '@/components/tables/systemColumn';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {

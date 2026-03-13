@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
-import { ClientData } from '../tables/ClientColumn';
+import { ClientData } from '../tables/clientColumn';
 
 const PAYMENT_TERMS = [
   'Net 15',
