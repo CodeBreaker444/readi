@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTheme } from '@/components/useTheme';
+import { RotateCcw } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Skeleton } from '../ui/skeleton';
@@ -35,6 +36,10 @@ const EMPTY_FORM = {
   component_vendor: '',
   component_guarantee_day: '',
   component_status: 'OPERATIONAL',
+  maintenance_cycle: '',
+  maintenance_cycle_hour: '',
+  maintenance_cycle_day: '',
+  maintenance_cycle_flight: '',
 };
 
 export default function EditComponentModal({
@@ -65,6 +70,28 @@ export default function EditComponentModal({
     }
   }, [open, toolId, initialComponentId]);
 
+  const populateForm = (comp: any) => {
+    setFormData({
+      fk_tool_id: String(comp.fk_tool_id || ''),
+      component_type: comp.component_type || '',
+      component_code: comp.component_code || '',
+      component_desc: comp.component_desc || '',
+      fk_tool_model_id: comp.fk_tool_model_id ? String(comp.fk_tool_model_id) : '',
+      component_sn: comp.component_sn || '',
+      cc_platform: comp.cc_platform || '',
+      gcs_type: comp.gcs_type || '',
+      component_activation_date: comp.component_activation_date?.split('T')[0] || '',
+      component_purchase_date: comp.component_purchase_date?.split('T')[0] || '',
+      component_vendor: comp.component_vendor || '',
+      component_guarantee_day: comp.component_guarantee_day ? String(comp.component_guarantee_day) : '',
+      component_status: comp.component_status || 'OPERATIONAL',
+      maintenance_cycle: comp.maintenance_cycle || '',
+      maintenance_cycle_hour: comp.maintenance_cycle_hour != null && comp.maintenance_cycle_hour !== '' ? String(comp.maintenance_cycle_hour) : '',
+      maintenance_cycle_day: comp.maintenance_cycle_day != null && comp.maintenance_cycle_day !== '' ? String(comp.maintenance_cycle_day) : '',
+      maintenance_cycle_flight: comp.maintenance_cycle_flight != null && comp.maintenance_cycle_flight !== '' ? String(comp.maintenance_cycle_flight) : '',
+    });
+  };
+
   const fetchAllComponentsAndSelect = async (componentId: number) => {
     setFetching(true);
     try {
@@ -80,21 +107,7 @@ export default function EditComponentModal({
         const comp = allComps.find(c => c.tool_component_id === componentId);
         if (comp) {
           setSelectedComponentId(String(componentId));
-          setFormData({
-            fk_tool_id: String(comp.fk_tool_id || ''),
-            component_type: comp.component_type || '',
-            component_code: comp.component_code || '',
-            component_desc: comp.component_desc || '',
-            fk_tool_model_id: comp.fk_tool_model_id ? String(comp.fk_tool_model_id) : '',
-            component_sn: comp.component_sn || '',
-            cc_platform: comp.cc_platform || '',
-            gcs_type: comp.gcs_type || '',
-            component_activation_date: comp.component_activation_date?.split('T')[0] || '',
-            component_purchase_date: comp.component_purchase_date?.split('T')[0] || '',
-            component_vendor: comp.component_vendor || '',
-            component_guarantee_day: comp.component_guarantee_day ? String(comp.component_guarantee_day) : '',
-            component_status: comp.component_status || 'OPERATIONAL',
-          });
+          populateForm(comp);
         }
       }
     } catch {
@@ -126,24 +139,62 @@ export default function EditComponentModal({
   const handleComponentSelect = (componentId: string) => {
     setSelectedComponentId(componentId);
     const comp = components.find(c => String(c.tool_component_id) === componentId);
-    if (comp) {
-      setFormData({
-        fk_tool_id: String(comp.fk_tool_id || toolId || ''),
-        component_type: comp.component_type || '',
-        component_code: comp.component_code || '',
-        component_desc: comp.component_desc || '',
-        fk_tool_model_id: comp.fk_tool_model_id ? String(comp.fk_tool_model_id) : '',
-        component_sn: comp.component_sn || '',
-        cc_platform: comp.cc_platform || '',
-        gcs_type: comp.gcs_type || '',
-        component_activation_date: comp.component_activation_date?.split('T')[0] || '',
-        component_purchase_date: comp.component_purchase_date?.split('T')[0] || '',
-        component_vendor: comp.component_vendor || '',
-        component_guarantee_day: comp.component_guarantee_day ? String(comp.component_guarantee_day) : '',
-        component_status: comp.component_status || 'OPERATIONAL',
-      });
+    if (comp) populateForm(comp);
+  };
+
+  const handleChange = (field: string, value: string) =>
+    setFormData(prev => ({ ...prev, [field]: value }));
+
+  /** When model changes, auto-fill maintenance cycle from model */
+  const handleModelSelect = (modelId: string) => {
+    handleChange('fk_tool_model_id', modelId);
+    const model = models.find(m => String(m.tool_model_id) === modelId);
+    if (model) {
+      setFormData(prev => ({
+        ...prev,
+        fk_tool_model_id: modelId,
+        maintenance_cycle: model.maintenance_cycle || '',
+        maintenance_cycle_hour: model.maintenance_cycle_hour != null ? String(model.maintenance_cycle_hour) : '',
+        maintenance_cycle_day: model.maintenance_cycle_day != null ? String(model.maintenance_cycle_day) : '',
+        maintenance_cycle_flight: model.maintenance_cycle_flight != null ? String(model.maintenance_cycle_flight) : '',
+      }));
     }
   };
+
+  /** Reset maintenance cycle back to model's values */
+  const handleResetMaintenanceToModel = () => {
+    const model = models.find(m => String(m.tool_model_id) === formData.fk_tool_model_id);
+    if (model) {
+      setFormData(prev => ({
+        ...prev,
+        maintenance_cycle: model.maintenance_cycle || '',
+        maintenance_cycle_hour: model.maintenance_cycle_hour != null ? String(model.maintenance_cycle_hour) : '',
+        maintenance_cycle_day: model.maintenance_cycle_day != null ? String(model.maintenance_cycle_day) : '',
+        maintenance_cycle_flight: model.maintenance_cycle_flight != null ? String(model.maintenance_cycle_flight) : '',
+      }));
+      toast.info('Maintenance cycle reset to model defaults');
+    }
+  };
+
+  const handleCycleChange = (value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      maintenance_cycle: value,
+      maintenance_cycle_hour: '',
+      maintenance_cycle_day: '',
+      maintenance_cycle_flight: '',
+    }));
+  };
+
+  const handleCycleInput = (field: string, value: string, max: number) => {
+    const num = Number(value);
+    if (value === '' || (num >= 0 && num <= max)) handleChange(field, value);
+  };
+
+  const showHours = formData.maintenance_cycle === 'HOURS' || formData.maintenance_cycle === 'MIXED';
+  const showDays = formData.maintenance_cycle === 'DAYS' || formData.maintenance_cycle === 'MIXED';
+  const showFlights = formData.maintenance_cycle === 'FLIGHTS' || formData.maintenance_cycle === 'MIXED';
+  const showNone = formData.maintenance_cycle === 'NONE';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -164,6 +215,10 @@ export default function EditComponentModal({
         component_vendor: formData.component_vendor || null,
         component_guarantee_day: formData.component_guarantee_day ? Number(formData.component_guarantee_day) : null,
         component_status: formData.component_status,
+        maintenance_cycle: formData.maintenance_cycle || null,
+        maintenance_cycle_hour: formData.maintenance_cycle_hour ? Number(formData.maintenance_cycle_hour) : null,
+        maintenance_cycle_day: formData.maintenance_cycle_day ? Number(formData.maintenance_cycle_day) : null,
+        maintenance_cycle_flight: formData.maintenance_cycle_flight ? Number(formData.maintenance_cycle_flight) : null,
       };
 
       const res = await fetch(`/api/system/component/${selectedComponentId}/update`, {
@@ -185,9 +240,6 @@ export default function EditComponentModal({
     }
   };
 
-  const handleChange = (field: string, value: string) =>
-    setFormData(prev => ({ ...prev, [field]: value }));
-
   const inputCls = isDark ? 'bg-slate-700 border-slate-600 text-slate-200' : '';
   const selectTriggerCls = isDark ? 'bg-slate-700 border-slate-600 text-slate-200' : '';
   const selectContentCls = isDark ? 'bg-slate-800 border-slate-700 text-slate-200' : '';
@@ -202,40 +254,36 @@ export default function EditComponentModal({
         </DialogHeader>
 
         {fetching ? (
-         <div className="space-y-6 py-4">
-        <div className="space-y-2">
-          <Skeleton className={`h-4 w-40 ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
-          <Skeleton className={`h-10 w-full ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
-        </div>
-
-        <div className="grid grid-cols-12 gap-3">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="col-span-3 space-y-2">
-              <Skeleton className={`h-4 w-20 ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
+          <div className="space-y-6 py-4">
+            <div className="space-y-2">
+              <Skeleton className={`h-4 w-40 ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
               <Skeleton className={`h-10 w-full ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
             </div>
-          ))}
-        </div>
-
-        <div className="space-y-2">
-          <Skeleton className={`h-4 w-24 ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
-          <Skeleton className={`h-10 w-3/4 ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
-        </div>
-
-        <div className="grid grid-cols-12 gap-3">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="col-span-3 space-y-2">
-              <Skeleton className={`h-4 w-20 ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
-              <Skeleton className={`h-10 w-full ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
+            <div className="grid grid-cols-12 gap-3">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="col-span-3 space-y-2">
+                  <Skeleton className={`h-4 w-20 ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
+                  <Skeleton className={`h-10 w-full ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-
-        <div className="flex justify-end gap-2 pt-4 border-t border-transparent">
-          <Skeleton className={`h-10 w-24 ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
-          <Skeleton className={`h-10 w-32 ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
-        </div>
-      </div>
+            <div className="space-y-2">
+              <Skeleton className={`h-4 w-24 ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
+              <Skeleton className={`h-10 w-3/4 ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
+            </div>
+            <div className="grid grid-cols-12 gap-3">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="col-span-3 space-y-2">
+                  <Skeleton className={`h-4 w-20 ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
+                  <Skeleton className={`h-10 w-full ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-end gap-2 pt-4 border-t border-transparent">
+              <Skeleton className={`h-10 w-24 ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
+              <Skeleton className={`h-10 w-32 ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
+            </div>
+          </div>
         ) : components.length === 0 ? (
           <div className="py-8 text-center text-sm text-gray-400">
             No components found for this system.
@@ -308,7 +356,7 @@ export default function EditComponentModal({
                 <div className="grid grid-cols-12 gap-3">
                   <div className="col-span-3 min-w-0">
                     <Label className={labelCls}>Brand / Model</Label>
-                    <Select value={formData.fk_tool_model_id} onValueChange={v => handleChange('fk_tool_model_id', v)}>
+                    <Select value={formData.fk_tool_model_id} onValueChange={handleModelSelect}>
                       <SelectTrigger className={`w-full truncate ${selectTriggerCls}`}><SelectValue placeholder="Select Model" /></SelectTrigger>
                       <SelectContent className={selectContentCls}>
                         {models.map((m: any) => (
@@ -326,32 +374,92 @@ export default function EditComponentModal({
                 </div>
 
                 {formData.component_type === 'DRONE' && (
-                <div className="grid grid-cols-12 gap-3">
-                  <div className="col-span-3">
-                    <Label className={labelCls}>C2 Platform</Label>
-                    <Select value={formData.cc_platform} onValueChange={v => handleChange('cc_platform', v)}>
-                      <SelectTrigger className={selectTriggerCls}><SelectValue placeholder="Select" /></SelectTrigger>
-                      <SelectContent className={selectContentCls}>
-                        <SelectItem value="_FLYTBASE">Flytbase</SelectItem>
-                        <SelectItem value="_VOTIX">Votix</SelectItem>
-                        <SelectItem value="_FLIGHTHUB">DJI FlightHub</SelectItem>
-                        <SelectItem value="_APP">APP on GCS</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  <div className="grid grid-cols-12 gap-3">
+                    <div className="col-span-3">
+                      <Label className={labelCls}>C2 Platform</Label>
+                      <Select value={formData.cc_platform} onValueChange={v => handleChange('cc_platform', v)}>
+                        <SelectTrigger className={selectTriggerCls}><SelectValue placeholder="Select" /></SelectTrigger>
+                        <SelectContent className={selectContentCls}>
+                          <SelectItem value="_FLYTBASE">Flytbase</SelectItem>
+                          <SelectItem value="_VOTIX">Votix</SelectItem>
+                          <SelectItem value="_FLIGHTHUB">DJI FlightHub</SelectItem>
+                          <SelectItem value="_APP">APP on GCS</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="col-span-3">
+                      <Label className={labelCls}>GCS</Label>
+                      <Select value={formData.gcs_type} onValueChange={v => handleChange('gcs_type', v)}>
+                        <SelectTrigger className={selectTriggerCls}><SelectValue placeholder="Select" /></SelectTrigger>
+                        <SelectContent className={selectContentCls}>
+                          <SelectItem value="_DOCK">Docking Station</SelectItem>
+                          <SelectItem value="_RC">Remote Control</SelectItem>
+                          <SelectItem value="_GCS">Ground Control Station</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                  <div className="col-span-3">
-                    <Label className={labelCls}>GCS</Label>
-                    <Select value={formData.gcs_type} onValueChange={v => handleChange('gcs_type', v)}>
-                      <SelectTrigger className={selectTriggerCls}><SelectValue placeholder="Select" /></SelectTrigger>
-                      <SelectContent className={selectContentCls}>
-                        <SelectItem value="_DOCK">Docking Station</SelectItem>
-                        <SelectItem value="_RC">Remote Control</SelectItem>
-                        <SelectItem value="_GCS">Ground Control Station</SelectItem>
-                      </SelectContent>
-                    </Select>
+                )}
+
+                {/* Maintenance Cycle */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className={sectionLabelCls}>Maintenance Cycle</p>
+                    {formData.fk_tool_model_id && (
+                      <button
+                        type="button"
+                        onClick={handleResetMaintenanceToModel}
+                        className={`inline-flex items-center gap-1 text-xs transition-colors ${isDark ? 'text-violet-400 hover:text-violet-300' : 'text-violet-600 hover:text-violet-500'}`}
+                      >
+                        <RotateCcw className="h-3 w-3" />
+                        Reset to model defaults
+                      </button>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-12 gap-3 items-end">
+                    <div className="col-span-3">
+                      <Label className={labelCls}>Cycle Type</Label>
+                      <Select value={formData.maintenance_cycle} onValueChange={handleCycleChange}>
+                        <SelectTrigger className={selectTriggerCls}><SelectValue placeholder="Select" /></SelectTrigger>
+                        <SelectContent className={selectContentCls}>
+                          <SelectItem value="HOURS">Hours</SelectItem>
+                          <SelectItem value="DAYS">Days</SelectItem>
+                          <SelectItem value="FLIGHTS">Flights</SelectItem>
+                          <SelectItem value="MIXED">Mixed</SelectItem>
+                          <SelectItem value="NONE">None</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {showNone && (
+                      <div className="col-span-9 flex items-end">
+                        <span className={`inline-flex items-center px-3 py-2 rounded-md text-sm ${isDark ? 'bg-slate-700 text-slate-400' : 'bg-muted text-muted-foreground'}`}>
+                          No maintenance cycle required
+                        </span>
+                      </div>
+                    )}
+                    {showHours && (
+                      <div className="col-span-2">
+                        <Label className={labelCls}>Hours <span className="text-xs text-muted-foreground">(0–24)</span></Label>
+                        <Input type="number" min={0} max={24} className={inputCls} value={formData.maintenance_cycle_hour}
+                          onChange={e => handleCycleInput('maintenance_cycle_hour', e.target.value, 24)} placeholder="0–24" />
+                      </div>
+                    )}
+                    {showDays && (
+                      <div className="col-span-2">
+                        <Label className={labelCls}>Days <span className="text-xs text-muted-foreground">(0–30)</span></Label>
+                        <Input type="number" min={0} max={30} className={inputCls} value={formData.maintenance_cycle_day}
+                          onChange={e => handleCycleInput('maintenance_cycle_day', e.target.value, 30)} placeholder="0–30" />
+                      </div>
+                    )}
+                    {showFlights && (
+                      <div className="col-span-2">
+                        <Label className={labelCls}>Flights <span className="text-xs text-muted-foreground">(0–10)</span></Label>
+                        <Input type="number" min={0} max={10} className={inputCls} value={formData.maintenance_cycle_flight}
+                          onChange={e => handleCycleInput('maintenance_cycle_flight', e.target.value, 10)} placeholder="0–10" />
+                      </div>
+                    )}
                   </div>
                 </div>
-                )}
 
                 <div className="grid grid-cols-12 gap-3">
                   <div className="col-span-3">

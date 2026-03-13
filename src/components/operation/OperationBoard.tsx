@@ -137,6 +137,7 @@ export function OperationBoard() {
         });
 
         if (result.status === 422) {
+            toast.error('Failed to Change the status!')
             setBoard((prev) => ({
                 ...prev,
                 [target]: prev[target].filter((m) => m.mission_id !== missionId),

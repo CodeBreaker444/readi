@@ -1,249 +1,176 @@
 import { supabase } from "@/backend/database/database";
 import { MaintenanceStatus } from "@/config/types/maintenance";
+ 
 
-
-function daysBetween(from: Date, to: Date): number {
-  return Math.floor((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24));
+interface UpdateComponentInput {
+  component_id: number;
+  add_flights: number;
+  add_hours: number;
 }
 
-function computeComponentStatus(
-  totalHours: number,
-  totalFlights: number,
-  lastMaintenanceDate: string | null,
-  cycle: { hour: number; flight: number; day: number },
-  thresholdPct = 0.8
-): { status: MaintenanceStatus; trigger: string[] } {
-  const triggers: string[] = [];
-  let isDue = false;
-  let isAlert = false;
-
-  if (cycle.hour > 0) {
-    const ratio = totalHours / cycle.hour;
-    if (ratio >= 1) { isDue = true; triggers.push("HOUR"); }
-    else if (ratio >= thresholdPct) { isAlert = true; triggers.push("HOUR"); }
-  }
-
-  if (cycle.flight > 0) {
-    const ratio = totalFlights / cycle.flight;
-    if (ratio >= 1) { isDue = true; triggers.push("FLIGHT"); }
-    else if (ratio >= thresholdPct) { isAlert = true; triggers.push("FLIGHT"); }
-  }
-
-  if (cycle.day > 0 && lastMaintenanceDate) {
-    const daysUsed = daysBetween(new Date(lastMaintenanceDate), new Date());
-    const ratio = daysUsed / cycle.day;
-    if (ratio >= 1) { isDue = true; triggers.push("DAY"); }
-    else if (ratio >= thresholdPct) { isAlert = true; triggers.push("DAY"); }
-  }
-
-  const status: MaintenanceStatus = isDue ? "DUE" : isAlert ? "ALERT" : "OK";
-  return { status, trigger: triggers };
-}
-
-
-export interface ComponentMaintenanceInfo {
+interface ComponentMaintenanceInfo {
   component_id: number;
   component_type: string | null;
   component_code: string | null;
   serial_number: string | null;
-  total_hours: number;
-  total_flights: number;
-  days_since_maintenance: number | null;
-  maintenance_cycle_hour: number;
-  maintenance_cycle_flight: number;
-  maintenance_cycle_day: number;
+  current_hours: number;
+  current_flights: number;
+  current_days: number;
+  limit_hour: number;
+  limit_flight: number;
+  limit_day: number;
   maintenance_cycle_type: string;
-  status: MaintenanceStatus;
+  last_maintenance_date: string | null;
+  status: "OK" | "ALERT" | "DUE";
   trigger: string[];
 }
 
-export interface SystemMaintenanceData {
+interface SystemData {
   tool_id: number;
   tool_code: string;
   tool_name: string;
-  system_status: MaintenanceStatus;
+  system_status: "OK" | "ALERT" | "DUE";
   components: ComponentMaintenanceInfo[];
 }
 
-export interface UpdateComponentInput {
-  component_id: number;
-  add_flights: number;
-  add_hours: number;
-  add_days: number;
+
+function daysBetween(a: Date, b: Date): number {
+  const ms = Math.abs(b.getTime() - a.getTime());
+  return Math.floor(ms / (1000 * 60 * 60 * 24));
 }
 
+function computeComponentStatus(
+  currentHours: number,
+  currentFlights: number,
+  currentDays: number,
+  limits: { hour: number; flight: number; day: number }
+): { status: "OK" | "ALERT" | "DUE"; trigger: string[] } {
+  const trigger: string[] = [];
+  let status: "OK" | "ALERT" | "DUE" = "OK";
+
+  const checks: { current: number; limit: number; name: string }[] = [];
+  if (limits.hour > 0) checks.push({ current: currentHours, limit: limits.hour, name: "hours" });
+  if (limits.flight > 0) checks.push({ current: currentFlights, limit: limits.flight, name: "flights" });
+  if (limits.day > 0) checks.push({ current: currentDays, limit: limits.day, name: "days" });
+
+  for (const c of checks) {
+    if (c.limit <= 0) continue;
+    const ratio = c.current / c.limit;
+    if (ratio >= 1) {
+      status = "DUE";
+      trigger.push(`${c.name} exceeded (${c.current}/${c.limit})`);
+    } else if (ratio >= 0.8 && status !== "DUE") {
+      status = "ALERT";
+      trigger.push(`${c.name} approaching (${c.current}/${c.limit})`);
+    }
+  }
+
+  return { status, trigger };
+}
+
+const COMPONENT_SELECT = `
+  component_id,
+  component_type,
+  component_code,
+  component_name,
+  serial_number,
+  current_usage_hours,
+  installation_date,
+  component_metadata,
+  component_active,
+  maintenance_cycle,
+  maintenance_cycle_hour,
+  maintenance_cycle_day,
+  maintenance_cycle_flight,
+  current_maintenance_hours,
+  current_maintenance_days,
+  current_maintenance_flights,
+  last_maintenance_date
+`;
+
+ 
 
 export async function getComponentsForMaintenanceCycle(
   toolId: number,
   ownerId: number
-): Promise<SystemMaintenanceData> {
-  console.log("[maint-cycle] fetching tool", toolId, "owner", ownerId);
-
+): Promise<SystemData> {
   const { data: tool, error: toolErr } = await supabase
     .from("tool")
-    .select("tool_id, tool_code, tool_name, fk_model_id, tool_metadata")
+    .select("tool_id, tool_code, tool_name")
     .eq("tool_id", toolId)
     .eq("fk_owner_id", ownerId)
-    .maybeSingle();
+    .single();
 
-  if (toolErr) {
-    console.error("[maint-cycle] tool query error:", toolErr);
-    throw new Error(`Tool query failed: ${toolErr.message}`);
-  }
-  if (!tool) {
-    console.error("[maint-cycle] tool not found for id", toolId, "owner", ownerId);
-    throw new Error("System not found or unauthorized");
-  }
+  if (toolErr || !tool) throw new Error("System not found or unauthorized");
 
-  console.log("[maint-cycle] tool found:", tool.tool_code);
-
-  const { data: rawComponents, error: compErr } = await supabase
+  const { data: comps, error: compErr } = await supabase
     .from("tool_component")
-    .select(`
-      component_id,
-      fk_tool_id,
-      component_code,
-      component_type,
-      component_name,
-      serial_number,
-      current_usage_hours,
-      installation_date,
-      expected_lifespan_hours,
-      component_metadata
-    `)
+    .select(COMPONENT_SELECT)
     .eq("fk_tool_id", toolId)
     .eq("component_active", "Y");
 
-  if (compErr) {
-    console.error("[maint-cycle] component query error:", compErr);
-    throw new Error(`Failed to fetch components: ${compErr.message}`);
+  if (compErr) throw compErr;
+
+  const components: ComponentMaintenanceInfo[] = [];
+  let worstStatus: "OK" | "ALERT" | "DUE" = "OK";
+
+  for (const comp of comps || []) {
+    const limitHour = Number(comp.maintenance_cycle_hour ?? 0);
+    const limitFlight = Number(comp.maintenance_cycle_flight ?? 0);
+    const limitDay = Number(comp.maintenance_cycle_day ?? 0);
+    const cycleType = comp.maintenance_cycle || "NONE";
+
+    // Skiping components with no limits configured
+    if (limitHour === 0 && limitFlight === 0 && limitDay === 0) continue;
+
+    // CURRENT accumulated usage from dedicated columns
+    const currentHours = Number(comp.current_maintenance_hours ?? 0);
+    const currentFlights = Number(comp.current_maintenance_flights ?? 0);
+
+    // Days: auto-calculate from last_maintenance_date  
+    const lastMaintDate = comp.last_maintenance_date || null;
+    const currentDays = lastMaintDate
+      ? daysBetween(new Date(lastMaintDate), new Date())
+      : Number(comp.current_maintenance_days ?? 0);
+
+    const { status, trigger } = computeComponentStatus(
+      currentHours,
+      currentFlights,
+      currentDays,
+      { hour: limitHour, flight: limitFlight, day: limitDay }
+    );
+
+    if (status === "DUE") worstStatus = "DUE";
+    else if (status === "ALERT" && worstStatus !== "DUE") worstStatus = "ALERT";
+
+    components.push({
+      component_id: comp.component_id,
+      component_type: comp.component_type,
+      component_code: comp.component_code || comp.component_name,
+      serial_number: comp.serial_number,
+      current_hours: currentHours,
+      current_flights: currentFlights,
+      current_days: currentDays,
+      limit_hour: limitHour,
+      limit_flight: limitFlight,
+      limit_day: limitDay,
+      maintenance_cycle_type: cycleType,
+      last_maintenance_date: lastMaintDate,
+      status,
+      trigger,
+    });
   }
-
-  const components = (rawComponents || []).filter(
-    (c: any) => c.component_metadata?.system_detached !== true
-  );
-
-  console.log("[maint-cycle] found", components.length, "components");
-
-  const modelIds = [
-    ...new Set(
-      (components || [])
-        .map((c: any) => c.component_metadata?.fk_tool_model_id)
-        .filter(Boolean)
-    ),
-  ];
-
-  let modelsMap: Record<number, any> = {};
-  if (modelIds.length > 0) {
-    const { data: models } = await supabase
-      .from("tool_model")
-      .select("model_id, model_name, manufacturer, model_code, specifications")
-      .in("model_id", modelIds);
-
-    for (const m of models || []) {
-      modelsMap[m.model_id] = m;
-    }
-  }
-
-  let toolModel: any = null;
-  if (tool.fk_model_id) {
-    const { data: tm } = await supabase
-      .from("tool_model")
-      .select("model_id, specifications")
-      .eq("model_id", tool.fk_model_id)
-      .maybeSingle();
-    toolModel = tm;
-  }
-
-  const compIds = (components || []).map((c: any) => c.component_id);
-  let compLastMaintMap: Record<number, string> = {};
-
-  if (compIds.length > 0) {
-    const { data: maintRecords } = await supabase
-      .from("tool_maintenance")
-      .select("fk_tool_id, completed_date")
-      .in("fk_tool_id", compIds)
-      .eq("maintenance_status", "COMPLETED")
-      .order("completed_date", { ascending: false });
-
-    for (const rec of maintRecords || []) {
-      const r = rec as { fk_tool_id: number; completed_date: string };
-      if (!compLastMaintMap[r.fk_tool_id]) {
-        compLastMaintMap[r.fk_tool_id] = r.completed_date;
-      }
-    }
-  }
-
-  let worstStatus: MaintenanceStatus = "OK";
-
-  const componentInfos: ComponentMaintenanceInfo[] = (components || []).map(
-    (comp: any) => {
-      const meta = comp.component_metadata || {};
-      const modelId = meta.fk_tool_model_id;
-      const model = modelId ? modelsMap[modelId] : null;
-      const specs = model?.specifications || {};
-
-      const cycleHour = Number(specs.maintenance_cycle_hour ?? 0);
-      const cycleFlight = Number(specs.maintenance_cycle_flight ?? 0);
-      const cycleDay = Number(specs.maintenance_cycle_day ?? 0);
-
-      let cycleType = "NONE";
-      const hasCycles = [cycleHour > 0, cycleFlight > 0, cycleDay > 0];
-      const activeCount = hasCycles.filter(Boolean).length;
-      if (activeCount > 1) cycleType = "MIXED";
-      else if (cycleHour > 0) cycleType = "HOURS";
-      else if (cycleFlight > 0) cycleType = "FLIGHTS";
-      else if (cycleDay > 0) cycleType = "DAYS";
-
-      const totalHours = comp.current_usage_hours ?? 0;
-      const totalFlights = meta.maintenance_flights ?? 0;
-      const lastMaint =
-        compLastMaintMap[comp.component_id] ??
-        comp.installation_date ??
-        null;
-
-      const daysSince = lastMaint
-        ? daysBetween(new Date(lastMaint), new Date())
-        : null;
-
-      const { status, trigger } = computeComponentStatus(
-        totalHours,
-        totalFlights,
-        lastMaint,
-        { hour: cycleHour, flight: cycleFlight, day: cycleDay }
-      );
-
-      if (status === "DUE") worstStatus = "DUE";
-      else if (status === "ALERT" && worstStatus !== "DUE")
-        worstStatus = "ALERT";
-
-      return {
-        component_id: comp.component_id,
-        component_type: comp.component_type,
-        component_code: comp.component_code || comp.component_name,
-        serial_number: comp.serial_number,
-        total_hours: totalHours,
-        total_flights: totalFlights,
-        days_since_maintenance: daysSince,
-        maintenance_cycle_hour: cycleHour,
-        maintenance_cycle_flight: cycleFlight,
-        maintenance_cycle_day: cycleDay,
-        maintenance_cycle_type: cycleType,
-        status,
-        trigger,
-      };
-    }
-  );
 
   return {
-    tool_id: toolId,
-    tool_code: tool.tool_code ?? `#${toolId}`,
-    tool_name: tool.tool_name ?? "",
+    tool_id: tool.tool_id,
+    tool_code: tool.tool_code,
+    tool_name: tool.tool_name,
     system_status: worstStatus,
-    components: componentInfos,
+    components,
   };
 }
 
+ 
 
 export async function updateComponentMaintenanceCycle(
   toolId: number,
@@ -265,7 +192,7 @@ export async function updateComponentMaintenanceCycle(
   for (const upd of updates) {
     const { data: comp, error: compErr } = await supabase
       .from("tool_component")
-      .select("component_id, fk_tool_id, component_type, component_code, component_name, serial_number, current_usage_hours, installation_date, component_metadata")
+      .select(COMPONENT_SELECT)
       .eq("component_id", upd.component_id)
       .eq("fk_tool_id", toolId)
       .maybeSingle();
@@ -273,65 +200,51 @@ export async function updateComponentMaintenanceCycle(
     if (compErr || !comp) continue;
 
     const meta = comp.component_metadata || {};
-    const prevFlights = meta.maintenance_flights ?? 0;
-    const prevDays = meta.maintenance_days ?? 0;
-    const prevHours = comp.current_usage_hours ?? 0;
 
+    // limits
+    const limitHour = Number(comp.maintenance_cycle_hour ?? 0);
+    const limitFlight = Number(comp.maintenance_cycle_flight ?? 0);
+    const limitDay = Number(comp.maintenance_cycle_day ?? 0);
+    const cycleType = comp.maintenance_cycle || "NONE";
+
+    // current usage from columns
+    const prevHours = Number(comp.current_maintenance_hours ?? 0);
+    const prevFlights = Number(comp.current_maintenance_flights ?? 0);
+    const prevLifetimeHours = comp.current_usage_hours ?? 0;
+
+    // Adding new usage
     const newHours = prevHours + (upd.add_hours || 0);
     const newFlights = prevFlights + (upd.add_flights || 0);
-    const newDays = prevDays + (upd.add_days || 0);
+    const newLifetimeHours = prevLifetimeHours + (upd.add_hours || 0);
+
+    const now = new Date().toISOString();
+
+    // Days resets to 0 because we set last_maintenance_date to now
+    const newDays = 0;
 
     const { error: updateErr } = await supabase
       .from("tool_component")
       .update({
-        current_usage_hours: newHours,
+        current_maintenance_hours: newHours,
+        current_maintenance_flights: newFlights,
+        current_maintenance_days: newDays,
+        current_usage_hours: newLifetimeHours,
+        last_maintenance_date: now,
         component_metadata: {
           ...meta,
-          maintenance_flights: newFlights,
-          maintenance_days: newDays,
           last_mission_id: missionId,
-          last_maintenance_update: new Date().toISOString(),
+          last_maintenance_update: now,
         },
       })
       .eq("component_id", upd.component_id);
 
     if (updateErr) continue;
 
-    const modelId = meta.fk_tool_model_id;
-    let cycleHour = 0, cycleFlight = 0, cycleDay = 0;
-
-    if (modelId) {
-      const { data: model } = await supabase
-        .from("tool_model")
-        .select("specifications")
-        .eq("model_id", modelId)
-        .maybeSingle();
-
-      if (model?.specifications) {
-        cycleHour = Number(model.specifications.maintenance_cycle_hour ?? 0);
-        cycleFlight = Number(model.specifications.maintenance_cycle_flight ?? 0);
-        cycleDay = Number(model.specifications.maintenance_cycle_day ?? 0);
-      }
-    }
-
-    const lastMaint = comp.installation_date ?? null;
-    const daysSince = lastMaint
-      ? daysBetween(new Date(lastMaint), new Date())
-      : null;
-
-    let cycleType = "NONE";
-    const hasCycles = [cycleHour > 0, cycleFlight > 0, cycleDay > 0];
-    const activeCount = hasCycles.filter(Boolean).length;
-    if (activeCount > 1) cycleType = "MIXED";
-    else if (cycleHour > 0) cycleType = "HOURS";
-    else if (cycleFlight > 0) cycleType = "FLIGHTS";
-    else if (cycleDay > 0) cycleType = "DAYS";
-
     const { status, trigger } = computeComponentStatus(
       newHours,
       newFlights,
-      lastMaint,
-      { hour: cycleHour, flight: cycleFlight, day: cycleDay }
+      newDays,
+      { hour: limitHour, flight: limitFlight, day: limitDay }
     );
 
     updatedComponents.push({
@@ -339,13 +252,14 @@ export async function updateComponentMaintenanceCycle(
       component_type: comp.component_type,
       component_code: comp.component_code || comp.component_name,
       serial_number: comp.serial_number,
-      total_hours: newHours,
-      total_flights: newFlights,
-      days_since_maintenance: daysSince,
-      maintenance_cycle_hour: cycleHour,
-      maintenance_cycle_flight: cycleFlight,
-      maintenance_cycle_day: cycleDay,
+      current_hours: newHours,
+      current_flights: newFlights,
+      current_days: newDays,
+      limit_hour: limitHour,
+      limit_flight: limitFlight,
+      limit_day: limitDay,
       maintenance_cycle_type: cycleType,
+      last_maintenance_date: now,
       status,
       trigger,
     });

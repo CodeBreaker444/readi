@@ -261,33 +261,45 @@ export async function getModelList(ownerId: number) {
     .eq('model_active', 'Y')
     .eq('specifications->>fk_owner_id', String(ownerId))
     .order('model_id', { ascending: false });
-
+ 
   if (error) throw error;
-
+ 
   return {
     code: 1,
     message: 'Success',
     dataRows: data?.length || 0,
-    data: (data || []).map((item) => ({
-      tool_model_id: item.model_id,
-      fk_tool_type_id: item.fk_tool_type_id,
-      factory_type: item.manufacturer,
-      factory_name: item.manufacturer,
-      factory_serie: item.model_code,
-      factory_model: item.model_name,
-      model_type: item.model_description || '',
-      specifications: item.specifications,
-      max_flight_time: item.specifications?.max_flight_time ?? null,
-      max_speed: item.specifications?.max_speed ?? null,
-      max_altitude: item.specifications?.max_altitude ?? null,
-      weight: item.specifications?.weight ?? null,
-    })),
+    data: (data || []).map((item) => {
+      const specs = item.specifications || {};
+      const notes: string = typeof specs.notes === 'string' ? specs.notes : '';
+      const cycleMatch = notes.match(/^Maintenance Cycle:\s*(.+)$/m);
+      const hoursMatch = notes.match(/^Maint\. Hours:\s*([\d.]+)$/m);
+      const daysMatch = notes.match(/^Maint\. Days:\s*([\d.]+)$/m);
+      const flightsMatch = notes.match(/^Maint\. Flights:\s*([\d.]+)$/m);
+ 
+      return {
+        tool_model_id: item.model_id,
+        fk_tool_type_id: item.fk_tool_type_id,
+        factory_type: item.manufacturer,
+        factory_name: item.manufacturer,
+        factory_serie: item.model_code,
+        factory_model: item.model_name,
+        model_type: item.model_description || '',
+        specifications: item.specifications,
+        max_flight_time: specs.max_flight_time ?? null,
+        max_speed: specs.max_speed ?? null,
+        max_altitude: specs.max_altitude ?? null,
+        weight: specs.weight ?? null,
+        maintenance_cycle: cycleMatch ? cycleMatch[1].trim() : null,
+        maintenance_cycle_hour: hoursMatch ? Number(hoursMatch[1]) : null,
+        maintenance_cycle_day: daysMatch ? Number(daysMatch[1]) : null,
+        maintenance_cycle_flight: flightsMatch ? Number(flightsMatch[1]) : null,
+      };
+    }),
   };
 }
 
 
 export async function deleteModel(ownerId: number, modelId: number) {
-  // Check if any active tool (system) uses this model directly
   const { data: toolsUsing } = await supabase
     .from('tool')
     .select('tool_id, tool_code')
@@ -295,7 +307,6 @@ export async function deleteModel(ownerId: number, modelId: number) {
     .eq('fk_owner_id', ownerId)
     .eq('tool_active', 'Y');
 
-  // Check if any component metadata references this model
   const { data: ownerTools } = await supabase
     .from('tool')
     .select('tool_id')
@@ -353,7 +364,6 @@ export async function deleteComponent(ownerId: number, componentId: number, forc
 
   if (compError || !comp) throw new Error('Component not found');
 
-  // Verify ownership via the attached tool
   const { data: tool } = await supabase
     .from('tool')
     .select('tool_id, tool_code')
@@ -363,7 +373,6 @@ export async function deleteComponent(ownerId: number, componentId: number, forc
 
   if (!tool) throw new Error('Component not found or unauthorized');
 
-  // If already logically detached from system, allow deletion without warning
   const isDetached = comp.component_metadata?.system_detached === true;
 
   if (!force && !isDetached) {
@@ -479,16 +488,16 @@ export async function getComponentList(ownerId: number, toolId?: number) {
     .from('tool')
     .select('tool_id')
     .eq('fk_owner_id', ownerId);
-
+ 
   if (toolId && toolId !== 0) {
     toolQuery = toolQuery.eq('tool_id', toolId);
   }
-
+ 
   const { data: ownerTools, error: toolError } = await toolQuery;
   if (toolError) throw toolError;
-
+ 
   const toolIds = (ownerTools || []).map((t) => t.tool_id);
-
+ 
   const selectFields = `
     component_id,
     fk_tool_id,
@@ -499,26 +508,30 @@ export async function getComponentList(ownerId: number, toolId?: number) {
     serial_number,
     component_active,
     installation_date,
-    component_metadata
+    component_metadata,
+    maintenance_cycle,
+    maintenance_cycle_hour,
+    maintenance_cycle_day,
+    maintenance_cycle_flight
   `;
-
+ 
   if (toolIds.length === 0) {
     return { code: 1, message: 'Success', dataRows: 0, data: [] };
   }
-
+ 
   const { data: rawData, error } = await supabase
     .from('tool_component')
     .select(selectFields)
     .in('fk_tool_id', toolIds)
     .eq('component_active', 'Y')
     .order('component_id', { ascending: false });
-
+ 
   if (error) throw error;
-
+ 
   const data = (toolId && toolId !== 0)
     ? (rawData || []).filter(item => item.component_metadata?.system_detached !== true)
     : (rawData || []);
-
+ 
   return {
     code: 1,
     message: 'Success',
@@ -542,23 +555,64 @@ export async function getComponentList(ownerId: number, toolId?: number) {
       gcs_type: item.component_metadata?.gcs_type || '',
       factory_serie: item.component_code,
       factory_model: item.component_name,
+      maintenance_cycle: item.maintenance_cycle || '',
+      maintenance_cycle_hour: item.maintenance_cycle_hour ?? '',
+      maintenance_cycle_day: item.maintenance_cycle_day ?? '',
+      maintenance_cycle_flight: item.maintenance_cycle_flight ?? '',
     })),
   };
 }
+ 
 
 
 export async function addComponent(componentData: any) {
+  let maintenanceCycle: string | null = null;
+  let maintenanceCycleHour: number | null = null;
+  let maintenanceCycleDay: number | null = null;
+  let maintenanceCycleFlight: number | null = null;
+ 
+  if (componentData.fk_tool_model_id) {
+    const { data: model } = await supabase
+      .from('tool_model')
+      .select('specifications')
+      .eq('model_id', componentData.fk_tool_model_id)
+      .single();
+ 
+    if (model?.specifications?.notes) {
+      const notes: string = model.specifications.notes;
+      const cycleMatch = notes.match(/^Maintenance Cycle:\s*(.+)$/m);
+      const hoursMatch = notes.match(/^Maint\. Hours:\s*([\d.]+)$/m);
+      const daysMatch = notes.match(/^Maint\. Days:\s*([\d.]+)$/m);
+      const flightsMatch = notes.match(/^Maint\. Flights:\s*([\d.]+)$/m);
+ 
+      maintenanceCycle = cycleMatch ? cycleMatch[1].trim() : null;
+      maintenanceCycleHour = hoursMatch ? Number(hoursMatch[1]) : null;
+      maintenanceCycleDay = daysMatch ? Number(daysMatch[1]) : null;
+      maintenanceCycleFlight = flightsMatch ? Number(flightsMatch[1]) : null;
+    }
+  }
+ 
+  const finalCycle = componentData.maintenance_cycle ?? maintenanceCycle;
+  const finalHour = componentData.maintenance_cycle_hour ?? maintenanceCycleHour;
+  const finalDay = componentData.maintenance_cycle_day ?? maintenanceCycleDay;
+  const finalFlight = componentData.maintenance_cycle_flight ?? maintenanceCycleFlight;
+ 
   const { data, error } = await supabase
     .from('tool_component')
     .insert({
       fk_tool_id: componentData.fk_tool_id,
       component_name: componentData.component_code || componentData.component_type,
       component_type: componentData.component_type,
-      component_code: componentData.component_code || null,
+      component_code: componentData.component_code || componentData.component_type,
       component_description: componentData.component_desc || componentData.component_vendor || null,
       serial_number: componentData.component_sn || null,
       installation_date: componentData.component_activation_date || null,
       component_active: 'Y',
+      last_maintenance_date : null,
+      maintenance_cycle: finalCycle || null,
+      maintenance_cycle_hour: finalHour ?? null,
+      maintenance_cycle_day: finalDay ?? null,
+      maintenance_cycle_flight: finalFlight ?? null,
       component_metadata: {
         cc_platform: componentData.cc_platform || null,
         gcs_type: componentData.gcs_type || null,
@@ -571,33 +625,27 @@ export async function addComponent(componentData: any) {
     })
     .select()
     .single();
-
+ 
   if (error) throw error;
   return { code: 1, message: 'Component added successfully', data };
 }
 
 
 export async function updateComponent(componentId: number, componentData: any) {
-  const { data: existing } = await supabase
-    .from('tool_component')
-    .select('component_metadata')
-    .eq('component_id', componentId)
-    .single();
-
-  const existingMeta = existing?.component_metadata || {};
-
   const { data, error } = await supabase
     .from('tool_component')
     .update({
       fk_tool_id: componentData.fk_tool_id,
-      component_name: componentData.component_name || componentData.component_type,
       component_type: componentData.component_type,
       component_code: componentData.component_code || null,
       component_description: componentData.component_desc || null,
       serial_number: componentData.component_sn || null,
       installation_date: componentData.component_activation_date || null,
+      maintenance_cycle: componentData.maintenance_cycle || null,
+      maintenance_cycle_hour: componentData.maintenance_cycle_hour ?? null,
+      maintenance_cycle_day: componentData.maintenance_cycle_day ?? null,
+      maintenance_cycle_flight: componentData.maintenance_cycle_flight ?? null,
       component_metadata: {
-        ...existingMeta,
         cc_platform: componentData.cc_platform || null,
         gcs_type: componentData.gcs_type || null,
         component_status: componentData.component_status || 'OPERATIONAL',
@@ -610,18 +658,9 @@ export async function updateComponent(componentId: number, componentData: any) {
     .eq('component_id', componentId)
     .select()
     .single();
-
+ 
   if (error) throw error;
-
-  return {
-    code: 1,
-    message: 'Component updated successfully',
-    data,
-    param: {
-      fk_owner_id: componentData.fk_owner_id,
-      fk_tool_id: componentData.fk_tool_id,
-    },
-  };
+  return { code: 1, message: 'Component updated successfully', data };
 }
 
 
