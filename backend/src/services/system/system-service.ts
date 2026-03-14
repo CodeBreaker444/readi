@@ -1,4 +1,5 @@
 import { supabase } from '@/backend/database/database';
+import { refreshMaintenanceDaysForOwner, refreshMaintenanceDaysForTool } from '@/backend/utils/refresh-maintenance-days';
 import { buildS3Url, getPresignedDownloadUrl, uploadFileToS3 } from '@/lib/s3Client';
 
 export interface StoredFile {
@@ -124,7 +125,7 @@ export async function getSystemList(
           tot_flown_time: missionData[item.tool_id]?.time || 0,
           tot_flown_meter: missionData[item.tool_id]?.distance || 0,
           tool_maintenance_logbook: item.tool_metadata?.maintenanceLogbook || 'N',
-          files: filesWithUrls,               
+          files: filesWithUrls,
           file_count: filesWithUrls.length,
           file_key: item.filekey ?? null,
           file_download_url: primaryDownloadUrl,
@@ -136,14 +137,14 @@ export async function getSystemList(
 
 const sanitizeFilename = (original: string): string => {
   return original
-    .normalize('NFD')                        
-    .replace(/[\u0300-\u036f]/g, '')          
-    .replace(/[^\x20-\x7E]/g, '_')           
-    .replace(/['"\\/:*?<>|()[\]{},;@!]/g, '_')  
-    .replace(/\s+/g, '_')                    
-    .replace(/_+/g, '_')                     
-    .replace(/^_|_$/g, '')                    
-    || 'file';                               
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\x20-\x7E]/g, '_')
+    .replace(/['"\\/:*?<>|()[\]{},;@!]/g, '_')
+    .replace(/\s+/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_|_$/g, '')
+    || 'file';
 }
 
 export async function addSystem(toolData: AddSystemInput) {
@@ -163,7 +164,7 @@ export async function addSystem(toolData: AddSystemInput) {
   const uploadedFiles: StoredFile[] = [];
 
   for (const f of filesToUpload) {
-      const safeFilename = sanitizeFilename(f.name)
+    const safeFilename = sanitizeFilename(f.name)
     const key = `system/${toolData.fk_owner_id}/${toolData.tool_code}/${Date.now()}_${safeFilename}`;
     await uploadFileToS3(key, f);
     const url = buildS3Url(key);
@@ -261,9 +262,9 @@ export async function getModelList(ownerId: number) {
     .eq('model_active', 'Y')
     .eq('specifications->>fk_owner_id', String(ownerId))
     .order('model_id', { ascending: false });
- 
+
   if (error) throw error;
- 
+
   return {
     code: 1,
     message: 'Success',
@@ -275,7 +276,7 @@ export async function getModelList(ownerId: number) {
       const hoursMatch = notes.match(/^Maint\. Hours:\s*([\d.]+)$/m);
       const daysMatch = notes.match(/^Maint\. Days:\s*([\d.]+)$/m);
       const flightsMatch = notes.match(/^Maint\. Flights:\s*([\d.]+)$/m);
- 
+
       return {
         tool_model_id: item.model_id,
         fk_tool_type_id: item.fk_tool_type_id,
@@ -484,20 +485,27 @@ export async function updateModel(modelId: number, modelData: any) {
 
 
 export async function getComponentList(ownerId: number, toolId?: number) {
+  
+  if (toolId && toolId !== 0) {
+    await refreshMaintenanceDaysForTool(toolId);
+  } else {
+    await refreshMaintenanceDaysForOwner(ownerId);
+  }
+
   let toolQuery = supabase
     .from('tool')
     .select('tool_id')
     .eq('fk_owner_id', ownerId);
- 
+
   if (toolId && toolId !== 0) {
     toolQuery = toolQuery.eq('tool_id', toolId);
   }
- 
+
   const { data: ownerTools, error: toolError } = await toolQuery;
   if (toolError) throw toolError;
- 
+
   const toolIds = (ownerTools || []).map((t) => t.tool_id);
- 
+
   const selectFields = `
     component_id,
     fk_tool_id,
@@ -514,24 +522,24 @@ export async function getComponentList(ownerId: number, toolId?: number) {
     maintenance_cycle_day,
     maintenance_cycle_flight
   `;
- 
+
   if (toolIds.length === 0) {
     return { code: 1, message: 'Success', dataRows: 0, data: [] };
   }
- 
+
   const { data: rawData, error } = await supabase
     .from('tool_component')
     .select(selectFields)
     .in('fk_tool_id', toolIds)
     .eq('component_active', 'Y')
     .order('component_id', { ascending: false });
- 
+
   if (error) throw error;
- 
+
   const data = (toolId && toolId !== 0)
     ? (rawData || []).filter(item => item.component_metadata?.system_detached !== true)
     : (rawData || []);
- 
+
   return {
     code: 1,
     message: 'Success',
@@ -562,7 +570,7 @@ export async function getComponentList(ownerId: number, toolId?: number) {
     })),
   };
 }
- 
+
 
 
 export async function addComponent(componentData: any) {
@@ -570,33 +578,33 @@ export async function addComponent(componentData: any) {
   let maintenanceCycleHour: number | null = null;
   let maintenanceCycleDay: number | null = null;
   let maintenanceCycleFlight: number | null = null;
- 
+
   if (componentData.fk_tool_model_id) {
     const { data: model } = await supabase
       .from('tool_model')
       .select('specifications')
       .eq('model_id', componentData.fk_tool_model_id)
       .single();
- 
+
     if (model?.specifications?.notes) {
       const notes: string = model.specifications.notes;
       const cycleMatch = notes.match(/^Maintenance Cycle:\s*(.+)$/m);
       const hoursMatch = notes.match(/^Maint\. Hours:\s*([\d.]+)$/m);
       const daysMatch = notes.match(/^Maint\. Days:\s*([\d.]+)$/m);
       const flightsMatch = notes.match(/^Maint\. Flights:\s*([\d.]+)$/m);
- 
+
       maintenanceCycle = cycleMatch ? cycleMatch[1].trim() : null;
       maintenanceCycleHour = hoursMatch ? Number(hoursMatch[1]) : null;
       maintenanceCycleDay = daysMatch ? Number(daysMatch[1]) : null;
       maintenanceCycleFlight = flightsMatch ? Number(flightsMatch[1]) : null;
     }
   }
- 
+
   const finalCycle = componentData.maintenance_cycle ?? maintenanceCycle;
   const finalHour = componentData.maintenance_cycle_hour ?? maintenanceCycleHour;
   const finalDay = componentData.maintenance_cycle_day ?? maintenanceCycleDay;
   const finalFlight = componentData.maintenance_cycle_flight ?? maintenanceCycleFlight;
- 
+
   const { data, error } = await supabase
     .from('tool_component')
     .insert({
@@ -608,7 +616,7 @@ export async function addComponent(componentData: any) {
       serial_number: componentData.component_sn || null,
       installation_date: componentData.component_activation_date || null,
       component_active: 'Y',
-      last_maintenance_date : null,
+      last_cycle_updated_at: componentData.component_activation_date || new Date().toISOString(),
       maintenance_cycle: finalCycle || null,
       maintenance_cycle_hour: finalHour ?? null,
       maintenance_cycle_day: finalDay ?? null,
@@ -625,13 +633,17 @@ export async function addComponent(componentData: any) {
     })
     .select()
     .single();
- 
+
   if (error) throw error;
   return { code: 1, message: 'Component added successfully', data };
 }
 
 
 export async function updateComponent(componentId: number, componentData: any) {
+  if (componentData.fk_tool_id) {
+    await refreshMaintenanceDaysForTool(componentData.fk_tool_id);
+  }
+
   const { data, error } = await supabase
     .from('tool_component')
     .update({
@@ -658,7 +670,7 @@ export async function updateComponent(componentId: number, componentData: any) {
     .eq('component_id', componentId)
     .select()
     .single();
- 
+
   if (error) throw error;
   return { code: 1, message: 'Component updated successfully', data };
 }
@@ -669,6 +681,9 @@ export async function getMaintenanceDashboard(
   clientId?: number,
   thresholdAlert: number = 80
 ) {
+  
+  await refreshMaintenanceDaysForOwner(ownerId);
+
   const { data: tools, error } = await supabase
     .from('tool')
     .select(`

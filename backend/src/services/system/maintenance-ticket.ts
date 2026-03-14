@@ -1,4 +1,5 @@
 import { supabase } from '@/backend/database/database';
+import { refreshMaintenanceDaysForTool } from '@/backend/utils/refresh-maintenance-days';
 import type {
   AddReportPayload,
   AssignTicketPayload,
@@ -38,7 +39,6 @@ export async function getTicketList(owner_id: number): Promise<MaintenanceTicket
       updated_at,
       tool:fk_tool_id (
         tool_code,
-        tool_serial_number,
         tool_model:fk_model_id (
           model_name,
           manufacturer
@@ -294,6 +294,8 @@ export async function getDroneList(ownerId: number): Promise<DroneOption[]> {
 
 
 export async function getComponentList(toolId: number): Promise<ComponentOption[]> {
+  await refreshMaintenanceDaysForTool(toolId);
+
   const { data, error } = await supabase
     .from('tool_component')
     .select('component_id, component_name, component_type, serial_number')

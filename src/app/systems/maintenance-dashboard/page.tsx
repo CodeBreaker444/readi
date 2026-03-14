@@ -21,7 +21,7 @@ export default function MaintenancePage() {
     setLoading(true);
     try {
       const res = await axios.post("/api/system/maintenance/dashboard", {
-        threshold_alert: 80,
+        threshold_alert: 60,
       });
       const json = res.data;
       if (json.code === 1) {
