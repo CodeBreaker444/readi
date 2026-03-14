@@ -114,6 +114,7 @@ export const getUserSession = cache(async (): Promise<Session | null> => {
       role: userData.user_role as Role,
       phone: userData.phone,
       userActive: userData.user_active,
+      timezone: userData.user_timezone ?? undefined,
       avatar: avatarUrl,
     };
 

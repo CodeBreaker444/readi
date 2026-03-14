@@ -3,7 +3,9 @@ import { dateConversionUtcToLocal, getCurrentYear } from "../../utils/date-utils
 import { MissionListItem, MissionTotal } from "./dashboard";
 
 /**
- * Get total mission statistics
+ * Get total mission statistics.
+ * Filters by scheduled_start (matches PHP view's date_start) so that
+ * planned missions with null actual_start are included.
  */
 export async function getReadiTotalMission(
   ownerId: number,
@@ -18,18 +20,14 @@ export async function getReadiTotalMission(
         pilot_mission_id,
         flight_duration,
         distance_flown,
+        scheduled_start,
         actual_start,
         fk_tool_id,
-        fk_mission_status_id,
-        fk_planning_id,
-        pilot_mission_status (
-          status_id,
-          status_code
-        )
+        fk_planning_id
       `)
       .eq('fk_owner_id', ownerId)
-      .gte('actual_start', `${year}-01-01`)
-      .lte('actual_start', `${year}-12-31`);
+      .gte('scheduled_start', `${year}-01-01`)
+      .lte('scheduled_start', `${year}-12-31`);
 
     if (fkUserId !== 0) {
       query = query.eq('fk_pilot_user_id', fkUserId);
@@ -89,13 +87,9 @@ export async function getReadiTotalMission(
     const total_hours = Math.floor(total_time / 60);
     const total_meter = missions.reduce((sum, m) => sum + (m.distance_flown || 0), 0);
 
-    const total_planned = missions.filter(m => {
-      const status = Array.isArray(m.pilot_mission_status)
-        ? m.pilot_mission_status[0]
-        : m.pilot_mission_status;
-      const statusCode = status?.status_code;
-      return statusCode === 'PLANNED' || statusCode === 'SCHEDULED';
-    }).length;
+    // PHP: SUM(is_scheduled_future) = count of missions where scheduled_start > NOW()
+    const now = new Date();
+    const total_planned = missions.filter(m => m.scheduled_start && new Date(m.scheduled_start) > now).length;
 
     const uniqueDrones = new Set(missions.map(m => m.fk_tool_id).filter(Boolean));
     const total_drones_used = uniqueDrones.size;
@@ -134,7 +128,11 @@ export async function getReadiTotalMission(
 }
 
 /**
- * Get last or next mission list
+ * Get last (executed) or next (planned) mission list.
+ * Uses scheduled_start for past/future determination — matching PHP's
+ * view_missioni_aggregate.is_scheduled_future = IF(date_start > NOW(), 1, 0)
+ * where date_start = scheduled_start.
+ * Displayed date uses actual_start if available, falls back to scheduled_start.
  */
 export async function getReadiLastNextMissionList(
   ownerId: number,
@@ -152,6 +150,7 @@ export async function getReadiLastNextMissionList(
       .from('pilot_mission')
       .select(`
         pilot_mission_id,
+        scheduled_start,
         actual_start,
         flight_duration,
         fk_pilot_user_id,
@@ -181,9 +180,15 @@ export async function getReadiLastNextMissionList(
     }
 
     if (isScheduledFuture === 1) {
-      query = query.gt('actual_start', now).order('actual_start', { ascending: true });
+      // Next/planned missions: scheduled_start in the future (PHP: is_scheduled_future = 1)
+      query = query
+        .gt('scheduled_start', now)
+        .order('scheduled_start', { ascending: true });
     } else {
-      query = query.lte('actual_start', now).order('actual_start', { ascending: false });
+      // Past/executed missions: scheduled_start in the past (PHP: is_scheduled_future = 0)
+      query = query
+        .lte('scheduled_start', now)
+        .order('scheduled_start', { ascending: false });
     }
 
     query = query.limit(limit);
@@ -237,13 +242,16 @@ export async function getReadiLastNextMissionList(
           ? item.pilot_mission_result[0]
           : item.pilot_mission_result;
 
+        // Use actual_start if the mission has started, otherwise show scheduled_start
+        const displayDate = item.actual_start || item.scheduled_start;
+
         return {
           status: 'success',
           year: currentYear,
           fk_client_id: planning?.fk_client_id || 0,
           fk_user_id: item.fk_pilot_user_id || 0,
           mission_id: item.pilot_mission_id,
-          date: dateConversionUtcToLocal(item.actual_start, userTimezone),
+          date: dateConversionUtcToLocal(displayDate, userTimezone),
           pilot_name: users ? `${users.first_name} ${users.last_name}` : '',
           drone_code: tool?.tool_code || '',
           mission_type_desc: missionType?.type_name || '',

@@ -2,7 +2,9 @@ import { supabase } from "../../database/database";
 import { ChartData, MissionResultChart } from "./dashboard";
 
 /**
- * Get mission chart data (missions per month per drone)
+ * Get mission chart data (missions per month per drone).
+ * Filters and groups by scheduled_start (matches PHP view's date_start)
+ * so that planned missions with null actual_start are included.
  */
 export async function getChartReadiTotalMission(
   ownerId: number,
@@ -15,7 +17,7 @@ export async function getChartReadiTotalMission(
       .from('pilot_mission')
       .select(`
         pilot_mission_id,
-        actual_start,
+        scheduled_start,
         fk_tool_id,
         fk_planning_id,
         tool (
@@ -24,8 +26,8 @@ export async function getChartReadiTotalMission(
         )
       `)
       .eq('fk_owner_id', ownerId)
-      .gte('actual_start', `${year}-01-01`)
-      .lte('actual_start', `${year}-12-31`)
+      .gte('scheduled_start', `${year}-01-01`)
+      .lte('scheduled_start', `${year}-12-31`)
       .not('tool.tool_code', 'is', null);
 
     if (fkUserId !== 0) {
@@ -70,7 +72,7 @@ export async function getChartReadiTotalMission(
 
       if (!droneName) return;
 
-      const date = new Date(mission.actual_start);
+      const date = new Date(mission.scheduled_start);
       const month = date.getMonth();
 
       if (!droneMap.has(droneName)) {
@@ -99,7 +101,9 @@ export async function getChartReadiTotalMission(
 }
 
 /**
- * Get mission result chart data
+ * Get mission result chart data.
+ * Filters by scheduled_start year (matches PHP view's YEAR(date_start)).
+ * Null result labels are mapped to 'Other' (matches PHP behaviour).
  */
 export async function getChartReadiTotalMissionResult(
   ownerId: number,
@@ -112,7 +116,7 @@ export async function getChartReadiTotalMissionResult(
       .from('pilot_mission')
       .select(`
         pilot_mission_id,
-        actual_start,
+        scheduled_start,
         fk_planning_id,
         pilot_mission_result (
           result_id,
@@ -120,8 +124,8 @@ export async function getChartReadiTotalMissionResult(
         )
       `)
       .eq('fk_owner_id', ownerId)
-      .gte('actual_start', `${year}-01-01`)
-      .lte('actual_start', `${year}-12-31`);
+      .gte('scheduled_start', `${year}-01-01`)
+      .lte('scheduled_start', `${year}-12-31`);
 
     if (fkUserId !== 0) {
       query = query.eq('fk_pilot_user_id', fkUserId);
@@ -158,7 +162,7 @@ export async function getChartReadiTotalMissionResult(
       const result = Array.isArray(mission.pilot_mission_result)
         ? mission.pilot_mission_result[0]
         : mission.pilot_mission_result;
-      const resultType = result?.result_type || 'Unknown';
+      const resultType = result?.result_type || 'Other';
 
       resultMap.set(resultType, (resultMap.get(resultType) || 0) + 1);
     });

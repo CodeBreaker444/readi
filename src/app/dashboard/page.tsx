@@ -1,4 +1,4 @@
-import { getDashboardData } from '@/backend/services/dashboard/dashboard';
+import { getDashboardData } from "@/backend/services/dashboard/dashboard";
 import DashboardClient from "@/components/dashboard/DashboardClient";
 import { getUserSession } from "@/lib/auth/server-session";
 
@@ -16,7 +16,7 @@ export default async function DashboardPage() {
   const dashboardData = await getDashboardData({
     owner_id: ownerId,
     user_id: userId,
-    user_timezone: session.user.timezone || 'UTC',
+    user_timezone: session.user.timezone || 'IST',
     user_profile_code: userProfileCode,
   });
   
