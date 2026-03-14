@@ -15,7 +15,6 @@ function computeStatus(
   currentHours: number,
   currentFlights: number,
   currentDays: number,
-  lastMaint: string | null,
   model: MaintenanceModel,
   threshold: number
 ): { status: MaintenanceStatus; trigger: (string | null)[] } {
@@ -25,20 +24,19 @@ function computeStatus(
   if (model.maintenance_cycle_hour > 0) {
     const pct = (currentHours / model.maintenance_cycle_hour) * 100;
     if (pct >= 100) { triggers[0] = "HOUR"; worst = "DUE"; }
-    else if (pct >= threshold) { triggers[0] = "HOUR"; 
-    if (worst !== "DUE") worst = "ALERT"; }
+    else if (pct >= threshold && worst !== "DUE") { triggers[0] = "HOUR"; worst = "ALERT"; }
   }
 
   if (model.maintenance_cycle_flight > 0) {
     const pct = (currentFlights / model.maintenance_cycle_flight) * 100;
     if (pct >= 100) { triggers[1] = "FLIGHT"; worst = "DUE"; }
-    else if (pct >= threshold) { triggers[1] = "FLIGHT"; if (worst !== "DUE") worst = "ALERT"; }
+    else if (pct >= threshold && worst !== "DUE") { triggers[1] = "FLIGHT"; worst = "ALERT"; }
   }
 
   if (model.maintenance_cycle_day > 0) {
     const pct = (currentDays / model.maintenance_cycle_day) * 100;
     if (pct >= 100) { triggers[2] = "DAY"; worst = "DUE"; }
-    else if (pct >= threshold) { triggers[2] = "DAY"; if (worst !== "DUE") worst = "ALERT"; }
+    else if (pct >= threshold && worst !== "DUE") { triggers[2] = "DAY"; worst = "ALERT"; }
   }
 
   return { status: worst, trigger: triggers };
@@ -57,7 +55,7 @@ function extractModel(rawModel: Record<string, unknown> | null): MaintenanceMode
   const specs = (rawModel.specifications ?? {}) as Record<string, number>;
 
   return {
-    factory_serie: String(rawModel.model_name ?? ""),
+    factory_serie: String(rawModel.manufacturer ?? ""),
     factory_model: String(rawModel.model_name ?? ""),
     maintenance_cycle_hour: Number(specs.maintenance_cycle_hour ?? 0),
     maintenance_cycle_flight: Number(specs.maintenance_cycle_flight ?? 0),
@@ -202,7 +200,6 @@ let toolQuery = supabase
       compHours,
       compFlights,
       compDays,
-      lastMaint,
       compModel,
       threshold_alert
     );
@@ -238,7 +235,6 @@ let toolQuery = supabase
       stats.totalHours,
       stats.totalFlights,
       droneDays,
-      lastMaint,
       model,
       threshold_alert
     );
@@ -246,7 +242,7 @@ let toolQuery = supabase
     return {
       tool_id: toolId,
       code: String(tool.tool_code ?? `#${toolId}`),
-      serial_number: String(tool.serial_number ?? ""),
+      serial_number: String(tool.tool_name ?? ""),
       last_maintenance: lastMaint,
       total_hours: Math.round(stats.totalHours * 100) / 100,
       total_flights: stats.totalFlights,

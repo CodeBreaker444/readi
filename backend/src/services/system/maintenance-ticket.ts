@@ -1,3 +1,5 @@
+'use server';
+
 import { supabase } from '@/backend/database/database';
 import { refreshMaintenanceDaysForTool } from '@/backend/utils/refresh-maintenance-days';
 import type {
@@ -17,8 +19,9 @@ import {
   buildS3Url,
   deleteFileFromS3,
   getPresignedDownloadUrl,
-  uploadFileToS3
+  uploadFileToS3,
 } from '@/lib/s3Client';
+
 
 
 export async function getTicketList(owner_id: number): Promise<MaintenanceTicket[]> {
@@ -39,6 +42,7 @@ export async function getTicketList(owner_id: number): Promise<MaintenanceTicket
       updated_at,
       tool:fk_tool_id (
         tool_code,
+        tool_name,
         tool_model:fk_model_id (
           model_name,
           manufacturer
@@ -53,34 +57,32 @@ export async function getTicketList(owner_id: number): Promise<MaintenanceTicket
     `)
     .order('ticket_id', { ascending: false });
 
-  if (owner_id) {
-    query = query.eq('fk_owner_id', owner_id);
-  }
+  if (owner_id) query = query.eq('fk_owner_id', owner_id);
 
   const { data, error } = await query;
   if (error) throw new Error(`getTicketList: ${error.message}`);
 
   return (data ?? []).map((row: any) => ({
-    ticket_id: row.ticket_id,
-    fk_owner_id: row.fk_owner_id,
-    fk_tool_id: row.fk_tool_id,
-    ticket_type: row.ticket_type ?? 'STANDARD',
-    entity_type: 'AIRCRAFT',
-    ticket_status: row.ticket_status ?? 'OPEN',
-    ticket_priority: row.ticket_priority ?? 'MEDIUM',
-    assigned_to_user_id: row.assigned_to_user_id,
-    opened_by: 'system',
-    opened_at: row.reported_at ?? row.created_at,
-    closed_at: row.closed_at ?? null,
-    note: row.resolution_notes ?? null,
-    created_at: row.created_at,
-    updated_at: row.updated_at,
-    drone_code: row.tool?.tool_code ?? '-',
-    drone_serial: row.tool?.tool_serial_number ?? '-',
-    drone_model: row.tool?.tool_model
+    ticket_id:           row.ticket_id,
+    fk_owner_id:         row.fk_owner_id,
+    fk_tool_id:          row.fk_tool_id,
+    ticket_type:         row.ticket_type ?? 'STANDARD',
+    entity_type:         'AIRCRAFT' as const,
+    ticket_status:       row.ticket_status ?? 'OPEN',
+    ticket_priority:     row.ticket_priority ?? 'MEDIUM',
+    assigned_to_user_id: row.assigned_to_user_id ?? null,
+    opened_by:           'system',
+    opened_at:           row.reported_at ?? row.created_at,
+    closed_at:           row.closed_at ?? null,
+    note:                row.resolution_notes ?? null,
+    created_at:          row.created_at,
+    updated_at:          row.updated_at,
+    drone_code:          row.tool?.tool_code ?? '—',
+    drone_serial:        row.tool?.tool_name ?? '—',
+    drone_model:         row.tool?.tool_model
       ? `${row.tool.tool_model.manufacturer ?? ''} ${row.tool.tool_model.model_name ?? ''}`.trim()
-      : '-',
-    assigner_name: row.assignee
+      : '—',
+    assigner_name:  row.assignee
       ? `${row.assignee.first_name ?? ''} ${row.assignee.last_name ?? ''}`.trim()
       : 'Unassigned',
     assigner_email: row.assignee?.email ?? '',
@@ -89,12 +91,11 @@ export async function getTicketList(owner_id: number): Promise<MaintenanceTicket
 }
 
 
-export async function createTicket(payload: CreateTicketPayload): Promise<number> {
-  const targets = payload.components?.length
-    ? payload.components
-    : [null];
 
-  const insert = targets.map((componentId) => ({
+export async function createTicket(payload: CreateTicketPayload): Promise<number> {
+  const targets = payload.components?.length ? payload.components : [null];
+
+  const rows = targets.map((componentId) => ({
     fk_owner_id:         payload.fk_owner_id,
     fk_tool_id:          payload.fk_tool_id,
     ticket_title:        componentId
@@ -111,30 +112,59 @@ export async function createTicket(payload: CreateTicketPayload): Promise<number
 
   const { data, error } = await supabase
     .from('maintenance_ticket')
-    .insert(insert)
+    .insert(rows)
     .select('ticket_id')
     .single();
 
   if (error) throw new Error(`createTicket: ${error.message}`);
 
   const ticketId: number = data.ticket_id;
-
   await addTicketEvent(ticketId, 'CREATED', `Ticket created by user #${payload.fk_user_id}`);
 
   return ticketId;
 }
 
+
+
 export async function closeTicket(payload: CloseTicketPayload): Promise<void> {
-  const { error } = await supabase
+  const { data: ticket, error: fetchErr } = await supabase
+    .from('maintenance_ticket')
+    .select('ticket_id, fk_tool_id, ticket_status')
+    .eq('ticket_id', payload.ticket_id)
+    .single();
+
+  if (fetchErr || !ticket) throw new Error('Ticket not found');
+  if (ticket.ticket_status === 'CLOSED') throw new Error('Ticket is already closed');
+
+  const now = new Date();
+  const todayDate = now.toISOString().split('T')[0];  
+
+  const { error: updateErr } = await supabase
     .from('maintenance_ticket')
     .update({
-      ticket_status: 'CLOSED',
-      closed_at: new Date().toISOString(),
+      ticket_status:    'CLOSED',
+      closed_at:        now.toISOString(),
       resolution_notes: payload.note ?? null,
     })
     .eq('ticket_id', payload.ticket_id);
 
-  if (error) throw new Error(`closeTicket: ${error.message}`);
+  if (updateErr) throw new Error(`closeTicket update: ${updateErr.message}`);
+
+  const { error: maintErr } = await supabase
+    .from('tool_maintenance')
+    .insert({
+      fk_tool_id:              ticket.fk_tool_id,
+      maintenance_type:        'CORRECTIVE',
+      maintenance_description: payload.note ?? 'Maintenance completed via ticket closure',
+      completed_date:          todayDate,
+      performed_by_user_id:    payload.closed_by ?? null,
+      maintenance_status:      'COMPLETED',
+      maintenance_notes:       payload.note ?? null,
+    });
+
+  if (maintErr) throw new Error(`closeTicket tool_maintenance insert: ${maintErr.message}`);
+
+  await resetComponentCounters(ticket.fk_tool_id, now.toISOString());
 
   await addTicketEvent(
     payload.ticket_id,
@@ -142,6 +172,7 @@ export async function closeTicket(payload: CloseTicketPayload): Promise<void> {
     payload.note ?? 'Ticket closed'
   );
 }
+
 
 
 export async function assignTicket(payload: AssignTicketPayload): Promise<void> {
@@ -160,23 +191,30 @@ export async function assignTicket(payload: AssignTicketPayload): Promise<void> 
 }
 
 
+
 export async function addReport(payload: AddReportPayload): Promise<void> {
-  const { error } = await supabase.from('maintenance_ticket_report').insert({
-    fk_ticket_id: payload.ticket_id,
-    report_title: 'Intervention Report',
-    report_content: payload.report_text,
-    report_type: 'INTERVENTION',
-    generated_at: new Date().toISOString(),
-  });
+  const { error } = await supabase
+    .from('maintenance_ticket_report')
+    .insert({
+      fk_ticket_id:   payload.ticket_id,
+      report_title:   'Intervention Report',
+      report_content: payload.report_text,
+      report_type:    'INTERVENTION',
+      generated_at:   new Date().toISOString(),
+    });
 
   if (error) throw new Error(`addReport: ${error.message}`);
 
   await addTicketEvent(payload.ticket_id, 'REPORT_ADDED', payload.report_text.slice(0, 120));
 
   if (payload.close_report === 'Y') {
-    await closeTicket({ ticket_id: payload.ticket_id, note: payload.report_text });
+    await closeTicket({
+      ticket_id: payload.ticket_id,
+      note:      payload.report_text,
+    });
   }
 }
+
 
 
 export async function getTicketEvents(ticketId: number): Promise<TicketEvent[]> {
@@ -189,13 +227,14 @@ export async function getTicketEvents(ticketId: number): Promise<TicketEvent[]> 
   if (error) throw new Error(`getTicketEvents: ${error.message}`);
 
   return (data ?? []).map((row: any) => ({
-    event_id: row.event_id,
+    event_id:     row.event_id,
     fk_ticket_id: ticketId,
-    event_type: row.event_type,
+    event_type:   row.event_type,
     event_message: row.event_description ?? '',
-    created_at: row.created_at,
+    created_at:   row.created_at,
   }));
 }
+
 
 
 export async function uploadAttachment(
@@ -206,24 +245,24 @@ export async function uploadAttachment(
   uploadedByUserId?: number
 ): Promise<{ file_key: string; s3_url: string }> {
   const fileKey = buildS3Key(ticketId, file.name);
-  const s3Url = buildS3Url(fileKey);
+  const s3Url   = buildS3Url(fileKey);
 
   await uploadFileToS3(fileKey, file);
 
   const { error: dbError } = await supabase
     .from('ticket_attachment')
     .insert({
-      fk_ticket_id: ticketId,
-      file_name: file.name,
-      file_key: fileKey,
-      file_type: file.type || 'application/octet-stream',
-      file_size: file.size,
-      file_description: description || null,
-      s3_region: REGION,
-      s3_url: s3Url,
-      uploaded_by: uploadedBy,
+      fk_ticket_id:        ticketId,
+      file_name:           file.name,
+      file_key:            fileKey,
+      file_type:           file.type || 'application/octet-stream',
+      file_size:           file.size,
+      file_description:    description || null,
+      s3_region:           REGION,
+      s3_url:              s3Url,
+      uploaded_by:         uploadedBy,
       uploaded_by_user_id: uploadedByUserId ?? null,
-      uploaded_at: new Date().toISOString(),
+      uploaded_at:         new Date().toISOString(),
     });
 
   if (dbError) throw new Error(`uploadAttachment (db): ${dbError.message}`);
@@ -232,7 +271,6 @@ export async function uploadAttachment(
 
   return { file_key: fileKey, s3_url: s3Url };
 }
-
 
 export async function getTicketAttachments(ticketId: number) {
   const { data, error } = await supabase
@@ -250,7 +288,6 @@ export async function getTicketAttachments(ticketId: number) {
     }))
   );
 }
-
 
 export async function deleteAttachment(attachmentId: number): Promise<void> {
   const { data, error: fetchError } = await supabase
@@ -274,6 +311,8 @@ export async function deleteAttachment(attachmentId: number): Promise<void> {
 }
 
 
+// ─── LOOKUPS ─────────────────────────────────────────────────────────────────
+
 export async function getDroneList(ownerId: number): Promise<DroneOption[]> {
   const { data, error } = await supabase
     .from('tool')
@@ -285,13 +324,12 @@ export async function getDroneList(ownerId: number): Promise<DroneOption[]> {
   if (error) throw new Error(`getDroneList: ${error.message}`);
 
   return (data ?? []).map((row: any) => ({
-    tool_id: row.tool_id,
-    tool_code: row.tool_code ?? '',
-    tool_desc: row.tool_name ?? '',
+    tool_id:     row.tool_id,
+    tool_code:   row.tool_code ?? '',
+    tool_desc:   row.tool_name ?? '',
     tool_status: String(row.fk_status_id ?? 'UNKNOWN'),
   }));
 }
-
 
 export async function getComponentList(toolId: number): Promise<ComponentOption[]> {
   await refreshMaintenanceDaysForTool(toolId);
@@ -306,11 +344,10 @@ export async function getComponentList(toolId: number): Promise<ComponentOption[
 
   return (data ?? []).map((row: any) => ({
     tool_component_id: row.component_id,
-    component_type: row.component_type ?? row.component_name ?? '',
-    component_sn: row.serial_number ?? '',
+    component_type:    row.component_type ?? row.component_name ?? '',
+    component_sn:      row.serial_number ?? '',
   }));
 }
-
 
 export async function getUserList(profileCode?: string): Promise<UserOption[]> {
   let query = supabase
@@ -326,13 +363,15 @@ export async function getUserList(profileCode?: string): Promise<UserOption[]> {
   if (error) throw new Error(`getUserList: ${error.message}`);
 
   return (data ?? []).map((row: any) => ({
-    user_id: row.user_id,
-    fullname: `${row.first_name ?? ''} ${row.last_name ?? ''}`.trim(),
-    email: row.email ?? '',
+    user_id:      row.user_id,
+    fullname:     `${row.first_name ?? ''} ${row.last_name ?? ''}`.trim(),
+    email:        row.email ?? '',
     user_profile: row.user_role ?? '',
   }));
 }
 
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
 
 async function addTicketEvent(
   ticketId: number,
@@ -340,9 +379,47 @@ async function addTicketEvent(
   message: string
 ): Promise<void> {
   await supabase.from('maintenance_ticket_event').insert({
-    fk_ticket_id: ticketId,
-    event_type: eventType,
+    fk_ticket_id:      ticketId,
+    event_type:        eventType,
     event_description: message,
-    created_at: new Date().toISOString(),
+    created_at:        new Date().toISOString(),
   });
+}
+
+/**
+ * Reset component maintenance counters to 0 after a maintenance is completed.
+ * Called when a ticket is closed.
+ */
+async function resetComponentCounters(toolId: number, resetAt: string): Promise<void> {
+  const { data: components } = await supabase
+    .from('tool_component')
+    .select('component_id, maintenance_cycle')
+    .eq('fk_tool_id', toolId)
+    .eq('component_active', 'Y');
+
+  if (!components || components.length === 0) return;
+
+  for (const comp of components) {
+    const cycleType = comp.maintenance_cycle ?? 'NONE';
+    if (cycleType === 'NONE') continue;
+
+    const resetPayload: Record<string, any> = {
+      last_cycle_updated_at: resetAt,
+    };
+
+    if (cycleType === 'HOURS' || cycleType === 'MIXED') {
+      resetPayload.current_maintenance_hours = 0;
+    }
+    if (cycleType === 'FLIGHTS' || cycleType === 'MIXED') {
+      resetPayload.current_maintenance_flights = 0;
+    }
+    if (cycleType === 'DAYS' || cycleType === 'MIXED') {
+      resetPayload.current_maintenance_days = 0;
+    }
+
+    await supabase
+      .from('tool_component')
+      .update(resetPayload)
+      .eq('component_id', comp.component_id);
+  }
 }

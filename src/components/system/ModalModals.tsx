@@ -55,7 +55,7 @@ function ModalFooter({
       <button
         type="button"
         onClick={onConfirm}
-        className={`px-5 py-2 text-white text-sm font-semibold rounded-xl transition ${confirmClass}`}
+        className={`px-5 py-2 text-white text-sm bg-violet-600 hover:bg-violet-700 rounded-sm transition ${confirmClass}`}
       >
         {confirmLabel}
       </button>
