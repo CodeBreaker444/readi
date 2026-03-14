@@ -2,35 +2,35 @@
 
 import { useTheme } from '@/components/useTheme';
 import {
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  useReactTable,
+    flexRender,
+    getCoreRowModel,
+    getFilteredRowModel,
+    getPaginationRowModel,
+    useReactTable,
 } from '@tanstack/react-table';
 import axios from 'axios';
 import { Building2, Filter, Plus, Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { ClientData, getClientColumns } from '../tables/clientColumn';
+import { ClientData, getClientColumns } from '../tables/ClientColumn';
 import { TablePagination } from '../tables/Pagination';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from '../ui/select';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from '../ui/table';
 import { ClientFormModal } from './ClientFormModal';
 import { ClientSkeletonRow, ClientStatSkeleton } from './ClientStatSkeleton';
