@@ -21,36 +21,38 @@ export async function refreshMaintenanceDays(toolIds: number[]): Promise<void> {
   if (error || !components || components.length === 0) return;
  
   const today = new Date();
-  today.setHours(0, 0, 0, 0);
- 
+  today.setUTCHours(0, 0, 0, 0);
+  const todayISO = today.toISOString();
+
   const updates: { id: number; days: number }[] = [];
- 
+
   for (const comp of components) {
     const limit = Number(comp.maintenance_cycle_day);
     const current = Number(comp.current_maintenance_days ?? 0);
- 
+
     if (current >= limit) continue;
- 
+
     const lastStamp = new Date(comp.last_cycle_updated_at);
-    lastStamp.setHours(0, 0, 0, 0);
- 
+    lastStamp.setUTCHours(0, 0, 0, 0);
+
     const daysPassed = Math.floor((today.getTime() - lastStamp.getTime()) / 86_400_000);
- 
+
     if (daysPassed <= 0) continue;
- 
+
     const newValue = Math.min(current + daysPassed, limit);
- 
+
     updates.push({ id: comp.component_id, days: newValue });
   }
- 
+
   for (const upd of updates) {
     await supabase
       .from('tool_component')
       .update({
         current_maintenance_days: upd.days,
-        last_cycle_updated_at: today.toISOString(),
+        last_cycle_updated_at: todayISO,
       })
-      .eq('component_id', upd.id);
+      .eq('component_id', upd.id)
+      .lt('last_cycle_updated_at', todayISO);
   }
 }
  

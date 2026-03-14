@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 interface AddModelModalProps {
@@ -334,7 +334,7 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
               {showHours && (
                 <div className="col-span-2">
                   <Label className="pb-2">
-                    Hours <span className="text-xs text-muted-foreground">(0–24)</span>
+                    Hours Limit<span className="text-xs text-muted-foreground">(0–24)</span>
                   </Label>
                   <Input
                     type="number"
@@ -350,7 +350,7 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
               {showDays && (
                 <div className="col-span-2">
                   <Label className="pb-2">
-                    Days <span className="text-xs text-muted-foreground">(0–30)</span>
+                    Days Limit<span className="text-xs text-muted-foreground">(0–30)</span>
                   </Label>
                   <Input
                     type="number"
@@ -366,7 +366,7 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
               {showFlights && (
                 <div className="col-span-2">
                   <Label className="pb-2">
-                    Flights <span className="text-xs text-muted-foreground">(0–10)</span>
+                    Flights Limit<span className="text-xs text-muted-foreground">(0–10)</span>
                   </Label>
                   <Input
                     type="number"

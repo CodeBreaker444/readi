@@ -87,28 +87,6 @@ export const systemCreateColumns = ({
             ),
         },
         {
-            header: () => (
-                <span className={isDark ? 'text-gray-100' : ''}>Flight Time (min)</span>
-            ),
-            accessorKey: 'tot_flown_time',
-            cell: ({ row }) => (
-                <span className={textClass}>
-                    {Math.round(row.original.tot_flown_time / 60)}
-                </span>
-            ),
-        },
-        {
-            header: () => (
-                <span className={isDark ? 'text-gray-100' : ''}>Distance (km)</span>
-            ),
-            accessorKey: 'tot_flown_meter',
-            cell: ({ row }) => (
-                <span className={textClass}>
-                    {(row.original.tot_flown_meter / 1000).toFixed(2)}
-                </span>
-            ),
-        },
-        {
             header: () => <span className={isDark ? 'text-gray-100' : ''}>Active</span>,
             accessorKey: 'active',
             cell: ({ row }) => {

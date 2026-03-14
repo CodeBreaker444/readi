@@ -616,7 +616,7 @@ export async function addComponent(componentData: any) {
       serial_number: componentData.component_sn || null,
       installation_date: componentData.component_activation_date || null,
       component_active: 'Y',
-      last_cycle_updated_at: componentData.component_activation_date || new Date().toISOString(),
+      last_cycle_updated_at: new Date().toISOString(),
       maintenance_cycle: finalCycle || null,
       maintenance_cycle_hour: finalHour ?? null,
       maintenance_cycle_day: finalDay ?? null,
