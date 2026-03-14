@@ -38,7 +38,7 @@ export const systemCreateColumns = ({
     return [
         {
             header: () => <span className={isDark ? 'text-gray-100' : ''}>Tool Code</span>,
-            accessorKey: 'tool_code',
+            accessorKey: 'system_code',
             cell: ({ getValue }) => (
                 <span className={textClass}>{getValue() as string}</span>
             ),
