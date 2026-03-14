@@ -47,7 +47,6 @@ function computeStatus(
 function extractModel(rawModel: Record<string, unknown> | null): MaintenanceModel {
   if (!rawModel) {
     return {
-      factory_type: null,
       factory_serie: null,
       factory_model: null,
       maintenance_cycle_hour: 0,
@@ -56,9 +55,8 @@ function extractModel(rawModel: Record<string, unknown> | null): MaintenanceMode
     };
   }
   const specs = (rawModel.specifications ?? {}) as Record<string, number>;
-  const toolType = rawModel.tool_type as Record<string, string> | null;
+
   return {
-    factory_type: toolType?.tool_type_name ?? null,
     factory_serie: String(rawModel.model_name ?? ""),
     factory_model: String(rawModel.model_name ?? ""),
     maintenance_cycle_hour: Number(specs.maintenance_cycle_hour ?? 0),
@@ -72,9 +70,9 @@ export async function getMaintenanceDashboard(
 ): Promise<MaintenanceDrone[]> {
   const { owner_id, client_id, threshold_alert } = params;
 
-  let toolQuery = supabase
-    .from("tool")
-    .select(`
+let toolQuery = supabase
+  .from("tool")
+  .select(`
     tool_id,
     tool_code,
     fk_owner_id,
@@ -83,14 +81,10 @@ export async function getMaintenanceDashboard(
       model_id,
       manufacturer,
       model_name,
-      specifications,
-      tool_type:fk_tool_type_id (
-        tool_type_name,
-        tool_type_code
-      )
+      specifications
     )
   `)
-    .eq("tool_active", "Y");
+  .eq("tool_active", "Y");
 
   if (owner_id > 0) toolQuery = toolQuery.eq("fk_owner_id", owner_id);
 
@@ -191,7 +185,7 @@ export async function getMaintenanceDashboard(
     };
 
     const compModel: MaintenanceModel = {
-      factory_type: comp.component_type,
+      // factory_type: comp.component_type,
       factory_serie: null,
       factory_model: comp.component_name,
       maintenance_cycle_hour: Number(comp.maintenance_cycle_hour ?? 0),

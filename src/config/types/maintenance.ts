@@ -1,7 +1,6 @@
 export type MaintenanceStatus = "OK" | "ALERT" | "DUE";
 
 export interface MaintenanceModel {
-  factory_type: string | null;
   factory_serie: string | null;
   factory_model: string | null;
   maintenance_cycle_hour: number;

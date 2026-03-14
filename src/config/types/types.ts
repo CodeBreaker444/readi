@@ -31,14 +31,7 @@ export interface ToolStatusRef {
   is_active: boolean;
 }
  
-export interface ToolType {
-  tool_type_id: number;
-  tool_type_code?: string | null;
-  tool_type_name: string;
-  tool_type_description?: string | null;
-  tool_type_category?: string | null;
-  tool_type_active?: "Y" | "N";
-}
+ 
 
 export interface ToolMetadata {
   latitude?: number;

@@ -214,9 +214,9 @@ function ComponentSubRow({ comp }: { comp: MaintenanceComponent }) {
         </div>
       </td>
 
-      <td className="px-3 py-2.5 text-slate-500 text-xs">
+      {/* <td className="px-3 py-2.5 text-slate-500 text-xs">
         {[model.factory_type, model.factory_model].filter(Boolean).join(" · ") || "—"}
-      </td>
+      </td> */}
 
       <td className="px-3 py-2.5 text-slate-500 text-xs font-mono">
         {comp.serial_number ?? "—"}
@@ -305,23 +305,23 @@ const columns: ColumnDef<MaintenanceDrone>[] = [
       );
     },
   },
-  {
-    id: "type",
-    header: "Type",
-    cell: ({ row }) => {
-      const model = row.original.model;
-      return (
-        <span className="text-xs text-slate-500">
-          <span className="inline-flex items-center px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-medium">
-            {model.factory_type ?? "—"}
-          </span>
-          {model.factory_model && (
-            <span className="ml-1.5 text-slate-400">{model.factory_model}</span>
-          )}
-        </span>
-      );
-    },
-  },
+  // {
+  //   id: "type",
+  //   header: "Type",
+  //   cell: ({ row }) => {
+  //     const model = row.original.model;
+  //     return (
+  //       <span className="text-xs text-slate-500">
+  //         <span className="inline-flex items-center px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-medium">
+  //           {model.factory_type ?? "—"}
+  //         </span>
+  //         {model.factory_model && (
+  //           <span className="ml-1.5 text-slate-400">{model.factory_model}</span>
+  //         )}
+  //       </span>
+  //     );
+  //   },
+  // },
   {
     id: "serial",
     header: "Serial",

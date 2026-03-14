@@ -8,7 +8,6 @@ const schema = z.object({
   model_code:      z.string().min(1),
   model_name:      z.string().min(1),
   model_type:      z.string().optional().nullable(),
-  tool_type_id:    z.string().optional(),
   max_flight_time: z.number().optional().nullable(),
   max_speed:       z.number().optional().nullable(),
   max_altitude:    z.number().optional().nullable(),
@@ -39,7 +38,6 @@ export async function POST(
 
     const result = await updateModel(Number(id), {
       ...parsed.data,
-      fk_tool_type_id: parsed.data.tool_type_id ? Number(parsed.data.tool_type_id) : undefined,
     });
     return NextResponse.json(result);
   } catch (error: any) {

@@ -183,7 +183,6 @@ export async function addSystem(toolData: AddSystemInput) {
     .from('tool')
     .insert({
       fk_owner_id: toolData.fk_owner_id,
-      fk_tool_type_id: 1,
       tool_code: toolData.tool_code,
       tool_name: toolData.tool_name || toolData.tool_code,
       tool_description: toolData.tool_description || null,
@@ -258,7 +257,7 @@ export async function deleteSystem(ownerId: number, toolId: number) {
 export async function getModelList(ownerId: number) {
   const { data, error } = await supabase
     .from('tool_model')
-    .select('model_id, model_code, model_name, manufacturer, fk_tool_type_id, specifications, model_description')
+    .select('model_id, model_code, model_name, manufacturer, specifications, model_description')
     .eq('model_active', 'Y')
     .eq('specifications->>fk_owner_id', String(ownerId))
     .order('model_id', { ascending: false });
@@ -279,7 +278,6 @@ export async function getModelList(ownerId: number) {
 
       return {
         tool_model_id: item.model_id,
-        fk_tool_type_id: item.fk_tool_type_id,
         factory_type: item.manufacturer,
         factory_name: item.manufacturer,
         factory_serie: item.model_code,
@@ -433,7 +431,6 @@ export async function addModel(modelData: any) {
   const { data, error } = await supabase
     .from('tool_model')
     .insert({
-      fk_tool_type_id: modelData.fk_tool_type_id || 1,
       model_code: modelData.factory_serie,
       model_name: modelData.factory_model,
       manufacturer: modelData.factory_type,
@@ -472,7 +469,6 @@ export async function updateModel(modelId: number, modelData: any) {
       model_code: modelData.model_code,
       model_name: modelData.model_name,
       ...(modelData.model_type !== undefined ? { model_description: modelData.model_type } : {}),
-      ...(modelData.fk_tool_type_id ? { fk_tool_type_id: modelData.fk_tool_type_id } : {}),
       specifications: updatedSpecs,
     })
     .eq('model_id', modelId)
