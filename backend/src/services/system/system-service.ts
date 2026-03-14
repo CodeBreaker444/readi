@@ -616,7 +616,7 @@ export async function addComponent(componentData: any) {
       serial_number: componentData.component_sn || null,
       installation_date: componentData.component_activation_date || null,
       component_active: 'Y',
-      last_cycle_updated_at: new Date().toISOString(),
+      last_cycle_updated_at: componentData.component_activation_date,
       maintenance_cycle: finalCycle || null,
       maintenance_cycle_hour: finalHour ?? null,
       maintenance_cycle_day: finalDay ?? null,
@@ -712,57 +712,4 @@ export async function getMaintenanceDashboard(
   });
 
   return { code: 1, message: 'Success', dataRows: maintenanceNeeded.length, data: maintenanceNeeded };
-}
-
-
-export async function getToolTypeList(active: string = 'ALL') {
-  let query = supabase.from('tool_type').select('*').order('tool_type_id', { ascending: true });
-
-  if (active !== 'ALL') query = query.eq('tool_type_active', active);
-
-  const { data, error } = await query;
-  if (error) throw error;
-
-  return {
-    code: 1,
-    message: 'Success',
-    dataRows: data?.length || 0,
-    data: (data || []).map((item) => ({
-      tool_type_id: item.tool_type_id,
-      tool_type_code: item.tool_type_code,
-      tool_type_name: item.tool_type_name,
-      tool_type_description: item.tool_type_description,
-      tool_type_category: item.tool_type_category,
-      tool_type_active: item.tool_type_active,
-      created_at: item.created_at,
-    })),
-  };
-}
-
-
-export async function addToolType(toolTypeData: any) {
-  if (toolTypeData.tool_type_code) {
-    const { data: existing } = await supabase
-      .from('tool_type')
-      .select('tool_type_id')
-      .eq('tool_type_code', toolTypeData.tool_type_code)
-      .maybeSingle();
-
-    if (existing) throw new Error('Tool type code already exists');
-  }
-
-  const { data, error } = await supabase
-    .from('tool_type')
-    .insert({
-      tool_type_code: toolTypeData.tool_type_code,
-      tool_type_name: toolTypeData.tool_type_name,
-      tool_type_description: toolTypeData.tool_type_description,
-      tool_type_category: toolTypeData.tool_type_category,
-      tool_type_active: toolTypeData.tool_type_active || 'Y',
-    })
-    .select()
-    .single();
-
-  if (error) throw error;
-  return { code: 1, message: 'Tool type added successfully', data };
 }

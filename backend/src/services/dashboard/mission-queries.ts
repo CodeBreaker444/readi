@@ -1,12 +1,7 @@
 import { supabase } from "../../database/database";
 import { dateConversionUtcToLocal, getCurrentYear } from "../../utils/date-utils";
 import { MissionListItem, MissionTotal } from "./dashboard";
-
-/**
- * Get total mission statistics.
- * Filters by scheduled_start (matches PHP view's date_start) so that
- * planned missions with null actual_start are included.
- */
+ 
 export async function getReadiTotalMission(
   ownerId: number,
   fkClientId: number,
@@ -87,7 +82,6 @@ export async function getReadiTotalMission(
     const total_hours = Math.floor(total_time / 60);
     const total_meter = missions.reduce((sum, m) => sum + (m.distance_flown || 0), 0);
 
-    // PHP: SUM(is_scheduled_future) = count of missions where scheduled_start > NOW()
     const now = new Date();
     const total_planned = missions.filter(m => m.scheduled_start && new Date(m.scheduled_start) > now).length;
 
@@ -127,13 +121,7 @@ export async function getReadiTotalMission(
   }
 }
 
-/**
- * Get last (executed) or next (planned) mission list.
- * Uses scheduled_start for past/future determination — matching PHP's
- * view_missioni_aggregate.is_scheduled_future = IF(date_start > NOW(), 1, 0)
- * where date_start = scheduled_start.
- * Displayed date uses actual_start if available, falls back to scheduled_start.
- */
+ 
 export async function getReadiLastNextMissionList(
   ownerId: number,
   fkClientId: number,
@@ -180,12 +168,10 @@ export async function getReadiLastNextMissionList(
     }
 
     if (isScheduledFuture === 1) {
-      // Next/planned missions: scheduled_start in the future (PHP: is_scheduled_future = 1)
       query = query
         .gt('scheduled_start', now)
         .order('scheduled_start', { ascending: true });
     } else {
-      // Past/executed missions: scheduled_start in the past (PHP: is_scheduled_future = 0)
       query = query
         .lte('scheduled_start', now)
         .order('scheduled_start', { ascending: false });
@@ -242,7 +228,6 @@ export async function getReadiLastNextMissionList(
           ? item.pilot_mission_result[0]
           : item.pilot_mission_result;
 
-        // Use actual_start if the mission has started, otherwise show scheduled_start
         const displayDate = item.actual_start || item.scheduled_start;
 
         return {

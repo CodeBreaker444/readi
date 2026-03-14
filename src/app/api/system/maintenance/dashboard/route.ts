@@ -15,15 +15,15 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const session = await getUserSession();
 
-    if (!session?.user || (session.user.role !== 'ADMIN' && session.user.role !== 'SUPERADMIN')) {
+    if (!session?.user) {
       return NextResponse.json(
         { code: 0, message: "Unauthorized", data: [], dataRows: 0 },
         { status: 401 }
       );
     }
 
-    const owner_id: number  = session.user.ownerId  
-    const client_id: number = session.user.userId 
+    const owner_id: number  = session.user.ownerId;
+    const client_id: number = session.user.clientId ;
 
     const parsed = MaintenanceDashboardSchema.safeParse(body);
     if (!parsed.success) {
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
         {
           code: 0,
           message: "Validation error",
-          errors: parsed.error.flatten().fieldErrors,
+          errors: parsed.error.flatten((i) => i.message).fieldErrors,
         },
         { status: 400 }
       );

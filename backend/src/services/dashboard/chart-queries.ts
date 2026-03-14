@@ -1,11 +1,7 @@
 import { supabase } from "../../database/database";
 import { ChartData, MissionResultChart } from "./dashboard";
 
-/**
- * Get mission chart data (missions per month per drone).
- * Filters and groups by scheduled_start (matches PHP view's date_start)
- * so that planned missions with null actual_start are included.
- */
+ 
 export async function getChartReadiTotalMission(
   ownerId: number,
   fkClientId: number,
@@ -100,11 +96,7 @@ export async function getChartReadiTotalMission(
   }
 }
 
-/**
- * Get mission result chart data.
- * Filters by scheduled_start year (matches PHP view's YEAR(date_start)).
- * Null result labels are mapped to 'Other' (matches PHP behaviour).
- */
+ 
 export async function getChartReadiTotalMissionResult(
   ownerId: number,
   fkClientId: number,
