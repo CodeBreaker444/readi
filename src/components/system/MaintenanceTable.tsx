@@ -17,7 +17,7 @@ import {
 } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
 import { TablePagination } from "../tables/Pagination";
-import StatusBadge, { ProgressBar } from "./StatusBadge";
+import StatusBadge from "./StatusBadge";
 
 
 function daysSince(dateStr: string | null): number | null {
@@ -28,6 +28,85 @@ function daysSince(dateStr: string | null): number | null {
 function cleanTrigger(arr: (string | null)[] | null): string[] {
   if (!Array.isArray(arr)) return [];
   return arr.filter((v): v is string => !!v && v !== "null");
+}
+
+/* ── Usage / Limit display cell ── */
+function UsageLimitCell({
+  current,
+  limit,
+  unit,
+  status,
+  isTriggered,
+}: {
+  current: number | null;
+  limit: number | null;
+  unit: string;
+  status: MaintenanceStatus;
+  isTriggered: boolean;
+}) {
+  const cur = current ?? 0;
+  const max = limit && limit > 0 ? limit : null;
+
+  // Compute percentage for bar
+  const pct = max ? Math.min((cur / max) * 100, 100) : 0;
+
+  // Color logic
+  const barColor =
+    status === "DUE" && isTriggered
+      ? "bg-rose-500"
+      : status === "ALERT" && isTriggered
+      ? "bg-amber-500"
+      : "bg-emerald-500";
+
+  const textColor =
+    status === "DUE" && isTriggered
+      ? "text-rose-600"
+      : status === "ALERT" && isTriggered
+      ? "text-amber-600"
+      : "text-slate-600";
+
+  if (!max) {
+    return (
+      <div className="flex flex-col gap-1">
+        <span className="text-xs text-slate-400">—</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-1 min-w-[100px]">
+      <div className="flex items-baseline justify-between gap-1">
+        <span className={`text-xs font-semibold tabular-nums ${textColor}`}>
+          {cur}
+        </span>
+        <span className="text-[10px] text-slate-400">
+          / {max} {unit}
+        </span>
+      </div>
+      <div className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
+        <div
+          className={`h-full rounded-full transition-all ${barColor}`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+/* ── Maintenance Cycle badge ── */
+function CycleBadge({ model }: { model: MaintenanceComponent["model"] }) {
+  const parts: string[] = [];
+  if (model.maintenance_cycle_hour > 0) parts.push(`${model.maintenance_cycle_hour}h`);
+  if (model.maintenance_cycle_flight > 0) parts.push(`${model.maintenance_cycle_flight}fl`);
+  if (model.maintenance_cycle_day > 0) parts.push(`${model.maintenance_cycle_day}d`);
+
+  if (parts.length === 0) return <span className="text-xs text-slate-300">—</span>;
+
+  return (
+    <span className="inline-flex items-center gap-1 text-[11px] text-slate-500 bg-slate-100 rounded px-1.5 py-0.5 font-medium">
+      {parts.join(" · ")}
+    </span>
+  );
 }
 
 
@@ -95,7 +174,7 @@ function FilterBar({
         ))}
       </div>
 
-      <div className="relative flex-1 min-w-[200px]">
+      <div className="relative flex-1 min-w-50">
         <svg
           className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400"
           fill="none" viewBox="0 0 24 24" stroke="currentColor"
@@ -125,30 +204,64 @@ function ComponentSubRow({ comp }: { comp: MaintenanceComponent }) {
     <tr className="border-t border-slate-100 bg-slate-50/60 text-sm">
       <td className="pl-10 pr-3 py-2.5">
         <div className="flex items-center gap-2">
-          <span className="w-1 h-4 rounded-full bg-slate-300 flex-shrink-0" />
-          <span className="text-slate-600 font-medium">{comp.component_type ?? "—"}</span>
+          <span className="w-1 h-4 rounded-full bg-slate-300 shrink-0" />
+          <div>
+            <span className="text-slate-600 font-medium">{comp.component_name ?? "—"}</span>
+            {comp.component_type && (
+              <p className="text-[11px] text-slate-400">{comp.component_type}</p>
+            )}
+          </div>
         </div>
       </td>
-      <td className="px-3 py-2.5 text-slate-500 text-xs">
+
+      {/* <td className="px-3 py-2.5 text-slate-500 text-xs">
         {[model.factory_type, model.factory_model].filter(Boolean).join(" · ") || "—"}
-      </td>
+      </td> */}
+
       <td className="px-3 py-2.5 text-slate-500 text-xs font-mono">
         {comp.serial_number ?? "—"}
       </td>
+
+      <td className="px-3 py-2.5">
+        <CycleBadge model={model} />
+      </td>
+
       <td className="px-3 py-2.5 text-slate-500 text-xs">
         {comp.last_maintenance
           ? new Date(comp.last_maintenance).toLocaleDateString("en-GB")
           : "—"}
       </td>
+
       <td className="px-3 py-2.5">
-        <ProgressBar value={comp.total_hours} max={model.maintenance_cycle_hour}   status={comp.status} isTriggered={triggers.includes("HOUR")} />
+        <UsageLimitCell
+          current={comp.total_hours}
+          limit={model.maintenance_cycle_hour}
+          unit="h"
+          status={comp.status}
+          isTriggered={triggers.includes("HOUR")}
+        />
       </td>
+
       <td className="px-3 py-2.5">
-        <ProgressBar value={comp.total_flights} max={model.maintenance_cycle_flight} status={comp.status} isTriggered={triggers.includes("FLIGHT")} />
+        <UsageLimitCell
+          current={comp.total_flights}
+          limit={model.maintenance_cycle_flight}
+          unit="fl"
+          status={comp.status}
+          isTriggered={triggers.includes("FLIGHT")}
+        />
       </td>
+
       <td className="px-3 py-2.5">
-        <ProgressBar value={daysUsed} max={model.maintenance_cycle_day} status={comp.status} isTriggered={triggers.includes("DAY")} />
+        <UsageLimitCell
+         current={comp.total_days}     
+          limit={model.maintenance_cycle_day}
+          unit="d"
+          status={comp.status}
+          isTriggered={triggers.includes("DAY")}
+        />
       </td>
+
       <td className="px-3 py-2.5">
         <StatusBadge status={comp.status} />
       </td>
@@ -192,22 +305,36 @@ const columns: ColumnDef<MaintenanceDrone>[] = [
       );
     },
   },
+  // {
+  //   id: "type",
+  //   header: "Type",
+  //   cell: ({ row }) => {
+  //     const model = row.original.model;
+  //     return (
+  //       <span className="text-xs text-slate-500">
+  //         <span className="inline-flex items-center px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-medium">
+  //           {model.factory_type ?? "—"}
+  //         </span>
+  //         {model.factory_model && (
+  //           <span className="ml-1.5 text-slate-400">{model.factory_model}</span>
+  //         )}
+  //       </span>
+  //     );
+  //   },
+  // },
   {
-    id: "type",
-    header: "Type",
-    cell: ({ row }) => {
-      const model = row.original.model;
-      return (
-        <span className="text-xs text-slate-500">
-          <span className="inline-flex items-center px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-medium">
-            {model.factory_type ?? "—"}
-          </span>
-          {model.factory_model && (
-            <span className="ml-1.5 text-slate-400">{model.factory_model}</span>
-          )}
-        </span>
-      );
-    },
+    id: "serial",
+    header: "Serial",
+    cell: ({ row }) => (
+      <span className="text-xs font-mono text-slate-500">
+        {row.original.serial_number || "—"}
+      </span>
+    ),
+  },
+  {
+    id: "cycle",
+    header: "Maint. Cycle",
+    cell: ({ row }) => <CycleBadge model={row.original.model} />,
   },
   {
     id: "last_maintenance",
@@ -229,9 +356,10 @@ const columns: ColumnDef<MaintenanceDrone>[] = [
       const d = row.original;
       const triggers = cleanTrigger(d.trigger);
       return (
-        <ProgressBar
-          value={d.total_hours}
-          max={d.model.maintenance_cycle_hour}
+        <UsageLimitCell
+          current={d.total_hours}
+          limit={d.model.maintenance_cycle_hour}
+          unit="h"
           status={d.status}
           isTriggered={triggers.includes("HOUR")}
         />
@@ -245,9 +373,10 @@ const columns: ColumnDef<MaintenanceDrone>[] = [
       const d = row.original;
       const triggers = cleanTrigger(d.trigger);
       return (
-        <ProgressBar
-          value={d.total_flights}
-          max={d.model.maintenance_cycle_flight}
+        <UsageLimitCell
+          current={d.total_flights}
+          limit={d.model.maintenance_cycle_flight}
+          unit="fl"
           status={d.status}
           isTriggered={triggers.includes("FLIGHT")}
         />
@@ -261,9 +390,10 @@ const columns: ColumnDef<MaintenanceDrone>[] = [
       const d = row.original;
       const triggers = cleanTrigger(d.trigger);
       return (
-        <ProgressBar
-          value={daysSince(d.last_maintenance)}
-          max={d.model.maintenance_cycle_day}
+        <UsageLimitCell
+          current={daysSince(d.last_maintenance)}
+          limit={d.model.maintenance_cycle_day}
+          unit="d"
           status={d.status}
           isTriggered={triggers.includes("DAY")}
         />
@@ -290,7 +420,8 @@ export default function MaintenanceTable({ data }: { data: MaintenanceDrone[] })
       if (search) {
         const q = search.toLowerCase();
         return (
-          d.code.toLowerCase().includes(q) 
+          d.code.toLowerCase().includes(q) ||
+          (d.serial_number && d.serial_number.toLowerCase().includes(q))
         );
       }
       return true;

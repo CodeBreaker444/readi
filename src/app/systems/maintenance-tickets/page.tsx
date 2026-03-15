@@ -1,5 +1,6 @@
 'use client';
 
+import { DownloadModal } from '@/components/system/DownloadModal';
 import {
   AssignTicketModal,
   CloseTicketModal,
@@ -21,6 +22,8 @@ export default function MaintenanceLogbookPage() {
   const { isDark } = useTheme();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [downloadTicketId, setDownloadTicketId] = useState<number | null>(null);
+  const [downloadOpen, setDownloadOpen] = useState(false);
 
   const {
     tickets, ticketsLoading,
@@ -63,6 +66,11 @@ export default function MaintenanceLogbookPage() {
     return matchStatus && matchSearch;
   });
 
+  const openDownloadModal = (ticketId: number) => {
+    setDownloadTicketId(ticketId);
+    setDownloadOpen(true);
+  };
+
   return (
     <div className={`${isDark ? 'bg-slate-900 text-white' : 'bg-slate-50 text-gray-900'} font-sans`}>
       <style>{`
@@ -74,19 +82,20 @@ export default function MaintenanceLogbookPage() {
       `}</style>
 
       <div
-        className={`top-0 z-10 backdrop-blur-md transition-colors ${isDark
+        className={`top-0 z-10 backdrop-blur-md transition-colors ${
+          isDark
             ? "bg-slate-900/80 border-b border-slate-800 text-white"
             : "bg-white/80 border-b border-slate-200 text-slate-900 shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
-          } px-6 py-4`}
+        } px-6 py-4`}
       >
         <div className="mx-auto max-w-[1800px] flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-1 h-6 rounded-full bg-violet-600" />
-
             <div>
               <h1
-                className={`font-semibold text-base tracking-tight ${isDark ? "text-white" : "text-slate-900"
-                  }`}
+                className={`font-semibold text-base tracking-tight ${
+                  isDark ? "text-white" : "text-slate-900"
+                }`}
               >
                 Maintenance Logbook
               </h1>
@@ -100,10 +109,11 @@ export default function MaintenanceLogbookPage() {
             <Button
               size="sm"
               onClick={openNewTicketModal}
-              className={`h-8 gap-1.5 text-xs font-semibold transition-all shadow-sm ${isDark
+              className={`h-8 gap-1.5 text-xs font-semibold transition-all shadow-sm ${
+                isDark
                   ? "bg-white hover:bg-white/90 text-black"
                   : "bg-violet-600 hover:bg-violet-700 text-white"
-                }`}
+              }`}
             >
               <Plus size={14} />
               <span>New Ticket</span>
@@ -112,7 +122,11 @@ export default function MaintenanceLogbookPage() {
         </div>
       </div>
 
-      <div className={`px-6 py-6 space-y-6 flex flex-col min-h-[calc(100vh-64px)] ${isDark ? 'bg-slate-800' : 'bg-white'}`}>
+      <div
+        className={`px-6 py-6 space-y-6 flex flex-col min-h-[calc(100vh-64px)] ${
+          isDark ? "bg-slate-800" : "bg-white"
+        }`}
+      >
         <TicketStats tickets={tickets} isDark={isDark} />
 
         <TicketFilters
@@ -132,11 +146,11 @@ export default function MaintenanceLogbookPage() {
             onReport={openReportModal}
             onUpload={openUploadModal}
             onClose={openCloseModal}
+            onDownload={openDownloadModal}
             isDark={isDark}
           />
         </div>
       </div>
-
 
       <NewTicketModal
         open={modals.newTicket}
@@ -193,6 +207,13 @@ export default function MaintenanceLogbookPage() {
         onClose={() => closeModal('events')}
         ticketId={activeTicketId}
         events={events}
+        isDark={isDark}
+      />
+
+      <DownloadModal
+        open={downloadOpen}
+        onClose={() => setDownloadOpen(false)}
+        ticketId={downloadTicketId}
         isDark={isDark}
       />
     </div>

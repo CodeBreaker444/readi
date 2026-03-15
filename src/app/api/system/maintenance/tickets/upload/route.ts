@@ -9,7 +9,7 @@ const uploadSchema = z.object({
   attachment_desc: z.string().optional(),
 });
 
-const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
+const MAX_SIZE_BYTES = 10 * 1024 * 1024;  
 
 export async function POST(req: NextRequest) {
   try {

@@ -1,6 +1,7 @@
 import { supabase } from "@/backend/database/database";
+import { refreshMaintenanceDaysForTool } from "@/backend/utils/refresh-maintenance-days";
 import { MaintenanceStatus } from "@/config/types/maintenance";
- 
+
 
 interface UpdateComponentInput {
   component_id: number;
@@ -20,7 +21,7 @@ interface ComponentMaintenanceInfo {
   limit_flight: number;
   limit_day: number;
   maintenance_cycle_type: string;
-  last_maintenance_date: string | null;
+  last_cycle_updated_at: string | null;
   status: "OK" | "ALERT" | "DUE";
   trigger: string[];
 }
@@ -33,11 +34,6 @@ interface SystemData {
   components: ComponentMaintenanceInfo[];
 }
 
-
-function daysBetween(a: Date, b: Date): number {
-  const ms = Math.abs(b.getTime() - a.getTime());
-  return Math.floor(ms / (1000 * 60 * 60 * 24));
-}
 
 function computeComponentStatus(
   currentHours: number,
@@ -85,10 +81,9 @@ const COMPONENT_SELECT = `
   current_maintenance_hours,
   current_maintenance_days,
   current_maintenance_flights,
-  last_maintenance_date
+  last_cycle_updated_at
 `;
 
- 
 
 export async function getComponentsForMaintenanceCycle(
   toolId: number,
@@ -102,6 +97,9 @@ export async function getComponentsForMaintenanceCycle(
     .single();
 
   if (toolErr || !tool) throw new Error("System not found or unauthorized");
+
+  // Refresh days before reading
+  await refreshMaintenanceDaysForTool(toolId);
 
   const { data: comps, error: compErr } = await supabase
     .from("tool_component")
@@ -120,15 +118,10 @@ export async function getComponentsForMaintenanceCycle(
     const limitDay = Number(comp.maintenance_cycle_day ?? 0);
     const cycleType = comp.maintenance_cycle || "NONE";
 
-    // CURRENT accumulated usage from dedicated columns
     const currentHours = Number(comp.current_maintenance_hours ?? 0);
     const currentFlights = Number(comp.current_maintenance_flights ?? 0);
-
-    // Days: auto-calculate from last_maintenance_date
-    const lastMaintDate = comp.last_maintenance_date || null;
-    const currentDays = lastMaintDate
-      ? daysBetween(new Date(lastMaintDate), new Date())
-      : Number(comp.current_maintenance_days ?? 0);
+    // Use DB value directly — already refreshed above
+    const currentDays = Number(comp.current_maintenance_days ?? 0);
 
     const hasLimits = limitHour > 0 || limitFlight > 0 || limitDay > 0;
     const { status, trigger } = hasLimits
@@ -154,7 +147,7 @@ export async function getComponentsForMaintenanceCycle(
       limit_flight: limitFlight,
       limit_day: limitDay,
       maintenance_cycle_type: cycleType,
-      last_maintenance_date: lastMaintDate,
+      last_cycle_updated_at: comp.last_cycle_updated_at || null,
       status,
       trigger,
     });
@@ -168,7 +161,7 @@ export async function getComponentsForMaintenanceCycle(
     components,
   };
 }
- 
+
 
 export async function updateComponentMaintenanceCycle(
   toolId: number,
@@ -185,6 +178,9 @@ export async function updateComponentMaintenanceCycle(
 
   if (toolErr || !tool) throw new Error("System not found or unauthorized");
 
+  // Refresh days before reading baselines
+  await refreshMaintenanceDaysForTool(toolId);
+
   const updatedComponents: ComponentMaintenanceInfo[] = [];
 
   for (const upd of updates) {
@@ -198,50 +194,60 @@ export async function updateComponentMaintenanceCycle(
     if (compErr || !comp) continue;
 
     const meta = comp.component_metadata || {};
+    const cycleType = comp.maintenance_cycle || "NONE";
 
-    // limits
+    // Limits
     const limitHour = Number(comp.maintenance_cycle_hour ?? 0);
     const limitFlight = Number(comp.maintenance_cycle_flight ?? 0);
     const limitDay = Number(comp.maintenance_cycle_day ?? 0);
-    const cycleType = comp.maintenance_cycle || "NONE";
 
-    // current usage from columns
+    // Current values from DB (days already refreshed)
     const prevHours = Number(comp.current_maintenance_hours ?? 0);
     const prevFlights = Number(comp.current_maintenance_flights ?? 0);
+    const currentDays = Number(comp.current_maintenance_days ?? 0);
     const prevLifetimeHours = comp.current_usage_hours ?? 0;
 
-    // Adding new usage
+    // Calculate new values
     const newHours = prevHours + (upd.add_hours || 0);
     const newFlights = prevFlights + (upd.add_flights || 0);
     const newLifetimeHours = prevLifetimeHours + (upd.add_hours || 0);
 
     const now = new Date().toISOString();
 
-    // Days resets to 0 because we set last_maintenance_date to now
-    const newDays = 0;
+    // Build update payload — only touch counters relevant to cycle type
+    const updatePayload: Record<string, any> = {
+      current_usage_hours: newLifetimeHours,
+      last_cycle_updated_at: now,
+      component_metadata: {
+        ...meta,
+        last_mission_id: missionId,
+        last_maintenance_update: now,
+      },
+    };
+
+    if (cycleType === "HOURS" || cycleType === "MIXED") {
+      updatePayload.current_maintenance_hours = newHours;
+    }
+    if (cycleType === "FLIGHTS" || cycleType === "MIXED") {
+      updatePayload.current_maintenance_flights = newFlights;
+    }
+    // Do NOT touch current_maintenance_days — refreshMaintenanceDays handles it
 
     const { error: updateErr } = await supabase
       .from("tool_component")
-      .update({
-        current_maintenance_hours: newHours,
-        current_maintenance_flights: newFlights,
-        current_maintenance_days: newDays,
-        current_usage_hours: newLifetimeHours,
-        last_maintenance_date: now,
-        component_metadata: {
-          ...meta,
-          last_mission_id: missionId,
-          last_maintenance_update: now,
-        },
-      })
+      .update(updatePayload)
       .eq("component_id", upd.component_id);
 
     if (updateErr) continue;
 
+    // Use updated values for status computation
+    const finalHours = (cycleType === "HOURS" || cycleType === "MIXED") ? newHours : prevHours;
+    const finalFlights = (cycleType === "FLIGHTS" || cycleType === "MIXED") ? newFlights : prevFlights;
+
     const { status, trigger } = computeComponentStatus(
-      newHours,
-      newFlights,
-      newDays,
+      finalHours,
+      finalFlights,
+      currentDays,
       { hour: limitHour, flight: limitFlight, day: limitDay }
     );
 
@@ -250,14 +256,14 @@ export async function updateComponentMaintenanceCycle(
       component_type: comp.component_type,
       component_code: comp.component_code || comp.component_name,
       serial_number: comp.serial_number,
-      current_hours: newHours,
-      current_flights: newFlights,
-      current_days: newDays,
+      current_hours: finalHours,
+      current_flights: finalFlights,
+      current_days: currentDays,
       limit_hour: limitHour,
       limit_flight: limitFlight,
       limit_day: limitDay,
       maintenance_cycle_type: cycleType,
-      last_maintenance_date: now,
+      last_cycle_updated_at: now,
       status,
       trigger,
     });
@@ -274,54 +280,44 @@ export async function updateComponentMaintenanceCycle(
 export async function getToolMaintenanceStatus(
   toolId: number
 ): Promise<MaintenanceStatus> {
+  await refreshMaintenanceDaysForTool(toolId);
+
   const { data: components } = await supabase
     .from("tool_component")
-    .select("component_id, current_usage_hours, installation_date, component_metadata")
+    .select(`
+      component_id,
+      maintenance_cycle,
+      maintenance_cycle_hour,
+      maintenance_cycle_day,
+      maintenance_cycle_flight,
+      current_maintenance_hours,
+      current_maintenance_days,
+      current_maintenance_flights
+    `)
     .eq("fk_tool_id", toolId)
     .eq("component_active", "Y");
 
   if (!components || components.length === 0) return "OK";
 
-  const modelIds = [
-    ...new Set(
-      components
-        .map((c: any) => c.component_metadata?.fk_tool_model_id)
-        .filter(Boolean)
-    ),
-  ];
-
-  let modelsMap: Record<number, any> = {};
-  if (modelIds.length > 0) {
-    const { data: models } = await supabase
-      .from("tool_model")
-      .select("model_id, specifications")
-      .in("model_id", modelIds);
-    for (const m of models || []) {
-      modelsMap[m.model_id] = m;
-    }
-  }
-
   let worst: MaintenanceStatus = "OK";
 
   for (const comp of components) {
-    const meta = (comp as any).component_metadata || {};
-    const modelId = meta.fk_tool_model_id;
-    const model = modelId ? modelsMap[modelId] : null;
-    const specs = model?.specifications || {};
+    const cycleType = comp.maintenance_cycle || "NONE";
+    if (cycleType === "NONE") continue;
 
-    const cycleHour = Number(specs.maintenance_cycle_hour ?? 0);
-    const cycleFlight = Number(specs.maintenance_cycle_flight ?? 0);
-    const cycleDay = Number(specs.maintenance_cycle_day ?? 0);
+    const limitHour = Number(comp.maintenance_cycle_hour ?? 0);
+    const limitFlight = Number(comp.maintenance_cycle_flight ?? 0);
+    const limitDay = Number(comp.maintenance_cycle_day ?? 0);
 
-    const totalHours = (comp as any).current_usage_hours ?? 0;
-    const totalFlights = meta.maintenance_flights ?? 0;
-    const lastMaint = (comp as any).installation_date ?? null;
+    const currentHours = Number(comp.current_maintenance_hours ?? 0);
+    const currentFlights = Number(comp.current_maintenance_flights ?? 0);
+    const currentDays = Number(comp.current_maintenance_days ?? 0);
 
     const { status } = computeComponentStatus(
-      totalHours,
-      totalFlights,
-      lastMaint,
-      { hour: cycleHour, flight: cycleFlight, day: cycleDay }
+      currentHours,
+      currentFlights,
+      currentDays,
+      { hour: limitHour, flight: limitFlight, day: limitDay }
     );
 
     if (status === "DUE") { worst = "DUE"; break; }

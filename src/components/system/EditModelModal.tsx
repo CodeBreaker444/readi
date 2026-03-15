@@ -533,21 +533,21 @@ export default function EditModelModal({ open, toolId, onClose, onSuccess, initi
                     )}
                     {showHours && (
                       <div className="col-span-2">
-                        <Label className={labelCls}>Hours <span className="text-xs text-muted-foreground">(0–24)</span></Label>
+                        <Label className={labelCls}>Hours Limit<span className="text-xs text-muted-foreground">(0–24)</span></Label>
                         <Input type="number" min={0} max={24} className={inputCls} value={formData.maintenance_cycle_hour}
                           onChange={e => handleCycleInput('maintenance_cycle_hour', e.target.value, 24)} placeholder="0–24" />
                       </div>
                     )}
                     {showDays && (
                       <div className="col-span-2">
-                        <Label className={labelCls}>Days <span className="text-xs text-muted-foreground">(0–30)</span></Label>
+                        <Label className={labelCls}>Days Limit<span className="text-xs text-muted-foreground">(0–30)</span></Label>
                         <Input type="number" min={0} max={30} className={inputCls} value={formData.maintenance_cycle_day}
                           onChange={e => handleCycleInput('maintenance_cycle_day', e.target.value, 30)} placeholder="0–30" />
                       </div>
                     )}
                     {showFlights && (
                       <div className="col-span-2">
-                        <Label className={labelCls}>Flights <span className="text-xs text-muted-foreground">(0–10)</span></Label>
+                        <Label className={labelCls}>Flights Limit<span className="text-xs text-muted-foreground">(0–10)</span></Label>
                         <Input type="number" min={0} max={10} className={inputCls} value={formData.maintenance_cycle_flight}
                           onChange={e => handleCycleInput('maintenance_cycle_flight', e.target.value, 10)} placeholder="0–10" />
                       </div>

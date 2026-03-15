@@ -1,7 +1,6 @@
 export type MaintenanceStatus = "OK" | "ALERT" | "DUE";
 
 export interface MaintenanceModel {
-  factory_type: string | null;
   factory_serie: string | null;
   factory_model: string | null;
   maintenance_cycle_hour: number;
@@ -11,19 +10,22 @@ export interface MaintenanceModel {
 
 export interface MaintenanceComponent {
   tool_component_id: number;
+  component_name: string;
   component_type: string | null;
   serial_number: string | null;
   last_maintenance: string | null;
   total_hours: number;
   total_flights: number;
+  total_days: number;
   status: MaintenanceStatus;
-  trigger: (string | null)[];    
+  trigger: (string | null)[];
   model: MaintenanceModel;
 }
 
 export interface MaintenanceDrone {
   tool_id: number;
   code: string;
+  serial_number: string;
   last_maintenance: string | null;
   total_hours: number;
   total_flights: number;

@@ -12,56 +12,39 @@ function daysBetween(from: Date, to: Date): number {
 }
 
 function computeStatus(
-  totalHours: number,
-  totalFlights: number,
-  lastMaintenanceDate: string | null,
-  model: {
-    maintenance_cycle_hour: number;
-    maintenance_cycle_flight: number;
-    maintenance_cycle_day: number;
-  },
-  thresholdAlert: number
+  currentHours: number,
+  currentFlights: number,
+  currentDays: number,
+  model: MaintenanceModel,
+  threshold: number
 ): { status: MaintenanceStatus; trigger: (string | null)[] } {
-  const today = new Date();
-  const triggers: string[] = [];
-  let isDue = false;
-  let isAlert = false;
-
-  const pct = thresholdAlert / 100;
+  const triggers: (string | null)[] = [null, null, null];
+  let worst = "OK" as MaintenanceStatus;
 
   if (model.maintenance_cycle_hour > 0) {
-    const ratio = totalHours / model.maintenance_cycle_hour;
-    if (ratio >= 1) { isDue = true; triggers.push("HOUR"); }
-    else if (ratio >= pct) { isAlert = true; triggers.push("HOUR"); }
+    const pct = (currentHours / model.maintenance_cycle_hour) * 100;
+    if (pct >= 100) { triggers[0] = "HOUR"; worst = "DUE"; }
+    else if (pct >= threshold && worst !== "DUE") { triggers[0] = "HOUR"; worst = "ALERT"; }
   }
 
   if (model.maintenance_cycle_flight > 0) {
-    const ratio = totalFlights / model.maintenance_cycle_flight;
-    if (ratio >= 1) { isDue = true; triggers.push("FLIGHT"); }
-    else if (ratio >= pct) { isAlert = true; triggers.push("FLIGHT"); }
+    const pct = (currentFlights / model.maintenance_cycle_flight) * 100;
+    if (pct >= 100) { triggers[1] = "FLIGHT"; worst = "DUE"; }
+    else if (pct >= threshold && worst !== "DUE") { triggers[1] = "FLIGHT"; worst = "ALERT"; }
   }
 
-  if (model.maintenance_cycle_day > 0 && lastMaintenanceDate) {
-    const daysUsed = daysBetween(new Date(lastMaintenanceDate), today);
-    const ratio = daysUsed / model.maintenance_cycle_day;
-    if (ratio >= 1) { isDue = true; triggers.push("DAY"); }
-    else if (ratio >= pct) { isAlert = true; triggers.push("DAY"); }
+  if (model.maintenance_cycle_day > 0) {
+    const pct = (currentDays / model.maintenance_cycle_day) * 100;
+    if (pct >= 100) { triggers[2] = "DAY"; worst = "DUE"; }
+    else if (pct >= threshold && worst !== "DUE") { triggers[2] = "DAY"; worst = "ALERT"; }
   }
 
-  const status: MaintenanceStatus = isDue ? "DUE" : isAlert ? "ALERT" : "OK";
-  const trigger: (string | null)[] = [
-    triggers[0] ?? null,
-    triggers[1] ?? null,
-    triggers[2] ?? null,
-  ];
-
-  return { status, trigger };
+  return { status: worst, trigger: triggers };
 }
 
 function extractModel(rawModel: Record<string, unknown> | null): MaintenanceModel {
   if (!rawModel) {
     return {
-      factory_type: null,
       factory_serie: null,
       factory_model: null,
       maintenance_cycle_hour: 0,
@@ -70,10 +53,9 @@ function extractModel(rawModel: Record<string, unknown> | null): MaintenanceMode
     };
   }
   const specs = (rawModel.specifications ?? {}) as Record<string, number>;
-  const toolType = rawModel.tool_type as Record<string, string> | null;
+
   return {
-    factory_type: toolType?.tool_type_name ?? null,
-    factory_serie: String(rawModel.model_name ?? ""),
+    factory_serie: String(rawModel.manufacturer ?? ""),
     factory_model: String(rawModel.model_name ?? ""),
     maintenance_cycle_hour: Number(specs.maintenance_cycle_hour ?? 0),
     maintenance_cycle_flight: Number(specs.maintenance_cycle_flight ?? 0),
@@ -86,25 +68,21 @@ export async function getMaintenanceDashboard(
 ): Promise<MaintenanceDrone[]> {
   const { owner_id, client_id, threshold_alert } = params;
 
-  let toolQuery = supabase
-    .from("tool")
-    .select(`
-      tool_id,
-      tool_code,
-      fk_owner_id,
-      fk_model_id,
-      tool_model (
-        model_id,
-        manufacturer,
-        model_name,
-        specifications,
-        tool_type:fk_tool_type_id (
-          tool_type_name,
-          tool_type_code
-        )
-      )
-    `)
-    .eq("tool_active", "Y");
+let toolQuery = supabase
+  .from("tool")
+  .select(`
+    tool_id,
+    tool_code,
+    fk_owner_id,
+    fk_model_id,
+    tool_model (
+      model_id,
+      manufacturer,
+      model_name,
+      specifications
+    )
+  `)
+  .eq("tool_active", "Y");
 
   if (owner_id > 0) toolQuery = toolQuery.eq("fk_owner_id", owner_id);
 
@@ -149,7 +127,7 @@ export async function getMaintenanceDashboard(
 
   const { data: missionStats } = await supabase
     .from("pilot_mission")
-    .select("fk_tool_id, flight_duration, distance_flown")
+    .select("fk_tool_id, flight_duration")
     .in("fk_tool_id", toolIds)
     .not("actual_end", "is", null);
 
@@ -168,76 +146,73 @@ export async function getMaintenanceDashboard(
     .select(`
       component_id,
       fk_tool_id,
+      component_code,
+      component_name,
       component_type,
       serial_number,
-      current_usage_hours,
-      last_replacement_date,
-      expected_lifespan_hours
+      installation_date,
+      maintenance_cycle_hour,
+      maintenance_cycle_flight,
+      maintenance_cycle_day,
+      current_maintenance_hours,
+      current_maintenance_days,
+      current_maintenance_flights,
+      last_cycle_updated_at
     `)
     .in("fk_tool_id", toolIds)
     .eq("component_active", "Y");
 
-  const componentIds = (components ?? []).map(
-    (c: { component_id: number }) => c.component_id
-  );
-
-  const { data: compMaintenance } = componentIds.length > 0
-    ? await supabase
-        .from("tool_maintenance")
-        .select("fk_tool_id, completed_date")
-        .in("fk_tool_id", componentIds)
-        .eq("maintenance_status", "COMPLETED")
-        .order("completed_date", { ascending: false })
-    : { data: [] };
-
-  const compLastMaintMap: Record<number, string> = {};
-  for (const rec of compMaintenance ?? []) {
-    const r = rec as { fk_tool_id: number; completed_date: string };
-    if (!compLastMaintMap[r.fk_tool_id]) {
-      compLastMaintMap[r.fk_tool_id] = r.completed_date;
-    }
-  }
-
   const compsByTool: Record<number, MaintenanceComponent[]> = {};
+
   for (const rawComp of components ?? []) {
     const comp = rawComp as {
       component_id: number;
       fk_tool_id: number;
+      component_code: string | null;
+      component_name: string;
       component_type: string | null;
       serial_number: string | null;
-      current_usage_hours: number | null;
-      last_replacement_date: string | null;
-      expected_lifespan_hours: number | null;
+      installation_date: string | null;
+      maintenance_cycle_hour: number | null;
+      maintenance_cycle_flight: number | null;
+      maintenance_cycle_day: number | null;
+      current_maintenance_hours: number | null;
+      current_maintenance_days: number | null;
+      current_maintenance_flights: number | null;
+      last_cycle_updated_at: string | null;
     };
 
     const compModel: MaintenanceModel = {
-      factory_type: comp.component_type,
+      // factory_type: comp.component_type,
       factory_serie: null,
-      factory_model: comp.component_type,
-      maintenance_cycle_hour: comp.expected_lifespan_hours ?? 0,
-      maintenance_cycle_flight: 0,
-      maintenance_cycle_day: 0,
+      factory_model: comp.component_name,
+      maintenance_cycle_hour: Number(comp.maintenance_cycle_hour ?? 0),
+      maintenance_cycle_flight: Number(comp.maintenance_cycle_flight ?? 0),
+      maintenance_cycle_day: Number(comp.maintenance_cycle_day ?? 0),
     };
+    const lastMaint = comp.last_cycle_updated_at ?? comp.installation_date ?? null;
 
-    const compHours = comp.current_usage_hours ?? 0;
-    const lastMaint =
-      compLastMaintMap[comp.component_id] ?? comp.last_replacement_date ?? null;
+    const compHours = Number(comp.current_maintenance_hours ?? 0);
+    const compFlights = Number(comp.current_maintenance_flights ?? 0);
+    const compDays = Number(comp.current_maintenance_days ?? 0);
 
     const { status, trigger } = computeStatus(
       compHours,
-      0,
-      lastMaint,
+      compFlights,
+      compDays,
       compModel,
       threshold_alert
     );
 
     const compEntry: MaintenanceComponent = {
       tool_component_id: comp.component_id,
+      component_name: comp.component_name,
       component_type: comp.component_type,
       serial_number: comp.serial_number,
       last_maintenance: lastMaint,
       total_hours: compHours,
-      total_flights: 0,
+      total_flights: compFlights,
+      total_days: compDays,
       status,
       trigger,
       model: compModel,
@@ -252,11 +227,14 @@ export async function getMaintenanceDashboard(
     const model = extractModel(tool.tool_model as Record<string, unknown> | null);
     const stats = statsMap[toolId] ?? { totalHours: 0, totalFlights: 0 };
     const lastMaint = lastMaintenanceMap[toolId] ?? null;
+    const droneDays = lastMaint
+      ? Math.floor((Date.now() - new Date(lastMaint).getTime()) / 86400000)
+      : 0;
 
     const { status, trigger } = computeStatus(
       stats.totalHours,
       stats.totalFlights,
-      lastMaint,
+      droneDays,
       model,
       threshold_alert
     );
@@ -264,6 +242,7 @@ export async function getMaintenanceDashboard(
     return {
       tool_id: toolId,
       code: String(tool.tool_code ?? `#${toolId}`),
+      serial_number: String(tool.tool_name ?? ""),
       last_maintenance: lastMaint,
       total_hours: Math.round(stats.totalHours * 100) / 100,
       total_flights: stats.totalFlights,

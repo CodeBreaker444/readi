@@ -1,10 +1,86 @@
-import { MaintenanceTicket } from '@/config/types/maintenance';
-import { ActionBtn, Badge, fmtDate, PRIORITY_STYLES, STATUS_STYLES } from './TicketUi';
+"use client";
 
-const COLUMNS = [
-  'ID', 'Type', 'Tool Code', 'Serial', 'Model',
-  'Assigned To', 'Status', 'Priority', 'Opened', 'Closed', 'Actions',
-];
+import type { MaintenanceTicket } from "@/config/types/maintenance";
+import {
+  ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  getPaginationRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
+import { useMemo, useState } from "react";
+import { TablePagination } from "../tables/Pagination";
+import { Badge, PRIORITY_STYLES, STATUS_STYLES, fmtDate } from "./TicketUi";
+
+function ActionIcon({
+  children,
+  label,
+  onClick,
+  variant = "default",
+}: {
+  children: React.ReactNode;
+  label: string;
+  onClick: () => void;
+  variant?: "default" | "success" | "danger" | "download";
+}) {
+  const styles = {
+    default:
+      "text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-700",
+    success:
+      "text-emerald-500 hover:text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:text-emerald-300 dark:hover:bg-emerald-900/30",
+    danger:
+      "text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:text-rose-400 dark:hover:text-rose-300 dark:hover:bg-rose-900/30",
+    download:
+      "text-blue-500 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:text-blue-300 dark:hover:bg-blue-900/30",
+  };
+
+  return (
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
+      title={label}
+      className={`inline-flex items-center gap-1 px-2 h-7 rounded-lg transition-all text-xs font-medium ${styles[variant]}`}
+    >
+      {children}
+      <span>{label}</span>
+    </button>
+  );
+}
+
+const Icons = {
+  events: (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  ),
+  assign: (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+    </svg>
+  ),
+  report: (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+    </svg>
+  ),
+  upload: (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+    </svg>
+  ),
+  download: (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+    </svg>
+  ),
+  close: (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  ),
+};
 
 interface Props {
   tickets: MaintenanceTicket[];
@@ -14,16 +90,9 @@ interface Props {
   onReport: (id: number) => void;
   onUpload: (id: number) => void;
   onClose: (id: number) => void;
+  onDownload?: (id: number) => void;
   isDark: boolean;
 }
-
-import {
-  getCoreRowModel,
-  getPaginationRowModel,
-  useReactTable,
-} from '@tanstack/react-table';
-import { useState } from 'react';
-import { TablePagination } from '../tables/Pagination';
 
 export function TicketTable({
   tickets,
@@ -33,56 +102,301 @@ export function TicketTable({
   onReport,
   onUpload,
   onClose,
-  isDark
+  onDownload,
+  isDark,
 }: Props) {
   const [pagination, setPagination] = useState({
     pageIndex: 0,
     pageSize: 8,
   });
 
+  const columns: ColumnDef<MaintenanceTicket>[] = useMemo(
+    () => [
+      {
+        id: "ticket",
+        header: "Ticket",
+        accessorFn: (row) => row.ticket_id,
+        cell: ({ row }) => {
+          const t = row.original;
+          const isOpen = t.ticket_status === "OPEN";
+          return (
+            <div className="flex items-center gap-2.5">
+              <div
+                className={`w-1 h-8 rounded-full shrink-0 ${
+                  isOpen ? "bg-rose-400" : "bg-emerald-400"
+                }`}
+              />
+              <div>
+                <p
+                  className={`text-sm font-semibold tabular-nums ${
+                    isDark ? "text-white" : "text-slate-800"
+                  }`}
+                >
+                  #{t.ticket_id}
+                </p>
+                <p
+                  className={`text-[11px] ${
+                    isDark ? "text-slate-500" : "text-slate-400"
+                  }`}
+                >
+                  {t.ticket_type}
+                </p>
+              </div>
+            </div>
+          );
+        },
+      },
+      {
+        id: "drone",
+        header: "Tool",
+        cell: ({ row }) => {
+          const t = row.original;
+          return (
+            <div>
+              <p
+                className={`text-sm font-semibold ${
+                  isDark ? "text-indigo-400" : "text-indigo-600"
+                }`}
+              >
+                {t.drone_code ?? "—"}
+              </p>
+              <p
+                className={`text-[11px] truncate max-w-[140px] ${
+                  isDark ? "text-slate-500" : "text-slate-400"
+                }`}
+              >
+                {t.drone_model ?? "—"}
+              </p>
+            </div>
+          );
+        },
+      },
+      {
+        id: "serial",
+        header: "Serial",
+        cell: ({ row }) => (
+          <span
+            className={`text-xs font-mono ${
+              isDark ? "text-slate-400" : "text-slate-500"
+            }`}
+          >
+            {row.original.drone_serial ?? "—"}
+          </span>
+        ),
+      },
+      {
+        id: "assigned",
+        header: "Assigned To",
+        cell: ({ row }) => {
+          const t = row.original;
+          return (
+            <div>
+              <p
+                className={`text-xs font-medium leading-tight ${
+                  isDark ? "text-slate-200" : "text-slate-700"
+                }`}
+              >
+                {t.assigner_name || "Unassigned"}
+              </p>
+              {t.assigner_email && (
+                <p
+                  className={`text-[11px] truncate max-w-[160px] ${
+                    isDark ? "text-slate-500" : "text-slate-400"
+                  }`}
+                >
+                  {t.assigner_email}
+                </p>
+              )}
+            </div>
+          );
+        },
+      },
+      {
+        id: "status",
+        header: "Status",
+        accessorFn: (row) => row.ticket_status,
+        cell: ({ row }) => (
+          <Badge
+            label={row.original.ticket_status}
+            style={
+              STATUS_STYLES[row.original.ticket_status] ?? STATUS_STYLES.OPEN
+            }
+          />
+        ),
+      },
+      {
+        id: "priority",
+        header: "Priority",
+        cell: ({ row }) => (
+          <Badge
+            label={row.original.ticket_priority}
+            style={PRIORITY_STYLES[row.original.ticket_priority]}
+          />
+        ),
+      },
+      {
+        id: "opened",
+        header: "Opened",
+        accessorFn: (row) => row.opened_at,
+        cell: ({ getValue }) => {
+          const val = getValue() as string | null;
+          return (
+            <span
+              className={`text-xs whitespace-nowrap ${
+                isDark ? "text-slate-400" : "text-slate-500"
+              }`}
+            >
+              {val ? fmtDate(val) : "—"}
+            </span>
+          );
+        },
+      },
+      {
+        id: "closed",
+        header: "Closed",
+        accessorFn: (row) => row.closed_at,
+        cell: ({ getValue }) => {
+          const val = getValue() as string | null;
+          return (
+            <span
+              className={`text-xs whitespace-nowrap ${
+                isDark ? "text-slate-400" : "text-slate-500"
+              }`}
+            >
+              {val ? fmtDate(val) : <span className={isDark ? "text-slate-600" : "text-slate-300"}>—</span>}
+            </span>
+          );
+        },
+      },
+      {
+        id: "actions",
+        header: "Actions",
+        cell: ({ row }) => {
+          const t = row.original;
+          const isOpen = t.ticket_status === "OPEN";
+
+          return (
+            <div className="flex items-center gap-0.5">
+              <ActionIcon label="Events" onClick={() => onEvents(t.ticket_id)}>
+                {Icons.events}
+              </ActionIcon>
+
+              {isOpen && (
+                <>
+                  <ActionIcon
+                    label="Assign"
+                    onClick={() => onAssign(t.ticket_id)}
+                  >
+                    {Icons.assign}
+                  </ActionIcon>
+                  <ActionIcon
+                    label="Report"
+                    onClick={() => onReport(t.ticket_id)}
+                  >
+                    {Icons.report}
+                  </ActionIcon>
+                  <ActionIcon
+                    label="Upload"
+                    onClick={() => onUpload(t.ticket_id)}
+                  >
+                    {Icons.upload}
+                  </ActionIcon>
+                </>
+              )}
+
+              {onDownload && (
+                <ActionIcon
+                  label="Download Files"
+                  onClick={() => onDownload(t.ticket_id)}
+                  variant="download"
+                >
+                  {Icons.download}
+                </ActionIcon>
+              )}
+
+              {isOpen && (
+                <ActionIcon
+                  label="Close Ticket"
+                  onClick={() => onClose(t.ticket_id)}
+                  variant="success"
+                >
+                  {Icons.close}
+                </ActionIcon>
+              )}
+            </div>
+          );
+        },
+      },
+    ],
+    [isDark, onEvents, onAssign, onReport, onUpload, onClose, onDownload]
+  );
+
   const table = useReactTable({
     data: tickets,
-    columns: [],  
+    columns,
     state: { pagination },
     onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
   });
 
+  const thCls = `text-left text-xs font-semibold uppercase tracking-wide px-3 py-2.5 whitespace-nowrap ${
+    isDark ? "text-slate-500" : "text-slate-500"
+  }`;
+
   return (
     <div className="flex flex-col h-full">
-      <div className={`flex-1 ${isDark ? 'bg-slate-900 text-white border-slate-700' : 'bg-gray-50 text-gray-900 border-slate-200'} rounded-2xl border shadow-sm overflow-hidden`}>
+      <div
+        className={`flex-1 rounded-xl border overflow-hidden ${
+          isDark
+            ? "bg-slate-800/80 border-slate-700/60"
+            : "bg-white border-slate-200"
+        }`}
+      >
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="sticky top-0 z-10">
-              <tr className={`${isDark ? 'bg-slate-800 border-b border-slate-700' : 'bg-slate-50 border-b border-slate-200'}`}>
-                {COLUMNS.map((h) => (
-                  <th
-                    key={h}
-                    className={`text-left text-xs font-semibold ${isDark ? 'text-white' : 'text-slate-500'} uppercase tracking-wide px-4 py-3 whitespace-nowrap`}
-                  >
-                    {h}
+            <thead>
+              <tr
+                className={`border-b ${
+                  isDark
+                    ? "bg-slate-800 border-slate-700/60"
+                    : "bg-slate-50 border-slate-200"
+                }`}
+              >
+                {table.getFlatHeaders().map((header) => (
+                  <th key={header.id} className={thCls}>
+                    {flexRender(
+                      header.column.columnDef.header,
+                      header.getContext()
+                    )}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className={`divide-y ${isDark ? 'divide-slate-800' : 'divide-slate-100'}`}>
+            <tbody>
               {loading ? (
-                <SkeletonRows />
+                <SkeletonRows cols={columns.length} isDark={isDark} />
               ) : table.getRowModel().rows.length === 0 ? (
-                <EmptyRow />
+                <EmptyRow cols={columns.length} isDark={isDark} />
               ) : (
                 table.getRowModel().rows.map((row) => (
-                  <TicketRow
-                    key={row.original.ticket_id}
-                    ticket={row.original}
-                    onEvents={onEvents}
-                    onAssign={onAssign}
-                    onReport={onReport}
-                    onUpload={onUpload}
-                    onClose={onClose}
-                    isDark={isDark}
-                  />
+                  <tr
+                    key={row.id}
+                    className={`border-t transition-colors ${
+                      isDark
+                        ? "border-slate-700/40 hover:bg-slate-700/30"
+                        : "border-slate-100 hover:bg-slate-50/80"
+                    }`}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <td key={cell.id} className="px-3 py-3">
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </td>
+                    ))}
+                  </tr>
                 ))
               )}
             </tbody>
@@ -90,84 +404,29 @@ export function TicketTable({
         </div>
       </div>
 
-      <div className="mt-auto">
+      <div
+        className={`border-t px-2 ${
+          isDark ? "border-slate-700/60" : "border-slate-200"
+        }`}
+      >
         <TablePagination table={table} />
       </div>
     </div>
   );
 }
 
-
-function TicketRow({
-  ticket: t,
-  onEvents,
-  onAssign,
-  onReport,
-  onUpload,
-  onClose,
-  isDark
-}: {
-  ticket: MaintenanceTicket;
-  onEvents: (id: number) => void;
-  onAssign: (id: number) => void;
-  onReport: (id: number) => void;
-  onUpload: (id: number) => void;
-  onClose: (id: number) => void;
-  isDark:boolean
-}) {
-  const borderColor =
-    t.ticket_status === 'OPEN' ? 'border-l-rose-400' : 'border-l-emerald-400';
-
-  return (
-    <tr className={`${isDark ? 'bg-slate-900 hover:bg-slate-800' : 'bg-white hover:bg-slate-50'} transition-colors border-l-2 ${borderColor}`}>
-      <td className={`px-4 py-3 font-mono text-xs ${isDark ? 'text-white' : 'text-slate-500'}`}>#{t.ticket_id}</td>
-      <td className={`px-4 py-3 ${isDark ? 'text-white' : 'text-slate-700'}`}>{t.ticket_type}</td>
-      <td className={`px-4 py-3 font-semibold ${isDark ? 'text-white' : 'text-indigo-600'}`}>{t.drone_code ?? '—'}</td>
-      <td className={`px-4 py-3 font-mono text-xs ${isDark ? 'text-white' : 'text-slate-600'}`}>{t.drone_serial ?? '—'}</td>
-      <td className={`px-4 py-3 ${isDark ? 'text-white' : 'text-slate-600'} max-w-[160px] truncate`}   >{t.drone_model ?? '—'}</td>
-      <td className="px-4 py-3">
-        <div className={`${isDark ? 'text-white' : 'text-slate-700'} font-medium leading-tight`}>{t.assigner_name}</div>
-        <div className={`text-xs ${isDark ? 'text-white' : 'text-slate-700'}`}>{t.assigner_email}</div>
-      </td>
-      <td className="px-4 py-3">
-        <Badge
-          label={t.ticket_status}
-          style={STATUS_STYLES[t.ticket_status] ?? STATUS_STYLES.OPEN}
-        />
-      </td>
-      <td className="px-4 py-3">
-        <Badge label={t.ticket_priority} style={PRIORITY_STYLES[t.ticket_priority]} />
-      </td>
-      <td className={`px-4 py-3 text-xs ${isDark ? 'text-white' : 'text-slate-700'} whitespace-nowrap`}>
-        {fmtDate(t.opened_at)}
-      </td>
-      <td className={`px-4 py-3 text-xs ${isDark ? 'text-white' : 'text-slate-700'} whitespace-nowrap`}>
-        {fmtDate(t.closed_at)}
-      </td>
-      <td className="px-4 py-3">
-        <div className="flex items-center gap-1 flex-wrap">
-          <ActionBtn color="blue" onClick={() => onEvents(t.ticket_id)}>Events</ActionBtn>
-          <ActionBtn color="violet" onClick={() => onAssign(t.ticket_id)}>Assign</ActionBtn>
-          <ActionBtn color="teal" onClick={() => onReport(t.ticket_id)}>Report</ActionBtn>
-          <ActionBtn color="slate" onClick={() => onUpload(t.ticket_id)}>Upload</ActionBtn>
-          {t.ticket_status === 'OPEN' && (
-            <ActionBtn color="emerald" onClick={() => onClose(t.ticket_id)}>Close</ActionBtn>
-          )}
-        </div>
-      </td>
-    </tr>
-  );
-}
-
-
-function SkeletonRows() {
+function SkeletonRows({ cols, isDark }: { cols: number; isDark: boolean }) {
   return (
     <>
       {Array.from({ length: 5 }).map((_, i) => (
         <tr key={i} className="animate-pulse">
-          {Array.from({ length: 11 }).map((_, j) => (
-            <td key={j} className="px-4 py-3">
-              <div className="h-4 bg-slate-200 rounded w-20" />
+          {Array.from({ length: cols }).map((_, j) => (
+            <td key={j} className="px-3 py-3">
+              <div
+                className={`h-4 rounded w-20 ${
+                  isDark ? "bg-slate-700" : "bg-slate-200"
+                }`}
+              />
             </td>
           ))}
         </tr>
@@ -176,13 +435,19 @@ function SkeletonRows() {
   );
 }
 
-
-function EmptyRow() {
+function EmptyRow({ cols, isDark }: { cols: number; isDark: boolean }) {
   return (
     <tr>
-      <td colSpan={11} className="text-center py-16 text-slate-400">
+      <td
+        colSpan={cols}
+        className={`text-center py-16 ${
+          isDark ? "text-slate-500" : "text-slate-400"
+        }`}
+      >
         <svg
-          className="w-10 h-10 mx-auto mb-3 text-slate-300"
+          className={`w-10 h-10 mx-auto mb-3 ${
+            isDark ? "text-slate-600" : "text-slate-300"
+          }`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -194,7 +459,7 @@ function EmptyRow() {
             d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
           />
         </svg>
-        No tickets found
+        <p className="text-sm">No tickets found</p>
       </td>
     </tr>
   );
