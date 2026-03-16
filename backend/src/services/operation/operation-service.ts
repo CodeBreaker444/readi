@@ -29,6 +29,8 @@ export async function listOperations(
       fk_tool_id,
       fk_mission_status_id,
       fk_planning_id,
+      fk_mission_type_id,
+      fk_mission_category_id,
       fk_owner_id,
       status_name,
       created_at,
@@ -150,6 +152,9 @@ export async function updateOperation(id: number, input: UpdateOperationSchema):
   if (input.fk_tool_id !== undefined) updatePayload.fk_tool_id = input.fk_tool_id;
   if (input.fk_planning_id !== undefined) updatePayload.fk_planning_id = input.fk_planning_id;
   if (input.fk_mission_status_id !== undefined) updatePayload.fk_mission_status_id = input.fk_mission_status_id;
+  if ((input as any).fk_mission_type_id !== undefined) updatePayload.fk_mission_type_id = (input as any).fk_mission_type_id;
+  if ((input as any).fk_mission_category_id !== undefined) updatePayload.fk_mission_category_id = (input as any).fk_mission_category_id;
+  if ((input as any).status_name !== undefined) updatePayload.status_name = (input as any).status_name;
   if (input.distance_flown !== undefined) updatePayload.distance_flown = input.distance_flown;
   if (input.max_altitude !== undefined) updatePayload.max_altitude = input.max_altitude;
 

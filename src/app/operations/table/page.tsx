@@ -67,6 +67,8 @@ export interface Operation {
   fk_tool_id?: number | null;
   fk_mission_status_id?: number | null;
   fk_planning_id?: number | null;
+  fk_mission_type_id?: number | null;
+  fk_mission_category_id?: number | null;
   pilot_name?: string | null;
   tool_code?: string | null;
   status_name?: string | null;
@@ -87,7 +89,6 @@ function SortIndicator({ isSorted }: { isSorted: false | 'asc' | 'desc' }) {
   if (!isSorted) return <span className="ml-1 text-muted-foreground/40">↕</span>;
   return <span className="ml-1">{isSorted === 'asc' ? '↑' : '↓'}</span>;
 }
-
 
 export default function OperationsPage() {
   const { isDark } = useTheme();

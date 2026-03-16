@@ -131,7 +131,7 @@ export const operationColumns: ColumnDef<Operation>[] = [
   },
   {
     accessorKey: 'tool_code',
-    header: 'Tool',
+    header: 'System',
     enableSorting: false,
     cell: ({ getValue }) => (
       <span className="text-sm text-muted-foreground">

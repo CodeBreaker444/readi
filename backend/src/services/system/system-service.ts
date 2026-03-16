@@ -155,7 +155,7 @@ export async function addSystem(toolData: AddSystemInput) {
     .eq('tool_code', toolData.tool_code)
     .maybeSingle();
 
-  if (existing) throw new Error('Tool code already exists for this owner');
+  if (existing) throw new Error('System code already exists for this owner');
 
   const filesToUpload: File[] = Array.isArray(toolData.files)
     ? toolData.files.filter((f) => f instanceof File && f.size > 0)
@@ -203,7 +203,7 @@ export async function addSystem(toolData: AddSystemInput) {
     .single();
 
   if (error) throw error;
-  return { code: 1, message: 'Tool added successfully', data };
+  return { code: 1, message: 'System added successfully', data };
 }
 
 
@@ -238,7 +238,7 @@ export async function updateTool(toolId: number, toolData: any) {
     .single();
 
   if (error) throw error;
-  return { code: 1, message: 'Tool updated successfully', data };
+  return { code: 1, message: 'system updated successfully', data };
 }
 
 
@@ -250,7 +250,7 @@ export async function deleteSystem(ownerId: number, toolId: number) {
     .eq('fk_owner_id', ownerId);
 
   if (error) throw error;
-  return { code: 1, message: 'Tool deleted successfully' };
+  return { code: 1, message: 'system deleted successfully' };
 }
 
 

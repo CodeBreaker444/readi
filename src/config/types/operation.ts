@@ -17,6 +17,8 @@ export interface Operation {
   fk_tool_id: number | null;
   fk_mission_status_id: number | null;
   fk_planning_id: number | null;
+  fk_mission_type_id?: number | null;
+  fk_mission_category_id?: number | null;
   pilot_name?: string;
   tool_code?: string;
   status_name?: string;

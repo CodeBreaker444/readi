@@ -233,7 +233,7 @@ export function AddOperationModal({ open, onClose, onSuccess, isDark }: AddOpera
 
                     <div className="grid grid-cols-2 gap-4">
                         <SelectField name="fk_pilot_user_id" label="Pilot (PIC)" options={pilots} placeholder="Select pilot" />
-                        <SelectField name="fk_tool_id" label="Vehicle / Tool" options={tools} placeholder="Select vehicle" />
+                        <SelectField name="fk_tool_id" label="Vehicle / System" options={tools} placeholder="Select vehicle" />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">

@@ -119,8 +119,8 @@ export function OperationDialog({ open, onClose, initial, onSaved }: OperationFo
                 status_name:            (initial.status_name as StatusName) ?? 'PLANNED',
                 fk_pilot_user_id:       initial.fk_pilot_user_id?.toString() ?? '',
                 fk_tool_id:             initial.fk_tool_id?.toString()       ?? '',
-                fk_mission_type_id:     (initial as any).fk_mission_type_id?.toString()     ?? '',
-                fk_mission_category_id: (initial as any).fk_mission_category_id?.toString() ?? '',
+                fk_mission_type_id:     initial.fk_mission_type_id?.toString()     ?? '',
+                fk_mission_category_id: initial.fk_mission_category_id?.toString() ?? '',
             });
         } else {
             setForm(EMPTY_FORM);
@@ -300,8 +300,8 @@ export function OperationDialog({ open, onClose, initial, onSaved }: OperationFo
                         <div className="space-y-3">
                             <SectionTitle>Assets</SectionTitle>
                             <div className="grid gap-1.5">
-                                <Label>Tool (Drone System)</Label>
-                                <Select value={form.fk_tool_id}
+                                <Label>System (Drone System)</Label>
+                                <Select key={`tool-${tools.length}`} value={form.fk_tool_id}
                                     onValueChange={(v) => setForm((f) => ({ ...f, fk_tool_id: v }))}
                                     disabled={loadingOptions}>
                                     <SelectTrigger>
@@ -318,7 +318,7 @@ export function OperationDialog({ open, onClose, initial, onSaved }: OperationFo
                             </div>
                             <div className="grid gap-1.5">
                                 <Label>Mission Category</Label>
-                                <Select value={form.fk_mission_category_id}
+                                <Select key={`cat-${missionCategories.length}`} value={form.fk_mission_category_id}
                                     onValueChange={(v) => setForm((f) => ({ ...f, fk_mission_category_id: v }))}
                                     disabled={loadingOptions}>
                                     <SelectTrigger>
@@ -335,7 +335,7 @@ export function OperationDialog({ open, onClose, initial, onSaved }: OperationFo
                             </div>
                             <div className="grid gap-1.5">
                                 <Label>Mission Type</Label>
-                                <Select value={form.fk_mission_type_id}
+                                <Select key={`type-${missionTypes.length}`} value={form.fk_mission_type_id}
                                     onValueChange={(v) => setForm((f) => ({ ...f, fk_mission_type_id: v }))}
                                     disabled={loadingOptions}>
                                     <SelectTrigger>
@@ -358,7 +358,7 @@ export function OperationDialog({ open, onClose, initial, onSaved }: OperationFo
                             <SectionTitle>Pilot In Command</SectionTitle>
                             <div className="grid gap-1.5">
                                 <Label>Pilot in Command <span className="text-red-500">*</span></Label>
-                                <Select value={form.fk_pilot_user_id}
+                                <Select key={`pilot-${pilots.length}`} value={form.fk_pilot_user_id}
                                     onValueChange={(v) => setForm((f) => ({ ...f, fk_pilot_user_id: v }))}
                                     disabled={loadingOptions}>
                                     <SelectTrigger>
