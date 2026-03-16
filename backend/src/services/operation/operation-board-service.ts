@@ -115,7 +115,6 @@ export async function getMissionBoard(
     else if (mission.mission_status_code === "10") done.push(mission);
   }
 
-  // Attach maintenance status per vehicle
   const allMissions = [...scheduled, ...in_progress, ...done];
   const uniqueToolIds = [...new Set(allMissions.map(m => m.fk_vehicle_id).filter(Boolean))];
 
@@ -206,20 +205,6 @@ export async function updateMissionStatus(
 ): Promise<{ code: number; message: string; check_daily_declaration?: string }> {
 
   const newStatusId = payload.workflow_mission_status === "_START" ? 2 : 3;
-
-  if (payload.workflow_mission_status === "_START") {
-    const today = new Date().toISOString().split("T")[0];
-    const { data: declaration } = await supabase
-      .from("pilot_declaration")
-      .select("declaration_id")
-      .eq("fk_user_id", payload.pilot_id)
-      .eq("declaration_date", today)
-      .single();
-
-    if (!declaration) {
-      return { code: 0, message: "Daily declaration not found", check_daily_declaration: "N" };
-    }
-  }
 
   const { error } = await supabase
     .from("pilot_mission")

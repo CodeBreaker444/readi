@@ -7,6 +7,7 @@ import { Skeleton } from '../../components/ui/skeleton';
 import { Mission, MissionBoardData } from '../../config/types/operation';
 import { useTheme } from "../useTheme";
 import { BoardHeader } from "./BoardHeader";
+import { DailyDeclarationModal } from "./DailyDeclarationModal";
 import { KanbanColumn } from "./KanbanColumn";
 import { MaintenanceCycleModal } from "./MaintenanceCycleModal";
 import { MissionDetailSheet } from "./MissionDetailSheet";
@@ -59,9 +60,16 @@ export function OperationBoard() {
     const [dragOverColumn, setDragOverColumn] = useState<ColumnId | null>(null);
     const [selectedMission, setSelectedMission] = useState<Mission | null>(null);
     const [completedMission, setCompletedMission] = useState<Mission | null>(null);
+    const [showDeclarationModal, setShowDeclarationModal] = useState(false);
     const dragMeta = useRef<{
         missionId: number;
         sourceColumn: ColumnId;
+    } | null>(null);
+    const pendingDragRef = useRef<{
+        missionId: number;
+        sourceColumn: ColumnId;
+        target: ColumnId;
+        mission: Mission;
     } | null>(null);
 
     const loadBoard = useCallback(async (silent = false) => {
@@ -96,6 +104,59 @@ export function OperationBoard() {
 
     const handleDragLeave = () => setDragOverColumn(null);
 
+    const executeMissionStatusUpdate = useCallback(async (
+        missionId: number,
+        sourceColumn: ColumnId,
+        target: ColumnId,
+        mission: Mission,
+    ) => {
+        const workflow = target === "in_progress" ? "_START" : "_END";
+
+        setBoard((prev) => ({
+            ...prev,
+            [sourceColumn]: prev[sourceColumn].filter((m) => m.mission_id !== missionId),
+            [target]: [...prev[target], { ...mission, fk_status_id: COLUMN_STATUS_MAP[target] }],
+        }));
+
+        try {
+            await axios.post('/api/operation/board/status', {
+                mission_id: missionId,
+                vehicle_id: mission.fk_vehicle_id,
+                status_id: COLUMN_STATUS_MAP[target],
+                workflow_mission_status: workflow,
+                pilot_id: mission.fk_pic_id,
+            });
+
+            pendingDragRef.current = null;
+
+            toast.success(
+                target === "in_progress" ? "Mission started" : "Mission completed",
+                { description: `Mission #${missionId} moved to ${target.replace("_", " ")}` }
+            );
+
+            if (target === "done") {
+                setCompletedMission(mission);
+            }
+        } catch (err: any) {
+            setBoard((prev) => ({
+                ...prev,
+                [target]: prev[target].filter((m) => m.mission_id !== missionId),
+                [sourceColumn]: [...prev[sourceColumn], mission],
+            }));
+
+            const responseData = err?.response?.data;
+
+            if (responseData?.check_daily_declaration === "N") {
+                pendingDragRef.current = { missionId, sourceColumn, target, mission };
+                setShowDeclarationModal(true);
+            } else {
+                toast.error("Status update failed", {
+                    description: responseData?.message ?? "Unknown error",
+                });
+            }
+        }
+    }, []);
+
     const handleDrop = async (e: React.DragEvent, targetColumn: string) => {
         e.preventDefault();
         setDragOverColumn(null);
@@ -116,51 +177,10 @@ export function OperationBoard() {
             return;
         }
 
-        const sourceMissions = board[sourceColumn];
-        const mission = sourceMissions.find((m) => m.mission_id === missionId);
+        const mission = board[sourceColumn].find((m) => m.mission_id === missionId);
         if (!mission) return;
 
-        setBoard((prev) => ({
-            ...prev,
-            [sourceColumn]: prev[sourceColumn].filter((m) => m.mission_id !== missionId),
-            [target]: [...prev[target], { ...mission, fk_status_id: COLUMN_STATUS_MAP[target] }],
-        }));
-
-        const workflow = target === "in_progress" ? "_START" : "_END";
-
-        const result = await axios.post('/api/operation/board/status', {
-            mission_id: missionId,
-            vehicle_id: mission.fk_vehicle_id,
-            status_id: COLUMN_STATUS_MAP[target],
-            workflow_mission_status: workflow,
-            pilot_id: mission.fk_pic_id, 
-        });
-
-        if (result.status === 422) {
-            toast.error('Failed to Change the status!')
-            setBoard((prev) => ({
-                ...prev,
-                [target]: prev[target].filter((m) => m.mission_id !== missionId),
-                [sourceColumn]: [...prev[sourceColumn], mission],
-            }));
-
-            if (result.data.check_daily_declaration === "N") {
-                toast.warning("Daily declaration required", {
-                    description: "Please complete your daily declaration before starting a mission.",
-                });
-            } else {
-                toast.error("Status update failed", { description: result.data.message });
-            }
-        } else {
-            toast.success(
-                target === "in_progress" ? "Mission started" : "Mission completed",
-                { description: `Mission #${missionId} moved to ${target.replace("_", " ")}` }
-            );
-
-            if (target === "done" && mission) {
-                setCompletedMission(mission);
-            }
-        }
+        await executeMissionStatusUpdate(missionId, sourceColumn, target, mission);
     };
 
     return (
@@ -198,6 +218,27 @@ export function OperationBoard() {
                 isDark={isDark}
             />
 
+            <DailyDeclarationModal
+                open={showDeclarationModal}
+                onClose={() => {
+                    setShowDeclarationModal(false);
+                    pendingDragRef.current = null;
+                }}
+                onSuccess={() => {
+                    setShowDeclarationModal(false);
+                    const pending = pendingDragRef.current;
+                    if (pending) {
+                        executeMissionStatusUpdate(
+                            pending.missionId,
+                            pending.sourceColumn,
+                            pending.target,
+                            pending.mission,
+                        );
+                    }
+                }}
+                isDark={isDark}
+            />
+
             {completedMission && (
                 <MaintenanceCycleModal
                     open={!!completedMission}
@@ -222,19 +263,19 @@ function BoardSkeleton({ isDark }: { isDark: boolean }) {
                     key={i}
                     className={`rounded-xl border p-3 ${
                         isDark
-                            ? "border-white/[0.06] bg-slate-950/50"
+                            ? "border-white/6 bg-slate-950/50"
                             : "border-slate-200 bg-white shadow-sm"
                     }`}
                 >
-                    <div className={`mb-3 flex items-center justify-between border-b pb-3 ${isDark ? "border-white/[0.06]" : "border-slate-200"}`}>
-                        <Skeleton className={`h-4 w-20 ${isDark ? "bg-white/[0.06]" : "bg-slate-100"}`} />
-                        <Skeleton className={`h-5 w-5 rounded-full ${isDark ? "bg-white/[0.06]" : "bg-slate-100"}`} />
+                    <div className={`mb-3 flex items-center justify-between border-b pb-3 ${isDark ? "border-white/6" : "border-slate-200"}`}>
+                        <Skeleton className={`h-4 w-20 ${isDark ? "bg-white/6" : "bg-slate-100"}`} />
+                        <Skeleton className={`h-5 w-5 rounded-full ${isDark ? "bg-white/6" : "bg-slate-100"}`} />
                     </div>
                     <div className="space-y-3">
                         {[...Array(i === 1 ? 2 : 1)].map((_, j) => (
                             <Skeleton
                                 key={j}
-                                className={`h-44 w-full rounded-lg ${isDark ? "bg-white/[0.04]" : "bg-slate-100"}`}
+                                className={`h-44 w-full rounded-lg ${isDark ? "bg-white/4" : "bg-slate-100"}`}
                             />
                         ))}
                     </div>

@@ -2,7 +2,7 @@
 
 import { SessionUser } from '@/lib/auth/server-session';
 import Cookies from 'js-cookie';
-import { Bell, ChevronDown, Clock, LogOut, Mail, Moon, Sun, User, UserCircle } from 'lucide-react';
+import { Bell, ChevronDown, Clock, LogOut, Moon, Sun, User, UserCircle } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '../lib/supabase/client';
@@ -63,15 +63,6 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
             aria-label="Toggle theme"
           >
             {isDark ? <Sun size={20} /> : <Moon size={20} />}
-          </button>
-
-          <button
-            className={`relative p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-slate-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'
-              }`}
-            aria-label="Messages"
-          >
-            <Mail size={20} />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-blue-500 rounded-full"></span>
           </button>
 
           <button

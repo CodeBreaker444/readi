@@ -187,13 +187,12 @@ export interface MissionBoardData {
 export interface UpdateMissionStatusPayload {
   owner_id: number;
   mission_id: number;
-  vehicle_id: number;
+  vehicle_id: number | null;
   status_id: number;
   workflow_mission_status: "_START" | "_END";
-  pilot_id: number;
+  pilot_id?: number | null;
 }
 
- 
 
 export type OperationCalenderStatus = 'Scheduled' | 'In Progress' | 'Completed' | 'Cancelled'
 
@@ -243,3 +242,27 @@ export type CreateOperationCalendarInput = {
 }
 
 export type CalendarEvent = OperationCalendarEvent
+
+// ─── Pilot Declaration ────────────────────────────────────────────────────────
+
+export interface PilotDeclaration {
+  declaration_id: number;
+  fk_user_id: number;
+  fk_tool_id: number | null;
+  declaration_type: string | null;
+  declaration_date: string | null;
+  declaration_data: Record<string, unknown> | null;
+  checklist_completed: boolean;
+  declared_at: string | null;
+}
+
+export interface InsertPilotDeclarationPayload {
+  fk_tool_id?: number | null;
+  declaration_type: string;
+  declaration_data: Record<string, unknown>;
+}
+
+export interface DailyDeclarationCheckResponse {
+  code: number;
+  check_daily_declaration: "Y" | "N";
+}
