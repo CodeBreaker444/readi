@@ -165,7 +165,7 @@ export default function DroneToolMapPage() {
                 className={`font-semibold text-base tracking-tight ${isDark ? "text-white" : "text-slate-900"
                   }`}
               >
-                Drone Tool Map
+                Drone System Map
               </h1>
               <p className={`text-xs ${isDark ? "text-slate-500" : "text-slate-400"}`}>
                 Installed docks & drone systems overview
@@ -203,7 +203,7 @@ export default function DroneToolMapPage() {
                 className="h-8 gap-1.5 text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white transition-all shadow-sm"
               >
                 <Plus size={14} />
-                <span className="hidden sm:inline">Add Tool</span>
+                <span className="hidden sm:inline">Add System</span>
               </Button>
 
               <Button

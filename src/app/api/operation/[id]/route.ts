@@ -22,6 +22,9 @@ const updateOperationSchema = z.object({
   fk_tool_id: z.number().int().positive().nullable().optional(),
   fk_planning_id: z.number().int().positive().nullable().optional(),
   fk_mission_status_id: z.number().int().positive().optional(),
+  fk_mission_type_id: z.number().int().positive().nullable().optional(),
+  fk_mission_category_id: z.number().int().positive().nullable().optional(),
+  status_name: z.enum(['PLANNED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'ABORTED']).optional(),
   distance_flown: z.number().nonnegative().nullable().optional(),
   max_altitude: z.number().nonnegative().nullable().optional(),
 });

@@ -100,7 +100,7 @@ export async function createTicket(payload: CreateTicketPayload): Promise<number
     fk_tool_id:          payload.fk_tool_id,
     ticket_title:        componentId
       ? `Component Maintenance - #${componentId}`
-      : `Maintenance - Tool #${payload.fk_tool_id}`,
+      : `Maintenance - System #${payload.fk_tool_id}`,
     ticket_type:         payload.type,
     ticket_priority:     payload.priority,
     ticket_status:       'OPEN',

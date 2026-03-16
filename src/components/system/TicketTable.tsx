@@ -148,7 +148,7 @@ export function TicketTable({
       },
       {
         id: "drone",
-        header: "Tool",
+        header: "System",
         cell: ({ row }) => {
           const t = row.original;
           return (

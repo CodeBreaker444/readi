@@ -90,13 +90,14 @@ export async function uploadFileToS3(
   file: File,
 ): Promise<void> {
   const buffer = Buffer.from(await file.arrayBuffer());
+ const contentType = file.type || 'application/octet-stream';
 
   await s3.send(
     new PutObjectCommand({
       Bucket:      BUCKET,
       Key:         key,
       Body:        buffer,
-      ContentType: file.type,
+      ContentType: contentType,
       ContentDisposition: `attachment; filename="${file.name}"`,
       ServerSideEncryption: 'AES256',
     })
