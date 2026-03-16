@@ -1,7 +1,7 @@
 import { Operation } from "@/app/operations/table/page";
 import { cn } from "@/lib/utils";
 import axios from "axios";
-import { CheckCircle2, ChevronLeft, ChevronRight, ClipboardCheck, Clock, FileText, Loader2, Paperclip, Settings, Trash2, Upload, User } from "lucide-react";
+import { CheckCircle2, ChevronLeft, ChevronRight, ClipboardCheck, Clock, Download, FileText, Loader2, Paperclip, Settings, Trash2, Upload, User } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Button } from "../ui/button";
@@ -9,33 +9,34 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { Skeleton } from "../ui/skeleton";
 import { Textarea } from "../ui/textarea";
 
 interface OperationFormProps {
-  open: boolean;
-  onClose: () => void;
-  initial?: Operation | null;
-  onSaved: (op: Operation) => void;
+    open: boolean;
+    onClose: () => void;
+    initial?: Operation | null;
+    onSaved: (op: Operation) => void;
 }
 
 
 interface MissionTypeOption {
-  mission_type_id: number;
-  type_name: string;
+    mission_type_id: number;
+    type_name: string;
 }
 
 interface MissionCategoryOption {
-  category_id: number;
-  category_name: string;
+    category_id: number;
+    category_name: string;
 }
- 
+
 
 type StatusName = 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'ABORTED';
 type Step = 0 | 1 | 2 | 3 | 4;
 
-interface PilotOption        { user_id: number; first_name: string; last_name: string }
-interface ToolOption         { tool_id: number; tool_name: string; tool_code: string }
-interface MissionTypeOption  { mission_type_id: number; type_name: string }
+interface PilotOption { user_id: number; first_name: string; last_name: string }
+interface ToolOption { tool_id: number; tool_name: string; tool_code: string }
+interface MissionTypeOption { mission_type_id: number; type_name: string }
 interface MissionCategoryOption { category_id: number; category_name: string }
 
 interface OperationForm {
@@ -60,11 +61,11 @@ interface OperationFormProps {
 }
 
 const STEPS = [
-    { id: 0, label: 'Details',  icon: ClipboardCheck },
+    { id: 0, label: 'Details', icon: ClipboardCheck },
     { id: 1, label: 'Schedule', icon: Clock },
-    { id: 2, label: 'Assets',   icon: Settings },
-    { id: 3, label: 'Pilot',    icon: User },
-    { id: 4, label: 'Review',   icon: CheckCircle2 },
+    { id: 2, label: 'Assets', icon: Settings },
+    { id: 3, label: 'Pilot', icon: User },
+    { id: 4, label: 'Review', icon: CheckCircle2 },
 ];
 
 const EMPTY_FORM: OperationForm = {
@@ -86,12 +87,12 @@ export function OperationDialog({ open, onClose, initial, onSaved }: OperationFo
     const [isPending, startTransition] = useTransition();
     const [step, setStep] = useState<Step>(0);
 
-    const [pilots,           setPilots]           = useState<PilotOption[]>([]);
-    const [tools,            setTools]            = useState<ToolOption[]>([]);
-    const [missionTypes,     setMissionTypes]     = useState<MissionTypeOption[]>([]);
-    const [missionCategories,setMissionCategories]= useState<MissionCategoryOption[]>([]);
-    const [loadingOptions,   setLoadingOptions]   = useState(false);
-    const [form,             setForm]             = useState<OperationForm>(EMPTY_FORM);
+    const [pilots, setPilots] = useState<PilotOption[]>([]);
+    const [tools, setTools] = useState<ToolOption[]>([]);
+    const [missionTypes, setMissionTypes] = useState<MissionTypeOption[]>([]);
+    const [missionCategories, setMissionCategories] = useState<MissionCategoryOption[]>([]);
+    const [loadingOptions, setLoadingOptions] = useState(false);
+    const [form, setForm] = useState<OperationForm>(EMPTY_FORM);
 
     useEffect(() => {
         if (!open) { setStep(0); return; }
@@ -110,16 +111,16 @@ export function OperationDialog({ open, onClose, initial, onSaved }: OperationFo
     useEffect(() => {
         if (initial) {
             setForm({
-                mission_name:           initial.mission_name        ?? '',
-                mission_code:           initial.mission_code        ?? '',
-                mission_description:    initial.mission_description ?? '',
-                location:               initial.location            ?? '',
-                notes:                  initial.notes               ?? '',
-                scheduled_start:        initial.scheduled_start     ?? '',
-                status_name:            (initial.status_name as StatusName) ?? 'PLANNED',
-                fk_pilot_user_id:       initial.fk_pilot_user_id?.toString() ?? '',
-                fk_tool_id:             initial.fk_tool_id?.toString()       ?? '',
-                fk_mission_type_id:     initial.fk_mission_type_id?.toString()     ?? '',
+                mission_name: initial.mission_name ?? '',
+                mission_code: initial.mission_code ?? '',
+                mission_description: initial.mission_description ?? '',
+                location: initial.location ?? '',
+                notes: initial.notes ?? '',
+                scheduled_start: initial.scheduled_start ?? '',
+                status_name: (initial.status_name as StatusName) ?? 'PLANNED',
+                fk_pilot_user_id: initial.fk_pilot_user_id?.toString() ?? '',
+                fk_tool_id: initial.fk_tool_id?.toString() ?? '',
+                fk_mission_type_id: initial.fk_mission_type_id?.toString() ?? '',
                 fk_mission_category_id: initial.fk_mission_category_id?.toString() ?? '',
             });
         } else {
@@ -137,17 +138,17 @@ export function OperationDialog({ open, onClose, initial, onSaved }: OperationFo
         startTransition(async () => {
             try {
                 const payload = {
-                    mission_name:           form.mission_name.trim(),
-                    mission_code:           form.mission_code?.trim()       || undefined,
-                    mission_description:    form.mission_description        || undefined,
-                    location:               form.location                   || undefined,
-                    notes:                  form.notes                      || undefined,
-                    scheduled_start:        toIsoString(form.scheduled_start),
-                    fk_pilot_user_id:       form.fk_pilot_user_id       ? parseInt(form.fk_pilot_user_id)       : undefined,
-                    fk_tool_id:             form.fk_tool_id             ? parseInt(form.fk_tool_id)             : undefined,
-                    fk_mission_type_id:     form.fk_mission_type_id     ? parseInt(form.fk_mission_type_id)     : undefined,
+                    mission_name: form.mission_name.trim(),
+                    mission_code: form.mission_code?.trim() || undefined,
+                    mission_description: form.mission_description || undefined,
+                    location: form.location || undefined,
+                    notes: form.notes || undefined,
+                    scheduled_start: toIsoString(form.scheduled_start),
+                    fk_pilot_user_id: form.fk_pilot_user_id ? parseInt(form.fk_pilot_user_id) : undefined,
+                    fk_tool_id: form.fk_tool_id ? parseInt(form.fk_tool_id) : undefined,
+                    fk_mission_type_id: form.fk_mission_type_id ? parseInt(form.fk_mission_type_id) : undefined,
                     fk_mission_category_id: form.fk_mission_category_id ? parseInt(form.fk_mission_category_id) : undefined,
-                    status_name:            form.status_name,
+                    status_name: form.status_name,
                 };
 
                 let saved: { data: Operation };
@@ -165,9 +166,9 @@ export function OperationDialog({ open, onClose, initial, onSaved }: OperationFo
         });
     }
 
-    const selectedPilot    = pilots.find((p) => p.user_id.toString()           === form.fk_pilot_user_id);
-    const selectedTool     = tools.find((t) => t.tool_id.toString()             === form.fk_tool_id);
-    const selectedType     = missionTypes.find((t) => t.mission_type_id.toString()  === form.fk_mission_type_id);
+    const selectedPilot = pilots.find((p) => p.user_id.toString() === form.fk_pilot_user_id);
+    const selectedTool = tools.find((t) => t.tool_id.toString() === form.fk_tool_id);
+    const selectedType = missionTypes.find((t) => t.mission_type_id.toString() === form.fk_mission_type_id);
     const selectedCategory = missionCategories.find((c) => c.category_id.toString() === form.fk_mission_category_id);
 
     const canGoNext = () => {
@@ -191,8 +192,8 @@ export function OperationDialog({ open, onClose, initial, onSaved }: OperationFo
                 <div className="px-6 pt-4 pb-2">
                     <div className="flex items-center gap-0">
                         {STEPS.map((s, i) => {
-                            const Icon   = s.icon;
-                            const done   = step > s.id;
+                            const Icon = s.icon;
+                            const done = step > s.id;
                             const active = step === s.id;
                             return (
                                 <div key={s.id} className="flex items-center flex-1">
@@ -387,15 +388,15 @@ export function OperationDialog({ open, onClose, initial, onSaved }: OperationFo
                             <SectionTitle>Mission Summary</SectionTitle>
                             <div className="rounded-lg border bg-muted/20 p-4 space-y-3 text-sm">
                                 <div className="grid grid-cols-2 gap-x-4 gap-y-2.5">
-                                    <ReviewRow label="Mission Name"  value={form.mission_name} />
-                                    <ReviewRow label="Mission Code"  value={form.mission_code} />
-                                    <ReviewRow label="Location"      value={form.location} />
-                                    <ReviewRow label="Status"        value={form.status_name} />
-                                    <ReviewRow label="Scheduled"     value={form.scheduled_start ? new Date(form.scheduled_start).toLocaleString() : undefined} />
-                                    <ReviewRow label="Pilot"         value={selectedPilot ? `${selectedPilot.first_name} ${selectedPilot.last_name}` : undefined} />
-                                    <ReviewRow label="Tool"          value={selectedTool ? `${selectedTool.tool_name} (${selectedTool.tool_code})` : undefined} />
-                                    <ReviewRow label="Type"          value={selectedType?.type_name} />
-                                    <ReviewRow label="Category"      value={selectedCategory?.category_name} />
+                                    <ReviewRow label="Mission Name" value={form.mission_name} />
+                                    <ReviewRow label="Mission Code" value={form.mission_code} />
+                                    <ReviewRow label="Location" value={form.location} />
+                                    <ReviewRow label="Status" value={form.status_name} />
+                                    <ReviewRow label="Scheduled" value={form.scheduled_start ? new Date(form.scheduled_start).toLocaleString() : undefined} />
+                                    <ReviewRow label="Pilot" value={selectedPilot ? `${selectedPilot.first_name} ${selectedPilot.last_name}` : undefined} />
+                                    <ReviewRow label="Tool" value={selectedTool ? `${selectedTool.tool_name} (${selectedTool.tool_code})` : undefined} />
+                                    <ReviewRow label="Type" value={selectedType?.type_name} />
+                                    <ReviewRow label="Category" value={selectedCategory?.category_name} />
                                 </div>
                                 {(form.mission_description || form.notes) && (
                                     <div className="border-t pt-2.5 space-y-2">
@@ -470,202 +471,226 @@ function ReviewRow({ label, value }: { label: string; value?: string }) {
     );
 }
 export function formatBytes(bytes?: number) {
-  if (!bytes) return '';
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    if (!bytes) return '';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 export function formatDate(iso?: string) {
-  if (!iso) return '—';
-  return new Date(iso).toLocaleDateString('en-GB', {
-    day: '2-digit', month: 'short', year: 'numeric',
-  });
+    if (!iso) return '—';
+    return new Date(iso).toLocaleDateString('en-GB', {
+        day: '2-digit', month: 'short', year: 'numeric',
+    });
 }
 
 interface Attachment {
-  attachment_id: number;
-  file_name: string;
-  file_type?: string;
-  file_size?: number;
-  s3_url: string;
-  uploaded_at?: string;
+    attachment_id: number;
+    file_name: string;
+    file_type?: string;
+    file_size?: number;
+    s3_url: string;
+    uploaded_at?: string;
 }
 
 export function AttachmentsDialog({ open, onClose, operationId, operationName }: {
-  open: boolean;
-  onClose: () => void;
-  operationId: number;
-  operationName: string;
+    open: boolean;
+    onClose: () => void;
+    operationId: number;
+    operationName: string;
 }) {
-  const [attachments, setAttachments] = useState<Attachment[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [dragOver, setDragOver] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
+    const [attachments, setAttachments] = useState<Attachment[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [uploading, setUploading] = useState(false);
+    const [dragOver, setDragOver] = useState(false);
+    const fileRef = useRef<HTMLInputElement>(null);
 
-  const loadAttachments = useCallback(async () => {
-    if (!operationId) return;
-    setLoading(true);
-    try {
-      const { data } = await axios.get(`/api/operation/${operationId}/attachment`);
-      setAttachments(data);
-    } catch (error) {
-      console.error("Failed to fetch attachments:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [operationId]);
-
-  useEffect(() => {
-    if (open) loadAttachments();
-  }, [open, loadAttachments]);
-
-  async function handleUpload(files: FileList | null) {
-    if (!files || files.length === 0) return;
-    setUploading(true);
-    try {
-      const uploaded: Attachment[] = [];
-      for (const file of Array.from(files)) {
-        const fd = new FormData();
-        fd.append('file', file);
-        const res = await fetch(`/api/operation/${operationId}/attachment`, {
-          method: 'POST',
-          body: fd,
-        });
-        if (!res.ok) {
-          const json = await res.json();
-          throw new Error(json.error ?? 'Upload failed');
+    const loadAttachments = useCallback(async () => {
+        if (!operationId) return;
+        setLoading(true);
+        try {
+            const { data } = await axios.get(`/api/operation/${operationId}/attachment`);
+            setAttachments(data);
+        } catch (error) {
+            console.error("Failed to fetch attachments:", error);
+        } finally {
+            setLoading(false);
         }
-        const json = await res.json();
-        uploaded.push(json.attachment);
-      }
-      setAttachments((prev) => [...uploaded, ...prev]);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Upload failed');
-    } finally {
-      setUploading(false);
+    }, [operationId]);
+
+    useEffect(() => {
+        if (open) loadAttachments();
+    }, [open, loadAttachments]);
+
+    async function handleUpload(files: FileList | null) {
+        if (!files || files.length === 0) return;
+        setUploading(true);
+        try {
+            const uploaded: Attachment[] = [];
+            for (const file of Array.from(files)) {
+                const fd = new FormData();
+                fd.append('file', file);
+                const res = await fetch(`/api/operation/${operationId}/attachment`, {
+                    method: 'POST',
+                    body: fd,
+                });
+                if (!res.ok) {
+                    const json = await res.json();
+                    throw new Error(json.error ?? 'Upload failed');
+                }
+                const json = await res.json();
+                uploaded.push(json.attachment);
+            }
+            setAttachments((prev) => [...uploaded, ...prev]);
+        } catch (err) {
+            toast.error(err instanceof Error ? err.message : 'Upload failed');
+        } finally {
+            setUploading(false);
+        }
     }
-  }
 
-  async function handleDeleteAttachment(attachmentId: number) {
-    try {
-      await axios.delete(`/api/operation/${operationId}/attachment/${attachmentId}`);
-      setAttachments((prev) => prev.filter((a) => a.attachment_id !== attachmentId));
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Delete failed');
+    async function handleDownload(attachment: Attachment) {
+        try {
+            const { data } = await axios.get(
+                `/api/operation/${operationId}/attachment/${attachment.attachment_id}/download`
+            );
+            window.open(data.url, '_blank');
+        } catch {
+            toast.error('Failed to get download link');
+        }
     }
-  }
 
-  return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-150">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Paperclip className="h-4 w-4" />
-            Attachments
-          </DialogTitle>
-          <DialogDescription className="truncate">{operationName}</DialogDescription>
-        </DialogHeader>
+    async function handleDeleteAttachment(attachmentId: number) {
+        try {
+            await axios.delete(`/api/operation/${operationId}/attachment/${attachmentId}`);
+            setAttachments((prev) => prev.filter((a) => a.attachment_id !== attachmentId));
+        } catch (err) {
+            toast.error(err instanceof Error ? err.message : 'Delete failed');
+        }
+    }
 
-        <div
-          className={cn(
-            'relative rounded-lg border-2 border-dashed px-6 py-8 text-center transition-colors cursor-pointer',
-            dragOver ? 'border-primary bg-primary/5' : 'border-muted-foreground/25 hover:border-muted-foreground/40',
-          )}
-          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={(e) => { e.preventDefault(); setDragOver(false); handleUpload(e.dataTransfer.files); }}
-          onClick={() => fileRef.current?.click()}
-        >
-          <input ref={fileRef} type="file" multiple className="hidden" onChange={(e) => handleUpload(e.target.files)} />
-          {uploading ? (
-            <div className="flex flex-col items-center gap-2 text-muted-foreground">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <p className="text-sm">Uploading…</p>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center gap-2 text-muted-foreground">
-              <Upload className="h-8 w-8" />
-              <p className="text-sm font-medium">Drop files here or click to browse</p>
-              <p className="text-xs">Max 20 MB · PDF, images, CSV, DOCX, XLSX</p>
-            </div>
-          )}
-        </div>
+    return (
+        <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+            <DialogContent className="sm:max-w-150">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                        <Paperclip className="h-4 w-4" />
+                        Attachments
+                    </DialogTitle>
+                    <DialogDescription className="truncate">{operationName}</DialogDescription>
+                </DialogHeader>
 
-        <div className="max-h-60 overflow-y-auto space-y-1.5">
-          {loading && (
-            <div className="py-4 text-center text-sm text-muted-foreground">
-              <Loader2 className="mx-auto mb-1 h-5 w-5 animate-spin" /> Loading…
-            </div>
-          )}
-          {!loading && attachments.length === 0 && (
-            <p className="py-4 text-center text-sm text-muted-foreground">No attachments yet.</p>
-          )}
-          {attachments.map((a) => (
-            <div key={a.attachment_id} className="flex items-center gap-3 rounded-md border bg-muted/30 px-3 py-2">
-              <FileText className="h-5 w-5 shrink-0 text-muted-foreground" />
-              <div className="min-w-0 flex-1">
-                <a href={a.s3_url} target="_blank" rel="noopener noreferrer" className="block truncate text-sm font-medium text-primary hover:underline">
-                  {a.file_name}
-                </a>
-                <p className="text-xs text-muted-foreground">{formatBytes(a.file_size)} · {formatDate(a.uploaded_at)}</p>
-              </div>
-              <button onClick={() => handleDeleteAttachment(a.attachment_id)} className="ml-auto shrink-0 text-muted-foreground hover:text-destructive transition-colors">
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </div>
-          ))}
-        </div>
+                <div
+                    className={cn(
+                        'relative rounded-lg border-2 border-dashed px-6 py-8 text-center transition-colors cursor-pointer',
+                        dragOver ? 'border-primary bg-primary/5' : 'border-muted-foreground/25 hover:border-muted-foreground/40',
+                    )}
+                    onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                    onDragLeave={() => setDragOver(false)}
+                    onDrop={(e) => { e.preventDefault(); setDragOver(false); handleUpload(e.dataTransfer.files); }}
+                    onClick={() => fileRef.current?.click()}
+                >
+                    <input ref={fileRef} type="file" multiple className="hidden" onChange={(e) => handleUpload(e.target.files)} />
+                    {uploading ? (
+                        <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                            <p className="text-sm">Uploading…</p>
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                            <Upload className="h-8 w-8" />
+                            <p className="text-sm font-medium">Drop files here or click to browse</p>
+                            <p className="text-xs">Max 20 MB · PDF, images, CSV, DOCX, XLSX</p>
+                        </div>
+                    )}
+                </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Close</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
+                <div className="max-h-60 overflow-y-auto space-y-1.5">
+                    {loading && (
+                      Array.from({ length: 2 }).map((_, i) => (
+                            <div key={i} className="flex items-center gap-3 rounded-md border px-3 py-2">
+                                <Skeleton className="h-8 w-8 rounded" />
+                                <div className="flex-1 space-y-2">
+                                    <Skeleton className="h-4 w-[60%]" />
+                                    <Skeleton className="h-3 w-[40%]" />
+                                </div>
+                                <Skeleton className="h-4 w-4 rounded-full" />
+                            </div>
+                        ))
+                    )}
+                    {!loading && attachments.length === 0 && (
+                        <p className="py-4 text-center text-sm text-muted-foreground">No attachments yet.</p>
+                    )}
+                    {attachments.map((a) => (
+                        <div key={a.attachment_id} className="flex items-center gap-3 rounded-md border bg-muted/30 px-3 py-2">
+                            <FileText className="h-5 w-5 shrink-0 text-muted-foreground" />
+                            <div className="min-w-0 flex-1">
+                                <a href={a.s3_url} target="_blank" rel="noopener noreferrer" className="block truncate text-sm font-medium text-primary hover:underline">
+                                    {a.file_name}
+                                </a>
+                                <p className="text-xs text-muted-foreground">{formatBytes(a.file_size)} · {formatDate(a.uploaded_at)}</p>
+                            </div>
+                            <button onClick={() => handleDeleteAttachment(a.attachment_id)} className="ml-auto shrink-0 text-sm hover:text-destructive transition-colors">
+                                <Trash2 className="h-4 w-4" />
+                            </button>
+                            <button
+                                onClick={() => handleDownload(a)}
+                                className="block truncate text-sm font-medium text-primary hover:underline"
+                            >
+                                <Download className="h-4 w-4"/>
+                            </button>
+                        </div>
+                    ))}
+                </div>
+
+                <DialogFooter>
+                    <Button variant="outline" onClick={onClose}>Close</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
 }
 
 export function DeleteDialog({ open, onClose, operation, onDeleted }: {
-  open: boolean;
-  onClose: () => void;
-  operation: Operation | null;
-  onDeleted: (id: number) => void;
+    open: boolean;
+    onClose: () => void;
+    operation: Operation | null;
+    onDeleted: (id: number) => void;
 }) {
-  const [isPending, startTransition] = useTransition();
+    const [isPending, startTransition] = useTransition();
 
-  function handleDelete() {
-    if (!operation) return;
-    startTransition(async () => {
-      try {
-        await axios.delete(`/api/operation/${operation.pilot_mission_id}`);
-        onDeleted(operation.pilot_mission_id);
-        toast.success('Operation deleted successfully');
-        onClose();
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Delete failed');
-      }
-    });
-  }
+    function handleDelete() {
+        if (!operation) return;
+        startTransition(async () => {
+            try {
+                await axios.delete(`/api/operation/${operation.pilot_mission_id}`);
+                onDeleted(operation.pilot_mission_id);
+                toast.success('Operation deleted successfully');
+                onClose();
+            } catch (err) {
+                toast.error(err instanceof Error ? err.message : 'Delete failed');
+            }
+        });
+    }
 
-  return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-105">
-        <DialogHeader>
-          <DialogTitle>Delete Operation</DialogTitle>
-          <DialogDescription>
-            This will permanently delete{' '}
-            <span className="font-medium text-foreground">{operation?.mission_name}</span>. This action cannot be undone.
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={isPending}>Cancel</Button>
-          <Button variant="destructive" onClick={handleDelete} disabled={isPending}>
-            {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Delete
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
+    return (
+        <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+            <DialogContent className="sm:max-w-105">
+                <DialogHeader>
+                    <DialogTitle>Delete Operation</DialogTitle>
+                    <DialogDescription>
+                        This will permanently delete{' '}
+                        <span className="font-medium text-foreground">{operation?.mission_name}</span>. This action cannot be undone.
+                    </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                    <Button variant="outline" onClick={onClose} disabled={isPending}>Cancel</Button>
+                    <Button variant="destructive" onClick={handleDelete} disabled={isPending}>
+                        {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Delete
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
 }

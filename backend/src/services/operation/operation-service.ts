@@ -1,6 +1,6 @@
 import { supabase } from '@/backend/database/database';
 import { AttachmentUploadResponse, CreateOperationSchema, ListOperationsQuerySchema, Operation, OperationAttachment, OperationsListResponse, UpdateOperationSchema } from '@/config/types/operation';
-import { BUCKET, buildS3Key, buildS3Url, deleteFileFromS3, getPresignedDownloadUrl, REGION, uploadFileToS3 } from '@/lib/s3Client';
+import { buildS3Url, deleteFileFromS3, getPresignedDownloadUrl, REGION, uploadFileToS3 } from '@/lib/s3Client';
 
 export async function listOperations(
   params: ListOperationsQuerySchema,
@@ -40,7 +40,7 @@ export async function listOperations(
     `,
       { count: 'exact' }
     )
-    .eq('fk_owner_id', ownerId )   
+    .eq('fk_owner_id', ownerId)
     .range(from, to)
     .order('created_at', { ascending: false });
 
@@ -96,13 +96,13 @@ export async function getOperation(id: number): Promise<Operation | null> {
 }
 
 export async function createOperation(input: CreateOperationSchema, ownerId: number): Promise<Operation> {
-  const codeToChild = input.mission_code  
+  const codeToChild = input.mission_code
 
   const { data: existing } = await supabase
     .from('pilot_mission')
     .select('pilot_mission_id')
     .eq('mission_code', codeToChild)
-    .eq('fk_owner_id', ownerId) 
+    .eq('fk_owner_id', ownerId)
     .maybeSingle();
 
   if (existing) {
@@ -133,7 +133,7 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
 
   const full = await getOperation(inserted.pilot_mission_id);
   if (!full) throw new Error('Failed to fetch created operation');
-  
+
   return full;
 }
 
@@ -191,6 +191,10 @@ export async function deleteOperation(id: number): Promise<void> {
   if (error) throw new Error(`Failed to delete operation: ${error.message}`);
 }
 
+function buildOperationS3Key(operationId: number, originalName: string): string {
+  const safe = originalName.replace(/[^a-zA-Z0-9._-]/g, '_');
+  return `operations/${operationId}/${Date.now()}_${safe}`;
+}
 
 export async function uploadOperationAttachment(
   operationId: number,
@@ -207,20 +211,19 @@ export async function uploadOperationAttachment(
 
   if (!op) throw new Error('Operation not found');
 
-  const key = buildS3Key(operationId, file.name);
+  const key = buildOperationS3Key(operationId, file.name);
   await uploadFileToS3(key, file);
   const s3Url = buildS3Url(key);
 
   const { data, error } = await supabase
-    .from('ticket_attachment')
+    .from('operation_attachment')
     .insert({
-      fk_ticket_id: operationId,
+      fk_operation_id: operationId,
       file_name: file.name,
       file_key: key,
       file_type: file.type || null,
       file_size: file.size,
       file_description: description ?? null,
-      s3_bucket: BUCKET,
       s3_region: REGION,
       s3_url: s3Url,
       uploaded_by: uploadedBy ?? 'web',
@@ -237,29 +240,32 @@ export async function uploadOperationAttachment(
   return { attachment: data as OperationAttachment, presignedDownloadUrl };
 }
 
-
 export async function listOperationAttachments(
   operationId: number
 ): Promise<OperationAttachment[]> {
-
   const { data, error } = await supabase
-    .from('ticket_attachment')
+    .from('operation_attachment')
     .select('*')
-    .eq('fk_ticket_id', operationId)
+    .eq('fk_operation_id', operationId)
     .order('uploaded_at', { ascending: false });
 
   if (error) throw new Error(`Failed to list attachments: ${error.message}`);
-
-  const withUrls = await Promise.all(
-    (data ?? []).map(async (att: any) => ({
-      ...att,
-      download_url: await getPresignedDownloadUrl(att.file_key).catch(() => att.s3_url),
-    }))
-  );
-
-  return withUrls as OperationAttachment[];
+  return (data ?? []) as OperationAttachment[];
 }
 
+export async function fetchOperationAttachment(attId: number, opId: number) {
+  const { data, error } = await supabase
+    .from('operation_attachment')
+    .select('file_key')
+    .eq('attachment_id', attId)
+    .eq('fk_operation_id', opId)
+    .single();
+
+  if (error || !data) {
+    throw new Error('Attachment not found');
+  }
+  return data.file_key;
+}
 
 export async function deleteOperationAttachment(attachmentId: number): Promise<void> {
 
@@ -286,7 +292,7 @@ export async function getPilotOptions(ownerId: number) {
     .from('users')
     .select('user_id, first_name, last_name')
     .eq('fk_owner_id', ownerId)
-    .eq('user_role','PIC')
+    .eq('user_role', 'PIC')
     .eq('user_active', 'Y')
     .order('first_name');
 
