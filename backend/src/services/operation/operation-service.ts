@@ -24,7 +24,6 @@ export async function listOperations(
       flight_duration,
       location,
       distance_flown,
-      max_altitude,
       notes,
       fk_pilot_user_id,
       fk_tool_id,

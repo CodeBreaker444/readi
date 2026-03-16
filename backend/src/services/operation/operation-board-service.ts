@@ -68,7 +68,6 @@ export async function getMissionBoard(
       flight_duration,
       distance_flown,
       notes,
-      weather_conditions,
       mission_name,
       users!pilot_mission_fk_pilot_user_id_fkey(first_name, last_name),
       tool!pilot_mission_fk_tool_id_fkey(tool_code, tool_name, tool_id),
