@@ -10,7 +10,6 @@ import { BoardHeader } from "./BoardHeader";
 import { DailyDeclarationModal } from "./DailyDeclarationModal";
 import { KanbanColumn } from "./KanbanColumn";
 import { MaintenanceCycleModal } from "./MaintenanceCycleModal";
-import { MissionDetailSheet } from "./MissionDetailSheet";
 
 type ColumnId = "scheduled" | "in_progress" | "done";
 
@@ -60,6 +59,7 @@ export function OperationBoard() {
     const [dragOverColumn, setDragOverColumn] = useState<ColumnId | null>(null);
     const [selectedMission, setSelectedMission] = useState<Mission | null>(null);
     const [completedMission, setCompletedMission] = useState<Mission | null>(null);
+    const [maintenanceMission, setMaintenanceMission] = useState<Mission | null>(null);
     const [showDeclarationModal, setShowDeclarationModal] = useState(false);
     const dragMeta = useRef<{
         missionId: number;
@@ -135,7 +135,7 @@ export function OperationBoard() {
             );
 
             if (target === "done") {
-                setCompletedMission(mission);
+                setCompletedMission({ ...mission, fk_status_id: COLUMN_STATUS_MAP[target] });
             }
         } catch (err: any) {
             setBoard((prev) => ({
@@ -154,6 +154,34 @@ export function OperationBoard() {
                     description: responseData?.message ?? "Unknown error",
                 });
             }
+        }
+    }, []);
+
+    const handleRevertMission = useCallback(async (mission: Mission) => {
+        setBoard((prev) => ({
+            ...prev,
+            done: prev.done.filter((m) => m.mission_id !== mission.mission_id),
+            in_progress: [...prev.in_progress, { ...mission, fk_status_id: COLUMN_STATUS_MAP.in_progress }],
+        }));
+        setCompletedMission(null);
+        try {
+            await axios.post('/api/operation/board/status', {
+                mission_id: mission.mission_id,
+                vehicle_id: mission.fk_vehicle_id,
+                status_id: COLUMN_STATUS_MAP.in_progress,
+                workflow_mission_status: "_REVERT",
+                pilot_id: mission.fk_pic_id,
+            });
+            toast.warning("Mission moved back to In Progress", {
+                description: "Please update the maintenance cycle to complete the mission.",
+            });
+        } catch {
+            setBoard((prev) => ({
+                ...prev,
+                in_progress: prev.in_progress.filter((m) => m.mission_id !== mission.mission_id),
+                done: [...prev.done, mission],
+            }));
+            toast.error("Failed to revert mission status");
         }
     }, []);
 
@@ -202,6 +230,7 @@ export function OperationBoard() {
                             onDragStart={handleDragStart}
                             onDrop={handleDrop}
                             onViewDetails={(m) => setSelectedMission(m)}
+                            onUpdateMaintenance={(m) => setMaintenanceMission(m)}
                             isDragOver={dragOverColumn === col.id}
                             onDragOver={(e) => handleDragOver(e, col.id)}
                             onDragLeave={handleDragLeave}
@@ -210,13 +239,6 @@ export function OperationBoard() {
                     ))}
                 </div>
             )}
-
-            <MissionDetailSheet
-                mission={selectedMission}
-                open={!!selectedMission}
-                onClose={() => setSelectedMission(null)}
-                isDark={isDark}
-            />
 
             <DailyDeclarationModal
                 open={showDeclarationModal}
@@ -246,8 +268,27 @@ export function OperationBoard() {
                         setCompletedMission(null);
                         loadBoard(true);
                     }}
+                    onSkip={() => {
+                        const mission = completedMission;
+                        setCompletedMission(null);
+                        handleRevertMission(mission);
+                    }}
                     toolId={completedMission.fk_vehicle_id}
                     missionId={completedMission.mission_id}
+                    isDark={isDark}
+                />
+            )}
+
+            {/* Manual maintenance update from Done card pill */}
+            {maintenanceMission && (
+                <MaintenanceCycleModal
+                    open={!!maintenanceMission}
+                    onClose={() => {
+                        setMaintenanceMission(null);
+                        loadBoard(true);
+                    }}
+                    toolId={maintenanceMission.fk_vehicle_id}
+                    missionId={maintenanceMission.mission_id}
                     isDark={isDark}
                 />
             )}

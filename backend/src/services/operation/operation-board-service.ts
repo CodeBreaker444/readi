@@ -3,58 +3,7 @@ import { Mission, MissionBoardData, UpdateMissionStatusPayload } from "@/config/
 import { getToolMaintenanceStatus } from "./maintenance-cycle-service";
 
 
-function buildMissionSelect() {
-  return `
-    pilot_mission.pilot_mission_id AS mission_id,
-    pilot_mission.fk_planning_id,
-    pilot_mission.fk_pilot_user_id AS fk_pic_id,
-    pilot_mission.fk_tool_id AS fk_vehicle_id,
-    pilot_mission.fk_mission_type_id,
-    pilot_mission.fk_mission_category_id,
-    pilot_mission.fk_mission_status_id AS fk_status_id,
-    pilot_mission.scheduled_start,
-    pilot_mission.actual_start,
-    pilot_mission.actual_end,
-    pilot_mission.flight_duration AS flown_time,
-    pilot_mission.distance_flown AS flown_meter,
-    pilot_mission.notes AS mission_notes,
-    users.first_name || ' ' || users.last_name AS pic_fullname,
-    client.client_name,
-    client.client_id AS fk_client_id,
-    tool.tool_code AS vehicle_code,
-    tool.tool_name AS vehicle_desc,
-    tool.tool_id,
-    pilot_mission_status.status_code AS mission_status_code,
-    pilot_mission_status.status_name AS mission_status_desc,
-    pilot_mission_type.type_name AS mission_type_desc,
-    pilot_mission_type.type_code AS mission_type_code,
-    pilot_mission_category.category_name AS mission_category_desc,
-    planning_logbook.mission_planning_code,
-    planning_logbook.mission_planning_desc,
-    planning_logbook.mission_planning_limit_json,
-    planning_logbook.mission_planning_id AS fk_mission_planning_id,
-    pilot_mission.mission_name,
-    pilot_mission.weather_conditions,
-    pilot_mission.coordinates
-  `;
-}
-
-
-export async function getMissionBoard(
-  ownerId: number,
-  userId: number,
-  userProfileCode: string
-): Promise<MissionBoardData> {
-
-  const pilotFilter = userProfileCode === "PIC" ? userId : null;
-
-  const today = new Date();
-  const todayStr = today.toISOString().split("T")[0];
-
-  let query = supabase
-    .from("pilot_mission")
-    .select(
-      `
+const MISSION_SELECT = `
       pilot_mission_id,
       fk_planning_id,
       fk_pilot_user_id,
@@ -85,34 +34,86 @@ export async function getMissionBoard(
           mission_planning_limit_json
         )
       )
-      `
-    )
-    .eq('fk_owner_id',ownerId)
-    .gte("scheduled_start", `${todayStr}T00:00:00`)
-    .lte("scheduled_start", `${todayStr}T23:59:59`)
-    .not("fk_pilot_user_id", "is", null);
+`;
+
+export async function getMissionBoard(
+  ownerId: number,
+  userId: number,
+  userProfileCode: string
+): Promise<MissionBoardData> {
+
+  const pilotFilter = userProfileCode === "PIC" ? userId : null;
+
+  const today = new Date();
+  const todayStr = today.toISOString().split("T")[0];
+  const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const weekAgoStr = weekAgo.toISOString().split("T")[0];
+
+  let scheduledQuery = supabase
+    .from("pilot_mission")
+    .select(MISSION_SELECT)
+    .eq('fk_owner_id', ownerId)
+    .eq("fk_mission_status_id", 1)
+    .or(`scheduled_start.is.null,and(scheduled_start.gte.${todayStr}T00:00:00,scheduled_start.lte.${todayStr}T23:59:59)`)
+    .order("scheduled_start", { ascending: false, nullsFirst: true });
 
   if (pilotFilter) {
-    query = query.eq("fk_pilot_user_id", pilotFilter);
+    scheduledQuery = scheduledQuery.eq("fk_pilot_user_id", pilotFilter);
   }
 
-  const { data, error } = await query;
+  // In-progress missions: all active regardless of date
+  let inProgressQuery = supabase
+    .from("pilot_mission")
+    .select(MISSION_SELECT)
+    .eq('fk_owner_id', ownerId)
+    .eq("fk_mission_status_id", 2)
+    .order("actual_start", { ascending: false, nullsFirst: true });
 
-  if (error) {
-    throw new Error(`Failed to fetch mission board: ${error.message}`);
+  if (pilotFilter) {
+    inProgressQuery = inProgressQuery.eq("fk_pilot_user_id", pilotFilter);
   }
+
+  // Done missions from the past 7 days
+  let doneQuery = supabase
+    .from("pilot_mission")
+    .select(MISSION_SELECT)
+    .eq('fk_owner_id', ownerId)
+    .eq("fk_mission_status_id", 3)
+    .gte("actual_end", `${weekAgoStr}T00:00:00`)
+    .not("fk_pilot_user_id", "is", null)
+    .order("actual_end", { ascending: false });
+
+  if (pilotFilter) {
+    doneQuery = doneQuery.eq("fk_pilot_user_id", pilotFilter);
+  }
+
+  const [
+    { data: scheduledData, error: scheduledError },
+    { data: inProgressData, error: inProgressError },
+    { data: doneData, error: doneError },
+  ] = await Promise.all([scheduledQuery, inProgressQuery, doneQuery]);
+
+  if (scheduledError) throw new Error(`Failed to fetch scheduled missions: ${scheduledError.message}`);
+  if (inProgressError) throw new Error(`Failed to fetch in-progress missions: ${inProgressError.message}`);
+  if (doneError) throw new Error(`Failed to fetch done missions: ${doneError.message}`);
 
   const scheduled: Mission[] = [];
   const in_progress: Mission[] = [];
   const done: Mission[] = [];
 
-  for (const row of data ?? []) {
+  for (const row of scheduledData ?? []) {
     const mission = transformMissionRow(row);
-    if (!mission) continue;
+    if (mission) scheduled.push(mission);
+  }
 
-    if (mission.mission_status_code === "00") scheduled.push(mission);
-    else if (mission.mission_status_code === "05") in_progress.push(mission);
-    else if (mission.mission_status_code === "10") done.push(mission);
+  for (const row of inProgressData ?? []) {
+    const mission = transformMissionRow(row);
+    if (mission) in_progress.push(mission);
+  }
+
+  for (const row of doneData ?? []) {
+    const mission = transformMissionRow(row);
+    if (mission) done.push(mission);
   }
 
   const allMissions = [...scheduled, ...in_progress, ...done];
@@ -204,16 +205,20 @@ export async function updateMissionStatus(
   payload: UpdateMissionStatusPayload
 ): Promise<{ code: number; message: string; check_daily_declaration?: string }> {
 
-  const newStatusId = payload.workflow_mission_status === "_START" ? 2 : 3;
+  let updateFields: Record<string, unknown>;
+
+  if (payload.workflow_mission_status === "_START") {
+    updateFields = { fk_mission_status_id: 2, status_name: "IN_PROGRESS", actual_start: new Date().toISOString() };
+  } else if (payload.workflow_mission_status === "_END") {
+    updateFields = { fk_mission_status_id: 3, status_name: "COMPLETED", actual_end: new Date().toISOString() };
+  } else {
+    // _REVERT: move back to in_progress, clear actual_end
+    updateFields = { fk_mission_status_id: 2, status_name: "IN_PROGRESS", actual_end: null };
+  }
 
   const { error } = await supabase
     .from("pilot_mission")
-    .update({
-      fk_mission_status_id: newStatusId,
-      ...(payload.workflow_mission_status === "_START"
-        ? { actual_start: new Date().toISOString() }
-        : { actual_end: new Date().toISOString() }),
-    })
+    .update(updateFields)
     .eq("pilot_mission_id", payload.mission_id);
 
   if (error) {

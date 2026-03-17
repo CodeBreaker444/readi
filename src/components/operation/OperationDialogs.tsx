@@ -289,8 +289,6 @@ export function OperationDialog({ open, onClose, initial, onSaved }: OperationFo
                                         <SelectItem value="PLANNED">Planned</SelectItem>
                                         <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
                                         <SelectItem value="COMPLETED">Completed</SelectItem>
-                                        <SelectItem value="CANCELLED">Cancelled</SelectItem>
-                                        <SelectItem value="ABORTED">Aborted</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>

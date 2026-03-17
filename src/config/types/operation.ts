@@ -191,7 +191,7 @@ export interface UpdateMissionStatusPayload {
   mission_id: number;
   vehicle_id: number | null;
   status_id: number;
-  workflow_mission_status: "_START" | "_END";
+  workflow_mission_status: "_START" | "_END" | "_REVERT";
   pilot_id?: number | null;
 }
 

@@ -2,6 +2,12 @@ import { supabase } from '@/backend/database/database';
 import { AttachmentUploadResponse, CreateOperationSchema, ListOperationsQuerySchema, Operation, OperationAttachment, OperationsListResponse, UpdateOperationSchema } from '@/config/types/operation';
 import { buildS3Url, deleteFileFromS3, getPresignedDownloadUrl, REGION, uploadFileToS3 } from '@/lib/s3Client';
 
+const STATUS_NAME_TO_ID: Record<string, number> = {
+  PLANNED: 1,
+  IN_PROGRESS: 2,
+  COMPLETED: 3,
+};
+
 export async function listOperations(
   params: ListOperationsQuerySchema,
   ownerId: number
@@ -96,7 +102,7 @@ export async function getOperation(id: number): Promise<Operation | null> {
 }
 
 export async function createOperation(input: CreateOperationSchema, ownerId: number): Promise<Operation> {
-  const codeToChild = input.mission_code
+  const codeToChild = input.mission_code;
 
   const { data: existing } = await supabase
     .from('pilot_mission')
@@ -116,6 +122,7 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
       mission_name: input.mission_name,
       mission_description: input.mission_description ?? null,
       status_name: input.status_name,
+      fk_mission_status_id: STATUS_NAME_TO_ID[input.status_name] ?? 1,
       scheduled_start: input.scheduled_start || null,
       location: input.location ?? null,
       notes: input.notes ?? null,

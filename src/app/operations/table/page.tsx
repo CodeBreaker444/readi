@@ -43,6 +43,7 @@ import { cn } from '@/lib/utils';
 import {
   flexRender,
   getCoreRowModel,
+  getPaginationRowModel,
   getSortedRowModel,
   SortingState,
   useReactTable,
@@ -162,6 +163,7 @@ export default function OperationsPage() {
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
     getRowId: (row) => String(row.pilot_mission_id),
     meta: tableMeta,
   });
