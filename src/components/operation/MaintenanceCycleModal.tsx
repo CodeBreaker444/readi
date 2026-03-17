@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { Skeleton } from "../ui/skeleton";
 
 
 interface ComponentInfo {
@@ -58,6 +59,7 @@ interface ComponentInput {
 interface Props {
   open: boolean;
   onClose: () => void;
+  onSkip?: () => void;
   toolId: number;
   missionId: number;
   isDark: boolean;
@@ -161,6 +163,7 @@ function formatLastMaintenance(dateStr: string | null): string {
 export function MaintenanceCycleModal({
   open,
   onClose,
+  onSkip,
   toolId,
   missionId,
   isDark,
@@ -250,7 +253,7 @@ export function MaintenanceCycleModal({
   const hasComponents = systemData && systemData.components.length > 0;
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent
         className={cn(
           "!max-w-[680px] w-[95vw] max-h-[85vh] overflow-hidden flex flex-col p-0",
@@ -312,13 +315,38 @@ export function MaintenanceCycleModal({
           )}
         </DialogHeader>
 
-        {/* Boy */}
         <div className="flex-1 overflow-y-auto px-6 py-4">
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2
-                className={cn("h-6 w-6 animate-spin", isDark ? "text-slate-500" : "text-slate-400")}
-              />
+            <div className={cn(
+              "rounded-xl border p-4 space-y-4",
+              isDark ? "border-white/[0.06] bg-slate-900/40" : "border-slate-200 bg-white"
+            )}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-4 w-16 rounded" />
+                  <Skeleton className="h-4 w-24 rounded" />
+                </div>
+                <Skeleton className="h-4 w-12 rounded-full" />
+              </div>
+
+              <Skeleton className="h-3 w-32" />
+
+              <div className="grid grid-cols-3 gap-3">
+                <Skeleton className="h-12 w-full rounded-lg" />
+                <Skeleton className="h-12 w-full rounded-lg" />
+                <Skeleton className="h-12 w-full rounded-lg" />
+              </div>
+
+              <div className={cn(
+                "rounded-lg border p-3 space-y-3",
+                isDark ? "border-white/[0.04] bg-slate-800/40" : "border-slate-100 bg-slate-50/80"
+              )}>
+                <Skeleton className="h-3 w-20" />
+                <div className="grid grid-cols-3 gap-3">
+                  <Skeleton className="h-8 w-full" />
+                  <Skeleton className="h-8 w-full" />
+                </div>
+              </div>
             </div>
           ) : !hasComponents ? (
             <div className="py-12 text-center">
@@ -570,34 +598,55 @@ export function MaintenanceCycleModal({
 
         <div
           className={cn(
-            "flex items-center justify-end gap-2 px-6 py-4 border-t",
+            "flex items-center justify-between gap-2 px-6 py-4 border-t",
             isDark ? "border-white/[0.06] bg-slate-900/30" : "border-slate-200 bg-slate-50"
           )}
         >
-          <Button
-            variant="outline"
-            onClick={onClose}
-            className={cn(
-              "h-9 px-4 text-sm",
-              isDark ? "border-slate-600 text-slate-300 hover:bg-slate-700" : ""
-            )}
-          >
-            Skip
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={submitting || loading || !hasComponents}
-            className="h-9 px-4 text-sm bg-violet-600 hover:bg-violet-500 text-white"
-          >
-            {submitting ? (
-              <>
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                Updating…
-              </>
-            ) : (
-              "Update Maintenance"
-            )}
-          </Button>
+          {onSkip ? (
+            <div className={cn(
+              "flex items-center gap-1.5 rounded-lg px-3 py-2 text-[11px]",
+              isDark
+                ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                : "bg-amber-50 text-amber-600 border border-amber-200"
+            )}>
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+              <span>Update required to complete mission</span>
+            </div>
+          ) : (
+            <div />
+          )}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={onSkip ?? onClose}
+              className={cn(
+                "h-9 px-4 text-sm",
+                onSkip
+                  ? isDark
+                    ? "border-amber-500/40 text-amber-400 hover:bg-amber-500/10"
+                    : "border-amber-300 text-amber-600 hover:bg-amber-50"
+                  : isDark
+                    ? "border-slate-600 text-slate-300 hover:bg-slate-700"
+                    : ""
+              )}
+            >
+              {onSkip ? "Back to In Progress" : "Skip"}
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              disabled={submitting || loading || !hasComponents}
+              className="h-9 px-4 text-sm bg-violet-600 hover:bg-violet-500 text-white"
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  Updating…
+                </>
+              ) : (
+                "Update Maintenance"
+              )}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

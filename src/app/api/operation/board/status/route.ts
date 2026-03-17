@@ -8,7 +8,7 @@ const bodySchema = z.object({
     mission_id: z.number().int().positive(),
     vehicle_id: z.number().int().positive().nullable(),
     status_id: z.number().int(),
-    workflow_mission_status: z.enum(["_START", "_END"]),
+    workflow_mission_status: z.enum(["_START", "_END", "_REVERT"]),
     pilot_id: z.number().int().positive().nullable(),
 });
 

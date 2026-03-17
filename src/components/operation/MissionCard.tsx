@@ -14,6 +14,7 @@ interface MissionCardProps {
   draggable?: boolean;
   onDragStart?: (e: React.DragEvent, missionId: number) => void;
   onViewDetails?: (mission: Mission) => void;
+  onUpdateMaintenance?: () => void;
   isDark: boolean
 }
 
@@ -80,7 +81,7 @@ const maintenanceStatusConfig: Record<
   },
 };
 
-export function MissionCard({ mission, draggable, onDragStart, onViewDetails , isDark}: MissionCardProps) {
+export function MissionCard({ mission, draggable, onDragStart, onViewDetails, onUpdateMaintenance, isDark}: MissionCardProps) {
 
   const statusCfg = statusConfig[mission.mission_status_code] ?? statusConfig["00"];
   const statusColor = isDark ? statusCfg.darkColor : statusCfg.lightColor;
@@ -93,7 +94,7 @@ export function MissionCard({ mission, draggable, onDragStart, onViewDetails , i
       data-mission-id={mission.mission_id}
       data-vehicle-id={mission.fk_vehicle_id}
       className={cn(
-        "group relative overflow-hidden border transition-all duration-200",
+        "group relative w-full shrink-0 overflow-hidden border transition-all duration-200",
         isDark
           ? "border-white/[0.06] bg-slate-900/60 backdrop-blur-sm hover:border-white/[0.12] hover:bg-slate-800/70 hover:shadow-lg hover:shadow-black/40"
           : "border-slate-200 bg-white shadow-sm hover:border-slate-300 hover:shadow-md",
@@ -251,7 +252,32 @@ export function MissionCard({ mission, draggable, onDragStart, onViewDetails , i
         <MissionLimitsPanel limitJson={mission.mission_planning_limit_json} isDark={isDark} />
       </CardContent>
 
-      <CardFooter className={`flex items-center justify-end gap-2 border-t px-4 py-2 ${isDark ? "border-white/[0.04]" : "border-slate-100"}`}>
+      <CardFooter className={`flex items-center justify-between gap-2 border-t px-4 py-2 ${isDark ? "border-white/4" : "border-slate-100"}`}>
+        <div>
+          {mission.mission_status_code === "10" && onUpdateMaintenance && (
+            <TooltipProvider delayDuration={300}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={onUpdateMaintenance}
+                    className={cn(
+                      "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium transition-colors",
+                      isDark
+                        ? "border-violet-500/30 bg-violet-500/10 text-violet-400 hover:bg-violet-500/20"
+                        : "border-violet-200 bg-violet-50 text-violet-600 hover:bg-violet-100"
+                    )}
+                  >
+                    <Wrench className="h-2.5 w-2.5" />
+                    Update Maintenance
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-xs">
+                  Update maintenance cycle
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        </div>
         <TooltipProvider delayDuration={300}>
           <Tooltip>
             <TooltipTrigger asChild>

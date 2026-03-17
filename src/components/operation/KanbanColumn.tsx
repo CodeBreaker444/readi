@@ -13,6 +13,7 @@ interface KanbanColumnProps {
   onDragStart: (e: React.DragEvent, missionId: number, sourceColumn: string) => void;
   onDrop: (e: React.DragEvent, targetColumn: string) => void;
   onViewDetails: (mission: Mission) => void;
+  onUpdateMaintenance?: (mission: Mission) => void;
   isDragOver: boolean;
   onDragOver: (e: React.DragEvent) => void;
   onDragLeave: () => void;
@@ -28,6 +29,7 @@ export function KanbanColumn({
   onDragStart,
   onDrop,
   onViewDetails,
+  onUpdateMaintenance,
   isDragOver,
   onDragOver,
   onDragLeave,
@@ -37,7 +39,7 @@ export function KanbanColumn({
   return (
     <div
       className={cn(
-        "flex min-h-[calc(100vh-220px)] flex-col rounded-xl border transition-all duration-200",
+        "flex h-[calc(100vh-220px)] flex-col rounded-xl border transition-all duration-200",
         isDark
           ? "border-white/[0.06] bg-slate-950/50"
           : "border-slate-200 bg-white shadow-sm",
@@ -65,7 +67,7 @@ export function KanbanColumn({
         </div>
       )}
 
-      <div className="flex flex-col gap-3 overflow-y-auto p-3">
+      <div className="flex flex-1 flex-col gap-3 overflow-y-auto p-3 min-w-0">
         {missions.length === 0 && !isDragOver && (
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <div className={`mb-2 h-8 w-8 rounded-full ${isDark ? "bg-white/[0.04]" : "bg-slate-100"}`} />
@@ -79,6 +81,7 @@ export function KanbanColumn({
             draggable
             onDragStart={(e) => onDragStart(e, mission.mission_id, columnId)}
             onViewDetails={onViewDetails}
+            onUpdateMaintenance={onUpdateMaintenance ? () => onUpdateMaintenance(mission) : undefined}
             isDark={isDark}
           />
         ))}
