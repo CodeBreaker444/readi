@@ -67,7 +67,12 @@ export function KanbanColumn({
         </div>
       )}
 
-      <div className="flex flex-1 flex-col gap-3 overflow-y-auto p-3 min-w-0">
+      <div className={cn(
+        "flex flex-col gap-3 overflow-y-auto p-3 min-w-0",
+        (columnId === "scheduled" || columnId === "in_progress") && missions.length > 2
+          ? "max-h-85"
+          : "flex-1"
+      )}>
         {missions.length === 0 && !isDragOver && (
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <div className={`mb-2 h-8 w-8 rounded-full ${isDark ? "bg-white/[0.04]" : "bg-slate-100"}`} />

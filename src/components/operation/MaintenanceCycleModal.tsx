@@ -253,7 +253,7 @@ export function MaintenanceCycleModal({
   const hasComponents = systemData && systemData.components.length > 0;
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+    <Dialog open={open} onOpenChange={(o) => { if (!o) (onSkip ?? onClose)(); }}>
       <DialogContent
         className={cn(
           "!max-w-[680px] w-[95vw] max-h-[85vh] overflow-hidden flex flex-col p-0",

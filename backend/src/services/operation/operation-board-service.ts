@@ -208,12 +208,12 @@ export async function updateMissionStatus(
   let updateFields: Record<string, unknown>;
 
   if (payload.workflow_mission_status === "_START") {
-    updateFields = { fk_mission_status_id: 2, actual_start: new Date().toISOString() };
+    updateFields = { fk_mission_status_id: 2, status_name: "IN_PROGRESS", actual_start: new Date().toISOString() };
   } else if (payload.workflow_mission_status === "_END") {
-    updateFields = { fk_mission_status_id: 3, actual_end: new Date().toISOString() };
+    updateFields = { fk_mission_status_id: 3, status_name: "COMPLETED", actual_end: new Date().toISOString() };
   } else {
     // _REVERT: move back to in_progress, clear actual_end
-    updateFields = { fk_mission_status_id: 2, actual_end: null };
+    updateFields = { fk_mission_status_id: 2, status_name: "IN_PROGRESS", actual_end: null };
   }
 
   const { error } = await supabase

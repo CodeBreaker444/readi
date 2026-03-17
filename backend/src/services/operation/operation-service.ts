@@ -6,8 +6,6 @@ const STATUS_NAME_TO_ID: Record<string, number> = {
   PLANNED: 1,
   IN_PROGRESS: 2,
   COMPLETED: 3,
-  CANCELLED: 4,
-  ABORTED: 5
 };
 
 export async function listOperations(
