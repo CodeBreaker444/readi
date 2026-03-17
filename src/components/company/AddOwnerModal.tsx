@@ -227,7 +227,7 @@ export default function AddOwnerModal({ open, onClose, onSuccess }: AddOwnerModa
                         Close
                     </Button>
                     <Button
-                        className="bg-black text-white hover:bg-black/80"
+                        className="bg-violet-600 text-white hover:bg-violet-700"
                         onClick={handleSubmit}
                         disabled={loading}
                     >

@@ -1,5 +1,6 @@
 import { env } from '@/backend/config/env';
 import { supabase } from '@/backend/database/database';
+import bcrypt from 'bcrypt';
 import { sendUserActivationEmail } from 'lib/resend/mail';
 import { generateActivationToken, generateUniqueCode } from '../user/user-management';
 
@@ -136,7 +137,6 @@ export async function updateOwner(id: string, payload: UpdateOwnerPayload) {
 }
 
 export async function deleteOwner(id: string, deletedByUserId: number) {
-    // Fetch full owner record
     const { data: owner, error: fetchError } = await supabase
         .from('owner')
         .select('*')
@@ -145,13 +145,11 @@ export async function deleteOwner(id: string, deletedByUserId: number) {
 
     if (fetchError || !owner) throw new Error('Organization not found');
 
-    // Fetch all users belonging to this owner
     const { data: users } = await supabase
         .from('users')
         .select('user_id, username, email, first_name, last_name, phone, user_role, user_type, fk_owner_id, created_at')
         .eq('fk_owner_id', id);
 
-    // Archive owner to deleted_owner
     const { error: archiveOwnerError } = await supabase
         .from('deleted_owner')
         .insert({
@@ -205,7 +203,6 @@ export async function deleteOwner(id: string, deletedByUserId: number) {
             console.error('Failed to archive users:', archiveUsersError);
         }
 
-        // Soft-delete users, set user_active = 'N'
         const userIds = users.map((u: any) => u.user_id);
 
         const { error: deactivateUsersError } = await supabase
@@ -217,7 +214,6 @@ export async function deleteOwner(id: string, deletedByUserId: number) {
             console.error('Failed to deactivate users:', deactivateUsersError);
         }
 
-        // Deactivate user_owner relationships
         const { error: deactivateRelError } = await supabase
             .from('user_owner')
             .update({ is_active: false })
@@ -228,7 +224,6 @@ export async function deleteOwner(id: string, deletedByUserId: number) {
         }
     }
 
-    // Soft-delete owner, set owner_active = 'N'
     const { error: deactivateOwnerError } = await supabase
         .from('owner')
         .update({ owner_active: 'N' })
@@ -295,13 +290,14 @@ export async function addOwnerWithAdmin(payload: AddOwnerWithAdminPayload) {
         const nameParts = payload.admin_fullname.trim().split(' ');
         const firstName = nameParts[0] || '';
         const lastName = nameParts.slice(1).join(' ') || '';
+        const hashedPasscode = await bcrypt.hash(uid, 10);
 
         const { data: adminUser, error: userError } = await supabase
             .from('users')
             .insert({
                 username: payload.admin_username,
                 email: payload.admin_email,
-                password_hash: uid,
+                password_hash: hashedPasscode,
                 first_name: firstName,
                 last_name: lastName,
                 phone: payload.admin_phone || null,

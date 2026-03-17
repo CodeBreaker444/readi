@@ -236,7 +236,7 @@ export function UserFormModal({ isOpen, clients, onClose, mode, userData, onSubm
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting} className="flex items-center gap-2">
+            <Button type="submit" disabled={isSubmitting} className="flex items-center gap-2 bg-violet-600 hover:bg-violet-700 cursor-pointer">
               {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
               {mode === 'add' ? 'Add User' : 'Update User'}
             </Button>

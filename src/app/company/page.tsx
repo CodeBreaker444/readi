@@ -61,7 +61,7 @@ export default function OwnersPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Company</h1>
         <Button
-          className="bg-black text-white hover:bg-black/80"
+          className="bg-violet-600 text-white hover:bg-violet-700"
           onClick={() => setAddOpen(true)}
         >
           + Add Company
