@@ -40,8 +40,8 @@ const POST = async (req: Request) => {
         const validation = ownerValidation.safeParse(body);
 
         if (!validation.success) {
-            const errorMessages = validation.error;
-            return NextResponse.json({ code: 0, message: `Validation error: ${errorMessages}` }, { status: 400 });
+            const errorMessages = validation.error.issues.map((e) => e.message).join(', ');
+            return NextResponse.json({ code: 0, message: errorMessages }, { status: 400 });
         }
 
         const result = await addOwnerWithAdmin(body);

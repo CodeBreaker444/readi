@@ -241,11 +241,15 @@ export type CreateOperationCalendarInput = {
   location?: string
   notes?: string
   status_name?: string
+  // recurrence
+  is_recurring?: boolean
+  days_of_week?: number[]    
+  recur_until?: string      
+  mission_group_label?: string
 }
 
 export type CalendarEvent = OperationCalendarEvent
 
-// ─── Pilot Declaration ────────────────────────────────────────────────────────
 
 export interface PilotDeclaration {
   declaration_id: number;

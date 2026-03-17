@@ -73,22 +73,72 @@ export const createOperationCalendarEntry = async (
   input: CreateOperationCalendarInput,
   ownerId: number
 ): Promise<number> => {
+  const base = {
+    fk_owner_id: ownerId,
+    mission_name: input.mission_name,
+    status_name: input.status_name ?? 'Scheduled',
+    fk_pilot_user_id: input.fk_pilot_user_id,
+    fk_tool_id: input.fk_tool_id ?? null,
+    fk_mission_type_id: input.fk_mission_type_id ?? null,
+    fk_mission_category_id: input.fk_mission_category_id ?? null,
+    fk_planning_id: input.fk_planning_id ?? null,
+    location: input.location ?? null,
+    notes: input.notes ?? null,
+  }
+
+  // ── Recurring (weekly) ──────────────────────────────────────────────────────
+  if (
+    input.is_recurring &&
+    input.days_of_week &&
+    input.days_of_week.length > 0 &&
+    input.recur_until
+  ) {
+    const recurringGroupId = crypto.randomUUID()
+    const startDt = new Date(input.scheduled_start)
+    const endDt = new Date(input.scheduled_end)
+    const durationMs = endDt.getTime() - startDt.getTime()
+    const untilDate = new Date(input.recur_until + 'T23:59:59')
+    const daysSet = new Set(input.days_of_week)
+
+    const rows: object[] = []
+    const cursor = new Date(startDt)
+    cursor.setHours(0, 0, 0, 0)
+    let iterations = 0
+
+    while (cursor <= untilDate && iterations < 1000) {
+      iterations++
+      if (daysSet.has(cursor.getDay())) {
+        const instanceStart = new Date(cursor)
+        instanceStart.setHours(startDt.getHours(), startDt.getMinutes(), 0, 0)
+        const instanceEnd = new Date(instanceStart.getTime() + durationMs)
+
+        rows.push({
+          ...base,
+          scheduled_start: instanceStart.toISOString(),
+          actual_end: instanceEnd.toISOString(),
+          recurring_group_id: recurringGroupId,
+          mission_date_until: input.recur_until,
+          mission_group_label: input.mission_group_label ?? null,
+        })
+      }
+      cursor.setDate(cursor.getDate() + 1)
+    }
+
+    if (rows.length === 0) throw new Error('No matching days found in the recurrence range')
+
+    const { data, error } = await supabase
+      .from('pilot_mission')
+      .insert(rows)
+      .select('pilot_mission_id')
+
+    if (error) throw new Error(`Failed to create recurring operations: ${error.message}`)
+    return data[0].pilot_mission_id
+  }
+
+  // ── Single entry ────────────────────────────────────────────────────────────
   const { data, error } = await supabase
     .from('pilot_mission')
-    .insert({
-      fk_owner_id: ownerId,
-      mission_name: input.mission_name,
-      scheduled_start: input.scheduled_start,
-      actual_end: input.scheduled_end,       
-      status_name: input.status_name ?? 'Scheduled',
-      fk_pilot_user_id: input.fk_pilot_user_id,
-      fk_tool_id: input.fk_tool_id ?? null,
-      fk_mission_type_id: input.fk_mission_type_id ?? null,
-      fk_mission_category_id: input.fk_mission_category_id ?? null,
-      fk_planning_id: input.fk_planning_id ?? null,
-      location: input.location ?? null,
-      notes: input.notes ?? null,
-    })
+    .insert({ ...base, scheduled_start: input.scheduled_start, actual_end: input.scheduled_end })
     .select('pilot_mission_id')
     .single()
 

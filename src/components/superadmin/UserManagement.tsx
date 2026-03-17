@@ -15,6 +15,16 @@ import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { TablePagination } from '../tables/Pagination';
 import { getUserColumns, UserData } from '../tables/UserColumns';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../ui/alert-dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
@@ -58,6 +68,8 @@ export default function UserManagement({ session }: UserManagementProps) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<UserData | null>(null);
 
 
   useEffect(() => {
@@ -92,15 +104,29 @@ export default function UserManagement({ session }: UserManagementProps) {
   };
 
   const handleEdit = (user: UserData) => { setSelectedUser(user); setShowEditModal(true); };
-  const handleDelete = async (userId: number) => {
+  const handleDelete = (userId: number) => {
+    const user = users.find((u) => u.user_id === userId) ?? null;
+    setUserToDelete(user);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!userToDelete) return;
     try {
-      await fetch('/api/team/user/delete',
-        {
-          method: 'DELETE', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user_id: userId })
-        });
-      fetchUsers();
-    } catch (e) { console.error(e); }
+      const res = await fetch('/api/team/user/delete', {
+        method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userToDelete.user_id }),
+      });
+      const data = await res.json();
+      if (data.code === 1) { toast.success('User deleted successfully'); fetchUsers(); }
+      else toast.error(data.error || 'Failed to delete user');
+    } catch (e) {
+      console.error(e);
+      toast.error('Error deleting user');
+    } finally {
+      setShowDeleteDialog(false);
+      setUserToDelete(null);
+    }
   };
 
   const handleAddUser = async (formData: any) => {
@@ -122,7 +148,10 @@ export default function UserManagement({ session }: UserManagementProps) {
       const data = res.data;
       if (data.code === 1) { toast.success('User created successfully'); setShowAddModal(false); fetchUsers(); }
       else toast.error(data.error || 'Failed to create user');
-    } catch { toast.error('Error creating user'); }
+    } catch (err: any) {
+      const msg = err?.response?.data?.error_list?.[0] || 'Error creating user';
+      toast.error(msg);
+    }
   };
 
   const handleUpdateUser = async (formData: any) => {
@@ -309,6 +338,23 @@ export default function UserManagement({ session }: UserManagementProps) {
       {showEditModal && selectedUser && (
         <UserFormModal isOpen={showEditModal}  clients={clients} onClose={() => { setShowEditModal(false); setSelectedUser(null); }} mode="edit" userData={selectedUser} onSubmit={handleUpdateUser} isDark={isDark} />
       )}
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={(open) => { if (!open) { setShowDeleteDialog(false); setUserToDelete(null); } }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete User</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{userToDelete?.fullname}</strong>? This will also remove their authentication account. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-rose-600 hover:bg-rose-700 text-white">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

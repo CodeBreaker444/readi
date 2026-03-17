@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { ClientData } from '../tables/ClientColumn';
 
 const PAYMENT_TERMS = [
@@ -93,11 +94,29 @@ export function ClientFormModal({ isOpen, onClose, mode, clientData, onSubmit, i
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!formData.client_name.trim()) {
+      toast.error('Client name is required');
+      return;
+    }
+    if (formData.client_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.client_email)) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+    if (formData.contract_start_date && formData.contract_end_date && formData.contract_end_date < formData.contract_start_date) {
+      toast.error('Contract end date must be after start date');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       await onSubmit({
         ...formData,
         credit_limit: formData.credit_limit ? parseFloat(formData.credit_limit) : undefined,
+        contract_start_date: formData.contract_start_date || undefined,
+        contract_end_date: formData.contract_end_date || undefined,
+        client_email: formData.client_email || undefined,
+        client_website: formData.client_website || undefined,
       });
     } finally {
       setIsSubmitting(false);
