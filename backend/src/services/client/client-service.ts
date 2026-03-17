@@ -60,9 +60,44 @@ export async function listClients(owner_id?: number): Promise<{ code: number; da
 
 export async function addClient(input: CreateClientInput): Promise<{ code: number; data?: ClientData; error?: string }> {
   try {
+    if (input.client_code) {
+      const { data: existing } = await supabase
+        .from('client')
+        .select('client_id')
+        .eq('fk_owner_id', input.fk_owner_id)
+        .eq('client_code', input.client_code)
+        .maybeSingle();
+      if (existing) return { code: 0, error: 'A client with this code already exists' };
+    }
+
+    if (input.client_email) {
+      const { data: existing } = await supabase
+        .from('client')
+        .select('client_id')
+        .eq('fk_owner_id', input.fk_owner_id)
+        .ilike('client_email', input.client_email)
+        .maybeSingle();
+      if (existing) return { code: 0, error: 'A client with this email already exists' };
+    }
+
+    if (input.client_phone) {
+      const { data: existing } = await supabase
+        .from('client')
+        .select('client_id')
+        .eq('fk_owner_id', input.fk_owner_id)
+        .eq('client_phone', input.client_phone)
+        .maybeSingle();
+      if (existing) return { code: 0, error: 'A client with this phone number already exists' };
+    }
+
+    const sanitized: Record<string, any> = {};
+    for (const [key, value] of Object.entries(input)) {
+      sanitized[key] = value === '' ? null : value;
+    }
+
     const { data, error } = await supabase
       .from('client')
-      .insert({ ...input, client_active: 'Y' })
+      .insert({ ...sanitized, client_active: 'Y' })
       .select()
       .single();
 

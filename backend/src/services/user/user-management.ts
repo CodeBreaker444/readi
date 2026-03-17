@@ -125,7 +125,7 @@ export async function createUser(userData: UserCreateData) {
 
       if (existingUser) {
         if (existingUser.email?.toLowerCase() === userData.email.toLowerCase()) {
-          throw new Error('This email is already registered');
+          throw new Error('A user with this email already exists');
         }
         if (existingUser.username === userData.username) {
           throw new Error('This username is already taken');
@@ -295,6 +295,13 @@ export async function updateUser(userData: UserUpdateData) {
 
 export async function deleteUser(userId: number, ownerId: number) {
   try {
+    const { data: userRecord } = await supabase
+      .from('users')
+      .select('auth_user_id')
+      .eq('user_id', userId)
+      .eq('fk_owner_id', ownerId)
+      .maybeSingle();
+
     const { error } = await supabase
       .from('users')
       .update({ user_active: 'N' })
@@ -302,6 +309,15 @@ export async function deleteUser(userId: number, ownerId: number) {
       .eq('fk_owner_id', ownerId);
 
     if (error) throw error;
+
+    if (userRecord?.auth_user_id) {
+      try {
+        await supabase.auth.admin.deleteUser(userRecord.auth_user_id);
+        console.log('Auth user deleted:', userRecord.auth_user_id);
+      } catch (authError) {
+        console.error('Failed to delete auth user (non-fatal):', authError);
+      }
+    }
 
     return {
       success: true,

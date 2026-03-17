@@ -118,8 +118,9 @@ export default function ClientManagement() {
       } else {
         toast.error(data.error || 'Failed to add client');
       }
-    } catch {
-      toast.error('Error adding client');
+    } catch (err: any) {
+      const msg = err?.response?.data?.error || 'Error adding client';
+      toast.error(msg);
     }
   };
 

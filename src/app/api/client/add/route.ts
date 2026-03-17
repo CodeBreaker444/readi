@@ -31,7 +31,8 @@ export async function POST(req: NextRequest) {
         const parsed = schema.safeParse(body);
 
         if (!parsed.success) {
-            return NextResponse.json({ code: 0, error: parsed.error }, { status: 400 });
+            const errorMessages = parsed.error.issues.map((e) => e.message).join(', ');
+            return NextResponse.json({ code: 0, error: errorMessages }, { status: 400 });
         }
 
         const result = await addClient({ ...parsed.data, fk_owner_id: session.user.ownerId });
