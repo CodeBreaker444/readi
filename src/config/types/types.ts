@@ -425,9 +425,7 @@ export interface ControlCenter {
 }
 export interface ToolMapRow {
   tool_id: number;
-
   fk_owner_id?: number;
-  fk_tool_type_id?: number;
   fk_model_id?: number | null;
   fk_status_id?: number | null;
   fk_client_id?: number | null;
