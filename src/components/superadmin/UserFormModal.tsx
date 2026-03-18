@@ -41,7 +41,8 @@ interface UserFormModalProps {
 }
 
 export function UserFormModal({ isOpen, clients, onClose, mode, userData, onSubmit, isDark }: UserFormModalProps) {
-  const [formData, setFormData] = useState(userData || {
+const [formData, setFormData] = useState(() => {
+  const defaults = {
     username: '',
     fullname: '',
     email: '',
@@ -51,7 +52,24 @@ export function UserFormModal({ isOpen, clients, onClose, mode, userData, onSubm
     user_type: 'EMPLOYEE',
     is_viewer: 'N',
     is_manager: 'N',
-  });
+    active: 1,
+  };
+
+  if (!userData) return defaults;
+
+  return {
+    ...defaults,
+    ...userData,
+    phone: userData.phone ?? userData.user_phone ?? '',
+    fk_user_profile_id: userData.fk_user_profile_id ?? userData.profile_id ?? 0,
+    fk_client_id: userData.fk_client_id ?? 0,
+    user_type: userData.user_type || 'EMPLOYEE',
+    is_viewer: userData.is_viewer || 'N',
+    is_manager: userData.is_manager || 'N',
+    active: userData.active ?? 1,
+  };
+});
+
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -106,7 +124,6 @@ export function UserFormModal({ isOpen, clients, onClose, mode, userData, onSubm
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 required
-                disabled={mode === 'edit'}
               />
             </div>
 

@@ -109,31 +109,31 @@ export default function UserManagement({ session }: UserManagementProps) {
     setShowDeleteDialog(true);
   };
 
-const confirmDelete = async () => {
-  if (!userToDelete) return;
-  const userId = userToDelete.user_id;
+  const confirmDelete = async () => {
+    if (!userToDelete) return;
+    const userId = userToDelete.user_id;
 
-  setShowDeleteDialog(false);
-  setUserToDelete(null);
+    setShowDeleteDialog(false);
+    setUserToDelete(null);
 
-  try {
-    const res = await fetch('/api/team/user/delete', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: userId }),
-    });
-    const data = await res.json();
-    if (data.code === 1) {
-      toast.success('User deleted successfully');
-      setUsers((prev) => prev.filter((u) => u.user_id !== userId));
-    } else {
-      toast.error(data.error || 'Failed to delete user');
+    try {
+      const res = await fetch('/api/team/user/delete', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId }),
+      });
+      const data = await res.json();
+      if (data.code === 1) {
+        toast.success('User deleted successfully');
+        setUsers((prev) => prev.filter((u) => u.user_id !== userId));
+      } else {
+        toast.error(data.error || 'Failed to delete user');
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error('Error deleting user');
     }
-  } catch (e) {
-    console.error(e);
-    toast.error('Error deleting user');
-  }
-};
+  };
 
   const handleAddUser = async (formData: any) => {
     try {
@@ -162,20 +162,28 @@ const confirmDelete = async () => {
 
   const handleUpdateUser = async (formData: any) => {
     try {
-      const res = await axios.post('/api/team/user/update',
-        {
-          data: JSON.stringify({
-            ...formData,
-            owner_id: session?.user.ownerId,
-            profile_id: formData.fk_user_profile_id,
-            user_viewer: formData.is_viewer,
-            user_manager: formData.is_manager
-          })
-        });
+      const res = await axios.post('/api/team/user/update', {
+        user_id: formData.user_id,
+        fullname: formData.fullname,
+        email: formData.email,
+        phone: formData.phone,
+        fk_user_profile_id: formData.fk_user_profile_id,
+        fk_client_id: formData.fk_client_id || null,
+        user_type: formData.user_type,
+        active: formData.active,
+        is_viewer: formData.is_viewer,
+        is_manager: formData.is_manager,
+      });
       const data = res.data;
-      if (data.code === 1) { toast.success('User updated successfully'); setShowEditModal(false); setSelectedUser(null); fetchUsers(); }
-      else toast.error(data.error || 'Failed to update user');
-    } catch { toast.error('Error updating user'); }
+      if (data.code === 1) {
+        toast.success('User updated successfully');
+        setShowEditModal(false);
+        setSelectedUser(null);
+        fetchUsers();
+      } else toast.error(data.error || 'Failed to update user');
+    } catch {
+      toast.error('Error updating user');
+    }
   };
 
   const uniqueRoles = useMemo(() => [...new Set(users.map((u) => u.user_role))].filter(Boolean), [users]);
@@ -342,7 +350,7 @@ const confirmDelete = async () => {
         <UserFormModal isOpen={showAddModal} clients={clients} onClose={() => setShowAddModal(false)} mode="add" onSubmit={handleAddUser} isDark={isDark} />
       )}
       {showEditModal && selectedUser && (
-        <UserFormModal isOpen={showEditModal}  clients={clients} onClose={() => { setShowEditModal(false); setSelectedUser(null); }} mode="edit" userData={selectedUser} onSubmit={handleUpdateUser} isDark={isDark} />
+        <UserFormModal isOpen={showEditModal} clients={clients} onClose={() => { setShowEditModal(false); setSelectedUser(null); }} mode="edit" userData={selectedUser} onSubmit={handleUpdateUser} isDark={isDark} />
       )}
 
       <AlertDialog open={showDeleteDialog} onOpenChange={(open) => { if (!open) { setShowDeleteDialog(false); setUserToDelete(null); } }}>

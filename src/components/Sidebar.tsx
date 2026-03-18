@@ -104,7 +104,7 @@ const configurationItems: SubNavItem[] = [
     subItems: [
       { name: 'Chart', href: '/organization/chart' },
          // { name: 'Board', href: '/organization/board' },
-      { name: 'LUC Procedures', href: '/organization/luc-procedures' },
+      { name: 'Procedures', href: '/organization/luc-procedures' },
       // { name: 'LUC Documents', href: '/organization/luc-docs' }
       { name: 'Checklist', href: '/organization/checklist' },
       { name: 'Assignments', href: '/organization/assignments' },

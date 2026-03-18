@@ -15,7 +15,8 @@ export async function getMissionTypeList(ownerId: number) {
   const { data, error } = await supabase
     .from('pilot_mission_type')
     .select('*')
-  .eq('is_active', true);  
+    .eq('fk_owner_id', ownerId)
+    .eq('is_active', true);
   
   if (error) throw error;
   

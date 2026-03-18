@@ -14,9 +14,13 @@ export interface UserData {
   username: string;
   fullname: string;
   email: string;
+  phone?: string;
   active: number;
   user_role: string;
   user_unique_code: string;
+  fk_user_profile_id?: number;
+  fk_client_id?: number;
+  user_type?: string;
   is_viewer: string;
   is_manager: string;
 }
