@@ -1,17 +1,28 @@
 'use client';
 
 import {
+  Activity,
+  Ban,
+  Briefcase,
+  Clock,
+  FileText,
+  MapPin,
   MessageSquare,
+  Navigation,
   Plus,
   RotateCcw,
   Search,
+  Trash2,
   Upload,
-  Wrench
+  User,
+  Wrench,
+  X
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
 import GeneralCommunicationDialog from '@/components/operation/GeneralCommunicationDialog';
 import ImportOperationDialog from '@/components/operation/ImportOperationDialog';
+import { MaintenanceCycleModal } from '@/components/operation/MaintenanceCycleModal';
 import {
   AttachmentsDialog,
   DeleteDialog,
@@ -19,6 +30,7 @@ import {
 } from '@/components/operation/OperationDialogs';
 import { operationColumns, OperationTableMeta } from '@/components/tables/OperationColumn';
 import { TablePagination } from '@/components/tables/Pagination';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -28,6 +40,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
@@ -45,6 +63,7 @@ import {
   getCoreRowModel,
   getPaginationRowModel,
   getSortedRowModel,
+  RowSelectionState,
   SortingState,
   useReactTable,
 } from '@tanstack/react-table';
@@ -84,11 +103,42 @@ interface FilterState {
   dateStart: string;
   dateEnd: string;
 }
- 
 
 function SortIndicator({ isSorted }: { isSorted: false | 'asc' | 'desc' }) {
   if (!isSorted) return <span className="ml-1 text-muted-foreground/40">↕</span>;
   return <span className="ml-1">{isSorted === 'asc' ? '↑' : '↓'}</span>;
+}
+
+const STATUS_BADGE: Record<string, { label: string; className: string }> = {
+  PLANNED: { label: 'Planned', className: 'bg-blue-50 text-blue-700 border-blue-200' },
+  IN_PROGRESS: { label: 'In Progress', className: 'bg-violet-50 text-violet-700 border-violet-200' },
+  COMPLETED: { label: 'Completed', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  CANCELLED: { label: 'Cancelled', className: 'bg-slate-100 text-slate-500 border-slate-200' },
+  ABORTED: { label: 'Aborted', className: 'bg-red-50 text-red-700 border-red-200' },
+};
+
+function formatDateTime(val?: string | null) {
+  if (!val) return '—';
+  try {
+    return new Intl.DateTimeFormat('en-GB', {
+      day: '2-digit', month: 'short', year: 'numeric',
+      hour: '2-digit', minute: '2-digit',
+    }).format(new Date(val));
+  } catch {
+    return val;
+  }
+}
+
+function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex items-start gap-3">
+      <div className="mt-0.5 p-1.5 rounded-md bg-muted text-muted-foreground shrink-0">{icon}</div>
+      <div className="min-w-0">
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <p className="text-sm font-medium truncate">{value || '—'}</p>
+      </div>
+    </div>
+  );
 }
 
 export default function OperationsPage() {
@@ -101,6 +151,11 @@ export default function OperationsPage() {
   const [editTarget, setEditTarget] = useState<Operation | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Operation | null>(null);
   const [attachTarget, setAttachTarget] = useState<Operation | null>(null);
+  const [detailTarget, setDetailTarget] = useState<Operation | null>(null);
+  const [maintenanceOpen, setMaintenanceOpen] = useState(false);
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const [batchDeleting, setBatchDeleting] = useState(false);
+  const [batchUpdating, setBatchUpdating] = useState(false);
   const [sorting, setSorting] = useState<SortingState>([
     { id: 'created_at', desc: true },
   ]);
@@ -152,6 +207,7 @@ export default function OperationsPage() {
       onEdit: (op) => setEditTarget(op),
       onAttach: (op) => setAttachTarget(op),
       onDelete: (op) => setDeleteTarget(op),
+      onViewDetails: (op) => setDetailTarget(op),
     }),
     []
   );
@@ -159,14 +215,62 @@ export default function OperationsPage() {
   const table = useReactTable({
     data: operations,
     columns: operationColumns,
-    state: { sorting },
+    state: { sorting, rowSelection },
     onSortingChange: setSorting,
+    onRowSelectionChange: setRowSelection,
+    enableRowSelection: true,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getRowId: (row) => String(row.pilot_mission_id),
     meta: tableMeta,
   });
+
+  const selectedRows = table.getSelectedRowModel().rows.map((r) => r.original);
+
+  async function handleBatchDelete() {
+    if (!selectedRows.length) return;
+    setBatchDeleting(true);
+    try {
+      await Promise.all(
+        selectedRows.map((op) => axios.delete(`/api/operation/${op.pilot_mission_id}`))
+      );
+      setOperations((prev) =>
+        prev.filter((o) => !selectedRows.some((s) => s.pilot_mission_id === o.pilot_mission_id))
+      );
+      setRowSelection({});
+      toast.success(`${selectedRows.length} operation(s) deleted`);
+    } catch {
+      toast.error('Failed to delete some operations');
+    } finally {
+      setBatchDeleting(false);
+    }
+  }
+
+  async function handleBatchStatus(status: string) {
+    if (!selectedRows.length) return;
+    setBatchUpdating(true);
+    try {
+      await Promise.all(
+        selectedRows.map((op) =>
+          axios.put(`/api/operation/${op.pilot_mission_id}`, { status_name: status })
+        )
+      );
+      setOperations((prev) =>
+        prev.map((o) =>
+          selectedRows.some((s) => s.pilot_mission_id === o.pilot_mission_id)
+            ? { ...o, status_name: status }
+            : o
+        )
+      );
+      setRowSelection({});
+      toast.success(`${selectedRows.length} operation(s) updated to ${status}`);
+    } catch {
+      toast.error('Failed to update some operations');
+    } finally {
+      setBatchUpdating(false);
+    }
+  }
 
   function handleSaved(op: Operation) {
     setOperations((prev) => {
@@ -190,6 +294,8 @@ export default function OperationsPage() {
     inProgress: operations.filter((o) => o.status_name === 'IN_PROGRESS').length,
     completed: operations.filter((o) => o.status_name === 'COMPLETED').length,
   };
+
+  const isCompleted = detailTarget?.status_name === 'COMPLETED';
 
   return (
     <TooltipProvider>
@@ -383,6 +489,49 @@ export default function OperationsPage() {
           </div>
         </div>
 
+        {selectedRows.length > 0 && (
+          <div className={cn(
+            'mx-6 mt-4 flex items-center gap-2 rounded-lg border px-4 py-2.5',
+            isDark ? 'bg-slate-800 border-slate-700' : 'bg-violet-50 border-violet-200'
+          )}>
+            <span className={cn('text-sm font-medium', isDark ? 'text-slate-200' : 'text-violet-800')}>
+              {selectedRows.length} selected
+            </span>
+            <div className="ml-auto flex items-center gap-2">
+              <Select onValueChange={handleBatchStatus} disabled={batchUpdating}>
+                <SelectTrigger className={cn('h-8 w-44 text-xs', isDark ? 'border-slate-600 bg-slate-700' : '')}>
+                  <SelectValue placeholder={batchUpdating ? 'Updating…' : 'Change status…'} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="PLANNED">Set Planned</SelectItem>
+                  <SelectItem value="IN_PROGRESS">Set In Progress</SelectItem>
+                  <SelectItem value="COMPLETED">Set Completed</SelectItem>
+                  <SelectItem value="CANCELLED">Set Cancelled</SelectItem>
+                  <SelectItem value="ABORTED">Set Aborted</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={batchDeleting}
+                onClick={handleBatchDelete}
+                className="h-8 gap-1.5 text-xs text-destructive border-destructive/40 hover:bg-destructive/10"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                {batchDeleting ? 'Deleting…' : 'Delete Selected'}
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setRowSelection({})}
+                className="h-8 w-8 p-0"
+              >
+                <X className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </div>
+        )}
+
         <div className="mx-auto px-6 py-4">
           <div className="rounded-lg border bg-card shadow-sm overflow-hidden">
             <Table>
@@ -418,6 +567,7 @@ export default function OperationsPage() {
                 {loading ? (
                   Array.from({ length: 8 }).map((_, i) => (
                     <TableRow key={i}>
+                      <TableCell><Skeleton className="h-4 w-4 rounded" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-[180px]" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-24" /></TableCell>
@@ -427,6 +577,7 @@ export default function OperationsPage() {
                       <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                       <TableCell>
                         <div className="flex gap-1">
+                          <Skeleton className="h-7 w-7 rounded-md" />
                           <Skeleton className="h-7 w-7 rounded-md" />
                           <Skeleton className="h-7 w-7 rounded-md" />
                           <Skeleton className="h-7 w-7 rounded-md" />
@@ -458,9 +609,164 @@ export default function OperationsPage() {
               </TableBody>
             </Table>
           </div>
-            <TablePagination table={table} />
+          <TablePagination table={table} />
         </div>
       </div>
+
+      <Sheet open={!!detailTarget} onOpenChange={(open) => { if (!open) setDetailTarget(null); }}>
+        <SheetContent className="w-full sm:max-w-md overflow-y-auto p-6" side="right">
+          {detailTarget && (
+            <>
+              <SheetHeader className="mb-6 pb-4 border-b">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-mono text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
+                    {detailTarget.mission_code}
+                  </span>
+                  {detailTarget.status_name && STATUS_BADGE[detailTarget.status_name] && (
+                    <Badge
+                      variant="outline"
+                      className={cn('text-xs', STATUS_BADGE[detailTarget.status_name].className)}
+                    >
+                      {STATUS_BADGE[detailTarget.status_name].label}
+                    </Badge>
+                  )}
+                </div>
+                <SheetTitle className="text-left text-base mt-1">{detailTarget.mission_name}</SheetTitle>
+                {detailTarget.mission_description && (
+                  <p className="text-sm text-muted-foreground text-left">{detailTarget.mission_description}</p>
+                )}
+              </SheetHeader>
+
+              <div className="space-y-6">
+                {/* Timeline */}
+                <section className="space-y-3">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Timeline</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="rounded-lg border bg-muted/30 p-3 space-y-1">
+                      <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> Scheduled</p>
+                      <p className="text-sm font-medium">{formatDateTime(detailTarget.scheduled_start)}</p>
+                    </div>
+                    <div className="rounded-lg border bg-muted/30 p-3 space-y-1">
+                      <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> Actual Start</p>
+                      <p className="text-sm font-medium">{formatDateTime(detailTarget.actual_start)}</p>
+                    </div>
+                    {detailTarget.actual_end && (
+                      <div className="rounded-lg border bg-muted/30 p-3 space-y-1">
+                        <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> End Time</p>
+                        <p className="text-sm font-medium">{formatDateTime(detailTarget.actual_end)}</p>
+                      </div>
+                    )}
+                  </div>
+                </section>
+
+                <div className="h-px bg-border" />
+
+                <section className="space-y-3">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Personnel &amp; Equipment</h3>
+                  <div className="space-y-2">
+                    <DetailRow icon={<User className="h-3.5 w-3.5" />} label="Pilot in Command" value={detailTarget.pilot_name} />
+                    <DetailRow icon={<Wrench className="h-3.5 w-3.5" />} label="Drone System" value={detailTarget.tool_code} />
+                    <DetailRow icon={<Briefcase className="h-3.5 w-3.5" />} label="Mission ID" value={`#${detailTarget.pilot_mission_id}`} />
+                    {detailTarget.location && (
+                      <DetailRow icon={<MapPin className="h-3.5 w-3.5" />} label="Location" value={detailTarget.location} />
+                    )}
+                  </div>
+                </section>
+
+                {isCompleted && (
+                  <>
+                    <div className="h-px bg-border" />
+                    <section className="space-y-3">
+                      <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Flight Results</h3>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="rounded-lg border bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800 p-3 space-y-1">
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Clock className="h-3 w-3" /> Duration
+                          </p>
+                          <p className="text-lg font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">
+                            {detailTarget.flight_duration != null ? `${detailTarget.flight_duration} min` : '—'}
+                          </p>
+                        </div>
+                        <div className="rounded-lg border bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800 p-3 space-y-1">
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Navigation className="h-3 w-3" /> Distance
+                          </p>
+                          <p className="text-lg font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">
+                            {detailTarget.distance_flown != null
+                              ? `${detailTarget.distance_flown.toLocaleString()} m`
+                              : '—'}
+                          </p>
+                        </div>
+                        {detailTarget.max_altitude != null && (
+                          <div className="rounded-lg border bg-muted/30 p-3 space-y-1">
+                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Activity className="h-3 w-3" /> Max Altitude
+                            </p>
+                            <p className="text-sm font-bold tabular-nums">{detailTarget.max_altitude} m</p>
+                          </div>
+                        )}
+                      </div>
+                    </section>
+                  </>
+                )}
+
+                {detailTarget.notes && (
+                  <>
+                    <div className="h-px bg-border" />
+                    <section className="space-y-3">
+                      <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                        <FileText className="h-3.5 w-3.5" /> Pilot Notes
+                      </h3>
+                      <div className="rounded-lg border bg-muted/30 p-3">
+                        <p className="text-sm text-foreground whitespace-pre-wrap">{detailTarget.notes}</p>
+                      </div>
+                    </section>
+                  </>
+                )}
+
+                {isCompleted && detailTarget.fk_tool_id && (
+                  <>
+                    <div className="h-px bg-border" />
+                    <section className="space-y-3">
+                      <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                        <Wrench className="h-3.5 w-3.5" /> Maintenance
+                      </h3>
+                      <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/20 p-3 flex items-start gap-3">
+                        <Ban className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
+                            Update maintenance cycles
+                          </p>
+                          <p className="text-xs text-amber-600 dark:text-amber-500 mt-0.5">
+                            Log flights &amp; hours for <span className="font-semibold">{detailTarget.tool_code}</span> after this mission.
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        className="w-full gap-2 bg-violet-600 hover:bg-violet-500 text-white"
+                        onClick={() => setMaintenanceOpen(true)}
+                      >
+                        <Wrench className="h-4 w-4" />
+                        Update Maintenance
+                      </Button>
+                    </section>
+                  </>
+                )}
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {detailTarget?.fk_tool_id && (
+        <MaintenanceCycleModal
+          open={maintenanceOpen}
+          onClose={() => setMaintenanceOpen(false)}
+          toolId={detailTarget.fk_tool_id}
+          missionId={detailTarget.pilot_mission_id}
+          isDark={isDark}
+        />
+      )}
 
       <OperationDialog
         open={createOpen}
