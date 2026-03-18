@@ -638,7 +638,6 @@ export default function OperationsPage() {
               </SheetHeader>
 
               <div className="space-y-6">
-                {/* Timeline */}
                 <section className="space-y-3">
                   <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Timeline</h3>
                   <div className="grid grid-cols-2 gap-3">

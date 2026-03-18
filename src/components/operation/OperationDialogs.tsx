@@ -231,7 +231,7 @@ export function OperationDialog({ open, onClose, initial, onSaved }: OperationFo
                     </div>
                 </div>
 
-                <div className="px-6 py-5 min-h-[280px]">
+                <div className="px-6 py-5 h-90 overflow-y-auto">
 
                     {step === 0 && (
                         <div className="space-y-3">
@@ -603,7 +603,7 @@ export function AttachmentsDialog({ open, onClose, operationId, operationName }:
                     )}
                 </div>
 
-                <div className="max-h-60 overflow-y-auto space-y-1.5">
+                <div className="max-h-60 overflow-y-auto scrollbar-thin space-y-1.5">
                     {loading && (
                       Array.from({ length: 2 }).map((_, i) => (
                             <div key={i} className="flex items-center gap-3 rounded-md border px-3 py-2">
