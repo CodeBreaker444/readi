@@ -41,7 +41,7 @@ export type CreateOperationSchema = {
   mission_name: string;
   mission_description?: string | null;
   status_name: string;
-  scheduled_start?: string | null;  
+  scheduled_start?: string | null;
   location?: string | null;
   notes?: string | null;
   fk_pilot_user_id: number;
@@ -55,7 +55,7 @@ export type UpdateOperationSchema = {
   scheduled_start?: string | null;
   actual_start?: string | null;
   actual_end?: string | null;
-  flight_duration?: number | null;  
+  flight_duration?: number | null;
   location?: string | null;
   notes?: string | null;
   fk_pilot_user_id?: number;
@@ -159,7 +159,7 @@ export interface Mission {
   mission_result_desc: string;
   mission_planning_code: string;
   mission_planning_desc: string;
-  mission_planning_limit_json: string; 
+  mission_planning_limit_json: string;
   pic_fullname: string;
   client_name: string;
   vehicle_code: string;
@@ -172,6 +172,7 @@ export interface Mission {
   flown_meter: number | null;
   mission_notes: string | null;
   mission_group_label: string | null;
+  recurring_group_id: string | null;
   mission_waypoint: string | null;
   incident_flag: number;
   rth_unplanned: number;
@@ -231,6 +232,7 @@ export type OperationCalendarEvent = {
 
 export type CreateOperationCalendarInput = {
   mission_name: string
+  mission_code?: string
   scheduled_start: string
   scheduled_end: string
   fk_pilot_user_id: number
@@ -243,8 +245,8 @@ export type CreateOperationCalendarInput = {
   status_name?: string
   // recurrence
   is_recurring?: boolean
-  days_of_week?: number[]    
-  recur_until?: string      
+  days_of_week?: number[]
+  recur_until?: string
   mission_group_label?: string
 }
 

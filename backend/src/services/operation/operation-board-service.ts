@@ -1,4 +1,4 @@
- import { supabase } from "@/backend/database/database";
+import { supabase } from "@/backend/database/database";
 import { Mission, MissionBoardData, UpdateMissionStatusPayload } from "@/config/types/operation";
 import { getToolMaintenanceStatus } from "./maintenance-cycle-service";
 
@@ -18,6 +18,8 @@ const MISSION_SELECT = `
       distance_flown,
       notes,
       mission_name,
+      recurring_group_id,
+      mission_group_label,
       users!pilot_mission_fk_pilot_user_id_fkey(first_name, last_name),
       tool!pilot_mission_fk_tool_id_fkey(tool_code, tool_name, tool_id),
       pilot_mission_status!pilot_mission_fk_mission_status_id_fkey(status_code, status_name, status_order),
@@ -188,7 +190,8 @@ function transformMissionRow(row: Record<string, unknown>): Mission | null {
       flown_time: row.flight_duration as number | null,
       flown_meter: row.distance_flown as number | null,
       mission_notes: row.notes as string | null,
-      mission_group_label: null,
+      mission_group_label: (row.mission_group_label as string) ?? null,
+      recurring_group_id: (row.recurring_group_id as string) ?? null,
       mission_waypoint: null,
       incident_flag: 0,
       rth_unplanned: 0,
@@ -212,7 +215,6 @@ export async function updateMissionStatus(
   } else if (payload.workflow_mission_status === "_END") {
     updateFields = { fk_mission_status_id: 3, status_name: "COMPLETED", actual_end: new Date().toISOString() };
   } else {
-    // _REVERT: move back to in_progress, clear actual_end
     updateFields = { fk_mission_status_id: 2, status_name: "IN_PROGRESS", actual_end: null };
   }
 
