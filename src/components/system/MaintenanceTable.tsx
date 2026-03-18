@@ -110,9 +110,16 @@ function CycleBadge({ model }: { model: MaintenanceComponent["model"] }) {
 }
 
 
+function effectiveStatus(drone: MaintenanceDrone): MaintenanceStatus {
+  const all: MaintenanceStatus[] = [drone.status, ...drone.components.map((c) => c.status)];
+  if (all.includes("DUE")) return "DUE";
+  if (all.includes("ALERT")) return "ALERT";
+  return "OK";
+}
+
 function SummaryBar({ data }: { data: MaintenanceDrone[] }) {
   const counts = useMemo(() => {
-    const by = (s: MaintenanceStatus) => data.filter((d) => d.status === s).length;
+    const by = (s: MaintenanceStatus) => data.filter((d) => effectiveStatus(d) === s).length;
     return { total: data.length, ok: by("OK"), alert: by("ALERT"), due: by("DUE") };
   }, [data]);
 
@@ -404,7 +411,37 @@ const columns: ColumnDef<MaintenanceDrone>[] = [
     id: "status",
     header: "Status",
     accessorFn: (row) => row.status,
-    cell: ({ row }) => <StatusBadge status={row.original.status} />,
+    cell: ({ row }) => {
+      const drone = row.original;
+      if (drone.components.length === 0) {
+        return <StatusBadge status={drone.status} />;
+      }
+      const compCounts = { DUE: 0, ALERT: 0, OK: 0 };
+      for (const c of drone.components) compCounts[c.status] = (compCounts[c.status] ?? 0) + 1;
+      const eff = effectiveStatus(drone);
+      return (
+        <div className="flex flex-col gap-1">
+          <StatusBadge status={eff} />
+          <div className="flex flex-wrap gap-1">
+            {compCounts.DUE > 0 && (
+              <span className="text-[10px] font-semibold text-rose-600 bg-rose-50 border border-rose-200 rounded px-1.5 py-0.5 leading-none">
+                {compCounts.DUE} DUE
+              </span>
+            )}
+            {compCounts.ALERT > 0 && (
+              <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 leading-none">
+                {compCounts.ALERT} ALERT
+              </span>
+            )}
+            {compCounts.OK > 0 && (
+              <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200 rounded px-1.5 py-0.5 leading-none">
+                {compCounts.OK} OK
+              </span>
+            )}
+          </div>
+        </div>
+      );
+    },
   },
 ];
 
@@ -416,7 +453,7 @@ export default function MaintenanceTable({ data }: { data: MaintenanceDrone[] })
 
   const filtered = useMemo(() => {
     return data.filter((d) => {
-      if (filter !== "ALL" && d.status !== filter) return false;
+      if (filter !== "ALL" && effectiveStatus(d) !== filter) return false;
       if (search) {
         const q = search.toLowerCase();
         return (
