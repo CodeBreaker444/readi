@@ -211,6 +211,31 @@ export function MaintenanceCycleModal({
     const maxMap = { add_flights: 10, add_hours: 24 };
     const num = value === "" ? 0 : Number(value);
     if (isNaN(num) || num < 0 || num > maxMap[field]) return;
+
+    const comp = systemData?.components.find((c) => c.component_id === compId);
+    if (comp && num > 0) {
+      if (field === "add_flights" && comp.limit_flight > 0) {
+        const newTotal = comp.current_flights + num;
+        if (newTotal > comp.limit_flight) {
+          toast.warning(
+            `Adding ${num} flight${num !== 1 ? "s" : ""} would exceed the limit. Please enter ${comp.limit_flight - comp.current_flights} or less.`,
+            { id: `limit-flights-${compId}` }
+          );
+          return;
+        }
+      }
+      if (field === "add_hours" && comp.limit_hour > 0) {
+        const newTotal = comp.current_hours + num;
+        if (newTotal > comp.limit_hour) {
+          toast.warning(
+            `Adding ${num} hour${num !== 1 ? "s" : ""} would exceed the limit. Please enter ${comp.limit_hour - comp.current_hours} or less.`,
+            { id: `limit-hours-${compId}` }
+          );
+          return;
+        }
+      }
+    }
+
     setInputs((prev) => ({
       ...prev,
       [compId]: { ...prev[compId], [field]: num },
