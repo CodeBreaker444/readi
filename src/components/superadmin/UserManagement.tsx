@@ -104,30 +104,36 @@ export default function UserManagement({ session }: UserManagementProps) {
   };
 
   const handleEdit = (user: UserData) => { setSelectedUser(user); setShowEditModal(true); };
-  const handleDelete = (userId: number) => {
-    const user = users.find((u) => u.user_id === userId) ?? null;
+  const handleDelete = (user: UserData) => {
     setUserToDelete(user);
     setShowDeleteDialog(true);
   };
 
-  const confirmDelete = async () => {
-    if (!userToDelete) return;
-    try {
-      const res = await fetch('/api/team/user/delete', {
-        method: 'DELETE', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: userToDelete.user_id }),
-      });
-      const data = await res.json();
-      if (data.code === 1) { toast.success('User deleted successfully'); fetchUsers(); }
-      else toast.error(data.error || 'Failed to delete user');
-    } catch (e) {
-      console.error(e);
-      toast.error('Error deleting user');
-    } finally {
-      setShowDeleteDialog(false);
-      setUserToDelete(null);
+const confirmDelete = async () => {
+  if (!userToDelete) return;
+  const userId = userToDelete.user_id;
+
+  setShowDeleteDialog(false);
+  setUserToDelete(null);
+
+  try {
+    const res = await fetch('/api/team/user/delete', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: userId }),
+    });
+    const data = await res.json();
+    if (data.code === 1) {
+      toast.success('User deleted successfully');
+      setUsers((prev) => prev.filter((u) => u.user_id !== userId));
+    } else {
+      toast.error(data.error || 'Failed to delete user');
     }
-  };
+  } catch (e) {
+    console.error(e);
+    toast.error('Error deleting user');
+  }
+};
 
   const handleAddUser = async (formData: any) => {
     try {
@@ -189,7 +195,7 @@ export default function UserManagement({ session }: UserManagementProps) {
     return matchesSearch && matchesRole && matchesStatus;
   }), [users, searchTerm, roleFilter, statusFilter]);
 
-  const columns = useMemo(() => getUserColumns({ isDark, onEdit: handleEdit, onDelete: handleDelete }), [isDark]);
+  const columns = useMemo(() => getUserColumns({ isDark, onEdit: handleEdit, onDelete: handleDelete }), [isDark, handleEdit, handleDelete]);
 
   const table = useReactTable({
     data: filteredData,

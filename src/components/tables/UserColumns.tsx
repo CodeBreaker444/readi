@@ -24,7 +24,7 @@ export interface UserData {
 interface GetUserColumnsOptions {
   isDark: boolean;
   onEdit: (user: UserData) => void;
-  onDelete: (userId: number) => void;
+  onDelete: (user: UserData) => void;
 }
 
 export function getUserColumns({
@@ -173,7 +173,7 @@ export function getUserColumns({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
-                    onClick={() => onDelete(user.user_id)}
+                    onClick={() => onDelete(user)}
                     className={`p-1.5 rounded-lg transition-all duration-150 ${
                       isDark
                         ? 'bg-rose-500/10 hover:bg-rose-500/25 text-rose-400 hover:text-rose-300 border border-rose-700/40 hover:border-rose-500/60'

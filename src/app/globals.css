@@ -129,3 +129,20 @@
     @apply bg-background text-foreground;
   }
 }
+.scrollbar-thin {
+  scrollbar-width: thin;
+  
+  &::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+  }
+}

@@ -3,6 +3,7 @@
 import { Operation } from '@/app/operations/table/page';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     Tooltip,
     TooltipContent,
@@ -13,6 +14,7 @@ import { ColumnDef } from '@tanstack/react-table';
 import {
     CheckCircle2,
     Clock,
+    Eye,
     Loader2,
     Paperclip,
     Pencil,
@@ -92,18 +94,48 @@ export interface OperationTableMeta {
   onEdit: (op: Operation) => void;
   onAttach: (op: Operation) => void;
   onDelete: (op: Operation) => void;
+  onViewDetails: (op: Operation) => void;
 }
 
- 
+
 export const operationColumns: ColumnDef<Operation>[] = [
+  {
+    id: 'select',
+    size: 40,
+    enableSorting: false,
+    enableHiding: false,
+    header: ({ table }) => (
+      <Checkbox
+        checked={table.getIsAllPageRowsSelected()}
+        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+        aria-label="Select all"
+        className="translate-y-px"
+      />
+    ),
+    cell: ({ row }) => (
+      <Checkbox
+        checked={row.getIsSelected()}
+        onCheckedChange={(value) => row.toggleSelected(!!value)}
+        onClick={(e) => e.stopPropagation()}
+        aria-label="Select row"
+        className="translate-y-px"
+      />
+    ),
+  },
   {
     accessorKey: 'mission_code',
     header: 'Code',
-    cell: ({ getValue }) => (
-      <span className="font-mono text-xs text-muted-foreground">
-        {getValue<string>()}
-      </span>
-    ),
+    cell: ({ getValue, row, table }) => {
+      const meta = table.options.meta as OperationTableMeta;
+      return (
+        <button
+          className="font-mono text-xs text-violet-600 hover:text-violet-700 hover:underline underline-offset-2 cursor-pointer"
+          onClick={(e) => { e.stopPropagation(); meta.onViewDetails(row.original); }}
+        >
+          {getValue<string>()}
+        </button>
+      );
+    },
   },
   {
     accessorKey: 'mission_name',
@@ -166,13 +198,26 @@ export const operationColumns: ColumnDef<Operation>[] = [
   {
     id: 'actions',
     header: () => <span className="sr-only">Actions</span>,
-    size: 110,
+    size: 140,
     enableSorting: false,
     cell: ({ row, table }) => {
       const meta = table.options.meta as OperationTableMeta;
       const op = row.original;
       return (
         <div className="flex items-center gap-1">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => meta.onViewDetails(op)}
+              >
+                <Eye className="h-3.5 w-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>View Details</TooltipContent>
+          </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
