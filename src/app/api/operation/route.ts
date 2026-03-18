@@ -1,4 +1,4 @@
-import { createOperation, listOperations } from '@/backend/services/operation/operation-service';
+import { createOperation, createRecurringOperations, listOperations } from '@/backend/services/operation/operation-service';
 import { CreateOperationSchema, ListOperationsQuerySchema } from '@/config/types/operation';
 import { getUserSession } from '@/lib/auth/server-session';
 import { NextRequest, NextResponse } from 'next/server';
@@ -29,6 +29,25 @@ const createOperationSchema = z.object({
   fk_planning_id: z.number().int().positive().nullable().optional(),
   fk_mission_type_id: z.number().int().positive().nullable().optional(),
   fk_mission_category_id: z.number().int().positive().nullable().optional(),
+});
+
+const createRecurringSchema = z.object({
+  mission_name: z.string().min(1),
+  mission_code: z.string().optional(),
+  mission_description: z.string().nullable().optional(),
+  scheduled_start: z.string(),
+  scheduled_end: z.string(),
+  fk_pilot_user_id: z.number().int().positive(),
+  fk_tool_id: z.number().int().positive().nullable().optional(),
+  fk_planning_id: z.number().int().positive().nullable().optional(),
+  fk_mission_type_id: z.number().int().positive().nullable().optional(),
+  fk_mission_category_id: z.number().int().positive().nullable().optional(),
+  location: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+  days_of_week: z.array(z.number().int().min(0).max(6)).min(1),
+  recur_until: z.string(),
+  mission_group_label: z.string().nullable().optional(),
+  is_recurring: z.literal(true),
 });
 
 export async function GET(req: NextRequest) {
@@ -70,6 +89,18 @@ export async function POST(req: NextRequest) {
     const ownerId = session?.user.ownerId;
 
     const body = await req.json();
+
+    if (body.is_recurring === true) {
+      const validated = createRecurringSchema.parse(body);
+      let result: { count: number; first_id: number };
+      try {
+        result = await createRecurringOperations(validated, ownerId);
+      } catch (appErr: any) {
+        return NextResponse.json({ success: false, error: appErr.message }, { status: 400 });
+      }
+      return NextResponse.json({ success: true, count: result.count, first_id: result.first_id }, { status: 201 });
+    }
+
     const validated = createOperationSchema.parse(body) as CreateOperationSchema;
     const operation = await createOperation({ ...validated }, ownerId);
     return NextResponse.json(operation, { status: 201 });

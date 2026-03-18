@@ -1,10 +1,11 @@
 import { Operation } from "@/app/operations/table/page";
 import { cn } from "@/lib/utils";
 import axios from "axios";
-import { CheckCircle2, ChevronLeft, ChevronRight, ClipboardCheck, Clock, Download, FileText, Loader2, Paperclip, Settings, Trash2, Upload, User } from "lucide-react";
+import { CheckCircle2, ChevronLeft, ChevronRight, ClipboardCheck, Clock, Download, FileText, Loader2, Paperclip, RefreshCw, Settings, Trash2, Upload, User } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Button } from "../ui/button";
+import { Checkbox } from "../ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
@@ -34,6 +35,24 @@ interface MissionCategoryOption {
 type StatusName = 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'ABORTED';
 type Step = 0 | 1 | 2 | 3 | 4;
 
+const DAYS_OF_WEEK = [
+    { value: 1, label: 'Mon' },
+    { value: 2, label: 'Tue' },
+    { value: 3, label: 'Wed' },
+    { value: 4, label: 'Thu' },
+    { value: 5, label: 'Fri' },
+    { value: 6, label: 'Sat' },
+    { value: 0, label: 'Sun' },
+]
+
+const STATUS_TO_CALENDAR: Record<string, string> = {
+    PLANNED: 'Scheduled',
+    IN_PROGRESS: 'In Progress',
+    COMPLETED: 'Completed',
+    CANCELLED: 'Cancelled',
+    ABORTED: 'Scheduled',
+}
+
 interface PilotOption { user_id: number; first_name: string; last_name: string }
 interface ToolOption { tool_id: number; tool_name: string; tool_code: string }
 interface MissionTypeOption { mission_type_id: number; type_name: string }
@@ -46,11 +65,16 @@ interface OperationForm {
     location: string;
     notes: string;
     scheduled_start: string;
+    scheduled_end: string;
     status_name: StatusName;
     fk_pilot_user_id: string;
     fk_tool_id: string;
     fk_mission_type_id: string;
     fk_mission_category_id: string;
+    is_recurring: boolean;
+    days_of_week: number[];
+    recur_until: string;
+    mission_group_label: string;
 }
 
 interface OperationFormProps {
@@ -58,6 +82,7 @@ interface OperationFormProps {
     onClose: () => void;
     onSaved: (op: Operation) => void;
     initial?: Operation | null;
+    onSuccess?: () => void;
 }
 
 const STEPS = [
@@ -75,14 +100,19 @@ const EMPTY_FORM: OperationForm = {
     location: '',
     notes: '',
     scheduled_start: '',
+    scheduled_end: '',
     status_name: 'PLANNED',
     fk_pilot_user_id: '',
     fk_tool_id: '',
     fk_mission_type_id: '',
     fk_mission_category_id: '',
+    is_recurring: false,
+    days_of_week: [],
+    recur_until: '',
+    mission_group_label: '',
 };
 
-export function OperationDialog({ open, onClose, initial, onSaved }: OperationFormProps) {
+export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: OperationFormProps) {
     const isEdit = !!initial;
     const [isPending, startTransition] = useTransition();
     const [step, setStep] = useState<Step>(0);
@@ -117,11 +147,16 @@ export function OperationDialog({ open, onClose, initial, onSaved }: OperationFo
                 location: initial.location ?? '',
                 notes: initial.notes ?? '',
                 scheduled_start: initial.scheduled_start ?? '',
+                scheduled_end: initial.actual_end ?? '',
                 status_name: (initial.status_name as StatusName) ?? 'PLANNED',
                 fk_pilot_user_id: initial.fk_pilot_user_id?.toString() ?? '',
                 fk_tool_id: initial.fk_tool_id?.toString() ?? '',
                 fk_mission_type_id: initial.fk_mission_type_id?.toString() ?? '',
                 fk_mission_category_id: initial.fk_mission_category_id?.toString() ?? '',
+                is_recurring: false,
+                days_of_week: [],
+                recur_until: '',
+                mission_group_label: '',
             });
         } else {
             setForm(EMPTY_FORM);
@@ -137,6 +172,48 @@ export function OperationDialog({ open, onClose, initial, onSaved }: OperationFo
     function handleSubmit() {
         startTransition(async () => {
             try {
+                if (!isEdit && form.is_recurring) {
+                    const startDate = form.scheduled_start.slice(0, 10);
+                    if (startDate > form.recur_until) {
+                        toast.error('Recurrence end date must be on or after the start date');
+                        return;
+                    }
+                    const daysSet = new Set(form.days_of_week);
+                    let cursor = new Date(startDate + 'T00:00:00Z');
+                    const until = new Date(form.recur_until + 'T23:59:59Z');
+                    let hasMatch = false;
+                    for (let i = 0; i < 366 && cursor <= until; i++, cursor = new Date(cursor.getTime() + 86400000)) {
+                        if (daysSet.has(cursor.getUTCDay())) { hasMatch = true; break; }
+                    }
+                    if (!hasMatch) {
+                        toast.error(`None of the selected days fall between ${startDate} and ${form.recur_until}. Widen the range or change the selected days.`);
+                        return;
+                    }
+
+                    const res = await axios.post('/api/operation', {
+                        mission_name: form.mission_name.trim(),
+                        mission_code: form.mission_code?.trim() || undefined,
+                        mission_description: form.mission_description || undefined,
+                        scheduled_start: form.scheduled_start,
+                        scheduled_end: form.scheduled_end,
+                        fk_pilot_user_id: form.fk_pilot_user_id ? parseInt(form.fk_pilot_user_id) : undefined,
+                        fk_tool_id: form.fk_tool_id ? parseInt(form.fk_tool_id) : undefined,
+                        fk_mission_type_id: form.fk_mission_type_id ? parseInt(form.fk_mission_type_id) : undefined,
+                        fk_mission_category_id: form.fk_mission_category_id ? parseInt(form.fk_mission_category_id) : undefined,
+                        location: form.location || undefined,
+                        notes: form.notes || undefined,
+                        is_recurring: true,
+                        days_of_week: form.days_of_week,
+                        recur_until: form.recur_until,
+                        mission_group_label: form.mission_group_label || undefined,
+                    });
+                    if (!res.data.success) throw new Error(res.data.error ?? 'Failed to create recurring operations');
+                    toast.success(`${res.data.count} recurring operations created successfully`);
+                    onSuccess?.();
+                    onClose();
+                    return;
+                }
+
                 const payload = {
                     mission_name: form.mission_name.trim(),
                     mission_code: form.mission_code?.trim() || undefined,
@@ -160,8 +237,9 @@ export function OperationDialog({ open, onClose, initial, onSaved }: OperationFo
                 onSaved(saved.data);
                 toast.success(`Operation ${isEdit ? 'updated' : 'created'} successfully`);
                 onClose();
-            } catch (err) {
-                toast.error(err instanceof Error ? err.message : 'Something went wrong');
+            } catch (err: any) {
+                const msg = err?.response?.data?.error ?? (err instanceof Error ? err.message : 'Something went wrong');
+                toast.error(msg);
             }
         });
     }
@@ -173,6 +251,22 @@ export function OperationDialog({ open, onClose, initial, onSaved }: OperationFo
 
     const canGoNext = () => {
         if (step === 0) return !!form.mission_name.trim() && !!form.mission_code.trim();
+        if (step === 1) {
+            if (!form.scheduled_start) return false;
+            if (form.is_recurring) {
+                if (!form.scheduled_end || form.days_of_week.length === 0 || !form.recur_until) return false;
+                const startDate = form.scheduled_start.slice(0, 10);
+                if (startDate > form.recur_until) return false;
+                const daysSet = new Set(form.days_of_week);
+                let cursor = new Date(startDate + 'T00:00:00Z');
+                const until = new Date(form.recur_until + 'T23:59:59Z');
+                for (let i = 0; i < 366 && cursor <= until; i++, cursor = new Date(cursor.getTime() + 86400000)) {
+                    if (daysSet.has(cursor.getUTCDay())) return true;
+                }
+                return false;
+            }
+            return true;
+        }
         if (step === 3) return !!form.fk_pilot_user_id;
         return true;
     };
@@ -274,11 +368,23 @@ export function OperationDialog({ open, onClose, initial, onSaved }: OperationFo
                     {step === 1 && (
                         <div className="space-y-3">
                             <SectionTitle>Schedule & Status</SectionTitle>
-                            <div className="grid gap-1.5">
-                                <Label htmlFor="scheduled_start">Scheduled Start</Label>
-                                <Input id="scheduled_start" type="datetime-local"
-                                    value={form.scheduled_start}
-                                    onChange={(e) => setForm((f) => ({ ...f, scheduled_start: e.target.value }))} />
+                            <div className={cn('grid gap-3', form.is_recurring ? 'grid-cols-2' : '')}>
+                                <div className="grid gap-1.5">
+                                    <Label htmlFor="scheduled_start">
+                                        Scheduled Start {form.is_recurring && <span className="text-red-500">*</span>}
+                                    </Label>
+                                    <Input id="scheduled_start" type="datetime-local"
+                                        value={form.scheduled_start}
+                                        onChange={(e) => setForm((f) => ({ ...f, scheduled_start: e.target.value }))} />
+                                </div>
+                                {form.is_recurring && (
+                                    <div className="grid gap-1.5">
+                                        <Label htmlFor="scheduled_end">Scheduled End <span className="text-red-500">*</span></Label>
+                                        <Input id="scheduled_end" type="datetime-local"
+                                            value={form.scheduled_end}
+                                            onChange={(e) => setForm((f) => ({ ...f, scheduled_end: e.target.value }))} />
+                                    </div>
+                                )}
                             </div>
                             <div className="grid gap-1.5">
                                 <Label>Status</Label>
@@ -292,6 +398,95 @@ export function OperationDialog({ open, onClose, initial, onSaved }: OperationFo
                                     </SelectContent>
                                 </Select>
                             </div>
+
+                            {!isEdit && (
+                                <div className="rounded-lg border p-3 space-y-3 bg-muted/30">
+                                    <div className="flex items-center gap-2">
+                                        <Checkbox
+                                            id="is_recurring"
+                                            checked={form.is_recurring}
+                                            onCheckedChange={(v) => setForm((f) => ({
+                                                ...f,
+                                                is_recurring: !!v,
+                                                days_of_week: [],
+                                                recur_until: '',
+                                                scheduled_end: '',
+                                            }))}
+                                            className="border-sky-500 data-[state=checked]:bg-sky-600"
+                                        />
+                                        <label htmlFor="is_recurring" className="flex items-center gap-1.5 text-sm font-medium cursor-pointer">
+                                            <RefreshCw className="w-3.5 h-3.5 text-sky-600" />
+                                            Recurrent (Weekly)
+                                        </label>
+                                    </div>
+
+                                    {form.is_recurring && (
+                                        <div className="space-y-3 pl-1">
+                                            <div className="grid gap-1.5">
+                                                <Label className="text-xs font-medium">Days of Week <span className="text-red-500">*</span></Label>
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {DAYS_OF_WEEK.map((day) => {
+                                                        const checked = form.days_of_week.includes(day.value)
+                                                        return (
+                                                            <button
+                                                                key={day.value}
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    const next = checked
+                                                                        ? form.days_of_week.filter((d) => d !== day.value)
+                                                                        : [...form.days_of_week, day.value]
+                                                                    setForm((f) => ({ ...f, days_of_week: next }))
+                                                                }}
+                                                                className={cn(
+                                                                    'px-2.5 py-1 rounded-md text-xs font-semibold border transition-colors',
+                                                                    checked
+                                                                        ? 'bg-sky-600 border-sky-600 text-white'
+                                                                        : 'bg-background border-border text-muted-foreground hover:bg-muted'
+                                                                )}
+                                                            >
+                                                                {day.label}
+                                                            </button>
+                                                        )
+                                                    })}
+                                                </div>
+                                                {form.days_of_week.length === 0 && (
+                                                    <p className="text-xs text-destructive">Select at least one day</p>
+                                                )}
+                                                {form.days_of_week.length > 0 && form.scheduled_start && form.recur_until && (() => {
+                                                    const startDate = form.scheduled_start.slice(0, 10);
+                                                    if (startDate > form.recur_until) return null;
+                                                    const daysSet = new Set(form.days_of_week);
+                                                    let cursor = new Date(startDate + 'T00:00:00Z');
+                                                    const until = new Date(form.recur_until + 'T23:59:59Z');
+                                                    let found = false;
+                                                    for (let i = 0; i < 366 && cursor <= until; i++, cursor = new Date(cursor.getTime() + 86400000)) {
+                                                        if (daysSet.has(cursor.getUTCDay())) { found = true; break; }
+                                                    }
+                                                    return !found ? (
+                                                        <p className="text-xs text-destructive">
+                                                            None of the selected days fall between {startDate} and {form.recur_until}. Widen the range or change the days.
+                                                        </p>
+                                                    ) : null;
+                                                })()}
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div className="grid gap-1.5">
+                                                    <Label htmlFor="recur_until" className="text-xs font-medium">Repeat Until <span className="text-red-500">*</span></Label>
+                                                    <Input id="recur_until" type="date"
+                                                        value={form.recur_until}
+                                                        onChange={(e) => setForm((f) => ({ ...f, recur_until: e.target.value }))} />
+                                                </div>
+                                                <div className="grid gap-1.5">
+                                                    <Label htmlFor="group_label" className="text-xs font-medium">Group Label</Label>
+                                                    <Input id="group_label" placeholder="e.g. Weekly Survey"
+                                                        value={form.mission_group_label}
+                                                        onChange={(e) => setForm((f) => ({ ...f, mission_group_label: e.target.value }))} />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -395,6 +590,17 @@ export function OperationDialog({ open, onClose, initial, onSaved }: OperationFo
                                     <ReviewRow label="Tool" value={selectedTool ? `${selectedTool.tool_name} (${selectedTool.tool_code})` : undefined} />
                                     <ReviewRow label="Type" value={selectedType?.type_name} />
                                     <ReviewRow label="Category" value={selectedCategory?.category_name} />
+                                    {form.is_recurring && (
+                                        <>
+                                            <ReviewRow label="Recurrence" value="Weekly" />
+                                            <ReviewRow label="Repeat Until" value={form.recur_until} />
+                                            <ReviewRow
+                                                label="Days"
+                                                value={DAYS_OF_WEEK.filter(d => form.days_of_week.includes(d.value)).map(d => d.label).join(', ')}
+                                            />
+                                            {form.mission_group_label && <ReviewRow label="Group Label" value={form.mission_group_label} />}
+                                        </>
+                                    )}
                                 </div>
                                 {(form.mission_description || form.notes) && (
                                     <div className="border-t pt-2.5 space-y-2">
@@ -446,7 +652,7 @@ export function OperationDialog({ open, onClose, initial, onSaved }: OperationFo
                             disabled={isPending || !form.mission_name.trim() || !form.fk_pilot_user_id}
                             className="gap-2 bg-violet-600 hover:bg-violet-700 text-white min-w-[140px]">
                             {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-                            {isEdit ? 'Save Changes' : 'Create Operation'}
+                            {isEdit ? 'Save Changes' : form.is_recurring ? 'Create Recurring' : 'Create Operation'}
                         </Button>
                     )}
                 </div>

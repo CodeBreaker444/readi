@@ -3,10 +3,11 @@ import { AttachmentUploadResponse, CreateOperationSchema, ListOperationsQuerySch
 import { buildS3Url, deleteFileFromS3, getPresignedDownloadUrl, REGION, uploadFileToS3 } from '@/lib/s3Client';
 
 const STATUS_NAME_TO_ID: Record<string, number> = {
-  PLANNED: 1,
-  IN_PROGRESS: 2,
-  COMPLETED: 3,
-};
+  Scheduled: 1,
+  'In Progress': 2,
+  Completed: 3,
+  Cancelled: 4,
+}
 
 export async function listOperations(
   params: ListOperationsQuerySchema,
@@ -292,6 +293,122 @@ export async function deleteOperationAttachment(attachmentId: number): Promise<v
     .eq('attachment_id', attachmentId);
 
   if (error) throw new Error(`Failed to delete attachment record: ${error.message}`);
+}
+
+export async function createRecurringOperations(
+  input: {
+    mission_name: string;
+    mission_code?: string;
+    mission_description?: string | null;
+    scheduled_start: string;
+    scheduled_end: string;
+    fk_pilot_user_id: number;
+    fk_tool_id?: number | null;
+    fk_mission_type_id?: number | null;
+    fk_mission_category_id?: number | null;
+    fk_planning_id?: number | null;
+    location?: string | null;
+    notes?: string | null;
+    days_of_week: number[];
+    recur_until: string;
+    mission_group_label?: string | null;
+  },
+  ownerId: number
+): Promise<{ count: number; first_id: number }> {
+  const recurringGroupId = crypto.randomUUID();
+
+  const startMatch = input.scheduled_start.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+  if (!startMatch) throw new Error('Invalid scheduled_start format. Expected YYYY-MM-DDTHH:mm');
+  const [, sYear, sMonth, sDay, sHour, sMin] = startMatch.map(Number);
+
+  const endMatch = input.scheduled_end.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+  if (!endMatch) throw new Error('Invalid scheduled_end format. Expected YYYY-MM-DDTHH:mm');
+  const [, eYear, eMonth, eDay, eHour, eMin] = endMatch.map(Number);
+
+  const startMs = Date.UTC(sYear, sMonth - 1, sDay, sHour, sMin, 0);
+  const endMs = Date.UTC(eYear, eMonth - 1, eDay, eHour, eMin, 0);
+  const durationMs = Math.max(endMs - startMs, 0);
+
+  const untilMatch = input.recur_until.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!untilMatch) throw new Error('Invalid recur_until format. Expected YYYY-MM-DD');
+  const [, uYear, uMonth, uDay] = untilMatch.map(Number);
+  const untilDate = new Date(Date.UTC(uYear, uMonth - 1, uDay, 23, 59, 59));
+
+  if (new Date(Date.UTC(sYear, sMonth - 1, sDay)) > untilDate) {
+    throw new Error('Recurrence end date must be on or after the start date');
+  }
+
+  const daysSet = new Set(input.days_of_week.map(Number));
+  let cursorDate = new Date(Date.UTC(sYear, sMonth - 1, sDay));
+
+  console.log('[createRecurringOperations] input:', {
+    scheduled_start: input.scheduled_start,
+    scheduled_end: input.scheduled_end,
+    recur_until: input.recur_until,
+    days_of_week: input.days_of_week,
+    daysSet: [...daysSet],
+    cursorDate: cursorDate.toISOString(),
+    untilDate: untilDate.toISOString(),
+  });
+
+  const rows: object[] = [];
+  let instanceIndex = 0;
+  let iterations = 0;
+
+  while (cursorDate <= untilDate && iterations < 1000) {
+    iterations++;
+    const dayOfWeek = cursorDate.getUTCDay();
+
+    if (daysSet.has(dayOfWeek)) {
+      instanceIndex++;
+      const y = cursorDate.getUTCFullYear();
+      const m = cursorDate.getUTCMonth();
+      const d = cursorDate.getUTCDate();
+
+      const instanceStart = new Date(Date.UTC(y, m, d, sHour, sMin, 0, 0));
+      const dateTag = `${y}${String(m + 1).padStart(2, '0')}${String(d).padStart(2, '0')}`;
+      const instanceCode = input.mission_code
+        ? `${input.mission_code}-${dateTag}-${instanceIndex}`
+        : null;
+
+      rows.push({
+        fk_owner_id: ownerId,
+        mission_name: input.mission_name,
+        mission_description: input.mission_description ?? null,
+        status_name: 'Scheduled',
+        fk_mission_status_id: 1,
+        fk_pilot_user_id: input.fk_pilot_user_id,
+        fk_tool_id: input.fk_tool_id ?? null,
+        fk_mission_type_id: input.fk_mission_type_id ?? null,
+        fk_mission_category_id: input.fk_mission_category_id ?? null,
+        fk_planning_id: input.fk_planning_id ?? null,
+        location: input.location ?? null,
+        notes: input.notes ?? null,
+        mission_code: instanceCode,
+        scheduled_start: instanceStart.toISOString(),
+        actual_end: new Date(instanceStart.getTime() + durationMs).toISOString(),
+        recurring_group_id: recurringGroupId,
+        mission_date_until: input.recur_until,
+        mission_group_label: input.mission_group_label ?? null,
+      });
+    }
+
+    cursorDate = new Date(Date.UTC(
+      cursorDate.getUTCFullYear(),
+      cursorDate.getUTCMonth(),
+      cursorDate.getUTCDate() + 1
+    ));
+  }
+
+  if (rows.length === 0) throw new Error('No matching days found in the recurrence range');
+
+  const { data, error } = await supabase
+    .from('pilot_mission')
+    .insert(rows)
+    .select('pilot_mission_id');
+
+  if (error) throw new Error(`Failed to create recurring operations: ${error.message}`);
+  return { count: rows.length, first_id: data[0].pilot_mission_id };
 }
 
 export async function getPilotOptions(ownerId: number) {

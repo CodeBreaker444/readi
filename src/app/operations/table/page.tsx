@@ -2,6 +2,9 @@
 
 import {
   Activity,
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
   Ban,
   Briefcase,
   Clock,
@@ -105,8 +108,11 @@ interface FilterState {
 }
 
 function SortIndicator({ isSorted }: { isSorted: false | 'asc' | 'desc' }) {
-  if (!isSorted) return <span className="ml-1 text-muted-foreground/40">↕</span>;
-  return <span className="ml-1">{isSorted === 'asc' ? '↑' : '↓'}</span>;
+  if (!isSorted)
+    return <ArrowUpDown className="ml-1 inline h-3 w-3 text-muted-foreground/40" />;
+  return isSorted === 'asc'
+    ? <ArrowUp className="ml-1 inline h-3 w-3" />
+    : <ArrowDown className="ml-1 inline h-3 w-3" />;
 }
 
 const STATUS_BADGE: Record<string, { label: string; className: string }> = {
@@ -156,6 +162,7 @@ export default function OperationsPage() {
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [batchDeleting, setBatchDeleting] = useState(false);
   const [batchUpdating, setBatchUpdating] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [sorting, setSorting] = useState<SortingState>([
     { id: 'created_at', desc: true },
   ]);
@@ -200,7 +207,7 @@ export default function OperationsPage() {
       }
     };
     fetchOperations();
-  }, [filters]);
+  }, [filters, refreshKey]);
 
   const tableMeta = useMemo<OperationTableMeta>(
     () => ({
@@ -771,6 +778,7 @@ export default function OperationsPage() {
         open={createOpen}
         onClose={() => setCreateOpen(false)}
         onSaved={handleSaved}
+        onSuccess={() => setRefreshKey((k) => k + 1)}
       />
       <OperationDialog
         open={!!editTarget}

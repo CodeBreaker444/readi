@@ -1,10 +1,9 @@
-
 import { supabase } from '@/backend/database/database';
 import {
-    CreateOperationCalendarInput,
-    OperationCalendarEvent,
-    OperationCalenderStatus,
-    OperationItem
+  CreateOperationCalendarInput,
+  OperationCalendarEvent,
+  OperationCalenderStatus,
+  OperationItem
 } from '@/config/types/operation';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -14,6 +13,12 @@ const STATUS_COLORS: Record<string, string> = {
   Cancelled: '#dc2626',
 }
 
+const STATUS_NAME_TO_ID: Record<string, number> = {
+  Scheduled: 1,
+  'In Progress': 2,
+  Completed: 3,
+  Cancelled: 4,
+}
 
 export const getOperationCalendarEvents = async (
   ownerId: number
@@ -36,6 +41,8 @@ export const getOperationCalendarEvents = async (
       fk_mission_category_id,
       fk_planning_id,
       fk_owner_id,
+      recurring_group_id,
+      mission_group_label,
       users!pilot_mission_fk_pilot_user_id_fkey(first_name, last_name),
       tool!pilot_mission_fk_tool_id_fkey(tool_code)
     `)
@@ -51,7 +58,6 @@ export const getOperationCalendarEvents = async (
       ? `${row.users.first_name} ${row.users.last_name}`.trim()
       : null,
     vehicle_code: row.tool?.tool_code ?? null,
-    // scheduled_end derived from actual_end or +1h estimate
     scheduled_end: row.actual_end ?? null,
   }))
 
@@ -73,10 +79,13 @@ export const createOperationCalendarEntry = async (
   input: CreateOperationCalendarInput,
   ownerId: number
 ): Promise<number> => {
+  const statusName = input.status_name ?? 'Scheduled';
+
   const base = {
     fk_owner_id: ownerId,
     mission_name: input.mission_name,
-    status_name: input.status_name ?? 'Scheduled',
+    status_name: statusName,
+    fk_mission_status_id: STATUS_NAME_TO_ID[statusName] ?? 1,
     fk_pilot_user_id: input.fk_pilot_user_id,
     fk_tool_id: input.fk_tool_id ?? null,
     fk_mission_type_id: input.fk_mission_type_id ?? null,
@@ -86,7 +95,6 @@ export const createOperationCalendarEntry = async (
     notes: input.notes ?? null,
   }
 
-  // ── Recurring (weekly) ──────────────────────────────────────────────────────
   if (
     input.is_recurring &&
     input.days_of_week &&
@@ -94,26 +102,63 @@ export const createOperationCalendarEntry = async (
     input.recur_until
   ) {
     const recurringGroupId = crypto.randomUUID()
-    const startDt = new Date(input.scheduled_start)
-    const endDt = new Date(input.scheduled_end)
-    const durationMs = endDt.getTime() - startDt.getTime()
-    const untilDate = new Date(input.recur_until + 'T23:59:59')
-    const daysSet = new Set(input.days_of_week)
+
+    const startMatch = input.scheduled_start.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/)
+    if (!startMatch) throw new Error('Invalid scheduled start format. Expected YYYY-MM-DDTHH:mm')
+
+    const [, sYear, sMonth, sDay, sHour, sMin] = startMatch.map(Number)
+
+    const endMatch = input.scheduled_end.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/)
+    if (!endMatch) throw new Error('Invalid scheduled end format. Expected YYYY-MM-DDTHH:mm')
+
+    const [, eYear, eMonth, eDay, eHour, eMin] = endMatch.map(Number)
+
+    const startMs = Date.UTC(sYear, sMonth - 1, sDay, sHour, sMin, 0)
+    const endMs = Date.UTC(eYear, eMonth - 1, eDay, eHour, eMin, 0)
+    if (isNaN(startMs)) throw new Error('Invalid scheduled start date')
+    if (isNaN(endMs)) throw new Error('Invalid scheduled end date')
+    const durationMs = Math.max(endMs - startMs, 0)
+
+    const untilMatch = input.recur_until.match(/^(\d{4})-(\d{2})-(\d{2})/)
+    if (!untilMatch) throw new Error('Invalid recur_until format. Expected YYYY-MM-DD')
+
+    const [, uYear, uMonth, uDay] = untilMatch.map(Number)
+    const untilDate = new Date(Date.UTC(uYear, uMonth - 1, uDay, 23, 59, 59))
+
+    let cursorDate = new Date(Date.UTC(sYear, sMonth - 1, sDay))
+
+    if (cursorDate > untilDate) {
+      throw new Error('Recurrence end date must be on or after the start date')
+    }
+
+    const daysSet = new Set(input.days_of_week.map((d: any) => Number(d)))
 
     const rows: object[] = []
-    const cursor = new Date(startDt)
-    cursor.setHours(0, 0, 0, 0)
+    let instanceIndex = 0
     let iterations = 0
 
-    while (cursor <= untilDate && iterations < 1000) {
+    while (cursorDate <= untilDate && iterations < 1000) {
       iterations++
-      if (daysSet.has(cursor.getDay())) {
-        const instanceStart = new Date(cursor)
-        instanceStart.setHours(startDt.getHours(), startDt.getMinutes(), 0, 0)
+      const dayOfWeek = cursorDate.getUTCDay()  
+
+      if (daysSet.has(dayOfWeek)) {
+        instanceIndex++
+
+        const y = cursorDate.getUTCFullYear()
+        const m = cursorDate.getUTCMonth()     
+        const d = cursorDate.getUTCDate()
+
+        const instanceStart = new Date(Date.UTC(y, m, d, sHour, sMin, 0, 0))
         const instanceEnd = new Date(instanceStart.getTime() + durationMs)
+
+        const dateTag = `${y}${String(m + 1).padStart(2, '0')}${String(d).padStart(2, '0')}`
+        const instanceCode = input.mission_code
+          ? `${input.mission_code}-${dateTag}-${instanceIndex}`
+          : null
 
         rows.push({
           ...base,
+          mission_code: instanceCode,
           scheduled_start: instanceStart.toISOString(),
           actual_end: instanceEnd.toISOString(),
           recurring_group_id: recurringGroupId,
@@ -121,7 +166,12 @@ export const createOperationCalendarEntry = async (
           mission_group_label: input.mission_group_label ?? null,
         })
       }
-      cursor.setDate(cursor.getDate() + 1)
+
+      cursorDate = new Date(Date.UTC(
+        cursorDate.getUTCFullYear(),
+        cursorDate.getUTCMonth(),
+        cursorDate.getUTCDate() + 1
+      ))
     }
 
     if (rows.length === 0) throw new Error('No matching days found in the recurrence range')
@@ -135,10 +185,14 @@ export const createOperationCalendarEntry = async (
     return data[0].pilot_mission_id
   }
 
-  // ── Single entry ────────────────────────────────────────────────────────────
   const { data, error } = await supabase
     .from('pilot_mission')
-    .insert({ ...base, scheduled_start: input.scheduled_start, actual_end: input.scheduled_end })
+    .insert({
+      ...base,
+      mission_code: input.mission_code ?? null,
+      scheduled_start: input.scheduled_start,
+      actual_end: input.scheduled_end,
+    })
     .select('pilot_mission_id')
     .single()
 
@@ -160,7 +214,6 @@ export const deleteOperationCalendarEntry = async (
   if (error) throw new Error(`Failed to delete operation: ${error.message}`)
 }
 
- 
 
 const buildOperationTitle = (op: OperationItem): string => {
   const parts: string[] = []

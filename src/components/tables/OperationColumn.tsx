@@ -5,21 +5,21 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
-    Tooltip,
-    TooltipContent,
-    TooltipTrigger,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { ColumnDef } from '@tanstack/react-table';
 import {
-    CheckCircle2,
-    Clock,
-    Eye,
-    Loader2,
-    Paperclip,
-    Pencil,
-    Trash2,
-    XCircle,
+  CheckCircle2,
+  Clock,
+  Eye,
+  Loader2,
+  Paperclip,
+  Pencil,
+  Trash2,
+  XCircle,
 } from 'lucide-react';
 
 
