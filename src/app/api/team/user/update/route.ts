@@ -17,6 +17,7 @@ export async function POST(request: NextRequest) {
       user_id: body.user_id,
       owner_id: body.owner_id || user.ownerId,
       fullname: body.fullname,
+      email: body.email,
       user_phone: body.user_phone || body.phone,
       fk_user_profile_id: body.profile_id || body.fk_user_profile_id,
       fk_territorial_unit: body.territorial_id || body.fk_territorial_unit,

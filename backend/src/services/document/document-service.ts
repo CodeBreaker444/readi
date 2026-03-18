@@ -83,6 +83,7 @@ export async function listDocuments(input: DocumentListInput): Promise<{
         doc_type_category
       )
     `)
+    .eq('fk_owner_id', input.ownerId)
     .eq('document_active', 'Y')
     .order('document_id', { ascending: false });
 

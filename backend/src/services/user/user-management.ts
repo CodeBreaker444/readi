@@ -21,7 +21,8 @@ export interface UserCreateData {
 export interface UserUpdateData {
   user_id: number;
   owner_id: number;
-  fullname: string;
+  fullname?: string;
+  email: string;
   user_phone?: string;
   fk_user_profile_id: number;
   fk_territorial_unit?: number;
@@ -85,9 +86,10 @@ export async function getUserListByOwner(ownerId: number, userProfileId: number,
       username: user.username,
       fullname: `${user.first_name} ${user.last_name}`.trim() || user.username,
       email: user.email,
+      phone: user.phone || '',
       user_role: user.user_role || 'Unknown',
       user_unique_code: user.user_unique_code || '',
-      fk_user_profile_id: user.fk_user_profile_id,
+      fk_user_profile_id: user.fk_user_profile_id || getRoleIdFromCode(user.user_role) || 0,
       active: user.user_active === 'Y' ? 1 : 0,
       is_viewer: user.is_viewer,
       is_manager: user.is_manager,
@@ -235,20 +237,25 @@ export async function createUser(userData: UserCreateData) {
 
 export async function updateUser(userData: UserUpdateData) {
   try {
-    const nameParts = userData.fullname.trim().split(' ');
-    const firstName = nameParts[0] || '';
-    const lastName = nameParts.slice(1).join(' ') || '';
+const toIntOrNull = (v: unknown): number | null => {
+  if (v === undefined || v === null || v === '' || v === 'undefined' || v === 'null') return null;
+  const n = parseInt(String(v), 10);
+  return isNaN(n) ? null : n;
+};
 
     const updateData: any = {
-      first_name: firstName,
-      last_name: lastName,
-      phone: userData.user_phone,
-      user_type: userData.user_type,
+      ...(userData.fullname && (() => {
+        const parts = userData.fullname.trim().split(' ');
+        return { first_name: parts[0] || '', last_name: parts.slice(1).join(' ') || '' };
+      })()),
+      email: userData.email,
+      phone: userData.user_phone || null,
+      user_type: userData.user_type || null,
       user_active: userData.active === 1 ? 'Y' : 'N',
-      is_viewer: userData.is_viewer,
-      is_manager: userData.is_manager,
-      fk_territorial_unit: userData.fk_territorial_unit || null,
-      fk_client_id: userData.fk_client_id || null,
+      is_viewer: userData.is_viewer || null,
+      is_manager: userData.is_manager || null,
+      fk_territorial_unit: toIntOrNull(userData.fk_territorial_unit),
+      fk_client_id: toIntOrNull(userData.fk_client_id),
       updated_at: new Date().toISOString(),
     };
 
@@ -338,6 +345,14 @@ export async function deleteUser(userId: number, ownerId: number) {
     throw new Error('Failed to delete user');
   }
 }
+
+const getRoleIdFromCode = (roleCode: string): number => {
+  const codeToId: Record<string, number> = {
+    'PIC': 8, 'OPM': 9, 'SM': 10, 'AM': 11,
+    'CMM': 12, 'RM': 13, 'TM': 14, 'DC': 15, 'SLA': 16, 'ADMIN': 17,
+  };
+  return codeToId[roleCode] || 0;
+};
 
 const getRoleLabel = (profileId: number): string => {
   const roleMapping: Record<number, string> = {

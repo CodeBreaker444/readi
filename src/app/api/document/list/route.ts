@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        const data = await listDocuments(parsed.data);
+        const data = await listDocuments({ ...parsed.data, ownerId: session.user.ownerId });
         return NextResponse.json(data);
     } catch (err) {
         console.error('[document_list]', err);

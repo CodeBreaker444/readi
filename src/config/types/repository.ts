@@ -88,6 +88,7 @@ export interface DocumentHistoryResponse {
 }
 
  export type DocumentListInput = {
+  ownerId: number;
   area?: "BOARD" | "COMPLIANCE" | "DATACONTROLLER" | "MAINTENANCE" | "OPERATION" | "SAFETY" | "SECURITY" | "TRAINING" | "VENDOR";
   category?: string;
   status?: "DRAFT" | "IN_REVIEW" | "APPROVED" | "OBSOLETE";
