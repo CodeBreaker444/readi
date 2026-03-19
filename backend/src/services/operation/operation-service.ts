@@ -301,7 +301,6 @@ export async function createRecurringOperations(
     mission_code?: string;
     mission_description?: string | null;
     scheduled_start: string;
-    scheduled_end: string;
     fk_pilot_user_id: number;
     fk_tool_id?: number | null;
     fk_mission_type_id?: number | null;
@@ -321,14 +320,6 @@ export async function createRecurringOperations(
   if (!startMatch) throw new Error('Invalid scheduled_start format. Expected YYYY-MM-DDTHH:mm');
   const [, sYear, sMonth, sDay, sHour, sMin] = startMatch.map(Number);
 
-  const endMatch = input.scheduled_end.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
-  if (!endMatch) throw new Error('Invalid scheduled_end format. Expected YYYY-MM-DDTHH:mm');
-  const [, eYear, eMonth, eDay, eHour, eMin] = endMatch.map(Number);
-
-  const startMs = Date.UTC(sYear, sMonth - 1, sDay, sHour, sMin, 0);
-  const endMs = Date.UTC(eYear, eMonth - 1, eDay, eHour, eMin, 0);
-  const durationMs = Math.max(endMs - startMs, 0);
-
   const untilMatch = input.recur_until.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (!untilMatch) throw new Error('Invalid recur_until format. Expected YYYY-MM-DD');
   const [, uYear, uMonth, uDay] = untilMatch.map(Number);
@@ -341,15 +332,14 @@ export async function createRecurringOperations(
   const daysSet = new Set(input.days_of_week.map(Number));
   let cursorDate = new Date(Date.UTC(sYear, sMonth - 1, sDay));
 
-  console.log('[createRecurringOperations] input:', {
-    scheduled_start: input.scheduled_start,
-    scheduled_end: input.scheduled_end,
-    recur_until: input.recur_until,
-    days_of_week: input.days_of_week,
-    daysSet: [...daysSet],
-    cursorDate: cursorDate.toISOString(),
-    untilDate: untilDate.toISOString(),
-  });
+  // console.log('[createRecurringOperations] input:', {
+  //   scheduled_start: input.scheduled_start,
+  //   recur_until: input.recur_until,
+  //   days_of_week: input.days_of_week,
+  //   daysSet: [...daysSet],
+  //   cursorDate: cursorDate.toISOString(),
+  //   untilDate: untilDate.toISOString(),
+  // });
 
   const rows: object[] = [];
   let instanceIndex = 0;
@@ -386,7 +376,7 @@ export async function createRecurringOperations(
         notes: input.notes ?? null,
         mission_code: instanceCode,
         scheduled_start: instanceStart.toISOString(),
-        actual_end: new Date(instanceStart.getTime() + durationMs).toISOString(),
+        actual_end: null,
         recurring_group_id: recurringGroupId,
         mission_date_until: input.recur_until,
         mission_group_label: input.mission_group_label ?? null,

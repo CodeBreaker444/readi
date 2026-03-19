@@ -195,7 +195,6 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
                         mission_code: form.mission_code?.trim() || undefined,
                         mission_description: form.mission_description || undefined,
                         scheduled_start: form.scheduled_start,
-                        scheduled_end: form.scheduled_end,
                         fk_pilot_user_id: form.fk_pilot_user_id ? parseInt(form.fk_pilot_user_id) : undefined,
                         fk_tool_id: form.fk_tool_id ? parseInt(form.fk_tool_id) : undefined,
                         fk_mission_type_id: form.fk_mission_type_id ? parseInt(form.fk_mission_type_id) : undefined,
@@ -254,7 +253,7 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
         if (step === 1) {
             if (!form.scheduled_start) return false;
             if (form.is_recurring) {
-                if (!form.scheduled_end || form.days_of_week.length === 0 || !form.recur_until) return false;
+                if (form.days_of_week.length === 0 || !form.recur_until) return false;
                 const startDate = form.scheduled_start.slice(0, 10);
                 if (startDate > form.recur_until) return false;
                 const daysSet = new Set(form.days_of_week);
@@ -368,23 +367,13 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
                     {step === 1 && (
                         <div className="space-y-3">
                             <SectionTitle>Schedule & Status</SectionTitle>
-                            <div className={cn('grid gap-3', form.is_recurring ? 'grid-cols-2' : '')}>
-                                <div className="grid gap-1.5">
-                                    <Label htmlFor="scheduled_start">
-                                        Scheduled Start {form.is_recurring && <span className="text-red-500">*</span>}
-                                    </Label>
-                                    <Input id="scheduled_start" type="datetime-local"
-                                        value={form.scheduled_start}
-                                        onChange={(e) => setForm((f) => ({ ...f, scheduled_start: e.target.value }))} />
-                                </div>
-                                {form.is_recurring && (
-                                    <div className="grid gap-1.5">
-                                        <Label htmlFor="scheduled_end">Scheduled End <span className="text-red-500">*</span></Label>
-                                        <Input id="scheduled_end" type="datetime-local"
-                                            value={form.scheduled_end}
-                                            onChange={(e) => setForm((f) => ({ ...f, scheduled_end: e.target.value }))} />
-                                    </div>
-                                )}
+                            <div className="grid gap-1.5">
+                                <Label htmlFor="scheduled_start">
+                                    Scheduled Start {form.is_recurring && <span className="text-red-500">*</span>}
+                                </Label>
+                                <Input id="scheduled_start" type="datetime-local"
+                                    value={form.scheduled_start}
+                                    onChange={(e) => setForm((f) => ({ ...f, scheduled_start: e.target.value }))} />
                             </div>
                             <div className="grid gap-1.5">
                                 <Label>Status</Label>
@@ -410,7 +399,6 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
                                                 is_recurring: !!v,
                                                 days_of_week: [],
                                                 recur_until: '',
-                                                scheduled_end: '',
                                             }))}
                                             className="border-sky-500 data-[state=checked]:bg-sky-600"
                                         />

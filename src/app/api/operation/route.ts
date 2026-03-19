@@ -36,7 +36,6 @@ const createRecurringSchema = z.object({
   mission_code: z.string().optional(),
   mission_description: z.string().nullable().optional(),
   scheduled_start: z.string(),
-  scheduled_end: z.string(),
   fk_pilot_user_id: z.number().int().positive(),
   fk_tool_id: z.number().int().positive().nullable().optional(),
   fk_planning_id: z.number().int().positive().nullable().optional(),
