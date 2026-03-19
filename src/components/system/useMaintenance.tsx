@@ -212,10 +212,11 @@ export function useMaintenanceLogbook() {
       });
       toast.success('Ticket assigned');
       closeModal('assign');
-      const selectedUser = users.find(u => u.user_id === assignTo);
+      const selectedUser = users.find(u => Number(u.user_id) === assignTo);
       updateLocalTicket(activeTicketId, {
         assigned_to_user_id: assignTo,
-        assigner_name: selectedUser?.fullname
+        assigner_name: selectedUser?.fullname ?? '',
+        assigner_email: selectedUser?.email ?? '',
       });
     } catch (e: any) {
       toast.error(e.response?.data?.message ?? e.message);

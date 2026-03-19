@@ -8,10 +8,8 @@ import EditComponentModal from '@/components/system/EditComponentModal';
 import EditModelModal from '@/components/system/EditModelModal';
 import EditSystemModal from '@/components/system/EditSystemModal';
 import { FilesDownloadModal, SystemFile } from '@/components/system/FilesDownloadModal';
-import MaintenanceTable from '@/components/system/MaintenanceTable';
 import ViewToolModal from '@/components/system/ViewToolModal';
 import { DroneToolData, getComponentColumns, getModelColumns, systemCreateColumns } from '@/components/tables/SystemColumn';
-import { MaintenanceDrone } from '@/config/types/maintenance';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -63,8 +61,6 @@ export default function DroneToolPage() {
     const [componentData, setComponentData] = useState<any[]>([]);
     const [loadingModels, setLoadingModels] = useState(false);
     const [loadingComponents, setLoadingComponents] = useState(false);
-    const [maintenanceData, setMaintenanceData] = useState<MaintenanceDrone[]>([]);
-    const [loadingMaintenance, setLoadingMaintenance] = useState(false);
 
     const [deleteConfirm, setDeleteConfirm] = useState<DeleteConfirm | null>(null);
     const [deleting, setDeleting] = useState(false);
@@ -84,7 +80,6 @@ export default function DroneToolPage() {
 
     useEffect(() => {
         if (activeTab === 'component') fetchAllComponents();
-        if (activeTab === 'maintenance') fetchMaintenanceData();
     }, [activeTab]);
 
     const fetchToolData = async () => {
@@ -126,24 +121,7 @@ export default function DroneToolPage() {
         }
     };
 
-    const fetchMaintenanceData = async () => {
-        setLoadingMaintenance(true);
-        try {
-            const response = await fetch('/api/system/maintenance/dashboard', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ threshold_alert: 80 }),
-            });
-            const result = await response.json();
-            if (result.code === 1) setMaintenanceData(result.data);
-            else toast.error(result.message || 'Failed to fetch maintenance data');
-        } catch {
-            toast.error('Error fetching maintenance data');
-        } finally {
-            setLoadingMaintenance(false);
-        }
-    };
-
+   
     const fetchAllComponents = async () => {
         setLoadingComponents(true);
         try {
@@ -350,7 +328,6 @@ const modelColumns = useMemo(
         { key: 'system', label: 'System' },
         { key: 'model', label: 'Model' },
         { key: 'component', label: 'Components' },
-        { key: 'maintenance', label: 'Maintenance History' },
     ];
 
     return (
@@ -379,7 +356,7 @@ const modelColumns = useMemo(
                         <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => { fetchToolData(); fetchModels(); if (activeTab === 'component') fetchAllComponents(); if (activeTab === 'maintenance') fetchMaintenanceData(); }}
+                            onClick={() => { fetchToolData(); fetchModels(); if (activeTab === 'component') fetchAllComponents(); }}
                             disabled={loading}
                             className={`h-8 gap-1.5 text-xs transition-all ${
                                 isDark
@@ -439,11 +416,6 @@ const modelColumns = useMemo(
                         )}
                         {activeTab === 'component' && (
                             <DataTable columns={componentColumns} data={componentData} loading={loadingComponents} />
-                        )}
-                        {activeTab === 'maintenance' && (
-                            loadingMaintenance
-                                ? <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-slate-400" /></div>
-                                : <MaintenanceTable data={maintenanceData} />
                         )}
                     </CardContent>
                 </Card>
