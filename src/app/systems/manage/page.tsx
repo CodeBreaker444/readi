@@ -8,6 +8,7 @@ import EditComponentModal from '@/components/system/EditComponentModal';
 import EditModelModal from '@/components/system/EditModelModal';
 import EditSystemModal from '@/components/system/EditSystemModal';
 import { FilesDownloadModal, SystemFile } from '@/components/system/FilesDownloadModal';
+import ViewComponentModal from '@/components/system/ViewComponentModal';
 import ViewToolModal from '@/components/system/ViewToolModal';
 import { DroneToolData, getComponentColumns, getModelColumns, systemCreateColumns } from '@/components/tables/SystemColumn';
 import { Button } from '@/components/ui/button';
@@ -44,13 +45,15 @@ export default function DroneToolPage() {
     const [toolData, setToolData] = useState<DroneToolData[]>([]);
     const [activeTab, setActiveTab] = useState<ActiveTab>('system');
 
-    const [showAddTool, setShowAddTool] = useState(false);
-    const [showAddModel, setShowAddModel] = useState(false);
-    const [showAddComponent, setShowAddComponent] = useState(false);
-    const [showViewTool, setShowViewTool] = useState(false);
-    const [showEditSystem, setShowEditSystem] = useState(false);
-    const [showEditModel, setShowEditModel] = useState(false);
-    const [showEditComponent, setShowEditComponent] = useState(false);
+    const [showAddTool, setShowAddTool] = useState<boolean>(false);
+    const [showAddModel, setShowAddModel] = useState<boolean>(false);
+    const [showAddComponent, setShowAddComponent] = useState<boolean>(false);
+    const [showViewTool, setShowViewTool] = useState<boolean>(false);
+    const [showViewComponent, setShowViewComponent] = useState<boolean>(false);
+    const [selectedComponent, setSelectedComponent] = useState<any | null>(null);
+    const [showEditSystem, setShowEditSystem] = useState<boolean>(false);
+    const [showEditModel, setShowEditModel] = useState<boolean>(false);
+    const [showEditComponent, setShowEditComponent] = useState<boolean>(false);
     const [selectedToolId, setSelectedToolId] = useState<number | null>(null);
     const [directModelId, setDirectModelId] = useState<number | null>(null);
     const [directComponentId, setDirectComponentId] = useState<number | null>(null);
@@ -153,6 +156,7 @@ export default function DroneToolPage() {
     };
 
     const handleView = (toolId: number) => { setSelectedToolId(toolId); setShowViewTool(true); };
+    const handleViewComponent = (row: any) => { setSelectedComponent(row); setShowViewComponent(true); };
     const handleEditSystem = (tool: DroneToolData) => { setSelectedToolId(tool.tool_id); setShowEditSystem(true); };
 
     const handleDelete = async (toolId: number) => {
@@ -315,11 +319,12 @@ const modelColumns = useMemo(
     );
 
     const componentColumns = useMemo(
-        () => getComponentColumns({ 
-            isDark, 
-            toolCodeMap, 
-            onEdit: handleEditComponentDirect, 
-            onDelete: handleDeleteComponent 
+        () => getComponentColumns({
+            isDark,
+            toolCodeMap,
+            onView: handleViewComponent,
+            onEdit: handleEditComponentDirect,
+            onDelete: handleDeleteComponent
         }),
         [isDark, toolCodeMap]
     );
@@ -441,6 +446,13 @@ const modelColumns = useMemo(
                 <ViewToolModal open={showViewTool} toolId={selectedToolId}
                     onClose={() => { setShowViewTool(false); setSelectedToolId(null); }} />
             )}
+
+            <ViewComponentModal
+                open={showViewComponent}
+                component={selectedComponent}
+                systemCode={selectedComponent ? toolCodeMap[selectedComponent.fk_tool_id] : undefined}
+                onClose={() => { setShowViewComponent(false); setSelectedComponent(null); }}
+            />
 
             {showEditSystem && (
                 <EditSystemModal open={showEditSystem} toolId={selectedToolId}
