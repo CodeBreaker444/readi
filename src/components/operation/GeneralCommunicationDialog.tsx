@@ -45,6 +45,9 @@ export type ProcedureName =
 
 interface RecipientOption {
   id: number;
+  name: string;
+  role: string;
+  email: string;
   text: string;
 }
 
@@ -188,7 +191,8 @@ export default function GeneralCommunicationDialog({
                         key={r.id}
                         className="inline-flex items-center gap-1 bg-violet-100 dark:bg-violet-950/50 text-violet-800 dark:text-violet-300 text-xs px-2 py-0.5 rounded-full"
                       >
-                        {r.text}
+                        {r.name}
+                        {r.role && <span className="opacity-70">— {r.role}</span>}
                         <button
                           onClick={() => toggleRecipient(r)}
                           className="hover:text-violet-500 transition-colors"
@@ -212,8 +216,10 @@ export default function GeneralCommunicationDialog({
                     {recipients
                       .filter((r) => !selectedRecipients.find((s) => s.id === r.id))
                       .map((r) => (
-                        <SelectItem key={r.id} value={String(r.id)} className="text-sm">
-                          {r.text}
+                        <SelectItem key={r.id} value={String(r.id)} className="text-xs">
+                          <span className="font-medium">{r.name}</span>
+                          {r.role && <span className="text-muted-foreground ml-1">— {r.role}</span>}
+                          {r.email && <span className="text-muted-foreground ml-1">({r.email})</span>}
                         </SelectItem>
                       ))}
                   </SelectContent>

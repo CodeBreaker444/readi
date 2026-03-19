@@ -17,8 +17,11 @@ export async function GET(req: NextRequest) {
 
     const recipients = (data ?? []).map((u: any) => ({
       id: u.user_id,
+      name: `${u.first_name ?? ''} ${u.last_name ?? ''}`.trim(),
+      role: u.user_role ?? '',
+      email: u.email ?? '',
       text: `${u.first_name ?? ''} ${u.last_name ?? ''}`.trim()
-        + (u.user_role ? ` (${u.user_role})` : ''),
+        + (u.user_role ? ` — ${u.user_role}` : ''),
     }));
 
     return NextResponse.json({ recipients, procedure });
