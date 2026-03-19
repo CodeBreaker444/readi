@@ -24,7 +24,7 @@ import {
 
 
 
-export async function getTicketList(owner_id: number): Promise<MaintenanceTicket[]> {
+export async function getTicketList(owner_id: number, tool_id?: number): Promise<MaintenanceTicket[]> {
   let query = supabase
     .from('maintenance_ticket')
     .select(`
@@ -58,6 +58,7 @@ export async function getTicketList(owner_id: number): Promise<MaintenanceTicket
     .order('ticket_id', { ascending: false });
 
   if (owner_id) query = query.eq('fk_owner_id', owner_id);
+  if (tool_id) query = query.eq('fk_tool_id', tool_id);
 
   const { data, error } = await query;
   if (error) throw new Error(`getTicketList: ${error.message}`);

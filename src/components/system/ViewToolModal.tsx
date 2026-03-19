@@ -18,11 +18,14 @@ export default function ViewSystemModal({ open, toolId, onClose }: ViewSystemMod
   const [loading, setLoading] = useState(false);
   const [toolData, setSystemData] = useState<any>(null);
   const [components, setComponents] = useState([]);
+  const [maintenanceTickets, setMaintenanceTickets] = useState<any[]>([]);
+  const [loadingTickets, setLoadingTickets] = useState(false);
 
   useEffect(() => {
     if (open && toolId) {
       fetchSystemDetails();
       fetchComponents();
+      fetchMaintenanceHistory();
     }
   }, [open, toolId]);
 
@@ -65,6 +68,21 @@ export default function ViewSystemModal({ open, toolId, onClose }: ViewSystemMod
     }
   };
 
+  const fetchMaintenanceHistory = async () => {
+    setLoadingTickets(true);
+    try {
+      const response = await fetch(`/api/system/maintenance/tickets?tool_id=${toolId}`);
+      const result = await response.json();
+      if (result.status === 'OK') {
+        setMaintenanceTickets(result.tickets);
+      }
+    } catch (error) {
+      console.error('Error fetching maintenance history:', error);
+    } finally {
+      setLoadingTickets(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -93,10 +111,11 @@ export default function ViewSystemModal({ open, toolId, onClose }: ViewSystemMod
         ) : (
           <>
             <Tabs defaultValue="general" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="general">General Info</TabsTrigger>
                 <TabsTrigger value="specifications">Specifications</TabsTrigger>
                 <TabsTrigger value="components">Components</TabsTrigger>
+                <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
               </TabsList>
 
               <TabsContent value="general" className="space-y-4 pt-4">
@@ -192,6 +211,56 @@ export default function ViewSystemModal({ open, toolId, onClose }: ViewSystemMod
                           <div><span className="text-gray-500">Serial:</span> {component.component_sn || 'N/A'}</div>
                           <div><span className="text-gray-500">Usage:</span> {component.component_cycles || 0} hrs</div>
                         </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="maintenance" className="pt-4">
+                {loadingTickets ? (
+                  <div className="space-y-3">
+                    {[1, 2, 3].map((i) => <Skeleton key={i} className="h-20 w-full" />)}
+                  </div>
+                ) : maintenanceTickets.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500 border rounded-lg border-dashed">
+                    No maintenance history for this system
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {maintenanceTickets.map((ticket: any) => (
+                      <div key={ticket.ticket_id} className="border rounded-lg p-4 shadow-sm">
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold text-gray-700">#{ticket.ticket_id}</span>
+                            <Badge variant={
+                              ticket.ticket_status === 'CLOSED' ? 'default' :
+                              ticket.ticket_status === 'IN_PROGRESS' ? 'secondary' : 'outline'
+                            }>
+                              {ticket.ticket_status}
+                            </Badge>
+                            <Badge variant={
+                              ticket.ticket_priority === 'HIGH' ? 'destructive' :
+                              ticket.ticket_priority === 'MEDIUM' ? 'secondary' : 'outline'
+                            }>
+                              {ticket.ticket_priority}
+                            </Badge>
+                          </div>
+                          <span className="text-xs text-gray-400">
+                            {new Date(ticket.opened_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 text-sm">
+                          <div><span className="text-gray-500">Type:</span> {ticket.ticket_type}</div>
+                          <div><span className="text-gray-500">Assigned:</span> {ticket.assigner_name || 'Unassigned'}</div>
+                          <div>
+                            <span className="text-gray-500">Closed:</span>{' '}
+                            {ticket.closed_at ? new Date(ticket.closed_at).toLocaleDateString() : '—'}
+                          </div>
+                        </div>
+                        {ticket.note && (
+                          <p className="mt-2 text-xs text-gray-600 bg-gray-50 rounded p-2">{ticket.note}</p>
+                        )}
                       </div>
                     ))}
                   </div>
