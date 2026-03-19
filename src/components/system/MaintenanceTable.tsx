@@ -15,9 +15,13 @@ import {
   getPaginationRowModel,
   useReactTable,
 } from "@tanstack/react-table";
+import { SlidersHorizontal } from "lucide-react";
 import { useMemo, useState } from "react";
 import { TablePagination } from "../tables/Pagination";
 import StatusBadge from "./StatusBadge";
+
+const MIN_THRESHOLD = 50;
+const MAX_THRESHOLD = 99;
 
 
 function daysSince(dateStr: string | null): number | null {
@@ -30,27 +34,25 @@ function cleanTrigger(arr: (string | null)[] | null): string[] {
   return arr.filter((v): v is string => !!v && v !== "null");
 }
 
-/* ── Usage / Limit display cell ── */
 function UsageLimitCell({
   current,
   limit,
   unit,
   status,
   isTriggered,
+  threshold,
 }: {
   current: number | null;
   limit: number | null;
   unit: string;
   status: MaintenanceStatus;
   isTriggered: boolean;
+  threshold: number;
 }) {
   const cur = current ?? 0;
   const max = limit && limit > 0 ? limit : null;
-
-  // Compute percentage for bar
   const pct = max ? Math.min((cur / max) * 100, 100) : 0;
 
-  // Color logic
   const barColor =
     status === "DUE" && isTriggered
       ? "bg-rose-500"
@@ -73,8 +75,10 @@ function UsageLimitCell({
     );
   }
 
+  const thresholdPct = Math.min(100, Math.max(0, threshold));
+
   return (
-    <div className="flex flex-col gap-1 min-w-[100px]">
+    <div className="flex flex-col gap-1 min-w-25">
       <div className="flex items-baseline justify-between gap-1">
         <span className={`text-xs font-semibold tabular-nums ${textColor}`}>
           {cur}
@@ -83,17 +87,22 @@ function UsageLimitCell({
           / {max} {unit}
         </span>
       </div>
-      <div className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
+      <div className="relative h-1.5 w-full rounded-full bg-slate-100 overflow-visible">
         <div
           className={`h-full rounded-full transition-all ${barColor}`}
           style={{ width: `${pct}%` }}
         />
+        <div
+          className="absolute top-1/2 -translate-y-1/2 w-0.5 h-3 rounded-sm bg-amber-400 opacity-80"
+          style={{ left: `${thresholdPct}%` }}
+          title={`Alert threshold: ${threshold}%`}
+        />
       </div>
+      <span className="text-[9px] text-slate-400 tabular-nums">{pct.toFixed(0)}%</span>
     </div>
   );
 }
 
-/* ── Maintenance Cycle badge ── */
 function CycleBadge({ model }: { model: MaintenanceComponent["model"] }) {
   const parts: string[] = [];
   if (model.maintenance_cycle_hour > 0) parts.push(`${model.maintenance_cycle_hour}h`);
@@ -117,27 +126,58 @@ function effectiveStatus(drone: MaintenanceDrone): MaintenanceStatus {
   return "OK";
 }
 
-function SummaryBar({ data }: { data: MaintenanceDrone[] }) {
+export function SummaryBar({ data, threshold }: { data: MaintenanceDrone[]; threshold: number }) {
   const counts = useMemo(() => {
-    const by = (s: MaintenanceStatus) => data.filter((d) => effectiveStatus(d) === s).length;
-    return { total: data.length, ok: by("OK"), alert: by("ALERT"), due: by("DUE") };
+    let ok = 0, alert = 0, due = 0;
+    for (const d of data) {
+      const all: MaintenanceStatus[] = [d.status, ...d.components.map((c) => c.status)];
+      const hasDue = all.includes("DUE");
+      const hasAlert = all.includes("ALERT");
+      if (!hasDue && !hasAlert) { ok++; continue; }
+      if (hasDue) due++;
+      if (hasAlert) alert++;
+    }
+    return { total: data.length, ok, alert, due };
   }, [data]);
 
-  const stats = [
-    { label: "Total Systems", value: counts.total, color: "text-slate-700" },
-    { label: "OK",            value: counts.ok,    color: "text-emerald-600" },
-    { label: "Alert",         value: counts.alert, color: "text-amber-600" },
-    { label: "Due",           value: counts.due,   color: "text-rose-600" },
-  ];
+  const thresholdLabel = threshold < 70 ? "Sensitive" : threshold < 85 ? "Normal" : "Lenient";
+  const thresholdColor = threshold < 70 ? "text-emerald-600" : threshold < 85 ? "text-amber-600" : "text-rose-600";
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-      {stats.map((s) => (
-        <div key={s.label} className="bg-white rounded-xl border border-slate-200 px-4 py-3">
-          <p className="text-xs text-slate-500 mb-0.5">{s.label}</p>
-          <p className={`text-2xl font-bold tabular-nums ${s.color}`}>{s.value}</p>
+    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-4">
+      <div className="bg-white rounded-xl border-2 border-violet-200 px-4 py-3 flex flex-col gap-1">
+        <p className="text-xs text-slate-500">Alert Threshold</p>
+        <div className="flex items-baseline gap-1.5">
+          <p className={`text-2xl font-bold tabular-nums ${thresholdColor}`}>{threshold}%</p>
+          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full border ${
+            threshold < 70
+              ? "text-emerald-600 bg-emerald-50 border-emerald-200"
+              : threshold < 85
+              ? "text-amber-600 bg-amber-50 border-amber-200"
+              : "text-rose-600 bg-rose-50 border-rose-200"
+          }`}>{thresholdLabel}</span>
         </div>
-      ))}
+        <div className="relative h-1 w-full rounded-full bg-slate-100 mt-1">
+          <div className="h-full rounded-full bg-violet-400" style={{ width: `${threshold}%` }} />
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl border border-slate-200 px-4 py-3">
+        <p className="text-xs text-slate-500 mb-0.5">Total Systems</p>
+        <p className="text-2xl font-bold tabular-nums text-slate-700">{counts.total}</p>
+      </div>
+      <div className="bg-white rounded-xl border border-slate-200 px-4 py-3">
+        <p className="text-xs text-slate-500 mb-0.5">OK</p>
+        <p className="text-2xl font-bold tabular-nums text-emerald-600">{counts.ok}</p>
+      </div>
+      <div className="bg-white rounded-xl border border-slate-200 px-4 py-3">
+        <p className="text-xs text-slate-500 mb-0.5">Alert</p>
+        <p className="text-2xl font-bold tabular-nums text-amber-600">{counts.alert}</p>
+      </div>
+      <div className="bg-white rounded-xl border border-slate-200 px-4 py-3">
+        <p className="text-xs text-slate-500 mb-0.5">Due</p>
+        <p className="text-2xl font-bold tabular-nums text-rose-600">{counts.due}</p>
+      </div>
     </div>
   );
 }
@@ -150,18 +190,42 @@ function FilterBar({
   onChange,
   search,
   onSearch,
+  threshold,
+  onApplyThreshold,
 }: {
   value: FilterStatus;
   onChange: (v: FilterStatus) => void;
   search: string;
   onSearch: (v: string) => void;
+  threshold: number;
+  onApplyThreshold: (v: number) => void;
 }) {
+  const [localInput, setLocalInput] = useState(String(threshold));
+
   const options: { value: FilterStatus; label: string }[] = [
     { value: "ALL",   label: "All" },
     { value: "OK",    label: "OK" },
     { value: "ALERT", label: "Alert" },
     { value: "DUE",   label: "Due" },
   ];
+
+  const commit = (raw: string) => {
+    const parsed = parseInt(raw, 10);
+    if (!isNaN(parsed)) {
+      const clamped = Math.min(MAX_THRESHOLD, Math.max(MIN_THRESHOLD, parsed));
+      setLocalInput(String(clamped));
+      onApplyThreshold(clamped);
+    } else {
+      setLocalInput(String(threshold));
+    }
+  };
+
+  const thresholdColor =
+    threshold >= 90
+      ? "text-rose-600 bg-rose-50 border-rose-200"
+      : threshold >= 70
+      ? "text-amber-600 bg-amber-50 border-amber-200"
+      : "text-emerald-600 bg-emerald-50 border-emerald-200";
 
   return (
     <div className="flex flex-wrap items-center gap-2 mb-4">
@@ -197,14 +261,51 @@ function FilterBar({
           className="w-full pl-9 pr-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
         />
       </div>
+      <div className="flex items-center gap-3 px-4 py-2 rounded-xl border border-slate-200 bg-slate-50">
+        <div className="flex items-center gap-1.5">
+          <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500" />
+          <span className="text-xs font-medium text-slate-500">Alert threshold</span>
+        </div>
+
+        <input
+          type="range"
+          min={MIN_THRESHOLD}
+          max={MAX_THRESHOLD}
+          step={1}
+          value={threshold}
+          onChange={(e) => {
+            const v = parseInt(e.target.value, 10);
+            setLocalInput(String(v));
+            onApplyThreshold(v);
+          }}
+          className="w-28 accent-violet-600 cursor-pointer"
+        />
+
+        <div className="flex items-center gap-0.5">
+          <input
+            type="number"
+            min={MIN_THRESHOLD}
+            max={MAX_THRESHOLD}
+            value={localInput}
+            onChange={(e) => setLocalInput(e.target.value)}
+            onBlur={(e) => commit(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") commit(localInput); }}
+            className="w-12 text-center text-xs font-semibold rounded-md border border-slate-300 bg-white px-1 py-1 focus:outline-none focus:ring-2 focus:ring-violet-400"
+          />
+          <span className="text-xs font-medium text-slate-500">%</span>
+        </div>
+
+        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${thresholdColor}`}>
+          {threshold < 70 ? "Sensitive" : threshold < 85 ? "Normal" : "Lenient"}
+        </span>
+      </div>
     </div>
   );
 }
 
 
-function ComponentSubRow({ comp }: { comp: MaintenanceComponent }) {
+function ComponentSubRow({ comp, threshold }: { comp: MaintenanceComponent; threshold: number }) {
   const triggers = cleanTrigger(comp.trigger);
-  const daysUsed = daysSince(comp.last_maintenance);
   const model = comp.model;
 
   return (
@@ -220,10 +321,6 @@ function ComponentSubRow({ comp }: { comp: MaintenanceComponent }) {
           </div>
         </div>
       </td>
-
-      {/* <td className="px-3 py-2.5 text-slate-500 text-xs">
-        {[model.factory_type, model.factory_model].filter(Boolean).join(" · ") || "—"}
-      </td> */}
 
       <td className="px-3 py-2.5 text-slate-500 text-xs font-mono">
         {comp.serial_number ?? "—"}
@@ -246,6 +343,7 @@ function ComponentSubRow({ comp }: { comp: MaintenanceComponent }) {
           unit="h"
           status={comp.status}
           isTriggered={triggers.includes("HOUR")}
+          threshold={threshold}
         />
       </td>
 
@@ -256,16 +354,18 @@ function ComponentSubRow({ comp }: { comp: MaintenanceComponent }) {
           unit="fl"
           status={comp.status}
           isTriggered={triggers.includes("FLIGHT")}
+          threshold={threshold}
         />
       </td>
 
       <td className="px-3 py-2.5">
         <UsageLimitCell
-         current={comp.total_days}     
+          current={comp.total_days}
           limit={model.maintenance_cycle_day}
           unit="d"
           status={comp.status}
           isTriggered={triggers.includes("DAY")}
+          threshold={threshold}
         />
       </td>
 
@@ -277,179 +377,177 @@ function ComponentSubRow({ comp }: { comp: MaintenanceComponent }) {
 }
 
 
-const columns: ColumnDef<MaintenanceDrone>[] = [
-  {
-    id: "drone",
-    header: "Drone / Component",
-    accessorFn: (row) => row.code,
-    cell: ({ row }) => {
-      const drone = row.original;
-      const hasComponents = drone.components.length > 0;
-      return (
-        <div className="flex items-center gap-2">
-          {hasComponents ? (
-            <button
-              onClick={(e) => { e.stopPropagation(); row.toggleExpanded(); }}
-              className="text-slate-400 transition-transform duration-200 focus:outline-none"
-              style={{ transform: row.getIsExpanded() ? "rotate(90deg)" : "rotate(0deg)" }}
-            >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          ) : (
-            <span className="w-3.5 h-3.5 inline-block" />
-          )}
-          <div>
-            <p className="font-semibold text-slate-800 text-sm">{drone.code}</p>
-            {hasComponents && (
-              <p className="text-[11px] text-slate-400">
-                {drone.components.length} component{drone.components.length !== 1 ? "s" : ""}
-              </p>
+function buildColumns(threshold: number): ColumnDef<MaintenanceDrone>[] {
+  return [
+    {
+      id: "drone",
+      header: "Drone / Component",
+      accessorFn: (row) => row.code,
+      cell: ({ row }) => {
+        const drone = row.original;
+        const hasComponents = drone.components.length > 0;
+        return (
+          <div className="flex items-center gap-2">
+            {hasComponents ? (
+              <button
+                onClick={(e) => { e.stopPropagation(); row.toggleExpanded(); }}
+                className="text-slate-400 transition-transform duration-200 focus:outline-none"
+                style={{ transform: row.getIsExpanded() ? "rotate(90deg)" : "rotate(0deg)" }}
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            ) : (
+              <span className="w-3.5 h-3.5 inline-block" />
             )}
+            <div>
+              <p className="font-semibold text-slate-800 text-sm">{drone.code}</p>
+              {hasComponents && (
+                <p className="text-[11px] text-slate-400">
+                  {drone.components.length} component{drone.components.length !== 1 ? "s" : ""}
+                </p>
+              )}
+            </div>
           </div>
-        </div>
-      );
+        );
+      },
     },
-  },
-  // {
-  //   id: "type",
-  //   header: "Type",
-  //   cell: ({ row }) => {
-  //     const model = row.original.model;
-  //     return (
-  //       <span className="text-xs text-slate-500">
-  //         <span className="inline-flex items-center px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-medium">
-  //           {model.factory_type ?? "—"}
-  //         </span>
-  //         {model.factory_model && (
-  //           <span className="ml-1.5 text-slate-400">{model.factory_model}</span>
-  //         )}
-  //       </span>
-  //     );
-  //   },
-  // },
-  {
-    id: "serial",
-    header: "Serial",
-    cell: ({ row }) => (
-      <span className="text-xs font-mono text-slate-500">
-        {row.original.serial_number || "—"}
-      </span>
-    ),
-  },
-  {
-    id: "cycle",
-    header: "Maint. Cycle",
-    cell: ({ row }) => <CycleBadge model={row.original.model} />,
-  },
-  {
-    id: "last_maintenance",
-    header: "Last Maintenance",
-    accessorFn: (row) => row.last_maintenance,
-    cell: ({ getValue }) => {
-      const val = getValue() as string | null;
-      return (
-        <span className="text-xs text-slate-500">
-          {val ? new Date(val).toLocaleDateString("en-GB") : <span className="text-slate-300">—</span>}
+    {
+      id: "serial",
+      header: "Serial",
+      cell: ({ row }) => (
+        <span className="text-xs font-mono text-slate-500">
+          {row.original.serial_number || "—"}
         </span>
-      );
+      ),
     },
-  },
-  {
-    id: "hours",
-    header: "Hours",
-    cell: ({ row }) => {
-      const d = row.original;
-      const triggers = cleanTrigger(d.trigger);
-      return (
-        <UsageLimitCell
-          current={d.total_hours}
-          limit={d.model.maintenance_cycle_hour}
-          unit="h"
-          status={d.status}
-          isTriggered={triggers.includes("HOUR")}
-        />
-      );
+    {
+      id: "cycle",
+      header: "Maint. Cycle",
+      cell: ({ row }) => <CycleBadge model={row.original.model} />,
     },
-  },
-  {
-    id: "flights",
-    header: "Flights",
-    cell: ({ row }) => {
-      const d = row.original;
-      const triggers = cleanTrigger(d.trigger);
-      return (
-        <UsageLimitCell
-          current={d.total_flights}
-          limit={d.model.maintenance_cycle_flight}
-          unit="fl"
-          status={d.status}
-          isTriggered={triggers.includes("FLIGHT")}
-        />
-      );
+    {
+      id: "last_maintenance",
+      header: "Last Maintenance",
+      accessorFn: (row) => row.last_maintenance,
+      cell: ({ getValue }) => {
+        const val = getValue() as string | null;
+        return (
+          <span className="text-xs text-slate-500">
+            {val ? new Date(val).toLocaleDateString("en-GB") : <span className="text-slate-300">—</span>}
+          </span>
+        );
+      },
     },
-  },
-  {
-    id: "days",
-    header: "Days",
-    cell: ({ row }) => {
-      const d = row.original;
-      const triggers = cleanTrigger(d.trigger);
-      return (
-        <UsageLimitCell
-          current={daysSince(d.last_maintenance)}
-          limit={d.model.maintenance_cycle_day}
-          unit="d"
-          status={d.status}
-          isTriggered={triggers.includes("DAY")}
-        />
-      );
+    {
+      id: "hours",
+      header: "Hours",
+      cell: ({ row }) => {
+        const d = row.original;
+        const triggers = cleanTrigger(d.trigger);
+        return (
+          <UsageLimitCell
+            current={d.total_hours}
+            limit={d.model.maintenance_cycle_hour}
+            unit="h"
+            status={d.status}
+            isTriggered={triggers.includes("HOUR")}
+            threshold={threshold}
+          />
+        );
+      },
     },
-  },
-  {
-    id: "status",
-    header: "Status",
-    accessorFn: (row) => row.status,
-    cell: ({ row }) => {
-      const drone = row.original;
-      if (drone.components.length === 0) {
-        return <StatusBadge status={drone.status} />;
-      }
-      const compCounts = { DUE: 0, ALERT: 0, OK: 0 };
-      for (const c of drone.components) compCounts[c.status] = (compCounts[c.status] ?? 0) + 1;
-      const eff = effectiveStatus(drone);
-      return (
-        <div className="flex flex-col gap-1">
-          <StatusBadge status={eff} />
-          <div className="flex flex-wrap gap-1">
-            {compCounts.DUE > 0 && (
-              <span className="text-[10px] font-semibold text-rose-600 bg-rose-50 border border-rose-200 rounded px-1.5 py-0.5 leading-none">
-                {compCounts.DUE} DUE
-              </span>
-            )}
-            {compCounts.ALERT > 0 && (
-              <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 leading-none">
-                {compCounts.ALERT} ALERT
-              </span>
-            )}
-            {compCounts.OK > 0 && (
-              <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200 rounded px-1.5 py-0.5 leading-none">
-                {compCounts.OK} OK
-              </span>
-            )}
+    {
+      id: "flights",
+      header: "Flights",
+      cell: ({ row }) => {
+        const d = row.original;
+        const triggers = cleanTrigger(d.trigger);
+        return (
+          <UsageLimitCell
+            current={d.total_flights}
+            limit={d.model.maintenance_cycle_flight}
+            unit="fl"
+            status={d.status}
+            isTriggered={triggers.includes("FLIGHT")}
+            threshold={threshold}
+          />
+        );
+      },
+    },
+    {
+      id: "days",
+      header: "Days",
+      cell: ({ row }) => {
+        const d = row.original;
+        const triggers = cleanTrigger(d.trigger);
+        return (
+          <UsageLimitCell
+            current={daysSince(d.last_maintenance)}
+            limit={d.model.maintenance_cycle_day}
+            unit="d"
+            status={d.status}
+            isTriggered={triggers.includes("DAY")}
+            threshold={threshold}
+          />
+        );
+      },
+    },
+    {
+      id: "status",
+      header: "Status",
+      accessorFn: (row) => row.status,
+      cell: ({ row }) => {
+        const drone = row.original;
+        if (drone.components.length === 0) {
+          return <StatusBadge status={drone.status} />;
+        }
+        const compCounts = { DUE: 0, ALERT: 0, OK: 0 };
+        for (const c of drone.components) compCounts[c.status] = (compCounts[c.status] ?? 0) + 1;
+        const eff = effectiveStatus(drone);
+        return (
+          <div className="flex flex-col gap-1">
+            <StatusBadge status={eff} />
+            <div className="flex flex-wrap gap-1">
+              {compCounts.DUE > 0 && (
+                <span className="text-[10px] font-semibold text-rose-600 bg-rose-50 border border-rose-200 rounded px-1.5 py-0.5 leading-none">
+                  {compCounts.DUE} DUE
+                </span>
+              )}
+              {compCounts.ALERT > 0 && (
+                <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 leading-none">
+                  {compCounts.ALERT} ALERT
+                </span>
+              )}
+              {compCounts.OK > 0 && (
+                <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200 rounded px-1.5 py-0.5 leading-none">
+                  {compCounts.OK} OK
+                </span>
+              )}
+            </div>
           </div>
-        </div>
-      );
+        );
+      },
     },
-  },
-];
+  ];
+}
 
 
-export default function MaintenanceTable({ data }: { data: MaintenanceDrone[] }) {
+export default function MaintenanceTable({
+  data,
+  threshold = 80,
+  onApplyThreshold,
+}: {
+  data: MaintenanceDrone[];
+  threshold?: number;
+  onApplyThreshold?: (v: number) => void;
+}) {
   const [filter, setFilter] = useState<FilterStatus>("ALL");
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState<ExpandedState>({});
+
+  const columns = useMemo(() => buildColumns(threshold), [threshold]);
 
   const filtered = useMemo(() => {
     return data.filter((d) => {
@@ -480,12 +578,13 @@ export default function MaintenanceTable({ data }: { data: MaintenanceDrone[] })
 
   return (
     <div>
-      <SummaryBar data={data} />
       <FilterBar
         value={filter}
         onChange={(v) => { setFilter(v); table.setPageIndex(0); }}
         search={search}
         onSearch={(v) => { setSearch(v); table.setPageIndex(0); }}
+        threshold={threshold}
+        onApplyThreshold={onApplyThreshold ?? (() => {})}
       />
 
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
@@ -534,6 +633,7 @@ export default function MaintenanceTable({ data }: { data: MaintenanceDrone[] })
                         <ComponentSubRow
                           key={comp.tool_component_id}
                           comp={comp}
+                          threshold={threshold}
                         />
                       ))}
                   </>
