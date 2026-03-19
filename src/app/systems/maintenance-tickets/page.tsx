@@ -189,7 +189,7 @@ export default function MaintenanceLogbookPage() {
         onClose={() => closeModal('report')}
         form={report}
         onFormChange={(u) => setReport((p) => ({ ...p, ...u }))}
-        onSubmit={handleAddReport}
+        onSubmit={(file) => handleAddReport(file)}
         isDark={isDark}
       />
 

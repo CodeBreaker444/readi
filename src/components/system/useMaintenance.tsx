@@ -223,17 +223,19 @@ export function useMaintenanceLogbook() {
     }
   }
 
-  async function handleAddReport() {
+  async function handleAddReport(file?: File) {
     if (!activeTicketId) return;
     try {
-      await axios.post(`/api/system/maintenance/tickets/report`, {
-        ticket_id: activeTicketId,
-        report_text: report.text,
-        work_start: report.work_start || undefined,
-        work_end: report.work_end || undefined,
-        report_by: 'web',
-        close_report: report.close ? 'Y' : undefined,
-      });
+      const fd = new FormData();
+      fd.append('ticket_id', String(activeTicketId));
+      fd.append('report_text', report.text);
+      if (report.work_start) fd.append('work_start', report.work_start);
+      if (report.work_end) fd.append('work_end', report.work_end);
+      fd.append('report_by', 'web');
+      if (report.close) fd.append('close_report', 'Y');
+      if (file) fd.append('file', file);
+
+      await axios.post(`/api/system/maintenance/tickets/report`, fd);
       toast.success('Report saved');
       closeModal('report');
       if (report.close) {

@@ -19,7 +19,7 @@ export function TicketFilters({ search, statusFilter, onSearch, onStatusChange, 
                         key={s}
                         onClick={() => onStatusChange(s)}
                         className={`px-3 py-1.5 text-sm font-medium transition-colors ${statusFilter === s
-                                ? 'bg-slate-900 text-white'
+                                ? 'bg-violet-600 text-white'
                                 : isDark
                                     ? 'text-slate-400 hover:bg-slate-700'
                                     : 'text-slate-600 hover:bg-slate-50'
