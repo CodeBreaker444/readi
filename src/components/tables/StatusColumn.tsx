@@ -34,24 +34,23 @@ export function createMissionStatusColumns({
   onDelete,
 }: GetStatusColumnsOptions): ColumnDef<Mission>[] {
   const inputClass = isDark
-    ? 'bg-gray-900 border-gray-600 text-gray-100 focus-visible:ring-blue-500 h-8 text-sm'
-    : 'bg-white border-gray-300 text-gray-800 focus-visible:ring-blue-400 h-8 text-sm';
-
-  const headerClass = `text-[11px] font-semibold uppercase tracking-widest ${isDark ? 'text-gray-400' : 'text-gray-400'}`;
+    ? 'bg-white/[0.05] border-white/[0.1] text-gray-100 focus-visible:ring-cyan-500/40 focus-visible:border-cyan-500/40 h-8 text-xs rounded-lg placeholder:text-gray-600'
+    : 'bg-white border-gray-200 text-gray-800 focus-visible:ring-blue-500/30 focus-visible:border-blue-300 h-8 text-xs rounded-lg placeholder:text-gray-300';
 
   return [
     {
       accessorKey: 'id',
-      header: () => <span className={headerClass}>#</span>,
+      header: () => <span>#</span>,
       cell: ({ row }) => (
-        <span className={`text-xs font-mono px-2 py-0.5 rounded-md ${isDark ? 'bg-gray-800 text-gray-400' : ' text-black'}`}>
+        <span className={`text-[11px] font-mono tabular-nums ${isDark ? 'text-gray-600' : 'text-gray-300'}`}>
           {String(row.original.id).padStart(3, '0')}
         </span>
       ),
+      size: 60,
     },
     {
       accessorKey: 'code',
-      header: () => <span className={headerClass}>Code</span>,
+      header: () => <span>Code</span>,
       cell: ({ row }) => {
         const status = row.original;
         if (editingId === status.id && editForm) {
@@ -61,12 +60,16 @@ export function createMissionStatusColumns({
               maxLength={50}
               value={editForm.code}
               onChange={(e) => onEditChange({ ...editForm, code: e.target.value.toUpperCase() })}
-              className={`uppercase ${inputClass}`}
+              className={`uppercase font-mono ${inputClass}`}
             />
           );
         }
         return (
-          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-widest ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>
+          <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-mono font-semibold tracking-wide ${
+            isDark
+              ? 'bg-white/[0.05] text-gray-300 ring-1 ring-white/[0.06]'
+              : 'bg-gray-100 text-gray-600 ring-1 ring-gray-200/60'
+          }`}>
             {status.code}
           </span>
         );
@@ -74,7 +77,7 @@ export function createMissionStatusColumns({
     },
     {
       accessorKey: 'name',
-      header: () => <span className={headerClass}>Name</span>,
+      header: () => <span>Name</span>,
       cell: ({ row }) => {
         const status = row.original;
         if (editingId === status.id && editForm) {
@@ -89,7 +92,7 @@ export function createMissionStatusColumns({
           );
         }
         return (
-          <span className={`text-sm font-semibold ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>
+          <span className={`text-[13px] font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
             {status.name}
           </span>
         );
@@ -97,7 +100,7 @@ export function createMissionStatusColumns({
     },
     {
       accessorKey: 'description',
-      header: () => <span className={headerClass}>Description</span>,
+      header: () => <span>Description</span>,
       cell: ({ row }) => {
         const status = row.original;
         if (editingId === status.id && editForm) {
@@ -106,19 +109,26 @@ export function createMissionStatusColumns({
               value={editForm.description || ''}
               onChange={(e) => onEditChange({ ...editForm, description: e.target.value })}
               className={inputClass}
+              placeholder="Optional description..."
             />
           );
         }
         return (
-          <span className={`text-sm truncate max-w-[200px] block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-            {status.description || <span className="opacity-30 italic">—</span>}
+          <span className={`text-xs truncate max-w-[240px] block leading-relaxed ${
+            isDark ? 'text-gray-500' : 'text-gray-400'
+          }`}>
+            {status.description || (
+              <span className={`italic ${isDark ? 'text-gray-700' : 'text-gray-300'}`}>
+                No description
+              </span>
+            )}
           </span>
         );
       },
     },
     {
       accessorKey: 'order',
-      header: () => <span className={headerClass}>Order</span>,
+      header: () => <span>Order</span>,
       cell: ({ row }) => {
         const status = row.original;
         if (editingId === status.id && editForm) {
@@ -128,20 +138,21 @@ export function createMissionStatusColumns({
               min="0"
               value={editForm.order || 0}
               onChange={(e) => onEditChange({ ...editForm, order: parseInt(e.target.value) || 0 })}
-              className={`w-20 ${inputClass}`}
+              className={`w-20 text-center font-mono ${inputClass}`}
             />
           );
         }
         return (
-          <span className={`text-xs font-mono px-2 py-0.5 rounded-md ${isDark ? 'bg-gray-800 text-gray-400' : 'bg-gray-100 text-gray-500'}`}>
+          <span className={`text-[11px] font-mono tabular-nums ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
             {status.order ?? '—'}
           </span>
         );
       },
+      size: 80,
     },
     {
       accessorKey: 'isFinalStatus',
-      header: () => <span className={`${headerClass} flex justify-center`}>Final</span>,
+      header: () => <span className="flex justify-center">Final</span>,
       cell: ({ row }) => {
         const status = row.original;
         if (editingId === status.id && editForm) {
@@ -150,6 +161,7 @@ export function createMissionStatusColumns({
               <Checkbox
                 checked={editForm.isFinalStatus || false}
                 onCheckedChange={(checked) => onEditChange({ ...editForm, isFinalStatus: !!checked })}
+                className={isDark ? 'border-gray-600 data-[state=checked]:bg-cyan-500 data-[state=checked]:border-cyan-500' : ''}
               />
             </div>
           );
@@ -157,68 +169,68 @@ export function createMissionStatusColumns({
         return (
           <div className="flex justify-center">
             {status.isFinalStatus ? (
-              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
                 isDark
-                  ? 'bg-emerald-950/60 text-emerald-300 border-emerald-700/50'
-                  : 'bg-emerald-50 text-emerald-600 border-emerald-200'
+                  ? 'bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20'
+                  : 'bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200/60'
               }`}>
-                Yes
+                <span className="w-1 h-1 rounded-full bg-current" />
+                Final
               </span>
             ) : (
-              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
-                isDark
-                  ? 'bg-gray-800 text-gray-500 border-gray-700'
-                  : 'bg-gray-100 text-gray-400 border-gray-200'
-              }`}>
-                No
+              <span className={`text-[10px] ${isDark ? 'text-gray-700' : 'text-gray-300'}`}>
+                —
               </span>
             )}
           </div>
         );
       },
+      size: 80,
     },
     {
       id: 'actions',
-      header: () => <div className={`${headerClass} flex justify-end`}>Actions</div>,
+      header: () => <div className="flex justify-end">Actions</div>,
       cell: ({ row }) => {
         const status = row.original;
         const isEditing = editingId === status.id && editForm;
 
         return (
-          <TooltipProvider delayDuration={100}>
-            <div className="flex items-center justify-end gap-1">
+          <TooltipProvider delayDuration={200}>
+            <div className={`flex items-center justify-end gap-1 transition-opacity ${
+              isEditing ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+            }`}>
               {isEditing ? (
                 <>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <button
                         onClick={onSave}
-                        className={`p-1.5 rounded-lg transition-all duration-150 ${
+                        className={`inline-flex items-center justify-center w-7 h-7 rounded-lg transition-all ${
                           isDark
-                            ? 'bg-emerald-500/10 hover:bg-emerald-500/25 text-emerald-400 hover:text-emerald-300 border border-emerald-700/40 hover:border-emerald-500/60'
-                            : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-600 hover:text-emerald-700 border border-emerald-200 hover:border-emerald-300'
+                            ? 'bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400'
+                            : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-600'
                         }`}
                       >
-                        <Check size={15} strokeWidth={2.5} />
+                        <Check size={14} strokeWidth={2.5} />
                       </button>
                     </TooltipTrigger>
-                    <TooltipContent side="top" className="text-xs">Save changes</TooltipContent>
+                    <TooltipContent side="top" className="text-[11px]">Save</TooltipContent>
                   </Tooltip>
 
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <button
                         onClick={onCancel}
-                        className={`p-1.5 rounded-lg transition-all duration-150 ${
+                        className={`inline-flex items-center justify-center w-7 h-7 rounded-lg transition-all ${
                           isDark
-                            ? 'bg-gray-700/50 hover:bg-gray-600/50 text-gray-400 hover:text-gray-200 border border-gray-600/40 hover:border-gray-500/60'
-                            : 'bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 border border-gray-200 hover:border-gray-300'
+                            ? 'bg-white/[0.05] hover:bg-white/[0.1] text-gray-400'
+                            : 'bg-gray-100 hover:bg-gray-200 text-gray-500'
                         }`}
                       >
-                        <X size={15} strokeWidth={2.5} />
+                        <X size={14} strokeWidth={2.5} />
                       </button>
                     </TooltipTrigger>
-                    <TooltipContent side="top" className="text-xs">Cancel</TooltipContent>
+                    <TooltipContent side="top" className="text-[11px]">Cancel</TooltipContent>
                   </Tooltip>
                 </>
               ) : (
@@ -227,32 +239,32 @@ export function createMissionStatusColumns({
                     <TooltipTrigger asChild>
                       <button
                         onClick={() => onEditClick(status)}
-                        className={`p-1.5 rounded-lg transition-all duration-150 ${
+                        className={`inline-flex items-center justify-center w-7 h-7 rounded-lg transition-all ${
                           isDark
-                            ? 'bg-indigo-500/10 hover:bg-indigo-500/25 text-indigo-400 hover:text-indigo-300 border border-indigo-700/40 hover:border-indigo-500/60'
-                            : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-500 hover:text-indigo-700 border border-indigo-200 hover:border-indigo-300'
+                            ? 'hover:bg-white/[0.08] text-gray-500 hover:text-gray-300'
+                            : 'hover:bg-gray-100 text-gray-400 hover:text-gray-600'
                         }`}
                       >
-                        <Pencil size={14} strokeWidth={2} />
+                        <Pencil size={13} strokeWidth={2} />
                       </button>
                     </TooltipTrigger>
-                    <TooltipContent side="top" className="text-xs">Edit</TooltipContent>
+                    <TooltipContent side="top" className="text-[11px]">Edit</TooltipContent>
                   </Tooltip>
 
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <button
                         onClick={() => onDelete(status.id)}
-                        className={`p-1.5 rounded-lg transition-all duration-150 ${
+                        className={`inline-flex items-center justify-center w-7 h-7 rounded-lg transition-all ${
                           isDark
-                            ? 'bg-rose-500/10 hover:bg-rose-500/25 text-rose-400 hover:text-rose-300 border border-rose-700/40 hover:border-rose-500/60'
-                            : 'bg-rose-50 hover:bg-rose-100 text-rose-500 hover:text-rose-600 border border-rose-200 hover:border-rose-300'
+                            ? 'hover:bg-rose-500/15 text-gray-500 hover:text-rose-400'
+                            : 'hover:bg-rose-50 text-gray-400 hover:text-rose-500'
                         }`}
                       >
-                        <Trash2 size={14} strokeWidth={2} />
+                        <Trash2 size={13} strokeWidth={2} />
                       </button>
                     </TooltipTrigger>
-                    <TooltipContent side="top" className="text-xs">Delete</TooltipContent>
+                    <TooltipContent side="top" className="text-[11px]">Delete</TooltipContent>
                   </Tooltip>
                 </>
               )}
@@ -260,6 +272,7 @@ export function createMissionStatusColumns({
           </TooltipProvider>
         );
       },
+      size: 100,
     },
   ];
 }

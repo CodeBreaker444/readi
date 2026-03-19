@@ -22,10 +22,12 @@ export default function MissionStatusPage() {
   const { isDark } = useTheme();
   const [statuses, setStatuses] = useState<Mission[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const fetchStatuses = async () => {
-    setLoading(true);
+  const fetchStatuses = async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
     try {
       const response = await axios.get(`/api/mission/status/list`);
       const result = response.data;
@@ -44,6 +46,7 @@ export default function MissionStatusPage() {
       toast.error('Failed to fetch mission statuses');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -120,60 +123,66 @@ export default function MissionStatusPage() {
 
   if (loading) return <MissionStatusSkeleton isDark={isDark} />;
 
+  const finalCount = statuses.filter(s => s.isFinalStatus).length;
+  const activeCount = statuses.length - finalCount;
+
   return (
-    <div className={`min-h-screen ${isDark ? 'bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800' : 'bg-white'}`}>
-      <div className="w-full">
-
-        <div
-          className={`top-0 z-10 backdrop-blur-md transition-colors ${isDark
-              ? "bg-slate-900/80 border-b border-slate-800 text-white"
-              : "bg-white/80 border-b border-slate-200 text-slate-900 shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
-            } px-6 py-4`}
-        >
-          <div className="mx-auto max-w-[1800px] flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-1 h-6 rounded-full bg-violet-600" />
-
-              <div>
-                <h1
-                  className={`font-semibold text-base tracking-tight ${isDark ? "text-white" : "text-slate-900"
-                    }`}
-                >
-                  Mission Status Management
-                </h1>
-                <p className={`text-xs ${isDark ? "text-slate-500" : "text-slate-400"}`}>
-                  Define and maintain mission statuses for tracking flight operations
-                </p>
-              </div>
+    <div className={`min-h-screen ${isDark ? 'bg-[#0a0e1a]' : 'bg-[#f4f6f9]'}`}>
+      <div
+        className={`sticky top-0 z-20 backdrop-blur-xl border-b transition-colors ${
+          isDark
+            ? 'bg-[#0a0e1a]/90 border-white/[0.06]'
+            : 'bg-white/80 border-black/[0.06] shadow-[0_1px_2px_rgba(0,0,0,0.04)]'
+        }`}
+      >
+        <div className="mx-auto max-w-[1600px] px-6 py-3.5 flex items-center justify-between">
+          <div className="flex items-center gap-3.5">
+                <div className="w-1 h-6 rounded-full bg-violet-600" />
+            <div>
+              <h1 className={`text-[15px] font-semibold tracking-[-0.01em] ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                Mission Statuses
+              </h1>
+              <p className={`text-[11px] mt-0.5 tracking-wide ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                {statuses.length} total &middot; {activeCount} active &middot; {finalCount} final
+              </p>
             </div>
+          </div>
 
-            <div className="flex items-center gap-2">
-
-              <Button
-                size="sm"
-                onClick={() => setIsDialogOpen(true)}
-                className={`h-8 gap-1.5 text-xs font-semibold transition-all shadow-sm ${isDark
-                    ? "bg-violet-600 hover:bg-violet-500 text-white"
-                    : "bg-violet-600 hover:bg-violet-700 text-white"
-                  }`}
-              >
-                <Plus size={14} />
-                <span>Add Status</span>
-              </Button>
-            </div>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              onClick={() => setIsDialogOpen(true)}
+              className={`h-8 gap-1.5 px-3.5 text-xs font-medium rounded-lg transition-all cursor-pointer bg-violet-600 hover:bg-violet-700`}
+            >
+              <Plus size={13} strokeWidth={2.5} />
+              <span>New Status</span>
+            </Button>
           </div>
         </div>
+      </div>
 
-        <div className={`rounded-md m-4 border overflow-hidden ${isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'}`}>
-          <div className={`px-4 sm:px-6 lg:px-8 py-4 sm:py-5 border-b ${isDark ? 'bg-gray-800/50 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
-            <h2 className={`text-lg sm:text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              Mission Status List
-            </h2>
-            <p className={`text-xs sm:text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-              View and manage existing statuses
-            </p>
+      <div className="mx-auto max-w-[1600px] px-6 py-6">
+        <div
+          className={`rounded-xl border overflow-hidden ${
+            isDark
+              ? 'bg-[#0f1320] border-white/[0.06] shadow-[0_0_0_1px_rgba(255,255,255,0.02)]'
+              : 'bg-white border-gray-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]'
+          }`}
+        >
+          <div className={`px-5 py-4 border-b flex items-center justify-between ${
+            isDark ? 'border-white/[0.06]' : 'border-gray-100'
+          }`}>
+            <div>
+              <h2 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                Status Definitions
+              </h2>
+              <p className={`text-[11px] mt-0.5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                Configure workflow stages for mission tracking
+              </p>
+            </div>
           </div>
-          <div className="p-4 sm:p-6 lg:p-8">
+
+          <div className="p-0">
             <MissionStatusTable
               data={statuses}
               onDelete={handleDeleteStatus}
@@ -185,13 +194,17 @@ export default function MissionStatusPage() {
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className={`sm:max-w-lg ${isDark ? 'bg-gray-900 border-gray-700 text-white' : 'bg-white'}`}>
+        <DialogContent className={`sm:max-w-lg rounded-xl ${
+          isDark
+            ? 'bg-[#0f1320] border-white/[0.08] text-white shadow-[0_25px_60px_rgba(0,0,0,0.5)]'
+            : 'bg-white border-gray-200 shadow-2xl'
+        }`}>
           <DialogHeader>
-            <DialogTitle className={isDark ? 'text-white' : 'text-gray-900'}>
-              Add New Mission Status
+            <DialogTitle className={`text-base font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              Create New Status
             </DialogTitle>
-            <DialogDescription className={isDark ? 'text-gray-400' : 'text-gray-500'}>
-              Fill in the details below to create a new mission status.
+            <DialogDescription className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+              Define a new workflow stage for mission operations.
             </DialogDescription>
           </DialogHeader>
           <MissionStatusForm onSubmit={handleAddStatus} isDark={isDark} />

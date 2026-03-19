@@ -45,6 +45,7 @@ export async function addMissionStatus(ownerId: number, statusData: {
   const { data: existing } = await supabase
     .from('pilot_mission_status')
     .select('status_code')
+    .eq('fk_owner_id', ownerId)
     .eq('status_code', statusData.code)
     .eq('is_active', true)
     .single();
@@ -98,11 +99,11 @@ export async function updateMissionStatus(ownerId: number, statusId: number, sta
   order?: number;
   isFinalStatus?: boolean;
 }) {
-  // Checking conflicts 
   if (statusData.code) {
     const { data: existing } = await supabase
       .from('pilot_mission_status')
       .select('status_id')
+      .eq('fk_owner_id', ownerId)
       .eq('status_code', statusData.code)
       .eq('is_active', true)
       .neq('status_id', statusId)
