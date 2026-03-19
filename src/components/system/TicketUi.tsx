@@ -2,12 +2,6 @@
 
 import { MaintenanceTicket, TicketPriority } from '@/config/types/maintenance';
 import { useEffect } from 'react';
-import {
-  MdCheckCircleOutline,
-  MdConfirmationNumber,
-  MdErrorOutline,
-  MdOutlineWatchLater,
-} from 'react-icons/md';
 
 export const PRIORITY_STYLES: Record<TicketPriority, string> = {
   HIGH: 'bg-red-500/10 text-red-500 border border-red-500/20',
@@ -160,74 +154,38 @@ export function TicketStats({ tickets, isDark }: Props) {
     {
       label: 'Total',
       value: tickets.length,
-      icon: MdConfirmationNumber,
-      accent: isDark ? 'from-slate-700 to-slate-800' : 'from-slate-100 to-slate-50',
-      valueColor: isDark ? 'text-white' : 'text-slate-800',
-      labelColor: isDark ? 'text-slate-400' : 'text-slate-500',
-      iconBg: isDark ? 'bg-slate-700' : 'bg-white',
-      iconColor: isDark ? 'text-slate-300' : 'text-slate-500',
-      border: isDark ? 'border-slate-700' : 'border-slate-200',
+      valueColor: isDark ? 'text-white' : 'text-slate-700',
     },
     {
       label: 'Open',
       value: tickets.filter((t) => t.ticket_status === 'OPEN').length,
-      icon: MdOutlineWatchLater,
-      accent: isDark ? 'from-rose-900/40 to-rose-900/10' : 'from-rose-50 to-white',
       valueColor: isDark ? 'text-rose-400' : 'text-rose-600',
-      labelColor: isDark ? 'text-rose-400/70' : 'text-rose-500/80',
-      iconBg: isDark ? 'bg-rose-900/40' : 'bg-rose-100',
-      iconColor: isDark ? 'text-rose-400' : 'text-rose-500',
-      border: isDark ? 'border-rose-900/30' : 'border-rose-100',
     },
     {
       label: 'Closed',
       value: tickets.filter((t) => t.ticket_status === 'CLOSED').length,
-      icon: MdCheckCircleOutline,
-      accent: isDark ? 'from-emerald-900/40 to-emerald-900/10' : 'from-emerald-50 to-white',
       valueColor: isDark ? 'text-emerald-400' : 'text-emerald-600',
-      labelColor: isDark ? 'text-emerald-400/70' : 'text-emerald-500/80',
-      iconBg: isDark ? 'bg-emerald-900/40' : 'bg-emerald-100',
-      iconColor: isDark ? 'text-emerald-400' : 'text-emerald-500',
-      border: isDark ? 'border-emerald-900/30' : 'border-emerald-100',
     },
     {
       label: 'High Priority',
       value: tickets.filter((t) => t.ticket_priority === 'HIGH' && t.ticket_status === 'OPEN').length,
-      icon: MdErrorOutline,
-      accent: isDark ? 'from-amber-900/40 to-amber-900/10' : 'from-amber-50 to-white',
       valueColor: isDark ? 'text-amber-400' : 'text-amber-600',
-      labelColor: isDark ? 'text-amber-400/70' : 'text-amber-500/80',
-      iconBg: isDark ? 'bg-amber-900/40' : 'bg-amber-100',
-      iconColor: isDark ? 'text-amber-400' : 'text-amber-500',
-      border: isDark ? 'border-amber-900/30' : 'border-amber-100',
     },
   ];
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-      {stats.map((s) => {
-        const Icon = s.icon;
-        return (
-          <div
-            key={s.label}
-            className={`relative overflow-hidden rounded-2xl border bg-gradient-to-br ${s.accent} ${s.border} p-5 shadow-sm transition-all  `}
-          >
-            <div className="flex items-start justify-between">
-              <div>
-                <p className={`text-[10px] font-bold uppercase tracking-widest ${s.labelColor}`}>
-                  {s.label}
-                </p>
-                <p className={`text-4xl font-black mt-2 tabular-nums leading-none ${s.valueColor}`}>
-                  {s.value}
-                </p>
-              </div>
-              <div className={`p-2 rounded-xl shadow-sm ${s.iconBg}`}>
-                <Icon size={20} className={s.iconColor} />
-              </div>
-            </div>
-          </div>
-        );
-      })}
+      {stats.map((s) => (
+        <div
+          key={s.label}
+          className={`rounded-xl border px-4 py-3 ${
+            isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'
+          }`}
+        >
+          <p className={`text-xs mb-0.5 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>{s.label}</p>
+          <p className={`text-2xl font-bold tabular-nums ${s.valueColor}`}>{s.value}</p>
+        </div>
+      ))}
     </div>
   );
 }

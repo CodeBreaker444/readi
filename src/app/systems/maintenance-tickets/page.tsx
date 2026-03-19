@@ -137,7 +137,7 @@ export default function MaintenanceLogbookPage() {
           isDark={isDark}
         />
 
-        <div className="flex-1 flex flex-col min-h-0">
+        <div>
           <TicketTable
             tickets={filtered}
             loading={ticketsLoading}

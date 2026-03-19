@@ -19,9 +19,9 @@ export async function GET(req: NextRequest) {
     }
 
     const validation = getLookupsSchema.safeParse({
-      type:    searchParams.get('type'),
-      tool_id: searchParams.get('tool_id'),    
-      profile: searchParams.get('profile'),   
+      type: searchParams.get('type'),
+      tool_id: searchParams.get('tool_id'),
+      profile: searchParams.get('profile'),
     });
 
     if (!validation.success) {
@@ -33,9 +33,10 @@ export async function GET(req: NextRequest) {
 
     const { type, tool_id, profile } = validation.data;
 
+    const owner_id = session.user.ownerId;
+
     switch (type) {
       case 'drones': {
-        const owner_id = session.user.ownerId;
         if (!owner_id)
           return NextResponse.json({ status: 'ERROR', message: 'Missing owner_id' }, { status: 400 });
 
@@ -52,7 +53,7 @@ export async function GET(req: NextRequest) {
       }
 
       case 'users': {
-        const users = await getUserList(profile ?? undefined);
+        const users = await getUserList(owner_id,profile ?? undefined);
         return NextResponse.json({ status: 'OK', data: users });
       }
 

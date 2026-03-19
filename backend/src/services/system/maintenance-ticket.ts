@@ -349,10 +349,11 @@ export async function getComponentList(toolId: number): Promise<ComponentOption[
   }));
 }
 
-export async function getUserList(profileCode?: string): Promise<UserOption[]> {
+export async function getUserList(ownerId: number, profileCode?: string): Promise<UserOption[]> {
   let query = supabase
     .from('users')
     .select('user_id, first_name, last_name, email, user_role')
+    .eq('fk_owner_id', ownerId)
     .eq('user_active', 'Y');
 
   if (profileCode && profileCode !== 'ALL') {
@@ -371,7 +372,6 @@ export async function getUserList(profileCode?: string): Promise<UserOption[]> {
 }
 
 
-// ─── HELPERS ─────────────────────────────────────────────────────────────────
 
 async function addTicketEvent(
   ticketId: number,
