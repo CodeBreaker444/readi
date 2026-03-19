@@ -2,10 +2,11 @@
 
 import { SessionUser } from '@/lib/auth/server-session';
 import Cookies from 'js-cookie';
-import { Bell, ChevronDown, Clock, LogOut, Moon, Sun, User, UserCircle } from 'lucide-react';
+import { ChevronDown, Clock, LogOut, Moon, Sun, User, UserCircle } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '../lib/supabase/client';
+import NotificationDropdown from './NotificationDropdown';
 import ProfileModal from './ProfileModal';
 
 interface TopBarProps {
@@ -65,16 +66,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
             {isDark ? <Sun size={20} /> : <Moon size={20} />}
           </button>
 
-          <button
-            className={`relative p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-slate-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'
-              }`}
-            aria-label="Notifications"
-          >
-            <Bell size={20} />
-            <span className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
-              3
-            </span>
-          </button>
+          <NotificationDropdown isDark={isDark} />
 
           <div className="relative">
             <button
