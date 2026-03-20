@@ -256,11 +256,12 @@ export const getModelColumns = ({ isDark, onEdit, onDelete }: ModelColumnProps):
 interface ComponentColumnProps {
     isDark: boolean;
     toolCodeMap: Record<number, string>;
+    onView: (row: any) => void;
     onEdit: (id: number) => void;
     onDelete: (id: number, name: string) => void;
 }
 
-export const getComponentColumns = ({ isDark, toolCodeMap, onEdit, onDelete }: ComponentColumnProps): ColumnDef<any>[] => {
+export const getComponentColumns = ({ isDark, toolCodeMap, onView, onEdit, onDelete }: ComponentColumnProps): ColumnDef<any>[] => {
     const text = isDark ? 'text-gray-200' : 'text-black';
     const hd = isDark ? 'text-gray-100' : '';
 
@@ -318,6 +319,11 @@ export const getComponentColumns = ({ isDark, toolCodeMap, onEdit, onDelete }: C
             header: () => <span className={hd}>Actions</span>,
             cell: ({ row }) => (
                 <div className="flex gap-2">
+                    <Button size="sm" variant="outline"
+                        className={isDark ? 'border-gray-700 text-gray-300 hover:bg-gray-800' : ''}
+                        onClick={() => onView(row.original)}>
+                        View
+                    </Button>
                     <Button size="sm" variant="outline"
                         className={isDark ? 'border-gray-700 text-gray-300 hover:bg-gray-800' : ''}
                         onClick={() => onEdit(row.original.tool_component_id)}>

@@ -24,7 +24,7 @@ import {
 
 
 
-export async function getTicketList(owner_id: number): Promise<MaintenanceTicket[]> {
+export async function getTicketList(owner_id: number, tool_id?: number): Promise<MaintenanceTicket[]> {
   let query = supabase
     .from('maintenance_ticket')
     .select(`
@@ -58,6 +58,7 @@ export async function getTicketList(owner_id: number): Promise<MaintenanceTicket
     .order('ticket_id', { ascending: false });
 
   if (owner_id) query = query.eq('fk_owner_id', owner_id);
+  if (tool_id) query = query.eq('fk_tool_id', tool_id);
 
   const { data, error } = await query;
   if (error) throw new Error(`getTicketList: ${error.message}`);
@@ -349,10 +350,11 @@ export async function getComponentList(toolId: number): Promise<ComponentOption[
   }));
 }
 
-export async function getUserList(profileCode?: string): Promise<UserOption[]> {
+export async function getUserList(ownerId: number, profileCode?: string): Promise<UserOption[]> {
   let query = supabase
     .from('users')
     .select('user_id, first_name, last_name, email, user_role')
+    .eq('fk_owner_id', ownerId)
     .eq('user_active', 'Y');
 
   if (profileCode && profileCode !== 'ALL') {
@@ -371,7 +373,6 @@ export async function getUserList(profileCode?: string): Promise<UserOption[]> {
 }
 
 
-// ─── HELPERS ─────────────────────────────────────────────────────────────────
 
 async function addTicketEvent(
   ticketId: number,

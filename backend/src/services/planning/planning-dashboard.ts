@@ -760,10 +760,10 @@ export async function addCommunicationGeneral(params: {
 
 export async function getUsers(params: {
   fk_owner_id: number;
-}): Promise<{ user_id: number; first_name: string; email: string; }[]> {
+}): Promise<{ user_id: number; first_name: string; last_name: string; email: string; user_role: string; }[]> {
   const { data, error } = await supabase
     .from("users")
-    .select("user_id, first_name, last_name ,email")
+    .select("user_id, first_name, last_name, email, user_role")
     .eq("fk_owner_id", params.fk_owner_id)
     .eq("user_active", "Y");
 

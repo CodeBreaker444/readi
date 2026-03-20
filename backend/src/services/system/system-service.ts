@@ -63,10 +63,22 @@ export async function getSystemList(
   let missionData: Record<number, { count: number; time: number; distance: number }> = {};
 
   if (toolIds.length > 0) {
-    const { data: missions } = await supabase
-      .from('pilot_mission')
-      .select('fk_tool_id, flight_duration, distance_flown')
-      .in('fk_tool_id', toolIds);
+    const { data: finalStatuses } = await supabase
+      .from('pilot_mission_status')
+      .select('status_id')
+      .eq('fk_owner_id', ownerId)
+      .eq('is_final_status', true)
+      .eq('is_active', true);
+
+    const finalStatusIds = (finalStatuses || []).map((s) => s.status_id);
+
+    const { data: missions } = finalStatusIds.length > 0
+      ? await supabase
+          .from('pilot_mission')
+          .select('fk_tool_id, flight_duration, distance_flown')
+          .in('fk_tool_id', toolIds)
+          .in('fk_mission_status_id', finalStatusIds)
+      : { data: [] };
 
     (missions || []).forEach((m) => {
       if (!missionData[m.fk_tool_id]) {

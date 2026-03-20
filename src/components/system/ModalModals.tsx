@@ -32,19 +32,22 @@ function ModalFooter({
   confirmLabel,
   confirmClass,
   isDark,
+  loading,
 }: {
   onCancel: () => void;
   onConfirm: () => void;
   confirmLabel: string;
   confirmClass: string;
   isDark?: boolean;
+  loading?: boolean;
 }) {
   return (
     <div className="flex justify-end gap-3 pt-2 mt-4 border-t border-slate-100 dark:border-slate-700">
       <button
         type="button"
         onClick={onCancel}
-        className={`px-4 py-2 text-sm rounded-lg transition ${
+        disabled={loading}
+        className={`px-4 py-2 text-sm rounded-lg transition disabled:opacity-50 ${
           isDark
             ? 'text-slate-300 hover:text-white hover:bg-slate-700'
             : 'text-slate-600 hover:text-slate-800 hover:bg-slate-100'
@@ -55,8 +58,15 @@ function ModalFooter({
       <button
         type="button"
         onClick={onConfirm}
-        className={`px-5 py-2 text-white text-sm bg-violet-600 hover:bg-violet-700 rounded-sm transition ${confirmClass}`}
+        disabled={loading}
+        className={`px-5 py-2 cursor-pointer text-white text-sm bg-violet-600 hover:bg-violet-700 rounded-sm transition disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2 ${confirmClass}`}
       >
+        {loading && (
+          <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+        )}
         {confirmLabel}
       </button>
     </div>
@@ -305,9 +315,11 @@ export function ReportModal({
   onClose: () => void;
   form: ReportForm;
   onFormChange: (updates: Partial<ReportForm>) => void;
-  onSubmit: () => void;
+  onSubmit: (file?: File) => void;
   isDark?: boolean;
 }) {
+  const fileRef = useRef<HTMLInputElement>(null);
+
   return (
     <Modal title="Intervention Report" open={open} onClose={onClose} isDark={isDark}>
       <div className="grid grid-cols-2 gap-4">
@@ -337,6 +349,9 @@ export function ReportModal({
           placeholder="Describe work performed…"
         />
       </Field>
+      <Field label="Attachment (optional)">
+        <input ref={fileRef} type="file" className={inputCls} />
+      </Field>
       <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300 cursor-pointer mb-2">
         <input
           type="checkbox"
@@ -348,7 +363,7 @@ export function ReportModal({
       </label>
       <ModalFooter
         onCancel={onClose}
-        onConfirm={onSubmit}
+        onConfirm={() => onSubmit(fileRef.current?.files?.[0])}
         confirmLabel="Save Report"
         confirmClass="bg-emerald-600 hover:bg-emerald-700"
         isDark={isDark}

@@ -329,9 +329,9 @@ export default function MissionTestLogbookModal({
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                                         <div className="space-y-2">
-                                            <Label className={isDark ? "text-white" : ""}>Pilot in Command</Label>
+                                            <Label className={isDark ? "text-white" : ""}>Pilot in Command <span className="text-red-500">*</span></Label>
                                             <Select value={form.fk_pic_id} onValueChange={(val) => handleFieldChange("fk_pic_id", val)}>
-                                                <SelectTrigger className={`h-11 ${isDark ? "bg-slate-950 border-slate-800" : ""}`}>
+                                                <SelectTrigger className={`h-11 ${errors.fk_pic_id ? "border-red-500" : ""} ${isDark ? "bg-slate-950 border-slate-800" : ""}`}>
                                                     <SelectValue placeholder="Select PiC" />
                                                 </SelectTrigger>
                                                 <SelectContent className={isDark ? "bg-slate-900 border-slate-800 text-white" : ""}>
@@ -345,16 +345,38 @@ export default function MissionTestLogbookModal({
                                                     ))}
                                                 </SelectContent>
                                             </Select>
+                                            {errors.fk_pic_id && <p className="text-xs text-red-500">{errors.fk_pic_id}</p>}
                                         </div>
 
                                         <div className="space-y-2">
-                                            <Label className={isDark ? "text-slate-300" : ""}>Test Code</Label>
+                                            <Label className={isDark ? "text-white" : ""}>Observer <span className="text-red-500">*</span></Label>
+                                            <Select value={form.fk_observer_id} onValueChange={(val) => handleFieldChange("fk_observer_id", val)}>
+                                                <SelectTrigger className={`h-11 ${errors.fk_observer_id ? "border-red-500" : ""} ${isDark ? "bg-slate-950 border-slate-800" : ""}`}>
+                                                    <SelectValue placeholder="Select Observer" />
+                                                </SelectTrigger>
+                                                <SelectContent className={isDark ? "bg-slate-900 border-slate-800 text-white" : ""}>
+                                                    {pilots.map((p) => (
+                                                        <SelectItem key={p.user_id} value={String(p.user_id)}>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className={`h-2 w-2 rounded-full ${p.userActive ? "bg-emerald-500 animate-pulse" : "bg-slate-400"}`} />
+                                                                {p.fullname}
+                                                            </div>
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            {errors.fk_observer_id && <p className="text-xs text-red-500">{errors.fk_observer_id}</p>}
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label className={isDark ? "text-slate-300" : ""}>Test Code <span className="text-red-500">*</span></Label>
                                             <Input
-                                                className={`h-11 font-mono ${isDark ? "bg-slate-950 border-slate-800 text-white" : ""}`}
+                                                className={`h-11 font-mono ${errors.mission_test_code ? "border-red-500" : ""} ${isDark ? "bg-slate-950 border-slate-800 text-white" : ""}`}
                                                 value={form.mission_test_code}
                                                 onChange={(e) => handleFieldChange("mission_test_code", e.target.value)}
                                                 placeholder="TST-001"
                                             />
+                                            {errors.mission_test_code && <p className="text-xs text-red-500">{errors.mission_test_code}</p>}
                                         </div>
 
                                         <div className="space-y-2">
@@ -369,8 +391,15 @@ export default function MissionTestLogbookModal({
                                         </div>
 
                                         <div className="space-y-2">
-                                            <Label className={isDark ? "text-slate-300" : ""}>End Date</Label>
-                                            <Input type="date" className={`h-11 ${isDark ? "bg-slate-950 border-slate-800 text-white" : ""}`} value={form.mission_test_date_end} onChange={(e) => handleFieldChange("mission_test_date_end", e.target.value)} />
+                                            <Label className={isDark ? "text-slate-300" : ""}>Start Date <span className="text-red-500">*</span></Label>
+                                            <Input type="date" className={`h-11 ${errors.mission_test_date_start ? "border-red-500" : ""} ${isDark ? "bg-slate-950 border-slate-800 text-white" : ""}`} value={form.mission_test_date_start} onChange={(e) => handleFieldChange("mission_test_date_start", e.target.value)} />
+                                            {errors.mission_test_date_start && <p className="text-xs text-red-500">{errors.mission_test_date_start}</p>}
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label className={isDark ? "text-slate-300" : ""}>End Date <span className="text-red-500">*</span></Label>
+                                            <Input type="date" className={`h-11 ${errors.mission_test_date_end ? "border-red-500" : ""} ${isDark ? "bg-slate-950 border-slate-800 text-white" : ""}`} value={form.mission_test_date_end} onChange={(e) => handleFieldChange("mission_test_date_end", e.target.value)} />
+                                            {errors.mission_test_date_end && <p className="text-xs text-red-500">{errors.mission_test_date_end}</p>}
                                         </div>
 
                                         <div className="space-y-2 lg:col-span-2">
@@ -386,18 +415,18 @@ export default function MissionTestLogbookModal({
                                     </div>
                                 </section>
 
-                                <div className={`rounded-xl border shadow-sm overflow-hidden ${isDark ? "bg-slate-900/50 border-slate-800" : "bg-card"}`}>
+                             <div className={`rounded-xl border shadow-sm overflow-hidden ${isDark ? "bg-slate-900/50 border-slate-800" : "bg-card"}`}>
                                     <div className={`bg-muted/30 px-6 py-4 border-b ${isDark ? "bg-slate-950/50 border-slate-800" : ""}`}>
                                         <h4 className="font-semibold text-muted-foreground">Historical Test Logs</h4>
                                     </div>
                                     <Table>
                                         <TableHeader className={isDark ? "bg-slate-950/30 text-white" : "bg-muted/10"}>
                                             <TableRow className={isDark ? "border-slate-800" : ""}>
-                                                <TableHead className={`${isDark ? "border-slate-800 text-white" : ""}  `}>Test Code</TableHead>
-                                                <TableHead className={`${isDark ? "border-slate-800 text-white" : ""}  `}>Staff (PiC / Obs)</TableHead>
-                                                <TableHead className={`${isDark ? "border-slate-800 text-white" : ""}  `}>Duration</TableHead>
-                                                <TableHead className={`${isDark ? "border-slate-800 text-white" : ""}  `}>Result</TableHead>
-                                                <TableHead className={`${isDark ? "border-slate-800 text-white" : ""}  `}>Actions</TableHead>
+                                                <TableHead className={`w-[15%] ${isDark ? "border-slate-800 text-white" : ""}`}>Test Code</TableHead>
+                                                <TableHead className={`w-[25%] ${isDark ? "border-slate-800 text-white" : ""}`}>Staff (PiC / Obs)</TableHead>
+                                                <TableHead className={`w-[30%] text-center ${isDark ? "border-slate-800 text-white" : ""}`}>Duration</TableHead>
+                                                <TableHead className={`w-[15%] ${isDark ? "border-slate-800 text-white" : ""}`}>Result</TableHead>
+                                                <TableHead className={`w-[15%] text-right ${isDark ? "border-slate-800 text-white" : ""}`}>Actions</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>

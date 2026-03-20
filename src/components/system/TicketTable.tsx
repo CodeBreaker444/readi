@@ -345,68 +345,64 @@ export function TicketTable({
   }`;
 
   return (
-    <div className="flex flex-col h-full">
-      <div
-        className={`flex-1 rounded-xl border overflow-hidden ${
-          isDark
-            ? "bg-slate-800/80 border-slate-700/60"
-            : "bg-white border-slate-200"
-        }`}
-      >
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr
-                className={`border-b ${
-                  isDark
-                    ? "bg-slate-800 border-slate-700/60"
-                    : "bg-slate-50 border-slate-200"
-                }`}
-              >
-                {table.getFlatHeaders().map((header) => (
-                  <th key={header.id} className={thCls}>
-                    {flexRender(
-                      header.column.columnDef.header,
-                      header.getContext()
-                    )}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <SkeletonRows cols={columns.length} isDark={isDark} />
-              ) : table.getRowModel().rows.length === 0 ? (
-                <EmptyRow cols={columns.length} isDark={isDark} />
-              ) : (
-                table.getRowModel().rows.map((row) => (
-                  <tr
-                    key={row.id}
-                    className={`border-t transition-colors ${
-                      isDark
-                        ? "border-slate-700/40 hover:bg-slate-700/30"
-                        : "border-slate-100 hover:bg-slate-50/80"
-                    }`}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <td key={cell.id} className="px-3 py-3">
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </td>
-                    ))}
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+    <div
+      className={`rounded-xl border overflow-hidden ${
+        isDark ? "bg-slate-800 border-slate-700" : "bg-white border-slate-200"
+      }`}
+    >
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr
+              className={`border-b ${
+                isDark
+                  ? "bg-slate-800 border-slate-700"
+                  : "bg-slate-50 border-slate-200"
+              }`}
+            >
+              {table.getFlatHeaders().map((header) => (
+                <th key={header.id} className={thCls}>
+                  {flexRender(
+                    header.column.columnDef.header,
+                    header.getContext()
+                  )}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <SkeletonRows cols={columns.length} isDark={isDark} />
+            ) : table.getRowModel().rows.length === 0 ? (
+              <EmptyRow cols={columns.length} isDark={isDark} />
+            ) : (
+              table.getRowModel().rows.map((row) => (
+                <tr
+                  key={row.id}
+                  className={`border-t transition-colors ${
+                    isDark
+                      ? "border-slate-700 hover:bg-slate-700/40"
+                      : "border-slate-100 hover:bg-slate-50/80"
+                  }`}
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <td key={cell.id} className="px-3 py-3">
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
 
       <div
         className={`border-t px-2 ${
-          isDark ? "border-slate-700/60" : "border-slate-200"
+          isDark ? "border-slate-700" : "border-slate-200"
         }`}
       >
         <TablePagination table={table} />

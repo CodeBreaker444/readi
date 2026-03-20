@@ -252,9 +252,9 @@ export default function EditModelModal({ open, toolId, onClose, onSuccess, initi
     }));
   };
 
-  const handleCycleInput = (field: string, value: string, max: number) => {
+  const handleCycleInput = (field: string, value: string ) => {
     const num = Number(value);
-    if (value === '' || (num >= 0 && num <= max)) handleChange(field, value);
+    if (value === '' || num >= 0 ) handleChange(field, value);
   };
 
   const showHours   = formData.maintenance_cycle === 'HOURS'   || formData.maintenance_cycle === 'MIXED';
@@ -533,23 +533,23 @@ export default function EditModelModal({ open, toolId, onClose, onSuccess, initi
                     )}
                     {showHours && (
                       <div className="col-span-2">
-                        <Label className={labelCls}>Hours Limit<span className="text-xs text-muted-foreground">(0–24)</span></Label>
-                        <Input type="number" min={0} max={24} className={inputCls} value={formData.maintenance_cycle_hour}
-                          onChange={e => handleCycleInput('maintenance_cycle_hour', e.target.value, 24)} placeholder="0–24" />
+                        <Label className={labelCls}>Hours Limit </Label>
+                        <Input type="number" min={0}   className={inputCls} value={formData.maintenance_cycle_hour}
+                          onChange={e => handleCycleInput('maintenance_cycle_hour', e.target.value)}   />
                       </div>
                     )}
                     {showDays && (
                       <div className="col-span-2">
-                        <Label className={labelCls}>Days Limit<span className="text-xs text-muted-foreground">(0–30)</span></Label>
-                        <Input type="number" min={0} max={30} className={inputCls} value={formData.maintenance_cycle_day}
-                          onChange={e => handleCycleInput('maintenance_cycle_day', e.target.value, 30)} placeholder="0–30" />
+                        <Label className={labelCls}>Days Limit </Label>
+                        <Input type="number" min={0}   className={inputCls} value={formData.maintenance_cycle_day}
+                          onChange={e => handleCycleInput('maintenance_cycle_day', e.target.value)}  />
                       </div>
                     )}
                     {showFlights && (
                       <div className="col-span-2">
                         <Label className={labelCls}>Flights Limit<span className="text-xs text-muted-foreground">(0–10)</span></Label>
-                        <Input type="number" min={0} max={10} className={inputCls} value={formData.maintenance_cycle_flight}
-                          onChange={e => handleCycleInput('maintenance_cycle_flight', e.target.value, 10)} placeholder="0–10" />
+                        <Input type="number" min={0}   className={inputCls} value={formData.maintenance_cycle_flight}
+                          onChange={e => handleCycleInput('maintenance_cycle_flight', e.target.value)}  />
                       </div>
                     )}
                   </div>

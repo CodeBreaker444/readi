@@ -137,7 +137,7 @@ export default function MaintenanceLogbookPage() {
           isDark={isDark}
         />
 
-        <div className="flex-1 flex flex-col min-h-0">
+        <div>
           <TicketTable
             tickets={filtered}
             loading={ticketsLoading}
@@ -189,7 +189,7 @@ export default function MaintenanceLogbookPage() {
         onClose={() => closeModal('report')}
         form={report}
         onFormChange={(u) => setReport((p) => ({ ...p, ...u }))}
-        onSubmit={handleAddReport}
+        onSubmit={(file) => handleAddReport(file)}
         isDark={isDark}
       />
 

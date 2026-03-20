@@ -8,10 +8,9 @@ import EditComponentModal from '@/components/system/EditComponentModal';
 import EditModelModal from '@/components/system/EditModelModal';
 import EditSystemModal from '@/components/system/EditSystemModal';
 import { FilesDownloadModal, SystemFile } from '@/components/system/FilesDownloadModal';
-import MaintenanceTable from '@/components/system/MaintenanceTable';
+import ViewComponentModal from '@/components/system/ViewComponentModal';
 import ViewToolModal from '@/components/system/ViewToolModal';
 import { DroneToolData, getComponentColumns, getModelColumns, systemCreateColumns } from '@/components/tables/SystemColumn';
-import { MaintenanceDrone } from '@/config/types/maintenance';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -46,13 +45,15 @@ export default function DroneToolPage() {
     const [toolData, setToolData] = useState<DroneToolData[]>([]);
     const [activeTab, setActiveTab] = useState<ActiveTab>('system');
 
-    const [showAddTool, setShowAddTool] = useState(false);
-    const [showAddModel, setShowAddModel] = useState(false);
-    const [showAddComponent, setShowAddComponent] = useState(false);
-    const [showViewTool, setShowViewTool] = useState(false);
-    const [showEditSystem, setShowEditSystem] = useState(false);
-    const [showEditModel, setShowEditModel] = useState(false);
-    const [showEditComponent, setShowEditComponent] = useState(false);
+    const [showAddTool, setShowAddTool] = useState<boolean>(false);
+    const [showAddModel, setShowAddModel] = useState<boolean>(false);
+    const [showAddComponent, setShowAddComponent] = useState<boolean>(false);
+    const [showViewTool, setShowViewTool] = useState<boolean>(false);
+    const [showViewComponent, setShowViewComponent] = useState<boolean>(false);
+    const [selectedComponent, setSelectedComponent] = useState<any | null>(null);
+    const [showEditSystem, setShowEditSystem] = useState<boolean>(false);
+    const [showEditModel, setShowEditModel] = useState<boolean>(false);
+    const [showEditComponent, setShowEditComponent] = useState<boolean>(false);
     const [selectedToolId, setSelectedToolId] = useState<number | null>(null);
     const [directModelId, setDirectModelId] = useState<number | null>(null);
     const [directComponentId, setDirectComponentId] = useState<number | null>(null);
@@ -63,8 +64,6 @@ export default function DroneToolPage() {
     const [componentData, setComponentData] = useState<any[]>([]);
     const [loadingModels, setLoadingModels] = useState(false);
     const [loadingComponents, setLoadingComponents] = useState(false);
-    const [maintenanceData, setMaintenanceData] = useState<MaintenanceDrone[]>([]);
-    const [loadingMaintenance, setLoadingMaintenance] = useState(false);
 
     const [deleteConfirm, setDeleteConfirm] = useState<DeleteConfirm | null>(null);
     const [deleting, setDeleting] = useState(false);
@@ -84,7 +83,6 @@ export default function DroneToolPage() {
 
     useEffect(() => {
         if (activeTab === 'component') fetchAllComponents();
-        if (activeTab === 'maintenance') fetchMaintenanceData();
     }, [activeTab]);
 
     const fetchToolData = async () => {
@@ -126,24 +124,7 @@ export default function DroneToolPage() {
         }
     };
 
-    const fetchMaintenanceData = async () => {
-        setLoadingMaintenance(true);
-        try {
-            const response = await fetch('/api/system/maintenance/dashboard', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ threshold_alert: 80 }),
-            });
-            const result = await response.json();
-            if (result.code === 1) setMaintenanceData(result.data);
-            else toast.error(result.message || 'Failed to fetch maintenance data');
-        } catch {
-            toast.error('Error fetching maintenance data');
-        } finally {
-            setLoadingMaintenance(false);
-        }
-    };
-
+   
     const fetchAllComponents = async () => {
         setLoadingComponents(true);
         try {
@@ -175,6 +156,7 @@ export default function DroneToolPage() {
     };
 
     const handleView = (toolId: number) => { setSelectedToolId(toolId); setShowViewTool(true); };
+    const handleViewComponent = (row: any) => { setSelectedComponent(row); setShowViewComponent(true); };
     const handleEditSystem = (tool: DroneToolData) => { setSelectedToolId(tool.tool_id); setShowEditSystem(true); };
 
     const handleDelete = async (toolId: number) => {
@@ -337,11 +319,12 @@ const modelColumns = useMemo(
     );
 
     const componentColumns = useMemo(
-        () => getComponentColumns({ 
-            isDark, 
-            toolCodeMap, 
-            onEdit: handleEditComponentDirect, 
-            onDelete: handleDeleteComponent 
+        () => getComponentColumns({
+            isDark,
+            toolCodeMap,
+            onView: handleViewComponent,
+            onEdit: handleEditComponentDirect,
+            onDelete: handleDeleteComponent
         }),
         [isDark, toolCodeMap]
     );
@@ -350,7 +333,6 @@ const modelColumns = useMemo(
         { key: 'system', label: 'System' },
         { key: 'model', label: 'Model' },
         { key: 'component', label: 'Components' },
-        { key: 'maintenance', label: 'Maintenance History' },
     ];
 
     return (
@@ -379,7 +361,7 @@ const modelColumns = useMemo(
                         <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => { fetchToolData(); fetchModels(); if (activeTab === 'component') fetchAllComponents(); if (activeTab === 'maintenance') fetchMaintenanceData(); }}
+                            onClick={() => { fetchToolData(); fetchModels(); if (activeTab === 'component') fetchAllComponents(); }}
                             disabled={loading}
                             className={`h-8 gap-1.5 text-xs transition-all ${
                                 isDark
@@ -440,11 +422,6 @@ const modelColumns = useMemo(
                         {activeTab === 'component' && (
                             <DataTable columns={componentColumns} data={componentData} loading={loadingComponents} />
                         )}
-                        {activeTab === 'maintenance' && (
-                            loadingMaintenance
-                                ? <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-slate-400" /></div>
-                                : <MaintenanceTable data={maintenanceData} />
-                        )}
                     </CardContent>
                 </Card>
             </div>
@@ -469,6 +446,13 @@ const modelColumns = useMemo(
                 <ViewToolModal open={showViewTool} toolId={selectedToolId}
                     onClose={() => { setShowViewTool(false); setSelectedToolId(null); }} />
             )}
+
+            <ViewComponentModal
+                open={showViewComponent}
+                component={selectedComponent}
+                systemCode={selectedComponent ? toolCodeMap[selectedComponent.fk_tool_id] : undefined}
+                onClose={() => { setShowViewComponent(false); setSelectedComponent(null); }}
+            />
 
             {showEditSystem && (
                 <EditSystemModal open={showEditSystem} toolId={selectedToolId}

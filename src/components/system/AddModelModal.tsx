@@ -91,9 +91,9 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
     }));
   };
 
-  const handleCycleInput = (field: string, value: string, max: number) => {
+  const handleCycleInput = (field: string, value: string ) => {
     const num = Number(value);
-    if (value === '' || (num >= 0 && num <= max)) {
+    if (value === '' || num >= 0  ) {
       handleChange(field, value);
     }
   };
@@ -247,7 +247,6 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
             </div>
           </div>
 
-          {/* Operating Conditions */}
           <div>
             <p className="text-sm font-medium text-muted-foreground mb-2">Operating Conditions</p>
             <div className="grid grid-cols-12 gap-3">
@@ -270,7 +269,6 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
             </div>
           </div>
 
-          {/* Performance */}
           <div>
             <p className="text-sm font-medium text-muted-foreground mb-2">Performance</p>
             <div className="grid grid-cols-12 gap-3">
@@ -293,7 +291,6 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
             </div>
           </div>
 
-          {/* Maintenance */}
           <div>
             <p className="text-sm font-medium text-muted-foreground mb-2">Maintenance</p>
             <div className="grid grid-cols-12 gap-3 items-end">
@@ -334,15 +331,13 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
               {showHours && (
                 <div className="col-span-2">
                   <Label className="pb-2">
-                    Hours Limit<span className="text-xs text-muted-foreground">(0–24)</span>
+                    Hours Limit 
                   </Label>
                   <Input
                     type="number"
                     min={0}
-                    max={24}
                     value={formData.maintenance_cycle_hour}
-                    onChange={(e) => handleCycleInput('maintenance_cycle_hour', e.target.value, 24)}
-                    placeholder="0–24"
+                    onChange={(e) => handleCycleInput('maintenance_cycle_hour', e.target.value )}
                   />
                 </div>
               )}
@@ -350,15 +345,13 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
               {showDays && (
                 <div className="col-span-2">
                   <Label className="pb-2">
-                    Days Limit<span className="text-xs text-muted-foreground">(0–30)</span>
+                    Days Limit 
                   </Label>
                   <Input
                     type="number"
                     min={0}
-                    max={30}
                     value={formData.maintenance_cycle_day}
-                    onChange={(e) => handleCycleInput('maintenance_cycle_day', e.target.value, 30)}
-                    placeholder="0–30"
+                    onChange={(e) => handleCycleInput('maintenance_cycle_day', e.target.value )}
                   />
                 </div>
               )}
@@ -366,15 +359,13 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
               {showFlights && (
                 <div className="col-span-2">
                   <Label className="pb-2">
-                    Flights Limit<span className="text-xs text-muted-foreground">(0–10)</span>
+                    Flights Limit 
                   </Label>
                   <Input
                     type="number"
                     min={0}
-                    max={10}
                     value={formData.maintenance_cycle_flight}
-                    onChange={(e) => handleCycleInput('maintenance_cycle_flight', e.target.value, 10)}
-                    placeholder="0–10"
+                    onChange={(e) => handleCycleInput('maintenance_cycle_flight', e.target.value)}
                   />
                 </div>
               )}
@@ -382,7 +373,6 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
             </div>
           </div>
 
-          {/* Guarantee & Notes */}
           <div>
             <p className="text-sm font-medium text-muted-foreground mb-2">Guarantee & Notes</p>
             <div className="grid grid-cols-12 gap-3">

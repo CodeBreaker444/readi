@@ -208,31 +208,18 @@ export function MaintenanceCycleModal({
     field: "add_flights" | "add_hours",
     value: string
   ) => {
-    const maxMap = { add_flights: 10, add_hours: 24 };
     const num = value === "" ? 0 : Number(value);
-    if (isNaN(num) || num < 0 || num > maxMap[field]) return;
+    if (isNaN(num) || num < 0) return;
 
     const comp = systemData?.components.find((c) => c.component_id === compId);
-    if (comp && num > 0) {
+    if (comp) {
       if (field === "add_flights" && comp.limit_flight > 0) {
-        const newTotal = comp.current_flights + num;
-        if (newTotal > comp.limit_flight) {
-          toast.warning(
-            `Adding ${num} flight${num !== 1 ? "s" : ""} would exceed the limit. Please enter ${comp.limit_flight - comp.current_flights} or less.`,
-            { id: `limit-flights-${compId}` }
-          );
-          return;
-        }
+        const max = comp.limit_flight - comp.current_flights;
+        if (num > max) return;
       }
       if (field === "add_hours" && comp.limit_hour > 0) {
-        const newTotal = comp.current_hours + num;
-        if (newTotal > comp.limit_hour) {
-          toast.warning(
-            `Adding ${num} hour${num !== 1 ? "s" : ""} would exceed the limit. Please enter ${comp.limit_hour - comp.current_hours} or less.`,
-            { id: `limit-hours-${compId}` }
-          );
-          return;
-        }
+        const max = comp.limit_hour - comp.current_hours;
+        if (num > max) return;
       }
     }
 
@@ -518,12 +505,12 @@ export function MaintenanceCycleModal({
                                   isDark ? "text-slate-400" : "text-slate-500"
                                 )}
                               >
-                                Flights <span className="opacity-50">(0–10)</span>
+                                Flights
                               </label>
                               <Input
                                 type="number"
                                 min={0}
-                                max={10}
+                                max={Math.max(0, comp.limit_flight - comp.current_flights)}
                                 value={inp?.add_flights || ""}
                                 onChange={(e) =>
                                   updateInput(comp.component_id, "add_flights", e.target.value)
@@ -556,12 +543,12 @@ export function MaintenanceCycleModal({
                                   isDark ? "text-slate-400" : "text-slate-500"
                                 )}
                               >
-                                Hours <span className="opacity-50">(0–24)</span>
+                                Hours
                               </label>
                               <Input
                                 type="number"
                                 min={0}
-                                max={24}
+                                max={Math.max(0, comp.limit_hour - comp.current_hours)}
                                 step={0.5}
                                 value={inp?.add_hours || ""}
                                 onChange={(e) =>
