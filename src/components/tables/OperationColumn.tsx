@@ -22,14 +22,18 @@ import {
   XCircle,
 } from 'lucide-react';
 
-
-const STATUS_CONFIG: Record<
+const STATUS_CONFIG: Record<  
   string,
   { label: string; color: string; icon: React.ReactNode }
 > = {
   PLANNED: {
     label: 'Planned',
     color: 'bg-blue-50 text-blue-700 border-blue-200',
+    icon: <Clock className="h-3 w-3" />,
+  },
+  SCHEDULED: {
+    label: 'Scheduled',
+    color: 'bg-amber-50 text-amber-700 border-amber-200',
     icon: <Clock className="h-3 w-3" />,
   },
   IN_PROGRESS: {

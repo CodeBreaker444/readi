@@ -125,6 +125,7 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
       status_name: input.status_name,
       fk_mission_status_id: STATUS_NAME_TO_ID[input.status_name] ?? 1,
       scheduled_start: input.scheduled_start || null,
+      actual_end: input.actual_end ?? null,
       location: input.location ?? null,
       notes: input.notes ?? null,
       fk_owner_id: ownerId,
@@ -399,6 +400,74 @@ export async function createRecurringOperations(
 
   if (error) throw new Error(`Failed to create recurring operations: ${error.message}`);
   return { count: rows.length, first_id: data[0].pilot_mission_id };
+}
+
+export async function batchSetPilot(
+  missionIds: number[],
+  pilotId: number,
+  ownerId: number
+): Promise<{ updated: number[]; skipped: number[] }> {
+  const { data: missions, error } = await supabase
+    .from('pilot_mission')
+    .select('pilot_mission_id, status_name')
+    .in('pilot_mission_id', missionIds)
+    .eq('fk_owner_id', ownerId);
+
+  if (error) throw new Error(`Failed to fetch missions: ${error.message}`);
+
+  const planned = (missions ?? []).filter((m: any) => m.status_name === 'PLANNED');
+  const skipped = (missions ?? [])
+    .filter((m: any) => m.status_name !== 'PLANNED')
+    .map((m: any) => m.pilot_mission_id);
+
+  if (planned.length === 0) return { updated: [], skipped };
+
+  const ids = planned.map((m: any) => m.pilot_mission_id);
+  const { error: updateError } = await supabase
+    .from('pilot_mission')
+    .update({ fk_pilot_user_id: pilotId, updated_at: new Date().toISOString() })
+    .in('pilot_mission_id', ids);
+
+  if (updateError) throw new Error(`Failed to set pilot: ${updateError.message}`);
+
+  return { updated: ids, skipped };
+}
+
+export async function batchAutofill(
+  missionIds: number[],
+  ownerId: number
+): Promise<{ processed: number[]; skipped: number[] }> {
+  const { data: missions, error } = await supabase
+    .from('pilot_mission')
+    .select('pilot_mission_id, status_name, fk_pilot_user_id, actual_end')
+    .in('pilot_mission_id', missionIds)
+    .eq('fk_owner_id', ownerId);
+
+  if (error) throw new Error(`Failed to fetch missions: ${error.message}`);
+
+  //COMPLETED and pilot assigned  
+  const eligible = (missions ?? []).filter(
+    (m: any) => m.status_name === 'COMPLETED' && m.fk_pilot_user_id
+  );
+  const skipped = (missions ?? [])
+    .filter((m: any) => m.status_name !== 'COMPLETED' || !m.fk_pilot_user_id)
+    .map((m: any) => m.pilot_mission_id);
+
+  if (eligible.length === 0) return { processed: [], skipped };
+
+  const now = new Date().toISOString();
+  const ids = eligible.map((m: any) => m.pilot_mission_id);
+
+  // Filling actual_end for missions that completed but have no end timestamp
+  const { error: updateError } = await supabase
+    .from('pilot_mission')
+    .update({ actual_end: now, updated_at: now })
+    .in('pilot_mission_id', ids)
+    .is('actual_end', null);
+
+  if (updateError) throw new Error(`Failed to autofill missions: ${updateError.message}`);
+
+  return { processed: ids, skipped };
 }
 
 export async function getPilotOptions(ownerId: number) {

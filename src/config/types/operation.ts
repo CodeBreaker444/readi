@@ -42,6 +42,7 @@ export type CreateOperationSchema = {
   mission_description?: string | null;
   status_name: string;
   scheduled_start?: string | null;
+  actual_end?: string | null;
   location?: string | null;
   notes?: string | null;
   fk_pilot_user_id: number;

@@ -220,6 +220,7 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
                     location: form.location || undefined,
                     notes: form.notes || undefined,
                     scheduled_start: toIsoString(form.scheduled_start),
+                    actual_end: toIsoString(form.scheduled_end) ?? null,
                     fk_pilot_user_id: form.fk_pilot_user_id ? parseInt(form.fk_pilot_user_id) : undefined,
                     fk_tool_id: form.fk_tool_id ? parseInt(form.fk_tool_id) : undefined,
                     fk_mission_type_id: form.fk_mission_type_id ? parseInt(form.fk_mission_type_id) : undefined,
@@ -375,6 +376,14 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
                                     value={form.scheduled_start}
                                     onChange={(e) => setForm((f) => ({ ...f, scheduled_start: e.target.value }))} />
                             </div>
+                            {!form.is_recurring && (
+                                <div className="grid gap-1.5">
+                                    <Label htmlFor="scheduled_end">Scheduled End</Label>
+                                    <Input id="scheduled_end" type="datetime-local"
+                                        value={form.scheduled_end}
+                                        onChange={(e) => setForm((f) => ({ ...f, scheduled_end: e.target.value }))} />
+                                </div>
+                            )}
                             <div className="grid gap-1.5">
                                 <Label>Status</Label>
                                 <Select value={form.status_name}
