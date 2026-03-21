@@ -2,6 +2,7 @@
 
 import {
   Activity,
+  AlertTriangle,
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
@@ -31,6 +32,7 @@ import {
   DeleteDialog,
   OperationDialog,
 } from '@/components/operation/OperationDialogs';
+import { ReportIssueModal } from '@/components/operation/ReportIssueModal';
 import { operationColumns, OperationTableMeta } from '@/components/tables/OperationColumn';
 import { TablePagination } from '@/components/tables/Pagination';
 import { Badge } from '@/components/ui/badge';
@@ -150,7 +152,7 @@ function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: strin
 export default function OperationsPage() {
   const { isDark } = useTheme();
   const [operations, setOperations] = useState<Operation[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
   const [createOpen, setCreateOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [commOpen, setCommOpen] = useState(false);
@@ -158,7 +160,8 @@ export default function OperationsPage() {
   const [deleteTarget, setDeleteTarget] = useState<Operation | null>(null);
   const [attachTarget, setAttachTarget] = useState<Operation | null>(null);
   const [detailTarget, setDetailTarget] = useState<Operation | null>(null);
-  const [maintenanceOpen, setMaintenanceOpen] = useState(false);
+  const [maintenanceOpen, setMaintenanceOpen] = useState<boolean>(false);
+  const [reportIssueOpen, setReportIssueOpen] = useState<boolean>(false);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [batchDeleting, setBatchDeleting] = useState(false);
   const [batchUpdating, setBatchUpdating] = useState(false);
@@ -652,10 +655,6 @@ export default function OperationsPage() {
                       <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> Scheduled</p>
                       <p className="text-sm font-medium">{formatDateTime(detailTarget.scheduled_start)}</p>
                     </div>
-                    <div className="rounded-lg border bg-muted/30 p-3 space-y-1">
-                      <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> Actual Start</p>
-                      <p className="text-sm font-medium">{formatDateTime(detailTarget.actual_start)}</p>
-                    </div>
                     {detailTarget.actual_end && (
                       <div className="rounded-lg border bg-muted/30 p-3 space-y-1">
                         <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> End Time</p>
@@ -730,30 +729,42 @@ export default function OperationsPage() {
                   </>
                 )}
 
-                {isCompleted && detailTarget.fk_tool_id && (
+                {detailTarget.fk_tool_id && (
                   <>
                     <div className="h-px bg-border" />
                     <section className="space-y-3">
                       <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                         <Wrench className="h-3.5 w-3.5" /> Maintenance
                       </h3>
-                      <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/20 p-3 flex items-start gap-3">
-                        <Ban className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
-                            Update maintenance cycles
-                          </p>
-                          <p className="text-xs text-amber-600 dark:text-amber-500 mt-0.5">
-                            Log flights &amp; hours for <span className="font-semibold">{detailTarget.tool_code}</span> after this mission.
-                          </p>
-                        </div>
-                      </div>
+                      {isCompleted && (
+                        <>
+                          <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/20 p-3 flex items-start gap-3">
+                            <Ban className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
+                                Update maintenance cycles
+                              </p>
+                              <p className="text-xs text-amber-600 dark:text-amber-500 mt-0.5">
+                                Log flights &amp; hours for <span className="font-semibold">{detailTarget.tool_code}</span> after this mission.
+                              </p>
+                            </div>
+                          </div>
+                          <Button
+                            className="w-full gap-2 bg-violet-600 hover:bg-violet-500 text-white"
+                            onClick={() => setMaintenanceOpen(true)}
+                          >
+                            <Wrench className="h-4 w-4" />
+                            Update Maintenance
+                          </Button>
+                        </>
+                      )}
                       <Button
-                        className="w-full gap-2 bg-violet-600 hover:bg-violet-500 text-white"
-                        onClick={() => setMaintenanceOpen(true)}
+                        variant="outline"
+                        className="w-full gap-2 border-red-200 text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/20"
+                        onClick={() => setReportIssueOpen(true)}
                       >
-                        <Wrench className="h-4 w-4" />
-                        Update Maintenance
+                        <AlertTriangle className="h-4 w-4" />
+                        Report Issue
                       </Button>
                     </section>
                   </>
@@ -769,6 +780,17 @@ export default function OperationsPage() {
           open={maintenanceOpen}
           onClose={() => setMaintenanceOpen(false)}
           toolId={detailTarget.fk_tool_id}
+          missionId={detailTarget.pilot_mission_id}
+          isDark={isDark}
+        />
+      )}
+
+      {detailTarget?.fk_tool_id && (
+        <ReportIssueModal
+          open={reportIssueOpen}
+          onClose={() => setReportIssueOpen(false)}
+          toolId={detailTarget.fk_tool_id}
+          toolCode={detailTarget.tool_code ?? ''}
           missionId={detailTarget.pilot_mission_id}
           isDark={isDark}
         />

@@ -99,6 +99,7 @@ export async function createTicket(payload: CreateTicketPayload): Promise<number
   const rows = targets.map((componentId) => ({
     fk_owner_id:         payload.fk_owner_id,
     fk_tool_id:          payload.fk_tool_id,
+    fk_component_id:     componentId ?? null,
     ticket_title:        componentId
       ? `Component Maintenance - #${componentId}`
       : `Maintenance - System #${payload.fk_tool_id}`,
@@ -130,7 +131,7 @@ export async function createTicket(payload: CreateTicketPayload): Promise<number
 export async function closeTicket(payload: CloseTicketPayload): Promise<void> {
   const { data: ticket, error: fetchErr } = await supabase
     .from('maintenance_ticket')
-    .select('ticket_id, fk_tool_id, ticket_status')
+    .select('ticket_id, fk_tool_id, fk_component_id, ticket_status')
     .eq('ticket_id', payload.ticket_id)
     .single();
 
@@ -165,7 +166,7 @@ export async function closeTicket(payload: CloseTicketPayload): Promise<void> {
 
   if (maintErr) throw new Error(`closeTicket tool_maintenance insert: ${maintErr.message}`);
 
-  await resetComponentCounters(ticket.fk_tool_id, now.toISOString());
+  await resetComponentCounters(ticket.fk_tool_id, now.toISOString(), ticket.fk_component_id ?? null);
 
   await addTicketEvent(
     payload.ticket_id,
@@ -391,12 +392,18 @@ async function addTicketEvent(
  * Reset component maintenance counters to 0 after a maintenance is completed.
  * Called when a ticket is closed.
  */
-async function resetComponentCounters(toolId: number, resetAt: string): Promise<void> {
-  const { data: components } = await supabase
+async function resetComponentCounters(toolId: number, resetAt: string, componentId?: number | null): Promise<void> {
+  let query = supabase
     .from('tool_component')
     .select('component_id, maintenance_cycle')
     .eq('fk_tool_id', toolId)
     .eq('component_active', 'Y');
+
+  if (componentId) {
+    query = query.eq('component_id', componentId);
+  }
+
+  const { data: components } = await query;
 
   if (!components || components.length === 0) return;
 
