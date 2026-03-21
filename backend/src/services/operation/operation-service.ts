@@ -333,15 +333,6 @@ export async function createRecurringOperations(
   const daysSet = new Set(input.days_of_week.map(Number));
   let cursorDate = new Date(Date.UTC(sYear, sMonth - 1, sDay));
 
-  // console.log('[createRecurringOperations] input:', {
-  //   scheduled_start: input.scheduled_start,
-  //   recur_until: input.recur_until,
-  //   days_of_week: input.days_of_week,
-  //   daysSet: [...daysSet],
-  //   cursorDate: cursorDate.toISOString(),
-  //   untilDate: untilDate.toISOString(),
-  // });
-
   const rows: object[] = [];
   let instanceIndex = 0;
   let iterations = 0;
@@ -357,9 +348,8 @@ export async function createRecurringOperations(
       const d = cursorDate.getUTCDate();
 
       const instanceStart = new Date(Date.UTC(y, m, d, sHour, sMin, 0, 0));
-      const dateTag = `${y}${String(m + 1).padStart(2, '0')}${String(d).padStart(2, '0')}`;
       const instanceCode = input.mission_code
-        ? `${input.mission_code}-${dateTag}-${instanceIndex}`
+        ? `${input.mission_code}-${instanceIndex}`
         : null;
 
       rows.push({

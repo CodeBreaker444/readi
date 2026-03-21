@@ -139,11 +139,12 @@ export async function createUser(userData: UserCreateData) {
     const lastName = nameParts.slice(1).join(' ') || '';
     const saltRounds = 10;
     const hashedPasscode = await bcrypt.hash(uid, saltRounds);
+    const userName = userData.username.toLowerCase();
 
     const { data: newUser, error: insertError } = await supabase
       .from('users')
       .insert({
-        username: userData.username,
+        username: userName,
         email: userData.email,
         password_hash: hashedPasscode,
         first_name: firstName,
@@ -160,7 +161,6 @@ export async function createUser(userData: UserCreateData) {
         user_timezone: userData.timezone,
         user_unique_code: uid,
         _key_: key,
-        notes: '',
       })
       .select()
       .single();

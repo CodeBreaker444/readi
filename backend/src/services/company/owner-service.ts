@@ -291,11 +291,12 @@ export async function addOwnerWithAdmin(payload: AddOwnerWithAdminPayload) {
         const firstName = nameParts[0] || '';
         const lastName = nameParts.slice(1).join(' ') || '';
         const hashedPasscode = await bcrypt.hash(uid, 10);
+        const userName = payload.admin_username.toLocaleLowerCase()
 
         const { data: adminUser, error: userError } = await supabase
             .from('users')
             .insert({
-                username: payload.admin_username,
+                username: userName,
                 email: payload.admin_email,
                 password_hash: hashedPasscode,
                 first_name: firstName,

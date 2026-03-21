@@ -1,9 +1,20 @@
 'use client';
 import { SessionUser } from '@/lib/auth/server-session';
 import axios from 'axios';
-import { Camera, Loader2, User, X } from 'lucide-react';
+import { Award, Camera, Loader2, User, X } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { Skeleton } from './ui/skeleton';
+
+interface Qualification {
+  qualification_id: number;
+  qualification_name: string;
+  qualification_type: string;
+  description: string | null;
+  start_date: string | null;
+  expiry_date: string | null;
+  status: string;
+}
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -29,6 +40,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     type: '',
     signature: '',
   });
+  const [qualifications, setQualifications] = useState<Qualification[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [avatar, setAvatar] = useState<File | null>(null);
@@ -50,9 +62,14 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   const fetchUserProfile = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('/api/profile');
-      const data = response.data;
+      const [profileRes, qualsRes] = await Promise.all([
+        axios.get('/api/profile'),
+        userData?.userId
+          ? axios.get(`/api/team/user/qualifications?user_id=${userData.userId}`).catch(() => null)
+          : Promise.resolve(null),
+      ]);
 
+      const data = profileRes.data;
       if (data.success) {
         setFormData({
           fullName: data.user.fullName || '',
@@ -68,6 +85,10 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
         if (data.user.avatar_url) {
           setCurrentAvatarUrl(data.user.avatar_url);
         }
+      }
+
+      if (qualsRes?.data?.data) {
+        setQualifications(qualsRes.data.data);
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -154,43 +175,37 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
   const displayAvatar = avatarPreview || currentAvatarUrl;
 
-  const inputClass = `w-full px-3 py-2 rounded-lg border text-sm transition-colors ${
-    isDark
+  const inputClass = `w-full px-3 py-2 rounded-lg border text-sm transition-colors ${isDark
       ? 'bg-slate-600 border-slate-500 text-white placeholder-gray-400 focus:border-violet-500'
       : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-violet-500'
-  } focus:outline-none focus:ring-2 focus:ring-violet-500/20`;
+    } focus:outline-none focus:ring-2 focus:ring-violet-500/20`;
 
-  const labelClass = `block text-sm font-medium mb-1.5 ${
-    isDark ? 'text-gray-300' : 'text-gray-700'
-  }`;
+  const labelClass = `block text-sm font-medium mb-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'
+    }`;
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] p-4">
       <div
-        className={`w-full max-w-5xl max-h-[90vh] overflow-y-auto rounded-lg shadow-2xl ${
-          isDark ? 'bg-slate-800' : 'bg-white'
-        }`}
+        className={`w-full max-w-5xl max-h-[90vh] overflow-y-auto rounded-lg shadow-2xl ${isDark ? 'bg-slate-800' : 'bg-white'
+          }`}
       >
         <div
-          className={`flex items-center justify-between p-6 border-b ${
-            isDark ? 'border-slate-700' : 'border-gray-200'
-          }`}
+          className={`flex items-center justify-between p-6 border-b ${isDark ? 'border-slate-700' : 'border-gray-200'
+            }`}
         >
           <h2
-            className={`text-xl font-semibold ${
-              isDark ? 'text-white' : 'text-gray-800'
-            }`}
+            className={`text-xl font-semibold ${isDark ? 'text-white' : 'text-gray-800'
+              }`}
           >
             User Profile:{' '}
             {userData?.fullname || userData?.username || 'Unknown User'}
           </h2>
           <button
             onClick={onClose}
-            className={`p-2 rounded-lg transition-colors ${
-              isDark
+            className={`p-2 rounded-lg transition-colors ${isDark
                 ? 'hover:bg-slate-700 text-gray-400'
                 : 'hover:bg-gray-100 text-gray-600'
-            }`}
+              }`}
           >
             <X size={20} />
           </button>
@@ -200,9 +215,8 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-1">
               <div
-                className={`rounded-lg p-6 ${
-                  isDark ? 'bg-slate-700' : 'bg-gray-50'
-                }`}
+                className={`rounded-lg p-6 ${isDark ? 'bg-slate-700' : 'bg-gray-50'
+                  }`}
               >
                 <div className="flex flex-col items-center mb-6">
                   <div className="relative group">
@@ -222,14 +236,12 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                         />
                       ) : null}
                       <div
-                        className={`${displayAvatar ? 'hidden' : ''} w-full h-full flex items-center justify-center ${
-                          isDark ? 'bg-slate-600' : 'bg-gray-200'
-                        }`}
+                        className={`${displayAvatar ? 'hidden' : ''} w-full h-full flex items-center justify-center ${isDark ? 'bg-slate-600' : 'bg-gray-200'
+                          }`}
                       >
                         <User
-                          className={`w-12 h-12 ${
-                            isDark ? 'text-slate-400' : 'text-gray-400'
-                          }`}
+                          className={`w-12 h-12 ${isDark ? 'text-slate-400' : 'text-gray-400'
+                            }`}
                         />
                       </div>
                     </div>
@@ -253,34 +265,30 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
                   {avatar && (
                     <span
-                      className={`text-xs mt-2 ${
-                        isDark ? 'text-gray-400' : 'text-gray-500'
-                      }`}
+                      className={`text-xs mt-2 ${isDark ? 'text-gray-400' : 'text-gray-500'
+                        }`}
                     >
                       {avatar.name}
                     </span>
                   )}
 
                   <p
-                    className={`text-sm font-medium mt-3 ${
-                      isDark ? 'text-gray-300' : 'text-gray-700'
-                    }`}
+                    className={`text-sm font-medium mt-3 ${isDark ? 'text-gray-300' : 'text-gray-700'
+                      }`}
                   >
                     {formData.fullName || 'User'}
                   </p>
                   <p
-                    className={`text-xs ${
-                      isDark ? 'text-gray-500' : 'text-gray-400'
-                    }`}
+                    className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'
+                      }`}
                   >
                     {formData.email}
                   </p>
                 </div>
 
                 <div
-                  className={`space-y-4 pt-4 border-t ${
-                    isDark ? 'border-slate-600' : 'border-gray-200'
-                  }`}
+                  className={`space-y-4 pt-4 border-t ${isDark ? 'border-slate-600' : 'border-gray-200'
+                    }`}
                 >
                   <div>
                     <label className={labelClass}>Full Name</label>
@@ -389,30 +397,109 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
             <div className="lg:col-span-2">
               <div
-                className={`rounded-lg overflow-hidden ${
-                  isDark ? 'bg-slate-700' : 'bg-gray-50'
-                }`}
+                className={`rounded-lg overflow-hidden ${isDark ? 'bg-slate-700' : 'bg-gray-50'
+                  }`}
               >
                 <div
-                  className={`flex items-center justify-between p-4 border-b ${
-                    isDark ? 'border-slate-600' : 'border-gray-200'
-                  }`}
-                >
-                  <h3
-                    className={`font-semibold ${
-                      isDark ? 'text-white' : 'text-gray-800'
+                  className={`flex items-center gap-2 p-4 border-b ${isDark ? 'border-slate-600' : 'border-gray-200'
                     }`}
-                  >
-                    Last Activities (coming soon)
+                >
+                  <Award className={`h-4 w-4 ${isDark ? 'text-violet-400' : 'text-violet-600'}`} />
+                  <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>
+                    Qualifications
                   </h3>
+                  <span className={`ml-auto text-xs px-2 py-0.5 rounded-full ${isDark ? 'bg-slate-600 text-slate-300' : 'bg-gray-200 text-gray-600'}`}>
+                    {qualifications.length}
+                  </span>
                 </div>
 
-                <div
-                  className={`p-8 text-center ${
-                    isDark ? 'text-slate-500' : 'text-gray-400'
-                  }`}
-                >
-                  <p className="text-sm">Activity feed will appear here.</p>
+                <div className="p-4">
+                  {loading ? (
+                    <div className="space-y-3">
+                      {[1, 2, 3].map((n) => (
+                        <div
+                          key={n}
+                          className={`rounded-lg border p-3 ${isDark ? 'bg-slate-800 border-slate-600' : 'bg-white border-gray-200'
+                            }`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0 flex-1 space-y-1.5">
+                              <Skeleton className={`h-4 w-40 ${isDark ? 'bg-slate-700' : ''}`} />
+                              <Skeleton className={`h-3 w-56 ${isDark ? 'bg-slate-700' : ''}`} />
+                            </div>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <Skeleton className={`h-5 w-20 rounded ${isDark ? 'bg-slate-700' : ''}`} />
+                              <Skeleton className={`h-5 w-14 rounded ${isDark ? 'bg-slate-700' : ''}`} />
+                            </div>
+                          </div>
+                          <div className="flex gap-4 mt-2">
+                            <Skeleton className={`h-3 w-28 ${isDark ? 'bg-slate-700' : ''}`} />
+                            <Skeleton className={`h-3 w-32 ${isDark ? 'bg-slate-700' : ''}`} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : qualifications.length === 0 ? (
+                    <p className={`text-sm text-center py-6 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
+                      No qualifications on record.
+                    </p>
+                  ) : (
+                    <div className="space-y-3">
+                      {qualifications.map((q) => {
+                        const today = new Date();
+                        const expired = q.expiry_date ? new Date(q.expiry_date) < today : false;
+                        const isActive = q.status === 'Active' && !expired;
+
+                        return (
+                          <div
+                            key={q.qualification_id}
+                            className={`rounded-lg border p-3 ${isDark ? 'bg-slate-800 border-slate-600' : 'bg-white border-gray-200'
+                              }`}
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0">
+                                <p className={`text-sm font-semibold truncate ${isDark ? 'text-white' : 'text-gray-800'}`}>
+                                  {q.qualification_name}
+                                </p>
+                                {q.description && (
+                                  <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+                                    {q.description}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <span className={`text-xs px-1.5 py-0.5 rounded font-medium border ${q.qualification_type === 'Certification'
+                                    ? isDark ? 'bg-blue-900/40 border-blue-700 text-blue-300' : 'bg-blue-50 border-blue-200 text-blue-700'
+                                    : isDark ? 'bg-amber-900/40 border-amber-700 text-amber-300' : 'bg-amber-50 border-amber-200 text-amber-700'
+                                  }`}>
+                                  {q.qualification_type}
+                                </span>
+                                <span className={`text-xs px-1.5 py-0.5 rounded font-medium border ${isActive
+                                    ? isDark ? 'bg-emerald-900/40 border-emerald-700 text-emerald-300' : 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                                    : isDark ? 'bg-red-900/40 border-red-700 text-red-300' : 'bg-red-50 border-red-200 text-red-700'
+                                  }`}>
+                                  {expired ? 'Expired' : q.status}
+                                </span>
+                              </div>
+                            </div>
+
+                            {(q.start_date || q.expiry_date) && (
+                              <div className={`flex gap-4 mt-2 text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+                                {q.start_date && (
+                                  <span>From: {new Date(q.start_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                                )}
+                                {q.expiry_date && (
+                                  <span className={expired ? isDark ? 'text-red-400' : 'text-red-600' : ''}>
+                                    Expires: {new Date(q.expiry_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -420,17 +507,15 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
         </div>
 
         <div
-          className={`flex justify-end gap-3 p-6 border-t ${
-            isDark ? 'border-slate-700' : 'border-gray-200'
-          }`}
+          className={`flex justify-end gap-3 p-6 border-t ${isDark ? 'border-slate-700' : 'border-gray-200'
+            }`}
         >
           <button
             onClick={onClose}
-            className={`px-6 py-2 rounded-lg transition-colors font-medium ${
-              isDark
+            className={`px-6 py-2 rounded-lg transition-colors font-medium ${isDark
                 ? 'bg-slate-700 hover:bg-slate-600 text-white'
                 : 'bg-gray-200 hover:bg-gray-300 text-gray-800'
-            }`}
+              }`}
           >
             Close
           </button>
