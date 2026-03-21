@@ -62,6 +62,7 @@ export default function MissionTypeTable({ data, onDelete, onEdit, isDark }: Mis
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
+    initialState: { pagination: { pageSize: 10 } },
   });
 
   return (

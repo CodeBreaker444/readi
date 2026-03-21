@@ -56,7 +56,8 @@ export default function AddOwnerModal({ open, onClose, onSuccess }: AddOwnerModa
     const [error, setError] = useState('');
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+        const value = e.target.name === 'admin_username' ? e.target.value.toLowerCase() : e.target.value;
+        setForm((prev) => ({ ...prev, [e.target.name]: value }));
     };
 
     const handleSubmit = async () => {

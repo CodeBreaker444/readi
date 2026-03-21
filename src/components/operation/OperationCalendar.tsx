@@ -88,10 +88,7 @@ export function OperationCalendar() {
               <Button
                 size="sm"
                 onClick={() => setAddModalOpen(true)}
-                className={`h-8 gap-1.5 text-xs font-semibold shadow-sm ${isDark
-                  ? 'bg-white hover:bg-white/90 text-black'
-                  : 'bg-violet-600 hover:bg-violet-700 text-white'
-                }`}
+                className={`h-8 gap-1.5 text-xs font-semibold shadow-sm bg-violet-600 hover:bg-violet-700 text-white`}
               >
                 <Plus size={14} />
                 <span>Add Operation</span>

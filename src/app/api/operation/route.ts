@@ -29,6 +29,7 @@ const createOperationSchema = z.object({
   fk_planning_id: z.number().int().positive().nullable().optional(),
   fk_mission_type_id: z.number().int().positive().nullable().optional(),
   fk_mission_category_id: z.number().int().positive().nullable().optional(),
+  actual_end: z.string().nullable().optional(),
 });
 
 const createRecurringSchema = z.object({
@@ -101,7 +102,12 @@ export async function POST(req: NextRequest) {
     }
 
     const validated = createOperationSchema.parse(body) as CreateOperationSchema;
-    const operation = await createOperation({ ...validated }, ownerId);
+    let operation;
+    try {
+      operation = await createOperation({ ...validated }, ownerId);
+    } catch (appErr: any) {
+      return NextResponse.json({ error: appErr.message }, { status: 400 });
+    }
     return NextResponse.json(operation, { status: 201 });
   } catch (err) {
     if (err instanceof ZodError) {

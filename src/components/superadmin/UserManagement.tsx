@@ -59,6 +59,7 @@ const STAT_CONFIG = [
 
 export default function UserManagement({ session }: UserManagementProps) {
   const { isDark } = useTheme();
+  const canEditEmail = session.user.role === 'ADMIN' || session.user.role === 'SUPERADMIN';
   const [users, setUsers] = useState<UserData[]>([]);
   const [clients, setClients] = useState<{ client_id: number, client_name: string }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -135,25 +136,42 @@ export default function UserManagement({ session }: UserManagementProps) {
     }
   };
 
+  const saveQualifications = async (userId: number, qualifications: any[]) => {
+    const toAdd = qualifications.filter((q) => !q.qualification_id && !q._toDelete);
+    const toDelete = qualifications.filter((q) => q.qualification_id && q._toDelete);
+    await Promise.all([
+      toAdd.length > 0 &&
+      axios.post('/api/team/user/qualifications', { user_id: userId, qualifications: toAdd }),
+      ...toDelete.map((q) =>
+        axios.delete(`/api/team/user/qualifications/${q.qualification_id}`)
+      ),
+    ]);
+  };
+
   const handleAddUser = async (formData: any) => {
     try {
-      const res = await axios.post('/api/team/user/add',
-        {
-          username: formData.username,
-          fullname: formData.fullname,
-          email: formData.email,
-          phone: formData.phone || '',
-          fk_client_id: formData.fk_client_id,
-          profile: formData.fk_user_profile_id,
-          ownerTerritorialUnit: 0,
-          user_type: formData.user_type,
-          user_viewer: formData.is_viewer,
-          user_manager: formData.is_manager,
-          timezone: 'IST'
-        });
+      const res = await axios.post('/api/team/user/add', {
+        username: formData.username,
+        fullname: formData.fullname,
+        email: formData.email,
+        phone: formData.phone || '',
+        fk_client_id: formData.fk_client_id,
+        profile: formData.fk_user_profile_id,
+        ownerTerritorialUnit: 0,
+        user_type: formData.user_type,
+        user_viewer: formData.is_viewer,
+        user_manager: formData.is_manager,
+        timezone: 'IST',
+      });
       const data = res.data;
-      if (data.code === 1) { toast.success('User created successfully'); setShowAddModal(false); fetchUsers(); }
-      else toast.error(data.error || 'Failed to create user');
+      if (data.code === 1) {
+        if (formData.qualifications?.length > 0) {
+          await saveQualifications(data.newId, formData.qualifications).catch(() => { });
+        }
+        toast.success('User created successfully');
+        setShowAddModal(false);
+        fetchUsers();
+      } else toast.error(data.error || 'Failed to create user');
     } catch (err: any) {
       const msg = err?.response?.data?.error_list?.[0] || 'Error creating user';
       toast.error(msg);
@@ -176,6 +194,9 @@ export default function UserManagement({ session }: UserManagementProps) {
       });
       const data = res.data;
       if (data.code === 1) {
+        if (formData.qualifications?.length > 0) {
+          await saveQualifications(formData.user_id, formData.qualifications).catch(() => { });
+        }
         toast.success('User updated successfully');
         setShowEditModal(false);
         setSelectedUser(null);
@@ -211,7 +232,11 @@ export default function UserManagement({ session }: UserManagementProps) {
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    initialState: { pagination: { pageSize: 10 } },
+    initialState: {
+      pagination: {
+        pageSize: 8
+      }
+    },
   });
 
   return (
@@ -347,10 +372,10 @@ export default function UserManagement({ session }: UserManagementProps) {
       </div>
 
       {showAddModal && (
-        <UserFormModal isOpen={showAddModal} clients={clients} onClose={() => setShowAddModal(false)} mode="add" onSubmit={handleAddUser} isDark={isDark} />
+        <UserFormModal isOpen={showAddModal} clients={clients} onClose={() => setShowAddModal(false)} mode="add" onSubmit={handleAddUser} isDark={isDark} canEditEmail={canEditEmail} />
       )}
       {showEditModal && selectedUser && (
-        <UserFormModal isOpen={showEditModal} clients={clients} onClose={() => { setShowEditModal(false); setSelectedUser(null); }} mode="edit" userData={selectedUser} onSubmit={handleUpdateUser} isDark={isDark} />
+        <UserFormModal isOpen={showEditModal} clients={clients} onClose={() => { setShowEditModal(false); setSelectedUser(null); }} mode="edit" userData={selectedUser} onSubmit={handleUpdateUser} isDark={isDark} canEditEmail={canEditEmail} />
       )}
 
       <AlertDialog open={showDeleteDialog} onOpenChange={(open) => { if (!open) { setShowDeleteDialog(false); setUserToDelete(null); } }}>

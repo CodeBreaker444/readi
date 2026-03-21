@@ -19,6 +19,7 @@ import {
   Trash2,
   Upload,
   User,
+  Wand2,
   Wrench,
   X
 } from 'lucide-react';
@@ -165,6 +166,8 @@ export default function OperationsPage() {
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [batchDeleting, setBatchDeleting] = useState(false);
   const [batchUpdating, setBatchUpdating] = useState(false);
+  const [batchSettingPilot, setBatchSettingPilot] = useState(false);
+  const [batchAutofilling, setBatchAutofilling] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [sorting, setSorting] = useState<SortingState>([
     { id: 'created_at', desc: true },
@@ -282,6 +285,70 @@ export default function OperationsPage() {
     }
   }
 
+  async function handleBatchSetPilot(pilotId: string) {
+    if (!pilotId) return;
+    const plannedRows = selectedRows.filter((r) => r.status_name === 'PLANNED');
+    if (!plannedRows.length) {
+      toast.warning('No Planned operations selected. Pilot can only be set on Planned missions.');
+      return;
+    }
+    setBatchSettingPilot(true);
+    try {
+      const res = await axios.post('/api/operation/batch/set-pilot', {
+        mission_ids: plannedRows.map((r) => r.pilot_mission_id),
+        pilot_id: Number(pilotId),
+      });
+      const pilot = pilots.find((p) => p.user_id === Number(pilotId));
+      const pilotName = pilot ? `${pilot.first_name} ${pilot.last_name}`.trim() : '';
+      const updatedIds: number[] = res.data.updated_ids ?? [];
+      setOperations((prev) =>
+        prev.map((o) =>
+          updatedIds.includes(o.pilot_mission_id)
+            ? { ...o, fk_pilot_user_id: Number(pilotId), pilot_name: pilotName }
+            : o
+        )
+      );
+      setRowSelection({});
+      const skipped = selectedRows.length - plannedRows.length;
+      toast.success(
+        `Pilot set for ${res.data.updated} operation(s)` +
+          (skipped > 0 ? `. ${skipped} skipped (not Planned).` : '.')
+      );
+    } catch {
+      toast.error('Failed to set pilot');
+    } finally {
+      setBatchSettingPilot(false);
+    }
+  }
+
+  async function handleBatchAutofill() {
+    const eligible = selectedRows.filter(
+      (r) => r.status_name === 'COMPLETED' && r.fk_pilot_user_id
+    );
+    if (!eligible.length) {
+      toast.warning(
+        'No eligible operations. Autofill requires Completed missions with a pilot assigned.'
+      );
+      return;
+    }
+    setBatchAutofilling(true);
+    try {
+      const res = await axios.post('/api/operation/batch/autofill', {
+        mission_ids: eligible.map((r) => r.pilot_mission_id),
+      });
+      setRowSelection({});
+      const skipped = selectedRows.length - eligible.length;
+      toast.success(
+        `Autofilled ${res.data.processed} operation(s)` +
+          (skipped > 0 ? `. ${skipped} skipped (not Completed or no pilot).` : '.')
+      );
+    } catch {
+      toast.error('Failed to autofill tasks');
+    } finally {
+      setBatchAutofilling(false);
+    }
+  }
+
   function handleSaved(op: Operation) {
     setOperations((prev) => {
       const idx = prev.findIndex((o) => o.pilot_mission_id === op.pilot_mission_id);
@@ -309,8 +376,8 @@ export default function OperationsPage() {
 
   return (
     <TooltipProvider>
-      <div className="min-h-screen bg-background">
-        <div className="border-b bg-card">
+      <div className={`min-h-screen transition-colors duration-300 ${isDark ? 'bg-[#080c12] text-white' : 'bg-slate-50 text-slate-900'}`}>
+        <div className={`border-b ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200'}`}>
           <div className="mx-auto">
             <div
               className={`top-0 z-10 backdrop-blur-md transition-colors ${
@@ -384,7 +451,7 @@ export default function OperationsPage() {
                 { label: 'In Progress', value: stats.inProgress, color: 'text-violet-600' },
                 { label: 'Completed', value: stats.completed, color: 'text-emerald-600' },
               ].map((s) => (
-                <div key={s.label} className="rounded-lg border bg-muted/30 px-4 py-2.5">
+                <div key={s.label} className={`rounded-lg border px-4 py-2.5 ${isDark ? 'bg-slate-800/60 border-slate-700' : 'bg-muted/30 border-slate-200'}`}>
                   <p className="text-xs text-muted-foreground">{s.label}</p>
                   {loading ? (
                     <Skeleton className="mt-1 h-8 w-12" />
@@ -399,7 +466,7 @@ export default function OperationsPage() {
           </div>
         </div>
 
-        <div className="border-b px-6 py-4">
+        <div className={`border-b px-6 py-4 ${isDark ? 'border-slate-800 bg-slate-900/60' : 'border-slate-200 bg-white'}`}>
           <div className="mx-auto space-y-3">
             <div className="flex flex-wrap items-center gap-2">
               <div className="relative flex-1 min-w-[200px] max-w-xs">
@@ -508,6 +575,35 @@ export default function OperationsPage() {
               {selectedRows.length} selected
             </span>
             <div className="ml-auto flex items-center gap-2">
+              <Select onValueChange={handleBatchSetPilot} disabled={batchSettingPilot}>
+                <SelectTrigger className={cn('h-8 w-44 text-xs', isDark ? 'border-slate-600 bg-slate-700' : '')}>
+                  <SelectValue placeholder={batchSettingPilot ? 'Setting pilot…' : 'Set pilot…'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {pilots.map((p) => (
+                    <SelectItem key={p.user_id} value={p.user_id.toString()}>
+                      {p.first_name} {p.last_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={batchAutofilling}
+                onClick={handleBatchAutofill}
+                className={cn(
+                  'h-8 gap-1.5 text-xs',
+                  isDark
+                    ? 'border-slate-600 bg-slate-700 text-slate-300 hover:bg-slate-600'
+                    : 'border-emerald-200 text-emerald-700 hover:bg-emerald-50'
+                )}
+              >
+                <Wand2 className="h-3.5 w-3.5" />
+                {batchAutofilling ? 'Autofilling…' : 'Autofill Tasks'}
+              </Button>
+
               <Select onValueChange={handleBatchStatus} disabled={batchUpdating}>
                 <SelectTrigger className={cn('h-8 w-44 text-xs', isDark ? 'border-slate-600 bg-slate-700' : '')}>
                   <SelectValue placeholder={batchUpdating ? 'Updating…' : 'Change status…'} />
@@ -543,13 +639,13 @@ export default function OperationsPage() {
         )}
 
         <div className="mx-auto px-6 py-4">
-          <div className="rounded-lg border bg-card shadow-sm overflow-hidden">
+          <div className={`rounded-lg border shadow-sm overflow-hidden ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`}>
             <Table>
               <TableHeader>
                 {table.getHeaderGroups().map((headerGroup) => (
                   <TableRow
                     key={headerGroup.id}
-                    className="bg-muted/40 hover:bg-muted/40"
+                    className={isDark ? 'bg-slate-800/80 hover:bg-slate-800/80 border-slate-700' : 'bg-muted/40 hover:bg-muted/40'}
                   >
                     {headerGroup.headers.map((header) => (
                       <TableHead
@@ -607,7 +703,7 @@ export default function OperationsPage() {
                   </TableRow>
                 ) : (
                   table.getRowModel().rows.map((row) => (
-                    <TableRow key={row.id} className="group">
+                    <TableRow key={row.id} className={`group ${isDark ? 'border-slate-700/60 hover:bg-slate-800/50' : 'hover:bg-slate-50'}`}>
                       {row.getVisibleCells().map((cell) => (
                         <TableCell key={cell.id}>
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -624,7 +720,7 @@ export default function OperationsPage() {
       </div>
 
       <Sheet open={!!detailTarget} onOpenChange={(open) => { if (!open) setDetailTarget(null); }}>
-        <SheetContent className="w-full sm:max-w-md overflow-y-auto p-6" side="right">
+        <SheetContent className={`w-full sm:max-w-md overflow-y-auto p-6 ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white'}`} side="right">
           {detailTarget && (
             <>
               <SheetHeader className="mb-6 pb-4 border-b">
@@ -651,12 +747,12 @@ export default function OperationsPage() {
                 <section className="space-y-3">
                   <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Timeline</h3>
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="rounded-lg border bg-muted/30 p-3 space-y-1">
+                    <div className={`rounded-lg border p-3 space-y-1 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-muted/30'}`}>
                       <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> Scheduled</p>
                       <p className="text-sm font-medium">{formatDateTime(detailTarget.scheduled_start)}</p>
                     </div>
                     {detailTarget.actual_end && (
-                      <div className="rounded-lg border bg-muted/30 p-3 space-y-1">
+                      <div className={`rounded-lg border p-3 space-y-1 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-muted/30'}`}>
                         <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> End Time</p>
                         <p className="text-sm font-medium">{formatDateTime(detailTarget.actual_end)}</p>
                       </div>
@@ -722,7 +818,7 @@ export default function OperationsPage() {
                       <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                         <FileText className="h-3.5 w-3.5" /> Pilot Notes
                       </h3>
-                      <div className="rounded-lg border bg-muted/30 p-3">
+                      <div className={`rounded-lg border p-3 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-muted/30'}`}>
                         <p className="text-sm text-foreground whitespace-pre-wrap">{detailTarget.notes}</p>
                       </div>
                     </section>

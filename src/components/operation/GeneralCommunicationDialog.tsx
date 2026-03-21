@@ -3,36 +3,35 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
 import {
-    AlertCircle,
-    AlertTriangle,
-    Info,
-    Loader2,
-    MessageSquare,
-    Paperclip,
-    Send,
-    Users,
-    X,
+  AlertCircle,
+  AlertTriangle,
+  Info,
+  Loader2,
+  MessageSquare,
+  Paperclip,
+  Send,
+  Users,
+  X,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-
 
 export type ProcedureName =
   | 'operation'
@@ -68,7 +67,6 @@ const LEVEL_OPTIONS = [
   { value: 'danger',  label: 'Issue',   icon: AlertCircle,   color: 'text-rose-600'  },
 ];
 
-
 export default function GeneralCommunicationDialog({
   open,
   onClose,
@@ -87,14 +85,18 @@ export default function GeneralCommunicationDialog({
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [newId, setNewId] = useState<number | null>(null);
+  const [loadingRecipients, setLoadingRecipients] = useState(false);
 
   useEffect(() => {
     if (!open) return;
     reset();
+    
+    setLoadingRecipients(true);
     axios
       .get(`/api/operation/communication/recipients?procedure=${procedureName}`)
       .then((r) => setRecipients(r.data.recipients ?? []))
-      .catch(() => toast.error('Failed to load recipients'));
+      .catch(() => toast.error('Failed to load recipients'))
+      .finally(() => setLoadingRecipients(false));
   }, [open, procedureName]);
 
   function reset() {
@@ -165,7 +167,7 @@ export default function GeneralCommunicationDialog({
           <DialogTitle className="flex items-center gap-2 text-base font-semibold">
             <MessageSquare className="h-5 w-5 text-violet-600" />
             General Communication
-            <Badge variant="outline" className="ml-auto font-normal text-xs capitalize">
+            <Badge variant="outline" className="ml-auto font-normal text-xs mr-5 capitalize">
               {procedureName.replace('_', ' ')}
             </Badge>
           </DialogTitle>
@@ -203,27 +205,35 @@ export default function GeneralCommunicationDialog({
                     ))}
                   </div>
                 )}
-                <Select
-                  onValueChange={(val) => {
-                    const opt = recipients.find((r) => String(r.id) === val);
-                    if (opt) toggleRecipient(opt);
-                  }}
-                >
-                  <SelectTrigger className="h-8 text-xs bg-background">
-                    <SelectValue placeholder="Add recipient…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {recipients
-                      .filter((r) => !selectedRecipients.find((s) => s.id === r.id))
-                      .map((r) => (
-                        <SelectItem key={r.id} value={String(r.id)} className="text-xs">
-                          <span className="font-medium">{r.name}</span>
-                          {r.role && <span className="text-muted-foreground ml-1">— {r.role}</span>}
-                          {r.email && <span className="text-muted-foreground ml-1">({r.email})</span>}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
+                
+                {loadingRecipients ? (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground py-1">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Loading recipients...
+                  </div>
+                ) : (
+                  <Select
+                    onValueChange={(val) => {
+                      const opt = recipients.find((r) => String(r.id) === val);
+                      if (opt) toggleRecipient(opt);
+                    }}
+                  >
+                    <SelectTrigger className="h-8 text-xs bg-background">
+                      <SelectValue placeholder="Add recipient…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {recipients
+                        .filter((r) => !selectedRecipients.find((s) => s.id === r.id))
+                        .map((r) => (
+                          <SelectItem key={r.id} value={String(r.id)} className="text-xs">
+                            <span className="font-medium">{r.name}</span>
+                            {r.role && <span className="text-muted-foreground ml-1">— {r.role}</span>}
+                            {r.email && <span className="text-muted-foreground ml-1">({r.email})</span>}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
             </div>
 
@@ -327,7 +337,7 @@ export default function GeneralCommunicationDialog({
             <Button
               size="sm"
               onClick={handleSend}
-              disabled={submitting || !message.trim() || selectedRecipients.length === 0}
+              disabled={submitting || loadingRecipients || !message.trim() || selectedRecipients.length === 0}
               className={cn(
                 'gap-2 min-w-[120px] text-white',
                 level === 'danger'
