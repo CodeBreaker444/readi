@@ -9,6 +9,7 @@ export interface Notification {
   sender_profile: string | null;
   sender_profile_code: string | null;
   communication_general_id: number | null;
+  action_url: string | null;
 }
 
 export interface NotificationListFilters {

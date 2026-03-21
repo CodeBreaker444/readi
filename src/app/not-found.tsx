@@ -9,7 +9,7 @@ export default function NotFound() {
 
   return (
     <div
-      className="min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-slate-50"
+      className="fixed inset-0 flex items-center justify-center overflow-hidden bg-slate-50 z-50"
       style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}
     >
       <div className="absolute inset-0 pointer-events-none">
@@ -45,15 +45,9 @@ export default function NotFound() {
           </div>
         </div>
 
-        <div
-          className="bg-white rounded-2xl border border-slate-200 p-8 w-full text-center"
-          style={{ boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}
-        >
+        <div className=" rounded-2xl p-8 w-full text-center  ">
           <div className="mb-6">
-            <p
-              className="text-7xl font-extrabold tracking-tighter leading-none bg-clip-text text-transparent"
-              style={{ backgroundImage: 'linear-gradient(135deg, #7c3aed, #6d28d9)' }}
-            >
+            <p className="text-7xl font-extrabold tracking-tighter leading-none bg-clip-text text-transparent bg-gradient-to-br from-violet-600 to-violet-700">
               404
             </p>
           </div>
@@ -79,11 +73,7 @@ export default function NotFound() {
             </button>
             <button
               onClick={() => router.push('/')}
-              className="flex-1 h-10 rounded-lg text-white text-sm font-semibold transition-all duration-150 active:scale-[0.99] flex items-center justify-center gap-2"
-              style={{
-                background: 'linear-gradient(135deg, #7c3aed, #6d28d9)',
-                boxShadow: '0 2px 12px rgba(124,58,237,0.25)',
-              }}
+              className="flex-1 h-10 rounded-lg text-white text-sm font-semibold transition-all duration-150 active:scale-[0.99] flex items-center justify-center gap-2 bg-gradient-to-br from-violet-600 to-violet-700 shadow-[0_2px_12px_rgba(124,58,237,0.25)]"
             >
               <HomeIcon className="h-4 w-4" />
               Home

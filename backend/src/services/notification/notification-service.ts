@@ -76,6 +76,7 @@ export async function listNotifications(
       sender_profile: notifData.sender_profile ?? null,
       sender_profile_code: notifData.sender_profile_code ?? null,
       communication_general_id: notifData.communication_general_id ?? null,
+      action_url: row.action_url ?? null,
     } satisfies Notification;
   });
 }

@@ -20,7 +20,7 @@ function timeAgo(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString();
 }
 
-const POLL_INTERVAL = 60_000; // 60 seconds
+const POLL_INTERVAL = 180_000;  
 
 const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isDark }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -30,7 +30,6 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isDark }) =
   const [markingAll, setMarkingAll] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // ─── Fetch notifications ────────────────────────────────────────────────────
   const fetchNotifications = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
@@ -43,20 +42,17 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isDark }) =
       const json = await res.json();
       if (json.success && Array.isArray(json.data)) {
         const all: Notification[] = json.data;
-        // Show unread first, then recent reads (up to 5), matching PHP logic
         const unread = all.filter((n) => n.is_read === 'N');
         const read = all.filter((n) => n.is_read === 'Y').slice(0, 5);
         setNotifications([...unread, ...read]);
         setUnreadCount(unread.length);
       }
     } catch {
-      // silently fail
     } finally {
       if (!silent) setLoading(false);
     }
   }, []);
 
-  // ─── Fetch unread count only (lightweight background poll) ─────────────────
   const fetchUnreadCount = useCallback(async () => {
     try {
       const res = await fetch('/api/notification/list', {
@@ -70,23 +66,19 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isDark }) =
         setUnreadCount(json.data.length);
       }
     } catch {
-      // silently fail
     }
   }, []);
 
-  // ─── Initial load + polling ─────────────────────────────────────────────────
   useEffect(() => {
     fetchUnreadCount();
     const timer = setInterval(fetchUnreadCount, POLL_INTERVAL);
     return () => clearInterval(timer);
   }, [fetchUnreadCount]);
 
-  // ─── Fetch full list when dropdown opens ───────────────────────────────────
   useEffect(() => {
     if (isOpen) fetchNotifications();
   }, [isOpen, fetchNotifications]);
 
-  // ─── Close on outside click ─────────────────────────────────────────────────
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -97,11 +89,9 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isDark }) =
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
 
-  // ─── Mark single notification as read ──────────────────────────────────────
   const handleMarkRead = async (notif: Notification, e?: React.MouseEvent) => {
     e?.stopPropagation();
     if (notif.is_read === 'Y') return;
-    // Optimistic update
     setNotifications((prev) =>
       prev.map((n) =>
         n.notification_id === notif.notification_id
@@ -117,16 +107,13 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isDark }) =
         body: JSON.stringify({ notification_id: notif.notification_id }),
       });
     } catch {
-      // revert on failure
       fetchNotifications(true);
     }
   };
 
-  // ─── Mark all as read ──────────────────────────────────────────────────────
   const handleMarkAllRead = async () => {
     if (unreadCount === 0 || markingAll) return;
     setMarkingAll(true);
-    // Optimistic update
     setNotifications((prev) =>
       prev.map((n) => ({ ...n, is_read: 'Y' as const, read_at: n.read_at ?? new Date().toISOString() }))
     );
@@ -144,10 +131,8 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isDark }) =
     }
   };
 
-  // ─── Dismiss (delete) a notification ──────────────────────────────────────
   const handleDismiss = async (notif: Notification, e: React.MouseEvent) => {
     e.stopPropagation();
-    // Optimistic update
     setNotifications((prev) => prev.filter((n) => n.notification_id !== notif.notification_id));
     if (notif.is_read === 'N') setUnreadCount((c) => Math.max(0, c - 1));
     try {
@@ -161,7 +146,6 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isDark }) =
     }
   };
 
-  // ─── Styles ────────────────────────────────────────────────────────────────
   const bg = isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200';
   const text = isDark ? 'text-white' : 'text-gray-800';
   const subtext = isDark ? 'text-gray-400' : 'text-gray-500';
@@ -170,7 +154,6 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isDark }) =
 
   return (
     <div className="relative" ref={dropdownRef}>
-      {/* Bell button */}
       <button
         onClick={() => setIsOpen((o) => !o)}
         className={`relative p-2 rounded-lg transition-colors ${
@@ -186,13 +169,11 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isDark }) =
         )}
       </button>
 
-      {/* Dropdown panel */}
       {isOpen && (
         <div
           className={`absolute right-0 mt-2 w-80 rounded-xl shadow-xl border z-50 flex flex-col overflow-hidden ${bg}`}
           style={{ maxHeight: '480px' }}
         >
-          {/* Header */}
           <div className={`flex items-center justify-between px-4 py-3 border-b ${divider} flex-shrink-0`}>
             <div className="flex items-center gap-2">
               <Bell size={16} className={subtext} />
@@ -222,7 +203,6 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isDark }) =
             )}
           </div>
 
-          {/* Notification list */}
           <div className="overflow-y-auto flex-1">
             {loading ? (
               <div className="flex items-center justify-center py-10">
@@ -259,7 +239,6 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isDark }) =
                         </div>
                       )}
 
-                      {/* Action buttons (visible on hover) */}
                       <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         {isUnread && (
                           <button
@@ -283,7 +262,6 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isDark }) =
                         </button>
                       </div>
 
-                      {/* Unread dot */}
                       {isUnread && (
                         <span className="absolute left-1.5 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-blue-500 rounded-full" />
                       )}
@@ -294,7 +272,6 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isDark }) =
             )}
           </div>
 
-          {/* Footer */}
           <div className={`border-t ${divider} flex-shrink-0`}>
             <Link
               href="/notifications"
@@ -314,7 +291,6 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isDark }) =
   );
 };
 
-// ─── Notification item content (reused for link and div variants) ──────────────
 interface ItemProps {
   notif: Notification;
   isUnread: boolean;
@@ -325,7 +301,6 @@ interface ItemProps {
 
 const NotificationItem: React.FC<ItemProps> = ({ notif, isUnread, isDark, subtext, text }) => (
   <div className="flex items-start gap-3">
-    {/* Avatar / icon */}
     <div className={`mt-0.5 flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold overflow-hidden ${
       isDark ? 'bg-slate-600 text-gray-300' : 'bg-gray-100 text-gray-600'
     }`}>
@@ -339,7 +314,6 @@ const NotificationItem: React.FC<ItemProps> = ({ notif, isUnread, isDark, subtex
     </div>
 
     <div className="flex-1 min-w-0">
-      {/* Title / type badge */}
       {notif.procedure_name && (
         <span className={`inline-block text-[10px] font-medium px-1.5 py-0.5 rounded mb-0.5 ${
           isDark ? 'bg-slate-600 text-gray-300' : 'bg-gray-100 text-gray-500'
@@ -347,11 +321,9 @@ const NotificationItem: React.FC<ItemProps> = ({ notif, isUnread, isDark, subtex
           {notif.procedure_name}
         </span>
       )}
-      {/* Message */}
       <p className={`text-xs leading-snug line-clamp-2 ${isUnread ? (isDark ? 'text-white font-medium' : 'text-gray-900 font-medium') : subtext}`}>
         {notif.message}
       </p>
-      {/* Meta */}
       <div className="flex items-center gap-1.5 mt-0.5">
         {notif.sender_fullname && (
           <span className={`text-[10px] ${subtext}`}>{notif.sender_fullname}</span>
