@@ -61,6 +61,7 @@ interface UserFormModalProps {
   userData?: any;
   onSubmit: (data: any) => void;
   isDark: boolean;
+  canEditEmail?: boolean;
 }
 
 export function UserFormModal({
@@ -71,6 +72,7 @@ export function UserFormModal({
   userData,
   onSubmit,
   isDark,
+  canEditEmail = true,
 }: UserFormModalProps) {
   const [formData, setFormData] = useState(() => {
     const defaults = {
@@ -191,7 +193,13 @@ export function UserFormModal({
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 required
+                disabled={!canEditEmail && mode === 'edit'}
+                readOnly={!canEditEmail && mode === 'edit'}
+                className={!canEditEmail && mode === 'edit' ? 'opacity-60 cursor-not-allowed' : ''}
               />
+              {!canEditEmail && mode === 'edit' && (
+                <p className="text-xs mt-1 text-slate-400">Only admins can change email addresses.</p>
+              )}
             </div>
             <div>
               <Label htmlFor="phone" className="pb-2">Phone</Label>

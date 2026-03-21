@@ -59,6 +59,7 @@ const STAT_CONFIG = [
 
 export default function UserManagement({ session }: UserManagementProps) {
   const { isDark } = useTheme();
+  const canEditEmail = session.user.role === 'ADMIN' || session.user.role === 'SUPERADMIN';
   const [users, setUsers] = useState<UserData[]>([]);
   const [clients, setClients] = useState<{ client_id: number, client_name: string }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -371,10 +372,10 @@ export default function UserManagement({ session }: UserManagementProps) {
       </div>
 
       {showAddModal && (
-        <UserFormModal isOpen={showAddModal} clients={clients} onClose={() => setShowAddModal(false)} mode="add" onSubmit={handleAddUser} isDark={isDark} />
+        <UserFormModal isOpen={showAddModal} clients={clients} onClose={() => setShowAddModal(false)} mode="add" onSubmit={handleAddUser} isDark={isDark} canEditEmail={canEditEmail} />
       )}
       {showEditModal && selectedUser && (
-        <UserFormModal isOpen={showEditModal} clients={clients} onClose={() => { setShowEditModal(false); setSelectedUser(null); }} mode="edit" userData={selectedUser} onSubmit={handleUpdateUser} isDark={isDark} />
+        <UserFormModal isOpen={showEditModal} clients={clients} onClose={() => { setShowEditModal(false); setSelectedUser(null); }} mode="edit" userData={selectedUser} onSubmit={handleUpdateUser} isDark={isDark} canEditEmail={canEditEmail} />
       )}
 
       <AlertDialog open={showDeleteDialog} onOpenChange={(open) => { if (!open) { setShowDeleteDialog(false); setUserToDelete(null); } }}>

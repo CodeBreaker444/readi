@@ -29,6 +29,8 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   isDark,
   userData,
 }) => {
+  const canEditEmail = userData?.role === 'ADMIN' || userData?.role === 'SUPERADMIN';
+
   const [formData, setFormData] = useState({
     fullName: userData?.fullname || '',
     email: userData?.email || '',
@@ -309,9 +311,16 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                       name="email"
                       value={formData.email}
                       onChange={handleInputChange}
-                      className={inputClass}
+                      className={`${inputClass} ${!canEditEmail ? 'opacity-60 cursor-not-allowed' : ''}`}
                       placeholder="Enter email address"
+                      disabled={!canEditEmail}
+                      readOnly={!canEditEmail}
                     />
+                    {!canEditEmail && (
+                      <p className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
+                        Only admins can change email addresses.
+                      </p>
+                    )}
                   </div>
 
                   <div>
