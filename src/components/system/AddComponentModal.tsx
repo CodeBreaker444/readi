@@ -288,21 +288,21 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
               )}
               {showHours && (
                 <div className="col-span-2">
-                  <Label className="pb-2">Hours </Label>
+                  <Label className="pb-2">Hours Limit</Label>
                   <Input type="number" min={0}   value={formData.maintenance_cycle_hour}
                     onChange={(e) => handleCycleInput('maintenance_cycle_hour', e.target.value)} />
                 </div>
               )}
               {showDays && (
                 <div className="col-span-2">
-                  <Label className="pb-2">Day </Label>
+                  <Label className="pb-2">Day Limit</Label>
                   <Input type="number" min={0}  value={formData.maintenance_cycle_day}
                     onChange={(e) => handleCycleInput('maintenance_cycle_day', e.target.value )}  />
                 </div>
               )}
               {showFlights && (
                 <div className="col-span-2">
-                  <Label className="pb-2">Flights </Label>
+                  <Label className="pb-2">Flights Limit</Label>
                   <Input type="number" min={0}   value={formData.maintenance_cycle_flight}
                     onChange={(e) => handleCycleInput('maintenance_cycle_flight', e.target.value)} />
                 </div>

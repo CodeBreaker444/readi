@@ -72,7 +72,6 @@ export async function addMissionCategory(ownerId: number, categoryData: { code: 
 }
 
 export async function deleteMissionCategory(ownerId: number, categoryId: number) {
-  
   // Soft delete
   const { error } = await supabase
     .from('pilot_mission_category')
@@ -92,6 +91,7 @@ export async function updateMissionCategory(ownerId: number, categoryId: number,
     const { data: existing } = await supabase
       .from('pilot_mission_category')
       .select('category_id')
+      .eq('fk_owner_id', ownerId)
       .eq('category_code', categoryData.code)
       .eq('is_active', true)
       .neq('category_id', categoryId)

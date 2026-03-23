@@ -1,45 +1,51 @@
-interface MissionResultSkeletonProps {
-  isDark: boolean;
-}
-
+interface MissionResultSkeletonProps { isDark: boolean; }
 export default function MissionResultSkeleton({ isDark }: MissionResultSkeletonProps) {
   return (
-    <div className={`rounded-xl sm:rounded-2xl shadow-xl border overflow-hidden ${isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'}`}>
-      {/* <div className={`px-4 sm:px-6 lg:px-8 py-4 sm:py-5 border-b ${isDark ? 'bg-gray-800/50 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
-        <div className={`h-5 w-48 rounded-md animate-pulse ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`} />
-        <div className={`h-3.5 w-64 rounded-md animate-pulse mt-2 ${isDark ? 'bg-gray-700/60' : 'bg-gray-100'}`} />
-      </div> */}
-      <div className="p-4 sm:p-6 lg:p-8">
-        <div className={`overflow-x-auto rounded-xl border shadow-sm animate-pulse ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
-          <table className="w-full">
-            <thead className={isDark ? 'bg-slate-700' : 'bg-gradient-to-r from-blue-50 to-indigo-50'}>
-              <tr>
-                {[1, 2, 3, 4].map((i) => (
-                  <th key={i} className="px-6 py-4">
-                    <div className={`h-3.5 rounded ${isDark ? 'bg-slate-600' : 'bg-gray-300'}`} />
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className={isDark ? 'divide-y divide-slate-700' : 'divide-y divide-gray-100'}>
-              {Array.from({ length: 8 }).map((_, row) => (
-                <tr key={row}>
-                  {[1, 2, 3, 4].map((col) => (
-                    <td key={col} className="px-6 py-4">
-                      <div className={`h-4 rounded ${col === 4 ? 'w-16 ml-auto' : ''} ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
-                    </td>
+    <div className={`min-h-screen ${isDark ? 'bg-[#0a0e1a]' : 'bg-[#f4f6f9]'}`}>
+      <div className={`sticky top-0 z-20 backdrop-blur-xl border-b ${isDark ? 'bg-[#0a0e1a]/90 border-white/[0.06]' : 'bg-white/80 border-black/[0.06]'}`}>
+        <div className="mx-auto max-w-[1600px] px-6 py-3.5 flex items-center justify-between">
+          <div className="space-y-1.5">
+            <div className={`h-4 w-36 rounded animate-pulse ${isDark ? 'bg-white/[0.06]' : 'bg-gray-200'}`} />
+            <div className={`h-2.5 w-48 rounded animate-pulse ${isDark ? 'bg-white/[0.04]' : 'bg-gray-100'}`} />
+          </div>
+          <div className={`w-28 h-8 rounded-lg animate-pulse ${isDark ? 'bg-white/[0.08]' : 'bg-gray-200'}`} />
+        </div>
+      </div>
+      <div className="mx-auto max-w-[1600px] px-6 py-6">
+        <div className={`rounded-xl border overflow-hidden ${isDark ? 'bg-[#0f1320] border-white/[0.06]' : 'bg-white border-gray-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.04)]'}`}>
+          <div className={`px-5 py-4 border-b ${isDark ? 'border-white/[0.06]' : 'border-gray-100'}`}>
+            <div className={`h-4 w-36 rounded animate-pulse ${isDark ? 'bg-white/[0.06]' : 'bg-gray-200'}`} />
+            <div className={`h-2.5 w-56 rounded animate-pulse mt-2 ${isDark ? 'bg-white/[0.04]' : 'bg-gray-100'}`} />
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className={`border-b ${isDark ? 'border-white/[0.06]' : 'border-gray-100'}`}>
+                  {[40, 80, 240, 80].map((w, i) => (
+                    <th key={i} className={`h-10 px-5 ${isDark ? 'bg-white/[0.02]' : 'bg-gray-50/60'}`}>
+                      <div className={`h-2.5 rounded animate-pulse ${isDark ? 'bg-white/[0.06]' : 'bg-gray-200/80'}`} style={{ width: `${w}px` }} />
+                    </th>
                   ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <div className={`mt-4 flex items-center justify-between px-4 py-3 rounded-lg border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
-          <div className={`h-4 w-48 rounded animate-pulse ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
-          <div className="flex items-center gap-2">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className={`h-9 w-9 rounded-lg animate-pulse ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
-            ))}
+              </thead>
+              <tbody>
+                {Array.from({ length: 8 }).map((_, row) => (
+                  <tr key={row} className={`border-b ${isDark ? 'border-white/[0.04]' : 'border-gray-50'}`}>
+                    {[32, 72, 200, 64].map((w, col) => (
+                      <td key={col} className="px-5 py-3">
+                        <div className={`h-4 rounded animate-pulse ${col === 3 ? 'ml-auto' : ''} ${isDark ? 'bg-white/[0.04]' : 'bg-gray-100'}`} style={{ width: `${w}px`, animationDelay: `${row * 60 + col * 30}ms` }} />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className={`px-5 py-3 border-t flex items-center justify-between ${isDark ? 'border-white/[0.06]' : 'border-gray-100'}`}>
+            <div className={`h-3 w-36 rounded animate-pulse ${isDark ? 'bg-white/[0.04]' : 'bg-gray-100'}`} />
+            <div className="flex items-center gap-1.5">
+              {[1,2,3,4].map((i) => <div key={i} className={`h-7 w-7 rounded-lg animate-pulse ${isDark ? 'bg-white/[0.04]' : 'bg-gray-100'}`} style={{ animationDelay: `${i * 50}ms` }} />)}
+            </div>
           </div>
         </div>
       </div>

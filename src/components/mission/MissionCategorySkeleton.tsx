@@ -1,12 +1,12 @@
-interface MissionTypeSkeletonProps { isDark: boolean; }
-export default function MissionTypeSkeleton({ isDark }: MissionTypeSkeletonProps) {
+interface MissionCategorySkeletonProps { isDark: boolean; }
+export default function MissionCategorySkeleton({ isDark }: MissionCategorySkeletonProps) {
   return (
     <div className={`min-h-screen ${isDark ? 'bg-[#0a0e1a]' : 'bg-[#f4f6f9]'}`}>
       <div className={`sticky top-0 z-20 backdrop-blur-xl border-b ${isDark ? 'bg-[#0a0e1a]/90 border-white/[0.06]' : 'bg-white/80 border-black/[0.06]'}`}>
         <div className="mx-auto max-w-[1600px] px-6 py-3.5 flex items-center justify-between">
           <div className="space-y-1.5">
-            <div className={`h-4 w-32 rounded animate-pulse ${isDark ? 'bg-white/[0.06]' : 'bg-gray-200'}`} />
-            <div className={`h-2.5 w-44 rounded animate-pulse ${isDark ? 'bg-white/[0.04]' : 'bg-gray-100'}`} />
+            <div className={`h-4 w-40 rounded animate-pulse ${isDark ? 'bg-white/[0.06]' : 'bg-gray-200'}`} />
+            <div className={`h-2.5 w-52 rounded animate-pulse ${isDark ? 'bg-white/[0.04]' : 'bg-gray-100'}`} />
           </div>
           <div className={`w-28 h-8 rounded-lg animate-pulse ${isDark ? 'bg-white/[0.08]' : 'bg-gray-200'}`} />
         </div>
@@ -21,7 +21,7 @@ export default function MissionTypeSkeleton({ isDark }: MissionTypeSkeletonProps
             <table className="w-full">
               <thead>
                 <tr className={`border-b ${isDark ? 'border-white/[0.06]' : 'border-gray-100'}`}>
-                  {[40, 80, 120, 180, 80].map((w, i) => (
+                  {[40, 80, 140, 200, 80].map((w, i) => (
                     <th key={i} className={`h-10 px-5 ${isDark ? 'bg-white/[0.02]' : 'bg-gray-50/60'}`}>
                       <div className={`h-2.5 rounded animate-pulse ${isDark ? 'bg-white/[0.06]' : 'bg-gray-200/80'}`} style={{ width: `${w}px` }} />
                     </th>
@@ -31,7 +31,7 @@ export default function MissionTypeSkeleton({ isDark }: MissionTypeSkeletonProps
               <tbody>
                 {Array.from({ length: 8 }).map((_, row) => (
                   <tr key={row} className={`border-b ${isDark ? 'border-white/[0.04]' : 'border-gray-50'}`}>
-                    {[32, 72, 100, 160, 64].map((w, col) => (
+                    {[32, 72, 120, 180, 64].map((w, col) => (
                       <td key={col} className="px-5 py-3">
                         <div className={`h-4 rounded animate-pulse ${col === 4 ? 'ml-auto' : ''} ${isDark ? 'bg-white/[0.04]' : 'bg-gray-100'}`} style={{ width: `${w}px`, animationDelay: `${row * 60 + col * 30}ms` }} />
                       </td>

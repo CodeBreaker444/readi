@@ -12,9 +12,13 @@ import { MissionType } from '@/config/types/types';
 import {
   flexRender,
   getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { useState } from 'react';
+import { Tag } from 'lucide-react';
+import { useMemo } from 'react';
 import { getMissionTypeColumns } from '../tables/MissionTypeColumn';
 import { TablePagination } from '../tables/Pagination';
 
@@ -26,59 +30,41 @@ interface MissionTypeTableProps {
 }
 
 export default function MissionTypeTable({ data, onDelete, onEdit, isDark }: MissionTypeTableProps) {
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [editForm, setEditForm] = useState<MissionType | null>(null);
-
-  const handleEditClick = (type: MissionType) => {
-    setEditingId(type.id);
-    setEditForm({ ...type });
-  };
-
-  const handleSaveEdit = () => {
-    if (editForm) {
-      onEdit(editForm);
-      setEditingId(null);
-      setEditForm(null);
-    }
-  };
-
-  const handleCancelEdit = () => {
-    setEditingId(null);
-    setEditForm(null);
-  };
-
-  const columns = getMissionTypeColumns({
-    isDark,
-    editingId,
-    editForm,
-    onEditChange: setEditForm,
-    onEditClick: handleEditClick,
-    onSave: handleSaveEdit,
-    onCancel: handleCancelEdit,
-    onDelete,
-  });
+  const columns = useMemo(
+    () => getMissionTypeColumns({ isDark, onEditClick: onEdit, onDelete }),
+    [isDark, onEdit, onDelete]
+  );
 
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    initialState: { pagination: { pageSize: 10 } },
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    initialState: { pagination: { pageSize: 8 } },
   });
 
   return (
-    <div className="overflow-hidden rounded-lg">
+    <div className="w-full">
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
-            {table.getHeaderGroups().map(headerGroup => (
+            {table.getHeaderGroups().map((headerGroup) => (
               <TableRow
                 key={headerGroup.id}
-                className={`border-b ${isDark ? 'bg-gray-800/50 border-gray-700 hover:bg-gray-800/50' : 'bg-gray-50 border-gray-200 hover:bg-gray-50'}`}
+                className={`border-b ${
+                  isDark
+                    ? 'border-white/[0.06] hover:bg-transparent'
+                    : 'border-gray-100 hover:bg-transparent'
+                }`}
               >
-                {headerGroup.headers.map(header => (
+                {headerGroup.headers.map((header) => (
                   <TableHead
                     key={header.id}
-                    className={`text-xs font-bold uppercase tracking-wider whitespace-nowrap ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
+                    className={`h-10 px-5 text-[10px] font-semibold uppercase tracking-[0.08em] ${
+                      isDark ? 'text-gray-500 bg-white/[0.02]' : 'text-gray-400 bg-gray-50/60'
+                    }`}
                   >
                     {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                   </TableHead>
@@ -89,13 +75,17 @@ export default function MissionTypeTable({ data, onDelete, onEdit, isDark }: Mis
 
           <TableBody>
             {table.getRowModel().rows.length ? (
-              table.getRowModel().rows.map(row => (
+              table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
-                  className={`transition-all duration-200 ${isDark ? 'border-gray-700 hover:bg-gray-800/50' : 'hover:bg-indigo-50/30'}`}
+                  className={`group transition-colors border-b ${
+                    isDark
+                      ? 'border-white/[0.04] hover:bg-white/[0.03]'
+                      : 'border-gray-50 hover:bg-gray-50/50'
+                  }`}
                 >
-                  {row.getVisibleCells().map(cell => (
-                    <TableCell key={cell.id}>
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id} className="px-5 py-3">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
@@ -104,17 +94,17 @@ export default function MissionTypeTable({ data, onDelete, onEdit, isDark }: Mis
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length}>
-                  <div className="text-center py-12 px-4">
-                    <div className={`inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-full mb-4 ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
-                      <svg className={`w-8 h-8 sm:w-10 sm:h-10 ${isDark ? 'text-gray-600' : 'text-gray-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
+                  <div className={`flex flex-col items-center justify-center py-20 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                    <div className={`flex items-center justify-center w-12 h-12 rounded-xl mb-4 ${
+                      isDark ? 'bg-white/[0.04] ring-1 ring-white/[0.06]' : 'bg-gray-100 ring-1 ring-gray-200/60'
+                    }`}>
+                      <Tag size={20} className="opacity-50" />
                     </div>
-                    <p className={`text-base sm:text-lg font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                      No mission types available
+                    <p className={`text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                      No types defined yet
                     </p>
-                    <p className={`text-xs sm:text-sm mt-2 ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
-                      Add your first mission type to get started
+                    <p className={`text-[11px] mt-1 ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>
+                      Create your first mission type to get started
                     </p>
                   </div>
                 </TableCell>
@@ -122,8 +112,13 @@ export default function MissionTypeTable({ data, onDelete, onEdit, isDark }: Mis
             )}
           </TableBody>
         </Table>
-        <TablePagination table={table} />
       </div>
+
+      {table.getRowModel().rows.length > 0 && (
+        <div className={`border-t ${isDark ? 'border-white/[0.06]' : 'border-gray-100'}`}>
+          <TablePagination table={table} />
+        </div>
+      )}
     </div>
   );
 }

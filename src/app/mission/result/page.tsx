@@ -1,16 +1,10 @@
 'use client';
-
 import MissionResultForm from '@/components/mission/MissionResultForm';
 import MissionResultSkeleton from '@/components/mission/MissionResultSkeleton';
 import MissionResultTable from '@/components/mission/MissionResultTable';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useTheme } from '@/components/useTheme';
 import { MissionResult } from '@/config/types/types';
 import axios from 'axios';
@@ -22,7 +16,10 @@ export default function MissionResultPage() {
   const { isDark } = useTheme();
   const [results, setResults] = useState<MissionResult[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [editItem, setEditItem] = useState<MissionResult | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState<number | null>(null);
 
   const fetchResults = async () => {
     setLoading(true);
@@ -30,157 +27,106 @@ export default function MissionResultPage() {
       const response = await axios.get(`/api/mission/result/list`);
       const result = response.data;
       if (result.code === 1) {
-        setResults(result.data.map((item: any) => ({
-          id: item.mission_result_id,
-          code: item.mission_result_code,
-          description: item.mission_result_desc,
-        })));
+        setResults(result.data.map((item: any) => ({ id: item.mission_result_id, code: item.mission_result_code, description: item.mission_result_desc })));
       }
-    } catch (error) {
-      console.error('Error fetching results:', error);
-      toast.error('Failed to fetch mission results');
-    } finally {
-      setLoading(false);
-    }
+    } catch (error) { toast.error('Failed to fetch mission results'); }
+    finally { setLoading(false); }
   };
 
   useEffect(() => { fetchResults(); }, []);
 
   const handleAddResult = async (newResult: Omit<MissionResult, 'id'>) => {
     try {
-      const response = await axios.post(`/api/mission/result/add`, {
-        mission_result_code: newResult.code,
-        mission_result_desc: newResult.description,
-      });
+      const response = await axios.post(`/api/mission/result/add`, { mission_result_code: newResult.code, mission_result_desc: newResult.description });
       const result = response.data;
       if (result.code === 1) {
-        const added: MissionResult = {
-          id: result.data.result_id,
-          code: result.data.result_type,
-          description: result.data.result_description,
-        };
-        setResults(prev => [...prev, added]);
-        toast.success('Mission result added successfully');
-        setIsDialogOpen(false);
-      } else {
-        toast.error(result.message || 'Failed to add result');
-      }
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Error adding result');
-    }
+        setResults(prev => [...prev, { id: result.data.result_id, code: result.data.result_type, description: result.data.result_description }]);
+        toast.success('Mission result added successfully'); setIsAddDialogOpen(false);
+      } else { toast.error(result.message || 'Failed to add result'); }
+    } catch (error: any) { toast.error(error.response?.data?.message || 'Error adding result'); }
   };
 
   const handleDeleteResult = async (id: number) => {
     try {
       const response = await axios.post(`/api/mission/result/${id}/delete`);
       const result = response.data;
-      if (result.code === 1) {
-        setResults(prev => prev.filter(r => r.id !== id));
-        toast.success('Mission result deleted successfully');
-      } else {
-        toast.error(result.message || 'Failed to delete result');
-      }
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Error deleting result');
-    }
+      if (result.code === 1) { setResults(prev => prev.filter(r => r.id !== id)); toast.success('Mission result deleted successfully'); }
+      else { toast.error(result.message || 'Failed to delete result'); }
+    } catch (error: any) { toast.error(error.response?.data?.message || 'Error deleting result'); }
   };
 
-  const handleEditResult = async (updatedResult: MissionResult) => {
+  const handleSaveEdit = async (data: Omit<MissionResult, 'id'>) => {
+    if (!editItem) return;
+    const updatedResult: MissionResult = { ...data, id: editItem.id };
     try {
-      const response = await axios.post(`/api/mission/result/${updatedResult.id}/update`, {
-        mission_result_code: updatedResult.code,
-        mission_result_desc: updatedResult.description,
-      });
+      const response = await axios.post(`/api/mission/result/${updatedResult.id}/update`, { mission_result_code: updatedResult.code, mission_result_desc: updatedResult.description });
       const result = response.data;
       if (result.code === 1) {
         setResults(prev => prev.map(r => r.id === updatedResult.id ? updatedResult : r));
-        toast.success('Mission result updated successfully');
-      } else {
-        toast.error(result.message || 'Failed to update result');
-      }
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Error updating result');
-    }
+        toast.success('Mission result updated successfully'); setIsEditDialogOpen(false); setEditItem(null);
+      } else { toast.error(result.message || 'Failed to update result'); }
+    } catch (error: any) { toast.error(error.response?.data?.message || 'Error updating result'); }
   };
+
+  const handleOpenEdit = (result: MissionResult) => { setEditItem(result); setIsEditDialogOpen(true); };
 
   if (loading) return <MissionResultSkeleton isDark={isDark} />;
 
   return (
-    <div className={`min-h-screen ${isDark ? 'bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800' : 'bg-white'}`}>
-      <div className="w-full ">
-
-        <div
-          className={` top-0 z-10 backdrop-blur-md transition-colors ${isDark
-              ? "bg-slate-900/80 border-b border-slate-800 text-white"
-              : "bg-white/80 border-b border-slate-200 text-slate-900 shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
-            } px-6 py-4`}
-        >
-          <div className="mx-auto max-w-[1800px] flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-1 h-6 rounded-full bg-violet-600" />
-
-              <div>
-                <h1
-                  className={`font-semibold text-base tracking-tight ${isDark ? "text-white" : "text-slate-900"
-                    }`}
-                >
-                  Mission Result Management
-                </h1>
-                <p className={`text-xs ${isDark ? "text-slate-500" : "text-slate-400"}`}>
-                  Define and maintain mission result types for tracking outcomes
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                onClick={() => setIsDialogOpen(true)}
-                className={`h-8 gap-1.5 text-xs font-semibold transition-all shadow-sm ${isDark
-                    ? "bg-violet-600 hover:bg-violet-500 text-white"
-                    : "bg-violet-600 hover:bg-violet-700 text-white"
-                  }`}
-              >
-                <Plus size={14} />
-                <span>Add New Result</span>
-              </Button>
+    <div className={`min-h-screen ${isDark ? 'bg-[#0a0e1a]' : 'bg-[#f4f6f9]'}`}>
+      <div className={`sticky top-0 z-20 backdrop-blur-xl border-b transition-colors ${isDark ? 'bg-[#0a0e1a]/90 border-white/[0.06]' : 'bg-white/80 border-black/[0.06] shadow-[0_1px_2px_rgba(0,0,0,0.04)]'}`}>
+        <div className="mx-auto max-w-[1600px] px-6 py-3.5 flex items-center justify-between">
+          <div className="flex items-center gap-3.5">
+            <div className="w-1 h-6 rounded-full bg-violet-600" />
+            <div>
+              <h1 className={`text-[15px] font-semibold tracking-[-0.01em] ${isDark ? 'text-white' : 'text-gray-900'}`}>Mission Results</h1>
+              <p className={`text-[11px] mt-0.5 tracking-wide ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{results.length} total &middot; Define and maintain mission result types</p>
             </div>
           </div>
-        </div>
-
-        <div className={`m-4 rounded-md border overflow-hidden ${isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'}`}>
-          <div className={`px-4 sm:px-6 lg:px-8 py-4 sm:py-5 border-b ${isDark ? 'bg-gray-800/50 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
-            <h2 className={`text-lg sm:text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              Mission Result List
-            </h2>
-            <p className={`text-xs sm:text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-              View and manage existing result types
-            </p>
-          </div>
-          <div className="p-4 sm:p-6 lg:p-8">
-            <MissionResultTable
-              data={results}
-              onDelete={handleDeleteResult}
-              onEdit={handleEditResult}
-              isDark={isDark}
-            />
-          </div>
+          <Button size="sm" onClick={() => setIsAddDialogOpen(true)} className="h-8 gap-1.5 px-3.5 text-xs font-medium rounded-lg transition-all cursor-pointer bg-violet-600 hover:bg-violet-700">
+            <Plus size={13} strokeWidth={2.5} /><span>New Result</span>
+          </Button>
         </div>
       </div>
-
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className={`sm:max-w-md ${isDark ? 'bg-gray-900 border-gray-700 text-white' : 'bg-white'}`}>
+      <div className="mx-auto max-w-[1600px] px-6 py-6">
+        <div className={`rounded-xl border overflow-hidden ${isDark ? 'bg-[#0f1320] border-white/[0.06] shadow-[0_0_0_1px_rgba(255,255,255,0.02)]' : 'bg-white border-gray-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]'}`}>
+          <div className={`px-5 py-4 border-b ${isDark ? 'border-white/[0.06]' : 'border-gray-100'}`}>
+            <h2 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Result Definitions</h2>
+            <p className={`text-[11px] mt-0.5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Configure mission result types for tracking outcomes</p>
+          </div>
+          <div className="p-0"><MissionResultTable data={results} onDelete={(id) => setDeleteId(id)} onEdit={handleOpenEdit} isDark={isDark} /></div>
+        </div>
+      </div>
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent className={`sm:max-w-lg rounded-xl ${isDark ? 'bg-[#0f1320] border-white/[0.08] text-white shadow-[0_25px_60px_rgba(0,0,0,0.5)]' : 'bg-white border-gray-200 shadow-2xl'}`}>
           <DialogHeader>
-            <DialogTitle className={isDark ? 'text-white' : 'text-gray-900'}>
-              Add New Mission Result
-            </DialogTitle>
-            <DialogDescription className={isDark ? 'text-gray-400' : 'text-gray-500'}>
-              Fill in the details below to create a new mission result type.
-            </DialogDescription>
+            <DialogTitle className={`text-base font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Create New Result</DialogTitle>
+            <DialogDescription className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Define a new mission result type for tracking outcomes.</DialogDescription>
           </DialogHeader>
-          <MissionResultForm onSubmit={handleAddResult} isDark={isDark} />
+          <MissionResultForm onSubmit={handleAddResult} isDark={isDark} mode="add" />
         </DialogContent>
       </Dialog>
+      <Dialog open={isEditDialogOpen} onOpenChange={(open) => { setIsEditDialogOpen(open); if (!open) setEditItem(null); }}>
+        <DialogContent className={`sm:max-w-lg rounded-xl ${isDark ? 'bg-[#0f1320] border-white/[0.08] text-white shadow-[0_25px_60px_rgba(0,0,0,0.5)]' : 'bg-white border-gray-200 shadow-2xl'}`}>
+          <DialogHeader>
+            <DialogTitle className={`text-base font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Edit Result</DialogTitle>
+            <DialogDescription className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Update the mission result type details.</DialogDescription>
+          </DialogHeader>
+          {editItem && <MissionResultForm key={editItem.id} onSubmit={handleSaveEdit} isDark={isDark} initialData={editItem} mode="edit" />}
+        </DialogContent>
+      </Dialog>
+      <AlertDialog open={deleteId !== null} onOpenChange={(open) => { if (!open) setDeleteId(null); }}>
+        <AlertDialogContent className={isDark ? 'bg-[#0f1320] border-white/[0.08] text-white' : ''}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Result</AlertDialogTitle>
+            <AlertDialogDescription>Are you sure you want to delete this mission result? This action cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction className="bg-red-600 hover:bg-red-700 text-white" onClick={() => { if (deleteId !== null) { handleDeleteResult(deleteId); setDeleteId(null); } }}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
