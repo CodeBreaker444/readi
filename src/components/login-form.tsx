@@ -47,7 +47,7 @@ export function LoginForm() {
 
   return (
     <div
-      className="min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-slate-50"
+      className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden bg-slate-50"
       style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}
     >
       <div className="absolute inset-0 pointer-events-none">
@@ -55,7 +55,7 @@ export function LoginForm() {
         <div className="absolute -bottom-48 -left-48 w-[500px] h-[500px] rounded-full" style={{ background: 'radial-gradient(circle, #ede9fe 0%, transparent 70%)', opacity: 0.4 }} />
       </div>
 
-      <div className="relative z-10 w-full max-w-4xl mx-6 flex items-center gap-12">
+      <div className="relative z-10 w-full max-w-4xl mx-6 flex items-center gap-12 flex-1">
 
         <div className="hidden lg:flex flex-col flex-1">
           <div className="flex items-center gap-2.5 mb-10">
@@ -76,19 +76,6 @@ export function LoginForm() {
           <p className="text-slate-500 text-sm leading-relaxed mb-10 max-w-xs">
             Real-time mission planning, safety management, and drone operations — unified in one command interface.
           </p>
-
-          {/* <div className="space-y-0">
-            {[
-              { label: 'Active missions tracked', val: '340+' },
-              { label: 'Safety incidents prevented', val: '1,200+' },
-              { label: 'Fleet uptime', val: '99.1%' },
-            ].map(({ label, val }) => (
-              <div key={label} className="flex items-center justify-between py-3 border-b border-slate-200">
-                <span className="text-xs text-slate-400">{label}</span>
-                <span className="text-xs font-semibold text-slate-700">{val}</span>
-              </div>
-            ))}
-          </div> */}
 
           <div className="flex items-center gap-2 mt-8">
             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
@@ -172,6 +159,19 @@ export function LoginForm() {
             </p>
           </div>
         </div>
+      </div>
+
+      <div className="relative z-10 w-full flex flex-col items-center py-6">
+        <Image
+          src="/compliance_readi.png"
+          alt="Compliance Certifications"
+          width={160}
+          height={20}
+          className="object-contain"
+        />
+        <p className="text-[0.65rem] text-slate-400 mt-2">
+          © {new Date().getFullYear()} ReADI. All rights reserved.
+        </p>
       </div>
     </div>
   )
