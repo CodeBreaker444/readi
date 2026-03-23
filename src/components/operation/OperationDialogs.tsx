@@ -75,6 +75,8 @@ interface OperationForm {
     days_of_week: number[];
     recur_until: string;
     mission_group_label: string;
+    flight_duration: string;
+    distance_flown: string;
 }
 
 interface OperationFormProps {
@@ -110,6 +112,8 @@ const EMPTY_FORM: OperationForm = {
     days_of_week: [],
     recur_until: '',
     mission_group_label: '',
+    flight_duration: '',
+    distance_flown: '',
 };
 
 export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: OperationFormProps) {
@@ -157,6 +161,8 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
                 days_of_week: [],
                 recur_until: '',
                 mission_group_label: '',
+                flight_duration: initial.flight_duration?.toString() ?? '',
+                distance_flown: initial.distance_flown?.toString() ?? '',
             });
         } else {
             setForm(EMPTY_FORM);
@@ -226,6 +232,8 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
                     fk_mission_type_id: form.fk_mission_type_id ? parseInt(form.fk_mission_type_id) : undefined,
                     fk_mission_category_id: form.fk_mission_category_id ? parseInt(form.fk_mission_category_id) : undefined,
                     status_name: form.status_name,
+                    flight_duration: form.flight_duration ? parseInt(form.flight_duration) : undefined,
+                    distance_flown: form.distance_flown ? parseFloat(form.distance_flown) : undefined,
                 };
 
                 let saved: { data: Operation };
@@ -396,6 +404,23 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
                                     </SelectContent>
                                 </Select>
                             </div>
+
+                            {isEdit && (
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="grid gap-1.5">
+                                        <Label htmlFor="flight_duration">Flight Duration (min)</Label>
+                                        <Input id="flight_duration" type="number" min="0" placeholder="e.g. 45"
+                                            value={form.flight_duration}
+                                            onChange={(e) => setForm((f) => ({ ...f, flight_duration: e.target.value }))} />
+                                    </div>
+                                    <div className="grid gap-1.5">
+                                        <Label htmlFor="distance_flown">Distance Flown (m)</Label>
+                                        <Input id="distance_flown" type="number" min="0" placeholder="e.g. 5000"
+                                            value={form.distance_flown}
+                                            onChange={(e) => setForm((f) => ({ ...f, distance_flown: e.target.value }))} />
+                                    </div>
+                                </div>
+                            )}
 
                             {!isEdit && (
                                 <div className="rounded-lg border p-3 space-y-3 bg-muted/30">
