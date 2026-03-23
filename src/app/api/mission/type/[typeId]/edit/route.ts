@@ -19,7 +19,7 @@ export async function PUT(
     const { typeId } = await params; 
     const body = await request.json();
     
-    const result = await updateMissionType(ownerId, Number(typeId), body.data);
+    const result = await updateMissionType(ownerId, Number(typeId), body);
     
     return NextResponse.json(result);
   } catch (error: any) {

@@ -1,187 +1,130 @@
 'use client';
-
 import MissionTypeForm from '@/components/mission/MissionTypeForm';
 import MissionTypeTable from '@/components/mission/MissionTypeTable';
+import MissionTypeSkeleton from '@/components/mission/MissionTypeSkeleton';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useTheme } from '@/components/useTheme';
 import { MissionType } from '@/config/types/types';
 import axios from 'axios';
 import { Plus } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 export default function MissionTypePage() {
   const { isDark } = useTheme();
   const [missionTypes, setMissionTypes] = useState<MissionType[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [editItem, setEditItem] = useState<MissionType | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState<number | null>(null);
 
   const fetchMissionTypes = async () => {
     setLoading(true);
     try {
       const response = await axios.get(`/api/mission/type/list`);
-      const result = await response.data;
-      if (result.code === 1) {
-        setMissionTypes(result.data);
-      }
-    } catch (error) {
-      console.error('Error fetching mission types:', error);
-    } finally {
-      setLoading(false);
-    }
+      const result = response.data;
+      if (result.code === 1) setMissionTypes(result.data);
+    } catch (error) { toast.error('Failed to fetch mission types'); }
+    finally { setLoading(false); }
   };
 
-  useEffect(() => {
-    fetchMissionTypes();
-  }, []);
+  useEffect(() => { fetchMissionTypes(); }, []);
 
   const handleAddMissionType = async (newType: Omit<MissionType, 'id'>) => {
     try {
-      const response = await axios.post(`/api/mission/type/add`, {
-        mission_type_name: newType.name,
-        mission_type_desc: newType.description,
-        mission_type_code: newType.code,
-        mission_type_label: newType.label,
-      });
-      const result = await response.data;
+      const response = await axios.post(`/api/mission/type/add`, { mission_type_name: newType.name, mission_type_desc: newType.description, mission_type_code: newType.code, mission_type_label: newType.label });
+      const result = response.data;
       if (result.code === 1) {
-        const newMissionType: MissionType = {
-          id: result.data.mission_type_id,
-          name: result.data.type_name,
-          code: result.data.type_code,
-          label: result.data.type_description,
-          description: result.data.type_description,
-        };
-        setMissionTypes(prev => [...prev, newMissionType]);
-        setIsDialogOpen(false);
-      }
-    } catch (error) {
-      console.error('Error adding mission type:', error);
-    }
+        setMissionTypes(prev => [...prev, { id: result.data.mission_type_id, name: result.data.type_name, code: result.data.type_code, label: result.data.type_description, description: result.data.type_description }]);
+        toast.success('Mission type added successfully'); setIsAddDialogOpen(false);
+      } else { toast.error(result.message || 'Failed to add mission type'); }
+    } catch (error: any) { toast.error(error.response?.data?.message || 'Error adding mission type'); }
   };
 
   const handleDeleteMissionType = async (id: number) => {
     try {
       const response = await axios.post(`/api/mission/type/${id}/delete`);
-      const result = await response.data;
-      if (result.code === 1) {
-        setMissionTypes(prev => prev.filter(type => type.id !== id));
-      }
-    } catch (error) {
-      console.error('Error deleting mission type:', error);
-    }
+      const result = response.data;
+      if (result.code === 1) { setMissionTypes(prev => prev.filter(type => type.id !== id)); toast.success('Mission type deleted successfully'); }
+      else { toast.error(result.message || 'Failed to delete mission type'); }
+    } catch (error: any) { toast.error(error.response?.data?.message || 'Error deleting mission type'); }
   };
 
-  const handleEditMissionType = async (updatedType: MissionType) => {
+  const handleSaveEdit = async (data: Omit<MissionType, 'id'>) => {
+    if (!editItem) return;
+    const updatedType: MissionType = { ...data, id: editItem.id };
     try {
-      const response = await axios.put(`/api/mission/type/${updatedType.id}/edit`, {
-        mission_type_name: updatedType.name,
-        mission_type_desc: updatedType.description,
-        mission_type_code: updatedType.code,
-        mission_type_label: updatedType.label,
-      });
-      const result = await response.data;
+      const response = await axios.put(`/api/mission/type/${updatedType.id}/edit`, { mission_type_name: updatedType.name, mission_type_desc: updatedType.description, mission_type_code: updatedType.code, mission_type_label: updatedType.label });
+      const result = response.data;
       if (result.code === 1) {
-        setMissionTypes(prev =>
-          prev.map(type => (type.id === updatedType.id ? updatedType : type))
-        );
-      }
-    } catch (error) {
-      console.error('Error updating mission type:', error);
-    }
+        setMissionTypes(prev => prev.map(type => type.id === updatedType.id ? updatedType : type));
+        toast.success('Mission type updated successfully'); setIsEditDialogOpen(false); setEditItem(null);
+      } else { toast.error(result.message || 'Failed to update mission type'); }
+    } catch (error: any) { toast.error(error.response?.data?.message || 'Error updating mission type'); }
   };
 
-  // if (loading) {
-  //   return <MissionTypeSkeleton isDark={isDark} />;
-  // }
+  const handleOpenEdit = (type: MissionType) => { setEditItem(type); setIsEditDialogOpen(true); };
+
+  if (loading) return <MissionTypeSkeleton isDark={isDark} />;
 
   return (
-    <div className={`min-h-screen ${isDark ? 'bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800' : 'bg-gradient-to-br from-gray-50 via-white to-gray-100'}`}>
-      <div className="w-full">
-
-        <div
-          className={` top-0 z-10 backdrop-blur-md transition-colors ${isDark
-              ? "bg-slate-900/80 border-b border-slate-800 text-white"
-              : "bg-white/80 border-b border-slate-200 text-slate-900 shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
-            } px-6 py-4`}
-        >
-          <div className="mx-auto max-w-[1800px] flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-1 h-6 rounded-full bg-violet-600" />
-
-              <div>
-                <h1
-                  className={`font-semibold text-base tracking-tight ${isDark ? "text-white" : "text-slate-900"
-                    }`}
-                >
-                  Mission Types Management
-                </h1>
-                <p className={`text-xs ${isDark ? "text-slate-500" : "text-slate-400"}`}>
-                  Manage and configure mission types for your operations
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                onClick={() => setIsDialogOpen(true)}
-                className={`h-8 gap-1.5 text-xs font-semibold transition-all shadow-sm ${isDark
-                    ? "bg-violet-600 hover:bg-violet-500 text-white"
-                    : "bg-violet-600 hover:bg-violet-700 text-white"
-                  }`}
-              >
-                <Plus size={14} />
-                <span>Add New Type</span>
-              </Button>
+    <div className={`min-h-screen ${isDark ? 'bg-[#0a0e1a]' : 'bg-[#f4f6f9]'}`}>
+      <div className={`sticky top-0 z-20 backdrop-blur-xl border-b transition-colors ${isDark ? 'bg-[#0a0e1a]/90 border-white/[0.06]' : 'bg-white/80 border-black/[0.06] shadow-[0_1px_2px_rgba(0,0,0,0.04)]'}`}>
+        <div className="mx-auto max-w-[1600px] px-6 py-3.5 flex items-center justify-between">
+          <div className="flex items-center gap-3.5">
+            <div className="w-1 h-6 rounded-full bg-violet-600" />
+            <div>
+              <h1 className={`text-[15px] font-semibold tracking-[-0.01em] ${isDark ? 'text-white' : 'text-gray-900'}`}>Mission Types</h1>
+              <p className={`text-[11px] mt-0.5 tracking-wide ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{missionTypes.length} total &middot; Manage and configure mission types</p>
             </div>
           </div>
-        </div>
-
-        <div className={`rounded-xl m-3 mt-6 sm:rounded-2xl   border overflow-hidden ${isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'}`}>
-          <div className={`px-4 sm:px-6 lg:px-8 py-4 sm:py-5 border-b ${isDark ? 'bg-gray-800/50 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
-            <h2 className={`text-lg sm:text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              Mission Type List
-            </h2>
-            <p className={`text-xs sm:text-sm mt-1 sm:mt-1.5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-              View and manage existing types
-            </p>
-          </div>
-          <div className="p-4 sm:p-6 lg:p-8">
-            <MissionTypeTable
-              data={missionTypes}
-              onDelete={handleDeleteMissionType}
-              onEdit={handleEditMissionType}
-              isDark={isDark}
-            />
-          </div>
+          <Button size="sm" onClick={() => setIsAddDialogOpen(true)} className="h-8 gap-1.5 px-3.5 text-xs font-medium rounded-lg transition-all cursor-pointer bg-violet-600 hover:bg-violet-700">
+            <Plus size={13} strokeWidth={2.5} /><span>New Type</span>
+          </Button>
         </div>
       </div>
-
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className={`sm:max-w-lg ${isDark ? 'bg-gray-900 border-gray-700 text-white' : 'bg-white'}`}>
+      <div className="mx-auto max-w-[1600px] px-6 py-6">
+        <div className={`rounded-xl border overflow-hidden ${isDark ? 'bg-[#0f1320] border-white/[0.06] shadow-[0_0_0_1px_rgba(255,255,255,0.02)]' : 'bg-white border-gray-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]'}`}>
+          <div className={`px-5 py-4 border-b ${isDark ? 'border-white/[0.06]' : 'border-gray-100'}`}>
+            <h2 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Type Definitions</h2>
+            <p className={`text-[11px] mt-0.5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Configure mission types for your operations</p>
+          </div>
+          <div className="p-0"><MissionTypeTable data={missionTypes} onDelete={(id) => setDeleteId(id)} onEdit={handleOpenEdit} isDark={isDark} /></div>
+        </div>
+      </div>
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent className={`sm:max-w-lg rounded-xl ${isDark ? 'bg-[#0f1320] border-white/[0.08] text-white shadow-[0_25px_60px_rgba(0,0,0,0.5)]' : 'bg-white border-gray-200 shadow-2xl'}`}>
           <DialogHeader>
-            <DialogTitle className={isDark ? 'text-white' : 'text-gray-900'}>
-              Add New Mission Type
-            </DialogTitle>
-            <DialogDescription className={isDark ? 'text-gray-400' : 'text-gray-500'}>
-              Fill in the details below to create a new mission type.
-            </DialogDescription>
+            <DialogTitle className={`text-base font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Create New Mission Type</DialogTitle>
+            <DialogDescription className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Fill in the details to create a new mission type.</DialogDescription>
           </DialogHeader>
-          <MissionTypeForm
-            onSubmit={(data) => {
-              handleAddMissionType(data);
-            }}
-            isDark={isDark}
-          />
+          <MissionTypeForm onSubmit={handleAddMissionType} isDark={isDark} mode="add" />
         </DialogContent>
       </Dialog>
+      <Dialog open={isEditDialogOpen} onOpenChange={(open) => { setIsEditDialogOpen(open); if (!open) setEditItem(null); }}>
+        <DialogContent className={`sm:max-w-lg rounded-xl ${isDark ? 'bg-[#0f1320] border-white/[0.08] text-white shadow-[0_25px_60px_rgba(0,0,0,0.5)]' : 'bg-white border-gray-200 shadow-2xl'}`}>
+          <DialogHeader>
+            <DialogTitle className={`text-base font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Edit Mission Type</DialogTitle>
+            <DialogDescription className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Update the mission type details.</DialogDescription>
+          </DialogHeader>
+          {editItem && <MissionTypeForm key={editItem.id} onSubmit={handleSaveEdit} isDark={isDark} initialData={editItem} mode="edit" />}
+        </DialogContent>
+      </Dialog>
+      <AlertDialog open={deleteId !== null} onOpenChange={(open) => { if (!open) setDeleteId(null); }}>
+        <AlertDialogContent className={isDark ? 'bg-[#0f1320] border-white/[0.08] text-white' : ''}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Mission Type</AlertDialogTitle>
+            <AlertDialogDescription>Are you sure you want to delete this mission type? This action cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction className="bg-red-600 hover:bg-red-700 text-white" onClick={() => { if (deleteId !== null) { handleDeleteMissionType(deleteId); setDeleteId(null); } }}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

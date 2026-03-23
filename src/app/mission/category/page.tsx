@@ -1,8 +1,9 @@
 'use client';
-
 import MissionCategoryForm from '@/components/mission/MissionCategoryForm';
 import MissionCategoryTable from '@/components/mission/MissionCategoryTable';
+import MissionCategorySkeleton from '@/components/mission/MissionCategorySkeleton';
 import { Button } from '@/components/ui/button';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useTheme } from '@/components/useTheme';
 import { MissionCategory } from '@/config/types/types';
@@ -11,173 +12,121 @@ import { Plus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
-
 export default function MissionCategoryPage() {
   const { isDark } = useTheme();
   const [categories, setCategories] = useState<MissionCategory[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [editItem, setEditItem] = useState<MissionCategory | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState<number | null>(null);
 
   const fetchCategories = async () => {
     setLoading(true);
     try {
       const response = await axios.get(`/api/mission/category/list`);
-
       const result = response.data;
       if (result.code === 1) {
-        setCategories(result.data.map((item: any) => ({
-          id: item.mission_category_id,
-          code: item.mission_category_code,
-          name: item.mission_category_name,
-          description: item.mission_category_desc
-        })));
+        setCategories(result.data.map((item: any) => ({ id: item.mission_category_id, code: item.mission_category_code, name: item.mission_category_name, description: item.mission_category_desc })));
       }
-    } catch (error) {
-      console.error('Error fetching categories:', error);
-    } finally {
-      setLoading(false);
-    }
+    } catch (error) { toast.error('Failed to fetch categories'); }
+    finally { setLoading(false); }
   };
-  useEffect(() => {
-    fetchCategories();
-  }, []);
+
+  useEffect(() => { fetchCategories(); }, []);
 
   const handleAddCategory = async (newCategory: Omit<MissionCategory, 'id'>) => {
     try {
-      const response = await axios.post(`/api/mission/category/add`, {
-        mission_category_code: newCategory.code,
-        mission_category_name: newCategory.name,
-        mission_category_desc: newCategory.description
-      });
-
+      const response = await axios.post(`/api/mission/category/add`, { mission_category_code: newCategory.code, mission_category_name: newCategory.name, mission_category_desc: newCategory.description });
       const result = response.data;
       if (result.code === 1) {
-        const newCat: MissionCategory = {
-          id: result.data.category_id,
-          code: result.data.category_code,
-          name: result.data.category_name,
-          description: result.data.category_description
-        };
-        setCategories(prev => [...prev, newCat]);
-      } else {
-        toast.error(result.message || 'Failed to add category');
-      }
-    } catch (error: any) {
-      console.error('Error adding category:', error);
-      toast.error(error.response?.data?.message || 'Error adding category');
-    }
+        setCategories(prev => [...prev, { id: result.data.category_id, code: result.data.category_code, name: result.data.category_name, description: result.data.category_description }]);
+        toast.success('Category added successfully'); setIsAddDialogOpen(false);
+      } else { toast.error(result.message || 'Failed to add category'); }
+    } catch (error: any) { toast.error(error.response?.data?.message || 'Error adding category'); }
   };
 
   const handleDeleteCategory = async (id: number) => {
     try {
       const response = await axios.post(`/api/mission/category/${id}/delete`);
-
       const result = response.data;
-      if (result.code === 1) {
-        setCategories(prev => prev.filter(cat => cat.id !== id));
-        toast.success('Category deleted successfully');
-      } else {
-        toast.error(result.message || 'Failed to delete category');
-      }
-    } catch (error: any) {
-      console.error('Error deleting category:', error);
-      toast.error(error.response?.data?.message || 'Error deleting category');
-    }
+      if (result.code === 1) { setCategories(prev => prev.filter(cat => cat.id !== id)); toast.success('Category deleted successfully'); }
+      else { toast.error(result.message || 'Failed to delete category'); }
+    } catch (error: any) { toast.error(error.response?.data?.message || 'Error deleting category'); }
   };
 
-  const handleEditCategory = async (updatedCategory: MissionCategory) => {
+  const handleSaveEdit = async (data: Omit<MissionCategory, 'id'>) => {
+    if (!editItem) return;
+    const updatedCategory: MissionCategory = { ...data, id: editItem.id };
     try {
-      const response = await axios.post(
-        `/api/mission/category/${updatedCategory.id}/update`,
-        {
-          mission_category_code: updatedCategory.code,
-          mission_category_name: updatedCategory.name,
-          mission_category_desc: updatedCategory.description
-        }
-      );
-
+      const response = await axios.post(`/api/mission/category/${updatedCategory.id}/update`, { mission_category_code: updatedCategory.code, mission_category_name: updatedCategory.name, mission_category_desc: updatedCategory.description });
       const result = response.data;
       if (result.code === 1) {
-        setCategories(prev =>
-          prev.map(cat =>
-            cat.id === updatedCategory.id ? updatedCategory : cat
-          )
-        );
-      } else {
-        toast.error(result.message || 'Failed to update category');
-      }
-    } catch (error: any) {
-      console.error('Error updating category:', error);
-      toast.error(error.response?.data?.message || 'Error updating category');
-    }
+        setCategories(prev => prev.map(cat => cat.id === updatedCategory.id ? updatedCategory : cat));
+        toast.success('Category updated successfully'); setIsEditDialogOpen(false); setEditItem(null);
+      } else { toast.error(result.message || 'Failed to update category'); }
+    } catch (error: any) { toast.error(error.response?.data?.message || 'Error updating category'); }
   };
+
+  const handleOpenEdit = (category: MissionCategory) => { setEditItem(category); setIsEditDialogOpen(true); };
+
+  if (loading) return <MissionCategorySkeleton isDark={isDark} />;
 
   return (
-    <div className={`min-h-screen ${isDark ? 'bg-slate-900' : 'bg-gray-50'}`}>
-      <div className={`top-0 z-10 backdrop-blur-md transition-colors w-full ${isDark
-          ? "bg-slate-900/80 border-b border-slate-800 text-white"
-          : "bg-white/80 border-b border-slate-200 text-slate-900 shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
-        } px-6 py-4 mb-8`}>
-        <div className="mx-auto max-w-[1800px] flex items-center justify-between">
-          <div className="flex items-center gap-3">
+    <div className={`min-h-screen ${isDark ? 'bg-[#0a0e1a]' : 'bg-[#f4f6f9]'}`}>
+      <div className={`sticky top-0 z-20 backdrop-blur-xl border-b transition-colors ${isDark ? 'bg-[#0a0e1a]/90 border-white/[0.06]' : 'bg-white/80 border-black/[0.06] shadow-[0_1px_2px_rgba(0,0,0,0.04)]'}`}>
+        <div className="mx-auto max-w-[1600px] px-6 py-3.5 flex items-center justify-between">
+          <div className="flex items-center gap-3.5">
             <div className="w-1 h-6 rounded-full bg-violet-600" />
             <div>
-              <h1 className={`font-semibold text-base tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>
-                Mission | Category Management
-              </h1>
-              <p className={`text-xs ${isDark ? "text-slate-500" : "text-slate-400"}`}>
-                Define and maintain mission categories used across operations
-              </p>
+              <h1 className={`text-[15px] font-semibold tracking-[-0.01em] ${isDark ? 'text-white' : 'text-gray-900'}`}>Mission Categories</h1>
+              <p className={`text-[11px] mt-0.5 tracking-wide ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{categories.length} total &middot; Define and maintain mission categories</p>
             </div>
           </div>
-
-          <Button
-            onClick={() => setIsDialogOpen(true)}
-            className="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-700 text-white"
-          >
-            <Plus size={16} />
-            Add Category
+          <Button size="sm" onClick={() => setIsAddDialogOpen(true)} className="h-8 gap-1.5 px-3.5 text-xs font-medium rounded-lg transition-all cursor-pointer bg-violet-600 hover:bg-violet-700">
+            <Plus size={13} strokeWidth={2.5} /><span>New Category</span>
           </Button>
         </div>
       </div>
-
-      <div className="mx-3">
-        <div className={`rounded-xl border shadow-sm ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
-          <div className={`px-4 py-3 border-b flex items-center justify-between ${isDark ? 'border-slate-700' : 'border-gray-100'}`}>
-            <h2 className={`text-base font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              Mission Category List
-            </h2>
+      <div className="mx-auto max-w-[1600px] px-6 py-6">
+        <div className={`rounded-xl border overflow-hidden ${isDark ? 'bg-[#0f1320] border-white/[0.06] shadow-[0_0_0_1px_rgba(255,255,255,0.02)]' : 'bg-white border-gray-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]'}`}>
+          <div className={`px-5 py-4 border-b ${isDark ? 'border-white/[0.06]' : 'border-gray-100'}`}>
+            <h2 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Category Definitions</h2>
+            <p className={`text-[11px] mt-0.5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Configure mission categories used across operations</p>
           </div>
-          <div className="p-4">
-            <MissionCategoryTable
-              data={categories}
-              onDelete={handleDeleteCategory}
-              onEdit={handleEditCategory}
-              isDark={isDark}
-            />
-          </div>
+          <div className="p-0"><MissionCategoryTable data={categories} onDelete={(id) => setDeleteId(id)} onEdit={handleOpenEdit} isDark={isDark} /></div>
         </div>
       </div>
-
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className={`sm:max-w-md ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white'}`}>
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent className={`sm:max-w-lg rounded-xl ${isDark ? 'bg-[#0f1320] border-white/[0.08] text-white shadow-[0_25px_60px_rgba(0,0,0,0.5)]' : 'bg-white border-gray-200 shadow-2xl'}`}>
           <DialogHeader>
-            <DialogTitle className={isDark ? 'text-white' : 'text-gray-900'}>
-              Add Mission Category
-            </DialogTitle>
-            <DialogDescription className={isDark ? 'text-slate-400' : 'text-gray-500'}>
-              Fill the form below to add a new mission category.
-            </DialogDescription>
+            <DialogTitle className={`text-base font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Create New Category</DialogTitle>
+            <DialogDescription className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Define a new mission category for your operations.</DialogDescription>
           </DialogHeader>
-          <MissionCategoryForm
-            onSubmit={(data) => {
-              handleAddCategory(data);
-              setIsDialogOpen(false);
-            }}
-            isDark={isDark}
-          />
+          <MissionCategoryForm onSubmit={handleAddCategory} isDark={isDark} mode="add" />
         </DialogContent>
       </Dialog>
+      <Dialog open={isEditDialogOpen} onOpenChange={(open) => { setIsEditDialogOpen(open); if (!open) setEditItem(null); }}>
+        <DialogContent className={`sm:max-w-lg rounded-xl ${isDark ? 'bg-[#0f1320] border-white/[0.08] text-white shadow-[0_25px_60px_rgba(0,0,0,0.5)]' : 'bg-white border-gray-200 shadow-2xl'}`}>
+          <DialogHeader>
+            <DialogTitle className={`text-base font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Edit Category</DialogTitle>
+            <DialogDescription className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Update the mission category details.</DialogDescription>
+          </DialogHeader>
+          {editItem && <MissionCategoryForm key={editItem.id} onSubmit={handleSaveEdit} isDark={isDark} initialData={editItem} mode="edit" />}
+        </DialogContent>
+      </Dialog>
+      <AlertDialog open={deleteId !== null} onOpenChange={(open) => { if (!open) setDeleteId(null); }}>
+        <AlertDialogContent className={isDark ? 'bg-[#0f1320] border-white/[0.08] text-white' : ''}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Category</AlertDialogTitle>
+            <AlertDialogDescription>Are you sure you want to delete this mission category? This action cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction className="bg-red-600 hover:bg-red-700 text-white" onClick={() => { if (deleteId !== null) { handleDeleteCategory(deleteId); setDeleteId(null); } }}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -1,16 +1,10 @@
 'use client';
-
 import MissionStatusForm from '@/components/mission/MissionStatusForm';
 import MissionStatusTable from '@/components/mission/MissionStatusTable';
 import MissionStatusSkeleton from '@/components/mission/StatusSkeleton';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useTheme } from '@/components/useTheme';
 import { Mission } from '@/config/types/types';
 import axios from 'axios';
@@ -22,31 +16,26 @@ export default function MissionStatusPage() {
   const { isDark } = useTheme();
   const [statuses, setStatuses] = useState<Mission[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [editItem, setEditItem] = useState<Mission | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState<number | null>(null);
 
-  const fetchStatuses = async (isRefresh = false) => {
-    if (isRefresh) setRefreshing(true);
-    else setLoading(true);
+  const fetchStatuses = async () => {
+    setLoading(true);
     try {
       const response = await axios.get(`/api/mission/status/list`);
       const result = response.data;
       if (result.code === 1) {
         setStatuses(result.data.map((item: any) => ({
-          id: item.mission_status_id,
-          code: item.mission_status_code,
-          name: item.mission_status_name,
-          description: item.mission_status_desc,
-          order: item.status_order,
-          isFinalStatus: item.is_final_status,
+          id: item.mission_status_id, code: item.mission_status_code, name: item.mission_status_name,
+          description: item.mission_status_desc, order: item.status_order, isFinalStatus: item.is_final_status,
         })));
       }
     } catch (error) {
-      console.error('Error fetching statuses:', error);
       toast.error('Failed to fetch mission statuses');
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   };
 
@@ -55,71 +44,47 @@ export default function MissionStatusPage() {
   const handleAddStatus = async (newStatus: Omit<Mission, 'id'>) => {
     try {
       const response = await axios.post(`/api/mission/status/add`, {
-        mission_status_code: newStatus.code,
-        mission_status_name: newStatus.name,
-        mission_status_desc: newStatus.description,
-        status_order: newStatus.order,
-        is_final_status: newStatus.isFinalStatus,
+        mission_status_code: newStatus.code, mission_status_name: newStatus.name,
+        mission_status_desc: newStatus.description, status_order: newStatus.order, is_final_status: newStatus.isFinalStatus,
       });
       const result = response.data;
       if (result.code === 1) {
-        const added: Mission = {
-          id: result.data.status_id,
-          code: result.data.status_code,
-          name: result.data.status_name,
-          description: result.data.status_description,
-          order: result.data.status_order,
-          isFinalStatus: result.data.is_final_status,
-        };
+        const added: Mission = { id: result.data.status_id, code: result.data.status_code, name: result.data.status_name, description: result.data.status_description, order: result.data.status_order, isFinalStatus: result.data.is_final_status };
         setStatuses(prev => [...prev, added].sort((a, b) => (a.order || 0) - (b.order || 0)));
         toast.success('Mission status added successfully');
-        setIsDialogOpen(false);
-      } else {
-        toast.error(result.message || 'Failed to add status');
-      }
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Error adding status');
-    }
+        setIsAddDialogOpen(false);
+      } else { toast.error(result.message || 'Failed to add status'); }
+    } catch (error: any) { toast.error(error.response?.data?.message || 'Error adding status'); }
   };
 
   const handleDeleteStatus = async (id: number) => {
     try {
       const response = await axios.post(`/api/mission/status/${id}/delete`);
       const result = response.data;
-      if (result.code === 1) {
-        setStatuses(prev => prev.filter(s => s.id !== id));
-        toast.success('Mission status deleted successfully');
-      } else {
-        toast.error(result.message || 'Failed to delete status');
-      }
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Error deleting status');
-    }
+      if (result.code === 1) { setStatuses(prev => prev.filter(s => s.id !== id)); toast.success('Mission status deleted successfully'); }
+      else { toast.error(result.message || 'Failed to delete status'); }
+    } catch (error: any) { toast.error(error.response?.data?.message || 'Error deleting status'); }
   };
 
-  const handleEditStatus = async (updatedStatus: Mission) => {
+  const handleSaveEdit = async (data: Omit<Mission, 'id'>) => {
+    if (!editItem) return;
+    const updatedStatus: Mission = { ...data, id: editItem.id };
     try {
       const response = await axios.post(`/api/mission/status/${updatedStatus.id}/update`, {
-        mission_status_code: updatedStatus.code,
-        mission_status_name: updatedStatus.name,
-        mission_status_desc: updatedStatus.description,
-        status_order: updatedStatus.order,
-        is_final_status: updatedStatus.isFinalStatus,
+        mission_status_code: updatedStatus.code, mission_status_name: updatedStatus.name,
+        mission_status_desc: updatedStatus.description, status_order: updatedStatus.order, is_final_status: updatedStatus.isFinalStatus,
       });
       const result = response.data;
       if (result.code === 1) {
-        setStatuses(prev =>
-          prev.map(s => s.id === updatedStatus.id ? updatedStatus : s)
-            .sort((a, b) => (a.order || 0) - (b.order || 0))
-        );
+        setStatuses(prev => prev.map(s => s.id === updatedStatus.id ? updatedStatus : s).sort((a, b) => (a.order || 0) - (b.order || 0)));
         toast.success('Mission status updated successfully');
-      } else {
-        toast.error(result.message || 'Failed to update status');
-      }
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Error updating status');
-    }
+        setIsEditDialogOpen(false);
+        setEditItem(null);
+      } else { toast.error(result.message || 'Failed to update status'); }
+    } catch (error: any) { toast.error(error.response?.data?.message || 'Error updating status'); }
   };
+
+  const handleOpenEdit = (status: Mission) => { setEditItem(status); setIsEditDialogOpen(true); };
 
   if (loading) return <MissionStatusSkeleton isDark={isDark} />;
 
@@ -128,88 +93,61 @@ export default function MissionStatusPage() {
 
   return (
     <div className={`min-h-screen ${isDark ? 'bg-[#0a0e1a]' : 'bg-[#f4f6f9]'}`}>
-      <div
-        className={`sticky top-0 z-20 backdrop-blur-xl border-b transition-colors ${
-          isDark
-            ? 'bg-[#0a0e1a]/90 border-white/[0.06]'
-            : 'bg-white/80 border-black/[0.06] shadow-[0_1px_2px_rgba(0,0,0,0.04)]'
-        }`}
-      >
+      <div className={`sticky top-0 z-20 backdrop-blur-xl border-b transition-colors ${isDark ? 'bg-[#0a0e1a]/90 border-white/[0.06]' : 'bg-white/80 border-black/[0.06] shadow-[0_1px_2px_rgba(0,0,0,0.04)]'}`}>
         <div className="mx-auto max-w-[1600px] px-6 py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-3.5">
-                <div className="w-1 h-6 rounded-full bg-violet-600" />
+            <div className="w-1 h-6 rounded-full bg-violet-600" />
             <div>
-              <h1 className={`text-[15px] font-semibold tracking-[-0.01em] ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                Mission Statuses
-              </h1>
-              <p className={`text-[11px] mt-0.5 tracking-wide ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                {statuses.length} total &middot; {activeCount} active &middot; {finalCount} final
-              </p>
+              <h1 className={`text-[15px] font-semibold tracking-[-0.01em] ${isDark ? 'text-white' : 'text-gray-900'}`}>Mission Statuses</h1>
+              <p className={`text-[11px] mt-0.5 tracking-wide ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{statuses.length} total &middot; {activeCount} active &middot; {finalCount} final</p>
             </div>
           </div>
-
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              onClick={() => setIsDialogOpen(true)}
-              className={`h-8 gap-1.5 px-3.5 text-xs font-medium rounded-lg transition-all cursor-pointer bg-violet-600 hover:bg-violet-700`}
-            >
-              <Plus size={13} strokeWidth={2.5} />
-              <span>New Status</span>
-            </Button>
-          </div>
+          <Button size="sm" onClick={() => setIsAddDialogOpen(true)} className="h-8 gap-1.5 px-3.5 text-xs font-medium rounded-lg transition-all cursor-pointer bg-violet-600 hover:bg-violet-700">
+            <Plus size={13} strokeWidth={2.5} /><span>New Status</span>
+          </Button>
         </div>
       </div>
-
       <div className="mx-auto max-w-[1600px] px-6 py-6">
-        <div
-          className={`rounded-xl border overflow-hidden ${
-            isDark
-              ? 'bg-[#0f1320] border-white/[0.06] shadow-[0_0_0_1px_rgba(255,255,255,0.02)]'
-              : 'bg-white border-gray-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]'
-          }`}
-        >
-          <div className={`px-5 py-4 border-b flex items-center justify-between ${
-            isDark ? 'border-white/[0.06]' : 'border-gray-100'
-          }`}>
-            <div>
-              <h2 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                Status Definitions
-              </h2>
-              <p className={`text-[11px] mt-0.5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                Configure workflow stages for mission tracking
-              </p>
-            </div>
+        <div className={`rounded-xl border overflow-hidden ${isDark ? 'bg-[#0f1320] border-white/[0.06] shadow-[0_0_0_1px_rgba(255,255,255,0.02)]' : 'bg-white border-gray-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]'}`}>
+          <div className={`px-5 py-4 border-b ${isDark ? 'border-white/[0.06]' : 'border-gray-100'}`}>
+            <h2 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Status Definitions</h2>
+            <p className={`text-[11px] mt-0.5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Configure workflow stages for mission tracking</p>
           </div>
-
           <div className="p-0">
-            <MissionStatusTable
-              data={statuses}
-              onDelete={handleDeleteStatus}
-              onEdit={handleEditStatus}
-              isDark={isDark}
-            />
+            <MissionStatusTable data={statuses} onDelete={(id) => setDeleteId(id)} onEdit={handleOpenEdit} isDark={isDark} />
           </div>
         </div>
       </div>
-
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className={`sm:max-w-lg rounded-xl ${
-          isDark
-            ? 'bg-[#0f1320] border-white/[0.08] text-white shadow-[0_25px_60px_rgba(0,0,0,0.5)]'
-            : 'bg-white border-gray-200 shadow-2xl'
-        }`}>
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent className={`sm:max-w-lg rounded-xl ${isDark ? 'bg-[#0f1320] border-white/[0.08] text-white shadow-[0_25px_60px_rgba(0,0,0,0.5)]' : 'bg-white border-gray-200 shadow-2xl'}`}>
           <DialogHeader>
-            <DialogTitle className={`text-base font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              Create New Status
-            </DialogTitle>
-            <DialogDescription className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-              Define a new workflow stage for mission operations.
-            </DialogDescription>
+            <DialogTitle className={`text-base font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Create New Status</DialogTitle>
+            <DialogDescription className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Define a new workflow stage for mission operations.</DialogDescription>
           </DialogHeader>
-          <MissionStatusForm onSubmit={handleAddStatus} isDark={isDark} />
+          <MissionStatusForm onSubmit={handleAddStatus} isDark={isDark} mode="add" />
         </DialogContent>
       </Dialog>
+      <Dialog open={isEditDialogOpen} onOpenChange={(open) => { setIsEditDialogOpen(open); if (!open) setEditItem(null); }}>
+        <DialogContent className={`sm:max-w-lg rounded-xl ${isDark ? 'bg-[#0f1320] border-white/[0.08] text-white shadow-[0_25px_60px_rgba(0,0,0,0.5)]' : 'bg-white border-gray-200 shadow-2xl'}`}>
+          <DialogHeader>
+            <DialogTitle className={`text-base font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Edit Status</DialogTitle>
+            <DialogDescription className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Update the workflow stage details.</DialogDescription>
+          </DialogHeader>
+          {editItem && <MissionStatusForm key={editItem.id} onSubmit={handleSaveEdit} isDark={isDark} initialData={editItem} mode="edit" />}
+        </DialogContent>
+      </Dialog>
+      <AlertDialog open={deleteId !== null} onOpenChange={(open) => { if (!open) setDeleteId(null); }}>
+        <AlertDialogContent className={isDark ? 'bg-[#0f1320] border-white/[0.08] text-white' : ''}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Status</AlertDialogTitle>
+            <AlertDialogDescription>Are you sure you want to delete this mission status? This action cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction className="bg-red-600 hover:bg-red-700 text-white" onClick={() => { if (deleteId !== null) { handleDeleteStatus(deleteId); setDeleteId(null); } }}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -90,6 +90,7 @@ export async function updateMissionType(ownerId: number, missionTypeId: number, 
     const { data: existing } = await supabase
       .from('pilot_mission_type')
       .select('mission_type_id')
+      .eq('fk_owner_id', ownerId)
       .eq('type_code', missionType.mission_type_code)
       .eq('is_active', true)
       .neq('mission_type_id', missionTypeId)

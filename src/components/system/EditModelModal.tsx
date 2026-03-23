@@ -384,7 +384,6 @@ export default function EditModelModal({ open, toolId, onClose, onSuccess, initi
 
             {selectedModelId && (
               <>
-                {/* Identification */}
                 <div>
                   <p className={sectionLabelCls}>Identification</p>
                   <div className="grid grid-cols-12 gap-3">
@@ -432,7 +431,6 @@ export default function EditModelModal({ open, toolId, onClose, onSuccess, initi
                   </div>
                 </div>
 
-                {/* Classification & Weight */}
                 <div>
                   <p className={sectionLabelCls}>Classification & Weight</p>
                   <div className="grid grid-cols-12 gap-3">
@@ -451,7 +449,6 @@ export default function EditModelModal({ open, toolId, onClose, onSuccess, initi
                   </div>
                 </div>
 
-                {/* Operating Conditions */}
                 <div>
                   <p className={sectionLabelCls}>Operating Conditions</p>
                   <div className="grid grid-cols-12 gap-3">
@@ -474,7 +471,6 @@ export default function EditModelModal({ open, toolId, onClose, onSuccess, initi
                   </div>
                 </div>
 
-                {/* Performance */}
                 <div>
                   <p className={sectionLabelCls}>Performance</p>
                   <div className="grid grid-cols-12 gap-3">
@@ -497,7 +493,6 @@ export default function EditModelModal({ open, toolId, onClose, onSuccess, initi
                   </div>
                 </div>
 
-                {/* Maintenance */}
                 <div>
                   <p className={sectionLabelCls}>Maintenance</p>
                   <div className="grid grid-cols-12 gap-3 items-end">
@@ -547,7 +542,7 @@ export default function EditModelModal({ open, toolId, onClose, onSuccess, initi
                     )}
                     {showFlights && (
                       <div className="col-span-2">
-                        <Label className={labelCls}>Flights Limit<span className="text-xs text-muted-foreground">(0–10)</span></Label>
+                        <Label className={labelCls}>Flights Limit</Label>
                         <Input type="number" min={0}   className={inputCls} value={formData.maintenance_cycle_flight}
                           onChange={e => handleCycleInput('maintenance_cycle_flight', e.target.value)}  />
                       </div>
@@ -555,7 +550,6 @@ export default function EditModelModal({ open, toolId, onClose, onSuccess, initi
                   </div>
                 </div>
 
-                {/* Guarantee & Notes */}
                 <div>
                   <p className={sectionLabelCls}>Guarantee & Notes</p>
                   <div className="grid grid-cols-12 gap-3">

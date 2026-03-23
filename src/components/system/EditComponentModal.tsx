@@ -437,22 +437,22 @@ export default function EditComponentModal({
                     )}
                     {showHours && (
                       <div className="col-span-2">
-                        <Label className={labelCls}>Hours  </Label>
+                        <Label className={labelCls}>Hours Limit</Label>
                         <Input type="number" min={0} className={inputCls} value={formData.maintenance_cycle_hour}
                           onChange={e => handleCycleInput('maintenance_cycle_hour', e.target.value)}  />
                       </div>
                     )}
                     {showDays && (
                       <div className="col-span-2">
-                        <Label className={labelCls}>Days </Label>
-                        <Input type="number" min={0} max={30} className={inputCls} value={formData.maintenance_cycle_day}
+                        <Label className={labelCls}>Days Limit</Label>
+                        <Input type="number" min={0} className={inputCls} value={formData.maintenance_cycle_day}
                           onChange={e => handleCycleInput('maintenance_cycle_day', e.target.value)}  />
                       </div>
                     )}
                     {showFlights && (
                       <div className="col-span-2">
-                        <Label className={labelCls}>Flights  </Label>
-                        <Input type="number" min={0} max={10} className={inputCls} value={formData.maintenance_cycle_flight}
+                        <Label className={labelCls}>Flights Limit</Label>
+                        <Input type="number" min={0} className={inputCls} value={formData.maintenance_cycle_flight}
                           onChange={e => handleCycleInput('maintenance_cycle_flight', e.target.value)}  />
                       </div>
                     )}

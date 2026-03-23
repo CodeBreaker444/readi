@@ -316,11 +316,6 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                       disabled={!canEditEmail}
                       readOnly={!canEditEmail}
                     />
-                    {!canEditEmail && (
-                      <p className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-                        Only admins can change email addresses.
-                      </p>
-                    )}
                   </div>
 
                   <div>

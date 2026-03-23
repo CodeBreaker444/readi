@@ -18,8 +18,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { ClipboardList } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { toast } from 'sonner';
+import { useMemo } from 'react';
 import { TablePagination } from '../tables/Pagination';
 import { createMissionStatusColumns } from '../tables/StatusColumn';
 
@@ -31,41 +30,9 @@ interface MissionStatusTableProps {
 }
 
 export default function MissionStatusTable({ data, onDelete, onEdit, isDark }: MissionStatusTableProps) {
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [editForm, setEditForm] = useState<Mission | null>(null);
-
-  const handleEditClick = (status: Mission) => {
-    setEditingId(status.id);
-    setEditForm({ ...status });
-  };
-
-  const handleSaveEdit = () => {
-    if (editForm && editForm.code.trim() && editForm.name.trim()) {
-      onEdit(editForm);
-      setEditingId(null);
-      setEditForm(null);
-    } else {
-      toast.error('Code and Name are required');
-    }
-  };
-
-  const handleCancelEdit = () => {
-    setEditingId(null);
-    setEditForm(null);
-  };
-
   const columns = useMemo(
-    () => createMissionStatusColumns({
-      isDark,
-      editingId,
-      editForm,
-      onEditChange: setEditForm,
-      onEditClick: handleEditClick,
-      onSave: handleSaveEdit,
-      onCancel: handleCancelEdit,
-      onDelete,
-    }),
-    [isDark, editingId, editForm, onDelete]
+    () => createMissionStatusColumns({ isDark, onEditClick: onEdit, onDelete }),
+    [isDark, onEdit, onDelete]
   );
 
   const table = useReactTable({
@@ -108,18 +75,13 @@ export default function MissionStatusTable({ data, onDelete, onEdit, isDark }: M
 
           <TableBody>
             {table.getRowModel().rows.length ? (
-              table.getRowModel().rows.map((row, idx) => (
+              table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
                   className={`group transition-colors border-b ${
                     isDark
                       ? 'border-white/[0.04] hover:bg-white/[0.03]'
                       : 'border-gray-50 hover:bg-gray-50/50'
-                  } ${editingId === row.original.id
-                    ? isDark
-                      ? 'bg-cyan-500/[0.04] hover:bg-cyan-500/[0.06]'
-                      : 'bg-blue-50/50 hover:bg-blue-50/70'
-                    : ''
                   }`}
                 >
                   {row.getVisibleCells().map((cell) => (

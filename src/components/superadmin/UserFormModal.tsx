@@ -197,9 +197,6 @@ export function UserFormModal({
                 readOnly={!canEditEmail && mode === 'edit'}
                 className={!canEditEmail && mode === 'edit' ? 'opacity-60 cursor-not-allowed' : ''}
               />
-              {!canEditEmail && mode === 'edit' && (
-                <p className="text-xs mt-1 text-slate-400">Only admins can change email addresses.</p>
-              )}
             </div>
             <div>
               <Label htmlFor="phone" className="pb-2">Phone</Label>
