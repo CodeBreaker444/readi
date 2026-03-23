@@ -1,3 +1,4 @@
+import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { createUser } from '@/backend/services/user/user-management';
 import { getUserSession } from '@/lib/auth/server-session';
 import { NextRequest, NextResponse } from 'next/server';
@@ -28,6 +29,19 @@ export async function POST(request: NextRequest) {
     };
 
     const result = await createUser(userData);
+
+    logEvent({
+      eventType: 'CREATE',
+      entityType: 'user',
+      entityId: result.userId,
+      description: `Created user '${body.fullname ?? body.email}'`,
+      userId: session.user.userId,
+      userName: session.user.fullname,
+      userEmail: session.user.email,
+      userRole: session.user.role,
+      ownerId: session.user.ownerId,
+      metadata: { email: body.email, role: body.user_type },
+    });
 
     return NextResponse.json({
       code: 1,

@@ -1,3 +1,4 @@
+import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { createDocument } from '@/backend/services/document/document-service';
 import { getUserSession } from '@/lib/auth/server-session';
 import { NextRequest, NextResponse } from 'next/server';
@@ -65,6 +66,20 @@ export async function POST(req: NextRequest) {
     }
 
     const result = await createDocument(parsed.data, file as File, ownerId);
+
+    logEvent({
+      eventType: 'CREATE',
+      entityType: 'document',
+      entityId: result?.document_id ,
+      description: `Created document '${parsed.data.title}'`,
+      userId: session.user.userId,
+      userName: session.user.fullname,
+      userEmail: session.user.email,
+      userRole: session.user.role,
+      ownerId,
+      metadata: { code: parsed.data.doc_code, status: parsed.data.status },
+    });
+
     return NextResponse.json({ code: 1, message: 'Documento creato', ...result }, { status: 201 });
   } catch (err:any) {
     if(err.message == "A document with code already exists.")

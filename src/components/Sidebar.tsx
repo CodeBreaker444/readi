@@ -10,6 +10,7 @@ import {
   HiOutlineBookOpen,
   HiOutlineBriefcase,
   HiOutlineChartBar,
+  HiOutlineClipboardList,
   HiOutlineCog,
   HiOutlineDocumentText,
   HiOutlineHome,
@@ -93,7 +94,8 @@ const navigationItems: NavItem[] = [
   //   icon: Users
   // },
   { name: 'Notifications', href: '/notifications', icon: HiOutlineBell },
-  { name: 'Document Repository', href: '/document-repository', icon: HiOutlineDocumentText }
+  { name: 'Document Repository', href: '/document-repository', icon: HiOutlineDocumentText },
+  { name: 'Audit Logs', href: '/audit-logs', icon: HiOutlineClipboardList },
 ];
 
 const configurationItems: SubNavItem[] = [
@@ -438,8 +440,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
       >
         <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
           <div className={`flex items-center ${isCollapsed ? '' : 'gap-2.5'}`}>
-            <div className="w-8 h-8 rounded-xl overflow-hidden flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg, #7c3aed, #5b21b6)', boxShadow: '0 2px 8px rgba(124,58,237,0.3)' }}>
-              <img src="/logo-sm.png" alt="ReADI Logo" className="w-full h-full object-contain" />
+            <div className="w-8 h-8 rounded-xl overflow-hidden text-white flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg, #7c3aed, #5b21b6)', boxShadow: '0 2px 8px rgba(124,58,237,0.3)' }}>
+              <img src="/logo-sm.png" alt="ReADI Logo" className="w-full h-full object-contain brightness-0 invert" />
             </div>
             {!isCollapsed && (
               <div>

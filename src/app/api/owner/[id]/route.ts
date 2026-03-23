@@ -1,3 +1,4 @@
+import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { deleteOwner, updateOwner } from '@/backend/services/company/owner-service';
 import { getUserSession } from '@/lib/auth/server-session';
 import { NextResponse } from 'next/server';
@@ -29,6 +30,19 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
         const data = await updateOwner(id, body);
 
+        logEvent({
+            eventType: 'UPDATE',
+            entityType: 'company',
+            entityId: id,
+            description: `Updated company ID ${id}`,
+            userId: session.user.userId,
+            userName: session.user.fullname,
+            userEmail: session.user.email,
+            userRole: session.user.role,
+            ownerId: session.user.ownerId,
+            metadata: { owner_name: body.owner_name },
+        });
+
         return NextResponse.json({ code: 1, message: 'Updated', data });
 
     } catch (err: any) {
@@ -49,6 +63,18 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
         }
 
         await deleteOwner(id, Number(deletedByUserId));
+
+        logEvent({
+            eventType: 'DELETE',
+            entityType: 'company',
+            entityId: id,
+            description: `Deactivated company ID ${id}`,
+            userId: session.user.userId,
+            userName: session.user.fullname,
+            userEmail: session.user.email,
+            userRole: session.user.role,
+            ownerId: session.user.ownerId,
+        });
 
         return NextResponse.json({ code: 1, message: 'Company deactivated and archived' });
         

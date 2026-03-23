@@ -1,3 +1,4 @@
+import { logEvent } from "@/backend/services/auditLog/audit-log";
 import { addOwnerWithAdmin, getOwners } from "@/backend/services/company/owner-service";
 import { getUserSession } from "@/lib/auth/server-session";
 import { NextResponse } from "next/server";
@@ -46,6 +47,19 @@ const POST = async (req: Request) => {
 
         const result = await addOwnerWithAdmin(body);
 
+
+        logEvent({
+            eventType: 'CREATE',
+            entityType: 'company',
+            entityId: result.owner.owner_id,
+            description: `Created company '${result.owner.owner_name}' (${result.owner.owner_code})`,
+            userId: session.user.userId,
+            userName: session.user.fullname,
+            userEmail: session.user.email,
+            userRole: session.user.role,
+            ownerId: session.user.ownerId,
+            metadata: { owner_code: result.owner.owner_code },
+        });
 
         return NextResponse.json({
             code: 1,
