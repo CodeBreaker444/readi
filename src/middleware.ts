@@ -43,7 +43,7 @@ export async function updateSession(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname
 
-  const publicRoutes = ['/auth/login', '/auth/activate','/auth/update-password', '/auth/setup-2fa', '/auth/verify-mfa']
+  const publicRoutes = ['/auth/login', '/auth/activate', '/auth/update-password', '/auth/setup-2fa', '/auth/verify-mfa']
   const authFlowRoutes = [
     '/auth/change-password',
     '/auth/setup-2fa',
@@ -59,7 +59,16 @@ export async function updateSession(request: NextRequest) {
     }
     return NextResponse.redirect(new URL('/auth/login', request.url))
   }
-if (!user) {
+  const hasJwtToken = request.cookies.get('readi_auth_token')?.value
+
+  if (hasJwtToken) {
+    if (isPublicRoute || isAuthFlowRoute) {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+    return response
+  }
+  
+  if (!user) {
     if (isPublicRoute) {
       return response
     }
@@ -88,7 +97,7 @@ if (!user) {
       }
     }
 
-const { data: userData, error: userError } = await supabase
+    const { data: userData, error: userError } = await supabase
       .from('users')
       .select('user_id, user_active, fk_owner_id, user_role')
       .eq('auth_user_id', user.id)
@@ -187,6 +196,6 @@ export async function middleware(request: NextRequest) {
 export const config = {
   runtime: 'nodejs',
   matcher: [
-     '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }

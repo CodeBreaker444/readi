@@ -1,10 +1,8 @@
 'use client';
 
 import { SessionUser } from '@/lib/auth/server-session';
-import Cookies from 'js-cookie';
 import { ChevronDown, Clock, LogOut, Moon, Sun, User, UserCircle } from 'lucide-react';
 import { useState } from 'react';
-import { toast } from 'sonner';
 import { supabase } from '../lib/supabase/client';
 import NotificationDropdown from './NotificationDropdown';
 import ProfileModal from './ProfileModal';
@@ -25,17 +23,9 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
     try {
       setIsLoggingOut(true);
 
-      const { error } = await supabase.auth.signOut();
+      await supabase.auth.signOut();
 
-      if (error) {
-        console.error('Logout error:', error);
-        toast.error('Failed to logout. Please try again.');
-        return;
-      }
-
-      Cookies.remove('readi_auth_token', { path: '/' });
-
-      Cookies.remove('mfa_verified', { path: '/' });
+      await fetch('/api/auth/logout', { method: 'POST' });
 
       setShowUserMenu(false);
 
@@ -159,7 +149,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
                       } ${isLoggingOut ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     <LogOut size={18} />
-                    <span>{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
+                    <span>Logout</span>
                   </button>
                 </div>
               </div>
