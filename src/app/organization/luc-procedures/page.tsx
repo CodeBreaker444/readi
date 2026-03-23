@@ -197,21 +197,21 @@ export default function LucProceduresPage() {
     : '';
 
   return (
-    <div className={`min-h-screen ${isDark ? 'bg-slate-950' : 'bg-gray-50'}`}>
+    <div className={`min-h-screen ${isDark ? 'bg-slate-950 text-slate-300' : 'bg-slate-100 text-slate-700'}`}>
 
-      <div className={`top-0 z-10 backdrop-blur-md transition-colors w-full px-6 py-4 mb-8
+      <div className={`top-0 z-10 backdrop-blur-md transition-colors w-full px-6 pt-4 mb-8
         ${isDark
-          ? 'bg-slate-900/80 border-b border-slate-700/60 text-white'
-          : 'bg-white/80 border-b border-gray-200 text-slate-900 shadow-[0_1px_3px_rgba(0,0,0,0.06)]'
+          ? 'bg-slate-900/80 border-b border-slate-800 text-white'
+          : 'bg-white/80 border-b border-slate-200 text-slate-900 shadow-[0_1px_3px_rgba(0,0,0,0.06)]'
         }`}>
-        <div className="max-w-[1800px] flex items-center justify-between mb-6">
+        <div className="mx-auto max-w-[1800px] flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <div className="w-1 h-6 rounded-full bg-violet-600" />
             <div>
               <h1 className={`font-semibold text-base tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
                 LUC Procedures
               </h1>
-              <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
+              <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                 Manage light UAS operator certificate procedures
               </p>
             </div>
@@ -242,7 +242,8 @@ export default function LucProceduresPage() {
             </Button>
           </div>
         </div>
-
+        </div>
+        <div className='relative mb-4 mx-3'> 
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
           <StatCard label="Total"      value={stats.total}      isDark={isDark}
             colorClass="text-slate-700"   bgClass="bg-white"

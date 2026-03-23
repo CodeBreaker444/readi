@@ -57,6 +57,7 @@ interface PilotOption { user_id: number; first_name: string; last_name: string }
 interface ToolOption { tool_id: number; tool_name: string; tool_code: string }
 interface MissionTypeOption { mission_type_id: number; type_name: string }
 interface MissionCategoryOption { category_id: number; category_name: string }
+interface PlanningOption { planning_id: number; planning_name: string; fk_client_id: number; client_name: string }
 
 interface OperationForm {
     mission_name: string;
@@ -75,6 +76,9 @@ interface OperationForm {
     days_of_week: number[];
     recur_until: string;
     mission_group_label: string;
+    flight_duration: string;
+    distance_flown: string;
+    fk_planning_id: string;
 }
 
 interface OperationFormProps {
@@ -110,6 +114,9 @@ const EMPTY_FORM: OperationForm = {
     days_of_week: [],
     recur_until: '',
     mission_group_label: '',
+    flight_duration: '',
+    distance_flown: '',
+    fk_planning_id: '',
 };
 
 export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: OperationFormProps) {
@@ -121,6 +128,7 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
     const [tools, setTools] = useState<ToolOption[]>([]);
     const [missionTypes, setMissionTypes] = useState<MissionTypeOption[]>([]);
     const [missionCategories, setMissionCategories] = useState<MissionCategoryOption[]>([]);
+    const [plannings, setPlannings] = useState<PlanningOption[]>([]);
     const [loadingOptions, setLoadingOptions] = useState(false);
     const [form, setForm] = useState<OperationForm>(EMPTY_FORM);
 
@@ -133,6 +141,7 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
                 setTools(res.data.tools ?? []);
                 setMissionTypes(res.data.types ?? []);
                 setMissionCategories(res.data.categories ?? []);
+                setPlannings(res.data.plannings ?? []);
             })
             .catch(() => toast.error('Failed to load form options'))
             .finally(() => setLoadingOptions(false));
@@ -157,6 +166,9 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
                 days_of_week: [],
                 recur_until: '',
                 mission_group_label: '',
+                flight_duration: initial.flight_duration?.toString() ?? '',
+                distance_flown: initial.distance_flown?.toString() ?? '',
+                fk_planning_id: (initial as any).fk_planning_id?.toString() ?? '',
             });
         } else {
             setForm(EMPTY_FORM);
@@ -199,6 +211,7 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
                         fk_tool_id: form.fk_tool_id ? parseInt(form.fk_tool_id) : undefined,
                         fk_mission_type_id: form.fk_mission_type_id ? parseInt(form.fk_mission_type_id) : undefined,
                         fk_mission_category_id: form.fk_mission_category_id ? parseInt(form.fk_mission_category_id) : undefined,
+                        fk_planning_id: form.fk_planning_id ? parseInt(form.fk_planning_id) : undefined,
                         location: form.location || undefined,
                         notes: form.notes || undefined,
                         is_recurring: true,
@@ -226,6 +239,9 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
                     fk_mission_type_id: form.fk_mission_type_id ? parseInt(form.fk_mission_type_id) : undefined,
                     fk_mission_category_id: form.fk_mission_category_id ? parseInt(form.fk_mission_category_id) : undefined,
                     status_name: form.status_name,
+                    flight_duration: form.flight_duration ? parseInt(form.flight_duration) : undefined,
+                    distance_flown: form.distance_flown ? parseFloat(form.distance_flown) : undefined,
+                    fk_planning_id: form.fk_planning_id ? parseInt(form.fk_planning_id) : undefined,
                 };
 
                 let saved: { data: Operation };
@@ -397,6 +413,23 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
                                 </Select>
                             </div>
 
+                            {isEdit && (
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="grid gap-1.5">
+                                        <Label htmlFor="flight_duration">Flight Duration (min)</Label>
+                                        <Input id="flight_duration" type="number" min="0" placeholder="e.g. 45"
+                                            value={form.flight_duration}
+                                            onChange={(e) => setForm((f) => ({ ...f, flight_duration: e.target.value }))} />
+                                    </div>
+                                    <div className="grid gap-1.5">
+                                        <Label htmlFor="distance_flown">Distance Flown (m)</Label>
+                                        <Input id="distance_flown" type="number" min="0" placeholder="e.g. 5000"
+                                            value={form.distance_flown}
+                                            onChange={(e) => setForm((f) => ({ ...f, distance_flown: e.target.value }))} />
+                                    </div>
+                                </div>
+                            )}
+
                             {!isEdit && (
                                 <div className="rounded-lg border p-3 space-y-3 bg-muted/30">
                                     <div className="flex items-center gap-2">
@@ -536,6 +569,23 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
                                         {missionTypes.map((t) => (
                                             <SelectItem key={t.mission_type_id} value={t.mission_type_id.toString()}>
                                                 {t.type_name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="grid gap-1.5">
+                                <Label>Client / Planning</Label>
+                                <Select key={`planning-${plannings.length}`} value={form.fk_planning_id}
+                                    onValueChange={(v) => setForm((f) => ({ ...f, fk_planning_id: v }))}
+                                    disabled={loadingOptions}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder={loadingOptions ? 'Loading…' : 'Select client / planning'} />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {plannings.map((p) => (
+                                            <SelectItem key={p.planning_id} value={p.planning_id.toString()}>
+                                                {p.client_name ? `${p.client_name} — ` : ''}{p.planning_name}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
@@ -808,7 +858,7 @@ export function AttachmentsDialog({ open, onClose, operationId, operationName }:
 
                 <div className="max-h-60 overflow-y-auto scrollbar-thin space-y-1.5">
                     {loading && (
-                      Array.from({ length: 2 }).map((_, i) => (
+                        Array.from({ length: 2 }).map((_, i) => (
                             <div key={i} className="flex items-center gap-3 rounded-md border px-3 py-2">
                                 <Skeleton className="h-8 w-8 rounded" />
                                 <div className="flex-1 space-y-2">
@@ -838,7 +888,7 @@ export function AttachmentsDialog({ open, onClose, operationId, operationName }:
                                 onClick={() => handleDownload(a)}
                                 className="block truncate text-sm font-medium text-primary hover:underline"
                             >
-                                <Download className="h-4 w-4"/>
+                                <Download className="h-4 w-4" />
                             </button>
                         </div>
                     ))}

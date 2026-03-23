@@ -1,4 +1,4 @@
-import { getMissionCategoryOptions, getMissionTypeOptions, getPilotOptions, getToolOptions } from '@/backend/services/operation/operation-service';
+import { getMissionCategoryOptions, getMissionTypeOptions, getPilotOptions, getPlanningOptions, getToolOptions } from '@/backend/services/operation/operation-service';
 import { getUserSession } from '@/lib/auth/server-session';
 import { NextResponse } from 'next/server';
 
@@ -9,18 +9,20 @@ export async function GET() {
     const ownerId = session.user.ownerId
 
     try {
-        const [pilots, tools, types, categories] = await Promise.all([
+        const [pilots, tools, types, categories, plannings] = await Promise.all([
             getPilotOptions(ownerId),
             getToolOptions(ownerId),
             getMissionTypeOptions(ownerId),
             getMissionCategoryOptions(ownerId),
+            getPlanningOptions(ownerId),
         ]);
 
         return NextResponse.json({
             pilots,
             tools,
             types,
-            categories
+            categories,
+            plannings,
         });
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });

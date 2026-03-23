@@ -508,3 +508,32 @@ export async function getMissionCategoryOptions(ownerId: number) {
   if (error) throw new Error(`Categories error: ${error.message}`);
   return data;
 }
+
+export async function getClientOptions(ownerId: number) {
+  const { data, error } = await supabase
+    .from('client')
+    .select('client_id, client_name')
+    .eq('fk_owner_id', ownerId)
+    .eq('client_active', 'Y')
+    .order('client_name');
+
+  if (error) throw new Error(`Clients error: ${error.message}`);
+  return data;
+}
+
+export async function getPlanningOptions(ownerId: number) {
+  const { data, error } = await supabase
+    .from('planning')
+    .select('planning_id, planning_name, fk_client_id, client:client!fk_client_id(client_name)')
+    .eq('fk_owner_id', ownerId)
+    .eq('planning_active', 'Y')
+    .order('planning_name');
+
+  if (error) throw new Error(`Planning error: ${error.message}`);
+  return (data || []).map((p: any) => ({
+    planning_id: p.planning_id,
+    planning_name: p.planning_name,
+    fk_client_id: p.fk_client_id,
+    client_name: Array.isArray(p.client) ? p.client[0]?.client_name : p.client?.client_name ?? '',
+  }));
+}

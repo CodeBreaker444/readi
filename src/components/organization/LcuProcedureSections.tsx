@@ -68,7 +68,7 @@ export function LcuEditModal({ open, procedure, onClose, onSave, saving }: EditM
   const { isDark } = useTheme();
   const [form, setForm] = useState<FormState>(() => buildForm(procedure));
 
-  useEffect(() => { setForm(buildForm(procedure)); }, [procedure]);
+  useEffect(() => { if (open) setForm(buildForm(procedure)); }, [open, procedure]);
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm(f => ({ ...f, [key]: value }));
