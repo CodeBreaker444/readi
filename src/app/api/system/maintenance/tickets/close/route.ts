@@ -1,3 +1,4 @@
+import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { closeTicket } from '@/backend/services/system/maintenance-ticket';
 import { getUserSession } from '@/lib/auth/server-session';
 import { NextRequest, NextResponse } from 'next/server';
@@ -28,10 +29,22 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    await closeTicket({ 
-      ticket_id: validation.data.ticket_id, 
-      note: validation.data.note, 
-      closed_by: Number(session.user.userId)  
+    await closeTicket({
+      ticket_id: validation.data.ticket_id,
+      note: validation.data.note,
+      closed_by: Number(session.user.userId)
+    });
+
+    logEvent({
+      eventType: 'UPDATE',
+      entityType: 'maintenance_ticket',
+      entityId: validation.data.ticket_id,
+      description: `Closed maintenance ticket #${validation.data.ticket_id}`,
+      userId: session.user.userId,
+      userName: session.user.fullname,
+      userEmail: session.user.email,
+      userRole: session.user.role,
+      ownerId: session.user.ownerId,
     });
 
     return NextResponse.json({ status: 'OK' });

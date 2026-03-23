@@ -1,9 +1,9 @@
 'use client';
 import MissionCategoryForm from '@/components/mission/MissionCategoryForm';
-import MissionCategoryTable from '@/components/mission/MissionCategoryTable';
 import MissionCategorySkeleton from '@/components/mission/MissionCategorySkeleton';
-import { Button } from '@/components/ui/button';
+import MissionCategoryTable from '@/components/mission/MissionCategoryTable';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useTheme } from '@/components/useTheme';
 import { MissionCategory } from '@/config/types/types';
@@ -74,7 +74,7 @@ export default function MissionCategoryPage() {
 
   return (
     <div className={`min-h-screen ${isDark ? 'bg-[#0a0e1a]' : 'bg-[#f4f6f9]'}`}>
-      <div className={`sticky top-0 z-20 backdrop-blur-xl border-b transition-colors ${isDark ? 'bg-[#0a0e1a]/90 border-white/[0.06]' : 'bg-white/80 border-black/[0.06] shadow-[0_1px_2px_rgba(0,0,0,0.04)]'}`}>
+      <div className={`top-0 z-20 backdrop-blur-xl border-b transition-colors ${isDark ? 'bg-[#0a0e1a]/90 border-white/[0.06]' : 'bg-white/80 border-black/[0.06] shadow-[0_1px_2px_rgba(0,0,0,0.04)]'}`}>
         <div className="mx-auto max-w-[1600px] px-6 py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-3.5">
             <div className="w-1 h-6 rounded-full bg-violet-600" />

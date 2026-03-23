@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export const EvaluationDetailSkeleton = () => {
   return (
     <div className="min-h-screen bg-slate-50/60">
-      <div className="border-b border-slate-200 bg-white py-3 sticky top-0 z-10">
+      <div className="border-b border-slate-200 bg-white py-3 top-0 z-10">
         <div className="mx-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Skeleton className="w-1 h-6 rounded-full" />

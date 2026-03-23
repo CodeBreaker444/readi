@@ -1,3 +1,4 @@
+import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { createTicket } from '@/backend/services/system/maintenance-ticket';
 import { CreateTicketPayload } from '@/config/types/maintenance';
 import { getUserSession } from '@/lib/auth/server-session';
@@ -33,6 +34,18 @@ export async function POST(req: NextRequest) {
     const userId= session.user.userId
     const ownerId = session.user.ownerId
     const ticket_id = await createTicket({...body, fk_user_id: userId, fk_owner_id: ownerId});
+
+    logEvent({
+      eventType: 'CREATE',
+      entityType: 'maintenance_ticket',
+      entityId: ticket_id,
+      description: `Created maintenance ticket for system #${body.fk_tool_id}`,
+      userId: session.user.userId,
+      userName: session.user.fullname,
+      userEmail: session.user.email,
+      userRole: session.user.role,
+      ownerId,
+    });
 
     return NextResponse.json({ status: 'OK', ticket_id });
 

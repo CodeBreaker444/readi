@@ -1,3 +1,4 @@
+import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { deleteClient } from '@/backend/services/client/client-service';
 import { getUserSession } from '@/lib/auth/server-session';
 import { NextRequest, NextResponse } from 'next/server';
@@ -23,6 +24,21 @@ export async function DELETE(req: NextRequest) {
         }
 
         const result = await deleteClient(parsed.data.client_id);
+
+        if (result.code === 1) {
+          logEvent({
+            eventType: 'DELETE',
+            entityType: 'client',
+            entityId: parsed.data.client_id,
+            description: `Deleted client #${parsed.data.client_id}`,
+            userId: session.user.userId,
+            userName: session.user.fullname,
+            userEmail: session.user.email,
+            userRole: session.user.role,
+            ownerId: session.user.ownerId,
+          });
+        }
+
         return NextResponse.json(result);
     } catch {
         return NextResponse.json({ code: 0, error: 'Internal server error' }, { status: 500 });

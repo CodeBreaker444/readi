@@ -148,7 +148,7 @@ export default function RepositoryTable() {
     return (
         <div className={`flex flex-col min-h-screen w-full ${isDark ? 'bg-slate-950' : 'bg-gray-50'}`}>
 
-            <div className={`sticky top-0 z-10 backdrop-blur-md w-full px-6 py-4 transition-colors
+            <div className={`top-0 z-10 backdrop-blur-md w-full px-6 py-4 transition-colors
     ${isDark
                     ? 'bg-slate-900/80 border-b border-slate-700/60 text-white'
                     : 'bg-white/80 border-b border-gray-200 text-slate-900 shadow-[0_1px_3px_rgba(0,0,0,0.06)]'

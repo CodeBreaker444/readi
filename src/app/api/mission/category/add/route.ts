@@ -1,3 +1,4 @@
+import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { addMissionCategory } from '@/backend/services/mission/category-service';
 import { getUserSession } from '@/lib/auth/server-session';
 import { NextRequest, NextResponse } from 'next/server';
@@ -40,6 +41,19 @@ export async function POST(request: NextRequest) {
       name: validation.data.mission_category_name,
       description: validation.data.mission_category_desc
     });
+
+    if (result.code === 1) {
+      logEvent({
+        eventType: 'CREATE',
+        entityType: 'mission_category',
+        description: `Created mission category '${validation.data.mission_category_name}' (${validation.data.mission_category_code})`,
+        userId: session.user.userId,
+        userName: session.user.fullname,
+        userEmail: session.user.email,
+        userRole: session.user.role,
+        ownerId,
+      });
+    }
 
     return NextResponse.json(result);
   } catch (error: any) {

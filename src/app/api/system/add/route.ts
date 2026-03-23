@@ -1,3 +1,4 @@
+import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { addSystem } from '@/backend/services/system/system-service';
 import { getUserSession } from '@/lib/auth/server-session';
 import { NextRequest, NextResponse } from 'next/server';
@@ -49,6 +50,19 @@ export async function POST(request: NextRequest) {
       clientId:         data.clientId,
       files,
     });
+
+    if (result.code === 1) {
+      logEvent({
+        eventType: 'CREATE',
+        entityType: 'system',
+        description: `Created system '${data.tool_code}'`,
+        userId: session.user.userId,
+        userName: session.user.fullname,
+        userEmail: session.user.email,
+        userRole: session.user.role,
+        ownerId,
+      });
+    }
 
     return NextResponse.json(result);
   } catch (error: any) {

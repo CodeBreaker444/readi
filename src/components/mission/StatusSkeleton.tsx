@@ -6,7 +6,7 @@ export default function MissionStatusSkeleton({ isDark }: MissionStatusSkeletonP
   return (
     <div className={`min-h-screen ${isDark ? 'bg-[#0a0e1a]' : 'bg-[#f4f6f9]'}`}>
       {/* Top Bar Skeleton */}
-      <div className={`sticky top-0 z-20 backdrop-blur-xl border-b ${
+      <div className={`top-0 z-20 backdrop-blur-xl border-b ${
         isDark ? 'bg-[#0a0e1a]/90 border-white/[0.06]' : 'bg-white/80 border-black/[0.06]'
       }`}>
         <div className="mx-auto max-w-[1600px] px-6 py-3.5 flex items-center justify-between">

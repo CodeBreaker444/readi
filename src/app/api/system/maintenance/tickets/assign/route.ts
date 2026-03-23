@@ -1,3 +1,4 @@
+import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { assignTicket } from '@/backend/services/system/maintenance-ticket';
 import { getUserSession } from '@/lib/auth/server-session';
 import { NextRequest, NextResponse } from 'next/server';
@@ -28,11 +29,23 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    await assignTicket({ 
-      ticket_id: validation.data.ticket_id, 
-      assigned_to: validation.data.assigned_to 
+    await assignTicket({
+      ticket_id: validation.data.ticket_id,
+      assigned_to: validation.data.assigned_to
     });
-    
+
+    logEvent({
+      eventType: 'UPDATE',
+      entityType: 'maintenance_ticket',
+      entityId: validation.data.ticket_id,
+      description: `Assigned maintenance ticket #${validation.data.ticket_id} to user #${validation.data.assigned_to}`,
+      userId: session.user.userId,
+      userName: session.user.fullname,
+      userEmail: session.user.email,
+      userRole: session.user.role,
+      ownerId: session.user.ownerId,
+    });
+
     return NextResponse.json({ status: 'OK' });
   } catch (err: any) {
     console.error('[POST /api/maintenance/tickets/assign]', err);

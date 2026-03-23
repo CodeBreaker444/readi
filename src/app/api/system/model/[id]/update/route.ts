@@ -1,3 +1,4 @@
+import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { updateModel } from '@/backend/services/system/system-service';
 import { getUserSession } from '@/lib/auth/server-session';
 import { NextRequest, NextResponse } from 'next/server';
@@ -39,6 +40,21 @@ export async function POST(
     const result = await updateModel(Number(id), {
       ...parsed.data,
     });
+
+    if (result.code === 1) {
+      logEvent({
+        eventType: 'UPDATE',
+        entityType: 'system',
+        entityId: id,
+        description: `Updated system model '${parsed.data.model_name}' (${parsed.data.model_code})`,
+        userId: session.user.userId,
+        userName: session.user.fullname,
+        userEmail: session.user.email,
+        userRole: session.user.role,
+        ownerId: session.user.ownerId,
+      });
+    }
+
     return NextResponse.json(result);
   } catch (error: any) {
     return NextResponse.json({ code: 0, status: 'ERROR', message: error.message }, { status: 500 });

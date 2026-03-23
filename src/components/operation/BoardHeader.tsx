@@ -33,7 +33,7 @@ export function BoardHeader({ onRefresh, isRefreshing, isDark }: Props) {
     });
     return (
      <div
-  className={`sticky top-0 z-10 backdrop-blur-md transition-colors ${
+  className={`top-0 z-10 backdrop-blur-md transition-colors ${
     isDark
       ? "bg-slate-900/80 border-b border-slate-800 text-white"
       : "bg-white/80 border-b border-slate-200 text-slate-900 shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
