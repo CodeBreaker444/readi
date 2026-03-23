@@ -96,6 +96,7 @@ export const ROUTE_PERMISSIONS: Record<string, Permission> = {
   '/team/personnel': 'manage_users',
   '/team/crew-shift': 'view_config',
   '/company': 'add_company',
+  '/audit-logs': 'view_logs',
 };
 
 export function canAccessRoute(role: Role | null | undefined, pathname: string): boolean {

@@ -1,3 +1,4 @@
+import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { deleteDocument } from '@/backend/services/document/document-service';
 import { getUserSession } from '@/lib/auth/server-session';
 import { NextRequest, NextResponse } from 'next/server';
@@ -22,6 +23,19 @@ export async function POST(req: NextRequest) {
       );
     }
     await deleteDocument(parsed.data);
+
+    logEvent({
+      eventType: 'DELETE',
+      entityType: 'document',
+      entityId: parsed.data.document_id,
+      description: `Deleted document ID ${parsed.data.document_id}`,
+      userId: session.user.userId,
+      userName: session.user.fullname,
+      userEmail: session.user.email,
+      userRole: session.user.role,
+      ownerId: session.user.ownerId,
+    });
+
     return NextResponse.json({ code: 1, message: 'Documento eliminato' });
   } catch (err) {
     console.error('[document_delete]', err);

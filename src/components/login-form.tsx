@@ -47,7 +47,7 @@ export function LoginForm() {
 
   return (
     <div
-      className="min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-slate-50"
+      className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden bg-slate-50"
       style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}
     >
       <div className="absolute inset-0 pointer-events-none">
@@ -55,12 +55,12 @@ export function LoginForm() {
         <div className="absolute -bottom-48 -left-48 w-[500px] h-[500px] rounded-full" style={{ background: 'radial-gradient(circle, #ede9fe 0%, transparent 70%)', opacity: 0.4 }} />
       </div>
 
-      <div className="relative z-10 w-full max-w-4xl mx-6 flex items-center gap-12">
+      <div className="relative z-10 w-full max-w-4xl mx-6 flex items-center gap-12 flex-1">
 
         <div className="hidden lg:flex flex-col flex-1">
           <div className="flex items-center gap-2.5 mb-10">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #7c3aed, #5b21b6)' }}>
-              <Image src="/logo-sm.png" alt="ReADI" width={18} height={18} className="object-contain brightness-0 invert" />
+            <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #7c3aed, #5b21b6)', boxShadow: '0 2px 8px rgba(124,58,237,0.3)' }}>
+              <Image src="/logo-sm.png" alt="ReADI" width={44} height={44} className="object-contain brightness-0 invert" />
             </div>
             <div>
               <p className="text-slate-900 font-bold text-sm leading-none">ReADI</p>
@@ -77,19 +77,6 @@ export function LoginForm() {
             Real-time mission planning, safety management, and drone operations — unified in one command interface.
           </p>
 
-          {/* <div className="space-y-0">
-            {[
-              { label: 'Active missions tracked', val: '340+' },
-              { label: 'Safety incidents prevented', val: '1,200+' },
-              { label: 'Fleet uptime', val: '99.1%' },
-            ].map(({ label, val }) => (
-              <div key={label} className="flex items-center justify-between py-3 border-b border-slate-200">
-                <span className="text-xs text-slate-400">{label}</span>
-                <span className="text-xs font-semibold text-slate-700">{val}</span>
-              </div>
-            ))}
-          </div> */}
-
           <div className="flex items-center gap-2 mt-8">
             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
             <span className="text-xs text-slate-400">All systems operational</span>
@@ -99,8 +86,8 @@ export function LoginForm() {
         <div className="flex-1 max-w-[380px] w-full mx-auto lg:mx-0">
 
           <div className="lg:hidden flex items-center gap-2.5 justify-center mb-8">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #7c3aed, #5b21b6)' }}>
-              <Image src="/logo-sm.png" alt="ReADI" width={18} height={18} className="object-contain brightness-0 invert" />
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #7c3aed, #5b21b6)', boxShadow: '0 2px 8px rgba(124,58,237,0.3)' }}>
+              <Image src="/logo-sm.png" alt="ReADI" width={44} height={44} className="object-contain brightness-0 invert" />
             </div>
             <p className="text-slate-900 font-bold text-base">ReADI</p>
           </div>
@@ -172,6 +159,19 @@ export function LoginForm() {
             </p>
           </div>
         </div>
+      </div>
+
+      <div className="relative z-10 w-full flex flex-col items-center py-6">
+        <Image
+          src="/compliance_readi.png"
+          alt="Compliance Certifications"
+          width={195}
+          height={40}
+          className="object-contain"
+        />
+        <p className="text-[0.65rem] text-slate-400 mt-2">
+          © {new Date().getFullYear()} ReADI. All rights reserved.
+        </p>
       </div>
     </div>
   )

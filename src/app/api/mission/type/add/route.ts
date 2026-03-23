@@ -1,3 +1,4 @@
+import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { addMissionType } from '@/backend/services/mission/mission-type';
 import { getUserSession } from '@/lib/auth/server-session';
 import { NextRequest, NextResponse } from 'next/server';
@@ -42,6 +43,17 @@ export async function POST( request: NextRequest ) {
       mission_type_code: body.mission_type_code,
       mission_type_label: body.mission_type_label,
       fk_owner_id: ownerId
+    });
+
+    logEvent({
+      eventType: 'CREATE',
+      entityType: 'mission_type',
+      description: `Created mission type '${body.mission_type_name}' (${body.mission_type_code})`,
+      userId: session.user.userId,
+      userName: session.user.fullname,
+      userEmail: session.user.email,
+      userRole: session.user.role,
+      ownerId,
     });
 
     return NextResponse.json(result);
