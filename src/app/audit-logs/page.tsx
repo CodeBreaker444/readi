@@ -143,7 +143,7 @@ export default function AuditLogsPage() {
       try {
         const params: Record<string, string> = {};
         if (selectedOwner) params.owner_id = selectedOwner;
-        const res = await axios.get('/api/team/user/list', { params });
+        const res = await axios.post('/api/team/user/list', { params });
         if (res.data.data) {
           setUsers(
             res.data.data.map((u: any) => ({
