@@ -59,8 +59,8 @@ export function LoginForm() {
 
         <div className="hidden lg:flex flex-col flex-1">
           <div className="flex items-center gap-2.5 mb-10">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #7c3aed, #5b21b6)' }}>
-              <Image src="/logo-sm.png" alt="ReADI" width={18} height={18} className="object-contain brightness-0 invert" />
+            <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #7c3aed, #5b21b6)', boxShadow: '0 2px 8px rgba(124,58,237,0.3)' }}>
+              <Image src="/logo-sm.png" alt="ReADI" width={44} height={44} className="object-contain brightness-0 invert" />
             </div>
             <div>
               <p className="text-slate-900 font-bold text-sm leading-none">ReADI</p>
@@ -86,8 +86,8 @@ export function LoginForm() {
         <div className="flex-1 max-w-[380px] w-full mx-auto lg:mx-0">
 
           <div className="lg:hidden flex items-center gap-2.5 justify-center mb-8">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #7c3aed, #5b21b6)' }}>
-              <Image src="/logo-sm.png" alt="ReADI" width={18} height={18} className="object-contain brightness-0 invert" />
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #7c3aed, #5b21b6)', boxShadow: '0 2px 8px rgba(124,58,237,0.3)' }}>
+              <Image src="/logo-sm.png" alt="ReADI" width={44} height={44} className="object-contain brightness-0 invert" />
             </div>
             <p className="text-slate-900 font-bold text-base">ReADI</p>
           </div>
@@ -165,8 +165,8 @@ export function LoginForm() {
         <Image
           src="/compliance_readi.png"
           alt="Compliance Certifications"
-          width={160}
-          height={20}
+          width={195}
+          height={40}
           className="object-contain"
         />
         <p className="text-[0.65rem] text-slate-400 mt-2">

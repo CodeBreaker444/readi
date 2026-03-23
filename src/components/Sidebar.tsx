@@ -71,7 +71,7 @@ const navigationItems: NavItem[] = [
     href: '/logbooks/operation-requests',
     icon: HiOutlineBookOpen,
     subItems: [
-       // { name: 'Operation Request Logbook', href: '/logbooks/operation-requests' },
+      // { name: 'Operation Request Logbook', href: '/logbooks/operation-requests' },
       { name: 'Planned Mission Logbook', href: '/logbooks/mission-planning-logbook' },
       { name: 'Flight Logbook', href: '/logbooks/operation-logbook' },
       // { name: 'Battery Logbook', href: '/logbooks/battery' },
@@ -84,10 +84,10 @@ const navigationItems: NavItem[] = [
     icon: HiOutlineBell,
     subItems: [
       { name: 'SPI & KPI Definitions', href: '/safety/spi-kpi-definitions' },
-       // { name: 'Document Repository', href: '/safety/documents' }
+      // { name: 'Document Repository', href: '/safety/documents' }
     ]
   },
-    // {
+  // {
   //   name: 'Emergency Contact List',
   //   href: '/emergency',
   //   icon: Users
@@ -103,7 +103,7 @@ const configurationItems: SubNavItem[] = [
     icon: HiOutlineOfficeBuilding,
     subItems: [
       { name: 'Chart', href: '/organization/chart' },
-         // { name: 'Board', href: '/organization/board' },
+      // { name: 'Board', href: '/organization/board' },
       { name: 'Procedures', href: '/organization/luc-procedures' },
       // { name: 'LUC Documents', href: '/organization/luc-docs' }
       { name: 'Checklist', href: '/organization/checklist' },
@@ -125,7 +125,7 @@ const configurationItems: SubNavItem[] = [
   {
     name: 'Systems',
     href: '/systems/manage',
-    icon: GrSystem ,
+    icon: GrSystem,
     subItems: [
       { name: 'Manage Systems', href: '/systems/manage' },
       { name: 'Map', href: '/systems/map' },
@@ -342,10 +342,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
                             ? '#a78bfa'
                             : '#ffffff'
                           : isHovered
-                          ? '#8b5cf6'
-                          : isDark
-                          ? '#475569'
-                          : '#cbd5e1',
+                            ? '#8b5cf6'
+                            : isDark
+                              ? '#475569'
+                              : '#cbd5e1',
                       }}
                     >
                       ●
@@ -433,21 +433,19 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
       `}
     >
       <div
-        className={`shrink-0 ${isDark ? 'border-b border-slate-800' : 'border-b border-slate-100'} ${
-          isCollapsed ? 'px-2 py-5' : 'px-5 py-5'
-        }`}
+        className={`shrink-0 ${isDark ? 'border-b border-slate-800' : 'border-b border-slate-100'} ${isCollapsed ? 'px-2 py-5' : 'px-5 py-5'
+          }`}
       >
         <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
           <div className={`flex items-center ${isCollapsed ? '' : 'gap-2.5'}`}>
-            <div className="w-7 h-7 rounded-md overflow-hidden flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 rounded-xl overflow-hidden flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg, #7c3aed, #5b21b6)', boxShadow: '0 2px 8px rgba(124,58,237,0.3)' }}>
               <img src="/logo-sm.png" alt="ReADI Logo" className="w-full h-full object-contain" />
             </div>
             {!isCollapsed && (
               <div>
                 <p
-                  className={`font-bold leading-none tracking-tight ${
-                    isDark ? 'text-white' : 'text-slate-900'
-                  }`}
+                  className={`font-bold leading-none tracking-tight ${isDark ? 'text-white' : 'text-slate-900'
+                    }`}
                   style={{ fontSize: '0.9rem', fontFamily: "'DM Sans', system-ui, sans-serif" }}
                 >
                   ReADI
@@ -470,15 +468,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
               onClick={onToggleCollapse}
               className={`cursor-pointer
                 p-1 rounded-md transition-all duration-150
-                ${
-                  isDark
-                    ? 'hover:bg-slate-800 text-slate-500 hover:text-slate-300'
-                    : 'hover:bg-slate-100 text-slate-400 hover:text-slate-600'
+                ${isDark
+                  ? 'hover:bg-slate-800 text-slate-500 hover:text-slate-300'
+                  : 'hover:bg-slate-100 text-slate-400 hover:text-slate-600'
                 }
               `}
               title="Collapse sidebar"
             >
-              <TbLayoutSidebarFilled  size={20} />
+              <TbLayoutSidebarFilled size={20} />
             </button>
           )}
         </div>
@@ -490,23 +487,21 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
             onClick={onToggleCollapse}
             className={`cursor-pointer
               p-1 rounded-md transition-all duration-150
-              ${
-                isDark
-                  ? 'hover:bg-slate-800 text-slate-500 hover:text-slate-300'
-                  : 'hover:bg-slate-100 text-slate-400 hover:text-slate-600'
+              ${isDark
+                ? 'hover:bg-slate-800 text-slate-500 hover:text-slate-300'
+                : 'hover:bg-slate-100 text-slate-400 hover:text-slate-600'
               }
             `}
             title="Expand sidebar"
           >
-            <TbLayoutSidebarFilled  size={20} />
+            <TbLayoutSidebarFilled size={20} />
           </button>
         </div>
       )}
 
       <nav
-        className={`flex-1 overflow-y-auto py-3 sidebar-scroll ${
-          isCollapsed ? 'px-1.5 space-y-1' : 'px-3 space-y-0.5'
-        }`}
+        className={`flex-1 overflow-y-auto py-3 sidebar-scroll ${isCollapsed ? 'px-1.5 space-y-1' : 'px-3 space-y-0.5'
+          }`}
       >
         {isCollapsed ? (
           <>
@@ -517,9 +512,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
             {filteredConfigurationItems.length > 0 && (
               <>
                 <div
-                  className={`my-2 mx-2 border-t ${
-                    isDark ? 'border-slate-800' : 'border-slate-200'
-                  }`}
+                  className={`my-2 mx-2 border-t ${isDark ? 'border-slate-800' : 'border-slate-200'
+                    }`}
                 />
                 {filteredConfigurationItems.map((configItem) =>
                   renderCollapsedIcon(
@@ -590,9 +584,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
             {filteredConfigurationItems.length > 0 && (
               <div className="pt-4">
                 <p
-                  className={`px-3 pb-1.5 uppercase ${
-                    isDark ? 'text-slate-600' : 'text-slate-400'
-                  }`}
+                  className={`px-3 pb-1.5 uppercase ${isDark ? 'text-slate-600' : 'text-slate-400'
+                    }`}
                   style={{ fontSize: '0.6rem', letterSpacing: '0.12em', fontWeight: 600 }}
                 >
                   Configuration
