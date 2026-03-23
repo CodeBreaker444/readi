@@ -1,3 +1,4 @@
+import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { createOperation, createRecurringOperations, listOperations } from '@/backend/services/operation/operation-service';
 import { CreateOperationSchema, ListOperationsQuerySchema } from '@/config/types/operation';
 import { getUserSession } from '@/lib/auth/server-session';
@@ -98,6 +99,16 @@ export async function POST(req: NextRequest) {
       } catch (appErr: any) {
         return NextResponse.json({ success: false, error: appErr.message }, { status: 400 });
       }
+      logEvent({
+        eventType: 'CREATE',
+        entityType: 'operation',
+        description: `Created ${result.count} recurring operation(s) '${validated.mission_name}'`,
+        userId: session.user.userId,
+        userName: session.user.fullname,
+        userEmail: session.user.email,
+        userRole: session.user.role,
+        ownerId,
+      });
       return NextResponse.json({ success: true, count: result.count, first_id: result.first_id }, { status: 201 });
     }
 
@@ -108,6 +119,16 @@ export async function POST(req: NextRequest) {
     } catch (appErr: any) {
       return NextResponse.json({ error: appErr.message }, { status: 400 });
     }
+    logEvent({
+      eventType: 'CREATE',
+      entityType: 'operation',
+      description: `Created operation '${validated.mission_name}'`,
+      userId: session.user.userId,
+      userName: session.user.fullname,
+      userEmail: session.user.email,
+      userRole: session.user.role,
+      ownerId,
+    });
     return NextResponse.json(operation, { status: 201 });
   } catch (err) {
     if (err instanceof ZodError) {

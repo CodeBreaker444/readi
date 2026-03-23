@@ -1,3 +1,4 @@
+import { logEvent } from "@/backend/services/auditLog/audit-log";
 import { updateMissionStatus } from "@/backend/services/operation/operation-board-service";
 import { checkDailyDeclaration } from "@/backend/services/operation/pilot-declaration-service";
 import { getUserSession } from "@/lib/auth/server-session";
@@ -45,6 +46,26 @@ export async function POST(req: NextRequest) {
     }
 
     const result = await updateMissionStatus({ ...parsed.data, owner_id: session.user.ownerId });
+
+    if (result.code === 1) {
+      const actionMap: Record<string, string> = {
+        _START: 'started',
+        _END: 'completed',
+        _REVERT: 'reverted to in-progress',
+      };
+      logEvent({
+        eventType: 'UPDATE',
+        entityType: 'operation',
+        entityId: parsed.data.mission_id,
+        description: `Mission #${parsed.data.mission_id} ${actionMap[parsed.data.workflow_mission_status] ?? 'status updated'}`,
+        userId: session.user.userId,
+        userName: session.user.fullname,
+        userEmail: session.user.email,
+        userRole: session.user.role,
+        ownerId: session.user.ownerId,
+      });
+    }
+
     return NextResponse.json(result, { status: result.code === 1 ? 200 : 422 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";

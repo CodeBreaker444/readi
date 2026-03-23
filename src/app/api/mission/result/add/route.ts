@@ -1,3 +1,4 @@
+import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { addMissionResult } from '@/backend/services/mission/result-service';
 import { getUserSession } from '@/lib/auth/server-session';
 import { NextRequest, NextResponse } from 'next/server';
@@ -38,6 +39,19 @@ export async function POST(request: NextRequest) {
       code: validation.data.mission_result_code,
       description: validation.data.mission_result_desc
     });
+
+    if (result.code === 1) {
+      logEvent({
+        eventType: 'CREATE',
+        entityType: 'mission_result',
+        description: `Created mission result '${validation.data.mission_result_desc}' (${validation.data.mission_result_code})`,
+        userId: session.user.userId,
+        userName: session.user.fullname,
+        userEmail: session.user.email,
+        userRole: session.user.role,
+        ownerId,
+      });
+    }
 
     return NextResponse.json(result);
   } catch (error: any) {

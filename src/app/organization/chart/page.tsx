@@ -43,7 +43,7 @@ export default function OrganizationPage() {
   return (
     <div className={`min-h-screen transition-colors duration-300 ${isDark ? 'bg-slate-800' : 'bg-white'}`}>
 
-      <header className={`sticky top-0 z-10 backdrop-blur-md transition-colors ${isDark
+      <header className={`top-0 z-10 backdrop-blur-md transition-colors ${isDark
           ? "bg-slate-900/80 border-b border-slate-800 text-white"
           : "bg-white/80 border-b border-slate-200 text-slate-900 shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
         } px-6 py-4 mb-8`}>

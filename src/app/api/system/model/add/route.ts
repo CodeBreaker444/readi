@@ -1,4 +1,5 @@
 
+import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { addModel } from '@/backend/services/system/system-service';
 import { getUserSession } from '@/lib/auth/server-session';
 import { NextRequest, NextResponse } from 'next/server';
@@ -55,6 +56,19 @@ export async function POST(req: NextRequest) {
       factory_desc: d.model_type,
       technical_specs: specsJson,
     });
+
+    if (result.code === 1) {
+      logEvent({
+        eventType: 'CREATE',
+        entityType: 'system',
+        description: `Created system model '${d.model_name}' (${d.model_code})`,
+        userId: session.user.userId,
+        userName: session.user.fullname,
+        userEmail: session.user.email,
+        userRole: session.user.role,
+        ownerId: session.user.ownerId,
+      });
+    }
 
     return NextResponse.json(result);
   } catch (error: any) {

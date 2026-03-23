@@ -2,7 +2,7 @@ interface MissionCategorySkeletonProps { isDark: boolean; }
 export default function MissionCategorySkeleton({ isDark }: MissionCategorySkeletonProps) {
   return (
     <div className={`min-h-screen ${isDark ? 'bg-[#0a0e1a]' : 'bg-[#f4f6f9]'}`}>
-      <div className={`sticky top-0 z-20 backdrop-blur-xl border-b ${isDark ? 'bg-[#0a0e1a]/90 border-white/[0.06]' : 'bg-white/80 border-black/[0.06]'}`}>
+      <div className={`top-0 z-20 backdrop-blur-xl border-b ${isDark ? 'bg-[#0a0e1a]/90 border-white/[0.06]' : 'bg-white/80 border-black/[0.06]'}`}>
         <div className="mx-auto max-w-[1600px] px-6 py-3.5 flex items-center justify-between">
           <div className="space-y-1.5">
             <div className={`h-4 w-40 rounded animate-pulse ${isDark ? 'bg-white/[0.06]' : 'bg-gray-200'}`} />

@@ -17,7 +17,7 @@ export interface LogEventParams {
 }
 
 export interface AuditLogFilters {
-  ownerId: number;
+  ownerId?: number;
   userId?: number;
   eventType?: AuditEventType;
   entityType?: string;
@@ -86,9 +86,10 @@ export async function getAuditLogs(filters: AuditLogFilters): Promise<GetAuditLo
   let query = supabase
     .from('audit_logs')
     .select('*', { count: 'exact' })
-    .eq('owner_id', filters.ownerId)
     .order('created_at', { ascending: false })
     .range(from, to);
+
+  if (filters.ownerId != null) query = query.eq('owner_id', filters.ownerId);
 
   if (filters.userId)     query = query.eq('user_id', filters.userId);
   if (filters.eventType)  query = query.eq('event_type', filters.eventType);

@@ -18,11 +18,13 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
 
-    // SUPERADMIN can query any owner; ADMIN is locked to their own owner
-    let targetOwnerId = ownerId;
+    // SUPERADMIN can query any owner or all owners; ADMIN is strictly locked to their own owner
+    let targetOwnerId: number | undefined;
     if (role === 'SUPERADMIN') {
       const ownerParam = searchParams.get('owner_id');
-      if (ownerParam) targetOwnerId = parseInt(ownerParam, 10);
+      targetOwnerId = ownerParam ? parseInt(ownerParam, 10) : undefined;
+    } else {
+      targetOwnerId = ownerId;
     }
 
     const userId    = searchParams.get('user_id');

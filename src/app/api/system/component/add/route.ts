@@ -1,3 +1,4 @@
+import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { addComponent } from '@/backend/services/system/system-service';
 import { getUserSession } from '@/lib/auth/server-session';
 import { NextRequest, NextResponse } from 'next/server';
@@ -62,6 +63,19 @@ export async function POST(req: NextRequest) {
       maintenance_cycle_day: d.maintenance_cycle_day,
       maintenance_cycle_flight: d.maintenance_cycle_flight,
     });
+
+    if (result.code === 1) {
+      logEvent({
+        eventType: 'CREATE',
+        entityType: 'system',
+        description: `Added component '${d.component_code ?? d.component_type}' to system #${d.fk_tool_id}`,
+        userId: session.user.userId,
+        userName: session.user.fullname,
+        userEmail: session.user.email,
+        userRole: session.user.role,
+        ownerId: session.user.ownerId,
+      });
+    }
 
     return NextResponse.json(result);
   } catch (error: any) {

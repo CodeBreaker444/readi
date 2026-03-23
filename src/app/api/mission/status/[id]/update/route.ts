@@ -1,3 +1,4 @@
+import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { updateMissionStatus } from '@/backend/services/mission/status-service';
 import { getUserSession } from '@/lib/auth/server-session';
 import { NextRequest, NextResponse } from 'next/server';
@@ -48,6 +49,20 @@ export async function POST(
             order: validation.data.status_order,
             isFinalStatus: validation.data.is_final_status
         });
+
+        if (result.code === 1) {
+          logEvent({
+            eventType: 'UPDATE',
+            entityType: 'mission_status',
+            entityId: id,
+            description: `Updated mission status '${validation.data.mission_status_name}' (${validation.data.mission_status_code})`,
+            userId: session.user.userId,
+            userName: session.user.fullname,
+            userEmail: session.user.email,
+            userRole: session.user.role,
+            ownerId,
+          });
+        }
 
         return NextResponse.json(result);
     } catch (error: any) {

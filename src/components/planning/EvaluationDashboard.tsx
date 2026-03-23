@@ -31,7 +31,7 @@ const EvaluationDashboard: React.FC<EvaluationProps> = ({ isDark }) => {
     return (
         <>
             <div className="min-h-screen bg-slate-50/60">
-                <div className="border-b border-slate-200 bg-white py-4 sticky top-0 z-10">
+                <div className="border-b border-slate-200 bg-white py-4  top-0 z-10">
                     <div className="mx-4 flex items-center justify-between">
                         <div className="flex items-center gap-3">
                              <div className="w-1 h-6 rounded-full bg-violet-600" />

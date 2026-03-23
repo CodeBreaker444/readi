@@ -56,7 +56,7 @@ export default function MaintenancePage() {
   return (
     <div className="min-h-screen bg-slate-50">
       <div
-        className={`sticky top-0 z-10 backdrop-blur-md transition-colors ${
+        className={`top-0 z-10 backdrop-blur-md transition-colors ${
           isDark
             ? "bg-slate-900/90 border-b border-slate-800"
             : "bg-white/90 border-b border-slate-200 shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
