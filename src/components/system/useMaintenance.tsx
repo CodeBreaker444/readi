@@ -182,6 +182,7 @@ export function useMaintenanceLogbook() {
 
 
   async function handleCreateTicket() {
+    if (!newTicket.fk_tool_id) { toast.error('Please select a drone/system'); return; }
     try {
       const res = await axios.post(`/api/system/maintenance/tickets/create`, {
         ...newTicket,
@@ -201,6 +202,7 @@ export function useMaintenanceLogbook() {
 
   async function handleCloseTicket() {
     if (!activeTicketId) return;
+    if (!closeNote.trim()) { toast.error('Please enter a closing note'); return; }
     try {
       await axios.post(`/api/system/maintenance/tickets/close`, {
         ticket_id: activeTicketId,
@@ -239,6 +241,10 @@ export function useMaintenanceLogbook() {
 
   async function handleAddReport(file?: File) {
     if (!activeTicketId) return;
+    if (!report.text.trim()) { toast.error('Please enter a report description'); return; }
+    if (report.work_start && report.work_end && report.work_end < report.work_start) {
+      toast.error('Work end time must be after work start time'); return;
+    }
     try {
       const fd = new FormData();
       fd.append('ticket_id', String(activeTicketId));

@@ -10,6 +10,7 @@ import type {
 } from '@/config/types/maintenance';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useRef } from 'react';
+import { toast } from 'sonner';
 import type { NewTicketForm, ReportForm } from './useMaintenance';
 
 
@@ -433,7 +434,8 @@ export function UploadModal({
         onCancel={onClose}
         onConfirm={() => {
           const file = fileRef.current?.files?.[0];
-          if (file) onSubmit(file);
+          if (!file) { toast.error('Please select a file to upload'); return; }
+          onSubmit(file);
         }}
         confirmLabel="Upload"
         confirmClass="bg-indigo-600 hover:bg-indigo-700"
