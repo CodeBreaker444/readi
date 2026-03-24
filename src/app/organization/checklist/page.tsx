@@ -5,6 +5,7 @@ import { ChecklistForm, Modal } from '@/components/organization/ChecklistUi';
 import { getColumns } from '@/components/tables/CheckListColumn';
 import { TablePagination } from '@/components/tables/Pagination';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useTheme } from '@/components/useTheme';
 import type { Checklist } from '@/config/types/checklist';
 import { flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, useReactTable } from '@tanstack/react-table';
@@ -65,7 +66,13 @@ export default function ChecklistPage() {
     isDark,
     (item) => setEditItem(item),
     (item) => setPreviewItem(item),
-    (item) => setConfirmDelete(item)
+    (item) => {
+      if (item.checklist_active === 'Y') {
+        toast.error('Cannot delete an active checklist. Set it to Inactive first.');
+        return;
+      }
+      setConfirmDelete(item);
+    }
   ), [isDark]);
 
   const table = useReactTable({
@@ -128,7 +135,6 @@ export default function ChecklistPage() {
   return (
     <div className={`min-h-screen ${isDark ? 'bg-slate-950 text-slate-300' : 'bg-slate-100 text-slate-700'}`}>
       <div className="mx-auto">
-
         <div className={`top-0 z-10 backdrop-blur-md transition-colors w-full ${isDark
           ? "bg-slate-900/80 border-b border-slate-800 text-white"
           : "bg-white/80 border-b border-slate-200 text-slate-900 shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
@@ -199,7 +205,15 @@ export default function ChecklistPage() {
               </thead>
               <tbody className={`divide-y ${isDark ? 'divide-slate-800/60' : 'divide-slate-100'}`}>
                 {loading ? (
-                  <tr><td colSpan={columns.length} className="py-10 text-center animate-pulse">Loading data...</td></tr>
+                  Array.from({ length: 6 }).map((_, i) => (
+                    <tr key={i} className={`border-b ${isDark ? 'border-slate-800/60' : 'border-slate-100'}`}>
+                      {Array.from({ length: columns.length }).map((_, j) => (
+                        <td key={j} className="px-4 py-3.5">
+                          <Skeleton className={`h-4 rounded ${j === 0 ? 'w-6' : j === columns.length - 1 ? 'w-16' : 'w-full'} ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`} />
+                        </td>
+                      ))}
+                    </tr>
+                  ))
                 ) : table.getRowModel().rows.length === 0 ? (
                   <tr><td colSpan={columns.length} className="py-20 text-center text-slate-500 italic">No results found.</td></tr>
                 ) : table.getRowModel().rows.map(row => (

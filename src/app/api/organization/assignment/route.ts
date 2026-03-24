@@ -18,7 +18,7 @@ export async function GET() {
     }
 
     const result = await getAssignmentsByOwner(session.user.ownerId)
-    return NextResponse.json({ ...result, message: 'Assignments retrieved successfully' }, { status: 200 })
+    return NextResponse.json({ code: 1, data: result, dataRows: result.length, message: 'Assignments retrieved successfully' }, { status: 200 })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unexpected error'
     return NextResponse.json(
