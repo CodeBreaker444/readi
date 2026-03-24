@@ -1,4 +1,5 @@
 import { supabase } from "@/backend/database/database";
+import { refreshMaintenanceDays } from "@/backend/utils/refresh-maintenance-days";
 import {
   MaintenanceComponent,
   MaintenanceDashboardQuery,
@@ -109,6 +110,8 @@ let toolQuery = supabase
   if (!tools || tools.length === 0) return [];
 
   const toolIds = tools.map((t: { tool_id: number }) => t.tool_id);
+
+  await refreshMaintenanceDays(toolIds);
 
   const { data: maintenanceRecords } = await supabase
     .from("tool_maintenance")
