@@ -31,6 +31,8 @@ export interface ClientData {
   credit_limit?: number;
   created_at?: string;
   updated_at?: string;
+  owner_code?: string;
+  owner_name?: string;
 }
 interface GetClientColumnsOptions {
   isDark: boolean;

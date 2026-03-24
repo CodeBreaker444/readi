@@ -10,7 +10,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import axios from 'axios';
-import { Filter, Plus, Search, User } from 'lucide-react';
+import { Building2, Filter, Plus, Search, User } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { TablePagination } from '../tables/Pagination';
@@ -59,13 +59,15 @@ const STAT_CONFIG = [
 
 export default function UserManagement({ session }: UserManagementProps) {
   const { isDark } = useTheme();
-  const canEditEmail = session.user.role === 'ADMIN' || session.user.role === 'SUPERADMIN';
+  const isSuperAdmin = session.user.role === 'SUPERADMIN';
+  const canEditEmail = session.user.role === 'ADMIN' || isSuperAdmin;
   const [users, setUsers] = useState<UserData[]>([]);
   const [clients, setClients] = useState<{ client_id: number, client_name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [companyFilter, setCompanyFilter] = useState('ALL');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
@@ -208,6 +210,7 @@ export default function UserManagement({ session }: UserManagementProps) {
   };
 
   const uniqueRoles = useMemo(() => [...new Set(users.map((u) => u.user_role))].filter(Boolean), [users]);
+  const uniqueCompanies = useMemo(() => [...new Set(users.map((u) => u.owner_name).filter(Boolean))].sort() as string[], [users]);
 
   const stats = useMemo(() => ({
     total: users.length,
@@ -221,8 +224,9 @@ export default function UserManagement({ session }: UserManagementProps) {
     const matchesSearch = user.fullname?.toLowerCase().includes(s) || user.email?.toLowerCase().includes(s) || user.username?.toLowerCase().includes(s);
     const matchesRole = roleFilter === 'ALL' || user.user_role === roleFilter;
     const matchesStatus = statusFilter === 'ALL' || (statusFilter === 'ACTIVE' && user.active === 1) || (statusFilter === 'INACTIVE' && user.active === 0);
-    return matchesSearch && matchesRole && matchesStatus;
-  }), [users, searchTerm, roleFilter, statusFilter]);
+    const matchesCompany = !isSuperAdmin || companyFilter === 'ALL' || user.owner_name === companyFilter;
+    return matchesSearch && matchesRole && matchesStatus && matchesCompany;
+  }), [users, searchTerm, roleFilter, statusFilter, companyFilter, isSuperAdmin]);
 
   const columns = useMemo(() => getUserColumns({ isDark, onEdit: handleEdit, onDelete: handleDelete }), [isDark, handleEdit, handleDelete]);
 
@@ -280,7 +284,7 @@ export default function UserManagement({ session }: UserManagementProps) {
         </div>
 
         <div className={`rounded-xl border p-4 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className={`grid grid-cols-1 gap-3 ${isSuperAdmin ? 'md:grid-cols-4' : 'md:grid-cols-3'}`}>
 
             <div className="space-y-1.5">
               <Label className={`flex items-center gap-1.5 text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
@@ -322,6 +326,25 @@ export default function UserManagement({ session }: UserManagementProps) {
                 </SelectContent>
               </Select>
             </div>
+
+            {isSuperAdmin && (
+              <div className="space-y-1.5">
+                <Label className={`flex items-center gap-1.5 text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  <Building2 size={13} /> Company
+                </Label>
+                <Select value={companyFilter} onValueChange={setCompanyFilter}>
+                  <SelectTrigger className={`h-8 text-sm ${isDark ? 'bg-gray-900 border-gray-700 text-gray-200' : ''}`}>
+                    <SelectValue placeholder="All Companies" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">All Companies</SelectItem>
+                    {uniqueCompanies.map((name) => (
+                      <SelectItem key={name} value={name}>{name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
           </div>
         </div>
