@@ -1,4 +1,5 @@
 import { supabase } from '@/backend/database/database';
+import { assertToolNotInMaintenance } from '@/backend/services/system/maintenance-ticket';
 import {
   CreateOperationCalendarInput,
   OperationCalendarEvent,
@@ -79,6 +80,10 @@ export const createOperationCalendarEntry = async (
   input: CreateOperationCalendarInput,
   ownerId: number
 ): Promise<number> => {
+  if (input.fk_tool_id) {
+    await assertToolNotInMaintenance(input.fk_tool_id);
+  }
+
   const statusName = input.status_name ?? 'Scheduled';
 
   const base = {

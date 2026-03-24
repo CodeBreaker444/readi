@@ -73,7 +73,7 @@ const createOperationCalendarSchema = z.object({
     { message: 'Recurrence end date is required', path: ['recur_until'] }
 )
 
-type OptionItem = { id: number; label: string }
+type OptionItem = { id: number; label: string; in_maintenance?: boolean }
 
 const now = new Date()
 const pad = (n: number) => String(n).padStart(2, '0')
@@ -134,6 +134,7 @@ export function AddOperationModal({ open, onClose, onSuccess, isDark }: AddOpera
                     (d.tools ?? []).map((t: any) => ({
                         id: t.tool_id,
                         label: `${t.tool_code} — ${t.tool_name}`,
+                        in_maintenance: t.in_maintenance ?? false,
                     }))
                 )
                 setMissionTypes(
@@ -207,7 +208,14 @@ export function AddOperationModal({ open, onClose, onSuccess, isDark }: AddOpera
                 control={control}
                 render={({ field }) => (
                     <Select
-                        onValueChange={(v) => field.onChange(Number(v))}
+                        onValueChange={(v) => {
+                            const selected = options.find(o => o.id === Number(v))
+                            if (selected?.in_maintenance) {
+                                toast.error('This system is currently in maintenance. Close the maintenance ticket before assigning it to an operation.')
+                                return
+                            }
+                            field.onChange(Number(v))
+                        }}
                         value={field.value != null ? String(field.value) : ''}
                     >
                         <SelectTrigger className={`mt-1 ${inputClass}`}>
@@ -218,9 +226,17 @@ export function AddOperationModal({ open, onClose, onSuccess, isDark }: AddOpera
                                 <SelectItem
                                     key={o.id}
                                     value={String(o.id)}
+                                    disabled={o.in_maintenance}
                                     className={isDark ? 'text-white focus:bg-slate-600' : ''}
                                 >
-                                    {o.label}
+                                    <span className="flex items-center gap-2">
+                                        {o.label}
+                                        {o.in_maintenance && (
+                                            <span className="text-[10px] font-semibold text-blue-600 bg-blue-50 border border-blue-200 rounded px-1.5 py-0.5 leading-none">
+                                                IN MAINTENANCE
+                                            </span>
+                                        )}
+                                    </span>
                                 </SelectItem>
                             ))}
                         </SelectContent>

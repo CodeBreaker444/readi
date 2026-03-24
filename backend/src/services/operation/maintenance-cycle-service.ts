@@ -280,6 +280,17 @@ export async function updateComponentMaintenanceCycle(
 export async function getToolMaintenanceStatus(
   toolId: number
 ): Promise<MaintenanceStatus> {
+  // Open maintenance ticket takes highest priority
+  const { data: openTicket } = await supabase
+    .from("maintenance_ticket")
+    .select("ticket_id")
+    .eq("fk_tool_id", toolId)
+    .neq("ticket_status", "CLOSED")
+    .limit(1)
+    .maybeSingle();
+
+  if (openTicket) return "IN_MAINTENANCE";
+
   await refreshMaintenanceDaysForTool(toolId);
 
   const { data: components } = await supabase

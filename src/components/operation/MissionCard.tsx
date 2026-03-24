@@ -79,6 +79,13 @@ const maintenanceStatusConfig: Record<
     darkBg: "bg-rose-500/10 border-rose-500/30",
     lightBg: "bg-rose-50 border-rose-200",
   },
+  IN_MAINTENANCE: {
+    label: "In Maintenance",
+    darkDot: "bg-blue-400 animate-pulse",
+    lightDot: "bg-blue-500 animate-pulse",
+    darkBg: "bg-blue-500/10 border-blue-500/30",
+    lightBg: "bg-blue-50 border-blue-200",
+  },
 };
 
 export function MissionCard({ mission, draggable, onDragStart, onViewDetails, onUpdateMaintenance, isDark}: MissionCardProps) {

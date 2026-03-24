@@ -24,6 +24,23 @@ import {
 
 
 
+ 
+export async function assertToolNotInMaintenance(toolId: number): Promise<void> {
+  const { data: openTicket } = await supabase
+    .from('maintenance_ticket')
+    .select('ticket_id')
+    .eq('fk_tool_id', toolId)
+    .neq('ticket_status', 'CLOSED')
+    .limit(1)
+    .maybeSingle();
+
+  if (openTicket) {
+    throw new Error(
+      'This system is currently in maintenance. Close the maintenance ticket before assigning it to an operation.'
+    );
+  }
+}
+
 export async function getTicketList(owner_id: number, tool_id?: number): Promise<MaintenanceTicket[]> {
   let query = supabase
     .from('maintenance_ticket')

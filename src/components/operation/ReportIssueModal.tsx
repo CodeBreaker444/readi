@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import axios from "axios";
@@ -184,7 +185,16 @@ export function ReportIssueModal({ open, onClose, toolId, toolCode, missionId, i
             </div>
           </div>
 
-          {/* Component selection */}
+          {loading && (
+            <div>
+              <Skeleton className={cn("h-3.5 w-40 mb-3", isDark ? "bg-slate-700" : "")} />
+              <div className="space-y-1.5">
+                {[1, 2, 3].map((i) => (
+                  <Skeleton key={i} className={cn("h-12 w-full rounded-lg", isDark ? "bg-slate-800" : "")} />
+                ))}
+              </div>
+            </div>
+          )}
           {!loading && components.length > 0 && (
             <div>
               <label className={cn("text-xs font-medium block mb-1.5", isDark ? "text-slate-400" : "text-slate-600")}>

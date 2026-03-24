@@ -113,6 +113,22 @@ let toolQuery = supabase
 
   await refreshMaintenanceDays(toolIds);
 
+  // Detecting tools and components with open (non-closed) maintenance tickets
+  const { data: openTickets } = await supabase
+    .from('maintenance_ticket')
+    .select('fk_tool_id, fk_component_id')
+    .in('fk_tool_id', toolIds)
+    .neq('ticket_status', 'CLOSED');
+
+  const toolsInMaintenance = new Set<number>(
+    (openTickets ?? []).map((t: { fk_tool_id: number }) => t.fk_tool_id)
+  );
+  const componentsInMaintenance = new Set<number>(
+    (openTickets ?? [])
+      .filter((t: { fk_component_id: number | null }) => t.fk_component_id != null)
+      .map((t: { fk_component_id: number }) => t.fk_component_id)
+  );
+
   const { data: maintenanceRecords } = await supabase
     .from("tool_maintenance")
     .select("fk_tool_id, completed_date")
@@ -199,13 +215,17 @@ let toolQuery = supabase
     const compFlights = Number(comp.current_maintenance_flights ?? 0);
     const compDays = Number(comp.current_maintenance_days ?? 0);
 
-    const { status, trigger } = computeStatus(
+    const computed = computeStatus(
       compHours,
       compFlights,
       compDays,
       compModel,
       threshold_alert
     );
+
+    const compStatus: MaintenanceStatus = componentsInMaintenance.has(comp.component_id)
+      ? "IN_MAINTENANCE"
+      : computed.status;
 
     const compEntry: MaintenanceComponent = {
       tool_component_id: comp.component_id,
@@ -216,8 +236,8 @@ let toolQuery = supabase
       total_hours: compHours,
       total_flights: compFlights,
       total_days: compDays,
-      status,
-      trigger,
+      status: compStatus,
+      trigger: computed.trigger,
       model: compModel,
     };
 
@@ -234,13 +254,17 @@ let toolQuery = supabase
       ? Math.floor((Date.now() - new Date(lastMaint).getTime()) / 86400000)
       : 0;
 
-    const { status, trigger } = computeStatus(
+    const computed = computeStatus(
       stats.totalHours,
       stats.totalFlights,
       droneDays,
       model,
       threshold_alert
     );
+
+    const droneStatus: MaintenanceStatus = toolsInMaintenance.has(toolId)
+      ? "IN_MAINTENANCE"
+      : computed.status;
 
     return {
       tool_id: toolId,
@@ -249,8 +273,8 @@ let toolQuery = supabase
       last_maintenance: lastMaint,
       total_hours: Math.round(stats.totalHours * 100) / 100,
       total_flights: stats.totalFlights,
-      status,
-      trigger,
+      status: droneStatus,
+      trigger: computed.trigger,
       model,
       components: compsByTool[toolId] ?? [],
     };

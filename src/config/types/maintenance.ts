@@ -1,4 +1,4 @@
-export type MaintenanceStatus = "OK" | "ALERT" | "DUE";
+export type MaintenanceStatus = "OK" | "ALERT" | "DUE" | "IN_MAINTENANCE";
 
 export interface MaintenanceModel {
   factory_serie: string | null;

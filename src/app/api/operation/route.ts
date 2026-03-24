@@ -1,5 +1,6 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { createOperation, createRecurringOperations, listOperations } from '@/backend/services/operation/operation-service';
+import { assertToolNotInMaintenance } from '@/backend/services/system/maintenance-ticket';
 import { CreateOperationSchema, ListOperationsQuerySchema } from '@/config/types/operation';
 import { getUserSession } from '@/lib/auth/server-session';
 import { NextRequest, NextResponse } from 'next/server';
@@ -113,6 +114,15 @@ export async function POST(req: NextRequest) {
     }
 
     const validated = createOperationSchema.parse(body) as CreateOperationSchema;
+
+    if (validated.fk_tool_id) {
+      try {
+        await assertToolNotInMaintenance(validated.fk_tool_id);
+      } catch (err: any) {
+        return NextResponse.json({ error: err.message }, { status: 400 });
+      }
+    }
+
     let operation;
     try {
       operation = await createOperation({ ...validated }, ownerId);

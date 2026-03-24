@@ -490,7 +490,25 @@ export async function getToolOptions(ownerId: number) {
     .order('tool_name');
 
   if (error) throw new Error(error.message);
-  return data;
+
+  const tools = data ?? [];
+  if (tools.length === 0) return tools;
+
+  const toolIds = tools.map((t: any) => t.tool_id);
+  const { data: openTickets } = await supabase
+    .from('maintenance_ticket')
+    .select('fk_tool_id')
+    .in('fk_tool_id', toolIds)
+    .neq('ticket_status', 'CLOSED');
+
+  const inMaintenanceSet = new Set<number>(
+    (openTickets ?? []).map((t: any) => t.fk_tool_id)
+  );
+
+  return tools.map((t: any) => ({
+    ...t,
+    in_maintenance: inMaintenanceSet.has(t.tool_id),
+  }));
 }
 
 export async function getMissionTypeOptions(ownerId: number) {
