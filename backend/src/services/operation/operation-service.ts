@@ -395,8 +395,8 @@ export async function createRecurringOperations(
 export async function batchSetPilot(
   missionIds: number[],
   pilotId: number,
-  ownerId: number
-): Promise<{ updated: number[]; skipped: number[] }> {
+  ownerId: number,
+): Promise<{ updated: number[]; skipped: number[], pilotName: string}> {
   const { data: missions, error } = await supabase
     .from('pilot_mission')
     .select('pilot_mission_id, status_name')
@@ -410,7 +410,7 @@ export async function batchSetPilot(
     .filter((m: any) => m.status_name !== 'PLANNED')
     .map((m: any) => m.pilot_mission_id);
 
-  if (planned.length === 0) return { updated: [], skipped };
+  if (planned.length === 0) return { updated: [], skipped, pilotName:'' };
 
   const ids = planned.map((m: any) => m.pilot_mission_id);
   const { error: updateError } = await supabase
@@ -420,7 +420,15 @@ export async function batchSetPilot(
 
   if (updateError) throw new Error(`Failed to set pilot: ${updateError.message}`);
 
-  return { updated: ids, skipped };
+  const { data: pilotUser } = await supabase
+        .from('users')
+        .select('username')
+        .eq('user_id', pilotId)
+        .single();
+      const pilotName = pilotUser?.username
+        
+
+  return { updated: ids, skipped, pilotName };
 }
 
 export async function batchAutofill(

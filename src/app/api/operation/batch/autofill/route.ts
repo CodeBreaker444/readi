@@ -1,3 +1,4 @@
+import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { batchAutofill } from '@/backend/services/operation/operation-service';
 import { getUserSession } from '@/lib/auth/server-session';
 import { NextRequest, NextResponse } from 'next/server';
@@ -18,6 +19,21 @@ export async function POST(req: NextRequest) {
 
     //autofill only for COMPLETED missions with a pilot assigned
     const result = await batchAutofill(mission_ids, ownerId);
+
+    logEvent({
+      eventType: 'UPDATE',
+      entityType: 'operation',
+      description: `Batch autofill on ${result.processed.length} operation(s)`,
+      userId: session.user.userId,
+      userName: session.user.fullname,
+      userEmail: session.user.email,
+      userRole: session.user.role,
+      ownerId,
+      metadata: {
+        processed_ids: result.processed,
+        skipped_ids: result.skipped,
+      },
+    });
 
     return NextResponse.json({
       processed: result.processed.length,

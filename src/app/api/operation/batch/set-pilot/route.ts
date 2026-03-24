@@ -1,3 +1,4 @@
+import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { batchSetPilot } from '@/backend/services/operation/operation-service';
 import { getUserSession } from '@/lib/auth/server-session';
 import { NextRequest, NextResponse } from 'next/server';
@@ -19,6 +20,22 @@ export async function POST(req: NextRequest) {
 
     // pilot can only be set on PLANNED missions
     const result = await batchSetPilot(mission_ids, pilot_id, ownerId);
+
+    logEvent({
+      eventType: 'UPDATE',
+      entityType: 'operation',
+      description: `Batch set pilot '${result.pilotName}' on ${result.updated.length} operation(s)`,
+      userId: session.user.userId,
+      userName: session.user.fullname,
+      userEmail: session.user.email,
+      userRole: session.user.role,
+      ownerId,
+      metadata: {
+        pilot_id,
+        updated_ids: result.updated,
+        skipped_ids: result.skipped,
+      },
+    });
 
     return NextResponse.json({
       updated: result.updated.length,
