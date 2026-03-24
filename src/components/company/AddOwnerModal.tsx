@@ -63,12 +63,27 @@ export default function AddOwnerModal({ open, onClose, onSuccess }: AddOwnerModa
     const handleSubmit = async () => {
         setError('');
 
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const urlRegex = /^https?:\/\/.+\..+/;
+
         if (!form.owner_code || !form.owner_name || !form.owner_email || !form.owner_website) {
             setError('Please fill all required company fields');
             return;
         }
+        if (!emailRegex.test(form.owner_email)) {
+            setError('Please enter a valid company email address');
+            return;
+        }
+        if (!urlRegex.test(form.owner_website)) {
+            setError('Please enter a valid website URL (e.g. https://example.com)');
+            return;
+        }
         if (!form.admin_username || !form.admin_fullname || !form.admin_email) {
             setError('Please fill all required admin fields');
+            return;
+        }
+        if (!emailRegex.test(form.admin_email)) {
+            setError('Please enter a valid admin email address');
             return;
         }
 

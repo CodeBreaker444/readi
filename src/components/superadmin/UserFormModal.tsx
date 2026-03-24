@@ -19,6 +19,7 @@ import {
 import axios from 'axios';
 import { Loader2, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 const ROLE_OPTIONS = [
   { value: 8, label: 'Pilot in Command (PIC)' },
@@ -143,6 +144,10 @@ export function UserFormModal({
 
   const handleSubmit = (e: React.SyntheticEvent) => {
     e.preventDefault();
+    if (!formData.fk_user_profile_id || formData.fk_user_profile_id === 0) {
+      toast.error('Please select a role for the user');
+      return;
+    }
     setIsSubmitting(true);
     Promise.resolve(onSubmit({ ...formData, qualifications })).finally(() => {
       setIsSubmitting(false);

@@ -118,6 +118,28 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
     if (!formData.model_name.trim()) { toast.error('Model name is required'); return; }
     if (!formData.manufacturer.trim()) { toast.error('Manufacturer (Brand) is required'); return; }
 
+    if (formData.wind_min && formData.wind_max && Number(formData.wind_min) > Number(formData.wind_max)) {
+      toast.error('Wind min cannot be greater than wind max'); return;
+    }
+    if (formData.temp_min && formData.temp_max && Number(formData.temp_min) > Number(formData.temp_max)) {
+      toast.error('Temperature min cannot be greater than temperature max'); return;
+    }
+    if (formData.endurance_min && formData.endurance_max && Number(formData.endurance_min) > Number(formData.endurance_max)) {
+      toast.error('Endurance min cannot be greater than endurance max'); return;
+    }
+    if (formData.max_flight_time && Number(formData.max_flight_time) <= 0) {
+      toast.error('Max flight time must be greater than 0'); return;
+    }
+    if (formData.max_speed && Number(formData.max_speed) <= 0) {
+      toast.error('Max speed must be greater than 0'); return;
+    }
+    if (formData.max_altitude && Number(formData.max_altitude) <= 0) {
+      toast.error('Max altitude must be greater than 0'); return;
+    }
+    if (formData.weight && Number(formData.weight) <= 0) {
+      toast.error('Weight must be greater than 0'); return;
+    }
+
     setLoading(true);
 
     try {

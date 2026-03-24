@@ -30,7 +30,24 @@ export default function AddSystemModal({ open, onClose, onSuccess, models, clien
   useEffect(() => { if (open) { setFormData(INITIAL_FORM); setFiles([]); } }, [open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault(); setLoading(true);
+    e.preventDefault();
+
+    if (formData.latitude) {
+      const lat = Number(formData.latitude);
+      if (isNaN(lat) || lat < -90 || lat > 90) {
+        toast.error('Latitude must be between -90 and 90');
+        return;
+      }
+    }
+    if (formData.longitude) {
+      const lng = Number(formData.longitude);
+      if (isNaN(lng) || lng < -180 || lng > 180) {
+        toast.error('Longitude must be between -180 and 180');
+        return;
+      }
+    }
+
+    setLoading(true);
     try {
       const formPayload = new FormData();
       const payload = {

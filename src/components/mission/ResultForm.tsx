@@ -3,6 +3,7 @@
 import { MissionResult } from '@/config/types/types';
 import { Plus } from 'lucide-react';
 import { FormEvent, useState } from 'react';
+import { toast } from 'sonner';
 
 interface ResultFormProps {
   onSubmit: (data: Omit<MissionResult, 'id'>) => void;
@@ -18,8 +19,8 @@ export default function ResultForm({ onSubmit, isDark}: ResultFormProps) {
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     
-    if (!formData.code || !formData.description) {
-      alert('Please fill in all fields');
+    if (!formData.code.trim() || !formData.description.trim()) {
+      toast.error('Please fill in all fields');
       return;
     }
 
