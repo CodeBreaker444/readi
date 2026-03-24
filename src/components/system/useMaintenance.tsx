@@ -56,6 +56,7 @@ export function useMaintenanceLogbook() {
   const [events, setEvents] = useState<TicketEvent[]>([]);
 
   const [activeTicketId, setActiveTicketId] = useState<number | null>(null);
+  const [modalLoading, setModalLoading] = useState(false);
 
   const [modals, setModals] = useState({
     newTicket: false,
@@ -99,6 +100,12 @@ export function useMaintenanceLogbook() {
 
 
   async function openNewTicketModal() {
+    setNewTicket(defaultNewTicket);
+    setComponents([]);
+    setDrones([]);
+    setUsers([]);
+    setModalLoading(true);
+    openModal('newTicket');
     try {
       const [dronesRes, usersRes] = await Promise.all([
         axios.get(`/api/system/maintenance/lookups?type=drones`),
@@ -106,11 +113,10 @@ export function useMaintenanceLogbook() {
       ]);
       setDrones(dronesRes.data.data);
       setUsers(usersRes.data.data);
-      setNewTicket(defaultNewTicket);
-      setComponents([]);
-      openModal('newTicket');
     } catch (e: any) {
       toast.error(e.response?.data?.message ?? e.message);
+    } finally {
+      setModalLoading(false);
     }
   }
 
@@ -133,13 +139,17 @@ export function useMaintenanceLogbook() {
 
   async function openAssignModal(id: number) {
     setActiveTicketId(id);
+    setUsers([]);
+    setAssignTo(0);
+    setModalLoading(true);
+    openModal('assign');
     try {
       const { data } = await axios.get(`/api/system/maintenance/lookups?type=users`);
       setUsers(data.data);
-      setAssignTo(0);
-      openModal('assign');
     } catch (e: any) {
       toast.error(e.response?.data?.message ?? e.message);
+    } finally {
+      setModalLoading(false);
     }
   }
 
@@ -157,12 +167,16 @@ export function useMaintenanceLogbook() {
 
   async function openEventsModal(id: number) {
     setActiveTicketId(id);
+    setEvents([]);
+    setModalLoading(true);
+    openModal('events');
     try {
       const { data } = await axios.get(`/api/system/maintenance/tickets/events?ticket_id=${id}`);
       setEvents(data.events);
-      openModal('events');
     } catch (e: any) {
       toast.error(e.response?.data?.message ?? e.message);
+    } finally {
+      setModalLoading(false);
     }
   }
 
@@ -285,6 +299,7 @@ export function useMaintenanceLogbook() {
     setReport,
     uploadDesc,
     setUploadDesc,
+    modalLoading,
     loadTickets,
     openNewTicketModal,
     handleDroneChange,

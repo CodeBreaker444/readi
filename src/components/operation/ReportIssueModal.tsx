@@ -181,7 +181,6 @@ export function ReportIssueModal({ open, onClose, toolId, toolCode, missionId, i
             </div>
           ) : (
             <>
-              {/* Issue description */}
               <div>
                 <label className={cn("text-xs font-medium block mb-1.5", isDark ? "text-slate-400" : "text-slate-600")}>
                   Issue Description <span className="text-red-500">*</span>
@@ -195,7 +194,6 @@ export function ReportIssueModal({ open, onClose, toolId, toolCode, missionId, i
                 />
               </div>
 
-              {/* Priority */}
               <div>
                 <label className={cn("text-xs font-medium block mb-1.5", isDark ? "text-slate-400" : "text-slate-600")}>
                   Priority
@@ -221,7 +219,6 @@ export function ReportIssueModal({ open, onClose, toolId, toolCode, missionId, i
                 </div>
               </div>
 
-              {/* Components */}
               {components.length > 0 && (
                 <div>
                   <label className={cn("text-xs font-medium block mb-1.5", isDark ? "text-slate-400" : "text-slate-600")}>
