@@ -259,9 +259,10 @@ interface ComponentColumnProps {
     onView: (row: any) => void;
     onEdit: (id: number) => void;
     onDelete: (id: number, name: string) => void;
+    onLog: (row: any) => void;
 }
 
-export const getComponentColumns = ({ isDark, toolCodeMap, onView, onEdit, onDelete }: ComponentColumnProps): ColumnDef<any>[] => {
+export const getComponentColumns = ({ isDark, toolCodeMap, onView, onEdit, onDelete, onLog }: ComponentColumnProps): ColumnDef<any>[] => {
     const text = isDark ? 'text-gray-200' : 'text-black';
     const hd = isDark ? 'text-gray-100' : '';
 
@@ -328,6 +329,11 @@ export const getComponentColumns = ({ isDark, toolCodeMap, onView, onEdit, onDel
                         className={isDark ? 'border-gray-700 text-gray-300 hover:bg-gray-800' : ''}
                         onClick={() => onEdit(row.original.tool_component_id)}>
                         Edit
+                    </Button>
+                    <Button size="sm" variant="outline"
+                        className={isDark ? 'border-slate-700 text-slate-300 hover:bg-slate-700' : 'border-violet-200 text-violet-700 hover:bg-violet-50'}
+                        onClick={() => onLog(row.original)}>
+                        Log
                     </Button>
                     <Button size="sm" variant="destructive"
                         onClick={() => onDelete(

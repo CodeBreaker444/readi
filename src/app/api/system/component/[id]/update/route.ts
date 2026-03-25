@@ -7,6 +7,7 @@ import { z } from 'zod';
 const schema = z.object({
   fk_tool_id: z.number().positive(),
   component_type: z.string().min(1),
+  component_category: z.string().optional().nullable(),
   component_code: z.string().optional().nullable(),
   component_desc: z.string().optional().nullable(),
   fk_tool_model_id: z.number().optional().nullable(),
@@ -50,7 +51,7 @@ export async function POST(
     if (result.code === 1) {
       logEvent({
         eventType: 'UPDATE',
-        entityType: 'system',
+        entityType: 'system_component',
         entityId: id,
         description: `Updated component #${id} on system #${parsed.data.fk_tool_id}`,
         userId: session.user.userId,

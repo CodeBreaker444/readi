@@ -2,6 +2,7 @@
 
 import { supabase } from '@/backend/database/database';
 import { refreshMaintenanceDaysForTool } from '@/backend/utils/refresh-maintenance-days';
+import { sendNotificationToRoles, sendNotificationToUser } from '@/backend/services/notification/notification-service';
 import type {
   AddReportPayload,
   AssignTicketPayload,
@@ -178,7 +179,7 @@ export async function createTicket(payload: CreateTicketPayload): Promise<number
 export async function closeTicket(payload: CloseTicketPayload): Promise<void> {
   const { data: ticket, error: fetchErr } = await supabase
     .from('maintenance_ticket')
-    .select('ticket_id, fk_tool_id, fk_component_id, ticket_status')
+    .select('ticket_id, fk_tool_id, fk_component_id, ticket_status, fk_owner_id, reported_by_user_id, ticket_title')
     .eq('ticket_id', payload.ticket_id)
     .single();
 
@@ -186,7 +187,7 @@ export async function closeTicket(payload: CloseTicketPayload): Promise<void> {
   if (ticket.ticket_status === 'CLOSED') throw new Error('Ticket is already closed');
 
   const now = new Date();
-  const todayDate = now.toISOString().split('T')[0];  
+  const todayDate = now.toISOString().split('T')[0];
 
   const { error: updateErr } = await supabase
     .from('maintenance_ticket')
@@ -215,11 +216,32 @@ export async function closeTicket(payload: CloseTicketPayload): Promise<void> {
 
   await resetComponentCounters(ticket.fk_tool_id, now.toISOString(), ticket.fk_component_id ?? null);
 
+  // Restore system to OPERATIONAL
+  await setSystemOperationalStatus(ticket.fk_tool_id, 'OPERATIONAL');
+
+  // Restore all NOT_OPERATIONAL components of this tool to OPERATIONAL
+  await setAllComponentsOperational(ticket.fk_tool_id);
+
   await addTicketEvent(
     payload.ticket_id,
     'CLOSED',
     payload.note ?? 'Ticket closed'
   );
+
+  // Send notifications (fire-and-forget)
+  const systemCode = await getToolCode(ticket.fk_tool_id);
+  const notifTitle = `Maintenance Complete — ${systemCode}`;
+  const notifMsg = `Maintenance ticket closed. ${systemCode} is now operational.${payload.note ? ` Note: ${payload.note}` : ''}`;
+  const actionUrl = '/systems/maintenance-tickets';
+
+  // Notify the pilot who reported the issue
+  if (ticket.reported_by_user_id) {
+    sendNotificationToUser(ticket.reported_by_user_id, notifTitle, notifMsg, actionUrl).catch(() => {});
+  }
+  // Notify OPM users
+  if (ticket.fk_owner_id) {
+    sendNotificationToRoles(ticket.fk_owner_id, ['OPM'], notifTitle, notifMsg, actionUrl).catch(() => {});
+  }
 }
 
 
@@ -435,6 +457,75 @@ async function addTicketEvent(
   });
 }
 
+async function getToolCode(toolId: number): Promise<string> {
+  const { data } = await supabase
+    .from('tool')
+    .select('tool_code')
+    .eq('tool_id', toolId)
+    .single();
+  return data?.tool_code ?? `System #${toolId}`;
+}
+
+export async function setSystemOperationalStatus(toolId: number, status: string): Promise<void> {
+  const { data: tool } = await supabase
+    .from('tool')
+    .select('tool_metadata')
+    .eq('tool_id', toolId)
+    .single();
+
+  await supabase
+    .from('tool')
+    .update({
+      tool_metadata: {
+        ...(tool?.tool_metadata ?? {}),
+        status,
+      },
+    })
+    .eq('tool_id', toolId);
+}
+
+export async function setComponentsOperationalStatus(componentIds: number[], status: string): Promise<void> {
+  if (!componentIds.length) return;
+  const { data: comps } = await supabase
+    .from('tool_component')
+    .select('component_id, component_metadata')
+    .in('component_id', componentIds);
+
+  for (const comp of comps ?? []) {
+    await supabase
+      .from('tool_component')
+      .update({
+        component_metadata: {
+          ...(comp.component_metadata ?? {}),
+          component_status: status,
+        },
+      })
+      .eq('component_id', comp.component_id);
+  }
+}
+
+async function setAllComponentsOperational(toolId: number): Promise<void> {
+  const { data: comps } = await supabase
+    .from('tool_component')
+    .select('component_id, component_metadata')
+    .eq('fk_tool_id', toolId)
+    .eq('component_active', 'Y');
+
+  for (const comp of comps ?? []) {
+    if ((comp.component_metadata?.component_status ?? 'OPERATIONAL') !== 'OPERATIONAL') {
+      await supabase
+        .from('tool_component')
+        .update({
+          component_metadata: {
+            ...(comp.component_metadata ?? {}),
+            component_status: 'OPERATIONAL',
+          },
+        })
+        .eq('component_id', comp.component_id);
+    }
+  }
+}
+
 /**
  * Reset component maintenance counters to 0 after a maintenance is completed.
  * Called when a ticket is closed.
@@ -477,4 +568,27 @@ async function resetComponentCounters(toolId: number, resetAt: string, component
       .update(resetPayload)
       .eq('component_id', comp.component_id);
   }
+}
+
+export async function getComponentTicketEvents(componentId: number) {
+  const { data, error } = await supabase
+    .from('maintenance_ticket')
+    .select(`
+      ticket_id,
+      ticket_status,
+      reported_at,
+      closed_at,
+      resolution_notes,
+      maintenance_ticket_event (
+        event_id,
+        event_type,
+        event_description,
+        created_at
+      )
+    `)
+    .eq('fk_component_id', componentId)
+    .order('ticket_id', { ascending: false });
+
+  if (error) throw new Error(`getComponentTicketEvents: ${error.message}`);
+  return data ?? [];
 }

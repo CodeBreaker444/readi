@@ -21,6 +21,7 @@ export interface AuditLogFilters {
   userId?: number;
   eventType?: AuditEventType;
   entityType?: string;
+  entityId?: string | number;
   dateFrom?: string;
   dateTo?: string;
   page?: number;
@@ -94,6 +95,7 @@ export async function getAuditLogs(filters: AuditLogFilters): Promise<GetAuditLo
   if (filters.userId)     query = query.eq('user_id', filters.userId);
   if (filters.eventType)  query = query.eq('event_type', filters.eventType);
   if (filters.entityType) query = query.eq('entity_type', filters.entityType);
+  if (filters.entityId != null) query = query.eq('entity_id', String(filters.entityId));
   if (filters.dateFrom)   query = query.gte('created_at', filters.dateFrom);
   if (filters.dateTo)     query = query.lte('created_at', filters.dateTo);
 

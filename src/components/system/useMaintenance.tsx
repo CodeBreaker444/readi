@@ -183,6 +183,7 @@ export function useMaintenanceLogbook() {
 
   async function handleCreateTicket() {
     if (!newTicket.fk_tool_id) { toast.error('Please select a drone/system'); return; }
+    setModalLoading(true);
     try {
       const res = await axios.post(`/api/system/maintenance/tickets/create`, {
         ...newTicket,
@@ -197,12 +198,15 @@ export function useMaintenanceLogbook() {
       }
     } catch (e: any) {
       toast.error(e.response?.data?.message ?? e.message);
+    } finally {
+      setModalLoading(false);
     }
   }
 
   async function handleCloseTicket() {
     if (!activeTicketId) return;
     if (!closeNote.trim()) { toast.error('Please enter a closing note'); return; }
+    setModalLoading(true);
     try {
       await axios.post(`/api/system/maintenance/tickets/close`, {
         ticket_id: activeTicketId,
@@ -216,11 +220,14 @@ export function useMaintenanceLogbook() {
       });
     } catch (e: any) {
       toast.error(e.response?.data?.message ?? e.message);
+    } finally {
+      setModalLoading(false);
     }
   }
 
   async function handleAssignTicket() {
     if (!activeTicketId || !assignTo) return;
+    setModalLoading(true);
     try {
       await axios.post(`/api/system/maintenance/tickets/assign`, {
         ticket_id: activeTicketId,
@@ -236,6 +243,8 @@ export function useMaintenanceLogbook() {
       });
     } catch (e: any) {
       toast.error(e.response?.data?.message ?? e.message);
+    } finally {
+      setModalLoading(false);
     }
   }
 
@@ -245,6 +254,7 @@ export function useMaintenanceLogbook() {
     if (report.work_start && report.work_end && report.work_end < report.work_start) {
       toast.error('Work end time must be after work start time'); return;
     }
+    setModalLoading(true);
     try {
       const fd = new FormData();
       fd.append('ticket_id', String(activeTicketId));
@@ -266,6 +276,8 @@ export function useMaintenanceLogbook() {
       }
     } catch (e: any) {
       toast.error(e.response?.data?.message ?? e.message);
+    } finally {
+      setModalLoading(false);
     }
   }
 
@@ -276,12 +288,15 @@ export function useMaintenanceLogbook() {
     fd.append('file', file);
     fd.append('attachment_desc', uploadDesc);
     fd.append('uploaded_by', 'web');
+    setModalLoading(true);
     try {
       await axios.post(`/api/system/maintenance/tickets/upload`, fd);
       toast.success('File uploaded');
       closeModal('upload');
     } catch (e: any) {
       toast.error(e.response?.data?.message ?? e.message);
+    } finally {
+      setModalLoading(false);
     }
   }
 

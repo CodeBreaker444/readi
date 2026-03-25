@@ -72,7 +72,14 @@ export function ReportIssueModal({ open, onClose, toolId, toolCode, missionId, i
   const [checking, setChecking] = useState(true);
   const [alreadyInMaintenance, setAlreadyInMaintenance] = useState(false);
   const [components, setComponents] = useState<ComponentInfo[]>([]);
+  const [selectedComponentIds, setSelectedComponentIds] = useState<number[]>([]);
   const [submitting, setSubmitting] = useState(false);
+
+  const toggleComponent = (id: number) => {
+    setSelectedComponentIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
 
   const loadData = useCallback(async () => {
     setChecking(true);
@@ -112,6 +119,7 @@ export function ReportIssueModal({ open, onClose, toolId, toolCode, missionId, i
         fk_tool_id: toolId,
         issue_description: description.trim(),
         priority,
+        selected_component_ids: selectedComponentIds,
       });
       if (data.status === "OK") {
         toast.success("Issue reported — maintenance ticket created");
@@ -222,40 +230,65 @@ export function ReportIssueModal({ open, onClose, toolId, toolCode, missionId, i
               {components.length > 0 && (
                 <div>
                   <label className={cn("text-xs font-medium block mb-1.5", isDark ? "text-slate-400" : "text-slate-600")}>
-                    System Components
+                    Affected Components <span className={cn("text-[10px] font-normal", isDark ? "text-slate-500" : "text-slate-400")}>(select all that apply)</span>
                   </label>
                   <div className="space-y-1.5">
-                    {components.map((comp) => (
-                      <div
-                        key={comp.component_id}
-                        className={cn(
-                          "rounded-lg border px-3 py-2.5",
-                          isDark ? "border-white/[0.06] bg-slate-900/40" : "border-slate-200 bg-slate-50"
-                        )}
-                      >
-                        <div className="flex items-center justify-between gap-2 mb-1.5">
-                          <div className="min-w-0">
-                            <p className={cn("text-xs font-medium truncate", isDark ? "text-slate-200" : "text-slate-700")}>
-                              {comp.component_type ?? "Component"}
-                              {comp.component_code ? ` — ${comp.component_code}` : ""}
-                            </p>
-                            {comp.serial_number && (
-                              <p className={cn("text-[10px] font-mono", isDark ? "text-slate-500" : "text-slate-400")}>
-                                SN: {comp.serial_number}
-                              </p>
-                            )}
+                    {components.map((comp) => {
+                      const isSelected = selectedComponentIds.includes(comp.component_id);
+                      return (
+                        <button
+                          key={comp.component_id}
+                          type="button"
+                          onClick={() => toggleComponent(comp.component_id)}
+                          className={cn(
+                            "w-full text-left rounded-lg border px-3 py-2.5 transition-all",
+                            isSelected
+                              ? isDark
+                                ? "border-red-500/50 bg-red-500/10"
+                                : "border-red-300 bg-red-50"
+                              : isDark
+                                ? "border-white/[0.06] bg-slate-900/40 hover:border-white/[0.12]"
+                                : "border-slate-200 bg-slate-50 hover:border-slate-300"
+                          )}
+                        >
+                          <div className="flex items-center justify-between gap-2 mb-1.5">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <div className={cn(
+                                "shrink-0 w-3.5 h-3.5 rounded border flex items-center justify-center",
+                                isSelected
+                                  ? "bg-red-500 border-red-500"
+                                  : isDark ? "border-slate-600" : "border-slate-300"
+                              )}>
+                                {isSelected && (
+                                  <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                )}
+                              </div>
+                              <div className="min-w-0">
+                                <p className={cn("text-xs font-medium truncate", isDark ? "text-slate-200" : "text-slate-700")}>
+                                  {comp.component_type ?? "Component"}
+                                  {comp.component_code ? ` — ${comp.component_code}` : ""}
+                                </p>
+                                {comp.serial_number && (
+                                  <p className={cn("text-[10px] font-mono", isDark ? "text-slate-500" : "text-slate-400")}>
+                                    SN: {comp.serial_number}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <span className={cn("text-[9px] font-semibold px-1.5 py-0.5 rounded border shrink-0", STATUS_STYLE[comp.status] ?? STATUS_STYLE.OK)}>
+                              {comp.status}
+                            </span>
                           </div>
-                          <span className={cn("text-[9px] font-semibold px-1.5 py-0.5 rounded border shrink-0", STATUS_STYLE[comp.status] ?? STATUS_STYLE.OK)}>
-                            {comp.status}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <CycleBar current={comp.current_hours} limit={comp.limit_hour} unit="h" />
-                          <CycleBar current={comp.current_flights} limit={comp.limit_flight} unit="fl" />
-                          <CycleBar current={comp.current_days} limit={comp.limit_day} unit="d" />
-                        </div>
-                      </div>
-                    ))}
+                          <div className="flex items-center gap-3 pl-5">
+                            <CycleBar current={comp.current_hours} limit={comp.limit_hour} unit="h" />
+                            <CycleBar current={comp.current_flights} limit={comp.limit_flight} unit="fl" />
+                            <CycleBar current={comp.current_days} limit={comp.limit_day} unit="d" />
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}

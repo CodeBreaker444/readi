@@ -22,9 +22,15 @@ interface EditComponentModalProps {
   initialComponentId?: number | null;
 }
 
+const COMPONENT_CATEGORIES = [
+  { value: 'STANDARD', label: 'Standard' },
+  { value: 'LIMITED',  label: 'Limited Life' },
+];
+
 const EMPTY_FORM = {
   fk_tool_id: '',
   component_type: '',
+  component_category: 'STANDARD',
   component_code: '',
   component_desc: '',
   fk_tool_model_id: '',
@@ -74,6 +80,7 @@ export default function EditComponentModal({
     setFormData({
       fk_tool_id: String(comp.fk_tool_id || ''),
       component_type: comp.component_type || '',
+      component_category: comp.component_category || 'STANDARD',
       component_code: comp.component_code || '',
       component_desc: comp.component_desc || '',
       fk_tool_model_id: comp.fk_tool_model_id ? String(comp.fk_tool_model_id) : '',
@@ -202,6 +209,7 @@ export default function EditComponentModal({
       const payload = {
         fk_tool_id: Number(formData.fk_tool_id),
         component_type: formData.component_type,
+        component_category: formData.component_category || 'STANDARD',
         component_code: formData.component_code || null,
         component_desc: formData.component_desc || null,
         fk_tool_model_id: formData.fk_tool_model_id ? Number(formData.fk_tool_model_id) : null,
@@ -338,6 +346,17 @@ export default function EditComponentModal({
                         <SelectItem value="CONTROLLER">Controller</SelectItem>
                         <SelectItem value="SENSOR">Sensor</SelectItem>
                         <SelectItem value="OTHER">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="col-span-3">
+                    <Label className={labelCls}>Category</Label>
+                    <Select value={formData.component_category} onValueChange={v => handleChange('component_category', v)}>
+                      <SelectTrigger className={selectTriggerCls}><SelectValue placeholder="Select category" /></SelectTrigger>
+                      <SelectContent className={selectContentCls}>
+                        {COMPONENT_CATEGORIES.map(c => (
+                          <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>

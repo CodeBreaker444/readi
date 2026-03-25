@@ -139,8 +139,6 @@ export function DownloadModal({ open, onClose, ticketId, isDark }: Props) {
                       : "border-slate-100 hover:bg-slate-50"
                   }`}
                 >
-                  <span className="text-lg shrink-0">{getFileIcon(att.file_type)}</span>
-
                   <div className="flex-1 min-w-0">
                     <p className={`text-xs font-medium truncate ${textPrimary}`}>
                       {att.file_name}

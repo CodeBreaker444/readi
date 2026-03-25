@@ -1,5 +1,6 @@
-import { assertNoOpenTicketForTool, createTicket, hasOpenTicketForTool } from '@/backend/services/system/maintenance-ticket';
+import { assertNoOpenTicketForTool, createTicket, hasOpenTicketForTool, setComponentsOperationalStatus, setSystemOperationalStatus } from '@/backend/services/system/maintenance-ticket';
 import { getComponentsForMaintenanceCycle } from '@/backend/services/operation/maintenance-cycle-service';
+import { sendNotificationToRoles } from '@/backend/services/notification/notification-service';
 import { getUserSession } from '@/lib/auth/server-session';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { fk_tool_id, issue_description, priority } = body;
+    const { fk_tool_id, issue_description, priority, selected_component_ids } = body;
 
     if (!fk_tool_id || typeof fk_tool_id !== 'number') {
       return NextResponse.json({ status: 'ERROR', message: 'fk_tool_id is required' }, { status: 400 });
@@ -60,6 +61,28 @@ export async function POST(req: NextRequest) {
       fk_user_id: session.user.userId,
       note: issue_description.trim(),
     });
+
+    // Mark system as NOT_OPERATIONAL
+    await setSystemOperationalStatus(fk_tool_id, 'NOT_OPERATIONAL');
+
+    // Mark selected components as NOT_OPERATIONAL
+    const componentIds: number[] = Array.isArray(selected_component_ids) ? selected_component_ids : [];
+    if (componentIds.length > 0) {
+      await setComponentsOperationalStatus(componentIds, 'NOT_OPERATIONAL');
+    }
+
+    // Notify maintenance managers (ADMIN) and OPM
+    const systemData = await getComponentsForMaintenanceCycle(fk_tool_id, session.user.ownerId).catch(() => null);
+    const systemCode = (systemData as any)?.tool_code ?? `System #${fk_tool_id}`;
+    const notifTitle = `Issue Reported — ${systemCode}`;
+    const notifMsg = `${session.user.fullname} reported an issue on ${systemCode}: ${issue_description.trim().slice(0, 120)}`;
+    sendNotificationToRoles(
+      session.user.ownerId,
+      ['ADMIN', 'OPM'],
+      notifTitle,
+      notifMsg,
+      '/systems/maintenance-tickets'
+    ).catch(() => {});
 
     return NextResponse.json({ status: 'OK', ticket_id });
   } catch (err: any) {

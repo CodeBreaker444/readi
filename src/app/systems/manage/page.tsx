@@ -3,6 +3,7 @@
 import AddComponentModal from '@/components/system/AddComponentModal';
 import AddModelModal from '@/components/system/AddModelModal';
 import AddSystemModal from '@/components/system/AddSystemModal';
+import { ComponentLogModal } from '@/components/system/ComponentLogModal';
 import DataTable from '@/components/system/DataTable';
 import EditComponentModal from '@/components/system/EditComponentModal';
 import EditModelModal from '@/components/system/EditModelModal';
@@ -51,6 +52,8 @@ export default function DroneToolPage() {
     const [showViewTool, setShowViewTool] = useState<boolean>(false);
     const [showViewComponent, setShowViewComponent] = useState<boolean>(false);
     const [selectedComponent, setSelectedComponent] = useState<any | null>(null);
+    const [showComponentLog, setShowComponentLog] = useState<boolean>(false);
+    const [logComponent, setLogComponent] = useState<any | null>(null);
     const [showEditSystem, setShowEditSystem] = useState<boolean>(false);
     const [showEditModel, setShowEditModel] = useState<boolean>(false);
     const [showEditComponent, setShowEditComponent] = useState<boolean>(false);
@@ -157,6 +160,7 @@ export default function DroneToolPage() {
 
     const handleView = (toolId: number) => { setSelectedToolId(toolId); setShowViewTool(true); };
     const handleViewComponent = (row: any) => { setSelectedComponent(row); setShowViewComponent(true); };
+    const handleLogComponent = (row: any) => { setLogComponent(row); setShowComponentLog(true); };
     const handleEditSystem = (tool: DroneToolData) => { setSelectedToolId(tool.tool_id); setShowEditSystem(true); };
 
     const handleDelete = async (toolId: number) => {
@@ -324,7 +328,8 @@ const modelColumns = useMemo(
             toolCodeMap,
             onView: handleViewComponent,
             onEdit: handleEditComponentDirect,
-            onDelete: handleDeleteComponent
+            onDelete: handleDeleteComponent,
+            onLog: handleLogComponent,
         }),
         [isDark, toolCodeMap]
     );
@@ -452,6 +457,15 @@ const modelColumns = useMemo(
                 component={selectedComponent}
                 systemCode={selectedComponent ? toolCodeMap[selectedComponent.fk_tool_id] : undefined}
                 onClose={() => { setShowViewComponent(false); setSelectedComponent(null); }}
+            />
+
+            <ComponentLogModal
+                open={showComponentLog}
+                componentId={logComponent?.tool_component_id ?? null}
+                componentLabel={logComponent
+                    ? `${logComponent.component_type ?? ''}${logComponent.component_code ? ` — ${logComponent.component_code}` : ''}`
+                    : ''}
+                onClose={() => { setShowComponentLog(false); setLogComponent(null); }}
             />
 
             {showEditSystem && (
