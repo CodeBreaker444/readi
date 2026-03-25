@@ -310,21 +310,23 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
                                     <div className="flex flex-col items-center gap-1 flex-1">
                                         <button
                                             type="button"
-                                            onClick={() => { if (done) setStep(s.id as Step); }}
+                                            onClick={() => { if (done || isEdit) setStep(s.id as Step); }}
                                             className={cn(
                                                 'h-8 w-8 rounded-full flex items-center justify-center text-xs font-semibold transition-all',
                                                 done
                                                     ? 'bg-emerald-600 text-white hover:bg-emerald-700 cursor-pointer'
                                                     : active
                                                         ? 'bg-violet-600 text-white ring-4 ring-violet-100 dark:ring-violet-900 cursor-default'
-                                                        : 'bg-muted text-muted-foreground cursor-default'
+                                                        : isEdit
+                                                            ? 'bg-muted text-muted-foreground hover:bg-violet-100 hover:text-violet-700 cursor-pointer'
+                                                            : 'bg-muted text-muted-foreground cursor-default'
                                             )}
                                         >
                                             {done ? <CheckCircle2 className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
                                         </button>
                                         <span className={cn(
                                             'text-[10px] font-medium whitespace-nowrap',
-                                            active ? 'text-violet-600' : done ? 'text-emerald-600' : 'text-muted-foreground'
+                                            active ? 'text-violet-600' : done ? 'text-emerald-600' : isEdit ? 'text-muted-foreground hover:text-violet-600 cursor-pointer' : 'text-muted-foreground'
                                         )}>
                                             {s.label}
                                         </span>
