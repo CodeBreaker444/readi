@@ -7,6 +7,7 @@ import { z } from 'zod';
 const ComponentSchema = z.object({
   fk_tool_id: z.number().positive(),
   component_type: z.string().min(1, "Type is required"),
+  component_category: z.string().optional().nullable(),
   component_code: z.string().optional().nullable(),
   component_desc: z.string().optional().nullable(),
   fk_tool_model_id: z.number().optional().nullable(),
@@ -47,6 +48,7 @@ export async function POST(req: NextRequest) {
     const result = await addComponent({
       fk_tool_id: d.fk_tool_id,
       component_type: d.component_type,
+      component_category: d.component_category,
       component_code: d.component_code,
       component_desc: d.component_desc,
       component_sn: d.component_sn,
@@ -67,7 +69,8 @@ export async function POST(req: NextRequest) {
     if (result.code === 1) {
       logEvent({
         eventType: 'CREATE',
-        entityType: 'system',
+        entityType: 'system_component',
+        entityId: result.data?.component_id,
         description: `Added component '${d.component_code ?? d.component_type}' to system #${d.fk_tool_id}`,
         userId: session.user.userId,
         userName: session.user.fullname,

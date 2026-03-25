@@ -174,6 +174,7 @@ export default function MaintenanceLogbookPage() {
         onNoteChange={setCloseNote}
         onSubmit={handleCloseTicket}
         isDark={isDark}
+        loading={modalLoading}
       />
 
       <AssignTicketModal
@@ -194,6 +195,7 @@ export default function MaintenanceLogbookPage() {
         onFormChange={(u) => setReport((p) => ({ ...p, ...u }))}
         onSubmit={(file) => handleAddReport(file)}
         isDark={isDark}
+        loading={modalLoading}
       />
 
       <UploadModal
@@ -203,6 +205,7 @@ export default function MaintenanceLogbookPage() {
         onDescChange={setUploadDesc}
         onSubmit={handleUploadFile}
         isDark={isDark}
+        loading={modalLoading}
       />
 
       <EventsModal

@@ -31,9 +31,15 @@ interface AddComponentModalProps {
   models: any[];
 }
 
+const COMPONENT_CATEGORIES = [
+  { value: 'STANDARD', label: 'Standard' },
+  { value: 'LIMITED',  label: 'Limited Life' },
+];
+
 const INITIAL_FORM = {
   fk_tool_id: '',
   component_type: '',
+  component_category: 'STANDARD',
   component_code: '',
   component_desc: '',
   fk_tool_model_id: '',
@@ -133,6 +139,7 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
       const payload = {
         fk_tool_id: Number(formData.fk_tool_id),
         component_type: formData.component_type,
+        component_category: formData.component_category || 'STANDARD',
         component_code: formData.component_code || null,
         component_desc: formData.component_desc || null,
         fk_tool_model_id: formData.fk_tool_model_id ? Number(formData.fk_tool_model_id) : null,
@@ -197,6 +204,17 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
                 <SelectContent>
                   {COMPONENT_TYPES.map((t) => (
                     <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="col-span-3">
+              <Label className="pb-2">Category</Label>
+              <Select value={formData.component_category} onValueChange={(v) => handleChange('component_category', v)}>
+                <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                <SelectContent>
+                  {COMPONENT_CATEGORIES.map((c) => (
+                    <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

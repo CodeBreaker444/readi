@@ -120,7 +120,60 @@ export async function deleteNotification(
     .from("notification")
     .delete()
     .eq("notification_id", notification_id)
-    .eq("fk_user_id", userId);  
+    .eq("fk_user_id", userId);
 
   if (error) throw new Error(error.message);
+}
+
+
+/**
+ * Fire-and-forget: send a notification to all active users of the given roles within an owner.
+ */
+export async function sendNotificationToRoles(
+  ownerId: number,
+  roles: string[],
+  title: string,
+  message: string,
+  actionUrl?: string
+): Promise<void> {
+  const { data: users } = await supabase
+    .from("users")
+    .select("user_id")
+    .eq("fk_owner_id", ownerId)
+    .eq("user_active", "Y")
+    .in("user_role", roles);
+
+  if (!users?.length) return;
+
+  const notifications = users.map((u: { user_id: number }) => ({
+    fk_user_id: u.user_id,
+    notification_title: title,
+    notification_message: message,
+    notification_type: "MAINTENANCE",
+    is_read: false,
+    action_url: actionUrl ?? null,
+    created_at: new Date().toISOString(),
+  }));
+
+  await supabase.from("notification").insert(notifications);
+}
+
+/**
+ * Fire-and-forget: send a notification to a specific user.
+ */
+export async function sendNotificationToUser(
+  userId: number,
+  title: string,
+  message: string,
+  actionUrl?: string
+): Promise<void> {
+  await supabase.from("notification").insert({
+    fk_user_id: userId,
+    notification_title: title,
+    notification_message: message,
+    notification_type: "MAINTENANCE",
+    is_read: false,
+    action_url: actionUrl ?? null,
+    created_at: new Date().toISOString(),
+  });
 }

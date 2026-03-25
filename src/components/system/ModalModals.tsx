@@ -262,7 +262,7 @@ export function NewTicketModal({
 }
 
 export function CloseTicketModal({
-  open, onClose, note, onNoteChange, onSubmit, isDark,
+  open, onClose, note, onNoteChange, onSubmit, isDark, loading,
 }: {
   open: boolean;
   onClose: () => void;
@@ -270,6 +270,7 @@ export function CloseTicketModal({
   onNoteChange: (v: string) => void;
   onSubmit: () => void;
   isDark?: boolean;
+  loading?: boolean;
 }) {
   return (
     <Modal title="Close Ticket" open={open} onClose={onClose} isDark={isDark}>
@@ -288,6 +289,7 @@ export function CloseTicketModal({
         confirmLabel="Close Ticket"
         confirmClass="bg-emerald-600 hover:bg-emerald-700"
         isDark={isDark}
+        loading={loading}
       />
     </Modal>
   );
@@ -341,7 +343,7 @@ export function AssignTicketModal({
 
 
 export function ReportModal({
-  open, onClose, form, onFormChange, onSubmit, isDark,
+  open, onClose, form, onFormChange, onSubmit, isDark, loading,
 }: {
   open: boolean;
   onClose: () => void;
@@ -349,6 +351,7 @@ export function ReportModal({
   onFormChange: (updates: Partial<ReportForm>) => void;
   onSubmit: (file?: File) => void;
   isDark?: boolean;
+  loading?: boolean;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -399,6 +402,7 @@ export function ReportModal({
         confirmLabel="Save Report"
         confirmClass="bg-emerald-600 hover:bg-emerald-700"
         isDark={isDark}
+        loading={loading}
       />
     </Modal>
   );
@@ -406,7 +410,7 @@ export function ReportModal({
 
 
 export function UploadModal({
-  open, onClose, desc, onDescChange, onSubmit, isDark,
+  open, onClose, desc, onDescChange, onSubmit, isDark, loading,
 }: {
   open: boolean;
   onClose: () => void;
@@ -414,6 +418,7 @@ export function UploadModal({
   onDescChange: (v: string) => void;
   onSubmit: (file: File) => void;
   isDark?: boolean;
+  loading?: boolean;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -440,6 +445,7 @@ export function UploadModal({
         confirmLabel="Upload"
         confirmClass="bg-indigo-600 hover:bg-indigo-700"
         isDark={isDark}
+        loading={loading}
       />
     </Modal>
   );

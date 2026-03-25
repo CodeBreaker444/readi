@@ -1,10 +1,14 @@
 "use client";
 
 import axios from "axios";
+import { Activity, Calendar, CheckCircle2, Clock, Crosshair, FileText, MapPin, Navigation, Tag, User, Wrench } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Skeleton } from '../../components/ui/skeleton';
-import { Mission, MissionBoardData } from '../../config/types/operation';
+import { Badge } from "@/components/ui/badge";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Mission, MissionBoardData } from "@/config/types/operation";
+import { cn } from "@/lib/utils";
 import { useTheme } from "../useTheme";
 import { BoardHeader } from "./BoardHeader";
 import { DailyDeclarationModal } from "./DailyDeclarationModal";
@@ -279,7 +283,6 @@ export function OperationBoard() {
                 />
             )}
 
-            {/* Manual maintenance update from Done card pill */}
             {maintenanceMission && (
                 <MaintenanceCycleModal
                     open={!!maintenanceMission}
@@ -292,7 +295,155 @@ export function OperationBoard() {
                     isDark={isDark}
                 />
             )}
+
+            <MissionDetailSheet
+                mission={selectedMission}
+                isDark={isDark}
+                onClose={() => setSelectedMission(null)}
+            />
         </div>
+    );
+}
+
+const STATUS_LABEL: Record<string, { label: string; cls: string; darkCls: string }> = {
+    "00": { label: "Scheduled", cls: "bg-blue-50 text-blue-700 border-blue-200", darkCls: "bg-blue-500/10 text-blue-400 border-blue-500/30" },
+    "05": { label: "In Progress", cls: "bg-amber-50 text-amber-700 border-amber-200", darkCls: "bg-amber-500/10 text-amber-400 border-amber-500/30" },
+    "10": { label: "Completed", cls: "bg-emerald-50 text-emerald-700 border-emerald-200", darkCls: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" },
+    "99": { label: "Cancelled", cls: "bg-red-50 text-red-700 border-red-200", darkCls: "bg-red-500/10 text-red-400 border-red-500/30" },
+};
+
+function DetailItem({ icon, label, value }: { icon: React.ReactNode; label: string; value: React.ReactNode }) {
+    return (
+        <div className="flex items-start gap-3">
+            <div className="mt-0.5 p-1.5 rounded-md bg-muted text-muted-foreground shrink-0">{icon}</div>
+            <div className="min-w-0">
+                <p className="text-xs text-muted-foreground">{label}</p>
+                <p className="text-sm font-medium">{value || "—"}</p>
+            </div>
+        </div>
+    );
+}
+
+function MissionDetailSheet({ mission, isDark, onClose }: { mission: Mission | null; isDark: boolean; onClose: () => void }) {
+    const isDone = mission?.fk_status_id === 3;
+    const statusCfg = mission ? (STATUS_LABEL[mission.mission_status_code] ?? STATUS_LABEL["00"]) : null;
+
+    return (
+        <Sheet open={!!mission} onOpenChange={(o) => { if (!o) onClose(); }}>
+            <SheetContent
+                className={cn("w-full sm:max-w-md overflow-y-auto p-6", isDark ? "bg-slate-900 border-slate-700 text-white" : "bg-white")}
+                side="right"
+            >
+                {mission && statusCfg && (
+                    <>
+                        <SheetHeader className="mb-6 pb-4 border-b">
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-mono text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
+                                    #{mission.mission_id}
+                                </span>
+                                <Badge variant="outline" className={cn("text-xs", isDark ? statusCfg.darkCls : statusCfg.cls)}>
+                                    {statusCfg.label}
+                                </Badge>
+                                {mission.maintenance_status && mission.maintenance_status !== "OK" && (
+                                    <Badge variant="outline" className={cn("text-xs", isDark ? "bg-amber-500/10 text-amber-400 border-amber-500/30" : "bg-amber-50 text-amber-700 border-amber-200")}>
+                                        <Wrench className="h-3 w-3 mr-1" />
+                                        {mission.maintenance_status.replace("_", " ")}
+                                    </Badge>
+                                )}
+                            </div>
+                            <SheetTitle className={cn("text-left text-base mt-1", isDark ? "text-white" : "")}>
+                                {mission.vehicle_code}{mission.vehicle_desc ? ` — ${mission.vehicle_desc}` : ""}
+                            </SheetTitle>
+                            {mission.client_name && (
+                                <p className="text-sm text-muted-foreground text-left">{mission.client_name}</p>
+                            )}
+                        </SheetHeader>
+
+                        <div className="space-y-6">
+                            <section className="space-y-3">
+                                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Timeline</h3>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className={cn("rounded-lg border p-3 space-y-1", isDark ? "bg-slate-800 border-slate-700" : "bg-muted/30")}>
+                                        <p className="text-xs text-muted-foreground flex items-center gap-1"><Calendar className="h-3 w-3" /> Scheduled</p>
+                                        <p className="text-sm font-medium">{mission.date_start || "—"}</p>
+                                        {mission.time_start && <p className="text-xs text-muted-foreground">{mission.time_start}</p>}
+                                    </div>
+                                    {mission.date_end && (
+                                        <div className={cn("rounded-lg border p-3 space-y-1", isDark ? "bg-slate-800 border-slate-700" : "bg-muted/30")}>
+                                            <p className="text-xs text-muted-foreground flex items-center gap-1"><CheckCircle2 className="h-3 w-3 text-emerald-500" /> Completed</p>
+                                            <p className="text-sm font-medium">{mission.date_end}</p>
+                                            {mission.time_end && <p className="text-xs text-muted-foreground">{mission.time_end}</p>}
+                                        </div>
+                                    )}
+                                </div>
+                            </section>
+
+                            <div className="h-px bg-border" />
+
+                            <section className="space-y-3">
+                                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Personnel &amp; Equipment</h3>
+                                <div className="space-y-2">
+                                    <DetailItem icon={<User className="h-3.5 w-3.5" />} label="Pilot in Command" value={mission.pic_fullname} />
+                                    {mission.mission_type_desc && (
+                                        <DetailItem icon={<Crosshair className="h-3.5 w-3.5" />} label="Mission Type" value={mission.mission_type_desc} />
+                                    )}
+                                    {mission.mission_category_desc && (
+                                        <DetailItem icon={<Tag className="h-3.5 w-3.5" />} label="Category" value={mission.mission_category_desc} />
+                                    )}
+                                    {mission.mission_planning_code && (
+                                        <DetailItem icon={<MapPin className="h-3.5 w-3.5" />} label="Planning" value={`${mission.mission_planning_code}${mission.mission_planning_desc ? ` · ${mission.mission_planning_desc}` : ""}`} />
+                                    )}
+                                </div>
+                            </section>
+
+                            {isDone && (mission.flown_time != null || mission.flown_meter != null) && (
+                                <>
+                                    <div className="h-px bg-border" />
+                                    <section className="space-y-3">
+                                        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Flight Results</h3>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            {mission.flown_time != null && (
+                                                <div className={cn("rounded-lg border p-3 space-y-1", isDark ? "bg-emerald-950/20 border-emerald-800" : "bg-emerald-50 border-emerald-200")}>
+                                                    <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> Duration</p>
+                                                    <p className={cn("text-lg font-bold tabular-nums", isDark ? "text-emerald-400" : "text-emerald-700")}>{mission.flown_time} min</p>
+                                                </div>
+                                            )}
+                                            {mission.flown_meter != null && (
+                                                <div className={cn("rounded-lg border p-3 space-y-1", isDark ? "bg-emerald-950/20 border-emerald-800" : "bg-emerald-50 border-emerald-200")}>
+                                                    <p className="text-xs text-muted-foreground flex items-center gap-1"><Navigation className="h-3 w-3" /> Distance</p>
+                                                    <p className={cn("text-lg font-bold tabular-nums", isDark ? "text-emerald-400" : "text-emerald-700")}>{(mission.flown_meter / 1000).toFixed(1)} km</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </section>
+                                </>
+                            )}
+
+                            {mission.mission_notes && (
+                                <>
+                                    <div className="h-px bg-border" />
+                                    <section className="space-y-3">
+                                        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                                            <FileText className="h-3.5 w-3.5" /> Notes
+                                        </h3>
+                                        <div className={cn("rounded-lg border p-3", isDark ? "bg-slate-800 border-slate-700" : "bg-muted/30")}>
+                                            <p className="text-sm whitespace-pre-wrap">{mission.mission_notes}</p>
+                                        </div>
+                                    </section>
+                                </>
+                            )}
+
+                            {mission.mission_group_label && (
+                                <>
+                                    <div className="h-px bg-border" />
+                                    <DetailItem icon={<Activity className="h-3.5 w-3.5" />} label="Mission Group" value={mission.mission_group_label} />
+                                </>
+                            )}
+                        </div>
+                    </>
+                )}
+            </SheetContent>
+        </Sheet>
     );
 }
 

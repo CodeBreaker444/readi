@@ -20,7 +20,7 @@ function timeAgo(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString();
 }
 
-const POLL_INTERVAL = 180_000;  
+const POLL_INTERVAL = 30_000;
 
 const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isDark }) => {
   const [isOpen, setIsOpen] = useState(false);

@@ -8,7 +8,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import axios from "axios";
 import {
@@ -203,29 +202,29 @@ export function MaintenanceCycleModal({
     if (open && toolId > 0) loadData();
   }, [open, toolId, loadData]);
 
-  const updateInput = (
+  const incrementInput = (
     compId: number,
-    field: "add_flights" | "add_hours",
-    value: string
+    field: "add_flights" | "add_hours"
   ) => {
-    const num = value === "" ? 0 : Number(value);
-    if (isNaN(num) || num < 0) return;
-
     const comp = systemData?.components.find((c) => c.component_id === compId);
+    const current = inputs[compId]?.[field] ?? 0;
+    const step = field === "add_hours" ? 0.5 : 1;
+    const next = current + step;
+
     if (comp) {
       if (field === "add_flights" && comp.limit_flight > 0) {
         const max = comp.limit_flight - comp.current_flights;
-        if (num > max) return;
+        if (next > max) return;
       }
       if (field === "add_hours" && comp.limit_hour > 0) {
         const max = comp.limit_hour - comp.current_hours;
-        if (num > max) return;
+        if (next > max) return;
       }
     }
 
     setInputs((prev) => ({
       ...prev,
-      [compId]: { ...prev[compId], [field]: num },
+      [compId]: { ...prev[compId], [field]: next },
     }));
   };
 
@@ -496,81 +495,52 @@ export function MaintenanceCycleModal({
                         >
                           Add Usage
                         </p>
-                        <div className="grid grid-cols-3 gap-3">
+                        <div className="flex flex-wrap gap-3">
                           {hasFlightLimit && (
-                            <div>
-                              <label
+                            <div className="flex items-center gap-2">
+                              <span className={cn("text-[10px] font-medium w-10", isDark ? "text-slate-400" : "text-slate-500")}>
+                                Flights
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => incrementInput(comp.component_id, "add_flights")}
                                 className={cn(
-                                  "text-[10px] font-medium block mb-1",
-                                  isDark ? "text-slate-400" : "text-slate-500"
+                                  "h-7 px-3 rounded-md text-xs font-semibold border transition-colors flex items-center gap-1",
+                                  isDark
+                                    ? "border-slate-600 bg-slate-700 text-slate-200 hover:bg-slate-600"
+                                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                                 )}
                               >
-                                Flights
-                              </label>
-                              <Input
-                                type="number"
-                                min={0}
-                                max={Math.max(0, comp.limit_flight - comp.current_flights)}
-                                value={inp?.add_flights || ""}
-                                onChange={(e) =>
-                                  updateInput(comp.component_id, "add_flights", e.target.value)
-                                }
-                                placeholder="0"
-                                className={cn(
-                                  "h-8 text-sm",
-                                  isDark
-                                    ? "bg-slate-700 border-slate-600 text-slate-200"
-                                    : "bg-white border-slate-200"
-                                )}
-                              />
+                                +1
+                              </button>
                               {inp?.add_flights > 0 && (
-                                <p
-                                  className={cn(
-                                    "text-[10px] mt-1",
-                                    isDark ? "text-slate-500" : "text-slate-400"
-                                  )}
-                                >
+                                <span className={cn("text-[10px] tabular-nums", isDark ? "text-slate-400" : "text-slate-500")}>
                                   {comp.current_flights} → {previewFlights}
-                                </p>
+                                </span>
                               )}
                             </div>
                           )}
                           {hasHourLimit && (
-                            <div>
-                              <label
+                            <div className="flex items-center gap-2">
+                              <span className={cn("text-[10px] font-medium w-10", isDark ? "text-slate-400" : "text-slate-500")}>
+                                Hours
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => incrementInput(comp.component_id, "add_hours")}
                                 className={cn(
-                                  "text-[10px] font-medium block mb-1",
-                                  isDark ? "text-slate-400" : "text-slate-500"
+                                  "h-7 px-3 rounded-md text-xs font-semibold border transition-colors flex items-center gap-1",
+                                  isDark
+                                    ? "border-slate-600 bg-slate-700 text-slate-200 hover:bg-slate-600"
+                                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                                 )}
                               >
-                                Hours
-                              </label>
-                              <Input
-                                type="number"
-                                min={0}
-                                max={Math.max(0, comp.limit_hour - comp.current_hours)}
-                                step={0.5}
-                                value={inp?.add_hours || ""}
-                                onChange={(e) =>
-                                  updateInput(comp.component_id, "add_hours", e.target.value)
-                                }
-                                placeholder="0"
-                                className={cn(
-                                  "h-8 text-sm",
-                                  isDark
-                                    ? "bg-slate-700 border-slate-600 text-slate-200"
-                                    : "bg-white border-slate-200"
-                                )}
-                              />
+                                +0.5h
+                              </button>
                               {inp?.add_hours > 0 && (
-                                <p
-                                  className={cn(
-                                    "text-[10px] mt-1",
-                                    isDark ? "text-slate-500" : "text-slate-400"
-                                  )}
-                                >
-                                  {comp.current_hours} → {previewHours}
-                                </p>
+                                <span className={cn("text-[10px] tabular-nums", isDark ? "text-slate-400" : "text-slate-500")}>
+                                  {comp.current_hours} → {previewHours}h
+                                </span>
                               )}
                             </div>
                           )}
