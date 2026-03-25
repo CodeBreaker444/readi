@@ -24,15 +24,28 @@ interface EvaluationCreateData {
 async function generateEvaluationCode(ownerId: number, year: number): Promise<string> {
   const prefix = `EVA-${year}-`;
 
-  const { count, error } = await supabase
+  const { data, error } = await supabase
     .from('evaluation')
-    .select('evaluation_id', { count: 'exact', head: true })
+    .select('evaluation_code')
     .eq('fk_owner_id', ownerId)
-    .eq('evaluation_year', year);
+    .eq('evaluation_year', year)
+    .order('evaluation_code', { ascending: false })
+    .limit(1)
+    .maybeSingle();
 
   if (error) throw new Error(`generateEvaluationCode: ${error.message}`);
 
-  const seq = ((count ?? 0) + 1).toString().padStart(4, '0');
+  let nextNumber = 1;
+
+  if (data && data.evaluation_code) {
+    const parts = data.evaluation_code.split('-');
+    const lastSeq = parseInt(parts[parts.length - 1], 10);
+    if (!isNaN(lastSeq)) {
+      nextNumber = lastSeq + 1;
+    }
+  }
+
+  const seq = nextNumber.toString().padStart(4, '0');
   return `${prefix}${seq}`;
 }
 

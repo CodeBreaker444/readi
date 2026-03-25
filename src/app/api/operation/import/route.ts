@@ -1,15 +1,13 @@
 import { importMissionFromLog } from '@/backend/services/operation/importOperation-service';
-import { getUserSession } from '@/lib/auth/server-session';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getUserSession();
-    if (!session?.user) {
-      return NextResponse.json({ code: 0, message: 'Unauthorized' }, { status: 401 });
-    }
+    const { session, error } = await requirePermission('view_operations');
+    if (error) return error;
 
-    const ownerId = session.user.ownerId;
+    const ownerId = session!.user.ownerId;
     const formData = await req.formData();
 
     const file = formData.get('mission_file_log') as File | null;

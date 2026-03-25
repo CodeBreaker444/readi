@@ -1,6 +1,6 @@
 
 import { addMissionPlanningLogbook } from "@/backend/services/planning/planning-dashboard";
-import { getUserSession } from "@/lib/auth/server-session";
+import { requirePermission } from "@/lib/auth/api-auth";
 import { buildS3Url, uploadFileToS3 } from "@/lib/s3Client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -27,13 +27,8 @@ const schema = z.object({
 
 export async function POST(request: Request) {
   try {
-    const session = await getUserSession();
-    if (!session) {
-      return NextResponse.json(
-        { code: 0, message: "Unauthorized" },
-        { status: 401 }
-      );
-    }
+    const { session, error } = await requirePermission('view_planning');
+    if (error) return error;
 
     const formData = await request.formData();
 
@@ -88,8 +83,8 @@ export async function POST(request: Request) {
   fk_planning_id: parsed.data.fk_planning_id,
   fk_evaluation_id: parsed.data.fk_evaluation_id,
   fk_client_id: parsed.data.fk_client_id,
-  fk_owner_id: session.user.ownerId,
-  fk_user_id: session.user.userId,
+  fk_owner_id: session!.user.ownerId,
+  fk_user_id: session!.user.userId,
   mission_planning_code: parsed.data.mission_planning_code,
   mission_planning_desc: parsed.data.mission_planning_desc,
   mission_planning_limit_json: limitJson,

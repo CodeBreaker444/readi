@@ -1,5 +1,5 @@
 import { moveEvaluationToPlanning } from '@/backend/services/planning/evaluation-detail';
-import { getUserSession } from '@/lib/auth/server-session';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -21,17 +21,15 @@ export async function POST(
     { params }: { params: Promise<{ id: string }> },
 ) {
     try {
-        const session = await getUserSession()
-        if (!session) {
-            return NextResponse.json({ code: 0, message: 'Unauthorized' }, { status: 401 });
-        }
+        const { session, error } = await requirePermission('view_planning_advanced');
+        if (error) return error;
         const { id } = evaluationIdParamSchema.parse(await params);
 
         const body = await req.json();
         const validated = moveToPlanningSchema.parse(body);
 
         const result = await moveEvaluationToPlanning(
-            session.user.ownerId,
+            session!.user.ownerId,
             id,
             validated.client_id,
             {

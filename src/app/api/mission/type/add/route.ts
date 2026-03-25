@@ -1,6 +1,6 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { addMissionType } from '@/backend/services/mission/mission-type';
-import { getUserSession } from '@/lib/auth/server-session';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -13,13 +13,8 @@ const missionTypeSchema = z.object({
 
 export async function POST( request: NextRequest ) {
   try {
-    const session = await getUserSession();
-    if (!session) {
-      return NextResponse.json(
-        { code: 0, status: 'ERROR', message: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+    const { session, error } = await requirePermission('view_config');
+    if (error) return error;
 
     const body = await request.json();
     
@@ -36,7 +31,7 @@ export async function POST( request: NextRequest ) {
       );
     }
 
-    const ownerId = session.user.ownerId;
+    const ownerId = session!.user.ownerId;
     const result = await addMissionType(ownerId, {
       mission_type_name: body.mission_type_name,
       mission_type_desc: body.mission_type_desc,
@@ -49,10 +44,10 @@ export async function POST( request: NextRequest ) {
       eventType: 'CREATE',
       entityType: 'mission_type',
       description: `Created mission type '${body.mission_type_name}' (${body.mission_type_code})`,
-      userId: session.user.userId,
-      userName: session.user.fullname,
-      userEmail: session.user.email,
-      userRole: session.user.role,
+      userId: session!.user.userId,
+      userName: session!.user.fullname,
+      userEmail: session!.user.email,
+      userRole: session!.user.role,
       ownerId,
     });
 

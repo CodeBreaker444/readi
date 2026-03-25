@@ -82,6 +82,7 @@ export const getUserSession = cache(async (): Promise<Session | null> => {
         fk_owner_id,
         user_timezone,
         fk_client_id,
+        last_logout_at,
         users_profile!fk_user_id (
           profile_picture
         )
@@ -94,6 +95,12 @@ export const getUserSession = cache(async (): Promise<Session | null> => {
     if (userDataError || !userData) {
       return null;
     }
+
+    // Reject tokens issued before the user's last logout (invalidates stolen/stale tokens)
+    const logoutEpoch = userData.last_logout_at
+      ? new Date(userData.last_logout_at).getTime() / 1000
+      : 0;
+    if (payload.iat && payload.iat < logoutEpoch) return null;
 
     const profileData = Array.isArray(userData.users_profile)
       ? userData.users_profile[0]

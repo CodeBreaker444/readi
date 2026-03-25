@@ -1,6 +1,6 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { updateMissionCategory } from '@/backend/services/mission/category-service';
-import { getUserSession } from '@/lib/auth/server-session';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
 
@@ -15,13 +15,8 @@ export async function POST(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await getUserSession();
-        if (!session) {
-            return NextResponse.json(
-                { code: 0, status: 'ERROR', message: 'Unauthorized' },
-                { status: 401 }
-            );
-        }
+         const { session, error } = await requirePermission('view_config')
+     if (error) return error;
 
         const body = await request.json();
         
@@ -38,7 +33,7 @@ export async function POST(
             );
         }
 
-        const ownerId = session.user.ownerId;
+        const ownerId = session!.user.ownerId;
         const { id } = await params;
         const result = await updateMissionCategory(ownerId, Number(id), {
             code: validation.data.mission_category_code,
@@ -52,10 +47,10 @@ export async function POST(
             entityType: 'mission_category',
             entityId: id,
             description: `Updated mission category '${validation.data.mission_category_name}' (${validation.data.mission_category_code})`,
-            userId: session.user.userId,
-            userName: session.user.fullname,
-            userEmail: session.user.email,
-            userRole: session.user.role,
+            userId: session!.user.userId,
+            userName: session!.user.fullname,
+            userEmail: session!.user.email,
+            userRole: session!.user.role,
             ownerId,
           });
         }

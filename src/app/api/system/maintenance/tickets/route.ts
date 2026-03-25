@@ -1,15 +1,13 @@
 import { getTicketList } from '@/backend/services/system/maintenance-ticket';
-import { getUserSession } from '@/lib/auth/server-session';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getUserSession();
-
-    if (!session?.user || (session.user.role !== 'ADMIN' && session.user.role !== 'SUPERADMIN')) {
-      return NextResponse.json({ status: 'ERROR', message: 'Unauthorized' }, { status: 401 });
-    }
-    const owner_id = session.user.ownerId;
+      const { session, error } = await requirePermission('view_config');
+      if (error) return error;
+      
+    const owner_id = session!.user.ownerId;
     const tool_id_param = req.nextUrl.searchParams.get('tool_id');
     const tool_id = tool_id_param ? Number(tool_id_param) : undefined;
 

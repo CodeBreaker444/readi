@@ -3,7 +3,7 @@ import {
   getPilotDeclarations,
   insertPilotDeclaration,
 } from "@/backend/services/operation/pilot-declaration-service";
-import { getUserSession } from "@/lib/auth/server-session";
+import { requirePermission } from "@/lib/auth/api-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -14,21 +14,19 @@ const insertSchema = z.object({
 });
 
 export async function GET(req: NextRequest) {
-  const session = await getUserSession();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const { session, error } = await requirePermission('view_operations');
+  if (error) return error;
 
   const { searchParams } = new URL(req.url);
   const date = searchParams.get("date") ?? undefined;
 
   try {
     if (!date) {
-      const hasDeclared = await checkDailyDeclaration(session.user.userId);
+      const hasDeclared = await checkDailyDeclaration(session!.user.userId);
       return NextResponse.json({ code: 1, check_daily_declaration: hasDeclared ? "Y" : "N" });
     }
 
-    const declarations = await getPilotDeclarations(session.user.userId, date);
+    const declarations = await getPilotDeclarations(session!.user.userId, date);
     return NextResponse.json({ code: 1, data: declarations, dataRows: declarations.length });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
@@ -36,12 +34,9 @@ export async function GET(req: NextRequest) {
   }
 }
 
- 
 export async function POST(req: NextRequest) {
-  const session = await getUserSession();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const { session, error } = await requirePermission('view_operations');
+  if (error) return error;
 
   let body: unknown;
   try {
@@ -60,7 +55,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const declaration = await insertPilotDeclaration({
-      fk_user_id: session.user.userId,
+      fk_user_id: session!.user.userId,
       fk_tool_id: parsed.data.fk_tool_id,
       declaration_type: parsed.data.declaration_type,
       declaration_data: parsed.data.declaration_data,

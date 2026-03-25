@@ -1,5 +1,5 @@
 import { updateCommunication } from "@/backend/services/organization/communication-service";
-import { getUserSession } from "@/lib/auth/server-session";
+import { requirePermission } from "@/lib/auth/api-auth";
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -23,10 +23,8 @@ const updateCommunicationSchema = z.object({
 
 export async function PUT(request: NextRequest) {
   try {
-    const session = await getUserSession();
-    if (!session) {
-      return NextResponse.json({ code: 0, message: "Unauthorized" }, { status: 401 });
-    }
+    const { session, error } = await requirePermission('view_config');
+    if (error) return error;
 
     const body = await request.json();
 
@@ -42,7 +40,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const ownerId = session.user.ownerId;
+    const ownerId = session!.user.ownerId;
     const { communication_id, ...updatePayload } = parsed.data;
 
     const result = await updateCommunication(communication_id, ownerId, updatePayload);

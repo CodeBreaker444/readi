@@ -1,6 +1,6 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { assignTicket } from '@/backend/services/system/maintenance-ticket';
-import { getUserSession } from '@/lib/auth/server-session';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
 const assignTicketSchema = z.object({
@@ -11,11 +11,8 @@ const assignTicketSchema = z.object({
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const session = await getUserSession();
-
-    if (!session?.user || (session.user.role !== 'ADMIN' && session.user.role !== 'SUPERADMIN')) {
-      return NextResponse.json({ status: 'ERROR', message: 'Unauthorized' }, { status: 401 });
-    }
+      const { session, error } = await requirePermission('view_config');
+      if (error) return error;
 
     const validation = assignTicketSchema.safeParse(body);
     if (!validation.success) {
@@ -39,11 +36,11 @@ export async function POST(req: NextRequest) {
       entityType: 'maintenance_ticket',
       entityId: validation.data.ticket_id,
       description: `Assigned maintenance ticket #${validation.data.ticket_id} to user #${validation.data.assigned_to}`,
-      userId: session.user.userId,
-      userName: session.user.fullname,
-      userEmail: session.user.email,
-      userRole: session.user.role,
-      ownerId: session.user.ownerId,
+      userId: session!.user.userId,
+      userName: session!.user.fullname,
+      userEmail: session!.user.email,
+      userRole: session!.user.role,
+      ownerId: session!.user.ownerId,
     });
 
     return NextResponse.json({ status: 'OK' });

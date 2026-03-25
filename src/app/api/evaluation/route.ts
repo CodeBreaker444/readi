@@ -1,17 +1,14 @@
- 
+
 import { getEvaluationList } from '@/backend/services/planning/evaluation-service';
-import { getUserSession } from '@/lib/auth/server-session';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(req: NextRequest) {
   try {
-     const session = await getUserSession()
-     if(!session)
-     {
-        return NextResponse.json({ code: 0, message: 'Unauthorized' }, { status: 401 });
-     }
+    const { session, error } = await requirePermission('view_planning_advanced');
+    if (error) return error;
 
-    const evaluations = await getEvaluationList(session.user.ownerId);
+    const evaluations = await getEvaluationList(session!.user.ownerId);
 
     return NextResponse.json({
       code: 1,

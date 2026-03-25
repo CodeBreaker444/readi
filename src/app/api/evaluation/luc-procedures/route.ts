@@ -1,18 +1,16 @@
 import { getLucProcedureList } from '@/backend/services/planning/evaluation-service';
-import { getUserSession } from '@/lib/auth/server-session';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
 
-     const session = await getUserSession()
-    if (!session) {
-      return NextResponse.json({ code: 0, message: 'Unauthorized' }, { status: 401 });
-    }
+    const { session, error } = await requirePermission('view_planning');
+    if (error) return error;
 
     const sector = searchParams.get('sector') ?? undefined;
-    const procedures = await getLucProcedureList(session.user.ownerId, sector);
+    const procedures = await getLucProcedureList(session!.user.ownerId, sector);
 
     return NextResponse.json({ code: 1, dataRows: procedures.length, data: procedures });
   } catch (err) {

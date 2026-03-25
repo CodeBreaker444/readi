@@ -1,5 +1,5 @@
 import { deleteShift } from '@/backend/services/shift/crew-shift-service'
-import { getUserSession } from '@/lib/auth/server-session'
+import { requirePermission } from '@/lib/auth/api-auth'
 import { NextRequest, NextResponse } from 'next/server'
 import z from 'zod'
 
@@ -14,10 +14,8 @@ export async function DELETE(
   try {
     const shiftId = Number((await params).id)
 
-   const session = await getUserSession()
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }   
+    const { session, error } = await requirePermission('manage_users');
+       if (error) return error;
 
     const parsed = deleteShiftSchema.safeParse({ shift_id: shiftId })
     if (!parsed.success) {
@@ -27,7 +25,7 @@ export async function DELETE(
       )
     }
     
-    const ownerId = session.user.ownerId
+    const ownerId = session!.user.ownerId
 
     await deleteShift(parsed.data.shift_id, ownerId)
 

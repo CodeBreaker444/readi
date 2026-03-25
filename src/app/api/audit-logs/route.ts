@@ -1,24 +1,17 @@
 import { AuditEventType, getAuditLogs } from '@/backend/services/auditLog/audit-log';
-import { getUserSession } from '@/lib/auth/server-session';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getUserSession();
-    if (!session) {
-      return NextResponse.json({ code: 0, message: 'Unauthorized' }, { status: 401 });
-    }
+    const { session, error } = await requirePermission('view_logs');
+    if (error) return error;
 
-    const { role, ownerId } = session.user;
-
-    // Only ADMIN and SUPERADMIN can access audit logs
-    if (role !== 'ADMIN' && role !== 'SUPERADMIN') {
-      return NextResponse.json({ code: 0, message: 'Forbidden' }, { status: 403 });
-    }
+    const { role, ownerId } = session!.user;
 
     const { searchParams } = new URL(request.url);
 
-    // SUPERADMIN can query any owner or all owners; ADMIN is strictly locked to their own owner
+    // SUPERADMIN can query any owner or all owners; everyone else is locked to their own owner
     let targetOwnerId: number | undefined;
     if (role === 'SUPERADMIN') {
       const ownerParam = searchParams.get('owner_id');

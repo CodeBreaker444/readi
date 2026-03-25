@@ -1,19 +1,16 @@
 import { getUserListByOwner } from '@/backend/services/user/user-management';
-import { getUserSession } from '@/lib/auth/server-session';
+import { requireAnyPermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getUserSession();
-    
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+   const { session, error } = await requireAnyPermission('manage_users', 'view_logs')
+     if (error) return error
 
     const body = await request.json();
-    const isSuperAdmin = session.user.role === 'SUPERADMIN';
-    const ownerId = isSuperAdmin ? 0 : session.user.ownerId;
-    const currentUserId = session.user.userId;
+    const isSuperAdmin = session!.user.role === 'SUPERADMIN';
+    const ownerId = isSuperAdmin ? 0 : session!.user.ownerId;
+    const currentUserId = session!.user.userId;
     const userProfileId = body.user_profile;
 
     const result = await getUserListByOwner(ownerId, userProfileId, currentUserId);

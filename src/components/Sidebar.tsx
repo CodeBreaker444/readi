@@ -19,7 +19,7 @@ import {
   HiOutlineUsers
 } from 'react-icons/hi';
 import { TbLayoutSidebarFilled } from "react-icons/tb";
-import { Permission, Role, roleHasPermission, ROUTE_PERMISSIONS } from '../lib/auth/roles';
+import { Permission, Role, roleHasPermission, ROUTE_PERMISSIONS, RoutePermissionEntry } from '../lib/auth/roles';
 
 interface SubNavItem {
   name: string;
@@ -69,7 +69,7 @@ const navigationItems: NavItem[] = [
   },
   {
     name: 'Logbooks',
-    href: '/logbooks/operation-requests',
+    href: '/logbooks/mission-planning-logbook',
     icon: HiOutlineBookOpen,
     subItems: [
       // { name: 'Operation Request Logbook', href: '/logbooks/operation-requests' },
@@ -178,8 +178,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
     }
   }, [isCollapsed]);
 
-  const getRequiredPermissionForRoute = (href: string): Permission | null => {
+  const getRequiredPermissionForRoute = (href: string): RoutePermissionEntry | null => {
     return ROUTE_PERMISSIONS[href] ?? null;
+  };
+
+  const canAccessWithRole = (entry: RoutePermissionEntry | null): boolean => {
+    if (!entry) return true;
+    const perms: Permission[] = Array.isArray(entry) ? entry : [entry];
+    return perms.some((p) => roleHasPermission(role, p));
   };
 
   const isRouteActive = (href: string, subItems?: SubNavItem[]): boolean => {
@@ -197,12 +203,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
       const visibleSubItems =
         item.subItems?.filter((sub) => {
           const perm = getRequiredPermissionForRoute(sub.href);
-          if (!perm) return true;
-          return roleHasPermission(role, perm);
+          return canAccessWithRole(perm);
         }) ?? [];
 
       const ownPerm = getRequiredPermissionForRoute(item.href);
-      const canSeeOwn = ownPerm ? roleHasPermission(role, ownPerm) : false;
+      const canSeeOwn = canAccessWithRole(ownPerm);
       const hasVisibleSub = visibleSubItems.length > 0;
 
       if (!canSeeOwn && !hasVisibleSub) return null;
@@ -212,15 +217,18 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
 
   const filteredConfigurationItems = configurationItems
     .map((configItem) => {
+      if (configItem.name === 'Company' && role !== 'SUPERADMIN') {
+        return null;
+      }
+
       const visibleSubItems =
         configItem.subItems?.filter((sub) => {
           const perm = getRequiredPermissionForRoute(sub.href);
-          if (!perm) return true;
-          return roleHasPermission(role, perm);
+          return canAccessWithRole(perm);
         }) ?? [];
 
       const ownPerm = getRequiredPermissionForRoute(configItem.href);
-      const canSeeOwn = ownPerm ? roleHasPermission(role, ownPerm) : false;
+      const canSeeOwn = canAccessWithRole(ownPerm);
       const hasVisibleSub = visibleSubItems.length > 0;
 
       if (!canSeeOwn && !hasVisibleSub) return null;

@@ -1,6 +1,6 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { deleteMissionResult } from '@/backend/services/mission/result-service';
-import { getUserSession } from '@/lib/auth/server-session';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(
@@ -8,15 +8,10 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getUserSession();
-    if (!session) {
-      return NextResponse.json(
-        { code: 0, status: 'ERROR', message: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+    const { session, error } = await requirePermission('view_config')
+     if (error) return error;
 
-    const ownerId = session.user.ownerId;
+    const ownerId = session!.user.ownerId;
     const { id } = await params;
     const result = await deleteMissionResult(ownerId, Number(id));
 
@@ -26,10 +21,10 @@ export async function POST(
         entityType: 'mission_result',
         entityId: id,
         description: `Deleted mission result #${id}`,
-        userId: session.user.userId,
-        userName: session.user.fullname,
-        userEmail: session.user.email,
-        userRole: session.user.role,
+        userId: session!.user.userId,
+        userName: session!.user.fullname,
+        userEmail: session!.user.email,
+        userRole: session!.user.role,
         ownerId,
       });
     }

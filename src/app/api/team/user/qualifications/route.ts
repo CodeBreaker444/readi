@@ -1,5 +1,5 @@
 import { createQualifications, listQualifications } from '@/backend/services/user/qualification-service';
-import { getUserSession } from '@/lib/auth/server-session';
+import { requireAuth } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { z, ZodError } from 'zod';
 
@@ -23,12 +23,13 @@ const getSchema = z.object({
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getUserSession();
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { session, error } = await requireAuth()
+    if (error) return error
 
     const { user_id } = getSchema.parse({ user_id: req.nextUrl.searchParams.get('user_id') });
+    const userId = session!.user.userId
 
-    const data = await listQualifications(user_id, session.user.ownerId);
+    const data = await listQualifications(userId, session!.user.ownerId);
     return NextResponse.json({ data });
   } catch (err) {
     if (err instanceof ZodError) {
@@ -41,13 +42,13 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getUserSession();
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { session, error } = await requireAuth()
+    if (error) return error
 
     const body = await req.json();
     const { user_id, qualifications } = postSchema.parse(body);
 
-    const data = await createQualifications(user_id, session.user.ownerId, qualifications);
+    const data = await createQualifications(user_id, session!.user.ownerId, qualifications);
     return NextResponse.json({ data }, { status: 201 });
   } catch (err) {
     if (err instanceof ZodError) {

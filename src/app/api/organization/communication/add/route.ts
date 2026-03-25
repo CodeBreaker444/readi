@@ -1,9 +1,9 @@
 import { addCommunication } from "@/backend/services/organization/communication-service";
-import { getUserSession } from "@/lib/auth/server-session";
+import { requirePermission } from "@/lib/auth/api-auth";
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
-  const addCommunicationSchema = z.object({
+const addCommunicationSchema = z.object({
   communication_code: z
     .string()
     .min(1, "Code is required")
@@ -21,30 +21,29 @@ import { z } from "zod";
 });
 
 export async function POST(request: NextRequest) {
-    try {
-        const body = await request.json();
-        const session = await getUserSession();
-        if (!session) {
-            return NextResponse.json({ code: 0, message: "Unauthorized" }, { status: 401 });
-        }
+  try {
+    const { session, error } = await requirePermission('view_config');
+    if (error) return error;
 
-        const parsed = addCommunicationSchema.safeParse(body);
+    const body = await request.json();
 
-        if (!parsed.success) {
-            return NextResponse.json(
-                { code: 0, message: "Validation failed", errors: parsed.error.flatten() },
-                { status: 400 }
-            );
-        }
+    const parsed = addCommunicationSchema.safeParse(body);
 
-        const ownerId = session.user.ownerId;
-        const userId = session.user.userId;
-
-        const data = await addCommunication(parsed.data,ownerId,Number(userId));
-
-        return NextResponse.json({ data, message: "Communication added successfully" }, { status: 201 });
-    } catch (error) {
-        const message = error instanceof Error ? error.message : "Internal server error";
-        return NextResponse.json({ code: 0, message }, { status: 500 });
+    if (!parsed.success) {
+      return NextResponse.json(
+        { code: 0, message: "Validation failed", errors: parsed.error.flatten() },
+        { status: 400 }
+      );
     }
+
+    const ownerId = session!.user.ownerId;
+    const userId = session!.user.userId;
+
+    const data = await addCommunication(parsed.data, ownerId, Number(userId));
+
+    return NextResponse.json({ data, message: "Communication added successfully" }, { status: 201 });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Internal server error";
+    return NextResponse.json({ code: 0, message }, { status: 500 });
+  }
 }

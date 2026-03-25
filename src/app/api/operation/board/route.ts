@@ -1,20 +1,17 @@
 
 import { getMissionBoard } from "@/backend/services/operation/operation-board-service";
-import { getUserSession } from "@/lib/auth/server-session";
+import { requirePermission } from "@/lib/auth/api-auth";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
-
-    const session = await getUserSession()
-    if (!session) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     try {
+        const { session, error } = await requirePermission('view_operations');
+        if (error) return error;
+
         const data = await getMissionBoard(
-            session.user.ownerId,
-            session.user.userId,
-            session.user.role
+            session!.user.ownerId,
+            session!.user.userId,
+            session!.user.role
         );
 
         return NextResponse.json({

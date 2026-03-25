@@ -1,16 +1,14 @@
 import { getClientList, getEvaluationList, getPilotList, getPlanningList } from "@/backend/services/logbook/mission-service";
-import { getUserSession } from "@/lib/auth/server-session";
+import { requirePermission } from "@/lib/auth/api-auth";
 import { NextRequest, NextResponse } from "next/server";
 
 
 export async function POST(request: NextRequest) {
     try {
 
-        const session = await getUserSession();
-        if (!session) {
-            return NextResponse.json({ code: 0, status: "UNAUTHORIZED", message: "User not authenticated" }, { status: 401 });
-        }
-        const ownerId = session.user.ownerId
+        const { session, error } = await requirePermission('view_logbooks');
+        if (error) return error;
+        const ownerId = session!.user.ownerId
 
 
         const [clients, pilots, evaluations, plannings] = await Promise.all([

@@ -1,16 +1,13 @@
 import { updateUser } from '@/backend/services/user/user-management';
-import { getUserSession } from '@/lib/auth/server-session';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getUserSession();
-    
-    if (!session || session.user.role != 'ADMIN') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const { session, error } = await requirePermission('manage_users')
+    if (error) return error
 
-    const user = session.user;
+    const user = session!.user;
     const body = await request.json();
 
     const result = await updateUser({
@@ -39,10 +36,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('API Error:', error);
     return NextResponse.json(
-      { 
+      {
         code: 0,
         status: 'ERROR',
-        error: error instanceof Error ? error.message : 'Internal server error' 
+        error: error instanceof Error ? error.message : 'Internal server error'
       },
       { status: 500 }
     );

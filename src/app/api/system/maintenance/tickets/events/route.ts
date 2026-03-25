@@ -1,12 +1,16 @@
 import { getTicketEvents } from '@/backend/services/system/maintenance-ticket';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
 
 const getEventsSchema = z.object({
   ticket_id: z.string(),
-}); 
+});
 
 export async function GET(req: NextRequest) {
+  const { error } = await requirePermission('view_config');
+  if (error) return error;
+
   try {
     const { searchParams } = new URL(req.url);
     const ticket_id = searchParams.get('ticket_id');

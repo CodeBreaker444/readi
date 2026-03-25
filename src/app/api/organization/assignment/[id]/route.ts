@@ -3,20 +3,15 @@ import {
     getAssignmentById,
     updateAssignment,
 } from '@/backend/services/organization/assignment-service'
-import { getUserSession } from '@/lib/auth/server-session'
+import { requirePermission } from '@/lib/auth/api-auth'
 import { NextRequest, NextResponse } from 'next/server'
 import z from 'zod'
 
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await getUserSession()
-    if (!session?.user) {
-      return NextResponse.json(
-        { code: 0, message: 'Unauthorized', dataRows: 0, data: null },
-        { status: 401 }
-      )
-    }
+    const { session, error } = await requirePermission('view_config')
+    if (error) return error
 
     const id = parseInt((await params).id)
     if (isNaN(id)) {
@@ -26,7 +21,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       )
     }
 
-    const result = await getAssignmentById(session.user.ownerId, id)
+    const result = await getAssignmentById(session!.user.ownerId, id)
     return NextResponse.json({ ...result, message: 'Assignment retrieved successfully' }, { status: 200 })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unexpected error'
@@ -48,13 +43,8 @@ const updateSchema = z.object({
 
 export async function PUT(request: NextRequest,  { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await getUserSession()
-    if (!session?.user) {
-      return NextResponse.json(
-        { code: 0, message: 'Unauthorized', dataRows: 0, data: null },
-        { status: 401 }
-      )
-    }
+    const { session, error } = await requirePermission('view_config')
+    if (error) return error
 
     const id = parseInt((await params).id)
     
@@ -77,8 +67,8 @@ export async function PUT(request: NextRequest,  { params }: { params: Promise<{
 
     const result = await updateAssignment({
       assignment_id: id,
-      fk_owner_id: session.user.ownerId,
-      fk_user_id: session.user.userId,
+      fk_owner_id: session!.user.ownerId,
+      fk_user_id: session!.user.userId,
       ...parsed.data,
     })
 
@@ -95,13 +85,8 @@ export async function PUT(request: NextRequest,  { params }: { params: Promise<{
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await getUserSession()
-    if (!session?.user) {
-      return NextResponse.json(
-        { code: 0, message: 'Unauthorized', dataRows: 0, data: null },
-        { status: 401 }
-      )
-    }
+    const { session, error } = await requirePermission('view_config')
+    if (error) return error
 
     const id = parseInt((await params).id)
     if (isNaN(id)) {
@@ -111,7 +96,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
       )
     }
 
-    const result = await deleteAssignment(session.user.ownerId, id)
+    const result = await deleteAssignment(session!.user.ownerId, id)
     return NextResponse.json({...result, message: 'Assignment deleted successfully'}, { status: 200 })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unexpected error'

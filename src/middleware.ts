@@ -1,8 +1,32 @@
 import { createServerClient } from '@supabase/ssr'
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
+import { getApiRoutePermission, Role, roleHasPermission, ROUTE_PERMISSIONS, RoutePermissionEntry } from './lib/auth/roles'
+
+/**
+ * Decode the payload of a JWT without verifying the signature.
+ * Used only for permission checks in middleware (UX layer).
+ * Actual signature verification happens in getUserSession() inside API handlers.
+ */
+function decodeJwtRole(token: string): Role | null {
+  try {
+    const parts = token.split('.')
+    if (parts.length !== 3) return null
+    const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'))
+    return (payload?.role as Role) ?? null
+  } catch {
+    return null
+  }
+}
+
+function hasRoutePermission(role: Role, entry: RoutePermissionEntry): boolean {
+  if (role === 'SUPERADMIN' || role === 'ADMIN') return true
+  const perms = Array.isArray(entry) ? entry : [entry]
+  return perms.some((p) => roleHasPermission(role, p))
+}
 
 export async function updateSession(request: NextRequest) {
+
   let response = NextResponse.next({
     request: {
       headers: request.headers,
@@ -41,7 +65,11 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const pathname = request.nextUrl.pathname
+  const pathname = request.nextUrl.pathname;
+
+  if (pathname.startsWith('/api/auth')) {
+    return NextResponse.next();
+  }
 
   const publicRoutes = ['/auth/login', '/auth/activate', '/auth/update-password', '/auth/setup-2fa', '/auth/verify-mfa']
   const authFlowRoutes = [
@@ -59,30 +87,52 @@ export async function updateSession(request: NextRequest) {
     }
     return NextResponse.redirect(new URL('/auth/login', request.url))
   }
-  const hasJwtToken = request.cookies.get('readi_auth_token')?.value
 
-  if (hasJwtToken) {
+  const jwtToken = request.cookies.get('readi_auth_token')?.value
+
+  if (jwtToken) {
     if (isPublicRoute || isAuthFlowRoute) {
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
+    if (pathname.startsWith('/api/')) {
+      const required = getApiRoutePermission(pathname)
+
+      if (required !== undefined) {
+        const role = decodeJwtRole(jwtToken)
+        if (!role) {
+          return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+        // required === null means "authenticated only, no specific permission"
+        const perms = Array.isArray(required) ? required : required !== null ? [required] : null;
+        if (perms !== null && !perms.some((p) => roleHasPermission(role, p))) {
+          return NextResponse.json(
+            { error: 'Forbidden: insufficient permissions' },
+            { status: 403 }
+          )
+        }
+      }
+      return response
+    }
+
+    const role = decodeJwtRole(jwtToken)
+    if (role) {
+      const requiredEntry = ROUTE_PERMISSIONS[pathname]
+      if (requiredEntry !== undefined && !hasRoutePermission(role, requiredEntry)) {
+        return NextResponse.redirect(new URL('/unauthorized', request.url))
+      }
+    }
+
     return response
   }
-  
+
   if (!user) {
     if (isPublicRoute) {
       return response
     }
-
-    const hasJwtToken = request.cookies.get('readi_auth_token')?.value
-
-    if (hasJwtToken) {
-      return response
-    }
-
     return NextResponse.redirect(new URL('/auth/login', request.url))
   }
-  try {
 
+  try {
     const {
       data: { session },
     } = await supabase.auth.getSession()
@@ -180,6 +230,14 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
 
+    if (!pathname.startsWith('/api/')) {
+      const role = userData.user_role as Role
+      const requiredEntry = ROUTE_PERMISSIONS[pathname]
+      if (requiredEntry !== undefined && !hasRoutePermission(role, requiredEntry)) {
+        return NextResponse.redirect(new URL('/unauthorized', request.url))
+      }
+    }
+
     return response
 
   } catch (error) {
@@ -196,6 +254,6 @@ export async function middleware(request: NextRequest) {
 export const config = {
   runtime: 'nodejs',
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }

@@ -1,20 +1,15 @@
 import { createChecklist, getChecklistsByOwner } from '@/backend/services/organization/checklist-service'
 import type { ChecklistCreatePayload } from '@/config/types/checklist'
-import { getUserSession } from '@/lib/auth/server-session'
+import { requirePermission } from '@/lib/auth/api-auth'
 import { NextRequest, NextResponse } from 'next/server'
 import z from 'zod'
 
 export async function GET(request: NextRequest) {
     try {
-        const session = await getUserSession()
-        if (!session || !session.user) {
-            return NextResponse.json(
-                { code: 0, message: 'Unauthorized', dataRows: 0, data: [] },
-                { status: 401 }
-            )
-        }
+        const { session, error } = await requirePermission('view_config')
+        if (error) return error
 
-        const ownerId = session.user.ownerId
+        const ownerId = session!.user.ownerId
 
         const result = await getChecklistsByOwner(ownerId)
         return NextResponse.json({result, message: 'Checklists retrieved successfully'}, {status: 200 })
@@ -37,13 +32,8 @@ export async function POST(request: NextRequest) {
     try {
         body = await request.json()
 
-        const session = await getUserSession()
-        if (!session || !session.user) {
-            return NextResponse.json(
-                { code: 0, message: 'Unauthorized', dataRows: 0, data: null },
-                { status: 401 } 
-            )
-        }
+        const { session, error } = await requirePermission('view_config')
+        if (error) return error
 
 
         const validationResult = checklistSchema.safeParse(body)
@@ -61,8 +51,8 @@ export async function POST(request: NextRequest) {
             checklist_ver: body.checklist_ver ?? '1.0',
             checklist_active: body.checklist_active ?? 'Y',
             checklist_json: body.checklist_json ?? '{}',
-            fk_owner_id: session.user.ownerId,
-            fk_user_id: session.user.userId,
+            fk_owner_id: session!.user.ownerId,
+            fk_user_id: session!.user.userId,
         })
 
         return NextResponse.json({...result, message: 'Checklist created successfully'}, { status: 201 })

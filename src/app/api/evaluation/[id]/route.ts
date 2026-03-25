@@ -8,6 +8,8 @@ import { getUserSession } from '@/lib/auth/server-session';
 import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
 
+const ALLOWED_ROLES = ['SUPERADMIN', 'ADMIN', 'OPM'];
+
 const evaluationIdParamSchema = z.object({
   id: z.coerce.number().int().positive('Invalid evaluation ID'),
 });
@@ -18,9 +20,8 @@ export async function GET(
 ) {
   try {
     const session = await getUserSession()
-    if (!session) {
-      return NextResponse.json({ code: 0, message: 'Unauthorized' }, { status: 401 });
-    }
+    if (!session) return NextResponse.json({ code: 0, message: 'Unauthorized' }, { status: 401 });
+    if (!ALLOWED_ROLES.includes(session.user.role)) return NextResponse.json({ code: 0, message: 'Forbidden' }, { status: 403 });
     const {id: evaluationId } = evaluationIdParamSchema.parse(await params);
 
     const data = await getEvaluationById(session.user.ownerId, evaluationId);
@@ -61,14 +62,15 @@ export async function PUT(
 ) {
   try {
     const session = await getUserSession()
-    if (!session) {
-      return NextResponse.json({ code: 0, message: 'Unauthorized' }, { status: 401 });
-    }
+    if (!session) return NextResponse.json({ code: 0, message: 'Unauthorized' }, { status: 401 });
+    if (!ALLOWED_ROLES.includes(session.user.role)) return NextResponse.json({ code: 0, message: 'Forbidden' }, { status: 403 });
     evaluationIdParamSchema.parse(await params);
 
     const body = await req.json();
     const validated = evaluationUpdateSchema.parse(body);
-    const result = await updateEvaluation(validated);
+    const ownerId = session.user.ownerId
+
+    const result = await updateEvaluation({...validated,fk_owner_id:ownerId});
 
     if (!result.success) {
       return NextResponse.json(
@@ -102,9 +104,8 @@ export async function DELETE(
 ) {
   try {
     const session = await getUserSession()
-    if (!session) {
-      return NextResponse.json({ code: 0, message: 'Unauthorized' }, { status: 401 });
-    }
+    if (!session) return NextResponse.json({ code: 0, message: 'Unauthorized' }, { status: 401 });
+    if (!ALLOWED_ROLES.includes(session.user.role)) return NextResponse.json({ code: 0, message: 'Forbidden' }, { status: 403 });
     const { id: evaluationId } = evaluationIdParamSchema.parse(await params);
 
     const result = await deleteEvaluation(session.user.ownerId, evaluationId);

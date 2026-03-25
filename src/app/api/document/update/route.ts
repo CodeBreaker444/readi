@@ -1,5 +1,5 @@
 import { updateDocument } from '@/backend/services/document/document-service';
-import { getUserSession } from '@/lib/auth/server-session';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
 
@@ -19,10 +19,8 @@ const DocumentUpdateSchema = z.object({
 });
 export async function POST(req: NextRequest) {
   try {
-    const session = await getUserSession();
-    if (!session) {
-      return NextResponse.json({ code: 0, message: 'Unauthorized' }, { status: 401 });
-    }
+    const { session: _session, error } = await requirePermission('view_repository');
+    if (error) return error;
     const body = await req.json();
     const parsed = DocumentUpdateSchema.safeParse(body);
     if (!parsed.success) {

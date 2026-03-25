@@ -1,13 +1,13 @@
 import { getShifts } from '@/backend/services/shift/crew-shift-service'
+import { requirePermission } from '@/lib/auth/api-auth'
 import { NextRequest, NextResponse } from 'next/server'
 
-export async function GET(req: NextRequest) {
-  try {
-    const ownerId = Number(req.headers.get('x-owner-id') ?? 1)
+export async function GET(_req: NextRequest) {
+  const { session, error } = await requirePermission('manage_users')
+  if (error) return error
 
-    if (!ownerId || isNaN(ownerId)) {
-      return NextResponse.json({ error: 'Invalid or missing owner ID' }, { status: 400 })
-    }
+  try {
+    const ownerId = session!.user.ownerId
 
     const { calendarEvents } = await getShifts(ownerId)
 

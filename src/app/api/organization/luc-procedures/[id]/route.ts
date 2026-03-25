@@ -1,5 +1,5 @@
 import { deleteLucProcedure, getLucProcedureById, updateLucProcedure } from '@/backend/services/organization/lcu-service';
-import { getUserSession } from '@/lib/auth/server-session';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
@@ -8,11 +8,8 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const session = await getUserSession();
-
-    if (!session?.user) {
-      return NextResponse.json({ message: 'Unauthorized', code: 0, data: null, dataRows: 0 }, { status: 401 });
-    }
+    const { session, error } = await requirePermission('view_config');
+    if (error) return error;
 
     const procedure = await getLucProcedureById(Number(id));
     if (!procedure) {
@@ -37,12 +34,9 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;   
-    const session = await getUserSession();
-
-    if (!session?.user) {
-      return NextResponse.json({ message: 'Unauthorized', code: 0, data: null, dataRows: 0 }, { status: 401 });
-    }
+    const { id } = await params;
+    const { session, error } = await requirePermission('view_config');
+    if (error) return error;
 
     const body = await request.json();
     const updated = await updateLucProcedure({ ...body, procedure_id: Number(id) });
@@ -63,11 +57,8 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const session = await getUserSession();
-
-    if (!session?.user) {
-      return NextResponse.json({ message: 'Unauthorized', code: 0, data: null, dataRows: 0 }, { status: 401 });
-    }
+    const { session, error } = await requirePermission('view_config');
+    if (error) return error;
 
     await deleteLucProcedure(Number(id));
 

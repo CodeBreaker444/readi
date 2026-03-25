@@ -1,5 +1,5 @@
 import { getEvaluationTasks, updateEvaluationTask } from '@/backend/services/planning/evaluation-detail';
-import { getUserSession } from '@/lib/auth/server-session';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
 
@@ -19,13 +19,11 @@ export async function GET(
     { params }: { params: Promise<{ id: string }> },
 ) {
     try {
-        const session = await getUserSession()
-        if (!session) {
-            return NextResponse.json({ code: 0, message: 'Unauthorized' }, { status: 401 });
-        }
+        const { session, error } = await requirePermission('view_planning_advanced');
+        if (error) return error;
         const { id } = evaluationIdParamSchema.parse(await params);
 
-        const result = await getEvaluationTasks(session.user.ownerId, id);
+        const result = await getEvaluationTasks(session!.user.ownerId, id);
         return NextResponse.json({ success: true, ...result });
     } catch (err: any) {
         if (err.name === 'ZodError') {
@@ -46,17 +44,14 @@ export async function PUT(
     { params }: { params: Promise<{ id: string }> },
 ) {
     try {
-
-        const session = await getUserSession()
-        if (!session) {
-            return NextResponse.json({ code: 0, message: 'Unauthorized' }, { status: 401 });
-        }
+        const { session, error } = await requirePermission('view_planning_advanced');
+        if (error) return error;
         const { id } = evaluationIdParamSchema.parse(await params);
 
         const body = await req.json();
         const validated = evaluationTaskUpdateSchema.parse(body);
 
-        const result = await updateEvaluationTask(session.user.ownerId, id, validated.task_id, validated.task_status);
+        const result = await updateEvaluationTask(session!.user.ownerId, id, validated.task_id, validated.task_status);
 
         if (!result.success) {
             return NextResponse.json(

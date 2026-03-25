@@ -1,16 +1,14 @@
 import { getComponentList } from '@/backend/services/system/system-service';
-import { getUserSession } from '@/lib/auth/server-session';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getUserSession();
-    if (!session?.user || (session.user.role !== 'ADMIN' && session.user.role !== 'SUPERADMIN')) {
-      return NextResponse.json({ status: 'ERROR', message: 'Unauthorized' }, { status: 401 });
-    }
+      const { session, error } = await requirePermission('view_config');
+      if (error) return error;
 
     const body = await request.json();
-    const ownerId = body.o_id || session.user.ownerId;
+    const ownerId = body.o_id || session!.user.ownerId;
     const toolId = body.tool_id;
 
     const result = await getComponentList(ownerId, toolId);

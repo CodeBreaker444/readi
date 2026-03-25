@@ -1,6 +1,7 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { deleteOperation, getOperation, updateOperation } from '@/backend/services/operation/operation-service';
 import { UpdateOperationSchema } from '@/config/types/operation';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { getUserSession } from '@/lib/auth/server-session';
 import { NextRequest, NextResponse } from 'next/server';
 import { ZodError, z } from 'zod';
@@ -37,8 +38,10 @@ interface Params {
 
 export async function GET(_req: NextRequest, { params }: Params) {
   try {
+    const { error } = await requirePermission('view_operations');
+    if (error) return error;
+
     const id = parseInt((await params).id, 10);
-    if (isNaN(id)) return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
 
     const operation = await getOperation(id);
     if (!operation) return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -52,10 +55,11 @@ export async function GET(_req: NextRequest, { params }: Params) {
 
 export async function PUT(req: NextRequest, { params }: Params) {
   try {
-    const id = parseInt((await params).id, 10);
-    if (isNaN(id)) return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
+    const { session, error } = await requirePermission('view_operations');
+    if (error) return error;
 
-    const session = await getUserSession();
+    const id = parseInt((await params).id, 10);
+
     const body = await req.json();
     const validated = updateOperationSchema.parse(body) as UpdateOperationSchema;
     const updated = await updateOperation(id, validated);

@@ -1,5 +1,5 @@
 import { updateComponentMaintenanceCycle } from "@/backend/services/operation/maintenance-cycle-service";
-import { getUserSession } from "@/lib/auth/server-session";
+import { requirePermission } from "@/lib/auth/api-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -16,10 +16,8 @@ const bodySchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const session = await getUserSession();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const { session, error } = await requirePermission('view_operations');
+  if (error) return error;
 
   let body: unknown;
   try {
@@ -43,7 +41,7 @@ export async function POST(req: NextRequest) {
     const result = await updateComponentMaintenanceCycle(
       parsed.data.tool_id,
       parsed.data.mission_id,
-      session.user.ownerId,
+      session!.user.ownerId,
       parsed.data.components
     );
     return NextResponse.json(result);

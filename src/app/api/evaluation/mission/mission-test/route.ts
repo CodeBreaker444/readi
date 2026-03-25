@@ -2,7 +2,7 @@ import {
   addMissionTestLogbook,
   buildMissionTestS3Key,
 } from "@/backend/services/planning/mission-test-logbook";
-import { getUserSession } from "@/lib/auth/server-session";
+import { requirePermission } from "@/lib/auth/api-auth";
 import { buildS3Url, uploadFileToS3 } from "@/lib/s3Client";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
@@ -41,10 +41,8 @@ const AddTestSchema = z
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getUserSession();
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const { session, error } = await requirePermission('view_planning');
+    if (error) return error;
 
     const formData = await req.formData();
 
@@ -66,8 +64,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const ownerId = session.user.ownerId;
-    const userId = session.user.userId;
+    const ownerId = session!.user.ownerId;
+    const userId = session!.user.userId;
 
     let fileData:
       | { s3Key: string; s3Url: string; filename: string; filesize: number }
