@@ -1,5 +1,5 @@
 import { createNewEvaluationRequest } from '@/backend/services/planning/evaluation';
-import { getUserSession } from '@/lib/auth/server-session';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import * as z from 'zod';
 
@@ -29,15 +29,12 @@ export type EvaluationFormData = z.infer<typeof evaluationSchema>;
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getUserSession();
-
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const { session, error } = await requirePermission('view_planning_advanced');
+    if (error) return error;
 
     const body = await request.json();
-    const ownerId = session.user.ownerId;
-    const userId = session.user.userId;
+    const ownerId = session!.user.ownerId;
+    const userId = session!.user.userId;
 
     const validation = evaluationSchema.safeParse(body.data);
 

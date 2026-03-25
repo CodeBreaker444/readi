@@ -1,6 +1,6 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { updateTool } from '@/backend/services/system/system-service';
-import { getUserSession } from '@/lib/auth/server-session';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -22,10 +22,8 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getUserSession();
-    if (!session?.user || (session.user.role !== 'ADMIN' && session.user.role !== 'SUPERADMIN')) {
-      return NextResponse.json({ status: 'ERROR', message: 'Unauthorized' }, { status: 401 });
-    }
+   const { session, error } = await requirePermission('view_config');
+       if (error) return error;
 
     const { id } = await params;
     const body = await request.json();
@@ -46,11 +44,11 @@ export async function POST(
         entityType: 'system',
         entityId: id,
         description: `System '${parsed.data.tool_code}' updated`,
-        userId: session.user.userId,
-        userName: session.user.fullname,
-        userEmail: session.user.email,
-        userRole: session.user.role,
-        ownerId: session.user.ownerId,
+        userId: session!.user.userId,
+        userName: session!.user.fullname,
+        userEmail: session!.user.email,
+        userRole: session!.user.role,
+        ownerId: session!.user.ownerId,
       });
     }
 

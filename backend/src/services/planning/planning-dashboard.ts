@@ -262,7 +262,7 @@ export async function getPlanningData(ownerId: number, planningId: number) {
 
 
 
-export async function updatePlanning(payload: UpdatePlanning) {
+export async function updatePlanning(payload: UpdatePlanning, ownerId: number) {
   const { planning_id, ...updates } = payload;
 
   const updateObj: Record<string, unknown> = {
@@ -284,10 +284,12 @@ export async function updatePlanning(payload: UpdatePlanning) {
     .from("planning")
     .update(updateObj)
     .eq("planning_id", planning_id)
+    .eq("fk_owner_id", ownerId)
     .select()
     .single();
 
   if (error) throw new Error(error.message);
+  if (!data) throw new Error("Planning not found or access denied");
   return data;
 }
 

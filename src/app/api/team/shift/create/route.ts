@@ -1,17 +1,16 @@
-import { createShift } from '@/backend/services/shift/crew-shift-service'
 import { createShiftSchema } from '@/app/api/team/shift/schema'
-import { getUserSession } from '@/lib/auth/server-session'
+import { createShift } from '@/backend/services/shift/crew-shift-service'
+import { requirePermission } from '@/lib/auth/api-auth'
 import { NextRequest, NextResponse } from 'next/server'
 import { ZodError } from 'zod'
 
 
 export async function POST(req: NextRequest) {
   try {
-  const session = await getUserSession()
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-    const ownerId = session.user.ownerId
+    const { session, error } = await requirePermission('manage_users');
+    if (error) return error;
+
+    const ownerId = session!.user.ownerId
 
     const body = await req.json()
 

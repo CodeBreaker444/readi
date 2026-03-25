@@ -1,12 +1,13 @@
 import { getMissionCategoryOptions, getMissionTypeOptions, getPilotOptions, getPlanningOptions, getToolOptions } from '@/backend/services/operation/operation-service';
-import { getUserSession } from '@/lib/auth/server-session';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
-    const session = await getUserSession();
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const ownerId = session.user.ownerId
+    const { session, error } = await requirePermission('view_operations');
+    if (error) return error;
+
+    const ownerId = session!.user.ownerId
 
     try {
         const [pilots, tools, types, categories, plannings] = await Promise.all([

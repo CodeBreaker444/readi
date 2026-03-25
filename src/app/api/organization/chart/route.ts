@@ -1,16 +1,13 @@
 import { countNodes, getOrganizationTree } from "@/backend/services/organization/organization-service";
-import { getUserSession } from "@/lib/auth/server-session";
+import { requirePermission } from "@/lib/auth/api-auth";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
   try {
-    const session = await getUserSession();
+    const { session, error } = await requirePermission('view_config');
+    if (error) return error;
 
-    if (!session?.user) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-    }
-
-    const ownerId = session.user.ownerId;
+    const ownerId = session!.user.ownerId;
 
     if (!ownerId || isNaN(Number(ownerId))) {
       return NextResponse.json(

@@ -1,6 +1,6 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { addMissionCategory } from '@/backend/services/mission/category-service';
-import { getUserSession } from '@/lib/auth/server-session';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -12,13 +12,8 @@ const missionCategorySchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getUserSession();
-    if (!session) {
-      return NextResponse.json(
-        { code: 0, status: 'ERROR', message: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+    const { session, error } = await requirePermission('view_config');
+    if (error) return error;
 
     const body = await request.json();
     
@@ -35,7 +30,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const ownerId = session.user.ownerId;
+    const ownerId = session!.user.ownerId;
     const result = await addMissionCategory(ownerId, {
       code: validation.data.mission_category_code,
       name: validation.data.mission_category_name,
@@ -47,10 +42,10 @@ export async function POST(request: NextRequest) {
         eventType: 'CREATE',
         entityType: 'mission_category',
         description: `Created mission category '${validation.data.mission_category_name}' (${validation.data.mission_category_code})`,
-        userId: session.user.userId,
-        userName: session.user.fullname,
-        userEmail: session.user.email,
-        userRole: session.user.role,
+        userId: session!.user.userId,
+        userName: session!.user.fullname,
+        userEmail: session!.user.email,
+        userRole: session!.user.role,
         ownerId,
       });
     }

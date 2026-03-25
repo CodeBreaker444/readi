@@ -2,22 +2,17 @@ import {
     createAssignment,
     getAssignmentsByOwner,
 } from '@/backend/services/organization/assignment-service'
-import { getUserSession } from '@/lib/auth/server-session'
+import { requirePermission } from '@/lib/auth/api-auth'
 import { NextRequest, NextResponse } from 'next/server'
 import z from 'zod'
 
 
 export async function GET() {
   try {
-    const session = await getUserSession()
-    if (!session?.user) {
-      return NextResponse.json(
-        { code: 0, message: 'Unauthorized', dataRows: 0, data: [] },
-        { status: 401 }
-      )
-    }
+    const { session, error } = await requirePermission('view_config')
+    if (error) return error
 
-    const result = await getAssignmentsByOwner(session.user.ownerId)
+    const result = await getAssignmentsByOwner(session!.user.ownerId)
     return NextResponse.json({ code: 1, data: result, dataRows: result.length, message: 'Assignments retrieved successfully' }, { status: 200 })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unexpected error'
@@ -39,13 +34,8 @@ const createSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getUserSession()
-    if (!session?.user) {
-      return NextResponse.json(
-        { code: 0, message: 'Unauthorized', dataRows: 0, data: null },
-        { status: 401 }
-      )
-    }
+    const { session, error } = await requirePermission('view_config')
+    if (error) return error
 
     const body = await request.json()
     const parsed = createSchema.safeParse(body)
@@ -65,8 +55,8 @@ export async function POST(request: NextRequest) {
 
     const result = await createAssignment({
       ...parsed.data,
-      fk_owner_id: session.user.ownerId,
-      fk_user_id: session.user.userId,
+      fk_owner_id: session!.user.ownerId,
+      fk_user_id: session!.user.userId,
     })
 
    return NextResponse.json({ 

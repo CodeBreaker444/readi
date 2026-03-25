@@ -1,6 +1,6 @@
 import { getMissionPlanningLogbookFiles } from "@/backend/services/planning/evaluation";
 import { getMissionTestRepositoryFiles } from "@/backend/services/planning/planning-dashboard";
-import { getUserSession } from "@/lib/auth/server-session";
+import { requirePermission } from "@/lib/auth/api-auth";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -11,13 +11,8 @@ const schema = z.object({
 
 export async function POST(request: Request) {
   try {
-    const session = await getUserSession();
-    if (!session) {
-      return NextResponse.json(
-        { code: 0, message: "Unauthorized" },
-        { status: 401 }
-      );
-    }
+    const { session, error } = await requirePermission('view_planning');
+    if (error) return error;
 
     const body = await request.json();
     const parsed = schema.safeParse(body);
@@ -33,7 +28,7 @@ export async function POST(request: Request) {
     }
 
     const { id, repository_type } = parsed.data;
-    const ownerId = session.user.ownerId;
+    const ownerId = session!.user.ownerId;
 
     let data;
 

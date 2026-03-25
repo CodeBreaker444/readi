@@ -2,19 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
 
 import { createLucProcedure, getLucProcedures } from '@/backend/services/organization/lcu-service';
-import { getUserSession } from '@/lib/auth/server-session';
+import { requirePermission } from '@/lib/auth/api-auth';
 
 export async function GET(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url);
         const sector = searchParams.get('sector') ?? undefined;
 
-        const session = await getUserSession();
-        if (!session?.user) {
-            return NextResponse.json({ message: 'Unauthorized', code: 0, data: [], dataRows: 0 }, { status: 401 });
-        }
+        const { session, error } = await requirePermission('view_config');
+        if (error) return error;
 
-        const procedures = await getLucProcedures(session.user.ownerId, sector);
+        const procedures = await getLucProcedures(session!.user.ownerId, sector);
 
         return NextResponse.json({
             data: procedures,
@@ -43,10 +41,8 @@ const createSchema = z.object({
 
 export async function POST(request: NextRequest) {
     try {
-        const session = await getUserSession();
-        if (!session?.user) {
-            return NextResponse.json({ message: 'Unauthorized', code: 0, data: null, dataRows: 0 }, { status: 401 });
-        }
+        const { session, error } = await requirePermission('view_config');
+        if (error) return error;
 
         const body = await request.json();
 
@@ -60,7 +56,7 @@ export async function POST(request: NextRequest) {
 
         const created = await createLucProcedure({
             ...validation.data,
-            fk_owner_id: session.user.ownerId,
+            fk_owner_id: session!.user.ownerId,
             procedure_version: validation.data.procedure_version ?? '1.0',
             procedure_active: validation.data.procedure_active ?? 'Y',
         });

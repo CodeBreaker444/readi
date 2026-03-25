@@ -1,17 +1,12 @@
 import { getMissionCategoryList } from '@/backend/services/mission/category-service';
-import { getUserSession } from '@/lib/auth/server-session';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET( request: NextRequest ) {
   try {
-    const session = await getUserSession();
-    if (!session) {
-      return NextResponse.json(
-        { code: 0, status: 'ERROR', message: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-    const ownerId = session.user.ownerId;
+    const { session, error } = await requirePermission('view_config');
+    if (error) return error;
+    const ownerId = session!.user.ownerId;
     const result = await getMissionCategoryList(ownerId);
     
     return NextResponse.json(result);

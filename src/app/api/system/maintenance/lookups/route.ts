@@ -1,5 +1,5 @@
 import { getComponentList, getDroneList, getUserList } from '@/backend/services/system/maintenance-ticket';
-import { getUserSession } from '@/lib/auth/server-session';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
 
@@ -13,10 +13,8 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
 
-    const session = await getUserSession();
-    if (!session?.user || (session.user.role !== 'ADMIN' && session.user.role !== 'SUPERADMIN')) {
-      return NextResponse.json({ status: 'ERROR', message: 'Unauthorized' }, { status: 401 });
-    }
+    const { session, error } = await requirePermission('view_config');
+    if (error) return error;
 
     const validation = getLookupsSchema.safeParse({
       type: searchParams.get('type'),
@@ -33,7 +31,7 @@ export async function GET(req: NextRequest) {
 
     const { type, tool_id, profile } = validation.data;
 
-    const owner_id = session.user.ownerId;
+    const owner_id = session!.user.ownerId;
 
     switch (type) {
       case 'drones': {
@@ -53,7 +51,7 @@ export async function GET(req: NextRequest) {
       }
 
       case 'users': {
-        const users = await getUserList(owner_id,profile ?? undefined);
+        const users = await getUserList(owner_id, profile ?? undefined);
         return NextResponse.json({ status: 'OK', data: users });
       }
 

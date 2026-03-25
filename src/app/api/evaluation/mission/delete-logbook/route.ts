@@ -1,5 +1,5 @@
 import { deleteMissionPlanningLogbook } from "@/backend/services/planning/mission-test-logbook";
-import { getUserSession } from "@/lib/auth/server-session";
+import { requirePermission } from "@/lib/auth/api-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -12,10 +12,8 @@ const DeleteSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getUserSession();
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const { session, error } = await requirePermission('view_planning');
+    if (error) return error;
 
     const body = await req.json();
     const parsed = DeleteSchema.safeParse(body);
@@ -30,7 +28,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const ownerId = session.user.ownerId;
+    const ownerId = session!.user.ownerId;
     const result = await deleteMissionPlanningLogbook(
       ownerId,
       parsed.data.missionPlanningId

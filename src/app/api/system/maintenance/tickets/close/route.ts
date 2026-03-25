@@ -1,6 +1,6 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { closeTicket } from '@/backend/services/system/maintenance-ticket';
-import { getUserSession } from '@/lib/auth/server-session';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
 
@@ -13,11 +13,8 @@ const closeTicketSchema = z.object({
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const session = await getUserSession();
-
-    if (!session?.user || (session.user.role !== 'ADMIN' && session.user.role !== 'SUPERADMIN')) {
-      return NextResponse.json({ status: 'ERROR', message: 'Unauthorized' }, { status: 401 });
-    }
+      const { session, error } = await requirePermission('view_config');
+      if (error) return error;
 
     const validation = closeTicketSchema.safeParse(body);
 
@@ -32,7 +29,7 @@ export async function POST(req: NextRequest) {
     await closeTicket({
       ticket_id: validation.data.ticket_id,
       note: validation.data.note,
-      closed_by: Number(session.user.userId)
+      closed_by: Number(session!.user.userId)
     });
 
     logEvent({
@@ -40,11 +37,11 @@ export async function POST(req: NextRequest) {
       entityType: 'maintenance_ticket',
       entityId: validation.data.ticket_id,
       description: `Closed maintenance ticket #${validation.data.ticket_id}`,
-      userId: session.user.userId,
-      userName: session.user.fullname,
-      userEmail: session.user.email,
-      userRole: session.user.role,
-      ownerId: session.user.ownerId,
+      userId: session!.user.userId,
+      userName: session!.user.fullname,
+      userEmail: session!.user.email,
+      userRole: session!.user.role,
+      ownerId: session!.user.ownerId,
     });
 
     return NextResponse.json({ status: 'OK' });

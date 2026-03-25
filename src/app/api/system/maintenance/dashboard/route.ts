@@ -1,5 +1,5 @@
 import { getMaintenanceDashboard } from "@/backend/services/system/maintenance-service";
-import { getUserSession } from "@/lib/auth/server-session";
+import { requirePermission } from "@/lib/auth/api-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -12,18 +12,13 @@ const MaintenanceDashboardSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
+    
+    const { session, error } = await requirePermission('view_config');
+    if (error) return error;
+    
     const body = await req.json()
-    const session = await getUserSession();
-
-    if (!session?.user) {
-      return NextResponse.json(
-        { code: 0, message: "Unauthorized", data: [], dataRows: 0 },
-        { status: 401 }
-      );
-    }
-
-    const owner_id: number  = session.user.ownerId;
-    const client_id: number = session.user.clientId ;
+    const owner_id: number  = session!.user.ownerId;
+    const client_id: number = session!.user.clientId ;
 
     const parsed = MaintenanceDashboardSchema.safeParse(body);
     if (!parsed.success) {

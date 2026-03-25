@@ -1,6 +1,6 @@
  
 import { getProfile, updateProfile } from '@/backend/services/user/user-profile';
-import { getUserSession } from '@/lib/auth/server-session';
+import { requireAuth } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
 
@@ -20,15 +20,10 @@ const updateProfileSchema = z.object({
 
 export async function GET() {
   try {
-    const session = await getUserSession();
-    if (!session) {
-      return NextResponse.json(
-        { success: false, message: 'Unauthorized' },
-        { status: 401 },
-      );
-    }
+    const { session, error } = await requireAuth();
+    if (error) return error;
 
-    const user = await getProfile(session.user.userId);
+    const user = await getProfile(session!.user.userId);
 
     return NextResponse.json({ success: true, user });
   } catch (err: any) {
@@ -41,13 +36,8 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getUserSession();
-    if (!session) {
-      return NextResponse.json(
-        { success: false, message: 'Unauthorized' },
-        { status: 401 },
-      );
-    }
+    const { session, error } = await requireAuth();
+    if (error) return error;
 
     const formData = await req.formData();
 
@@ -96,8 +86,8 @@ export async function POST(req: NextRequest) {
     }
 
     const result = await updateProfile(
-      session.user.userId,
-      session.user.ownerId,
+      session!.user.userId,
+      session!.user.ownerId,
       validated,
       avatarFile,
     );

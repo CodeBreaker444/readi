@@ -1,15 +1,12 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { createUser } from '@/backend/services/user/user-management';
-import { getUserSession } from '@/lib/auth/server-session';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getUserSession();
-    
-    if (!session || session.user.role != 'ADMIN') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+   const { session, error } = await requirePermission('manage_users')
+     if (error) return error
 
     const body = await request.json();
 
@@ -25,7 +22,7 @@ export async function POST(request: NextRequest) {
       timezone: body.timezone,
       fk_client_id: parseInt(body.fk_client_id || 0),
       fk_territorial_unit: parseInt(body.ownerTerritorialUnit || body.territorial_id || 0),
-      owner_id: session.user.ownerId,
+      owner_id: session!.user.ownerId,
     };
 
     const result = await createUser(userData);
@@ -35,11 +32,11 @@ export async function POST(request: NextRequest) {
       entityType: 'user',
       entityId: result.userId,
       description: `Created user '${body.fullname ?? body.email}'`,
-      userId: session.user.userId,
-      userName: session.user.fullname,
-      userEmail: session.user.email,
-      userRole: session.user.role,
-      ownerId: session.user.ownerId,
+      userId: session!.user.userId,
+      userName: session!.user.fullname,
+      userEmail: session!.user.email,
+      userRole: session!.user.role,
+      ownerId: session!.user.ownerId,
       metadata: { email: body.email, role: body.user_type },
     });
 

@@ -1,7 +1,7 @@
 
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { addModel } from '@/backend/services/system/system-service';
-import { getUserSession } from '@/lib/auth/server-session';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -19,10 +19,8 @@ const ModelSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getUserSession();
-    if (!session?.user) {
-      return NextResponse.json({ status: 'ERROR', message: 'Unauthorized' }, { status: 401 });
-    }
+      const { session, error } = await requirePermission('view_config');
+      if (error) return error;
 
     const body = await req.json();
     const validation = ModelSchema.safeParse(body);
@@ -49,7 +47,7 @@ export async function POST(req: NextRequest) {
     };
 
     const result = await addModel({
-      fk_owner_id: session.user.ownerId,
+      fk_owner_id: session!.user.ownerId,
       factory_serie: d.model_code,
       factory_model: d.model_name,
       factory_type: d.manufacturer,
@@ -62,11 +60,11 @@ export async function POST(req: NextRequest) {
         eventType: 'CREATE',
         entityType: 'system',
         description: `Created system model '${d.model_name}' (${d.model_code})`,
-        userId: session.user.userId,
-        userName: session.user.fullname,
-        userEmail: session.user.email,
-        userRole: session.user.role,
-        ownerId: session.user.ownerId,
+        userId: session!.user.userId,
+        userName: session!.user.fullname,
+        userEmail: session!.user.email,
+        userRole: session!.user.role,
+        ownerId: session!.user.ownerId,
       });
     }
 

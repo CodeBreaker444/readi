@@ -1,18 +1,13 @@
 import { markAllNotificationsRead } from "@/backend/services/notification/notification-service";
-import { getUserSession } from "@/lib/auth/server-session";
+import { requirePermission } from "@/lib/auth/api-auth";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
   try {
 
-    const session = await getUserSession();
-    if (!session || !session.user) {
-      return NextResponse.json(
-        { success: false, message: "Unauthorized" },
-        { status: 401 }
-      );
-    }
-    const userId = session.user.userId;
+    const { session, error } = await requirePermission('view_notifications');
+    if (error) return error;
+    const userId = session!.user.userId;
 
     const result = await markAllNotificationsRead(userId);
 

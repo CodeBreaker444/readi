@@ -1,6 +1,6 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { addComponent } from '@/backend/services/system/system-service';
-import { getUserSession } from '@/lib/auth/server-session';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -30,10 +30,8 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const validation = ComponentSchema.safeParse(body);
 
-    const session = await getUserSession();
-    if (!session?.user || (session.user.role !== 'ADMIN' && session.user.role !== 'SUPERADMIN')) {
-      return NextResponse.json({ status: 'ERROR', message: 'Unauthorized' }, { status: 401 });
-    }
+    const { session, error } = await requirePermission('view_config');
+    if (error) return error;
 
     if (!validation.success) {
       return NextResponse.json({
@@ -72,11 +70,11 @@ export async function POST(req: NextRequest) {
         entityType: 'system_component',
         entityId: result.data?.component_id,
         description: `Added component '${d.component_code ?? d.component_type}' to system #${d.fk_tool_id}`,
-        userId: session.user.userId,
-        userName: session.user.fullname,
-        userEmail: session.user.email,
-        userRole: session.user.role,
-        ownerId: session.user.ownerId,
+        userId: session!.user.userId,
+        userName: session!.user.fullname,
+        userEmail: session!.user.email,
+        userRole: session!.user.role,
+        ownerId: session!.user.ownerId,
       });
     }
 

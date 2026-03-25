@@ -1,16 +1,14 @@
 
 import { getPilotList } from "@/backend/services/planning/planning-dashboard";
-import { getUserSession } from "@/lib/auth/server-session";
+import { requirePermission } from "@/lib/auth/api-auth";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
     try {
-        const session = await getUserSession()
-        if (!session) {
-            return NextResponse.json({ code: 0, message: 'Unauthorized' }, { status: 401 });
-        }
+        const { session, error } = await requirePermission('view_planning');
+        if (error) return error;
  
-        const data = await getPilotList(session.user.ownerId);
+        const data = await getPilotList(session!.user.ownerId);
 
         return NextResponse.json({ code: 1, message: "Success", data, dataRows: data.length });
     } catch (err: any) {

@@ -1,6 +1,6 @@
 import { listSpiKpiDefinitions } from '@/backend/services/safetyManagement/spi-kpi-service'
 import { AREAS, TYPES } from '@/config/types/safetyMng'
-import { getUserSession } from '@/lib/auth/server-session'
+import { requirePermission } from '@/lib/auth/api-auth'
 import { NextRequest, NextResponse } from 'next/server'
 import z from 'zod'
 
@@ -13,10 +13,8 @@ const spiKpiListSchema = z.object({
 
 export async function GET(req: NextRequest) {
     try {
-        const session = await getUserSession();
-        if (!session) {
-            return NextResponse.json({ code: 0, error: 'Unauthorized' }, { status: 401 })
-        }
+        const { session: _session, error } = await requirePermission('view_safety_mgmt');
+        if (error) return error;
 
         const { searchParams } = new URL(req.url)
 

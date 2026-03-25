@@ -2,6 +2,7 @@ import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { createOperation, createRecurringOperations, listOperations } from '@/backend/services/operation/operation-service';
 import { assertToolNotInMaintenance } from '@/backend/services/system/maintenance-ticket';
 import { CreateOperationSchema, ListOperationsQuerySchema } from '@/config/types/operation';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { getUserSession } from '@/lib/auth/server-session';
 import { NextRequest, NextResponse } from 'next/server';
 import { ZodError, z } from 'zod';
@@ -54,11 +55,10 @@ const createRecurringSchema = z.object({
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getUserSession()
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    const ownerId = session?.user.ownerId;
+    const { session, error } = await requirePermission('view_operations');
+    if (error) return error;
+
+    const ownerId = session!.user.ownerId;
 
     const { searchParams } = new URL(req.url);
     const query = listOperationsQuerySchema.parse({

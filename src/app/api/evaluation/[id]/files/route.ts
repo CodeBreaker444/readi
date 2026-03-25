@@ -3,7 +3,7 @@ import {
   deleteEvaluationFile,
   getEvaluationFiles
 } from '@/backend/services/planning/evaluation-detail';
-import { getUserSession } from '@/lib/auth/server-session';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
 
@@ -16,13 +16,11 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await getUserSession()
-    if (!session) {
-      return NextResponse.json({ code: 0, message: 'Unauthorized' }, { status: 401 });
-    }
+    const { session, error } = await requirePermission('view_planning_advanced');
+    if (error) return error;
     const { id } = evaluationIdParamSchema.parse(await params);
 
-    const data = await getEvaluationFiles(session.user.ownerId, id);
+    const data = await getEvaluationFiles(session!.user.ownerId, id);
     return NextResponse.json({ success: true, data });
   } catch (err: any) {
     if (err.name === 'ZodError') {
@@ -48,10 +46,8 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await getUserSession()
-    if (!session) {
-      return NextResponse.json({ code: 0, message: 'Unauthorized' }, { status: 401 });
-    }
+    const { session, error } = await requirePermission('view_planning_advanced');
+    if (error) return error;
     const { id } = evaluationIdParamSchema.parse(await params);
 
     const formData = await req.formData();
@@ -71,7 +67,7 @@ export async function POST(
 
     const result = await addEvaluationFile(
       id,
-      session.user.ownerId,
+      session!.user.ownerId,
       file,
       validated.evaluation_file_desc ?? '',
       validated.evaluation_file_ver ?? '1.0',
@@ -104,10 +100,8 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await getUserSession()
-    if (!session) {
-      return NextResponse.json({ code: 0, message: 'Unauthorized' }, { status: 401 });
-    }
+    const { session, error } = await requirePermission('view_planning_advanced');
+    if (error) return error;
     const { id } = evaluationIdParamSchema.parse(await params);
     const fileId = Number(req.nextUrl.searchParams.get('fileId'));
 
@@ -118,7 +112,7 @@ export async function DELETE(
       );
     }
 
-    const result = await deleteEvaluationFile(session.user.ownerId, id, fileId);
+    const result = await deleteEvaluationFile(session!.user.ownerId, id, fileId);
 
     if (!result.success) {
       return NextResponse.json(

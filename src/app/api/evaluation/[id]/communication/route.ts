@@ -1,5 +1,5 @@
 import { sendEvaluationCommunication } from '@/backend/services/planning/evaluation-detail';
-import { getUserSession } from '@/lib/auth/server-session';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -18,21 +18,19 @@ export async function POST(
     { params }: { params: Promise<{ id: string }> },
 ) {
     try {
-        const session = await getUserSession();
-        if (!session) {
-            return NextResponse.json({ code: 0, message: 'Unauthorized' }, { status: 401 });
-        }
+        const { session, error } = await requirePermission('view_planning_advanced');
+        if (error) return error;
 
         const { id: evaluationId } = paramsSchema.parse(await params);
         const body = await req.json();
         const validated = bodySchema.parse(body);
 
         const result = await sendEvaluationCommunication(
-            session.user.ownerId,
+            session!.user.ownerId,
             evaluationId,
             {
                 to_user_id: validated.to_user_id,
-                from_user_id: session.user.userId,
+                from_user_id: session!.user.userId,
                 message: validated.message,
                 subject: validated.subject,
             },

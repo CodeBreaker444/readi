@@ -1,5 +1,5 @@
 import { addReport, uploadAttachment } from '@/backend/services/system/maintenance-ticket';
-import { getUserSession } from '@/lib/auth/server-session';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
 
@@ -16,11 +16,8 @@ const MAX_SIZE_BYTES = 10 * 1024 * 1024;
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getUserSession();
-
-    if (!session?.user || (session.user.role !== 'ADMIN' && session.user.role !== 'SUPERADMIN')) {
-      return NextResponse.json({ status: 'ERROR', message: 'Unauthorized' }, { status: 401 });
-    }
+       const { session, error } = await requirePermission('view_config');
+       if (error) return error;
 
     const formData = await req.formData();
 
@@ -60,7 +57,7 @@ export async function POST(req: NextRequest) {
         file,
         'Intervention report attachment',
         validation.data.report_by ?? 'web',
-        session.user.userId,
+        session!.user.userId,
       );
     }
 

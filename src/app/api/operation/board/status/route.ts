@@ -1,16 +1,16 @@
 import { logEvent } from "@/backend/services/auditLog/audit-log";
 import { updateMissionStatus } from "@/backend/services/operation/operation-board-service";
 import { checkDailyDeclaration } from "@/backend/services/operation/pilot-declaration-service";
-import { getUserSession } from "@/lib/auth/server-session";
+import { requirePermission } from "@/lib/auth/api-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 const bodySchema = z.object({
-    mission_id: z.number().int().positive(),
-    vehicle_id: z.number().int().positive().nullable(),
-    status_id: z.number().int(),
-    workflow_mission_status: z.enum(["_START", "_END", "_REVERT"]),
-    pilot_id: z.number().int().positive().nullable(),
+  mission_id: z.number().int().positive(),
+  vehicle_id: z.number().int().positive().nullable(),
+  status_id: z.number().int(),
+  workflow_mission_status: z.enum(["_START", "_END", "_REVERT"]),
+  pilot_id: z.number().int().positive().nullable(),
 });
 
 export async function POST(req: NextRequest) {
@@ -21,10 +21,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ code: 0, message: "Invalid JSON body" }, { status: 400 });
   }
 
-   const session = await getUserSession()
-  if (!session) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      }
+  const { session, error } = await requirePermission('view_operations');
+  if (error) return error;
 
   const parsed = bodySchema.safeParse(body);
   if (!parsed.success) {
@@ -36,7 +34,7 @@ export async function POST(req: NextRequest) {
 
   try {
     if (parsed.data.workflow_mission_status === "_START") {
-      const hasDeclared = await checkDailyDeclaration(session.user.userId);
+      const hasDeclared = await checkDailyDeclaration(session!.user.userId);
       if (!hasDeclared) {
         return NextResponse.json(
           { code: 0, message: "Daily declaration not found", check_daily_declaration: "N" },
@@ -45,7 +43,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const result = await updateMissionStatus({ ...parsed.data, owner_id: session.user.ownerId });
+    const result = await updateMissionStatus({ ...parsed.data, owner_id: session!.user.ownerId });
 
     if (result.code === 1) {
       const actionMap: Record<string, string> = {
@@ -58,11 +56,11 @@ export async function POST(req: NextRequest) {
         entityType: 'operation',
         entityId: parsed.data.mission_id,
         description: `Mission #${parsed.data.mission_id} ${actionMap[parsed.data.workflow_mission_status] ?? 'status updated'}`,
-        userId: session.user.userId,
-        userName: session.user.fullname,
-        userEmail: session.user.email,
-        userRole: session.user.role,
-        ownerId: session.user.ownerId,
+        userId: session!.user.userId,
+        userName: session!.user.fullname,
+        userEmail: session!.user.email,
+        userRole: session!.user.role,
+        ownerId: session!.user.ownerId,
       });
     }
 

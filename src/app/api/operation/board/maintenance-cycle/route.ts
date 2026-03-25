@@ -1,25 +1,23 @@
 import { getComponentsForMaintenanceCycle } from "@/backend/services/operation/maintenance-cycle-service";
-import { getUserSession } from "@/lib/auth/server-session";
+import { requirePermission } from "@/lib/auth/api-auth";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
-  const session = await getUserSession();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const toolId = Number(req.nextUrl.searchParams.get("tool_id"));
-  if (!toolId || toolId <= 0) {
-    return NextResponse.json(
-      { code: 0, message: "tool_id is required" },
-      { status: 400 }
-    );
-  }
-
   try {
+    const { session, error } = await requirePermission('view_operations');
+    if (error) return error;
+
+    const toolId = Number(req.nextUrl.searchParams.get("tool_id"));
+    if (!toolId || toolId <= 0) {
+      return NextResponse.json(
+        { code: 0, message: "tool_id is required" },
+        { status: 400 }
+      );
+    }
+
     const data = await getComponentsForMaintenanceCycle(
       toolId,
-      session.user.ownerId
+      session!.user.ownerId
     );
     return NextResponse.json({ code: 1, message: "Success", data });
   } catch (error) {

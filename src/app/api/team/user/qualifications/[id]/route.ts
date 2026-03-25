@@ -1,5 +1,5 @@
 import { deleteQualification } from '@/backend/services/user/qualification-service';
-import { getUserSession } from '@/lib/auth/server-session';
+import { requireAuth } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { z, ZodError } from 'zod';
 
@@ -12,14 +12,14 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getUserSession();
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+   const { session, error } = await requireAuth()
+     if (error) return error
 
     const resolvedParams = await params; 
     
     const { id } = paramsSchema.parse(resolvedParams);
 
-    await deleteQualification(id, session.user.ownerId);
+    await deleteQualification(id, session!.user.ownerId);
     return NextResponse.json({ success: true });
   } catch (err) {
     if (err instanceof ZodError) {

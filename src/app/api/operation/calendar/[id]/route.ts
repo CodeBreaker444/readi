@@ -1,5 +1,5 @@
 import { deleteOperationCalendarEntry } from '@/backend/services/operation/operation-calendar-service'
-import { getUserSession } from '@/lib/auth/server-session'
+import { requirePermission } from '@/lib/auth/api-auth'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function DELETE(
@@ -7,22 +7,18 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getUserSession()
-    if (!session) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
-    }
+    const { session, error } = await requirePermission('view_operations')
+    if (error) return error
 
     const operationId = Number((await params).id)
     if (isNaN(operationId)) {
       return NextResponse.json({ success: false, error: 'Invalid operation ID' }, { status: 400 })
     }
 
-    await deleteOperationCalendarEntry(operationId, session.user.ownerId)
+    await deleteOperationCalendarEntry(operationId, session!.user.ownerId)
     return NextResponse.json({ success: true })
   } catch (err: any) {
     console.error('[DELETE /api/operation/calendar/[id]]', err)
     return NextResponse.json({ success: false, error: err.message }, { status: 500 })
   }
 }
-
- 

@@ -1,6 +1,6 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { batchSetPilot } from '@/backend/services/operation/operation-service';
-import { getUserSession } from '@/lib/auth/server-session';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { z, ZodError } from 'zod';
 
@@ -11,10 +11,10 @@ const schema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getUserSession();
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { session, error } = await requirePermission('view_operations');
+    if (error) return error;
 
-    const ownerId = session.user.ownerId;
+    const ownerId = session!.user.ownerId;
     const body = await req.json();
     const { mission_ids, pilot_id } = schema.parse(body);
 
@@ -25,10 +25,10 @@ export async function POST(req: NextRequest) {
       eventType: 'UPDATE',
       entityType: 'operation',
       description: `Batch set pilot '${result.pilotName}' on ${result.updated.length} operation(s)`,
-      userId: session.user.userId,
-      userName: session.user.fullname,
-      userEmail: session.user.email,
-      userRole: session.user.role,
+      userId: session!.user.userId,
+      userName: session!.user.fullname,
+      userEmail: session!.user.email,
+      userRole: session!.user.role,
       ownerId,
       metadata: {
         pilot_id,

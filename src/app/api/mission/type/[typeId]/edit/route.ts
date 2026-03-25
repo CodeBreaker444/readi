@@ -1,21 +1,16 @@
 import { updateMissionType } from '@/backend/services/mission/mission-type';
-import { getUserSession } from '@/lib/auth/server-session';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ typeId: string }> } 
+  { params }: { params: Promise<{ typeId: string }> }
 ) {
   try {
-    const session = await getUserSession();
-    if (!session) {
-      return NextResponse.json(
-        { code: 0, status: 'ERROR', message: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+    const { session, error } = await requirePermission('view_config');
+    if (error) return error;
 
-    const ownerId = session.user.ownerId;
+    const ownerId = session!.user.ownerId;
     const { typeId } = await params; 
     const body = await request.json();
     

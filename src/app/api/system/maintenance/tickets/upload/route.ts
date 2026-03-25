@@ -1,34 +1,26 @@
 import { uploadAttachment } from '@/backend/services/system/maintenance-ticket';
-import { getUserSession } from '@/lib/auth/server-session';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
 
 const uploadSchema = z.object({
-  ticket_id:       z.string().min(1),
-  file:            z.instanceof(File),
+  ticket_id: z.string().min(1),
+  file: z.instanceof(File),
   attachment_desc: z.string().optional(),
 });
 
-const MAX_SIZE_BYTES = 10 * 1024 * 1024;  
+const MAX_SIZE_BYTES = 10 * 1024 * 1024;
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getUserSession();
-    if (
-      !session?.user ||
-      (session.user.role !== 'ADMIN' && session.user.role !== 'SUPERADMIN')
-    ) {
-      return NextResponse.json(
-        { status: 'ERROR', message: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+    const { session, error } = await requirePermission('view_config');
+    if (error) return error;
 
     const formData = await req.formData();
 
     const validation = uploadSchema.safeParse({
-      ticket_id:       formData.get('ticket_id'),
-      file:            formData.get('file'),
+      ticket_id: formData.get('ticket_id'),
+      file: formData.get('file'),
       attachment_desc: formData.get('attachment_desc')?.toString() ?? '',
     });
 
@@ -57,13 +49,13 @@ export async function POST(req: NextRequest) {
       file,
       attachment_desc ?? '',
       'web',
-      session.user.userId         
+      session!.user.userId
     );
 
     return NextResponse.json({
-      status:   'OK',
+      status: 'OK',
       file_key: result.file_key,
-      s3_url:   result.s3_url,
+      s3_url: result.s3_url,
     });
 
   } catch (err: any) {

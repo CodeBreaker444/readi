@@ -1,19 +1,16 @@
 import { getLUCProceduresList } from '@/backend/services/planning/lucProcedures';
-import { getUserSession } from '@/lib/auth/server-session';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getUserSession();
-    
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const { session, error } = await requirePermission('view_config');
+    if (error) return error;
 
     const { searchParams } = new URL(request.url);
     const sector = searchParams.get('sector') || undefined;
-    
-    const ownerId = session.user.ownerId;
+
+    const ownerId = session!.user.ownerId;
     const result = await getLUCProceduresList(ownerId, sector);
 
     return NextResponse.json(result);

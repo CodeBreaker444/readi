@@ -1,5 +1,5 @@
 import { getPlanningTasks, updatePlanningTask } from '@/backend/services/planning/planning-dashboard';
-import { getUserSession } from '@/lib/auth/server-session';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
 
@@ -17,12 +17,11 @@ export async function GET(
     { params }: { params: Promise<{ id: string }> },
 ) {
     try {
-        const session = await getUserSession();
-        if (!session) {
-            return NextResponse.json({ code: 0, message: 'Unauthorized' }, { status: 401 });
-        }
+        const { session, error } = await requirePermission('view_planning')
+        if (error) return error
+
         const { id } = planningIdParamSchema.parse(await params);
-        const result = await getPlanningTasks(session.user.ownerId, id);
+        const result = await getPlanningTasks(session!.user.ownerId, id);
         return NextResponse.json({ success: true, ...result });
     } catch (err: any) {
         if (err.name === 'ZodError') {
@@ -37,15 +36,14 @@ export async function PUT(
     { params }: { params: Promise<{ id: string }> },
 ) {
     try {
-        const session = await getUserSession();
-        if (!session) {
-            return NextResponse.json({ code: 0, message: 'Unauthorized' }, { status: 401 });
-        }
+        const { session, error } = await requirePermission('view_planning')
+        if (error) return error
+
         const { id } = planningIdParamSchema.parse(await params);
         const body = await req.json();
         const validated = planningTaskUpdateSchema.parse(body);
         const result = await updatePlanningTask(
-            session.user.ownerId,
+            session!.user.ownerId,
             id,
             validated.task_id,
             validated.task_status,

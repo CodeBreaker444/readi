@@ -1,6 +1,6 @@
 import { getAuditLogs } from '@/backend/services/auditLog/audit-log';
 import { getComponentTicketEvents } from '@/backend/services/system/maintenance-ticket';
-import { getUserSession } from '@/lib/auth/server-session';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
@@ -8,10 +8,8 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getUserSession();
-    if (!session?.user || (session.user.role !== 'ADMIN' && session.user.role !== 'SUPERADMIN')) {
-      return NextResponse.json({ code: 0, message: 'Unauthorized' }, { status: 401 });
-    }
+    const { session, error } = await requirePermission('view_config');
+    if (error) return error;
 
     const { id } = await params;
     const componentId = Number(id);
@@ -19,7 +17,7 @@ export async function GET(
 
     const [auditResult, ticketEvents] = await Promise.all([
       getAuditLogs({
-        ownerId: session.user.ownerId,
+        ownerId: session!.user.ownerId,
         entityType: 'system_component',
         entityId: componentId,
         page: 1,

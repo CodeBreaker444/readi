@@ -1,5 +1,5 @@
 import { getSPIKPITrend } from '@/backend/services/dashboard/dashboard';
-import { getUserSession } from '@/lib/auth/server-session';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
 
@@ -9,17 +9,15 @@ const SPIKPITrendSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getUserSession();
-    if (!session) {
-      return NextResponse.json({ code: 0, status: 'ERROR', message: 'Unauthorized' }, { status: 401 });
-    }
+    const { session, error } = await requirePermission('view_dashboard');
+    if (error) return error;
 
     const body = await req.json();
     const { name } = SPIKPITrendSchema.parse(body);
 
     const result = await getSPIKPITrend({
-      owner_id: session.user.ownerId,
-      user_id: session.user.userId,
+      owner_id: session!.user.ownerId,
+      user_id: session!.user.userId,
       name,
     });
 

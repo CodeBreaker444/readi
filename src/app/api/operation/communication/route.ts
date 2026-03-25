@@ -1,17 +1,15 @@
 import { sendGeneralCommunication } from '@/backend/services/operation/communication-service';
-import { getUserSession } from '@/lib/auth/server-session';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
   try {
-      const session = await getUserSession()
-    if (!session?.user) {
-      return NextResponse.json({ code: 0, message: 'Unauthorized' }, { status: 401 });
-    }
+    const { session, error } = await requirePermission('view_operations');
+    if (error) return error;
 
-    const ownerId: number  = session.user.ownerId
-    const userId: number   = session.user.userId
-    const userEmail: string = session.user.email
+    const ownerId: number  = session!.user.ownerId
+    const userId: number   = session!.user.userId
+    const userEmail: string = session!.user.email
 
     const formData = await req.formData();
 

@@ -1,4 +1,5 @@
 import { fetchOperationAttachment } from '@/backend/services/operation/operation-service';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { getPresignedDownloadUrl } from '@/lib/s3Client';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -7,6 +8,9 @@ interface Params {
 }
 
 export async function GET(_req: NextRequest, { params }: Params) {
+  const { error } = await requirePermission('view_operations');
+  if (error) return error;
+
   try {
     const { id, attachmentId } = await params;
     const opId = parseInt(id, 10);

@@ -1,4 +1,5 @@
 import { deleteOperationAttachment } from '@/backend/services/operation/operation-service';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 interface Params {
@@ -6,6 +7,9 @@ interface Params {
 }
 
 export async function DELETE(_req: NextRequest, { params }: Params) {
+  const { error } = await requirePermission('view_operations');
+  if (error) return error;
+
   try {
     const { id, attachmentId } = await params;
     const opId = parseInt(id, 10);

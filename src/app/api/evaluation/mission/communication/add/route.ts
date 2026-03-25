@@ -1,19 +1,17 @@
 import { addCommunicationGeneral } from "@/backend/services/planning/planning-dashboard";
-import { getUserSession } from "@/lib/auth/server-session";
+import { requirePermission } from "@/lib/auth/api-auth";
 import { buildS3Url, uploadFileToS3 } from "@/lib/s3Client";
 import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   try {
-    const session = await getUserSession();
-    if (!session) {
-      return NextResponse.json({ code: 0, message: "Unauthorized" }, { status: 401 });
-    }
+    const { session, error } = await requirePermission('view_planning');
+    if (error) return error;
 
     const formData = await request.formData();
 const sentByUserId = formData.get("sent_by_user_id") 
       ? Number(formData.get("sent_by_user_id")) 
-      : session.user.userId;
+      : session!.user.userId;
     const message = formData.get("message") as string | null;
     const communicationLevel = (formData.get("communication_level") as string) || "info";
     const fkClientId = formData.get("fk_client_id") as string | null;
@@ -36,7 +34,7 @@ const sentByUserId = formData.get("sent_by_user_id")
     if (file && file.size > 0) {
       const ext = file.name.split(".").pop() ?? "bin";
       const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-      fileKey = `communication/${session.user.ownerId}/${Date.now()}_${safeName}`;
+      fileKey = `communication/${session!.user.ownerId}/${Date.now()}_${safeName}`;
       fileName = file.name;
 
       await uploadFileToS3(fileKey, file);
@@ -44,7 +42,7 @@ const sentByUserId = formData.get("sent_by_user_id")
     }
 
    const commId = await addCommunicationGeneral({
-      fk_owner_id: session.user.ownerId,
+      fk_owner_id: session!.user.ownerId,
       subject: message.substring(0, 100), 
       message,
       communication_type: "mission",

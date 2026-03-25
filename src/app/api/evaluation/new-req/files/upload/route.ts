@@ -1,14 +1,11 @@
 import { uploadEvaluationFile } from '@/backend/services/planning/evaluationFiles';
-import { getUserSession } from '@/lib/auth/server-session';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
     try {
-        const session = await getUserSession();
-
-        if (!session?.user) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
+        const { session, error } = await requirePermission('view_planning_advanced');
+        if (error) return error;
 
         const formData = await request.formData();
         const file = formData.get('file') as File;
@@ -18,8 +15,8 @@ export async function POST(request: NextRequest) {
         const evaluationId = parseInt(formData.get('evaluation_id') as string);
         const clientId = parseInt(formData.get('client_id') as string);
 
-        const ownerId = session.user.ownerId;
-        const userId = session.user.userId;
+        const ownerId = session!.user.ownerId;
+        const userId = session!.user.userId;
         
         const result = await uploadEvaluationFile(
             ownerId,

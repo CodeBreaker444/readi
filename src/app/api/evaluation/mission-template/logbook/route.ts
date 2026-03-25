@@ -1,7 +1,7 @@
 import {
     getMissionTemplateLogbook
 } from '@/backend/services/planning/mission-template';
-import { getUserSession } from '@/lib/auth/server-session';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
 
@@ -23,13 +23,8 @@ const logbookQuerySchema = z.object({
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getUserSession();
-    if (!session) {
-      return NextResponse.json(
-        { code: 0, message: 'Unauthorized' },
-        { status: 401 },
-      );
-    }
+    const { session, error } = await requirePermission('view_planning');
+    if (error) return error;
 
     const { searchParams } = new URL(req.url);
     const rawParams: Record<string, string> = {};
@@ -39,7 +34,7 @@ export async function GET(req: NextRequest) {
 
     const validated = logbookQuerySchema.parse(rawParams);
 
-    const data = await getMissionTemplateLogbook(session.user.ownerId, {
+    const data = await getMissionTemplateLogbook(session!.user.ownerId, {
       client_id: validated.client_id,
       pilot_id: validated.pilot_id,
       evaluation_id: validated.evaluation_id,

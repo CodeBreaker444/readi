@@ -1,5 +1,5 @@
 import { deleteEvaluationFile } from '@/backend/services/planning/evaluationFiles';
-import { getUserSession } from '@/lib/auth/server-session';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function DELETE(
@@ -7,15 +7,12 @@ export async function DELETE(
   { params }: { params: Promise<{ fileId: string }> }
 ) {
   try {
-    const session = await getUserSession();
-    
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const { session, error } = await requirePermission('view_planning_advanced');
+    if (error) return error;
 
-    const { fileId } = await params;   
+    const { fileId } = await params;
     const fileIdNum = parseInt(fileId);
-    const ownerId = session.user.ownerId;
+    const ownerId = session!.user.ownerId;
 
     const result = await deleteEvaluationFile(fileIdNum, ownerId);
 

@@ -1,4 +1,5 @@
 import { listOperationAttachments, uploadOperationAttachment } from '@/backend/services/operation/operation-service';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024;  
@@ -20,6 +21,9 @@ interface Params {
 }
 
 export async function GET(_req: NextRequest, { params }: Params) {
+  const { error } = await requirePermission('view_operations');
+  if (error) return error;
+
   try {
     const id = parseInt((await params).id, 10);
     if (isNaN(id)) return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
@@ -33,6 +37,9 @@ export async function GET(_req: NextRequest, { params }: Params) {
 }
 
 export async function POST(req: NextRequest, { params }: Params) {
+  const { error } = await requirePermission('view_operations');
+  if (error) return error;
+
   try {
     const id = parseInt((await params).id, 10);
     if (isNaN(id)) return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });

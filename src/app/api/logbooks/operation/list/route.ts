@@ -1,5 +1,5 @@
 import { getOperationLogbookList } from "@/backend/services/logbook/flight-logbook-service";
-import { getUserSession } from "@/lib/auth/server-session";
+import { requirePermission } from "@/lib/auth/api-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -18,13 +18,8 @@ const schema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getUserSession();
-    if (!session) {
-      return NextResponse.json(
-        { code: 0, status: "UNAUTHORIZED", message: "Not authenticated", dataRows: 0, data: [] },
-        { status: 401 }
-      );
-    }
+    const { session, error } = await requirePermission('view_logbooks');
+    if (error) return error;
 
     const body = await request.json();
     const parsed = schema.safeParse(body);
@@ -45,7 +40,7 @@ export async function POST(request: NextRequest) {
 
     const result = await getOperationLogbookList({
       ...parsed.data,
-      owner_id: session.user.ownerId,
+      owner_id: session!.user.ownerId,
     });
 
     return NextResponse.json(result, { status: 200 });

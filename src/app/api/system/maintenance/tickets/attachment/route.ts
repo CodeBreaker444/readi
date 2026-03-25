@@ -1,16 +1,11 @@
 import { getTicketAttachments } from "@/backend/services/system/maintenance-ticket";
-import { getUserSession } from "@/lib/auth/server-session";
+import { requirePermission } from "@/lib/auth/api-auth";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getUserSession();
-    if (!session?.user) {
-      return NextResponse.json(
-        { code: 0, message: "Unauthorized", data: [] },
-        { status: 401 }
-      );
-    }
+      const { session, error } = await requirePermission('view_config');
+      if (error) return error;
 
     const ticketId = req.nextUrl.searchParams.get("ticket_id");
     if (!ticketId) {
