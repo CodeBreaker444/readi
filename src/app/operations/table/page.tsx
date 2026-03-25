@@ -225,10 +225,18 @@ export default function OperationsPage() {
     []
   );
 
-  const table = useReactTable({
+const table = useReactTable({
     data: operations,
     columns: operationColumns,
-    state: { sorting, rowSelection },
+    state: { 
+      sorting, 
+      rowSelection,
+    },
+    initialState: {
+      pagination: {
+        pageSize: 8,  
+      },
+    },
     onSortingChange: setSorting,
     onRowSelectionChange: setRowSelection,
     enableRowSelection: true,

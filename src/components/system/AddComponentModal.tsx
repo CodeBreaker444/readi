@@ -119,6 +119,14 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!formData.fk_tool_id) { toast.error('Please select a system'); return; }
+    if (!formData.component_type) { toast.error('Please select a component type'); return; }
+    if (formData.component_activation_date && formData.component_purchase_date &&
+        formData.component_activation_date < formData.component_purchase_date) {
+      toast.error('Activation date cannot be before purchase date'); return;
+    }
+
     setLoading(true);
 
     try {

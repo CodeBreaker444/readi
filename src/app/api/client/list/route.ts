@@ -11,7 +11,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({message:"Unauthorized"},{status:401})
     }
 
-    const result = await listClients(session.user.ownerId);
+    const isSuperAdmin = session.user.role === 'SUPERADMIN';
+    const result = await listClients(isSuperAdmin ? undefined : session.user.ownerId);
     return NextResponse.json(result);
   } catch {
     return NextResponse.json({ code: 0, error: 'Internal server error' }, { status: 500 });

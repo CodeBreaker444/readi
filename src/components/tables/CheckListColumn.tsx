@@ -70,14 +70,12 @@ export const getColumns = (
           >
             <HiPlay size={16} />
           </button>
-          {c.checklist_active === 'N' && (
-            <button
-              onClick={() => onDelete(c)}
-              className={`p-1.5 rounded-lg transition-all ${isDark ? 'text-rose-400 hover:bg-rose-500/10' : 'text-rose-600 hover:bg-rose-50'}`}
-            >
-              <HiTrash size={16} />
-            </button>
-          )}
+          <button
+            onClick={() => onDelete(c)}
+            className={`p-1.5 rounded-lg transition-all ${isDark ? 'text-rose-400 hover:bg-rose-500/10' : 'text-rose-600 hover:bg-rose-50'}`}
+          >
+            <HiTrash size={16} />
+          </button>
         </div>
       )
     },

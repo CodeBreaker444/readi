@@ -179,7 +179,7 @@ export interface Mission {
   rth_unplanned: number;
   link_loss: number;
   deviation_flag: number;
-  maintenance_status?: 'OK' | 'ALERT' | 'DUE';
+  maintenance_status?: 'OK' | 'ALERT' | 'DUE' | 'IN_MAINTENANCE';
 }
 
 export interface MissionBoardData {

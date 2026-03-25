@@ -54,14 +54,18 @@ function UsageLimitCell({
   const pct = max ? Math.min((cur / max) * 100, 100) : 0;
 
   const barColor =
-    status === "DUE" && isTriggered
+    status === "IN_MAINTENANCE"
+      ? "bg-blue-400"
+      : status === "DUE" && isTriggered
       ? "bg-rose-500"
       : status === "ALERT" && isTriggered
       ? "bg-amber-500"
       : "bg-emerald-500";
 
   const textColor =
-    status === "DUE" && isTriggered
+    status === "IN_MAINTENANCE"
+      ? "text-blue-600"
+      : status === "DUE" && isTriggered
       ? "text-rose-600"
       : status === "ALERT" && isTriggered
       ? "text-amber-600"
@@ -121,6 +125,7 @@ function CycleBadge({ model }: { model: MaintenanceComponent["model"] }) {
 
 function effectiveStatus(drone: MaintenanceDrone): MaintenanceStatus {
   const all: MaintenanceStatus[] = [drone.status, ...drone.components.map((c) => c.status)];
+  if (all.includes("IN_MAINTENANCE")) return "IN_MAINTENANCE";
   if (all.includes("DUE")) return "DUE";
   if (all.includes("ALERT")) return "ALERT";
   return "OK";
@@ -128,23 +133,22 @@ function effectiveStatus(drone: MaintenanceDrone): MaintenanceStatus {
 
 export function SummaryBar({ data, threshold }: { data: MaintenanceDrone[]; threshold: number }) {
   const counts = useMemo(() => {
-    let ok = 0, alert = 0, due = 0;
+    let ok = 0, alert = 0, due = 0, inMaintenance = 0;
     for (const d of data) {
-      const all: MaintenanceStatus[] = [d.status, ...d.components.map((c) => c.status)];
-      const hasDue = all.includes("DUE");
-      const hasAlert = all.includes("ALERT");
-      if (!hasDue && !hasAlert) { ok++; continue; }
-      if (hasDue) due++;
-      if (hasAlert) alert++;
+      const eff = effectiveStatus(d);
+      if (eff === "IN_MAINTENANCE") { inMaintenance++; continue; }
+      if (eff === "DUE") { due++; continue; }
+      if (eff === "ALERT") { alert++; continue; }
+      ok++;
     }
-    return { total: data.length, ok, alert, due };
+    return { total: data.length, ok, alert, due, inMaintenance };
   }, [data]);
 
   const thresholdLabel = threshold < 70 ? "Sensitive" : threshold < 85 ? "Normal" : "Lenient";
   const thresholdColor = threshold < 70 ? "text-emerald-600" : threshold < 85 ? "text-amber-600" : "text-rose-600";
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-4">
+    <div className="grid grid-cols-2 sm:grid-cols-6 gap-3 mb-4">
       <div className="bg-white rounded-xl border-2 border-violet-200 px-4 py-3 flex flex-col gap-1">
         <p className="text-xs text-slate-500">Alert Threshold</p>
         <div className="flex items-baseline gap-1.5">
@@ -178,6 +182,10 @@ export function SummaryBar({ data, threshold }: { data: MaintenanceDrone[]; thre
         <p className="text-xs text-slate-500 mb-0.5">Due</p>
         <p className="text-2xl font-bold tabular-nums text-rose-600">{counts.due}</p>
       </div>
+      <div className="bg-white rounded-xl border border-slate-200 px-4 py-3">
+        <p className="text-xs text-slate-500 mb-0.5">In Maintenance</p>
+        <p className="text-2xl font-bold tabular-nums text-blue-600">{counts.inMaintenance}</p>
+      </div>
     </div>
   );
 }
@@ -203,10 +211,11 @@ function FilterBar({
   const [localInput, setLocalInput] = useState(String(threshold));
 
   const options: { value: FilterStatus; label: string }[] = [
-    { value: "ALL",   label: "All" },
-    { value: "OK",    label: "OK" },
-    { value: "ALERT", label: "Alert" },
-    { value: "DUE",   label: "Due" },
+    { value: "ALL",            label: "All" },
+    { value: "OK",             label: "OK" },
+    { value: "ALERT",          label: "Alert" },
+    { value: "DUE",            label: "Due" },
+    { value: "IN_MAINTENANCE", label: "In Maintenance" },
   ];
 
   const commit = (raw: string) => {
@@ -503,13 +512,18 @@ function buildColumns(threshold: number): ColumnDef<MaintenanceDrone>[] {
         if (drone.components.length === 0) {
           return <StatusBadge status={drone.status} />;
         }
-        const compCounts = { DUE: 0, ALERT: 0, OK: 0 };
+        const compCounts = { DUE: 0, ALERT: 0, OK: 0, IN_MAINTENANCE: 0 };
         for (const c of drone.components) compCounts[c.status] = (compCounts[c.status] ?? 0) + 1;
         const eff = effectiveStatus(drone);
         return (
           <div className="flex flex-col gap-1">
             <StatusBadge status={eff} />
             <div className="flex flex-wrap gap-1">
+              {compCounts.IN_MAINTENANCE > 0 && (
+                <span className="text-[10px] font-semibold text-blue-600 bg-blue-50 border border-blue-200 rounded px-1.5 py-0.5 leading-none">
+                  {compCounts.IN_MAINTENANCE} MAINT
+                </span>
+              )}
               {compCounts.DUE > 0 && (
                 <span className="text-[10px] font-semibold text-rose-600 bg-rose-50 border border-rose-200 rounded px-1.5 py-0.5 leading-none">
                   {compCounts.DUE} DUE

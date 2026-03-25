@@ -23,6 +23,53 @@ import {
 } from '@/lib/s3Client';
 
 
+export async function hasOpenTicketForTool(toolId: number): Promise<boolean> {
+  const { data } = await supabase
+    .from('maintenance_ticket')
+    .select('ticket_id')
+    .eq('fk_tool_id', toolId)
+    .neq('ticket_status', 'CLOSED')
+    .limit(1)
+    .maybeSingle();
+
+  return !!data;
+}
+
+/**
+ * Throws if the given tool already has an open (non-closed) maintenance ticket.
+ * Use this before creating a new report to prevent duplicate tickets.
+ */
+export async function assertNoOpenTicketForTool(toolId: number): Promise<void> {
+  const { data: openTicket } = await supabase
+    .from('maintenance_ticket')
+    .select('ticket_id')
+    .eq('fk_tool_id', toolId)
+    .neq('ticket_status', 'CLOSED')
+    .limit(1)
+    .maybeSingle();
+
+  if (openTicket) {
+    throw new Error(
+      'This system already has an open maintenance ticket. Close the existing ticket before reporting a new issue.'
+    );
+  }
+}
+
+export async function assertToolNotInMaintenance(toolId: number): Promise<void> {
+  const { data: openTicket } = await supabase
+    .from('maintenance_ticket')
+    .select('ticket_id')
+    .eq('fk_tool_id', toolId)
+    .neq('ticket_status', 'CLOSED')
+    .limit(1)
+    .maybeSingle();
+
+  if (openTicket) {
+    throw new Error(
+      'This system is currently in maintenance. Close the maintenance ticket before assigning it to an operation.'
+    );
+  }
+}
 
 export async function getTicketList(owner_id: number, tool_id?: number): Promise<MaintenanceTicket[]> {
   let query = supabase
@@ -115,12 +162,12 @@ export async function createTicket(payload: CreateTicketPayload): Promise<number
   const { data, error } = await supabase
     .from('maintenance_ticket')
     .insert(rows)
-    .select('ticket_id')
-    .single();
+    .select('ticket_id');
 
   if (error) throw new Error(`createTicket: ${error.message}`);
+  if (!data || data.length === 0) throw new Error('createTicket: no rows returned');
 
-  const ticketId: number = data.ticket_id;
+  const ticketId: number = data[0].ticket_id;
   await addTicketEvent(ticketId, 'CREATED', `Ticket created by user #${payload.fk_user_id}`);
 
   return ticketId;

@@ -125,15 +125,13 @@ export const getAssignmentColumns = (
           >
             <Play size={14} />
           </button>
-          {a.assignment_active === 'N' && (
-            <button
-              onClick={() => onDelete(a)}
-              className="cursor-pointer p-1.5 rounded-lg transition-colors text-rose-600 hover:bg-rose-500/10 dark:text-rose-400 dark:hover:bg-rose-500/15"
-              title="Delete"
-            >
-              <Trash2 size={14} />
-            </button>
-          )}
+          <button
+            onClick={() => onDelete(a)}
+            className="cursor-pointer p-1.5 rounded-lg transition-colors text-rose-600 hover:bg-rose-500/10 dark:text-rose-400 dark:hover:bg-rose-500/15"
+            title="Delete"
+          >
+            <Trash2 size={14} />
+          </button>
         </div>
       )
     },

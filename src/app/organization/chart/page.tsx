@@ -3,6 +3,7 @@
 import { OrgNode } from "@/backend/services/organization/organization-service";
 import OrganizationTree, { countDepth, countVisible } from "@/components/organization/OrganizationTree";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useTheme } from "@/components/useTheme";
 import { useEffect, useState } from "react";
 import { MdErrorOutline, MdOutlineAccountTree, MdRefresh } from "react-icons/md";
@@ -89,9 +90,19 @@ export default function OrganizationPage() {
 
         <div className="p-6 min-h-[640px] relative">
           {loading ? (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-              <div className="w-9 h-9 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
-              <span className="text-xs font-mono text-slate-500 tracking-wider">Fetching org data…</span>
+            <div className="flex flex-col items-center gap-8 pt-10 overflow-hidden">
+              <Skeleton className="h-21 w-60 rounded-xl" />
+              <div className="flex gap-6">
+                <Skeleton className="h-21 w-60 rounded-xl" />
+                <Skeleton className="h-21 w-60 rounded-xl" />
+                <Skeleton className="h-21 w-60 rounded-xl" />
+              </div>
+              <div className="flex gap-6">
+                <Skeleton className="h-21 w-60 rounded-xl" />
+                <Skeleton className="h-21 w-60 rounded-xl" />
+                <Skeleton className="h-21 w-60 rounded-xl" />
+                <Skeleton className="h-21 w-60 rounded-xl" />
+              </div>
             </div>
           ) : errMsg ? (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-center px-8">

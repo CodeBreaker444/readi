@@ -41,7 +41,7 @@ function ActionIcon({
         onClick();
       }}
       title={label}
-      className={`inline-flex items-center gap-1 px-2 h-7 rounded-lg transition-all text-xs font-medium ${styles[variant]}`}
+      className={`cursor-pointer inline-flex items-center gap-1 px-2 h-7 rounded-lg transition-all text-xs font-medium ${styles[variant]}`}
     >
       {children}
       <span>{label}</span>

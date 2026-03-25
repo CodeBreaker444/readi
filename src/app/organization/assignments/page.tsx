@@ -48,12 +48,7 @@ export default function AssignmentPage() {
     setLoading(true)
     try {
       const res = await axios.get('/api/organization/assignment')
-      const rawData = res.data
-      const dataArray = Object.keys(rawData)
-        .filter(key => !isNaN(Number(key)))
-        .map(key => rawData[key])
-
-      setAssignments(dataArray)
+      setAssignments(res.data.data ?? [])
     } catch {
       toast.error('Failed to load assignments')
       setAssignments([])
@@ -68,7 +63,13 @@ export default function AssignmentPage() {
     isDark,
     (item) => setEditItem(item),
     (item) => setPreviewItem(item),
-    (item) => setConfirmDelete(item)
+    (item) => {
+      if (item.assignment_active === 'Y') {
+        toast.error('Cannot delete an active assignment. Set it to Inactive first.');
+        return;
+      }
+      setConfirmDelete(item);
+    }
   ), [isDark])
 
   const table = useReactTable({

@@ -28,6 +28,7 @@ export default function MaintenanceLogbookPage() {
   const {
     tickets, ticketsLoading,
     drones, components, users, events, activeTicketId,
+    modalLoading,
 
     modals, closeModal,
 
@@ -109,7 +110,7 @@ export default function MaintenanceLogbookPage() {
             <Button
               size="sm"
               onClick={openNewTicketModal}
-              className={`h-8 gap-1.5 text-xs font-semibold transition-all shadow-sm ${
+              className={`h-8 cursor-pointer gap-1.5 text-xs font-semibold transition-all shadow-sm ${
                 isDark
                   ? "bg-white hover:bg-white/90 text-black"
                   : "bg-violet-600 hover:bg-violet-700 text-white"
@@ -163,6 +164,7 @@ export default function MaintenanceLogbookPage() {
         onDroneChange={handleDroneChange}
         onSubmit={handleCreateTicket}
         isDark={isDark}
+        loading={modalLoading}
       />
 
       <CloseTicketModal
@@ -182,6 +184,7 @@ export default function MaintenanceLogbookPage() {
         onAssignChange={setAssignTo}
         onSubmit={handleAssignTicket}
         isDark={isDark}
+        loading={modalLoading}
       />
 
       <ReportModal
@@ -208,6 +211,7 @@ export default function MaintenanceLogbookPage() {
         ticketId={activeTicketId}
         events={events}
         isDark={isDark}
+        loading={modalLoading}
       />
 
       <DownloadModal

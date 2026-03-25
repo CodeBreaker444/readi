@@ -95,8 +95,8 @@ export default function MaintenancePage() {
       <main className="mx-auto px-4 sm:px-6 py-4">
         {loading && !data.length ? (
           <>
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-4">
-              {[...Array(5)].map((_, i) => (
+            <div className="grid grid-cols-2 sm:grid-cols-6 gap-3 mb-4">
+              {[...Array(6)].map((_, i) => (
                 <div key={i} className="bg-white rounded-xl border border-slate-200 px-4 py-3 h-16 animate-pulse" />
               ))}
             </div>

@@ -23,6 +23,8 @@ export interface UserData {
   user_type?: string;
   is_viewer: string;
   is_manager: string;
+  owner_code?: string;
+  owner_name?: string;
 }
 
 interface GetUserColumnsOptions {

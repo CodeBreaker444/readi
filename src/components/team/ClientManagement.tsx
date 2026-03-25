@@ -1,6 +1,7 @@
 'use client';
 
 import { useTheme } from '@/components/useTheme';
+import { Session } from '@/lib/auth/server-session';
 import {
   flexRender,
   getCoreRowModel,
@@ -35,6 +36,10 @@ import {
 import { ClientFormModal } from './ClientFormModal';
 import { ClientSkeletonRow, ClientStatSkeleton } from './ClientStatSkeleton';
 
+interface ClientManagementProps {
+  session: Session;
+}
+
 const STAT_CONFIG = [
   {
     key: 'total' as const,
@@ -62,12 +67,14 @@ const STAT_CONFIG = [
   },
 ] as const;
 
-export default function ClientManagement() {
+export default function ClientManagement({ session }: ClientManagementProps) {
   const { isDark } = useTheme();
+  const isSuperAdmin = session.user.role === 'SUPERADMIN';
   const [clients, setClients] = useState<ClientData[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [companyFilter, setCompanyFilter] = useState('ALL');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedClient, setSelectedClient] = useState<ClientData | null>(null);
@@ -159,6 +166,11 @@ export default function ClientManagement() {
     };
   }, [clients]);
 
+  const uniqueCompanies = useMemo(() =>
+    [...new Set(clients.map((c) => c.owner_name).filter(Boolean))].sort(),
+    [clients]
+  );
+
   const filteredData = useMemo(() =>
     clients.filter((client) => {
       const s = searchTerm.toLowerCase();
@@ -171,9 +183,11 @@ export default function ClientManagement() {
         statusFilter === 'ALL' ||
         (statusFilter === 'ACTIVE' && client.client_active === 'Y') ||
         (statusFilter === 'INACTIVE' && client.client_active === 'N');
-      return matchesSearch && matchesStatus;
+      const matchesCompany =
+        !isSuperAdmin || companyFilter === 'ALL' || client.owner_name === companyFilter;
+      return matchesSearch && matchesStatus && matchesCompany;
     }),
-    [clients, searchTerm, statusFilter]
+    [clients, searchTerm, statusFilter, companyFilter, isSuperAdmin]
   );
 
   const columns = useMemo(
@@ -244,7 +258,7 @@ export default function ClientManagement() {
         </div>
 
         <div className={`rounded-xl border p-4 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className={`grid grid-cols-1 gap-3 ${isSuperAdmin ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
             <div className="space-y-1.5">
               <Label className={`flex items-center gap-1.5 text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                 <Search size={13} /> Search
@@ -271,6 +285,24 @@ export default function ClientManagement() {
                 </SelectContent>
               </Select>
             </div>
+            {isSuperAdmin && (
+              <div className="space-y-1.5">
+                <Label className={`flex items-center gap-1.5 text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  <Building2 size={13} /> Company
+                </Label>
+                <Select value={companyFilter} onValueChange={setCompanyFilter}>
+                  <SelectTrigger className={`h-8 text-sm ${isDark ? 'bg-gray-900 border-gray-700 text-gray-200' : ''}`}>
+                    <SelectValue placeholder="All Companies" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">All Companies</SelectItem>
+                    {uniqueCompanies.map((name) => (
+                      <SelectItem key={name} value={name!}>{name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
         </div>
 

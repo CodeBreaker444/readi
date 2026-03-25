@@ -83,6 +83,11 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, do
   }, [document, open]);
 
   async function handleSave() {
+    if (!docTypeId) { toast.error('Please select a document type'); return; }
+    if (!title.trim()) { toast.error('Document title is required'); return; }
+    if (effectiveDate && expiryDate && expiryDate < effectiveDate) {
+      toast.error('Expiry date must be after the effective date'); return;
+    }
     setSaving(true);
     try {
       if (!isEdit) {

@@ -21,6 +21,12 @@ const CONFIG: Record<
     text: "text-rose-700",
     dot: "bg-rose-500",
   },
+  IN_MAINTENANCE: {
+    label: "IN MAINTENANCE",
+    bg: "bg-blue-50 border border-blue-200",
+    text: "text-blue-700",
+    dot: "bg-blue-500 animate-pulse",
+  },
 };
 
 export default function StatusBadge({ status }: { status: MaintenanceStatus }) {

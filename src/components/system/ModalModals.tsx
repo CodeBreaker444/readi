@@ -8,7 +8,9 @@ import type {
   TicketType,
   UserOption,
 } from '@/config/types/maintenance';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useRef } from 'react';
+import { toast } from 'sonner';
 import type { NewTicketForm, ReportForm } from './useMaintenance';
 
 
@@ -47,7 +49,7 @@ function ModalFooter({
         type="button"
         onClick={onCancel}
         disabled={loading}
-        className={`px-4 py-2 text-sm rounded-lg transition disabled:opacity-50 ${
+        className={`px-4 py-2 text-sm rounded-lg transition cursor-pointer disabled:opacity-50 ${
           isDark
             ? 'text-slate-300 hover:text-white hover:bg-slate-700'
             : 'text-slate-600 hover:text-slate-800 hover:bg-slate-100'
@@ -96,12 +98,11 @@ function Modal({
         }`}
         style={{ maxHeight: 'min(90vh, 700px)' }}
       >
-        {/* Header */}
         <div className={`flex items-center justify-between px-6 py-4 border-b shrink-0 ${isDark ? 'border-slate-700' : 'border-slate-100'}`}>
           <h2 className="text-base font-semibold">{title}</h2>
           <button
             onClick={onClose}
-            className={`transition-colors ${isDark ? 'text-slate-400 hover:text-white' : 'text-slate-400 hover:text-slate-600'}`}
+            className={`cursor-pointer transition-colors ${isDark ? 'text-slate-400 hover:text-white' : 'text-slate-400 hover:text-slate-600'}`}
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -111,6 +112,23 @@ function Modal({
         <div className="overflow-y-auto flex-1 px-6 py-4">
           {children}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function ModalSkeleton({ rows = 4 }: { rows?: number }) {
+  return (
+    <div className="space-y-4 py-2">
+      {Array.from({ length: rows }).map((_, i) => (
+        <div key={i} className="space-y-1.5">
+          <Skeleton className="h-3 w-20 rounded" />
+          <Skeleton className="h-9 w-full rounded-lg" />
+        </div>
+      ))}
+      <div className="flex justify-end gap-3 pt-2 mt-4 border-t border-slate-100 dark:border-slate-700">
+        <Skeleton className="h-9 w-20 rounded-lg" />
+        <Skeleton className="h-9 w-28 rounded-sm" />
       </div>
     </div>
   );
@@ -128,110 +146,117 @@ interface NewTicketProps {
   onDroneChange: (toolId: number) => void;
   onSubmit: () => void;
   isDark?: boolean;
+  loading?: boolean;
 }
 
 export function NewTicketModal({
   open, onClose, drones, components, users,
-  form, onFormChange, onDroneChange, onSubmit, isDark,
+  form, onFormChange, onDroneChange, onSubmit, isDark, loading,
 }: NewTicketProps) {
   return (
     <Modal title="New Maintenance Ticket" open={open} onClose={onClose} isDark={isDark}>
-      <Field label="Drone">
-        <select
-          className={inputCls}
-          value={form.fk_tool_id}
-          onChange={(e) => onDroneChange(Number(e.target.value))}
-        >
-          <option value={0}>Select drone…</option>
-          {drones.map((d) => (
-            <option key={d.tool_id} value={d.tool_id}>
-              {d.tool_code} — {d.tool_desc} [{d.tool_status}]
-            </option>
-          ))}
-        </select>
-      </Field>
+      {loading ? (
+        <ModalSkeleton rows={5} />
+      ) : (
+        <>
+          <Field label="Drone">
+            <select
+              className={inputCls}
+              value={form.fk_tool_id}
+              onChange={(e) => onDroneChange(Number(e.target.value))}
+            >
+              <option value={0}>Select drone…</option>
+              {drones.map((d) => (
+                <option key={d.tool_id} value={d.tool_id}>
+                  {d.tool_code} — {d.tool_desc} [{d.tool_status}]
+                </option>
+              ))}
+            </select>
+          </Field>
 
-      <Field label="Components (optional, multi-select)">
-        <select
-          className={`${inputCls} min-h-[90px]`}
-          multiple
-          disabled={components.length === 0}
-          value={form.components.map(String)}
-          onChange={(e) =>
-            onFormChange({
-              components: Array.from(e.target.selectedOptions, (o) => Number(o.value)),
-            })
-          }
-        >
-          {components.length === 0 ? (
-            <option disabled value="">Select a drone first…</option>
-          ) : (
-            components.map((c) => (
-              <option key={c.tool_component_id} value={c.tool_component_id}>
-                {c.component_type} — {c.component_sn}
-              </option>
-            ))
-          )}
-        </select>
-      </Field>
+          <Field label="Components (optional, multi-select)">
+            <select
+              className={`${inputCls} min-h-[90px]`}
+              multiple
+              disabled={components.length === 0}
+              value={form.components.map(String)}
+              onChange={(e) =>
+                onFormChange({
+                  components: Array.from(e.target.selectedOptions, (o) => Number(o.value)),
+                })
+              }
+            >
+              {components.length === 0 ? (
+                <option disabled value="">Select a drone first…</option>
+              ) : (
+                components.map((c) => (
+                  <option key={c.tool_component_id} value={c.tool_component_id}>
+                    {c.component_type} — {c.component_sn}
+                  </option>
+                ))
+              )}
+            </select>
+          </Field>
 
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Type">
-          <select
-            className={inputCls}
-            value={form.type}
-            onChange={(e) => onFormChange({ type: e.target.value as TicketType })}
-          >
-            <option value="BASIC">Basic</option>
-            <option value="STANDARD">Standard</option>
-            <option value="EXTRAORDINARY">Extraordinary</option>
-          </select>
-        </Field>
-        <Field label="Priority">
-          <select
-            className={inputCls}
-            value={form.priority}
-            onChange={(e) => onFormChange({ priority: e.target.value as TicketPriority })}
-          >
-            <option value="HIGH">HIGH</option>
-            <option value="MEDIUM">MEDIUM</option>
-            <option value="LOW">LOW</option>
-          </select>
-        </Field>
-      </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Type">
+              <select
+                className={inputCls}
+                value={form.type}
+                onChange={(e) => onFormChange({ type: e.target.value as TicketType })}
+              >
+                <option value="BASIC">Basic</option>
+                <option value="STANDARD">Standard</option>
+                <option value="EXTRAORDINARY">Extraordinary</option>
+              </select>
+            </Field>
+            <Field label="Priority">
+              <select
+                className={inputCls}
+                value={form.priority}
+                onChange={(e) => onFormChange({ priority: e.target.value as TicketPriority })}
+              >
+                <option value="HIGH">HIGH</option>
+                <option value="MEDIUM">MEDIUM</option>
+                <option value="LOW">LOW</option>
+              </select>
+            </Field>
+          </div>
 
-      <Field label="Assign To">
-        <select
-          className={inputCls}
-          value={form.assigned_to}
-          onChange={(e) => onFormChange({ assigned_to: Number(e.target.value) })}
-        >
-          <option value={0}>Select technician…</option>
-          {users.map((u) => (
-            <option key={u.user_id} value={u.user_id}>
-              {u.fullname} ({u.user_profile})
-            </option>
-          ))}
-        </select>
-      </Field>
+          <Field label="Assign To">
+            <select
+              className={inputCls}
+              value={form.assigned_to}
+              onChange={(e) => onFormChange({ assigned_to: Number(e.target.value) })}
+            >
+              <option value={0}>Select technician…</option>
+              {users.map((u) => (
+                <option key={u.user_id} value={u.user_id}>
+                  {u.fullname} ({u.user_profile})
+                </option>
+              ))}
+            </select>
+          </Field>
 
-      <Field label="Note">
-        <textarea
-          className={inputCls}
-          rows={3}
-          value={form.note}
-          onChange={(e) => onFormChange({ note: e.target.value })}
-          placeholder="Describe the issue…"
-        />
-      </Field>
+          <Field label="Note">
+            <textarea
+              className={inputCls}
+              rows={3}
+              value={form.note}
+              onChange={(e) => onFormChange({ note: e.target.value })}
+              placeholder="Describe the issue…"
+            />
+          </Field>
 
-      <ModalFooter
-        onCancel={onClose}
-        onConfirm={onSubmit}
-        confirmLabel="Create Ticket"
-        confirmClass="bg-black hover:bg-black/60 text-white"
-        isDark={isDark}
-      />
+          <ModalFooter
+            onCancel={onClose}
+            onConfirm={onSubmit}
+            confirmLabel="Create Ticket"
+            confirmClass="bg-black hover:bg-black/60 text-white"
+            isDark={isDark}
+          />
+        </>
+      )}
     </Modal>
   );
 }
@@ -270,7 +295,7 @@ export function CloseTicketModal({
 
 
 export function AssignTicketModal({
-  open, onClose, users, assignTo, onAssignChange, onSubmit, isDark,
+  open, onClose, users, assignTo, onAssignChange, onSubmit, isDark, loading,
 }: {
   open: boolean;
   onClose: () => void;
@@ -279,30 +304,37 @@ export function AssignTicketModal({
   onAssignChange: (id: number) => void;
   onSubmit: () => void;
   isDark?: boolean;
+  loading?: boolean;
 }) {
   return (
     <Modal title="Assign Ticket" open={open} onClose={onClose} isDark={isDark}>
-      <Field label="Technician">
-        <select
-          className={inputCls}
-          value={assignTo}
-          onChange={(e) => onAssignChange(Number(e.target.value))}
-        >
-          <option value={0}>Select technician…</option>
-          {users.map((u) => (
-            <option key={u.user_id} value={u.user_id}>
-              {u.fullname} ({u.user_profile})
-            </option>
-          ))}
-        </select>
-      </Field>
-      <ModalFooter
-        onCancel={onClose}
-        onConfirm={onSubmit}
-        confirmLabel="Assign"
-        confirmClass="bg-indigo-600 hover:bg-indigo-700"
-        isDark={isDark}
-      />
+      {loading ? (
+        <ModalSkeleton rows={1} />
+      ) : (
+        <>
+          <Field label="Technician">
+            <select
+              className={inputCls}
+              value={assignTo}
+              onChange={(e) => onAssignChange(Number(e.target.value))}
+            >
+              <option value={0}>Select technician…</option>
+              {users.map((u) => (
+                <option key={u.user_id} value={u.user_id}>
+                  {u.fullname} ({u.user_profile})
+                </option>
+              ))}
+            </select>
+          </Field>
+          <ModalFooter
+            onCancel={onClose}
+            onConfirm={onSubmit}
+            confirmLabel="Assign"
+            confirmClass="bg-indigo-600 hover:bg-indigo-700"
+            isDark={isDark}
+          />
+        </>
+      )}
     </Modal>
   );
 }
@@ -402,7 +434,8 @@ export function UploadModal({
         onCancel={onClose}
         onConfirm={() => {
           const file = fileRef.current?.files?.[0];
-          if (file) onSubmit(file);
+          if (!file) { toast.error('Please select a file to upload'); return; }
+          onSubmit(file);
         }}
         confirmLabel="Upload"
         confirmClass="bg-indigo-600 hover:bg-indigo-700"
@@ -422,13 +455,14 @@ function fmtDate(iso?: string | null) {
 }
 
 export function EventsModal({
-  open, onClose, ticketId, events, isDark,
+  open, onClose, ticketId, events, isDark, loading,
 }: {
   open: boolean;
   onClose: () => void;
   ticketId: number | null;
   events: TicketEvent[];
   isDark?: boolean;
+  loading?: boolean;
 }) {
   return (
     <Modal
@@ -437,7 +471,19 @@ export function EventsModal({
       onClose={onClose}
       isDark={isDark}
     >
-      {events.length === 0 ? (
+      {loading ? (
+        <div className="space-y-3 py-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="flex gap-3 items-start ml-6">
+              <div className="space-y-1.5 flex-1">
+                <Skeleton className="h-5 w-20 rounded-full" />
+                <Skeleton className="h-4 w-full rounded" />
+                <Skeleton className="h-3 w-24 rounded" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : events.length === 0 ? (
         <p className="text-sm text-slate-400 py-6 text-center">No events recorded yet.</p>
       ) : (
         <ol className="relative border-l border-indigo-200 ml-3 space-y-4">
@@ -456,7 +502,7 @@ export function EventsModal({
       <div className="flex justify-end mt-4">
         <button
           onClick={onClose}
-          className="px-4 py-2 text-sm text-slate-600 hover:text-slate-800 dark:text-slate-300 dark:hover:text-white transition"
+          className="cursor-pointer px-4 py-2 text-sm text-slate-600 hover:text-slate-800 dark:text-slate-300 dark:hover:text-white transition"
         >
           Close
         </button>

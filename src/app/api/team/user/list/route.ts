@@ -11,7 +11,8 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const ownerId = session.user.ownerId;
+    const isSuperAdmin = session.user.role === 'SUPERADMIN';
+    const ownerId = isSuperAdmin ? 0 : session.user.ownerId;
     const currentUserId = session.user.userId;
     const userProfileId = body.user_profile;
 

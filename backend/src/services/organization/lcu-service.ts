@@ -75,7 +75,12 @@ export async function deleteLucProcedure(procedureId: number): Promise<boolean> 
     .delete()
     .eq('procedure_id', procedureId);
 
-  if (error) throw new Error(`Failed to delete LUC procedure: ${error.message}`);
+  if (error) {
+    if (error.code === '23503') {
+      throw new Error('This procedure is linked to one or more evaluations and cannot be deleted. Remove the linked evaluations first.');
+    }
+    throw new Error(`Failed to delete LUC procedure: ${error.message}`);
+  }
   return true;
 }
 

@@ -20,6 +20,8 @@ export interface ClientData {
   credit_limit?: number;
   created_at?: string;
   updated_at?: string;
+  owner_code?: string;
+  owner_name?: string;
 }
 
 export interface CreateClientInput {
@@ -47,12 +49,23 @@ export interface UpdateClientInput extends Partial<CreateClientInput> {
 
 export async function listClients(owner_id?: number): Promise<{ code: number; data?: ClientData[]; error?: string }> {
   try {
-    let query = supabase.from('client').select('*').order('created_at', { ascending: false });
+    let query = supabase
+      .from('client')
+      .select('*, owner(owner_code, owner_name)')
+      .order('created_at', { ascending: false });
     if (owner_id) query = query.eq('fk_owner_id', owner_id);
 
     const { data, error } = await query;
     if (error) return { code: 0, error: error.message };
-    return { code: 1, data: data as ClientData[] };
+
+    const formatted = (data as any[]).map((c) => ({
+      ...c,
+      owner_code: c.owner?.owner_code || '',
+      owner_name: c.owner?.owner_name || '',
+      owner: undefined,
+    }));
+
+    return { code: 1, data: formatted as ClientData[] };
   } catch (e: any) {
     return { code: 0, error: e.message };
   }

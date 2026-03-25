@@ -144,7 +144,15 @@ export default function LucProceduresPage() {
     }
   };
 
-  const columns = useMemo(() => getLucProcedureColumns(setEditTarget, setDeleteTarget), []);
+  const handleDeleteClick = useCallback((proc: LucProcedure) => {
+    if (proc.procedure_active === 'Y') {
+      toast.error('Cannot delete an active procedure. Set it to Inactive first.');
+      return;
+    }
+    setDeleteTarget(proc);
+  }, []);
+
+  const columns = useMemo(() => getLucProcedureColumns(setEditTarget, handleDeleteClick), [handleDeleteClick]);
 
   const table = useReactTable({
     data: procedures,
