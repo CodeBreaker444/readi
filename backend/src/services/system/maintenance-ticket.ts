@@ -498,17 +498,19 @@ export async function setComponentsOperationalStatus(componentIds: number[], sta
     .select('component_id, component_metadata')
     .in('component_id', componentIds);
 
-  for (const comp of comps ?? []) {
-    await supabase
-      .from('tool_component')
-      .update({
-        component_metadata: {
-          ...(comp.component_metadata ?? {}),
-          component_status: status,
-        },
-      })
-      .eq('component_id', comp.component_id);
-  }
+  await Promise.all(
+    (comps ?? []).map((comp) =>
+      supabase
+        .from('tool_component')
+        .update({
+          component_metadata: {
+            ...(comp.component_metadata ?? {}),
+            component_status: status,
+          },
+        })
+        .eq('component_id', comp.component_id),
+    ),
+  );
 }
 
 async function setAllComponentsOperational(toolId: number): Promise<void> {
@@ -518,9 +520,12 @@ async function setAllComponentsOperational(toolId: number): Promise<void> {
     .eq('fk_tool_id', toolId)
     .eq('component_active', 'Y');
 
-  for (const comp of comps ?? []) {
-    if ((comp.component_metadata?.component_status ?? 'OPERATIONAL') !== 'OPERATIONAL') {
-      await supabase
+  const compsToUpdate = (comps ?? []).filter(
+    (comp) => (comp.component_metadata?.component_status ?? 'OPERATIONAL') !== 'OPERATIONAL',
+  );
+  await Promise.all(
+    compsToUpdate.map((comp) =>
+      supabase
         .from('tool_component')
         .update({
           component_metadata: {
@@ -528,9 +533,9 @@ async function setAllComponentsOperational(toolId: number): Promise<void> {
             component_status: 'OPERATIONAL',
           },
         })
-        .eq('component_id', comp.component_id);
-    }
-  }
+        .eq('component_id', comp.component_id),
+    ),
+  );
 }
 
 /**
@@ -552,29 +557,32 @@ async function resetComponentCounters(toolId: number, resetAt: string, component
 
   if (!components || components.length === 0) return;
 
-  for (const comp of components) {
-    const cycleType = comp.maintenance_cycle ?? 'NONE';
-    if (cycleType === 'NONE') continue;
+  await Promise.all(
+    components
+      .filter((comp) => (comp.maintenance_cycle ?? 'NONE') !== 'NONE')
+      .map((comp) => {
+        const cycleType = comp.maintenance_cycle!;
 
-    const resetPayload: Record<string, any> = {
-      last_cycle_updated_at: resetAt,
-    };
+        const resetPayload: Record<string, any> = {
+          last_cycle_updated_at: resetAt,
+        };
 
-    if (cycleType === 'HOURS' || cycleType === 'MIXED') {
-      resetPayload.current_maintenance_hours = 0;
-    }
-    if (cycleType === 'FLIGHTS' || cycleType === 'MIXED') {
-      resetPayload.current_maintenance_flights = 0;
-    }
-    if (cycleType === 'DAYS' || cycleType === 'MIXED') {
-      resetPayload.current_maintenance_days = 0;
-    }
+        if (cycleType === 'HOURS' || cycleType === 'MIXED') {
+          resetPayload.current_maintenance_hours = 0;
+        }
+        if (cycleType === 'FLIGHTS' || cycleType === 'MIXED') {
+          resetPayload.current_maintenance_flights = 0;
+        }
+        if (cycleType === 'DAYS' || cycleType === 'MIXED') {
+          resetPayload.current_maintenance_days = 0;
+        }
 
-    await supabase
-      .from('tool_component')
-      .update(resetPayload)
-      .eq('component_id', comp.component_id);
-  }
+        return supabase
+          .from('tool_component')
+          .update(resetPayload)
+          .eq('component_id', comp.component_id);
+      }),
+  );
 }
 
 export async function getComponentTicketEvents(componentId: number) {

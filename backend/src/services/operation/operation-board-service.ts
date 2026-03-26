@@ -57,7 +57,8 @@ export async function getMissionBoard(
     .eq('fk_owner_id', ownerId)
     .eq("fk_mission_status_id", 1)
     .or(`scheduled_start.is.null,and(scheduled_start.gte.${todayStr}T00:00:00,scheduled_start.lte.${todayStr}T23:59:59)`)
-    .order("scheduled_start", { ascending: false, nullsFirst: true });
+    .order("scheduled_start", { ascending: false, nullsFirst: true })
+    .limit(100);
 
   if (pilotFilter) {
     scheduledQuery = scheduledQuery.eq("fk_pilot_user_id", pilotFilter);
@@ -69,7 +70,8 @@ export async function getMissionBoard(
     .select(MISSION_SELECT)
     .eq('fk_owner_id', ownerId)
     .eq("fk_mission_status_id", 2)
-    .order("actual_start", { ascending: false, nullsFirst: true });
+    .order("actual_start", { ascending: false, nullsFirst: true })
+    .limit(100);
 
   if (pilotFilter) {
     inProgressQuery = inProgressQuery.eq("fk_pilot_user_id", pilotFilter);
@@ -83,7 +85,8 @@ export async function getMissionBoard(
     .eq("fk_mission_status_id", 3)
     .gte("actual_end", `${weekAgoStr}T00:00:00`)
     .not("fk_pilot_user_id", "is", null)
-    .order("actual_end", { ascending: false });
+    .order("actual_end", { ascending: false })
+    .limit(100);
 
   if (pilotFilter) {
     doneQuery = doneQuery.eq("fk_pilot_user_id", pilotFilter);
