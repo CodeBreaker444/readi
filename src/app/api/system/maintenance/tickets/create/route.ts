@@ -30,7 +30,13 @@ export async function POST(req: NextRequest) {
     }
     const userId= session!.user.userId
     const ownerId = session!.user.ownerId
-    const ticket_id = await createTicket({...body, fk_user_id: userId, fk_owner_id: ownerId});
+    const ticket_id = await createTicket({
+      ...body,
+      fk_user_id: userId,
+      fk_owner_id: ownerId,
+      reporter_name: session!.user.fullname,
+      reporter_email: session!.user.email,
+    });
 
     logEvent({
       eventType: 'CREATE',

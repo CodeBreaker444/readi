@@ -169,7 +169,9 @@ export async function createTicket(payload: CreateTicketPayload): Promise<number
   if (!data || data.length === 0) throw new Error('createTicket: no rows returned');
 
   const ticketId: number = data[0].ticket_id;
-  await addTicketEvent(ticketId, 'CREATED', `Ticket created by user #${payload.fk_user_id}`);
+  const reporter = payload.reporter_name ?? `User #${payload.fk_user_id}`;
+  const issueDetail = payload.note?.trim() ? `${payload.note.trim()}` : 'No description provided.';
+  await addTicketEvent(ticketId, 'CREATED', `Reported by ${reporter}: ${issueDetail}`, payload.reporter_email, payload.fk_user_id);
 
   return ticketId;
 }
@@ -276,7 +278,7 @@ export async function addReport(payload: AddReportPayload): Promise<void> {
 
   if (error) throw new Error(`addReport: ${error.message}`);
 
-  await addTicketEvent(payload.ticket_id, 'REPORT_ADDED', payload.report_text.slice(0, 120));
+  await addTicketEvent(payload.ticket_id, 'REPORT_ADDED', payload.report_text.slice(0, 120), payload.reporter_email, payload.reporter_user_id);
 
   if (payload.close_report === 'Y') {
     await closeTicket({
@@ -291,18 +293,19 @@ export async function addReport(payload: AddReportPayload): Promise<void> {
 export async function getTicketEvents(ticketId: number): Promise<TicketEvent[]> {
   const { data, error } = await supabase
     .from('maintenance_ticket_event')
-    .select('event_id, event_type, event_description, created_at')
+    .select('event_id, event_type, event_description, event_data, created_at')
     .eq('fk_ticket_id', ticketId)
     .order('created_at', { ascending: true });
 
   if (error) throw new Error(`getTicketEvents: ${error.message}`);
 
   return (data ?? []).map((row: any) => ({
-    event_id:     row.event_id,
-    fk_ticket_id: ticketId,
-    event_type:   row.event_type,
+    event_id:      row.event_id,
+    fk_ticket_id:  ticketId,
+    event_type:    row.event_type,
     event_message: row.event_description ?? '',
-    created_at:   row.created_at,
+    created_by:    (row.event_data as any)?.email ?? null,
+    created_at:    row.created_at,
   }));
 }
 
@@ -447,13 +450,17 @@ export async function getUserList(ownerId: number, profileCode?: string): Promis
 async function addTicketEvent(
   ticketId: number,
   eventType: string,
-  message: string
+  message: string,
+  createdByEmail?: string,
+  createdByUserId?: number
 ): Promise<void> {
   await supabase.from('maintenance_ticket_event').insert({
-    fk_ticket_id:      ticketId,
-    event_type:        eventType,
-    event_description: message,
-    created_at:        new Date().toISOString(),
+    fk_ticket_id:       ticketId,
+    event_type:         eventType,
+    event_description:  message,
+    created_by_user_id: createdByUserId ?? null,
+    event_data:         createdByEmail ? { email: createdByEmail } : null,
+    created_at:         new Date().toISOString(),
   });
 }
 
