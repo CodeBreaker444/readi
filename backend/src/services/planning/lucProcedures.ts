@@ -31,7 +31,6 @@ export async function getLUCProceduresList(ownerId: number, sector?: string) {
       throw error;
     }
 
-    console.log('Fetched procedures:', data?.length || 0);
 
     return {
       success: true,
