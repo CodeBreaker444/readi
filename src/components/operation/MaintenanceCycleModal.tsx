@@ -503,12 +503,24 @@ export function MaintenanceCycleModal({
                               </span>
                               <button
                                 type="button"
-                                onClick={() => incrementInput(comp.component_id, "add_flights")}
+                                onClick={() =>
+                                  setInputs((prev) => ({
+                                    ...prev,
+                                    [comp.component_id]: {
+                                      ...prev[comp.component_id],
+                                      add_flights: prev[comp.component_id]?.add_flights === 1 ? 0 : 1,
+                                    },
+                                  }))
+                                }
                                 className={cn(
                                   "h-7 px-3 rounded-md text-xs font-semibold border transition-colors flex items-center gap-1",
-                                  isDark
-                                    ? "border-slate-600 bg-slate-700 text-slate-200 hover:bg-slate-600"
-                                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                                  inp?.add_flights === 1
+                                    ? isDark
+                                      ? "border-violet-500 bg-violet-500/20 text-violet-300"
+                                      : "border-violet-500 bg-violet-50 text-violet-700"
+                                    : isDark
+                                      ? "border-slate-600 bg-slate-700 text-slate-200 hover:bg-slate-600"
+                                      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                                 )}
                               >
                                 +1

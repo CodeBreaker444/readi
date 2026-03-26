@@ -118,6 +118,8 @@ export interface CreateTicketPayload {
   priority: TicketPriority;
   opened_by: string;
   fk_user_id: number;
+  reporter_name?: string;
+  reporter_email?: string;
   assigned_to?: number;
   note?: string;
 }
@@ -139,6 +141,8 @@ export interface AddReportPayload {
   work_start?: string;
   work_end?: string;
   report_by: string;
+  reporter_email?: string;
+  reporter_user_id?: number;
   close_report?: string;
 }
 

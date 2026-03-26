@@ -500,7 +500,13 @@ export function EventsModal({
                 {ev.event_type}
               </span>
               <p className="text-sm text-slate-700 dark:text-slate-300">{ev.event_message}</p>
-              <time className="text-xs text-slate-400">{fmtDate(ev.created_at)}</time>
+              <div className="flex items-center gap-2 mt-0.5">
+                {ev.created_by && (
+                  <span className="text-xs text-slate-500 dark:text-slate-400">{ev.created_by}</span>
+                )}
+                {ev.created_by && <span className="text-xs text-slate-300 dark:text-slate-600">·</span>}
+                <time className="text-xs text-slate-400">{fmtDate(ev.created_at)}</time>
+              </div>
             </li>
           ))}
         </ol>

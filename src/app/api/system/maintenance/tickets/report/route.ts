@@ -39,12 +39,14 @@ export async function POST(req: NextRequest) {
     }
 
     await addReport({
-      ticket_id:    validation.data.ticket_id,
-      report_text:  validation.data.report_text,
-      work_start:   validation.data.work_start,
-      work_end:     validation.data.work_end,
-      report_by:    validation.data.report_by ?? 'web',
-      close_report: validation.data.close_report,
+      ticket_id:      validation.data.ticket_id,
+      report_text:    validation.data.report_text,
+      work_start:     validation.data.work_start,
+      work_end:       validation.data.work_end,
+      report_by:      validation.data.report_by ?? 'web',
+      reporter_email:   session!.user.email,
+      reporter_user_id: session!.user.userId,
+      close_report:     validation.data.close_report,
     });
 
     const file = formData.get('file');

@@ -1,3 +1,4 @@
+import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { sendNotificationToRoles } from '@/backend/services/notification/notification-service';
 import { getComponentsForMaintenanceCycle } from '@/backend/services/operation/maintenance-cycle-service';
 import { assertNoOpenTicketForTool, createTicket, hasOpenTicketForTool, setComponentsOperationalStatus, setSystemOperationalStatus } from '@/backend/services/system/maintenance-ticket';
@@ -55,6 +56,8 @@ export async function POST(req: NextRequest) {
       priority,
       opened_by: session!.user.fullname,
       fk_user_id: session!.user.userId,
+      reporter_name: session!.user.fullname,
+      reporter_email: session!.user.email,
       note: issue_description.trim(),
     });
 
@@ -68,6 +71,20 @@ export async function POST(req: NextRequest) {
 
     const systemData = await getComponentsForMaintenanceCycle(fk_tool_id, session!.user.ownerId).catch(() => null);
     const systemCode = (systemData as any)?.tool_code ?? `System #${fk_tool_id}`;
+
+    logEvent({
+      eventType: 'CREATE',
+      entityType: 'maintenance_ticket',
+      entityId: ticket_id,
+      description: `Issue reported on ${systemCode} by ${session!.user.fullname}: ${issue_description.trim().slice(0, 120)}`,
+      userId: session!.user.userId,
+      userName: session!.user.fullname,
+      userEmail: session!.user.email,
+      userRole: session!.user.role,
+      ownerId: session!.user.ownerId,
+      metadata: { fk_tool_id, priority, component_ids: componentIds },
+    });
+
     const notifTitle = `Issue Reported — ${systemCode}`;
     const notifMsg = `${session!.user.fullname} reported an issue on ${systemCode}: ${issue_description.trim().slice(0, 120)}`;
     sendNotificationToRoles(
