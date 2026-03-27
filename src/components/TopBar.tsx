@@ -40,7 +40,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
 
   return (
     <>
-      <div className={`h-16 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'} border-b flex items-center justify-between px-6`}>
+      <div className={`h-[69px] ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'} border-b flex items-center justify-between px-6`}>
         <div className="flex items-center space-x-4">
           <h2 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>
           </h2>

@@ -120,17 +120,18 @@ export const API_ROUTE_PERMISSIONS: Array<{ prefix: string; permission: ApiPermi
   { prefix: '/api/safety', permission: 'view_safety_mgmt' },
   { prefix: '/api/notification', permission: 'view_notifications' },
   { prefix: '/api/document', permission: 'view_repository' },
-  { prefix: '/api/luc-procedures', permission: ['view_config', 'view_planning'] },        // used by planning pages too
+  { prefix: '/api/luc-procedures', permission: ['view_config', 'view_planning'] },        
   { prefix: '/api/organization', permission: 'view_config' },
   { prefix: '/api/mission', permission: 'view_config' },
   { prefix: '/api/system', permission: 'view_config' },
   { prefix: '/api/team/shift', permission: 'manage_users' },
-  { prefix: '/api/team/user/qualifications', permission: null },                          // any auth — used by ProfileModal for own qualifications
-  { prefix: '/api/team/user/list', permission: ['manage_users', 'view_logs'] },           // also used by audit-logs page
+  { prefix: '/api/team/user/qualifications', permission: null },                           
+  { prefix: '/api/team/user/list', permission: ['manage_users', 'view_logs'] },            
   { prefix: '/api/team/user', permission: 'manage_users' },
-  { prefix: '/api/client/list', permission: ['view_client', 'view_config', 'view_planning'] }, // read-only list used by systems/manage and planning pages
+  { prefix: '/api/client/list', permission: ['view_client', 'view_config', 'view_planning'] },  
   { prefix: '/api/client', permission: 'view_client' },
   { prefix: '/api/audit-logs', permission: 'view_logs' },
+  { prefix: '/api/integrations/flytbase', permission: null },  
 ];
 
 export function getApiRoutePermission(pathname: string): ApiPermissionEntry | undefined {
