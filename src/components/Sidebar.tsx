@@ -15,6 +15,7 @@ import {
   HiOutlineDocumentText,
   HiOutlineHome,
   HiOutlineOfficeBuilding,
+  HiOutlinePaperAirplane,
   HiOutlineTemplate,
   HiOutlineUsers
 } from 'react-icons/hi';
@@ -93,6 +94,15 @@ const navigationItems: NavItem[] = [
   //   href: '/emergency',
   //   icon: Users
   // },
+  {
+    name: 'FlytBase',
+    href: '/flytbase',
+    icon: HiOutlinePaperAirplane,
+    subItems: [
+      { name: 'Settings', href: '/flytbase' },
+      { name: 'Recent Flights', href: '/flytbase/flights' },
+    ],
+  },
   { name: 'Notifications', href: '/notifications', icon: HiOutlineBell },
   { name: 'Document Repository', href: '/document-repository', icon: HiOutlineDocumentText },
   { name: 'Audit Logs', href: '/audit-logs', icon: HiOutlineClipboardList },

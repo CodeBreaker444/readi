@@ -550,9 +550,32 @@ export function MaintenanceCycleModal({
                                 +0.5h
                               </button>
                               {inp?.add_hours > 0 && (
-                                <span className={cn("text-[10px] tabular-nums", isDark ? "text-slate-400" : "text-slate-500")}>
-                                  {comp.current_hours} → {previewHours}h
-                                </span>
+                                <>
+                                  <span className={cn("text-[10px] tabular-nums", isDark ? "text-slate-400" : "text-slate-500")}>
+                                    {comp.current_hours} → {previewHours}h
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setInputs((prev) => ({
+                                        ...prev,
+                                        [comp.component_id]: {
+                                          ...prev[comp.component_id],
+                                          add_hours: 0,
+                                        },
+                                      }))
+                                    }
+                                    className={cn(
+                                      "h-5 w-5 rounded flex items-center justify-center text-[10px] border transition-colors",
+                                      isDark
+                                        ? "border-slate-600 bg-slate-700 text-slate-400 hover:text-rose-400 hover:border-rose-500/40"
+                                        : "border-slate-200 bg-white text-slate-400 hover:text-rose-500 hover:border-rose-300"
+                                    )}
+                                    title="Reset hours"
+                                  >
+                                    ×
+                                  </button>
+                                </>
                               )}
                             </div>
                           )}

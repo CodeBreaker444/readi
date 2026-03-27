@@ -73,11 +73,11 @@ export function useMaintenanceLogbook() {
   const [report, setReport] = useState<ReportForm>(defaultReport);
   const [uploadDesc, setUploadDesc] = useState('');
 
-  const openModal = (key: keyof typeof modals) =>
-    setModals((p) => ({ ...p, [key]: true }));
+  const openModal = useCallback((key: keyof typeof modals) =>
+    setModals((p) => ({ ...p, [key]: true })), []);
 
-  const closeModal = (key: keyof typeof modals) =>
-    setModals((p) => ({ ...p, [key]: false }));
+  const closeModal = useCallback((key: keyof typeof modals) =>
+    setModals((p) => ({ ...p, [key]: false })), []);
 
 
   const loadTickets = useCallback(async () => {
@@ -92,14 +92,13 @@ export function useMaintenanceLogbook() {
     }
   }, []);
 
-  const updateLocalTicket = (ticketId: number, updates: Partial<MaintenanceTicket>) => {
+  const updateLocalTicket = useCallback((ticketId: number, updates: Partial<MaintenanceTicket>) => {
     setTickets((prev) =>
       prev.map((t) => (t.ticket_id === ticketId ? { ...t, ...updates } : t))
     );
-  };
+  }, []);
 
-
-  async function openNewTicketModal() {
+  const openNewTicketModal = useCallback(async () => {
     setNewTicket(defaultNewTicket);
     setComponents([]);
     setDrones([]);
@@ -118,9 +117,9 @@ export function useMaintenanceLogbook() {
     } finally {
       setModalLoading(false);
     }
-  }
+  }, [openModal]);
 
-  async function handleDroneChange(toolId: number) {
+  const handleDroneChange = useCallback(async (toolId: number) => {
     setNewTicket((p) => ({ ...p, fk_tool_id: toolId, components: [] }));
     if (!toolId) return;
     try {
@@ -129,15 +128,15 @@ export function useMaintenanceLogbook() {
     } catch (e: any) {
       toast.error(e.response?.data?.message ?? e.message);
     }
-  }
+  }, []);
 
-  function openCloseModal(id: number) {
+  const openCloseModal = useCallback((id: number) => {
     setActiveTicketId(id);
     setCloseNote('');
     openModal('close');
-  }
+  }, [openModal]);
 
-  async function openAssignModal(id: number) {
+  const openAssignModal = useCallback(async (id: number) => {
     setActiveTicketId(id);
     setUsers([]);
     setAssignTo(0);
@@ -151,21 +150,21 @@ export function useMaintenanceLogbook() {
     } finally {
       setModalLoading(false);
     }
-  }
+  }, [openModal]);
 
-  function openReportModal(id: number) {
+  const openReportModal = useCallback((id: number) => {
     setActiveTicketId(id);
     setReport(defaultReport);
     openModal('report');
-  }
+  }, [openModal]);
 
-  function openUploadModal(id: number) {
+  const openUploadModal = useCallback((id: number) => {
     setActiveTicketId(id);
     setUploadDesc('');
     openModal('upload');
-  }
+  }, [openModal]);
 
-  async function openEventsModal(id: number) {
+  const openEventsModal = useCallback(async (id: number) => {
     setActiveTicketId(id);
     setEvents([]);
     setModalLoading(true);
@@ -178,10 +177,9 @@ export function useMaintenanceLogbook() {
     } finally {
       setModalLoading(false);
     }
-  }
+  }, [openModal]);
 
-
-  async function handleCreateTicket() {
+  const handleCreateTicket = useCallback(async () => {
     if (!newTicket.fk_tool_id) { toast.error('Please select a drone/system'); return; }
     setModalLoading(true);
     try {
@@ -201,9 +199,9 @@ export function useMaintenanceLogbook() {
     } finally {
       setModalLoading(false);
     }
-  }
+  }, [newTicket, closeModal, loadTickets]);
 
-  async function handleCloseTicket() {
+  const handleCloseTicket = useCallback(async () => {
     if (!activeTicketId) return;
     if (!closeNote.trim()) { toast.error('Please enter a closing note'); return; }
     setModalLoading(true);
@@ -223,9 +221,9 @@ export function useMaintenanceLogbook() {
     } finally {
       setModalLoading(false);
     }
-  }
+  }, [activeTicketId, closeNote, closeModal, updateLocalTicket]);
 
-  async function handleAssignTicket() {
+  const handleAssignTicket = useCallback(async () => {
     if (!activeTicketId || !assignTo) return;
     setModalLoading(true);
     try {
@@ -246,9 +244,9 @@ export function useMaintenanceLogbook() {
     } finally {
       setModalLoading(false);
     }
-  }
+  }, [activeTicketId, assignTo, users, closeModal, updateLocalTicket]);
 
-  async function handleAddReport(file?: File) {
+  const handleAddReport = useCallback(async (file?: File) => {
     if (!activeTicketId) return;
     if (!report.text.trim()) { toast.error('Please enter a report description'); return; }
     if (report.work_start && report.work_end && report.work_end < report.work_start) {
@@ -271,7 +269,7 @@ export function useMaintenanceLogbook() {
       if (report.close) {
         updateLocalTicket(activeTicketId, {
           ticket_status: 'CLOSED',
-          closed_at: new Date().toISOString()
+          closed_at: new Date().toISOString(),
         });
       }
     } catch (e: any) {
@@ -279,9 +277,9 @@ export function useMaintenanceLogbook() {
     } finally {
       setModalLoading(false);
     }
-  }
+  }, [activeTicketId, report, closeModal, updateLocalTicket]);
 
-  async function handleUploadFile(file: File) {
+  const handleUploadFile = useCallback(async (file: File) => {
     if (!activeTicketId) return;
     const fd = new FormData();
     fd.append('ticket_id', String(activeTicketId));
@@ -298,7 +296,7 @@ export function useMaintenanceLogbook() {
     } finally {
       setModalLoading(false);
     }
-  }
+  }, [activeTicketId, uploadDesc, closeModal]);
 
   return {
     tickets,

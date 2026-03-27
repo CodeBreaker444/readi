@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname, useSearchParams } from 'next/navigation';
-import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState, Suspense } from 'react';
 
 type RouteLoadingCtx = {
   isRouteLoading: boolean;
@@ -11,11 +11,19 @@ type RouteLoadingCtx = {
 
 const Ctx = createContext<RouteLoadingCtx | null>(null);
 
-export function RouteLoadingProvider({ children }: { children: React.ReactNode }) {
+function RouteChangeWatcher({ onRouteChange }: { onRouteChange: () => void }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const searchKey = searchParams?.toString() ?? '';
 
+  useEffect(() => {
+    onRouteChange();
+  }, [pathname, searchKey]);
+
+  return null;
+}
+
+export function RouteLoadingProvider({ children }: { children: React.ReactNode }) {
   const [isRouteLoading, setIsRouteLoading] = useState(false);
   const safetyTimeoutRef = useRef<number | null>(null);
 
@@ -38,19 +46,19 @@ export function RouteLoadingProvider({ children }: { children: React.ReactNode }
     }, 10_000);
   };
 
-  // When url changes stop the global loader
-  useEffect(() => {
-    if (!isRouteLoading) return;
-    const id = window.setTimeout(() => stopRouteLoading(), 0);
-    return () => window.clearTimeout(id);
-  }, [pathname, searchKey, isRouteLoading]);
-
   const value = useMemo(
     () => ({ isRouteLoading, startRouteLoading, stopRouteLoading }),
     [isRouteLoading]
   );
 
-  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
+  return (
+    <Ctx.Provider value={value}>
+      <Suspense fallback={null}>
+        <RouteChangeWatcher onRouteChange={stopRouteLoading} />
+      </Suspense>
+      {children}
+    </Ctx.Provider>
+  );
 }
 
 export function useRouteLoading() {
