@@ -181,98 +181,90 @@ export async function updateComponentMaintenanceCycle(
   // Refresh days before reading baselines
   await refreshMaintenanceDaysForTool(toolId);
 
-  const updatedComponents: ComponentMaintenanceInfo[] = [];
+  const results = await Promise.all(
+    updates.map(async (upd): Promise<ComponentMaintenanceInfo | null> => {
+      const { data: comp, error: compErr } = await supabase
+        .from("tool_component")
+        .select(COMPONENT_SELECT)
+        .eq("component_id", upd.component_id)
+        .eq("fk_tool_id", toolId)
+        .maybeSingle();
 
-  for (const upd of updates) {
-    const { data: comp, error: compErr } = await supabase
-      .from("tool_component")
-      .select(COMPONENT_SELECT)
-      .eq("component_id", upd.component_id)
-      .eq("fk_tool_id", toolId)
-      .maybeSingle();
+      if (compErr || !comp) return null;
 
-    if (compErr || !comp) continue;
+      const meta = comp.component_metadata || {};
+      const cycleType = comp.maintenance_cycle || "NONE";
 
-    const meta = comp.component_metadata || {};
-    const cycleType = comp.maintenance_cycle || "NONE";
+      const limitHour = Number(comp.maintenance_cycle_hour ?? 0);
+      const limitFlight = Number(comp.maintenance_cycle_flight ?? 0);
+      const limitDay = Number(comp.maintenance_cycle_day ?? 0);
 
-    // Limits
-    const limitHour = Number(comp.maintenance_cycle_hour ?? 0);
-    const limitFlight = Number(comp.maintenance_cycle_flight ?? 0);
-    const limitDay = Number(comp.maintenance_cycle_day ?? 0);
+      const prevHours = Number(comp.current_maintenance_hours ?? 0);
+      const prevFlights = Number(comp.current_maintenance_flights ?? 0);
+      const currentDays = Number(comp.current_maintenance_days ?? 0);
+      const prevLifetimeHours = comp.current_usage_hours ?? 0;
 
-    // Current values from DB (days already refreshed)
-    const prevHours = Number(comp.current_maintenance_hours ?? 0);
-    const prevFlights = Number(comp.current_maintenance_flights ?? 0);
-    const currentDays = Number(comp.current_maintenance_days ?? 0);
-    const prevLifetimeHours = comp.current_usage_hours ?? 0;
+      const newHours = prevHours + (upd.add_hours || 0);
+      const newFlights = prevFlights + (upd.add_flights || 0);
+      const newLifetimeHours = prevLifetimeHours + (upd.add_hours || 0);
 
-    // Calculate new values
-    const newHours = prevHours + (upd.add_hours || 0);
-    const newFlights = prevFlights + (upd.add_flights || 0);
-    const newLifetimeHours = prevLifetimeHours + (upd.add_hours || 0);
+      const now = new Date().toISOString();
 
-    const now = new Date().toISOString();
+      const updatePayload: Record<string, any> = {
+        current_usage_hours: newLifetimeHours,
+        last_cycle_updated_at: now,
+        component_metadata: {
+          ...meta,
+          last_mission_id: missionId,
+          last_maintenance_update: now,
+        },
+      };
 
-    // Build update payload — only touch counters relevant to cycle type
-    const updatePayload: Record<string, any> = {
-      current_usage_hours: newLifetimeHours,
-      last_cycle_updated_at: now,
-      component_metadata: {
-        ...meta,
-        last_mission_id: missionId,
-        last_maintenance_update: now,
-      },
-    };
+      if (cycleType === "HOURS" || cycleType === "MIXED") {
+        updatePayload.current_maintenance_hours = newHours;
+      }
+      if (cycleType === "FLIGHTS" || cycleType === "MIXED") {
+        updatePayload.current_maintenance_flights = newFlights;
+      }
 
-    if (cycleType === "HOURS" || cycleType === "MIXED") {
-      updatePayload.current_maintenance_hours = newHours;
-    }
-    if (cycleType === "FLIGHTS" || cycleType === "MIXED") {
-      updatePayload.current_maintenance_flights = newFlights;
-    }
-    // Do NOT touch current_maintenance_days — refreshMaintenanceDays handles it
+      const { error: updateErr } = await supabase
+        .from("tool_component")
+        .update(updatePayload)
+        .eq("component_id", upd.component_id);
 
-    const { error: updateErr } = await supabase
-      .from("tool_component")
-      .update(updatePayload)
-      .eq("component_id", upd.component_id);
+      if (updateErr) return null;
 
-    if (updateErr) continue;
+      const finalHours = (cycleType === "HOURS" || cycleType === "MIXED") ? newHours : prevHours;
+      const finalFlights = (cycleType === "FLIGHTS" || cycleType === "MIXED") ? newFlights : prevFlights;
 
-    // Use updated values for status computation
-    const finalHours = (cycleType === "HOURS" || cycleType === "MIXED") ? newHours : prevHours;
-    const finalFlights = (cycleType === "FLIGHTS" || cycleType === "MIXED") ? newFlights : prevFlights;
+      const { status, trigger } = computeComponentStatus(
+        finalHours, finalFlights, currentDays,
+        { hour: limitHour, flight: limitFlight, day: limitDay },
+      );
 
-    const { status, trigger } = computeComponentStatus(
-      finalHours,
-      finalFlights,
-      currentDays,
-      { hour: limitHour, flight: limitFlight, day: limitDay }
-    );
-
-    updatedComponents.push({
-      component_id: comp.component_id,
-      component_type: comp.component_type,
-      component_code: comp.component_code || comp.component_name,
-      serial_number: comp.serial_number,
-      current_hours: finalHours,
-      current_flights: finalFlights,
-      current_days: currentDays,
-      limit_hour: limitHour,
-      limit_flight: limitFlight,
-      limit_day: limitDay,
-      maintenance_cycle_type: cycleType,
-      last_cycle_updated_at: now,
-      status,
-      trigger,
-    });
-  }
+      return {
+        component_id: comp.component_id,
+        component_type: comp.component_type,
+        component_code: comp.component_code || comp.component_name,
+        serial_number: comp.serial_number,
+        current_hours: finalHours,
+        current_flights: finalFlights,
+        current_days: currentDays,
+        limit_hour: limitHour,
+        limit_flight: limitFlight,
+        limit_day: limitDay,
+        maintenance_cycle_type: cycleType,
+        last_cycle_updated_at: now,
+        status,
+        trigger,
+      };
+    }),
+  );
 
   return {
     code: 1,
     message: "Maintenance tracking updated successfully",
-    components: updatedComponents,
+    components: results.filter((r): r is ComponentMaintenanceInfo => r !== null),
   };
 }
 
