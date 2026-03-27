@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
 
     const windowParam = req.nextUrl.searchParams.get('window');
     const windowMinutes = Math.min(
-      Math.max(1, parseInt(windowParam ?? '30', 10) || 30),
+      Math.max(1, parseInt(windowParam ?? '1440', 10) || 1440),
       1440,
     );
 

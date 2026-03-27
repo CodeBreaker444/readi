@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTheme } from '@/components/useTheme';
 import axios from 'axios';
+import JSZip from 'jszip';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import {
@@ -31,10 +32,10 @@ interface Flight {
 }
 
 const WINDOWS = [
-  { label: 'Last 30 min', value: 30 },
   { label: 'Last 1 hr', value: 60 },
-  { label: 'Last 3 hrs', value: 180 },
   { label: 'Last 6 hrs', value: 360 },
+  { label: 'Last 12 hrs', value: 720 },
+  { label: 'Last 24 hrs', value: 1440 },
 ];
 
 function formatMs(ms?: number): string {
@@ -56,7 +57,7 @@ function formatDistance(m?: number): string {
 
 export default function FlytbaseFlightsPage() {
   const { isDark } = useTheme();
-  const [window, setWindow] = useState(30);
+  const [window, setWindow] = useState(1440);
   const [flights, setFlights] = useState<Flight[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -95,17 +96,80 @@ export default function FlytbaseFlightsPage() {
     setPreview(null);
     setPreviewLoading(true);
     try {
-      const res = await axios.post('/api/flytbase/flights/preview', {
-        flightId: flight.flight_id,
-      });
-      setPreview(res.data.preview);
+      const res = await fetch(
+        `/api/flytbase/flights/preview?flightId=${encodeURIComponent(flight.flight_id)}`,
+      );
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body?.message ?? `Server error ${res.status}`);
+      }
+
+      const reader = res.body!.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let presignedUrl: string | null = null;
+
+      outer: while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? '';
+        for (const line of lines) {
+          if (!line.startsWith('data:')) continue;
+          const payload = JSON.parse(line.slice(5).trim());
+          if (payload.error) throw new Error(payload.message ?? 'FlytBase error');
+          if (payload.done) { presignedUrl = payload.url; break outer; }
+        }
+      }
+
+      if (!presignedUrl) throw new Error('No presigned URL received from server.');
+
+      const zipRes = await fetch(presignedUrl);
+      if (!zipRes.ok) throw new Error(`Failed to download GUTMA archive (${zipRes.status})`);
+      const zip = await JSZip.loadAsync(await zipRes.arrayBuffer());
+
+      const jsonFile = Object.values(zip.files).find(
+        (f) => !f.dir && f.name.toLowerCase().endsWith('.json'),
+      );
+      if (!jsonFile) throw new Error('No GUTMA JSON found in the downloaded archive.');
+
+      const jsonText = await jsonFile.async('string');
+      const gutma = JSON.parse(jsonText);
+
+      setPreview(parseGutmaClient(flight.flight_id, jsonFile.name, gutma));
     } catch (err: any) {
-      const msg = err?.response?.data?.message ?? 'Failed to load flight log.';
-      toast.error(msg);
+      toast.error(err?.message ?? 'Failed to load flight log.');
       setPreview(null);
     } finally {
       setPreviewLoading(false);
     }
+  }
+
+  function parseGutmaClient(flightId: string, filename: string, gutma: any) {
+    const flightData = gutma?.exchange?.message?.flight_data ?? {};
+
+    const waypointItems: any[] = flightData?.flight_logging?.flight_logging_items ?? [];
+    const waypoints = waypointItems.slice(0, 200).map((w: any) => ({
+      timestamp: w.timestamp ?? undefined,
+      latitude: w.lat ?? w.latitude ?? w.y ?? undefined,
+      longitude: w.lon ?? w.longitude ?? w.x ?? undefined,
+      altitude: w.altitude ?? undefined,
+      speed: w.speed ?? undefined,
+      heading: w.heading ?? undefined,
+    }));
+
+    return {
+      flight_id: flightId,
+      raw_filename: filename,
+      aircraft: flightData?.aircraft ?? {},
+      gcs: flightData?.gcs ?? {},
+      waypoints,
+      total_waypoints: waypointItems.length,
+      start_time: flightData?.start_time ?? gutma?.exchange?.message?.start_time,
+      end_time: flightData?.end_time ?? gutma?.exchange?.message?.end_time,
+    };
   }
 
   const bg = isDark ? 'bg-slate-950' : 'bg-slate-50';
@@ -118,8 +182,6 @@ export default function FlytbaseFlightsPage() {
   return (
     <div className={`min-h-screen transition-colors duration-300 ${bg}`}>
       <div className="animate-in fade-in duration-700">
-
-        {/* Header */}
         <div className={`backdrop-blur-md w-full ${isDark ? 'bg-slate-900/80 border-b border-slate-800' : 'bg-white/80 border-b border-slate-200 shadow-[0_1px_3px_rgba(0,0,0,0.06)]'} px-6 py-4 mb-6`}>
           <div className="mx-auto max-w-[1800px] flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -135,7 +197,6 @@ export default function FlytbaseFlightsPage() {
             </div>
 
             <div className="flex items-center gap-2">
-              {/* Window selector */}
               <div className="flex items-center gap-1">
                 {WINDOWS.map((w) => (
                   <button
@@ -276,7 +337,6 @@ export default function FlytbaseFlightsPage() {
               </div>
             </div>
 
-            {/* GUTMA preview panel */}
             <div className="flex-1 min-w-0">
               {!selectedFlight && !loading && (
                 <div className={`rounded-xl border h-64 flex flex-col items-center justify-center gap-3 ${card}`}>

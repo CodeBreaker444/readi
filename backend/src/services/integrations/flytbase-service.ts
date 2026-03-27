@@ -3,7 +3,6 @@
 import { env } from '@/backend/config/env';
 import { supabase } from '@/backend/database/database';
 import { decryptToken, encryptToken } from '@/backend/utils/token-encryption';
-import JSZip from 'jszip';
 
 
 export interface FlytbaseUserInfo {
@@ -142,7 +141,6 @@ function flytbaseHeaders(token: string, orgId: string): Record<string, string> {
 /**
  * Verifies the token is accepted by FlytBase by making a minimal flight-list
  * call. Throws if the credentials are rejected.
- * Returns a FlytbaseUserInfo populated from whatever the API returns.
  */
 export async function verifyFlytbaseTokenAndGetUser(
   plainToken: string,
@@ -254,120 +252,3 @@ export async function fetchRecentFlights(
   return { flights, total };
 }
 
-
-/**
- * Download the GUTMA ZIP for a single flight, extract it, and return a
- * structured preview of the first GUTMA file found.
- */
-export async function fetchFlightGutmaPreview(
-  token: string,
-  orgId: string,
-  flightId: string,
-): Promise<GutmaFlightPreview> {
-  const params = new URLSearchParams({ flightIds: flightId });
-  const url = `${env.FLYTBASE_URL}/v2/flight/report/download/gutma?${params.toString()}`;
-
-  const abort = new AbortController();
-  const timer = setTimeout(() => abort.abort(), 50_000);  
-
-  let response: Response;
-  try {
-    response = await fetch(url, {
-      method: 'GET',
-      headers: flytbaseHeaders(token, orgId),
-      signal: abort.signal,
-    });
-  } catch (err: any) {
-    clearTimeout(timer);
-    if (err?.name === 'AbortError') {
-      throw new Error('FlytBase GUTMA download timed out. The file may be too large — try again.');
-    }
-    throw err;
-  }
-  clearTimeout(timer);
-
-  if (!response.ok) {
-    throw new Error(`GUTMA download failed ${response.status}: ${response.statusText}`);
-  }
-
-  const arrayBuffer = await response.arrayBuffer();
-  const zip = await JSZip.loadAsync(arrayBuffer);
-
-  // Find the first .json file inside the ZIP
-  const jsonEntry = Object.values(zip.files).find(
-    (f) => !f.dir && f.name.toLowerCase().endsWith('.json'),
-  );
-
-  if (!jsonEntry) {
-    throw new Error('No GUTMA JSON file found in the downloaded archive.');
-  }
-
-  const jsonText = await jsonEntry.async('string');
-  const gutma = JSON.parse(jsonText);
-
-  return parseGutma(flightId, jsonEntry.name, gutma);
-}
-
-function parseGutma(
-  flightId: string,
-  filename: string,
-  gutma: Record<string, unknown>,
-): GutmaFlightPreview {
-  const msg =
-    ((gutma as any)?.exchange?.message) ?? {};
-  const flightData = msg?.flight_data ?? {};
-
-  const aircraft: GutmaAircraft = {
-    serial_number: flightData?.aircraft?.serial_number ?? undefined,
-    product_name: flightData?.aircraft?.product_name ?? undefined,
-    firmware_version: flightData?.aircraft?.firmware_version ?? undefined,
-    model: flightData?.aircraft?.model ?? undefined,
-    manufacturer: flightData?.aircraft?.manufacturer ?? undefined,
-  };
-
-  const gcs: GutmaGcs = {
-    type: flightData?.gcs?.type ?? undefined,
-    name: flightData?.gcs?.name ?? undefined,
-    serial_number: flightData?.gcs?.serial_number ?? undefined,
-  };
-
-  const rawWaypoints: Record<string, unknown>[] =
-    flightData?.flight_logging?.flight_logging_items ?? [];
-
-  const waypointsFull: GutmaWaypoint[] = rawWaypoints.slice(0, 200).map((w) => {
-    const lat =
-      w.lat != null ? Number(w.lat)
-      : w.latitude != null ? Number(w.latitude)
-      : w.y != null ? Number(w.y)
-      : undefined;
-    const lng =
-      w.lon != null ? Number(w.lon)
-      : w.longitude != null ? Number(w.longitude)
-      : w.x != null ? Number(w.x)
-      : undefined;
-    return {
-      timestamp: w.timestamp != null ? Number(w.timestamp) : undefined,
-      latitude: lat,
-      longitude: lng,
-      altitude: w.altitude != null ? Number(w.altitude) : undefined,
-      speed: w.speed != null ? Number(w.speed) : undefined,
-      heading: w.heading != null ? Number(w.heading) : undefined,
-    };
-  });
-
-  const startTime: string | undefined =
-    flightData?.start_time ?? msg?.start_time ?? undefined;
-  const endTime: string | undefined =
-    flightData?.end_time ?? msg?.end_time ?? undefined;
-
-  return {
-    flight_id: flightId,
-    aircraft,
-    gcs,
-    waypoints: waypointsFull,
-    total_waypoints: rawWaypoints.length,
-    start_time: startTime,
-    end_time: endTime,
-    raw_filename: filename,
-  };
-}

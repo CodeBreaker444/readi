@@ -123,11 +123,20 @@ export function GutmaPreviewPanel({ flight, preview, loading, isDark }: Props) {
         )}
 
         {loading && (
-          <div className="space-y-3">
-            <Skeleton className={`h-4 w-1/3 ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`} />
-            <Skeleton className={`h-24 w-full ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`} />
-            <Skeleton className={`h-4 w-1/4 ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`} />
-            <Skeleton className={`h-40 w-full ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`} />
+          <div className="space-y-4">
+            <div className={`flex items-center gap-2.5 text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+              <svg className="w-3.5 h-3.5 animate-spin shrink-0" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+              </svg>
+              Downloading GUTMA log from FlytBase — this may take up to a minute…
+            </div>
+            <div className="space-y-3">
+              <Skeleton className={`h-4 w-1/3 ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`} />
+              <Skeleton className={`h-24 w-full ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`} />
+              <Skeleton className={`h-4 w-1/4 ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`} />
+              <Skeleton className={`h-40 w-full ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`} />
+            </div>
           </div>
         )}
 
