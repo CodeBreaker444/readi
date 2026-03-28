@@ -3,8 +3,7 @@
 import { FlytbaseTokenConfig } from '@/components/flytbase/FlytbaseTokenConfig';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/components/useTheme';
-import Link from 'next/link';
-import { HiOutlineDocumentText } from 'react-icons/hi';
+import { HiOutlineClock, HiOutlineDocumentText } from 'react-icons/hi';
 
 export default function FlytbaseIntegrationPage() {
   const { isDark } = useTheme();
@@ -43,47 +42,76 @@ export default function FlytbaseIntegrationPage() {
               </div>
             </div>
 
-            <Link href="/flytbase/flights">
-              <Button
-                variant="outline"
-                size="sm"
-                className={`h-8 text-xs gap-1.5 ${
-                  isDark
-                    ? 'border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700'
-                    : 'border-slate-200 text-slate-600'
-                }`}
-              >
-                <HiOutlineDocumentText className="w-3.5 h-3.5" />
-                View Flights
-              </Button>
-            </Link>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled
+              className={`h-8 text-xs gap-1.5 cursor-not-allowed opacity-50 ${
+                isDark
+                  ? 'border-slate-700 bg-slate-800 text-slate-300'
+                  : 'border-slate-200 text-slate-600'
+              }`}
+            >
+              <HiOutlineDocumentText className="w-3.5 h-3.5" />
+              View Flights
+            </Button>
           </div>
         </div>
 
         <div className="flex-1 flex items-center justify-center px-4 sm:px-6 py-8">
-          <div className="w-full max-w-3xl space-y-6">
-            <FlytbaseTokenConfig />
-
-            <div className="text-center space-y-1 pt-2">
-              <p className={`text-xs ${textSecondary}`}>
-                Need a FlytBase API token?{' '}
-                <a
-                  href="https://docs.flytbase.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-violet-500 hover:text-violet-400 underline underline-offset-2"
-                >
-                  View documentation
-                </a>
-              </p>
+          <div className="w-full max-w-3xl space-y-4">
+            {/* Coming Soon Banner */}
+            <div
+              className={`flex items-center gap-3 rounded-xl border px-4 py-3 ${
+                isDark
+                  ? 'bg-amber-950/20 border-amber-800/30'
+                  : 'bg-amber-50 border-amber-200'
+              }`}
+            >
+              <HiOutlineClock
+                className={`w-4 h-4 shrink-0 ${
+                  isDark ? 'text-amber-400' : 'text-amber-600'
+                }`}
+              />
               <p
-                className={`text-[11px] ${
-                  isDark ? 'text-slate-600' : 'text-slate-400'
+                className={`text-xs font-medium ${
+                  isDark ? 'text-amber-300' : 'text-amber-700'
                 }`}
               >
-                Use a long-lived API key (RS256 JWT), not a short-lived session
-                token.
+                FlytBase integration is coming soon. This is a preview of the
+                interface — buttons are not active yet.
               </p>
+              <span
+                className={`ml-auto shrink-0 px-2 py-0.5 rounded text-[10px] font-semibold tracking-wide ${
+                  isDark
+                    ? 'bg-amber-900/60 text-amber-300 border border-amber-700/50'
+                    : 'bg-amber-100 text-amber-700 border border-amber-200'
+                }`}
+              >
+                Coming Soon
+              </span>
+            </div>
+
+            {/* Dimmed non-interactive content */}
+            <div className="pointer-events-none opacity-50 select-none space-y-6">
+              <FlytbaseTokenConfig />
+
+              <div className="text-center space-y-1 pt-2">
+                <p className={`text-xs ${textSecondary}`}>
+                  Need a FlytBase API token?{' '}
+                  <span className="text-violet-500 underline underline-offset-2">
+                    View documentation
+                  </span>
+                </p>
+                <p
+                  className={`text-[11px] ${
+                    isDark ? 'text-slate-600' : 'text-slate-400'
+                  }`}
+                >
+                  Use a long-lived API key (RS256 JWT), not a short-lived
+                  session token.
+                </p>
+              </div>
             </div>
           </div>
         </div>

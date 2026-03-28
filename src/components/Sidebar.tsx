@@ -27,6 +27,7 @@ interface SubNavItem {
   href: string;
   icon?: React.ElementType;
   subItems?: SubNavItem[];
+  soon?: boolean;
 }
 
 interface NavItem {
