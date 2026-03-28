@@ -81,7 +81,7 @@ export function DailyDeclarationModal({ open, onClose, onSuccess, isDark }: Prop
             <button
               key={item.key}
               onClick={() => toggle(item.key)}
-              className={`flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm transition-colors ${itemBg}`}
+              className={`flex cursor-pointer w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm transition-colors ${itemBg}`}
             >
               <span
                 className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border text-xs font-bold transition-colors ${
@@ -110,7 +110,7 @@ export function DailyDeclarationModal({ open, onClose, onSuccess, isDark }: Prop
           <button
             onClick={onClose}
             disabled={submitting}
-            className={`rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${btnSecondary}`}
+            className={`rounded-lg cursor-pointer px-4 py-2.5 text-sm font-medium transition-colors ${btnSecondary}`}
           >
             Cancel
           </button>

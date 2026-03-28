@@ -14,6 +14,7 @@ import { BoardHeader } from "./BoardHeader";
 import { DailyDeclarationModal } from "./DailyDeclarationModal";
 import { KanbanColumn } from "./KanbanColumn";
 import { MaintenanceCycleModal } from "./MaintenanceCycleModal";
+import { MissionCompleteModal } from "./MissionCompleteModal";
 
 type ColumnId = "scheduled" | "in_progress" | "done";
 
@@ -266,7 +267,7 @@ export function OperationBoard() {
             />
 
             {completedMission && (
-                <MaintenanceCycleModal
+                <MissionCompleteModal
                     open={!!completedMission}
                     onClose={() => {
                         setCompletedMission(null);
