@@ -195,24 +195,36 @@ export default function ViewSystemModal({ open, toolId, onClose }: ViewSystemMod
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {components.map((component: any) => (
-                      <div key={component.tool_component_id} className="border rounded-lg p-4 shadow-sm">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h4 className="font-semibold">{component.factory_model}</h4>
-                            <p className="text-sm text-gray-500">{component.component_type}</p>
+                    {components.map((component: any) => {
+                      const inMaintenance = component.component_status === 'MAINTENANCE';
+                      return (
+                        <div key={component.tool_component_id} className={`border rounded-lg p-4 shadow-sm ${inMaintenance ? 'border-yellow-300 bg-yellow-50' : ''}`}>
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-semibold">{component.factory_model || component.component_code || `#${component.tool_component_id}`}</h4>
+                                {inMaintenance && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-yellow-200 text-yellow-800 border border-yellow-300">
+                                    In Maintenance
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-sm text-gray-500">{component.component_type}</p>
+                            </div>
+                            {!inMaintenance && (
+                              <Badge variant={component.component_status === 'OPERATIONAL' ? 'default' : 'secondary'}>
+                                {component.component_status}
+                              </Badge>
+                            )}
                           </div>
-                          <Badge variant={component.component_status === 'OPERATIONAL' ? 'default' : 'secondary'}>
-                            {component.component_status}
-                          </Badge>
+                          <div className="mt-2 grid grid-cols-3 gap-2 text-sm">
+                            <div><span className="text-gray-500">Code:</span> {component.component_code || component.factory_serie || '—'}</div>
+                            <div><span className="text-gray-500">Serial:</span> {component.component_sn || 'N/A'}</div>
+                            <div><span className="text-gray-500">Usage:</span> {component.component_cycles || 0} hrs</div>
+                          </div>
                         </div>
-                        <div className="mt-2 grid grid-cols-3 gap-2 text-sm">
-                          <div><span className="text-gray-500">Code:</span> {component.factory_serie}</div>
-                          <div><span className="text-gray-500">Serial:</span> {component.component_sn || 'N/A'}</div>
-                          <div><span className="text-gray-500">Usage:</span> {component.component_cycles || 0} hrs</div>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </TabsContent>

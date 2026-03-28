@@ -6,10 +6,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTheme } from '@/components/useTheme';
-import { RotateCcw } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import axios from 'axios';
+import { Loader2, Pencil, RotateCcw } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Skeleton } from '../ui/skeleton';
+import { ManageComponentTypesModal } from './ManageComponentTypesModal';
 
 interface EditComponentModalProps {
   open: boolean;
@@ -22,15 +24,9 @@ interface EditComponentModalProps {
   initialComponentId?: number | null;
 }
 
-const COMPONENT_CATEGORIES = [
-  { value: 'STANDARD', label: 'Standard' },
-  { value: 'LIMITED',  label: 'Limited Life' },
-];
-
 const EMPTY_FORM = {
   fk_tool_id: '',
   component_type: '',
-  component_category: 'STANDARD',
   component_code: '',
   component_desc: '',
   fk_tool_model_id: '',
@@ -47,7 +43,11 @@ const EMPTY_FORM = {
   maintenance_cycle_day: '',
   maintenance_cycle_flight: '',
 };
-
+interface ComponentType {
+  type_id: number;
+  type_value: string;
+  type_label: string;
+}
 export default function EditComponentModal({
   open, toolId, onClose, onSuccess, models, clients, tools, initialComponentId,
 }: EditComponentModalProps) {
@@ -56,7 +56,26 @@ export default function EditComponentModal({
   const [fetching, setFetching] = useState(false);
   const [components, setComponents] = useState<any[]>([]);
   const [selectedComponentId, setSelectedComponentId] = useState<string>('');
-  const [formData, setFormData] = useState(EMPTY_FORM);
+  const [showManageTypes, setShowManageTypes] = useState(false);
+  
+    const [formData, setFormData] = useState(EMPTY_FORM);
+
+    const [types, setTypes] = useState<ComponentType[]>([]);
+    const [typesLoading, setTypesLoading] = useState(false);
+
+    const reload = useCallback(async () => {
+      setTypesLoading(true);
+      try {
+        const { data } = await axios.get('/api/system/component-types');
+        if (data.code === 1) setTypes(data.data ?? []);
+      } catch(err:any) {
+        toast.error(err)
+      } finally {
+        setTypesLoading(false);
+      }
+    }, []);
+  
+    useEffect(() => { reload(); }, [reload]);
 
   useEffect(() => {
     if (open) {
@@ -80,7 +99,6 @@ export default function EditComponentModal({
     setFormData({
       fk_tool_id: String(comp.fk_tool_id || ''),
       component_type: comp.component_type || '',
-      component_category: comp.component_category || 'STANDARD',
       component_code: comp.component_code || '',
       component_desc: comp.component_desc || '',
       fk_tool_model_id: comp.fk_tool_model_id ? String(comp.fk_tool_model_id) : '',
@@ -209,7 +227,6 @@ export default function EditComponentModal({
       const payload = {
         fk_tool_id: Number(formData.fk_tool_id),
         component_type: formData.component_type,
-        component_category: formData.component_category || 'STANDARD',
         component_code: formData.component_code || null,
         component_desc: formData.component_desc || null,
         fk_tool_model_id: formData.fk_tool_model_id ? Number(formData.fk_tool_model_id) : null,
@@ -253,6 +270,7 @@ export default function EditComponentModal({
   const sectionLabelCls = `text-sm font-medium mb-2 ${isDark ? 'text-slate-400' : 'text-muted-foreground'}`;
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className={`!max-w-[900px] w-[90vw] max-h-[90vh] overflow-y-auto ${isDark ? 'bg-slate-800 border-slate-700' : ''}`}>
         <DialogHeader className={`border-b pb-3 ${isDark ? 'border-slate-700/60' : 'border-gray-100'}`}>
@@ -332,30 +350,25 @@ export default function EditComponentModal({
                     </Select>
                   </div>
                   <div className="col-span-3">
-                    <Label className={labelCls}>Component Type *</Label>
-                    <Select value={formData.component_type} onValueChange={v => handleChange('component_type', v)}>
-                      <SelectTrigger className={selectTriggerCls}><SelectValue placeholder="Select type" /></SelectTrigger>
+                    <div className="flex items-center gap-1.5 pb-2">
+                      <Label className={labelCls.replace(' pb-2', '')}>Component Type *</Label>
+                      <button type="button" onClick={() => setShowManageTypes(true)} className="text-slate-400 hover:text-violet-600 transition-colors" title="Manage types">
+                        <Pencil className="h-3 w-3" />
+                      </button>
+                    </div>
+                    <Select value={formData.component_type} onValueChange={v => handleChange('component_type', v)} disabled={typesLoading}>
+                      <SelectTrigger className={selectTriggerCls}>
+                        {typesLoading ? (
+                          <span className="flex items-center gap-2 text-muted-foreground">
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading...
+                          </span>
+                        ) : (
+                          <SelectValue placeholder="Select type" />
+                        )}
+                      </SelectTrigger>
                       <SelectContent className={selectContentCls}>
-                        <SelectItem value="DRONE">Drone (Aircraft)</SelectItem>
-                        <SelectItem value="DOCK">Dock</SelectItem>
-                        <SelectItem value="BATTERY">Battery</SelectItem>
-                        <SelectItem value="PROPELLER">Propeller</SelectItem>
-                        <SelectItem value="CAMERA">Camera</SelectItem>
-                        <SelectItem value="GIMBAL">Gimbal</SelectItem>
-                        <SelectItem value="GPS">GPS</SelectItem>
-                        <SelectItem value="CONTROLLER">Controller</SelectItem>
-                        <SelectItem value="SENSOR">Sensor</SelectItem>
-                        <SelectItem value="OTHER">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="col-span-3">
-                    <Label className={labelCls}>Category</Label>
-                    <Select value={formData.component_category} onValueChange={v => handleChange('component_category', v)}>
-                      <SelectTrigger className={selectTriggerCls}><SelectValue placeholder="Select category" /></SelectTrigger>
-                      <SelectContent className={selectContentCls}>
-                        {COMPONENT_CATEGORIES.map(c => (
-                          <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                        {types.map((t) => (
+                          <SelectItem key={t.type_id} value={t.type_value}>{t.type_label}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -527,5 +540,14 @@ export default function EditComponentModal({
         )}
       </DialogContent>
     </Dialog>
+
+    <ManageComponentTypesModal
+      open={showManageTypes}
+      onClose={() => setShowManageTypes(false)}
+      types={types}
+      onReload={reload}
+      isDark={isDark}
+    />
+    </>
   );
 }
