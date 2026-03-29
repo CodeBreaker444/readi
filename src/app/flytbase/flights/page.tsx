@@ -13,6 +13,7 @@ import {
   HiChevronRight,
   HiClock,
   HiExclamationCircle,
+  HiOutlineClock,
   HiOutlineDocumentText,
   HiRefresh,
 } from 'react-icons/hi';
@@ -196,18 +197,18 @@ export default function FlytbaseFlightsPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 pointer-events-none opacity-50">
               <div className="flex items-center gap-1">
                 {WINDOWS.map((w) => (
                   <button
                     key={w.value}
-                    onClick={() => setWindow(w.value)}
-                    className={`px-2.5 py-1 rounded text-[11px] font-medium transition-colors ${
+                    disabled
+                    className={`px-2.5 py-1 rounded text-[11px] font-medium ${
                       window === w.value
                         ? 'bg-violet-600 text-white'
                         : isDark
-                        ? 'text-slate-400 hover:text-white hover:bg-slate-800'
-                        : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
+                        ? 'text-slate-400 bg-slate-800'
+                        : 'text-slate-500 bg-slate-100'
                     }`}
                   >
                     {w.label}
@@ -218,24 +219,58 @@ export default function FlytbaseFlightsPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => fetchFlights(window)}
-                disabled={loading}
-                className={`h-8 gap-1.5 text-xs ${isDark ? 'border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700' : 'border-slate-200 text-slate-600'}`}
+                disabled
+                className={`h-8 gap-1.5 text-xs ${isDark ? 'border-slate-700 bg-slate-800 text-slate-300' : 'border-slate-200 text-slate-600'}`}
               >
-                <HiRefresh className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+                <HiRefresh className="h-3.5 w-3.5" />
                 Refresh
               </Button>
 
-              <Link href="/flytbase">
-                <Button variant="outline" size="sm" className={`h-8 text-xs ${isDark ? 'border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700' : 'border-slate-200 text-slate-600'}`}>
-                  Settings
-                </Button>
-              </Link>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled
+                className={`h-8 text-xs ${isDark ? 'border-slate-700 bg-slate-800 text-slate-300' : 'border-slate-200 text-slate-600'}`}
+              >
+                Settings
+              </Button>
             </div>
           </div>
         </div>
 
         <div className="px-6 max-w-[1800px] mx-auto">
+          <div
+            className={`flex items-center gap-3 rounded-xl border px-4 py-3 mb-6 ${
+              isDark
+                ? 'bg-amber-950/20 border-amber-800/30'
+                : 'bg-amber-50 border-amber-200'
+            }`}
+          >
+            <HiOutlineClock
+              className={`w-4 h-4 shrink-0 ${
+                isDark ? 'text-amber-400' : 'text-amber-600'
+              }`}
+            />
+            <p
+              className={`text-xs font-medium ${
+                isDark ? 'text-amber-300' : 'text-amber-700'
+              }`}
+            >
+              FlytBase integration is coming soon. This is a preview of the
+              interface — buttons are not active yet.
+            </p>
+            <span
+              className={`ml-auto shrink-0 px-2 py-0.5 rounded text-[10px] font-semibold tracking-wide ${
+                isDark
+                  ? 'bg-amber-900/60 text-amber-300 border border-amber-700/50'
+                  : 'bg-amber-100 text-amber-700 border border-amber-200'
+              }`}
+            >
+              Coming Soon
+            </span>
+          </div>
+
+          <div className="pointer-events-none opacity-50 select-none">
           {error === 'no_token' && (
             <div className={`flex items-center justify-between gap-4 rounded-xl border p-4 mb-6 ${isDark ? 'bg-violet-950/20 border-violet-800/30' : 'bg-violet-50 border-violet-200'}`}>
               <div className="flex items-center gap-3">
@@ -355,6 +390,7 @@ export default function FlytbaseFlightsPage() {
               )}
             </div>
           </div>
+          </div>  
         </div>
       </div>
     </div>
