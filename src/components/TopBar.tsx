@@ -3,6 +3,7 @@
 import { SessionUser } from '@/lib/auth/server-session';
 import { ChevronDown, LogOut, Moon, Search, Sparkles, Sun, User, UserCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { supabase } from '../lib/supabase/client';
 import NotificationDropdown from './NotificationDropdown';
 import ProfileModal from './ProfileModal';
@@ -46,7 +47,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
       window.location.href = '/auth/login';
     } catch (error) {
       console.error('Unexpected logout error:', error);
-      alert('An unexpected error occurred. Please try again.');
+      toast.error('An unexpected error occurred. Please try again.');
     } finally {
       setIsLoggingOut(false);
     }

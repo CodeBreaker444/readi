@@ -30,7 +30,6 @@ export async function getComponentTypes(ownerId: number): Promise<ComponentTypeR
 
   if (error) throw new Error(error.message);
 
-  // Auto-seed defaults on first use
   if (!data || data.length === 0) {
     const rows = DEFAULT_TYPES.map(t => ({ ...t, fk_owner_id: ownerId }));
     const { data: seeded, error: seedErr } = await supabase
@@ -86,7 +85,63 @@ export async function updateComponentType(
   if (error) throw new Error(error.message);
 }
 
+export interface ComponentUsageRow {
+  component_id: number;
+  component_code: string | null;
+  component_name: string | null;
+  fk_tool_id: number;
+  tool_code: string | null;
+}
+
+export async function getComponentsUsingType(
+  ownerId: number,
+  typeValue: string,
+): Promise<ComponentUsageRow[]> {
+  const { data: tools, error: toolError } = await supabase
+    .from('tool')
+    .select('tool_id, tool_code')
+    .eq('fk_owner_id', ownerId);
+  if (toolError) throw new Error(toolError.message);
+
+  const toolIds = (tools ?? []).map((t: any) => t.tool_id);
+  if (toolIds.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from('tool_component')
+    .select('component_id, component_code, component_name, fk_tool_id')
+    .eq('component_type', typeValue)
+    .eq('component_active', 'Y')
+    .in('fk_tool_id', toolIds);
+
+  if (error) throw new Error(error.message);
+
+  const toolMap = new Map((tools ?? []).map((t: any) => [t.tool_id, t.tool_code]));
+  return (data ?? []).map((c: any) => ({
+    component_id: c.component_id,
+    component_code: c.component_code,
+    component_name: c.component_name,
+    fk_tool_id: c.fk_tool_id,
+    tool_code: toolMap.get(c.fk_tool_id) ?? null,
+  }));
+}
+
 export async function deleteComponentType(ownerId: number, typeId: number): Promise<void> {
+  const { data: typeRow, error: fetchErr } = await supabase
+    .from('component_type_config')
+    .select('type_value')
+    .eq('type_id', typeId)
+    .eq('fk_owner_id', ownerId)
+    .maybeSingle();
+  if (fetchErr) throw new Error(fetchErr.message);
+  if (!typeRow) throw new Error('Type not found.');
+
+  const usage = await getComponentsUsingType(ownerId, typeRow.type_value);
+  if (usage.length > 0) {
+    throw new Error(
+      `Cannot delete: ${usage.length} component${usage.length > 1 ? 's' : ''} use this type.`,
+    );
+  }
+
   const { error } = await supabase
     .from('component_type_config')
     .delete()

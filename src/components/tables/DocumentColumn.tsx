@@ -1,11 +1,9 @@
 'use client';
  
-import { getDownloadUrl } from '@/actions/repository';
 import { RepositoryDocument } from '@/config/types/repository';
 import { ColumnDef } from '@tanstack/react-table';
 import { format } from 'date-fns';
-import { ArrowUpDown, Calendar, Download, DownloadCloud, History, Loader2, Pencil, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { ArrowUpDown, Calendar, DownloadCloud, History, Pencil, Trash2 } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 
@@ -49,34 +47,7 @@ function fmtDate(d?: string | null) {
   if (!d) return '—';
   try { return format(new Date(d), 'dd/MM/yyyy'); } catch { return d; }
 }
-
-function DownloadButton({ filePath }: { filePath: string }) {
-  const [loading, setLoading] = useState(false);
-
-  async function handleDownload() {
-    setLoading(true);
-    try {
-      const url = await getDownloadUrl(filePath);
-      window.open(url, '_blank', 'noopener,noreferrer');
-    } catch (e) {
-      console.error('Download failed', e);
-      alert('Error during download. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return (
-    <button
-      onClick={handleDownload}
-      disabled={loading}
-      title="Download"
-      className="rounded p-1.5 text-emerald-600 hover:bg-emerald-50 disabled:opacity-50 transition-colors"
-    >
-      {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-    </button>
-  );
-}
+ 
 
 export interface ColumnActions {
   onEdit:    (doc: RepositoryDocument) => void;
