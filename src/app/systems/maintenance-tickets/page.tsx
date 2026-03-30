@@ -19,6 +19,20 @@ import { useTheme } from '@/components/useTheme';
 import { Plus } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
+const TICKET_COLUMNS: ExportColumn[] = [
+  { header: 'Ticket #',    key: 'ticket_id' },
+  { header: 'Type',        key: 'type' },
+  { header: 'Status',      key: 'status' },
+  { header: 'Priority',    key: 'priority' },
+  { header: 'System',      key: 'system' },
+  { header: 'Serial',      key: 'serial' },
+  { header: 'Entity',      key: 'entity' },
+  { header: 'Assigned To', key: 'assigned_to' },
+  { header: 'Opened',      key: 'opened' },
+  { header: 'Closed',      key: 'closed' },
+  { header: 'Notes',       key: 'note' },
+];
+
 export default function MaintenanceLogbookPage() {
   const { isDark } = useTheme();
   const [search, setSearch] = useState('');
@@ -55,20 +69,6 @@ export default function MaintenanceLogbookPage() {
   } = useMaintenanceLogbook();
 
   useEffect(() => { loadTickets(); }, [loadTickets]);
-
-  const TICKET_COLUMNS: ExportColumn[] = [
-    { header: 'Ticket #',    key: 'ticket_id' },
-    { header: 'Type',        key: 'type' },
-    { header: 'Status',      key: 'status' },
-    { header: 'Priority',    key: 'priority' },
-    { header: 'System',      key: 'system' },
-    { header: 'Serial',      key: 'serial' },
-    { header: 'Entity',      key: 'entity' },
-    { header: 'Assigned To', key: 'assigned_to' },
-    { header: 'Opened',      key: 'opened' },
-    { header: 'Closed',      key: 'closed' },
-    { header: 'Notes',       key: 'note' },
-  ];
 
   const filtered = tickets.filter((t) => {
     const matchStatus = statusFilter === 'ALL' || t.ticket_status === statusFilter;

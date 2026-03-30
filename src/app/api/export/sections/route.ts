@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
       const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
 
       ws['!cols'] = headers.map((h, i) => ({
-        wch: Math.min(80, Math.max(h.length + 2, ...rows.map((r) => String(r[i] ?? '').length))),
+        wch: Math.min(80, rows.reduce((max, r) => Math.max(max, String(r[i] ?? '').length), h.length + 2)),
       }));
       ws['!freeze'] = { xSplit: 0, ySplit: 1 };
 
