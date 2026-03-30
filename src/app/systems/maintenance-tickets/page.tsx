@@ -1,5 +1,6 @@
 'use client';
 
+import { ExportButton, ExportColumn } from '@/components/ExportButton';
 import { DownloadModal } from '@/components/system/DownloadModal';
 import {
   AssignTicketModal,
@@ -16,7 +17,7 @@ import { useMaintenanceLogbook } from '@/components/system/useMaintenance';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/components/useTheme';
 import { Plus } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 export default function MaintenanceLogbookPage() {
   const { isDark } = useTheme();
@@ -55,6 +56,20 @@ export default function MaintenanceLogbookPage() {
 
   useEffect(() => { loadTickets(); }, [loadTickets]);
 
+  const TICKET_COLUMNS: ExportColumn[] = [
+    { header: 'Ticket #',    key: 'ticket_id' },
+    { header: 'Type',        key: 'type' },
+    { header: 'Status',      key: 'status' },
+    { header: 'Priority',    key: 'priority' },
+    { header: 'System',      key: 'system' },
+    { header: 'Serial',      key: 'serial' },
+    { header: 'Entity',      key: 'entity' },
+    { header: 'Assigned To', key: 'assigned_to' },
+    { header: 'Opened',      key: 'opened' },
+    { header: 'Closed',      key: 'closed' },
+    { header: 'Notes',       key: 'note' },
+  ];
+
   const filtered = tickets.filter((t) => {
     const matchStatus = statusFilter === 'ALL' || t.ticket_status === statusFilter;
     const q = search.toLowerCase();
@@ -66,6 +81,24 @@ export default function MaintenanceLogbookPage() {
       String(t.ticket_id).includes(q);
     return matchStatus && matchSearch;
   });
+
+  const ticketExportData = useMemo(
+    () =>
+      filtered.map((t) => ({
+        ticket_id:   `#${t.ticket_id}`,
+        type:        t.ticket_type,
+        status:      t.ticket_status,
+        priority:    t.ticket_priority,
+        system:      t.drone_code ?? '',
+        serial:      t.drone_serial ?? '',
+        entity:      t.entity_name ?? '',
+        assigned_to: t.assigner_name ?? 'Unassigned',
+        opened:      t.opened_at  ? new Date(t.opened_at).toLocaleDateString('en-GB')  : '—',
+        closed:      t.closed_at  ? new Date(t.closed_at).toLocaleDateString('en-GB')  : '—',
+        note:        t.note ?? '',
+      })),
+    [filtered]
+  );
 
   const openDownloadModal = (ticketId: number) => {
     setDownloadTicketId(ticketId);
@@ -150,6 +183,17 @@ export default function MaintenanceLogbookPage() {
             onDownload={openDownloadModal}
             isDark={isDark}
           />
+
+          <div className="mt-3 flex justify-start">
+            <ExportButton
+              data={ticketExportData}
+              columns={TICKET_COLUMNS}
+              filename={`maintenance-tickets-${new Date().toISOString().slice(0, 10)}`}
+              title="Maintenance Logbook"
+              isDark={isDark}
+              disabled={ticketsLoading}
+            />
+          </div>
         </div>
       </div>
 
