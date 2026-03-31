@@ -273,7 +273,7 @@ export function MaintenanceCycleModal({
       >
         <DialogHeader
           className={cn(
-            "relative overflow-hidden px-6 pb-4 pt-6",
+            "relative overflow-hidden px-6 pb-5 pt-6",
             isDark ? "bg-slate-900/60" : "bg-slate-50 border-b border-slate-200"
           )}
         >

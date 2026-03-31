@@ -2,9 +2,18 @@
 
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { HiDownload } from 'react-icons/hi';
 import { toast } from 'sonner';
 import { Badge } from '../ui/badge';
 
@@ -20,6 +29,7 @@ export default function ViewSystemModal({ open, toolId, onClose }: ViewSystemMod
   const [components, setComponents] = useState([]);
   const [maintenanceTickets, setMaintenanceTickets] = useState<any[]>([]);
   const [loadingTickets, setLoadingTickets] = useState(false);
+  const [loadingComponents, setLoadingComponents] = useState(false);
 
   useEffect(() => {
     if (open && toolId) {
@@ -52,6 +62,7 @@ export default function ViewSystemModal({ open, toolId, onClose }: ViewSystemMod
   };
 
   const fetchComponents = async () => {
+    setLoadingComponents(true);
     try {
       const response = await fetch('/api/system/component/list', {
         method: 'POST',
@@ -65,8 +76,205 @@ export default function ViewSystemModal({ open, toolId, onClose }: ViewSystemMod
       }
     } catch (error) {
       console.error('Error fetching components:', error);
+    } finally {
+      setLoadingComponents(false);
     }
   };
+
+  const [exporting, setExporting] = useState<'xlsx' | 'pdf' | 'docx' | null>(null);
+
+  const exportSections = useMemo(() => {
+    const sections = [];
+
+    if (toolData) {
+      sections.push({
+        title: 'General Info',
+        headers: ['Field', 'Value'],
+        rows: [
+          ['System Code',    toolData.tool_code ?? ''],
+          ['Status',         toolData.tool_status ?? ''],
+          ['Active',         toolData.active === 'Y' ? 'Yes' : 'No'],
+          ['Client',         toolData.client_name ?? ''],
+          ['Description',    toolData.tool_desc ?? ''],
+          ['GCS Type',       toolData.tool_gcs_type ?? ''],
+          ['C2 Platform',    toolData.tool_ccPlatform ?? ''],
+          ['Latitude',       String(toolData.tool_latitude ?? '')],
+          ['Longitude',      String(toolData.tool_longitude ?? '')],
+        ],
+      });
+
+      sections.push({
+        title: 'Flight Statistics',
+        headers: ['Metric', 'Value'],
+        rows: [
+          ['Total Missions', String(toolData.tot_mission ?? 0)],
+          ['Flight Time',    `${Math.round((toolData.tot_flown_time || 0) / 60)} min`],
+          ['Distance',       `${((toolData.tot_flown_meter || 0) / 1000).toFixed(2)} km`],
+        ],
+      });
+    }
+
+    sections.push({
+      title: 'Components',
+      headers: ['Model / Code', 'Type', 'Status', 'Serial', 'Usage (hrs)'],
+      rows: (components as any[]).map((c) => [
+        c.factory_model || c.component_code || `#${c.tool_component_id}`,
+        c.component_type ?? '',
+        c.component_status ?? '',
+        c.component_sn ?? 'N/A',
+        String(c.component_cycles ?? 0),
+      ]),
+    });
+
+    sections.push({
+      title: 'Maintenance History',
+      headers: ['Ticket #', 'Status', 'Priority', 'Type', 'Assigned To', 'Opened', 'Closed', 'Notes'],
+      rows: maintenanceTickets.map((t) => [
+        String(t.ticket_id),
+        t.ticket_status ?? '',
+        t.ticket_priority ?? '',
+        t.ticket_type ?? '',
+        t.assigner_name || 'Unassigned',
+        t.opened_at ? new Date(t.opened_at).toLocaleDateString() : '—',
+        t.closed_at ? new Date(t.closed_at).toLocaleDateString() : '—',
+        t.note ?? '',
+      ]),
+    });
+
+    return sections;
+  }, [toolData, components, maintenanceTickets]);
+
+  const isExportDisabled = loading || loadingTickets || loadingComponents || !toolData || !!exporting;
+
+  function triggerDownload(blob: Blob, name: string) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  async function handleServerExport(format: 'xlsx' | 'docx') {
+    setExporting(format);
+    try {
+      const exportTitle = `System Details — ${toolData?.tool_code ?? ''}`;
+      const exportFilename = `system-details-${toolData?.tool_code ?? toolId}`;
+      const res = await fetch('/api/export/sections', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ format, sections: exportSections, title: exportTitle, filename: exportFilename }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.error ?? `Server returned ${res.status}`);
+      }
+      const blob = await res.blob();
+      triggerDownload(blob, `system-details-${toolData?.tool_code ?? toolId}.${format}`);
+    } catch (err) {
+      console.error(`[ViewSystemModal] ${format} export error`, err);
+      toast.error(`Failed to export ${format.toUpperCase()} file.`);
+    } finally {
+      setExporting(null);
+    }
+  }
+
+  async function handlePdfExport() {
+    setExporting('pdf');
+    try {
+      const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+        import('jspdf'),
+        import('jspdf-autotable'),
+      ]);
+
+      let logoBase64: string | null = null;
+      try {
+        const res = await fetch('/logo-sm.png');
+        const blob = await res.blob();
+        logoBase64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      } catch { 
+        console.log('Logo is Missing for PDF export!');
+       }
+
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm' });
+      const pageW = doc.internal.pageSize.width;
+      const pageH = doc.internal.pageSize.height;
+      const exportTitle = `System Details — ${toolData?.tool_code ?? ''}`;
+      const exportedOn = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
+      doc.setFontSize(13);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(15, 15, 15);
+      doc.text(exportTitle, 14, 15);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(100, 116, 139);
+      doc.text(`Exported ${exportedOn}`, 14, 21);
+      doc.setTextColor(0, 0, 0);
+
+      let startY = 27;
+      for (const section of exportSections) {
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(109, 40, 217);
+        doc.text(section.title, 14, startY);
+        doc.setTextColor(0, 0, 0);
+        startY += 5;
+
+        autoTable(doc, {
+          startY,
+          head: [section.headers],
+          body: section.rows,
+          styles: { fontSize: 8, cellPadding: { top: 2, right: 3, bottom: 2, left: 3 }, overflow: 'linebreak' },
+          headStyles: { fillColor: [109, 40, 217], textColor: 255, fontStyle: 'bold', fontSize: 8 },
+          alternateRowStyles: { fillColor: [248, 248, 252] },
+          margin: { left: 14, right: 14, bottom: 16 },
+          tableLineColor: [226, 232, 240],
+          tableLineWidth: 0.1,
+          didDrawPage: (data) => { startY = data.cursor?.y ?? startY; },
+        });
+
+        startY = (doc as any).lastAutoTable.finalY + 8;
+        if (startY > pageH - 20) {
+          doc.addPage();
+          startY = 15;
+        }
+      }
+
+      const totalPages = doc.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+
+        if (logoBase64) {
+          doc.addImage(logoBase64, 'PNG', pageW - 26, 5, 12, 12);
+        }
+
+        doc.setDrawColor(226, 232, 240);
+        doc.setLineWidth(0.3);
+        doc.line(14, pageH - 12, pageW - 14, pageH - 12);
+        doc.setLineWidth(0.2);
+        doc.setFontSize(7);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(148, 163, 184);
+        doc.text('Generated by Readi Platform', 14, pageH - 7);
+        doc.text(`Page ${i} of ${totalPages}`, pageW - 14, pageH - 7, { align: 'right' });
+      }
+
+      doc.save(`system-details-${toolData?.tool_code ?? toolId}.pdf`);
+    } catch (err) {
+      console.error('[ViewSystemModal] pdf export error', err);
+      toast.error('Failed to export PDF.');
+    } finally {
+      setExporting(null);
+    }
+  }
 
   const fetchMaintenanceHistory = async () => {
     setLoadingTickets(true);
@@ -87,9 +295,38 @@ export default function ViewSystemModal({ open, toolId, onClose }: ViewSystemMod
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
-            {loading ? <Skeleton className="h-6 w-48" /> : `System Details - ${toolData?.tool_code || 'Loading...'}`}
-          </DialogTitle>
+          <div className="flex items-center justify-between gap-3 mr-6">
+            <DialogTitle>
+              {loading ? <Skeleton className="h-6 w-48" /> : `System Details - ${toolData?.tool_code || 'Loading...'}`}
+            </DialogTitle>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" disabled={isExportDisabled} className="gap-1.5 text-xs h-7 cursor-pointer">
+                  <HiDownload className="w-3.5 h-3.5" />
+                  {exporting ? 'Exporting…' : 'Export'}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-47">
+                <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-slate-400">Download as</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => handleServerExport('xlsx')} disabled={!!exporting} className="text-xs gap-2 cursor-pointer">
+                  <span className="w-4 text-center text-emerald-500 font-bold text-sm">X</span>
+                  Excel (.xlsx)
+                  {exporting === 'xlsx' && <span className="ml-auto text-[10px] opacity-60">…</span>}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handlePdfExport} disabled={!!exporting} className="text-xs gap-2 cursor-pointer">
+                  <span className="w-4 text-center text-red-500 font-bold text-sm">P</span>
+                  PDF (.pdf)
+                  {exporting === 'pdf' && <span className="ml-auto text-[10px] opacity-60">…</span>}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleServerExport('docx')} disabled={!!exporting} className="text-xs gap-2 cursor-pointer">
+                  <span className="w-4 text-center text-blue-500 font-bold text-sm">W</span>
+                  Word (.docx)
+                  {exporting === 'docx' && <span className="ml-auto text-[10px] opacity-60">…</span>}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </DialogHeader>
 
         {loading ? (

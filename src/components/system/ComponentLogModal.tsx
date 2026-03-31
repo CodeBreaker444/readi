@@ -1,8 +1,9 @@
 'use client';
 
+import { ExportButton } from '@/components/ExportButton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 interface AuditLog {
   id: number;
@@ -71,6 +72,24 @@ export function ComponentLogModal({
   const [loading, setLoading] = useState(false);
   const [entries, setEntries] = useState<LogEntry[]>([]);
 
+  const exportData = useMemo(
+    () =>
+      entries.map((e) => ({
+        timestamp: fmt(e.time),
+        type: e.type,
+        source: e.source === 'ticket' ? 'Maintenance' : 'System',
+        description: e.description,
+      })),
+    [entries]
+  );
+
+  const EXPORT_COLUMNS = [
+    { header: 'Timestamp',   key: 'timestamp' },
+    { header: 'Type',        key: 'type' },
+    { header: 'Source',      key: 'source' },
+    { header: 'Description', key: 'description' },
+  ];
+
   useEffect(() => {
     if (!open || !componentId) return;
     setLoading(true);
@@ -115,10 +134,21 @@ export function ComponentLogModal({
     <Dialog open={open} onOpenChange={o => { if (!o) onClose(); }}>
       <DialogContent className="!max-w-[640px] w-[95vw] max-h-[80vh] overflow-hidden flex flex-col p-0">
         <DialogHeader className="px-6 pt-5 pb-4 border-b border-slate-200 shrink-0">
-          <DialogTitle className="text-base font-semibold text-slate-900">
-            Component Log
-          </DialogTitle>
-          <p className="text-xs text-slate-400 mt-0.5">{componentLabel}</p>
+          <div className="flex items-start justify-between gap-3 mr-6">
+            <div>
+              <DialogTitle className="text-base font-semibold text-slate-900">
+                Component Log
+              </DialogTitle>
+              <p className="text-xs text-slate-400 mt-0.5">{componentLabel}</p>
+            </div>
+            <ExportButton
+              data={exportData}
+              columns={EXPORT_COLUMNS}
+              filename={`component-log-${componentId ?? 'unknown'}`}
+              title={`Component Log — ${componentLabel}`}
+              disabled={loading || entries.length === 0}
+            />
+          </div>
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto px-6 py-4">

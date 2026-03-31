@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import axios from 'axios';
-import { Check, Loader2, Pencil, Plus, Trash2, X } from 'lucide-react';
+import { AlertTriangle, Check, Loader2, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { ComponentType } from './AddComponentModal';
@@ -27,6 +27,8 @@ export function ManageComponentTypesModal({ open, onClose, types, onReload, isDa
   const [newValue, setNewValue] = useState('');
   const [adding, setAdding] = useState(false);
 
+  const [impactData, setImpactData] = useState<any[] | null>(null);
+
   const bg = isDark ? 'bg-[#0f1419] border-white/[0.08]' : 'bg-white';
   const rowBg = isDark ? 'bg-slate-900/40 border-white/[0.06]' : 'bg-white border-slate-200';
   const inputCls = isDark ? 'bg-slate-800 border-slate-600 text-white placeholder:text-slate-500' : '';
@@ -36,24 +38,39 @@ export function ManageComponentTypesModal({ open, onClose, types, onReload, isDa
   const startEdit = (t: ComponentType) => {
     setEditingId(t.type_id);
     setEditLabel(t.type_label);
+    setImpactData(null);
   };
 
-  const cancelEdit = () => { setEditingId(null); setEditLabel(''); };
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditLabel('');
+    setImpactData(null);
+  };
 
-  const handleSave = async (typeId: number) => {
+  const handleSave = async (typeId: number, confirmed = false) => {
     if (!editLabel.trim()) return;
     setSavingId(typeId);
     try {
-      const { data } = await axios.patch(`/api/system/component-types/${typeId}`, { type_label: editLabel.trim() });
+      const { data } = await axios.patch(`/api/system/component-types/${typeId}`, {
+        type_label: editLabel.trim(),
+        confirm_impact: confirmed
+      });
+
+      if (data.code === 2) {
+        setImpactData(data.usage);
+        return;
+      }
+
       if (data.code === 1) {
         toast.success('Type updated');
         setEditingId(null);
+        setImpactData(null);
         onReload();
       } else {
         toast.error(data.message ?? 'Update failed');
       }
-    } catch {
-      toast.error('Failed to update type');
+    } catch (e: any) {
+      toast.error(e.response?.data?.message || 'Failed to update type');
     } finally {
       setSavingId(null);
     }
@@ -69,8 +86,8 @@ export function ManageComponentTypesModal({ open, onClose, types, onReload, isDa
       } else {
         toast.error(data.message ?? 'Delete failed');
       }
-    } catch {
-      toast.error('Failed to delete type');
+    } catch (e: any) {
+      toast.error(e.response?.data?.message || 'Failed to delete type');
     } finally {
       setDeletingId(null);
     }
@@ -97,7 +114,7 @@ export function ManageComponentTypesModal({ open, onClose, types, onReload, isDa
   };
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+    <Dialog open={open} onOpenChange={(o) => { if (!o) { onClose(); setImpactData(null); } }}>
       <DialogContent className={`!max-w-[480px] w-[95vw] max-h-[80vh] overflow-hidden flex flex-col p-0 ${bg}`}>
         <DialogHeader className={`px-5 pt-5 pb-4 border-b ${isDark ? 'border-white/[0.06]' : 'border-slate-200'}`}>
           <DialogTitle className={`text-sm font-semibold ${text}`}>Manage Component Types</DialogTitle>
@@ -106,56 +123,85 @@ export function ManageComponentTypesModal({ open, onClose, types, onReload, isDa
 
         <div className="flex-1 overflow-y-auto px-5 py-3 space-y-1.5">
           {types.map((t) => (
-            <div key={t.type_id} className={`flex items-center gap-2 rounded-lg border px-3 py-2 ${rowBg}`}>
-              {editingId === t.type_id ? (
-                <>
-                  <Input
-                    value={editLabel}
-                    onChange={(e) => setEditLabel(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') handleSave(t.type_id); if (e.key === 'Escape') cancelEdit(); }}
-                    autoFocus
-                    className={`h-7 text-xs flex-1 ${inputCls}`}
-                  />
-                  <button
-                    onClick={() => handleSave(t.type_id)}
-                    disabled={savingId === t.type_id}
-                    className={`h-6 w-6 flex items-center justify-center rounded transition-colors ${isDark ? 'text-emerald-400 hover:bg-emerald-500/10' : 'text-emerald-600 hover:bg-emerald-50'}`}
-                  >
-                    {savingId === t.type_id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
-                  </button>
-                  <button
-                    onClick={cancelEdit}
-                    className={`h-6 w-6 flex items-center justify-center rounded transition-colors ${isDark ? 'text-slate-400 hover:bg-slate-700' : 'text-slate-400 hover:bg-slate-100'}`}
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                </>
-              ) : (
-                <>
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-xs font-medium ${text}`}>{t.type_label}</p>
-                    <p className={`text-[10px] font-mono ${muted}`}>{t.type_value}</p>
+            <div key={t.type_id} className="space-y-2">
+              <div className={`flex items-center gap-2 rounded-lg border px-3 py-2 ${rowBg}`}>
+                {editingId === t.type_id ? (
+                  <>
+                    <Input
+                      value={editLabel}
+                      onChange={(e) => setEditLabel(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') handleSave(t.type_id); if (e.key === 'Escape') cancelEdit(); }}
+                      autoFocus
+                      className={`h-7 text-xs flex-1 ${inputCls}`}
+                    />
+                    <button
+                      onClick={() => handleSave(t.type_id)}
+                      disabled={savingId === t.type_id}
+                      className={`h-6 w-6 flex items-center justify-center rounded transition-colors ${isDark ? 'text-emerald-400 hover:bg-emerald-500/10' : 'text-emerald-600 hover:bg-emerald-50'}`}
+                    >
+                      {savingId === t.type_id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                    </button>
+                    <button
+                      onClick={cancelEdit}
+                      className={`h-6 w-6 cursor-pointer flex items-center justify-center rounded transition-colors ${isDark ? 'text-slate-400 hover:bg-slate-700' : 'text-slate-400 hover:bg-slate-100'}`}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-xs font-medium ${text}`}>{t.type_label}</p>
+                      <p className={`text-[10px] font-mono ${muted}`}>{t.type_value}</p>
+                    </div>
+                    <button
+                      onClick={() => startEdit(t)}
+                      className={`h-6 w-6 cursor-pointer flex items-center justify-center rounded transition-colors ${isDark ? 'text-slate-500 hover:text-slate-200 hover:bg-slate-700' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}`}
+                    >
+                      <Pencil className="h-3 w-3" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(t.type_id)}
+                      disabled={deletingId === t.type_id}
+                      className={`h-6 w-6 cursor-pointer flex items-center justify-center rounded transition-colors ${isDark ? 'text-slate-600 hover:text-rose-400 hover:bg-rose-500/10' : 'text-slate-300 hover:text-rose-500 hover:bg-rose-50'}`}
+                    >
+                      {deletingId === t.type_id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                    </button>
+                  </>
+                )}
+              </div>
+
+              {editingId === t.type_id && impactData && (
+                <div className={`p-3 rounded-lg border text-[11px] animate-in fade-in slide-in-from-top-1 ${isDark ? 'bg-amber-500/10 border-amber-500/20 text-amber-200' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
+                  <div className="flex gap-2 mb-2">
+                    <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-500" />
+                    <p className="font-semibold">Rename Confirmation Required</p>
                   </div>
-                  <button
-                    onClick={() => startEdit(t)}
-                    className={`h-6 w-6 flex items-center justify-center rounded transition-colors ${isDark ? 'text-slate-500 hover:text-slate-200 hover:bg-slate-700' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}`}
-                  >
-                    <Pencil className="h-3 w-3" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(t.type_id)}
-                    disabled={deletingId === t.type_id}
-                    className={`h-6 w-6 flex items-center justify-center rounded transition-colors ${isDark ? 'text-slate-600 hover:text-rose-400 hover:bg-rose-500/10' : 'text-slate-300 hover:text-rose-500 hover:bg-rose-50'}`}
-                  >
-                    {deletingId === t.type_id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
-                  </button>
-                </>
+                  <p className="mb-2">This change affects {impactData.length} active components:</p>
+                  <div className={`max-h-24 overflow-y-auto rounded p-2 mb-3 space-y-1 ${isDark ? 'bg-black/20' : 'bg-white/50'}`}>
+                    {impactData.map(c => (
+                      <div key={c.component_id} className="flex justify-between font-mono text-[10px]">
+                        <span>{c.component_code || `#${c.component_id}`}</span>
+                        <span className={muted}>{c.tool_code}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button variant="ghost" size="sm" className="h-7 text-[10px]" onClick={() => setImpactData(null)}>Back</Button>
+                    <Button
+                      size="sm"
+                      className="h-7 cursor-pointer text-[10px] bg-amber-600 hover:bg-amber-500 text-white"
+                      onClick={() => handleSave(t.type_id, true)}
+                    >
+                      Yes, Rename All
+                    </Button>
+                  </div>
+                </div>
               )}
             </div>
           ))}
         </div>
 
-        {/* Add new */}
         <div className={`px-5 py-4 border-t ${isDark ? 'border-white/[0.06] bg-slate-900/30' : 'border-slate-200 bg-slate-50'}`}>
           <p className={`text-[10px] uppercase tracking-wider font-medium mb-2 ${muted}`}>Add new type</p>
           <div className="flex gap-2">

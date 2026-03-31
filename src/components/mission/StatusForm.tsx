@@ -3,6 +3,7 @@
 import { MissionStatus } from '@/config/types/types';
 import { Plus } from 'lucide-react';
 import { FormEvent, useState } from 'react';
+import { toast } from 'sonner';
 
 interface StatusFormProps {
   onSubmit: (data: Omit<MissionStatus, 'id'>) => void;
@@ -19,7 +20,7 @@ export default function StatusForm({ onSubmit, isDark }: StatusFormProps) {
     e.preventDefault();
     
     if (!formData.code || !formData.description) {
-      alert('Please fill in all fields');
+      toast.error('Please fill in all fields');
       return;
     }
 

@@ -57,6 +57,8 @@ const emptyQualification = (): QualificationEntry => ({
 interface UserFormModalProps {
   isOpen: boolean;
   clients: { client_id: number; client_name: string }[];
+  owners?: { owner_id: number; owner_name: string }[];
+  isSuperAdmin?: boolean;
   onClose: () => void;
   mode: 'add' | 'edit';
   userData?: any;
@@ -68,6 +70,8 @@ interface UserFormModalProps {
 export function UserFormModal({
   isOpen,
   clients,
+  owners = [],
+  isSuperAdmin = false,
   onClose,
   mode,
   userData,
@@ -83,6 +87,7 @@ export function UserFormModal({
       phone: '',
       fk_user_profile_id: 0,
       fk_client_id: 0,
+      owner_id: 0,
       user_type: 'EMPLOYEE',
       is_viewer: 'N',
       is_manager: 'N',
@@ -144,6 +149,10 @@ export function UserFormModal({
 
   const handleSubmit = (e: React.SyntheticEvent) => {
     e.preventDefault();
+    if (isSuperAdmin && mode === 'add' && (!formData.owner_id || formData.owner_id === 0)) {
+      toast.error('Please assign a company to the user');
+      return;
+    }
     if (!formData.fk_user_profile_id || formData.fk_user_profile_id === 0) {
       toast.error('Please select a role for the user');
       return;
@@ -213,6 +222,30 @@ export function UserFormModal({
               />
             </div>
           </div>
+
+          {isSuperAdmin && mode === 'add' && (
+            <div>
+              <Label htmlFor="owner_id" className="pb-2">
+                Company <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                value={formData.owner_id?.toString()}
+                onValueChange={(value) => setFormData({ ...formData, owner_id: parseInt(value) })}
+              >
+                <SelectTrigger className={isDark ? 'bg-slate-900 border-slate-700' : ''}>
+                  <SelectValue placeholder="Select a Company" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">Select a Company</SelectItem>
+                  {owners.map((owner) => (
+                    <SelectItem key={owner.owner_id} value={owner.owner_id.toString()}>
+                      {owner.owner_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">

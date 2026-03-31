@@ -424,11 +424,6 @@ export function FlytbaseTokenConfig() {
                       isDark={isDark}
                     />
                   )}
-                  <UserInfoRow
-                    label="Email"
-                    value={verifiedUser.email}
-                    isDark={isDark}
-                  />
                   {verifiedUser.username && (
                     <UserInfoRow
                       label="Username"
