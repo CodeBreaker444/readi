@@ -30,8 +30,12 @@ export function LoginForm() {
       const response = await axios.post('/api/auth/login', formData)
       const result = response.data
       if (!result.success) { toast.error(result.error || 'Login failed'); return }
+      if (result.redirect) {
+        toast.info('Please set a new password to continue.')
+        window.location.href = result.redirect
+        return
+      }
       toast.success(result.message || 'Login successful!')
-      if (result.redirect) { window.location.href = result.redirect; return }
       if (result.data) window.location.href = getDefaultRoute(result.data.role)
     } catch (err: any) {
       toast.error(err.response?.data?.error || err.message || 'Login failed.')

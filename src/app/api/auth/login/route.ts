@@ -95,6 +95,13 @@ export async function POST(request: NextRequest) {
     });
 
     if (needsPasswordChange) {
+      cookieStore.set('force_pw_change', '1', {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 30,
+        path: '/',
+      });
       return NextResponse.json({ success: true, redirect: '/auth/change-password' });
     }
 

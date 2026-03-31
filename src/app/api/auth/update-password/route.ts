@@ -98,6 +98,8 @@ export async function POST(request: NextRequest) {
 
     if (settingsError) console.error('Settings sync error:', settingsError)
 
+    cookieStore.delete('force_pw_change')
+
     return NextResponse.json({
       success: true,
       message: 'Password changed successfully'

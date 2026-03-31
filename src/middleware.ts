@@ -91,6 +91,10 @@ export async function updateSession(request: NextRequest) {
   const jwtToken = request.cookies.get('readi_auth_token')?.value
 
   if (jwtToken) {
+    const forcePwChange = request.cookies.get('force_pw_change')?.value === '1'
+    if (forcePwChange && pathname === '/auth/change-password') {
+      return NextResponse.next()
+    }
     if (isPublicRoute || isAuthFlowRoute) {
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }

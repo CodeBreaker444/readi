@@ -10,6 +10,15 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
 
+    const isSuperAdmin = session!.user.role === 'SUPERADMIN';
+
+    if (isSuperAdmin && !body.owner_id) {
+      return NextResponse.json(
+        { code: 0, status: 'ERROR', message: 'A company must be assigned when creating a user as Super Admin', error_list: ['owner_id is required'] },
+        { status: 400 },
+      );
+    }
+
     const userData = {
       username: body.username,
       fullname: body.fullname,
@@ -22,7 +31,7 @@ export async function POST(request: NextRequest) {
       timezone: body.timezone,
       fk_client_id: parseInt(body.fk_client_id || 0),
       fk_territorial_unit: parseInt(body.ownerTerritorialUnit || body.territorial_id || 0),
-      owner_id: session!.user.ownerId,
+      owner_id: isSuperAdmin ? parseInt(body.owner_id) : session!.user.ownerId,
     };
 
     const result = await createUser(userData);

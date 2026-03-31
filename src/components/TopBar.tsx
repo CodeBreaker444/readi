@@ -198,11 +198,6 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
                       </p>
                     </div>
                   </div>
-                  {userData?.userId && (
-                    <div className={`mt-3 px-2.5 py-1.5 rounded-md text-[11px] font-mono ${isDark ? 'bg-slate-700/50 text-gray-400' : 'bg-gray-50 text-gray-400'}`}>
-                      ID: {userData.userId}
-                    </div>
-                  )}
                 </div>
 
                 <div className="px-2 py-2">

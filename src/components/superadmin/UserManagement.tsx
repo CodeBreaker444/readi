@@ -63,6 +63,7 @@ export default function UserManagement({ session }: UserManagementProps) {
   const canEditEmail = session.user.role === 'ADMIN' || isSuperAdmin;
   const [users, setUsers] = useState<UserData[]>([]);
   const [clients, setClients] = useState<{ client_id: number, client_name: string }[]>([]);
+  const [owners, setOwners] = useState<{ owner_id: number; owner_name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
@@ -78,7 +79,17 @@ export default function UserManagement({ session }: UserManagementProps) {
   useEffect(() => {
     fetchUsers();
     fetchClients();
+    if (isSuperAdmin) fetchOwners();
   }, []);
+
+  const fetchOwners = async () => {
+    try {
+      const res = await axios.get('/api/owner');
+      if (res.data.code === 1 && res.data.data) setOwners(res.data.data);
+    } catch (e) {
+      console.error('Failed to fetch owners', e);
+    }
+  };
 
   const fetchClients = async () => {
     try {
@@ -164,6 +175,7 @@ export default function UserManagement({ session }: UserManagementProps) {
         user_viewer: formData.is_viewer,
         user_manager: formData.is_manager,
         timezone: 'IST',
+        ...(isSuperAdmin && { owner_id: formData.owner_id }),
       });
       const data = res.data;
       if (data.code === 1) {
@@ -395,7 +407,7 @@ export default function UserManagement({ session }: UserManagementProps) {
       </div>
 
       {showAddModal && (
-        <UserFormModal isOpen={showAddModal} clients={clients} onClose={() => setShowAddModal(false)} mode="add" onSubmit={handleAddUser} isDark={isDark} canEditEmail={canEditEmail} />
+        <UserFormModal isOpen={showAddModal} clients={clients} owners={owners} isSuperAdmin={isSuperAdmin} onClose={() => setShowAddModal(false)} mode="add" onSubmit={handleAddUser} isDark={isDark} canEditEmail={canEditEmail} />
       )}
       {showEditModal && selectedUser && (
         <UserFormModal isOpen={showEditModal} clients={clients} onClose={() => { setShowEditModal(false); setSelectedUser(null); }} mode="edit" userData={selectedUser} onSubmit={handleUpdateUser} isDark={isDark} canEditEmail={canEditEmail} />
