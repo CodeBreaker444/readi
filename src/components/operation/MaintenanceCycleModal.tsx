@@ -171,6 +171,8 @@ export function MaintenanceCycleModal({
   const [submitting, setSubmitting] = useState(false);
   const [systemData, setSystemData] = useState<SystemData | null>(null);
   const [inputs, setInputs] = useState<Record<number, ComponentInput>>({});
+  // Raw string state for the hours input so the user can type freely (e.g. "19.54")
+  const [hoursRaw, setHoursRaw] = useState<Record<number, string>>({});
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -182,14 +184,17 @@ export function MaintenanceCycleModal({
         const sys = data.data as SystemData;
         setSystemData(sys);
         const initial: Record<number, ComponentInput> = {};
+        const initialRaw: Record<number, string> = {};
         for (const comp of sys.components) {
           initial[comp.component_id] = {
             component_id: comp.component_id,
             add_flights: 0,
             add_hours: 0,
           };
+          initialRaw[comp.component_id] = "";
         }
         setInputs(initial);
+        setHoursRaw(initialRaw);
       }
     } catch (e: any) {
       toast.error(e.response?.data?.message ?? "Failed to load maintenance data");
@@ -202,29 +207,46 @@ export function MaintenanceCycleModal({
     if (open && toolId > 0) loadData();
   }, [open, toolId, loadData]);
 
-  const incrementInput = (
-    compId: number,
-    field: "add_flights" | "add_hours"
-  ) => {
-    const comp = systemData?.components.find((c) => c.component_id === compId);
-    const current = inputs[compId]?.[field] ?? 0;
-    const step = field === "add_hours" ? 0.5 : 1;
-    const next = current + step;
+  /** Handle direct hours text input – format HH.MM (minutes 0-59, max 999.59) */
+  const handleHoursChange = (compId: number, rawValue: string) => {
+    // Allow empty string for clearing
+    if (rawValue === "") {
+      setHoursRaw((prev) => ({ ...prev, [compId]: "" }));
+      setInputs((prev) => ({
+        ...prev,
+        [compId]: { ...prev[compId], add_hours: 0 },
+      }));
+      return;
+    }
 
-    if (comp) {
-      if (field === "add_flights" && comp.limit_flight > 0) {
-        const max = comp.limit_flight - comp.current_flights;
-        if (next > max) return;
-      }
-      if (field === "add_hours" && comp.limit_hour > 0) {
-        const max = comp.limit_hour - comp.current_hours;
-        if (next > max) return;
+    // Only allow digits and at most one decimal point; up to 3 digits before dot, up to 2 after
+    if (!/^\d{0,3}(\.\d{0,2})?$/.test(rawValue)) return;
+
+    // Validate minutes part doesn't exceed 59
+    if (rawValue.includes(".")) {
+      const minutesPart = rawValue.split(".")[1];
+      if (minutesPart && minutesPart.length === 2) {
+        const minutes = parseInt(minutesPart, 10);
+        if (minutes > 59) return;
       }
     }
 
+    const numValue = parseFloat(rawValue) || 0;
+
+    // Cap at 999.59
+    if (numValue > 999.59) return;
+
+    // Check against remaining limit
+    const comp = systemData?.components.find((c) => c.component_id === compId);
+    if (comp && comp.limit_hour > 0) {
+      const max = comp.limit_hour - comp.current_hours;
+      if (numValue > max) return;
+    }
+
+    setHoursRaw((prev) => ({ ...prev, [compId]: rawValue }));
     setInputs((prev) => ({
       ...prev,
-      [compId]: { ...prev[compId], [field]: next },
+      [compId]: { ...prev[compId], add_hours: numValue },
     }));
   };
 
@@ -537,34 +559,52 @@ export function MaintenanceCycleModal({
                               <span className={cn("text-[10px] font-medium w-10", isDark ? "text-slate-400" : "text-slate-500")}>
                                 Hours
                               </span>
-                              <button
-                                type="button"
-                                onClick={() => incrementInput(comp.component_id, "add_hours")}
+                              <div className="relative">
+                                <input
+                                  type="text"
+                                  inputMode="decimal"
+                                  placeholder="0.00"
+                                  value={hoursRaw[comp.component_id] ?? ""}
+                                  onChange={(e) =>
+                                    handleHoursChange(comp.component_id, e.target.value)
+                                  }
+                                  className={cn(
+                                    "h-7 w-[80px] rounded-md text-xs font-semibold border transition-colors text-center tabular-nums",
+                                    isDark
+                                      ? "border-slate-600 bg-slate-700 text-slate-200 placeholder:text-slate-600 focus:border-violet-500 focus:ring-1 focus:ring-violet-500/30"
+                                      : "border-slate-200 bg-white text-slate-700 placeholder:text-slate-300 focus:border-violet-500 focus:ring-1 focus:ring-violet-500/30",
+                                    "outline-none"
+                                  )}
+                                />
+                              </div>
+                              <span
                                 className={cn(
-                                  "h-7 px-3 rounded-md text-xs font-semibold border transition-colors flex items-center gap-1",
-                                  isDark
-                                    ? "border-slate-600 bg-slate-700 text-slate-200 hover:bg-slate-600"
-                                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                                  "text-[9px] uppercase tracking-wider",
+                                  isDark ? "text-slate-600" : "text-slate-400"
                                 )}
                               >
-                                +0.5h
-                              </button>
+                                h.min
+                              </span>
                               {inp?.add_hours > 0 && (
                                 <>
                                   <span className={cn("text-[10px] tabular-nums", isDark ? "text-slate-400" : "text-slate-500")}>
-                                    {comp.current_hours} → {previewHours}h
+                                    {comp.current_hours} → {previewHours}
                                   </span>
                                   <button
                                     type="button"
-                                    onClick={() =>
+                                    onClick={() => {
                                       setInputs((prev) => ({
                                         ...prev,
                                         [comp.component_id]: {
                                           ...prev[comp.component_id],
                                           add_hours: 0,
                                         },
-                                      }))
-                                    }
+                                      }));
+                                      setHoursRaw((prev) => ({
+                                        ...prev,
+                                        [comp.component_id]: "",
+                                      }));
+                                    }}
                                     className={cn(
                                       "h-5 w-5 rounded flex items-center justify-center text-[10px] border transition-colors",
                                       isDark
