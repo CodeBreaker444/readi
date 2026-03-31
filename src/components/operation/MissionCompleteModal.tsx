@@ -120,6 +120,24 @@ const TIME_WINDOWS = [
 ];
 
 
+function hhmmToMinutes(hhmm: number): number {
+  const h = Math.floor(hhmm);
+  const m = Math.round((hhmm - h) * 100);
+  return h * 60 + m;
+}
+
+function addHhmmHours(a: number, b: number): number {
+  const totalMin = hhmmToMinutes(a) + hhmmToMinutes(b);
+  return Math.floor(totalMin / 60) + (totalMin % 60) / 100;
+}
+
+function formatHhmmHours(value: number): string {
+  const hours = Math.floor(value);
+  const minutes = Math.round((value - hours) * 100);
+  if (minutes === 0) return `${hours}h`;
+  return `${hours}h ${minutes}m`;
+}
+
 function CycleProgressBar({
   current,
   limit,
@@ -127,6 +145,7 @@ function CycleProgressBar({
   icon: Icon,
   status,
   isDark,
+  isHours,
 }: {
   current: number;
   limit: number;
@@ -134,6 +153,7 @@ function CycleProgressBar({
   icon: React.ElementType;
   status: "OK" | "ALERT" | "DUE";
   isDark: boolean;
+  isHours?: boolean;
 }) {
   if (!limit || limit <= 0) return null;
   const pct = Math.min(100, (current / limit) * 100);
@@ -151,8 +171,8 @@ function CycleProgressBar({
         <div className={cn("h-full rounded-full transition-all", cfg.barColor)} style={{ width: `${pct}%` }} />
       </div>
       <p className={cn("text-xs tabular-nums", isDark ? "text-slate-400" : "text-slate-500")}>
-        {Math.floor(current)}
-        <span className={isDark ? "text-slate-600" : "text-slate-400"}> / {limit}</span>
+        {isHours ? formatHhmmHours(current) : current}
+        <span className={isDark ? "text-slate-600" : "text-slate-400"}> / {isHours ? formatHhmmHours(limit) : limit}</span>
       </p>
     </div>
   );
@@ -189,6 +209,7 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
   const [submitting, setSubmitting] = useState(false);
   const [systemData, setSystemData] = useState<SystemData | null>(null);
   const [inputs, setInputs] = useState<Record<number, ComponentInput>>({});
+  const [hoursRaw, setHoursRaw] = useState<Record<number, string>>({});
 
   const [logs, setLogs] = useState<FlightLog[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
@@ -211,10 +232,13 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
         const sys = data.data as SystemData;
         setSystemData(sys);
         const init: Record<number, ComponentInput> = {};
+        const initRaw: Record<number, string> = {};
         for (const c of sys.components) {
           init[c.component_id] = { component_id: c.component_id, add_flights: 0, add_hours: 0 };
+          initRaw[c.component_id] = "";
         }
         setInputs(init);
+        setHoursRaw(initRaw);
       }
     } catch (e: any) {
       toast.error(e.response?.data?.message ?? "Failed to load maintenance data");
@@ -243,16 +267,29 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
     }
   }, [open, toolId, loadMaintenance, loadLogs]);
 
-  const incrementInput = (compId: number, field: "add_flights" | "add_hours") => {
-    const comp = systemData?.components.find((c) => c.component_id === compId);
-    const current = inputs[compId]?.[field] ?? 0;
-    const step = field === "add_hours" ? 0.5 : 1;
-    const next = current + step;
-    if (comp) {
-      if (field === "add_flights" && comp.limit_flight > 0 && next > comp.limit_flight - comp.current_flights) return;
-      if (field === "add_hours" && comp.limit_hour > 0 && next > comp.limit_hour - comp.current_hours) return;
+  const handleHoursChange = (compId: number, rawValue: string) => {
+    if (rawValue === "") {
+      setHoursRaw((prev) => ({ ...prev, [compId]: "" }));
+      setInputs((prev) => ({ ...prev, [compId]: { ...prev[compId], add_hours: 0 } }));
+      return;
     }
-    setInputs((prev) => ({ ...prev, [compId]: { ...prev[compId], [field]: next } }));
+    if (!/^\d{0,3}(\.\d{0,2})?$/.test(rawValue)) return;
+    if (rawValue.includes(".")) {
+      const minutesPart = rawValue.split(".")[1];
+      if (minutesPart && minutesPart.length === 2) {
+        const minutes = parseInt(minutesPart, 10);
+        if (minutes > 59) return;
+      }
+    }
+    const numValue = parseFloat(rawValue) || 0;
+    if (numValue > 999.59) return;
+    const comp = systemData?.components.find((c) => c.component_id === compId);
+    if (comp && comp.limit_hour > 0) {
+      const remainingMin = hhmmToMinutes(comp.limit_hour) - hhmmToMinutes(comp.current_hours);
+      if (hhmmToMinutes(numValue) > remainingMin) return;
+    }
+    setHoursRaw((prev) => ({ ...prev, [compId]: rawValue }));
+    setInputs((prev) => ({ ...prev, [compId]: { ...prev[compId], add_hours: numValue } }));
   };
 
   const handleSubmitMaintenance = async () => {
@@ -368,14 +405,14 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
       >
         <DialogHeader
           className={cn(
-            "relative overflow-hidden px-6 pb-4 pt-6",
-            isDark ? "bg-slate-900/60" : "bg-slate-50 border-b border-slate-200"
+            "relative overflow-hidden px-6 pt-6 pb-0 shrink-0",
+            isDark ? "bg-slate-900/60" : "bg-slate-50"
           )}
         >
           {isDark && (
             <div className="pointer-events-none absolute right-0 top-0 h-20 w-20 rounded-bl-full bg-gradient-to-bl from-violet-500/10 to-transparent" />
           )}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 mb-3">
             <div className={cn("flex h-9 w-9 items-center justify-center rounded-lg", isDark ? "bg-violet-500/10 text-violet-400" : "bg-violet-50 text-violet-600")}>
               <CheckCircle2 className="h-4.5 w-4.5" />
             </div>
@@ -390,34 +427,33 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
               )}
             </div>
           </div>
+          <div className={cn("flex border-b", isDark ? "border-white/6" : "border-slate-200")}>
+            {(["maintenance", "logs"] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={cn(
+                  "flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 transition-colors",
+                  activeTab === tab
+                    ? isDark
+                      ? "border-violet-400 text-violet-400"
+                      : "border-violet-600 text-violet-600"
+                    : isDark
+                      ? "border-transparent text-slate-500 hover:text-slate-300"
+                      : "border-transparent text-slate-500 hover:text-slate-700"
+                )}
+              >
+                {tab === "maintenance" ? <Wrench className="h-3.5 w-3.5" /> : <FileUp className="h-3.5 w-3.5" />}
+                {tab === "maintenance" ? "Maintenance" : "Flight Logs"}
+                {tab === "logs" && logs.length > 0 && (
+                  <span className={cn("ml-1 rounded-full px-1.5 py-0 text-[10px] font-semibold", isDark ? "bg-violet-500/20 text-violet-300" : "bg-violet-100 text-violet-700")}>
+                    {logs.length}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
         </DialogHeader>
-
-        <div className={cn("flex border-b", isDark ? "border-white/[0.06]" : "border-slate-200")}>
-          {(["maintenance", "logs"] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={cn(
-                "flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 transition-colors",
-                activeTab === tab
-                  ? isDark
-                    ? "border-violet-400 text-violet-400"
-                    : "border-violet-600 text-violet-600"
-                  : isDark
-                    ? "border-transparent text-slate-500 hover:text-slate-300"
-                    : "border-transparent text-slate-500 hover:text-slate-700"
-              )}
-            >
-              {tab === "maintenance" ? <Wrench className="h-3.5 w-3.5" /> : <FileUp className="h-3.5 w-3.5" />}
-              {tab === "maintenance" ? "Maintenance" : "Flight Logs"}
-              {tab === "logs" && logs.length > 0 && (
-                <span className={cn("ml-1 rounded-full px-1.5 py-0 text-[10px] font-semibold", isDark ? "bg-violet-500/20 text-violet-300" : "bg-violet-100 text-violet-700")}>
-                  {logs.length}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
 
         <div className="flex-1 overflow-y-auto px-6 py-4">
 
@@ -457,7 +493,7 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
                     {systemData!.components.map((comp) => {
                       const cfg = STATUS_CONFIG[comp.status];
                       const inp = inputs[comp.component_id];
-                      const previewHours = comp.current_hours + (inp?.add_hours || 0);
+                      const previewHours = addHhmmHours(comp.current_hours, inp?.add_hours || 0);
                       const previewFlights = comp.current_flights + (inp?.add_flights || 0);
                       const hasFlightLimit = comp.limit_flight > 0;
                       const hasHourLimit = comp.limit_hour > 0;
@@ -495,7 +531,7 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
                           </div>
                           <div className="grid grid-cols-3 gap-3 mb-3">
                             {hasFlightLimit && <CycleProgressBar current={previewFlights} limit={comp.limit_flight} label="Flights" icon={Plane} status={comp.status} isDark={isDark} />}
-                            {hasHourLimit && <CycleProgressBar current={previewHours} limit={comp.limit_hour} label="Hours" icon={Clock} status={comp.status} isDark={isDark} />}
+                            {hasHourLimit && <CycleProgressBar current={previewHours} limit={comp.limit_hour} label="Hours" icon={Clock} status={comp.status} isDark={isDark} isHours />}
                             {hasDayLimit && <CycleProgressBar current={comp.current_days} limit={comp.limit_day} label="Days" icon={CalendarDays} status={comp.status} isDark={isDark} />}
                           </div>
                           {(hasFlightLimit || hasHourLimit) && (
@@ -530,19 +566,33 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
                                 {hasHourLimit && (
                                   <div className="flex items-center gap-2">
                                     <span className={cn("text-[10px] font-medium w-10", isDark ? "text-slate-400" : "text-slate-500")}>Hours</span>
-                                    <button
-                                      type="button"
-                                      onClick={() => incrementInput(comp.component_id, "add_hours")}
-                                      className={cn("h-7 px-3 rounded-md text-xs font-semibold border transition-colors", isDark ? "border-slate-600 bg-slate-700 text-slate-200 hover:bg-slate-600" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50")}
-                                    >+0.5h</button>
+                                    <div className="relative">
+                                      <input
+                                        type="text"
+                                        inputMode="decimal"
+                                        placeholder="0.00"
+                                        value={hoursRaw[comp.component_id] ?? ""}
+                                        onChange={(e) => handleHoursChange(comp.component_id, e.target.value)}
+                                        className={cn(
+                                          "h-7 w-20 rounded-md text-xs font-semibold border transition-colors text-center tabular-nums outline-none",
+                                          isDark
+                                            ? "border-slate-600 bg-slate-700 text-slate-200 placeholder:text-slate-600 focus:border-violet-500 focus:ring-1 focus:ring-violet-500/30"
+                                            : "border-slate-200 bg-white text-slate-700 placeholder:text-slate-300 focus:border-violet-500 focus:ring-1 focus:ring-violet-500/30"
+                                        )}
+                                      />
+                                    </div>
+                                    <span className={cn("text-[9px] uppercase tracking-wider", isDark ? "text-slate-600" : "text-slate-400")}>h.min</span>
                                     {inp?.add_hours > 0 && (
                                       <>
                                         <span className={cn("text-[10px] tabular-nums", isDark ? "text-slate-400" : "text-slate-500")}>
-                                          {comp.current_hours} → {previewHours}h
+                                          {formatHhmmHours(comp.current_hours)} → {formatHhmmHours(previewHours)}
                                         </span>
                                         <button
                                           type="button"
-                                          onClick={() => setInputs((prev) => ({ ...prev, [comp.component_id]: { ...prev[comp.component_id], add_hours: 0 } }))}
+                                          onClick={() => {
+                                            setInputs((prev) => ({ ...prev, [comp.component_id]: { ...prev[comp.component_id], add_hours: 0 } }));
+                                            setHoursRaw((prev) => ({ ...prev, [comp.component_id]: "" }));
+                                          }}
                                           className={cn("h-5 w-5 rounded flex items-center justify-center text-[10px] border transition-colors", isDark ? "border-slate-600 bg-slate-700 text-slate-400 hover:text-rose-400 hover:border-rose-500/40" : "border-slate-200 bg-white text-slate-400 hover:text-rose-500 hover:border-rose-300")}
                                           title="Reset hours"
                                         >×</button>

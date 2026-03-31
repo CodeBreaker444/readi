@@ -90,6 +90,24 @@ const STATUS_CONFIG = {
 };
 
 
+function hhmmToMinutes(hhmm: number): number {
+  const h = Math.floor(hhmm);
+  const m = Math.round((hhmm - h) * 100);
+  return h * 60 + m;
+}
+
+function addHhmmHours(a: number, b: number): number {
+  const totalMin = hhmmToMinutes(a) + hhmmToMinutes(b);
+  return Math.floor(totalMin / 60) + (totalMin % 60) / 100;
+}
+
+function formatHhmmHours(value: number): string {
+  const hours = Math.floor(value);
+  const minutes = Math.round((value - hours) * 100);
+  if (minutes === 0) return `${hours}h`;
+  return `${hours}h ${minutes}m`;
+}
+
 function CycleProgressBar({
   current,
   limit,
@@ -97,6 +115,7 @@ function CycleProgressBar({
   icon: Icon,
   status,
   isDark,
+  isHours,
 }: {
   current: number;
   limit: number;
@@ -104,6 +123,7 @@ function CycleProgressBar({
   icon: React.ElementType;
   status: "OK" | "ALERT" | "DUE";
   isDark: boolean;
+  isHours?: boolean;
 }) {
   if (!limit || limit <= 0) return null;
 
@@ -139,8 +159,8 @@ function CycleProgressBar({
       <p
         className={cn("text-xs tabular-nums", isDark ? "text-slate-400" : "text-slate-500")}
       >
-        {Math.floor(current)}
-        <span className={isDark ? "text-slate-600" : "text-slate-400"}> / {limit}</span>
+        {isHours ? formatHhmmHours(current) : current}
+        <span className={isDark ? "text-slate-600" : "text-slate-400"}> / {isHours ? formatHhmmHours(limit) : limit}</span>
       </p>
     </div>
   );
@@ -171,7 +191,6 @@ export function MaintenanceCycleModal({
   const [submitting, setSubmitting] = useState(false);
   const [systemData, setSystemData] = useState<SystemData | null>(null);
   const [inputs, setInputs] = useState<Record<number, ComponentInput>>({});
-  // Raw string state for the hours input so the user can type freely (e.g. "19.54")
   const [hoursRaw, setHoursRaw] = useState<Record<number, string>>({});
 
   const loadData = useCallback(async () => {
@@ -207,9 +226,7 @@ export function MaintenanceCycleModal({
     if (open && toolId > 0) loadData();
   }, [open, toolId, loadData]);
 
-  /** Handle direct hours text input – format HH.MM (minutes 0-59, max 999.59) */
   const handleHoursChange = (compId: number, rawValue: string) => {
-    // Allow empty string for clearing
     if (rawValue === "") {
       setHoursRaw((prev) => ({ ...prev, [compId]: "" }));
       setInputs((prev) => ({
@@ -219,10 +236,8 @@ export function MaintenanceCycleModal({
       return;
     }
 
-    // Only allow digits and at most one decimal point; up to 3 digits before dot, up to 2 after
     if (!/^\d{0,3}(\.\d{0,2})?$/.test(rawValue)) return;
 
-    // Validate minutes part doesn't exceed 59
     if (rawValue.includes(".")) {
       const minutesPart = rawValue.split(".")[1];
       if (minutesPart && minutesPart.length === 2) {
@@ -233,14 +248,12 @@ export function MaintenanceCycleModal({
 
     const numValue = parseFloat(rawValue) || 0;
 
-    // Cap at 999.59
     if (numValue > 999.59) return;
 
-    // Check against remaining limit
     const comp = systemData?.components.find((c) => c.component_id === compId);
     if (comp && comp.limit_hour > 0) {
-      const max = comp.limit_hour - comp.current_hours;
-      if (numValue > max) return;
+      const remainingMin = hhmmToMinutes(comp.limit_hour) - hhmmToMinutes(comp.current_hours);
+      if (hhmmToMinutes(numValue) > remainingMin) return;
     }
 
     setHoursRaw((prev) => ({ ...prev, [compId]: rawValue }));
@@ -396,7 +409,7 @@ export function MaintenanceCycleModal({
                 const cfg = STATUS_CONFIG[comp.status];
                 const inp = inputs[comp.component_id];
 
-                const previewHours = comp.current_hours + (inp?.add_hours || 0);
+                const previewHours = addHhmmHours(comp.current_hours, inp?.add_hours || 0);
                 const previewFlights = comp.current_flights + (inp?.add_flights || 0);
 
                 const hasFlightLimit = comp.limit_flight > 0;
@@ -486,6 +499,7 @@ export function MaintenanceCycleModal({
                           icon={Clock}
                           status={comp.status}
                           isDark={isDark}
+                          isHours
                         />
                       )}
                       {hasDayLimit && (
@@ -588,7 +602,7 @@ export function MaintenanceCycleModal({
                               {inp?.add_hours > 0 && (
                                 <>
                                   <span className={cn("text-[10px] tabular-nums", isDark ? "text-slate-400" : "text-slate-500")}>
-                                    {comp.current_hours} → {previewHours}
+                                    {formatHhmmHours(comp.current_hours)} → {formatHhmmHours(previewHours)}
                                   </span>
                                   <button
                                     type="button"

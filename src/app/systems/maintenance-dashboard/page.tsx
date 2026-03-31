@@ -186,14 +186,12 @@ export default function MaintenancePage() {
       const exportedOn = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
       const thresholdLabel = threshold < 70 ? 'Sensitive' : threshold < 85 ? 'Normal' : 'Lenient';
 
-      // Title
       doc.setFontSize(13); doc.setFont('helvetica', 'bold'); doc.setTextColor(15, 15, 15);
       doc.text('Maintenance Dashboard', 14, 15);
       doc.setFontSize(8); doc.setFont('helvetica', 'normal'); doc.setTextColor(100, 116, 139);
       doc.text(`Exported ${exportedOn}`, 14, 21);
       doc.setTextColor(0, 0, 0);
 
-      // Summary stat boxes
       const boxY = 26; const boxH = 17; const gap = 3;
       const boxW = (pageW - 28 - gap * 5) / 6;
       const statBoxes = [
@@ -218,7 +216,6 @@ export default function MaintenancePage() {
       });
       doc.setTextColor(0, 0, 0);
 
-      // Tables (skip Summary section — already drawn as boxes)
       let startY = boxY + boxH + 6;
       for (const section of exportSections.slice(1)) {
         doc.setFontSize(10); doc.setFont('helvetica', 'bold'); doc.setTextColor(109, 40, 217);
@@ -236,7 +233,6 @@ export default function MaintenancePage() {
         if (startY > pageH - 20) { doc.addPage(); startY = 15; }
       }
 
-      // Logo + footer on every page
       const totalPages = doc.getNumberOfPages();
       for (let i = 1; i <= totalPages; i++) {
         doc.setPage(i);

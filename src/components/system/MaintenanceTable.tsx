@@ -34,6 +34,13 @@ function cleanTrigger(arr: (string | null)[] | null): string[] {
   return arr.filter((v): v is string => !!v && v !== "null");
 }
 
+function formatHhmmHours(value: number): string {
+  const hours = Math.floor(value);
+  const minutes = Math.round((value - hours) * 100);
+  if (minutes === 0) return `${hours}h`;
+  return `${hours}h ${minutes}m`;
+}
+
 function UsageLimitCell({
   current,
   limit,
@@ -85,10 +92,10 @@ function UsageLimitCell({
     <div className="flex flex-col gap-1 min-w-25">
       <div className="flex items-baseline justify-between gap-1">
         <span className={`text-xs font-semibold tabular-nums ${textColor}`}>
-          {cur}
+          {unit === "h" ? formatHhmmHours(cur) : cur}
         </span>
         <span className="text-[10px] text-slate-400">
-          / {max} {unit}
+          / {unit === "h" ? formatHhmmHours(max!) : max} {unit}
         </span>
       </div>
       <div className="relative h-1.5 w-full rounded-full bg-slate-100 overflow-visible">

@@ -35,6 +35,17 @@ interface SystemData {
 }
 
 
+function hhmmToMinutes(hhmm: number): number {
+  const h = Math.floor(hhmm);
+  const m = Math.round((hhmm - h) * 100);
+  return h * 60 + m;
+}
+
+function addHhmmHours(a: number, b: number): number {
+  const totalMin = hhmmToMinutes(a) + hhmmToMinutes(b);
+  return Math.floor(totalMin / 60) + (totalMin % 60) / 100;
+}
+
 function computeComponentStatus(
   currentHours: number,
   currentFlights: number,
@@ -126,10 +137,10 @@ export async function getComponentsForMaintenanceCycle(
     const hasLimits = limitHour > 0 || limitFlight > 0 || limitDay > 0;
     const { status, trigger } = hasLimits
       ? computeComponentStatus(currentHours, currentFlights, currentDays, {
-          hour: limitHour,
-          flight: limitFlight,
-          day: limitDay,
-        })
+        hour: limitHour,
+        flight: limitFlight,
+        day: limitDay,
+      })
       : { status: "OK" as const, trigger: [] };
 
     if (status === "DUE") worstStatus = "DUE";
@@ -192,7 +203,15 @@ export async function updateComponentMaintenanceCycle(
 
       if (compErr || !comp) return null;
 
-      const meta = comp.component_metadata || {};
+      const rawMeta = comp.component_metadata;
+      let meta: Record<string, unknown> = {};
+      if (rawMeta) {
+        if (typeof rawMeta === "string") {
+          try { meta = JSON.parse(rawMeta); } catch { meta = {}; }
+        } else if (typeof rawMeta === "object" && !Array.isArray(rawMeta)) {
+          meta = rawMeta as Record<string, unknown>;
+        }
+      }
       const cycleType = comp.maintenance_cycle || "NONE";
 
       const limitHour = Number(comp.maintenance_cycle_hour ?? 0);
@@ -202,40 +221,47 @@ export async function updateComponentMaintenanceCycle(
       const prevHours = Number(comp.current_maintenance_hours ?? 0);
       const prevFlights = Number(comp.current_maintenance_flights ?? 0);
       const currentDays = Number(comp.current_maintenance_days ?? 0);
-      const prevLifetimeHours = comp.current_usage_hours ?? 0;
+      const prevLifetimeHours = Number(comp.current_usage_hours ?? 0);
 
-      const newHours = prevHours + (upd.add_hours || 0);
+      const newHours = addHhmmHours(prevHours, upd.add_hours || 0);
       const newFlights = prevFlights + (upd.add_flights || 0);
-      const newLifetimeHours = prevLifetimeHours + (upd.add_hours || 0);
+      const newLifetimeHours = addHhmmHours(prevLifetimeHours, upd.add_hours || 0);
 
       const now = new Date().toISOString();
 
       const updatePayload: Record<string, any> = {
         current_usage_hours: newLifetimeHours,
         last_cycle_updated_at: now,
-        component_metadata: {
+        component_metadata: JSON.stringify({
           ...meta,
           last_mission_id: missionId,
           last_maintenance_update: now,
-        },
+        }),
       };
 
-      if (cycleType === "HOURS" || cycleType === "MIXED") {
+      if (limitHour > 0 && upd.add_hours > 0) {
         updatePayload.current_maintenance_hours = newHours;
       }
-      if (cycleType === "FLIGHTS" || cycleType === "MIXED") {
+      if (limitFlight > 0 && upd.add_flights > 0) {
         updatePayload.current_maintenance_flights = newFlights;
       }
 
-      const { error: updateErr } = await supabase
+
+      const { data: updated, error: updateErr } = await supabase
         .from("tool_component")
         .update(updatePayload)
-        .eq("component_id", upd.component_id);
+        .eq("component_id", upd.component_id)
+        .eq("fk_tool_id", toolId)
+        .select("component_id, current_maintenance_hours, current_maintenance_flights")
+        .maybeSingle();
 
-      if (updateErr) return null;
+      if (updateErr || !updated) {
+        console.error(`[maintenance-cycle] update failed for component ${upd.component_id}:`, updateErr, 'updated:', updated);
+        return null;
+      }
 
-      const finalHours = (cycleType === "HOURS" || cycleType === "MIXED") ? newHours : prevHours;
-      const finalFlights = (cycleType === "FLIGHTS" || cycleType === "MIXED") ? newFlights : prevFlights;
+      const finalHours = limitHour > 0 ? newHours : prevHours;
+      const finalFlights = limitFlight > 0 ? newFlights : prevFlights;
 
       const { status, trigger } = computeComponentStatus(
         finalHours, finalFlights, currentDays,
