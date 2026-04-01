@@ -248,7 +248,7 @@ export default function TrainingCoursesPage() {
     <div className={`min-h-screen ${bg}`}>
 
       <div className={`backdrop-blur-xl border-b ${isDark ? 'bg-[#0a0e1a]/90 border-white/6' : 'bg-white/80 border-black/6 shadow-[0_1px_2px_rgba(0,0,0,0.04)]'}`}>
-        <div className="mx-auto max-w-[1400px] px-6 py-3.5 flex items-center justify-between">
+        <div className="mx-auto   px-6 py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-3.5">
             <div className="w-1 h-6 rounded-full bg-violet-600" />
             <div>
@@ -293,7 +293,7 @@ export default function TrainingCoursesPage() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-[1400px] px-6 py-6 space-y-5">
+      <div className="mx-auto  px-6 py-6 space-y-5">
 
         {filterOpen && (
           <div className={`rounded-xl border p-4 flex flex-wrap gap-3 items-center ${cardBg}`}>
