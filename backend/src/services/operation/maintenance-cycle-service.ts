@@ -21,7 +21,7 @@ interface ComponentMaintenanceInfo {
   limit_flight: number;
   limit_day: number;
   maintenance_cycle_type: string;
-  last_cycle_updated_at: string | null;
+  last_maintenance_date: string | null;
   status: "OK" | "ALERT" | "DUE";
   trigger: string[];
 }
@@ -92,7 +92,7 @@ const COMPONENT_SELECT = `
   current_maintenance_hours,
   current_maintenance_days,
   current_maintenance_flights,
-  last_cycle_updated_at
+  last_maintenance_date
 `;
 
 
@@ -158,7 +158,7 @@ export async function getComponentsForMaintenanceCycle(
       limit_flight: limitFlight,
       limit_day: limitDay,
       maintenance_cycle_type: cycleType,
-      last_cycle_updated_at: comp.last_cycle_updated_at || null,
+      last_maintenance_date: comp.last_maintenance_date || null,
       status,
       trigger,
     });
@@ -231,7 +231,6 @@ export async function updateComponentMaintenanceCycle(
 
       const updatePayload: Record<string, any> = {
         current_usage_hours: newLifetimeHours,
-        last_cycle_updated_at: now,
         component_metadata: JSON.stringify({
           ...meta,
           last_mission_id: missionId,
@@ -280,7 +279,7 @@ export async function updateComponentMaintenanceCycle(
         limit_flight: limitFlight,
         limit_day: limitDay,
         maintenance_cycle_type: cycleType,
-        last_cycle_updated_at: now,
+        last_maintenance_date: comp.last_maintenance_date || null,
         status,
         trigger,
       };

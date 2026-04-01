@@ -6,6 +6,7 @@ import { GrSystem } from "react-icons/gr";
 import {
   HiChevronDown,
   HiChevronRight,
+  HiOutlineAcademicCap,
   HiOutlineBell,
   HiOutlineBookOpen,
   HiOutlineBriefcase,
@@ -102,6 +103,15 @@ const navigationItems: NavItem[] = [
     subItems: [
       { name: 'Settings', href: '/flytbase' },
       { name: 'Recent Flights', href: '/flytbase/flights' },
+    ],
+  },
+  {
+    name: 'Training',
+    href: '/training/courses',
+    icon: HiOutlineAcademicCap,
+    subItems: [
+      { name: 'Courses', href: '/training/courses' },
+      { name: 'Calendar', href: '/training/calendar' },
     ],
   },
   { name: 'Notifications', href: '/notifications', icon: HiOutlineBell },

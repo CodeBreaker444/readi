@@ -101,6 +101,8 @@ export const ROUTE_PERMISSIONS: Record<string, RoutePermissionEntry> = {
   '/team/client': 'view_client',
   '/company': 'add_company',
   '/audit-logs': 'view_logs',
+  '/training/courses': 'view_training',
+  '/training/calendar': 'view_training',
 };
 
 
@@ -131,7 +133,8 @@ export const API_ROUTE_PERMISSIONS: Array<{ prefix: string; permission: ApiPermi
   { prefix: '/api/client/list', permission: ['view_client', 'view_config', 'view_planning'] },  
   { prefix: '/api/client', permission: 'view_client' },
   { prefix: '/api/audit-logs', permission: 'view_logs' },
-  { prefix: '/api/integrations/flytbase', permission: null },  
+  { prefix: '/api/training', permission: 'view_training' },
+  { prefix: '/api/integrations/flytbase', permission: null },
 ];
 
 export function getApiRoutePermission(pathname: string): ApiPermissionEntry | undefined {

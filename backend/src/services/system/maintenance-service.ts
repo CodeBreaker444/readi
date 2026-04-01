@@ -8,9 +8,6 @@ import {
   MaintenanceStatus,
 } from "@/config/types/maintenance";
 
-function daysBetween(from: Date, to: Date): number {
-  return Math.floor((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24));
-}
 
 function computeStatus(
   currentHours: number,
@@ -176,7 +173,7 @@ let toolQuery = supabase
       current_maintenance_hours,
       current_maintenance_days,
       current_maintenance_flights,
-      last_cycle_updated_at
+      last_maintenance_date
     `)
     .in("fk_tool_id", toolIds)
     .eq("component_active", "Y");
@@ -198,18 +195,17 @@ let toolQuery = supabase
       current_maintenance_hours: number | null;
       current_maintenance_days: number | null;
       current_maintenance_flights: number | null;
-      last_cycle_updated_at: string | null;
+      last_maintenance_date: string | null;
     };
 
     const compModel: MaintenanceModel = {
-      // factory_type: comp.component_type,
       factory_serie: null,
       factory_model: comp.component_name,
       maintenance_cycle_hour: Number(comp.maintenance_cycle_hour ?? 0),
       maintenance_cycle_flight: Number(comp.maintenance_cycle_flight ?? 0),
       maintenance_cycle_day: Number(comp.maintenance_cycle_day ?? 0),
     };
-    const lastMaint = comp.last_cycle_updated_at ?? comp.installation_date ?? null;
+    const lastMaint = comp.last_maintenance_date ?? null;
 
     const compHours = Number(comp.current_maintenance_hours ?? 0);
     const compFlights = Number(comp.current_maintenance_flights ?? 0);
