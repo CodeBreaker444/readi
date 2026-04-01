@@ -6,6 +6,7 @@ import { GrSystem } from "react-icons/gr";
 import {
   HiChevronDown,
   HiChevronRight,
+  HiOutlineAcademicCap,
   HiOutlineBell,
   HiOutlineBookOpen,
   HiOutlineBriefcase,
@@ -16,6 +17,7 @@ import {
   HiOutlineHome,
   HiOutlineOfficeBuilding,
   HiOutlinePaperAirplane,
+  HiOutlineShieldCheck,
   HiOutlineTemplate,
   HiOutlineUsers
 } from 'react-icons/hi';
@@ -55,7 +57,7 @@ const navigationItems: NavItem[] = [
       { name: 'P00 – New Evaluation Request', href: '/planning/new-evaluation' },
       { name: 'P01 – Evaluation', href: '/planning/evaluation' },
       { name: 'P02 – Planning Dashboard', href: '/planning/planning-dashboard' },
-      // { name: 'P03 – Test Mission', href: '/planning/test-mission' },
+          // { name: 'P03 – Test Mission', href: '/planning/test-mission' },
       { name: 'P04 – Mission Templates', href: '/planning/mission-template' }
     ]
   },
@@ -74,7 +76,7 @@ const navigationItems: NavItem[] = [
     href: '/logbooks/mission-planning-logbook',
     icon: HiOutlineBookOpen,
     subItems: [
-      // { name: 'Operation Request Logbook', href: '/logbooks/operation-requests' },
+         // { name: 'Operation Request Logbook', href: '/logbooks/operation-requests' },
       { name: 'Planned Mission Logbook', href: '/logbooks/mission-planning-logbook' },
       { name: 'Flight Logbook', href: '/logbooks/operation-logbook' },
       // { name: 'Battery Logbook', href: '/logbooks/battery' },
@@ -87,14 +89,22 @@ const navigationItems: NavItem[] = [
     icon: HiOutlineBell,
     subItems: [
       { name: 'SPI & KPI Definitions', href: '/safety/spi-kpi-definitions' },
-      // { name: 'Document Repository', href: '/safety/documents' }
+         // { name: 'Document Repository', href: '/safety/documents' }
     ]
   },
-  // {
+    // {
   //   name: 'Emergency Contact List',
   //   href: '/emergency',
   //   icon: Users
-  // },
+  // }
+  {
+    name: 'Compliance',
+    href: '/compliance/general-audit-plan',
+    icon: HiOutlineShieldCheck,
+    subItems: [
+      { name: 'General Audit Plan', href: '/compliance/general-audit-plan' },
+    ]
+  },
   {
     name: 'FlytBase',
     href: '/flytbase',
@@ -102,6 +112,15 @@ const navigationItems: NavItem[] = [
     subItems: [
       { name: 'Settings', href: '/flytbase' },
       { name: 'Recent Flights', href: '/flytbase/flights' },
+    ],
+  },
+  {
+    name: 'Training',
+    href: '/training/courses',
+    icon: HiOutlineAcademicCap,
+    subItems: [
+      { name: 'Courses', href: '/training/courses' },
+      { name: 'Calendar', href: '/training/calendar' },
     ],
   },
   { name: 'Notifications', href: '/notifications', icon: HiOutlineBell },
@@ -116,7 +135,7 @@ const configurationItems: SubNavItem[] = [
     icon: HiOutlineOfficeBuilding,
     subItems: [
       { name: 'Chart', href: '/organization/chart' },
-      // { name: 'Board', href: '/organization/board' },
+       // { name: 'Board', href: '/organization/board' },
       { name: 'Procedures', href: '/organization/luc-procedures' },
       // { name: 'LUC Documents', href: '/organization/luc-docs' }
       { name: 'Checklist', href: '/organization/checklist' },
@@ -359,14 +378,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
                       className="text-[0.45rem] transition-colors duration-150"
                       style={{
                         color: isActive
-                          ? isDark
-                            ? '#a78bfa'
-                            : '#ffffff'
-                          : isHovered
-                            ? '#8b5cf6'
-                            : isDark
-                              ? '#475569'
-                              : '#cbd5e1',
+                          ? isDark ? '#a78bfa' : '#ffffff'
+                          : isHovered ? '#8b5cf6'
+                          : isDark ? '#475569' : '#cbd5e1',
                       }}
                     >
                       ●
@@ -422,7 +436,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
             ${getCollapsedItemClass(href, isActive)}
           `}
         >
-          <Icon size={18} className={`shrink-0 transition-colors duration-150`} />
+          <Icon size={18} className="shrink-0 transition-colors duration-150" />
         </a>
         {tooltipItem === href && (
           <div
@@ -454,30 +468,38 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
       `}
     >
       <div
-        className={`shrink-0 ${isDark ? 'border-b border-slate-800' : 'border-b border-slate-100'} ${isCollapsed ? 'px-2 py-5' : 'px-5 py-5'
-          }`}
+        className={`shrink-0 ${isDark ? 'border-b border-slate-800' : 'border-b border-slate-100'} ${
+          isCollapsed ? 'px-2 py-5' : 'px-5 py-5'
+        }`}
       >
         <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
           <div className={`flex items-center ${isCollapsed ? '' : 'gap-2.5'}`}>
-            <div className="w-8 h-8 rounded-xl overflow-hidden text-white flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg, #7c3aed, #5b21b6)', boxShadow: '0 2px 8px rgba(124,58,237,0.3)' }}>
-              <img src="/logo-sm.png" alt="ReADI Logo" className="w-full h-full object-contain brightness-0 invert" />
+            <div
+              className="w-8 h-8 rounded-xl overflow-hidden text-white flex items-center justify-center shrink-0"
+              style={{
+                background: 'linear-gradient(135deg, #7c3aed, #5b21b6)',
+                boxShadow: '0 2px 8px rgba(124,58,237,0.3)',
+              }}
+            >
+              <img
+                src="/logo-sm.png"
+                alt="ReADI Logo"
+                className="w-full h-full object-contain brightness-0 invert"
+              />
             </div>
             {!isCollapsed && (
               <div>
                 <p
-                  className={`font-bold leading-none tracking-tight ${isDark ? 'text-white' : 'text-slate-900'
-                    }`}
+                  className={`font-bold leading-none tracking-tight ${
+                    isDark ? 'text-white' : 'text-slate-900'
+                  }`}
                   style={{ fontSize: '0.9rem', fontFamily: "'DM Sans', system-ui, sans-serif" }}
                 >
                   ReADI
                 </p>
                 <p
                   className={`leading-none mt-0.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}
-                  style={{
-                    fontSize: '0.6rem',
-                    letterSpacing: '0.12em',
-                    textTransform: 'uppercase',
-                  }}
+                  style={{ fontSize: '0.6rem', letterSpacing: '0.12em', textTransform: 'uppercase' }}
                 >
                   Drone Control
                 </p>
@@ -487,13 +509,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
           {!isCollapsed && (
             <button
               onClick={onToggleCollapse}
-              className={`cursor-pointer
-                p-1 rounded-md transition-all duration-150
-                ${isDark
+              className={`cursor-pointer p-1 rounded-md transition-all duration-150 ${
+                isDark
                   ? 'hover:bg-slate-800 text-slate-500 hover:text-slate-300'
                   : 'hover:bg-slate-100 text-slate-400 hover:text-slate-600'
-                }
-              `}
+              }`}
               title="Collapse sidebar"
             >
               <TbLayoutSidebarFilled size={20} />
@@ -506,13 +526,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
         <div className="flex justify-center pt-2 pb-1">
           <button
             onClick={onToggleCollapse}
-            className={`cursor-pointer
-              p-1 rounded-md transition-all duration-150
-              ${isDark
+            className={`cursor-pointer p-1 rounded-md transition-all duration-150 ${
+              isDark
                 ? 'hover:bg-slate-800 text-slate-500 hover:text-slate-300'
                 : 'hover:bg-slate-100 text-slate-400 hover:text-slate-600'
-              }
-            `}
+            }`}
             title="Expand sidebar"
           >
             <TbLayoutSidebarFilled size={20} />
@@ -521,8 +539,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
       )}
 
       <nav
-        className={`flex-1 overflow-y-auto py-3 sidebar-scroll ${isCollapsed ? 'px-1.5 space-y-1' : 'px-3 space-y-0.5'
-          }`}
+        className={`flex-1 overflow-y-auto py-3 sidebar-scroll ${
+          isCollapsed ? 'px-1.5 space-y-1' : 'px-3 space-y-0.5'
+        }`}
       >
         {isCollapsed ? (
           <>
@@ -533,8 +552,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
             {filteredConfigurationItems.length > 0 && (
               <>
                 <div
-                  className={`my-2 mx-2 border-t ${isDark ? 'border-slate-800' : 'border-slate-200'
-                    }`}
+                  className={`my-2 mx-2 border-t ${
+                    isDark ? 'border-slate-800' : 'border-slate-200'
+                  }`}
                 />
                 {filteredConfigurationItems.map((configItem) =>
                   renderCollapsedIcon(
@@ -574,10 +594,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
                     <span className="flex items-center gap-2.5">
                       <Icon
                         size={17}
-                        className={`shrink-0 transition-colors duration-150 ${getIconClass(
-                          item.href,
-                          isActive
-                        )}`}
+                        className={`shrink-0 transition-colors duration-150 ${getIconClass(item.href, isActive)}`}
                       />
                       <span
                         style={{
@@ -605,8 +622,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
             {filteredConfigurationItems.length > 0 && (
               <div className="pt-4">
                 <p
-                  className={`px-3 pb-1.5 uppercase ${isDark ? 'text-slate-600' : 'text-slate-400'
-                    }`}
+                  className={`px-3 pb-1.5 uppercase ${isDark ? 'text-slate-600' : 'text-slate-400'}`}
                   style={{ fontSize: '0.6rem', letterSpacing: '0.12em', fontWeight: 600 }}
                 >
                   Configuration
@@ -633,9 +649,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
                             transition-all duration-150 cursor-pointer
                             ${getItemClass(configItem.href, isActive)}
                           `}
-                          style={{
-                            fontFamily: "'DM Sans', system-ui, sans-serif",
-                          }}
+                          style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}
                         >
                           <span className="flex items-center gap-2.5">
                             <ConfigIcon
@@ -662,9 +676,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
                               <HiChevronRight size={13} className="shrink-0 opacity-40" />
                             ))}
                         </a>
-                        {configItem.subItems &&
-                          isExpanded &&
-                          renderSubItems(configItem.subItems, 2)}
+                        {configItem.subItems && isExpanded && renderSubItems(configItem.subItems, 2)}
                       </div>
                     );
                   })}

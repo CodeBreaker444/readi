@@ -563,7 +563,7 @@ async function resetComponentCounters(toolId: number, resetAt: string, component
       const cycleType = comp.maintenance_cycle ?? 'NONE';
       if (cycleType === 'NONE') return null;
 
-      const resetPayload: Record<string, any> = { last_cycle_updated_at: resetAt };
+      const resetPayload: Record<string, any> = { last_maintenance_date: resetAt };
       if (cycleType === 'HOURS' || cycleType === 'MIXED') resetPayload.current_maintenance_hours = 0;
       if (cycleType === 'FLIGHTS' || cycleType === 'MIXED') resetPayload.current_maintenance_flights = 0;
       if (cycleType === 'DAYS' || cycleType === 'MIXED') resetPayload.current_maintenance_days = 0;
