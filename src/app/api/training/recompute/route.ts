@@ -1,3 +1,4 @@
+import { recomputeMonthlyKPI } from '@/backend/services/training/training-service';
 import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -6,49 +7,25 @@ export async function POST(req: NextRequest) {
     const { session, error } = await requirePermission('view_training');
     if (error) return error;
 
-    // const user = session!.user;
+    const user = session!.user;
 
-    // let period = '';
-    // try {
-    //   const body = await req.json();
-    //   if (body?.period) period = body.period;
-    // } catch {
-    // }
+    let period = '';
+    try {
+      const body = await req.json();
+      if (body?.period) period = String(body.period);
+    } catch {
+      // body may be empty — default below
+    }
 
-    // const payload = {
-    //   owner_id: user.ownerId,
-    //   user_id: user.userId,
-    //   user_timezone: user.timezone || 'UTC',
-    //   user_profile_code: user.role || '',
-    //   period,
-    // };
+    if (!period || !/^\d{4}-\d{2}-\d{2}$/.test(period)) {
+      const d = new Date();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      period = `${d.getFullYear()}-${mm}-01`;
+    }
 
-    // const cookieStore = await cookies();
-    // const token = cookieStore.get('readi_auth_token')?.value ?? '';
+    const result = await recomputeMonthlyKPI(user.ownerId, period);
 
-    // const apiUri = process.env.READI_API_URI || 'http://localhost/api/';
-    // const xApiKey = process.env.READI_X_API_KEY || '';
-    // const url = `${apiUri}owner/${user.ownerId}/training/run/monthly`;
-
-    // const upstream = await fetch(url, {
-    //   method: 'POST',
-    //   headers: {
-    //     'Content-Type': 'application/json',
-    //     Authorization: `Bearer ${token}`,
-    //     'X-API-KEY': xApiKey,
-    //     'cache-control': 'no-cache',
-    //   },
-    //   body: JSON.stringify(payload),
-    // });
-
-    // const data = await upstream.text();
-
-    return NextResponse.json({ code: 1, message: 'Recompute triggered' });
-
-    // return new NextResponse(data, {
-    //   status: upstream.status,
-    //   headers: { 'Content-Type': 'application/json' },
-    // });
+    return NextResponse.json({ code: 1, ...result });
   } catch (err: any) {
     console.error('[POST /api/training/recompute]', err);
     return NextResponse.json(

@@ -31,6 +31,7 @@ import {
 import axios from 'axios';
 import { Award, BookOpen, Filter, Plus, RefreshCw, ShieldCheck, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 
 interface UserOption {
   user_id: number;
@@ -206,9 +207,19 @@ export default function TrainingCoursesPage() {
   async function handleRecompute() {
     setRecomputing(true);
     try {
-      await axios.post('/api/training/recompute');
-    } catch (err) {
+      const d = new Date();
+      const period = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
+      const res = await axios.post('/api/training/recompute', { period });
+      if (res.data.code === 1) {
+        const { period_end, total, valid, expired, pending } = res.data;
+        const msg = `${total} total · ${valid} valid · ${expired} expired · ${pending} pending${period_end ? ` (${period_end})` : ''}`;
+        toast.success(msg)
+      } else {
+        toast.error(res.data.error || 'Recompute failed');
+      }
+    } catch (err: any) {
       console.error('Failed to recompute KPI', err);
+      toast.error(err?.response?.data?.error || 'Network error');
     } finally {
       setRecomputing(false);
     }
@@ -275,16 +286,17 @@ export default function TrainingCoursesPage() {
             >
               <RefreshCw size={13} className={loading ? 'animate-spin' : ''} strokeWidth={2.5} />
             </Button>
-            {/* <Button
+            <Button
               variant="outline"
               size="sm"
               onClick={handleRecompute}
               disabled={recomputing}
               className={`h-8 gap-1.5 text-xs ${btnOutline}`}
             >
-              <ShieldCheck size={13} strokeWidth={2.5} />
+              <ShieldCheck size={13} strokeWidth={2.5} className={recomputing ? 'animate-spin' : ''} />
               {recomputing ? 'Updating…' : 'Recompute KPI'}
-            </Button> */}
+            </Button>
+           
             <Button size="sm" onClick={openCreate} className="h-8 gap-1.5 text-xs bg-violet-600 hover:bg-violet-700 text-white">
               <Plus size={14} strokeWidth={2.5} />
               New
