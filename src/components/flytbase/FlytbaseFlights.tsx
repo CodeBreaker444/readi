@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTheme } from '@/components/useTheme';
 import axios from 'axios';
-import JSZip from 'jszip';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import {
@@ -69,6 +68,10 @@ export function FlytbaseFlights({ token }: Props) {
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [preview, setPreview] = useState<any | null>(null);
+  const [presignedUploadUrl, setPresignedUploadUrl] = useState<string | null>(null);
+  const [archiving, setArchiving] = useState(false);
+  const [archived, setArchived] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
 
   const fetchFlights = useCallback(async (win: number) => {
     if (!token) {
@@ -80,6 +83,8 @@ export function FlytbaseFlights({ token }: Props) {
     setError(null);
     setSelectedFlight(null);
     setPreview(null);
+    setPresignedUploadUrl(null);
+    setArchived(false);
     try {
       const res = await axios.get(`/api/flytbase/flights?window=${win}`);
       setFlights(res.data.flights ?? []);
@@ -101,59 +106,52 @@ export function FlytbaseFlights({ token }: Props) {
 
     setSelectedFlight(flight);
     setPreview(null);
+    setPresignedUploadUrl(null);
+    setArchived(false);
+    setPreviewError(null);
     setPreviewLoading(true);
 
     try {
       const res = await fetch(
         `/api/flytbase/flights/preview?flightId=${encodeURIComponent(flight.flight_id)}`,
       );
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body?.message ?? `Server error ${res.status}`);
 
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body?.message ?? `Server error ${res.status}`);
+      setPreview(body.data);
+
+      if (body.fromCache) {
+        setArchived(true);
+      } else {
+        setPresignedUploadUrl(body.presignedUploadUrl ?? null);
       }
-
-      const zip = await JSZip.loadAsync(await res.arrayBuffer());
-
-      const jsonFile = Object.values(zip.files).find(
-        (f) => !f.dir && f.name.toLowerCase().endsWith('.json'),
-      );
-      if (!jsonFile) throw new Error('No GUTMA JSON found in the downloaded archive.');
-
-      const jsonText = await jsonFile.async('string');
-      const gutma = JSON.parse(jsonText);
-
-      setPreview(parseGutmaClient(flight.flight_id, jsonFile.name, gutma));
     } catch (err: any) {
-      toast.error(err?.message ?? 'Failed to load flight log.');
+      const msg = err?.message ?? 'Failed to load flight log.';
+      setPreviewError(msg);
       setPreview(null);
     } finally {
       setPreviewLoading(false);
     }
   }
 
-  function parseGutmaClient(flightId: string, filename: string, gutma: any) {
-    const flightData = gutma?.exchange?.message?.flight_data ?? {};
-    const waypointItems: any[] = flightData?.flight_logging?.flight_logging_items ?? [];
-    const waypoints = waypointItems.slice(0, 200).map((w: any) => ({
-      timestamp: w.timestamp ?? undefined,
-      latitude: w.lat ?? w.latitude ?? w.y ?? undefined,
-      longitude: w.lon ?? w.longitude ?? w.x ?? undefined,
-      altitude: w.altitude ?? undefined,
-      speed: w.speed ?? undefined,
-      heading: w.heading ?? undefined,
-    }));
-
-    return {
-      flight_id: flightId,
-      raw_filename: filename,
-      aircraft: flightData?.aircraft ?? {},
-      gcs: flightData?.gcs ?? {},
-      waypoints,
-      total_waypoints: waypointItems.length,
-      start_time: flightData?.start_time ?? gutma?.exchange?.message?.start_time,
-      end_time: flightData?.end_time ?? gutma?.exchange?.message?.end_time,
-    };
+  async function handleArchive() {
+    if (!presignedUploadUrl || !preview) return;
+    setArchiving(true);
+    try {
+      const res = await fetch(presignedUploadUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(preview),
+      });
+      if (!res.ok) throw new Error(`Upload failed (${res.status})`);
+      setArchived(true);
+      setPresignedUploadUrl(null);
+      toast.success('Flight log archived to S3.');
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Failed to archive flight log.');
+    } finally {
+      setArchiving(false);
+    }
   }
 
   const bg = isDark ? 'bg-slate-950' : 'bg-slate-50';
@@ -337,6 +335,11 @@ export function FlytbaseFlights({ token }: Props) {
                     preview={preview}
                     loading={previewLoading}
                     isDark={isDark}
+                    previewError={previewError}
+                    canArchive={!!presignedUploadUrl && !archived}
+                    archiving={archiving}
+                    archived={archived}
+                    onArchive={handleArchive}
                   />
                 )}
               </div>

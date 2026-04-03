@@ -1,13 +1,22 @@
 'use client';
 
-import { Badge } from '@/components/ui/badge';
+import type { FlightWaypoint } from '@/components/flytbase/FlightPathMap';
 import { Skeleton } from '@/components/ui/skeleton';
+import dynamic from 'next/dynamic';
+import { useState } from 'react';
 import {
   HiChip,
   HiClock,
   HiLocationMarker,
+  HiMap,
   HiOutlineDocumentText,
+  HiTable,
 } from 'react-icons/hi';
+
+const FlightPathMapDynamic = dynamic(
+  () => import('@/components/flytbase/FlightPathMap').then((m) => ({ default: m.FlightPathMap })),
+  { ssr: false },
+);
 
 interface Flight {
   flight_id: string;
@@ -23,6 +32,7 @@ interface Flight {
 
 interface GutmaPreview {
   flight_id: string;
+  filename?: string;
   aircraft?: {
     serial_number?: string;
     product_name?: string;
@@ -35,18 +45,10 @@ interface GutmaPreview {
     name?: string;
     serial_number?: string;
   };
-  waypoints: Array<{
-    timestamp?: number;
-    latitude?: number;
-    longitude?: number;
-    altitude?: number;
-    speed?: number;
-    heading?: number;
-  }>;
+  waypoints: FlightWaypoint[];
   total_waypoints: number;
   start_time?: string;
   end_time?: string;
-  raw_filename?: string;
 }
 
 interface Props {
@@ -54,95 +56,132 @@ interface Props {
   preview: GutmaPreview | null;
   loading: boolean;
   isDark: boolean;
+  previewError?: string | null;
+  canArchive?: boolean;
+  archiving?: boolean;
+  archived?: boolean;
+  onArchive?: () => void;
 }
+ 
 
-function formatMs(ms?: number): string {
-  if (ms == null) return '—';
-  return new Date(ms).toLocaleString([], {
-    month: 'short', day: 'numeric',
-    hour: '2-digit', minute: '2-digit', second: '2-digit',
-  });
-}
+export function GutmaPreviewPanel({
+  flight, preview, loading, isDark, previewError,
+  canArchive, archiving, archived, onArchive,
+}: Props) {
+  const [tab, setTab] = useState<'map' | 'gutma'>('map');
 
-function formatDuration(secs?: number): string {
-  if (secs == null) return '—';
-  const m = Math.floor(secs / 60);
-  const s = secs % 60;
-  return m > 0 ? `${m}m ${s}s` : `${s}s`;
-}
-
-function formatDistance(m?: number): string {
-  if (m == null) return '—';
-  return m >= 1000 ? `${(m / 1000).toFixed(2)} km` : `${Math.round(m)} m`;
-}
-
-export function GutmaPreviewPanel({ flight, preview, loading, isDark }: Props) {
   const card = isDark ? 'bg-[#0c0f1a] border-slate-800' : 'bg-white border-slate-200 shadow-sm';
   const textPrimary = isDark ? 'text-white' : 'text-slate-900';
   const textSecondary = isDark ? 'text-slate-400' : 'text-slate-500';
   const sectionBg = isDark ? 'bg-slate-800/40 border-slate-700/50' : 'bg-slate-50 border-slate-200';
   const tableBorder = isDark ? 'border-slate-800' : 'border-slate-200';
+  const tabBorder = isDark ? 'border-slate-800' : 'border-slate-200';
+
+  const hasMap = !!(
+    preview?.waypoints &&
+    preview.waypoints.some((wp) => wp.latitude != null && wp.longitude != null)
+  );
+
+  function TabButton({ id, icon, label }: { id: 'map' | 'gutma'; icon: React.ReactNode; label: string }) {
+    const active = tab === id;
+    return (
+      <button
+        onClick={() => setTab(id)}
+        className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${
+          active
+            ? 'border-violet-500 text-violet-500'
+            : `border-transparent ${textSecondary} hover:${textPrimary}`
+        }`}
+      >
+        {icon}
+        {label}
+      </button>
+    );
+  }
 
   return (
     <div className={`rounded-xl border overflow-hidden ${card}`}>
-      {/* Panel header */}
-      <div className={`flex items-center justify-between px-5 py-3.5 border-b ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
+      <div className={`flex items-center justify-between px-5 py-3.5 border-b ${tabBorder}`}>
         <div className="flex items-center gap-2">
           <HiOutlineDocumentText className={`w-4 h-4 ${textSecondary}`} />
           <span className={`text-xs font-semibold ${textPrimary}`}>
             {flight.flight_name ?? flight.flight_id}
           </span>
         </div>
-        {preview?.raw_filename && (
-          <span className={`text-[10px] font-mono ${textSecondary}`}>{preview.raw_filename}</span>
-        )}
+        <div className="flex items-center gap-3">
+          {preview?.filename && (
+            <span className={`text-[10px] font-mono ${textSecondary}`}>{preview.filename}</span>
+          )}
+          {archived && (
+            <span className="text-[11px] font-medium text-emerald-500">Archived</span>
+          )}
+          {canArchive && !archived && (
+            <button
+              onClick={onArchive}
+              disabled={archiving}
+              className="h-7 px-3 rounded text-[11px] font-medium bg-violet-600 hover:bg-violet-500 disabled:opacity-60 text-white flex items-center gap-1.5"
+            >
+              {archiving && (
+                <svg className="w-3 h-3 animate-spin" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                </svg>
+              )}
+              {archiving ? 'Archiving…' : 'Archive to S3'}
+            </button>
+          )}
+        </div>
       </div>
 
-      <div className="p-5 space-y-5">
-        {/* Flight summary row */}
-        <div className={`grid grid-cols-2 sm:grid-cols-4 gap-3`}>
-          <StatBox label="Start time" value={formatMs(flight.start_time)} isDark={isDark} />
-          <StatBox label="End time" value={formatMs(flight.end_time)} isDark={isDark} />
-          <StatBox label="Duration" value={formatDuration(flight.duration)} isDark={isDark} />
-          <StatBox label="Distance" value={formatDistance(flight.distance)} isDark={isDark} />
+      {!loading && preview && (
+        <div className={`flex border-b ${tabBorder} px-3`}>
+          <TabButton id="map"   icon={<HiMap   className="w-3.5 h-3.5" />} label="Map" />
+          <TabButton id="gutma" icon={<HiTable className="w-3.5 h-3.5" />} label="GUTMA Log" />
         </div>
+      )}
 
-        {/* Flight meta */}
-        {(flight.drone_name || flight.pilot_name || flight.mission_name) && (
-          <div className={`grid grid-cols-1 sm:grid-cols-3 gap-3`}>
-            {flight.drone_name && (
-              <StatBox label="Drone" value={flight.drone_name} isDark={isDark} />
-            )}
-            {flight.pilot_name && (
-              <StatBox label="Pilot" value={flight.pilot_name} isDark={isDark} />
-            )}
-            {flight.mission_name && (
-              <StatBox label="Mission" value={flight.mission_name} isDark={isDark} />
-            )}
-          </div>
-        )}
-
+      <div className="p-5">
         {loading && (
           <div className="space-y-4">
-            <div className={`flex items-center gap-2.5 text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+            <div className={`flex items-center gap-2.5 text-xs ${textSecondary}`}>
               <svg className="w-3.5 h-3.5 animate-spin shrink-0" viewBox="0 0 24 24" fill="none">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
               </svg>
-              Downloading GUTMA log from FlytBase — this may take up to a minute…
+              Downloading GUTMA log from FlytBase…
             </div>
-            <div className="space-y-3">
-              <Skeleton className={`h-4 w-1/3 ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`} />
-              <Skeleton className={`h-24 w-full ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`} />
-              <Skeleton className={`h-4 w-1/4 ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`} />
-              <Skeleton className={`h-40 w-full ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`} />
-            </div>
+            <Skeleton className={`h-95 w-full rounded-lg ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`} />
           </div>
         )}
 
-        {!loading && preview && (
-          <>
-            {/* Aircraft info */}
+        {!loading && !preview && previewError && (
+          <div className={`rounded-lg border p-6 flex flex-col items-center gap-3 text-center ${isDark ? 'bg-red-950/20 border-red-800/30' : 'bg-red-50 border-red-200'}`}>
+            <svg className={`w-8 h-8 ${isDark ? 'text-red-400' : 'text-red-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+            </svg>
+            <p className={`text-xs font-medium ${isDark ? 'text-red-300' : 'text-red-700'}`}>{previewError}</p>
+          </div>
+        )}
+
+        {!loading && preview && tab === 'map' && (
+          <div className="space-y-5">
+            {hasMap ? (
+              <FlightPathMapDynamic
+                waypoints={preview.waypoints}
+                height="420px"
+                isDark={isDark}
+              />
+            ) : (
+              <div className={`rounded-lg border p-8 text-center ${sectionBg}`}>
+                <HiMap className={`w-8 h-8 mx-auto mb-2 ${textSecondary}`} />
+                <p className={`text-xs ${textSecondary}`}>No GPS coordinates found in this GUTMA file.</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {!loading && preview && tab === 'gutma' && (
+          <div className="space-y-5">
             {preview.aircraft && Object.values(preview.aircraft).some(Boolean) && (
               <Section title="Aircraft" icon={<HiChip className="w-3.5 h-3.5" />} isDark={isDark}>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -165,7 +204,6 @@ export function GutmaPreviewPanel({ flight, preview, loading, isDark }: Props) {
               </Section>
             )}
 
-            {/* GCS info */}
             {preview.gcs && Object.values(preview.gcs).some(Boolean) && (
               <Section title="Ground Control Station" icon={<HiLocationMarker className="w-3.5 h-3.5" />} isDark={isDark}>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -182,11 +220,10 @@ export function GutmaPreviewPanel({ flight, preview, loading, isDark }: Props) {
               </Section>
             )}
 
-            {/* Waypoints table */}
-            {preview.waypoints.length > 0 && (
+            {preview.waypoints.length > 0 ? (
               <Section
-                title={`Flight Path`}
-                subtitle={`${preview.waypoints.length} of ${preview.total_waypoints} points shown`}
+                title="Waypoint Log"
+                subtitle={`${preview.waypoints.length} of ${preview.total_waypoints} points`}
                 icon={<HiClock className="w-3.5 h-3.5" />}
                 isDark={isDark}
               >
@@ -194,8 +231,8 @@ export function GutmaPreviewPanel({ flight, preview, loading, isDark }: Props) {
                   <table className="w-full text-[11px]">
                     <thead>
                       <tr className={`border-b ${tableBorder}`}>
-                        {['#', 'Timestamp', 'Latitude', 'Longitude', 'Alt (m)', 'Speed (m/s)', 'Heading'].map((h) => (
-                          <th key={h} className={`px-3 py-2 text-left font-medium uppercase tracking-wider ${textSecondary}`}>
+                        {['#', 'Timestamp', 'Lat', 'Lon', 'Alt (m)', 'Speed', 'Vx/Vy/Vz (m/s)', 'Heading (ψ)', 'Roll (φ)', 'Pitch (θ)', 'Battery'].map((h) => (
+                          <th key={h} className={`px-3 py-2 text-left font-medium uppercase tracking-wider whitespace-nowrap ${textSecondary}`}>
                             {h}
                           </th>
                         ))}
@@ -209,19 +246,33 @@ export function GutmaPreviewPanel({ flight, preview, loading, isDark }: Props) {
                             {wp.timestamp != null ? new Date(wp.timestamp).toISOString().slice(11, 23) : '—'}
                           </td>
                           <td className={`px-3 py-1.5 font-mono ${textPrimary}`}>
-                            {wp.latitude != null ? wp.latitude.toFixed(6) : '—'}
+                            {wp.latitude  != null ? wp.latitude.toFixed(6)  : '—'}
                           </td>
                           <td className={`px-3 py-1.5 font-mono ${textPrimary}`}>
                             {wp.longitude != null ? wp.longitude.toFixed(6) : '—'}
                           </td>
                           <td className={`px-3 py-1.5 font-mono ${textPrimary}`}>
-                            {wp.altitude != null ? wp.altitude.toFixed(1) : '—'}
+                            {wp.altitude  != null ? wp.altitude.toFixed(1)  : '—'}
                           </td>
                           <td className={`px-3 py-1.5 font-mono ${textPrimary}`}>
                             {wp.speed != null ? wp.speed.toFixed(2) : '—'}
                           </td>
                           <td className={`px-3 py-1.5 font-mono ${textPrimary}`}>
-                            {wp.heading != null ? `${wp.heading.toFixed(1)}°` : '—'}
+                            {[wp.speed_vx, wp.speed_vy, wp.speed_vz]
+                              .map((v) => (v != null ? v.toFixed(2) : '—'))
+                              .join(' / ')}
+                          </td>
+                          <td className={`px-3 py-1.5 font-mono ${textPrimary}`}>
+                            {wp.heading    != null ? `${wp.heading.toFixed(1)}°`    : '—'}
+                          </td>
+                          <td className={`px-3 py-1.5 font-mono ${textPrimary}`}>
+                            {wp.angle_phi  != null ? `${wp.angle_phi.toFixed(1)}°`  : '—'}
+                          </td>
+                          <td className={`px-3 py-1.5 font-mono ${textPrimary}`}>
+                            {wp.angle_theta != null ? `${wp.angle_theta.toFixed(1)}°` : '—'}
+                          </td>
+                          <td className={`px-3 py-1.5 font-mono ${textPrimary}`}>
+                            {wp.battery != null ? `${wp.battery.toFixed(0)}%` : '—'}
                           </td>
                         </tr>
                       ))}
@@ -234,15 +285,12 @@ export function GutmaPreviewPanel({ flight, preview, loading, isDark }: Props) {
                   </p>
                 )}
               </Section>
-            )}
-
-            {/* No flight path data */}
-            {preview.waypoints.length === 0 && (
+            ) : (
               <div className={`rounded-lg border p-4 text-center ${sectionBg}`}>
                 <p className={`text-xs ${textSecondary}`}>No waypoint data found in this GUTMA file.</p>
               </div>
             )}
-          </>
+          </div>
         )}
       </div>
     </div>
