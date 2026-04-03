@@ -85,8 +85,8 @@ export async function GET(req: NextRequest) {
   const { session, error } = await requireAuth();
   if (error) return error;
 
-  // const flightId = req.nextUrl.searchParams.get('flightId');
-  const flightId = '6f5bbd84-2341-4b62-ab4c-852f3a416a0b';
+  const flightId = req.nextUrl.searchParams.get('flightId');
+  // const flightId = '6f5bbd84-2341-4b62-ab4c-852f3a416a0b';
   if (!flightId) {
     return NextResponse.json({ success: false, message: 'flightId is required' }, { status: 400 });
   }
