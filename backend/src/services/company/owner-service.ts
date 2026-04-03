@@ -1,7 +1,7 @@
 import { env } from '@/backend/config/env';
 import { supabase } from '@/backend/database/database';
 import bcrypt from 'bcrypt';
-import { sendUserActivationEmail } from 'lib/resend/mail';
+import { sendUserActivationEmail } from '../../../../lib/resend/mail';
 import { generateActivationToken, generateUniqueCode } from '../user/user-management';
 
 export interface OwnerData {

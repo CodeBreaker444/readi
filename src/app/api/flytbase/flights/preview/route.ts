@@ -29,6 +29,7 @@ export async function GET(req: NextRequest) {
       Authorization: `Bearer ${creds.token}`,
       'org-id': creds.orgId,
     },
+    signal: AbortSignal.timeout(120_000) // 2 Min
   });
 
   if (!upstream.ok) {
