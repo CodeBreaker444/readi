@@ -64,6 +64,12 @@ interface Props {
 }
  
 
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
 export function GutmaPreviewPanel({
   flight, preview, loading, isDark, previewError,
   canArchive, archiving, archived, onArchive,
@@ -109,12 +115,32 @@ export function GutmaPreviewPanel({
           </span>
         </div>
         <div className="flex items-center gap-3">
+          {/* File name + size */}
           {preview?.filename && (
-            <span className={`text-[10px] font-mono ${textSecondary}`}>{preview.filename}</span>
+            <div className="flex items-center gap-1.5">
+              <span className={`text-[10px] font-mono ${textSecondary}`}>{preview.filename}</span>
+              <span className={`text-[10px] ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>·</span>
+              <span className={`text-[10px] font-mono ${textSecondary}`}>
+                {formatBytes(JSON.stringify(preview).length)}
+              </span>
+            </div>
           )}
-          {archived && (
-            <span className="text-[11px] font-medium text-emerald-500">Archived</span>
-          )}
+
+          {/* Storage status badge */}
+          {archived ? (
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-500">
+              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+              Saved to S3
+            </span>
+          ) : preview && !loading ? (
+            <span className={`text-[11px] font-medium ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
+              Not saved
+            </span>
+          ) : null}
+
+          {/* Archive button */}
           {canArchive && !archived && (
             <button
               onClick={onArchive}

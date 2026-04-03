@@ -114,9 +114,10 @@ const STATUS_CONFIG = {
 };
 
 const TIME_WINDOWS = [
-  { label: "30 min", minutes: 30 },
-  { label: "1 hr", minutes: 60 },
-  { label: "2 hr", minutes: 120 },
+  { label: "Last 1 hr",   minutes: 60 },
+  { label: "Last 6 hrs",  minutes: 360 },
+  { label: "Last 12 hrs", minutes: 720 },
+  { label: "Last 24 hrs", minutes: 1440 },
 ];
 
 
@@ -371,6 +372,7 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
   const handleAttachFlight = async () => {
     if (!selectedFlight) return;
     setAttachingFlight(true);
+    setFlightsError(null);
     try {
       const { data } = await axios.post("/api/operation/board/flight-logs/flytbase", {
         mission_id: missionId,
@@ -382,10 +384,10 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
         setFlights([]);
         loadLogs();
       } else {
-        toast.error(data.message ?? "Failed to attach flight");
+        setFlightsError(data.message ?? "Failed to attach flight");
       }
     } catch (e: any) {
-      toast.error(e.response?.data?.message ?? "Failed to attach flight");
+      setFlightsError(e.response?.data?.message ?? "Failed to attach flight");
     } finally {
       setAttachingFlight(false);
     }
@@ -736,7 +738,15 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
                 </div>
 
                 {flightsError && (
-                  <p className={cn("text-xs py-3 text-center", isDark ? "text-slate-500" : "text-slate-400")}>{flightsError}</p>
+                  <div className={cn(
+                    "flex items-start gap-2.5 rounded-lg border p-3 mt-2",
+                    isDark ? "bg-red-950/20 border-red-800/30" : "bg-red-50 border-red-200"
+                  )}>
+                    <svg className={cn("w-4 h-4 mt-0.5 shrink-0", isDark ? "text-red-400" : "text-red-500")} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                    </svg>
+                    <p className={cn("text-xs", isDark ? "text-red-300" : "text-red-700")}>{flightsError}</p>
+                  </div>
                 )}
 
                 {flights.length > 0 && (
