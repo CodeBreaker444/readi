@@ -22,10 +22,12 @@ export async function POST(req: NextRequest) {
 
     await attachFlytbaseFlightLog(missionId, session!.user.userId, flightId);
     return NextResponse.json({ code: 1, message: 'Flight log attached from FlytBase' });
-  } catch (err) {
+  } catch (err: any) {
     console.error('[flight-logs/flytbase] POST error:', err);
     const message = err instanceof Error ? err.message : 'Unknown error';
-    const status = message.includes('No FlytBase') ? 422 : 500;
+    const status =
+      err?.code === 'FLYTBASE_TIMEOUT'   ? 504 :
+      message.includes('No FlytBase')    ? 422 : 500;
     return NextResponse.json({ code: 0, message }, { status });
   }
 }

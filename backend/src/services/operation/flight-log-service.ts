@@ -1,7 +1,7 @@
 'use server';
 
-import { supabase } from '@/backend/database/database';
 import { env } from '@/backend/config/env';
+import { supabase } from '@/backend/database/database';
 import { getFlytbaseCredentials } from '@/backend/services/integrations/flytbase-service';
 import { BUCKET, getPresignedDownloadUrl, s3 } from '@/lib/s3Client';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
@@ -87,26 +87,46 @@ export async function attachFlytbaseFlightLog(
 
   const gutmaUrl = `${env.FLYTBASE_URL}/v2/flight/report/download/gutma?${new URLSearchParams({ flightIds: flightId })}`;
 
-  const upstream = await fetch(gutmaUrl, {
-    method: 'GET',
-    headers: {
-      Authorization: `Bearer ${creds.token}`,
-      'org-id': creds.orgId,
-    },
-  });
+  let upstream: Response;
+  try {
+    upstream = await fetch(gutmaUrl, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${creds.token}`,
+        'org-id': creds.orgId,
+      },
+      signal: AbortSignal.timeout(30_000),
+    });
+  } catch (err: any) {
+    const msg = err?.name === 'TimeoutError'
+      ? 'No GUTMA data available for this flight.'
+      : 'Failed to reach FlytBase.';
+    throw Object.assign(new Error(msg), { code: 'FLYTBASE_TIMEOUT' });
+  }
 
-  if (!upstream.ok) throw new Error(`FlytBase returned ${upstream.status}`);
+  if (!upstream.ok) {
+    const errText = await upstream.text().catch(() => '');
+    throw new Error(`FlytBase returned ${upstream.status}: ${errText.slice(0, 200)}`);
+  }
 
-  const zipBuffer = Buffer.from(await upstream.arrayBuffer());
-  const s3Key = `flight-logs/mission/${missionId}/flytbase_${flightId}_${Date.now()}.zip`;
+  let gutma: any;
+  try {
+    gutma = await upstream.json();
+  } catch {
+    throw new Error('GUTMA data unavailable for this flight.');
+  }
+
+  // Use the GUTMA filename from the response, same as the preview route
+  const filename: string = gutma?.file?.filename ?? `FlytBase_Export_${flightId}.gutma`;
+  const s3Key = `flight-logs/mission/${missionId}/${filename}`;
 
   await s3.send(
     new PutObjectCommand({
       Bucket: BUCKET,
       Key: s3Key,
-      Body: zipBuffer,
-      ContentType: 'application/zip',
-      ContentDisposition: `attachment; filename="flight_${flightId}.zip"`,
+      Body: JSON.stringify(gutma),
+      ContentType: 'application/json',
+      ContentDisposition: `attachment; filename="${filename}"`,
       ServerSideEncryption: 'AES256',
     })
   );
@@ -115,7 +135,7 @@ export async function attachFlytbaseFlightLog(
     fk_mission_id: missionId,
     log_source: 'flytbase',
     s3_key: s3Key,
-    original_filename: `flight_${flightId}.zip`,
+    original_filename: filename,
     flytbase_flight_id: flightId,
     uploaded_by: userId,
   });
