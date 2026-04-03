@@ -212,7 +212,7 @@ export default function RequirementsEvidencesPage() {
     setReqModalOpen(true);
   }
 
-  async function handleSaveReq() {
+  const handleSaveReq = async () => {
     if (!reqForm.requirement_code.trim() || !reqForm.requirement_title.trim()) return;
     setSaving(true);
     try {
@@ -241,7 +241,7 @@ export default function RequirementsEvidencesPage() {
     }
   }
 
-  async function handleDeleteReq() {
+  const handleDeleteReq = async () => {
     if (!deleteTarget) return;
     const id = deleteTarget.requirement_id;
     setDeleteTarget(null);
@@ -256,13 +256,13 @@ export default function RequirementsEvidencesPage() {
   }
 
 
-  function openStatusModal(r: ComplianceRequirement) {
+  const openStatusModal = (r: ComplianceRequirement) => {
     setStatusTarget(r);
     setNewStatus(r.requirement_status as ComplianceStatus);
     setStatusComment('');
   }
 
-  async function handleStatusChange() {
+  const handleStatusChange = async () => {
     if (!statusTarget) return;
     setStatusSaving(true);
     try {
@@ -282,13 +282,13 @@ export default function RequirementsEvidencesPage() {
   }
 
 
-  function openEviPanel(r: ComplianceRequirement) {
+  const openEviPanel = (r: ComplianceRequirement) => {
     setEviTarget(r);
     setEviForm(EMPTY_EVI);
     fetchEvidences(r.requirement_id);
   }
 
-  async function handleAddEvidence() {
+  const handleAddEvidence = async () => {
     if (!eviTarget || !eviForm.evidence_description.trim()) return;
     setEviSaving(true);
     try {
@@ -309,7 +309,7 @@ export default function RequirementsEvidencesPage() {
     }
   }
 
-  async function handleDeleteEvidence(evidenceId: number) {
+  const handleDeleteEvidence = async (evidenceId: number) => {
     try {
       await axios.post('/api/compliance/requirements-evidences/evidence/delete', { evidence_id: evidenceId });
       toast.success('Evidence deleted');
@@ -320,16 +320,25 @@ export default function RequirementsEvidencesPage() {
   }
 
 
-  async function runComplianceMonthly() {
+  const runComplianceMonthly = async () => {
     setKpiRunning(true);
     try {
       const d = new Date();
       d.setMonth(d.getMonth() + 1, 0);
       const period = d.toISOString().slice(0, 10);
+
       const res = await axios.get(`/api/compliance/audit-plan/stats?period=${period}`);
-      if (res.data.code === 1) toast.success('KPI Compliance updated');
-      else toast.error(res.data.error || 'KPI update failed');
-    } catch {
+
+      if (res.data.code === 1) {
+        const { compliant, non_compliant, partial, total } = res.data.data;
+
+        toast.success(
+          `KPI Updated: ${compliant}/${total} Compliant (${non_compliant} Non-Compliant, ${partial} Partial)`
+        );
+      } else {
+        toast.error(res.data.error || 'KPI update failed');
+      }
+    } catch (err) {
       toast.error('Failed to run monthly KPI');
     } finally {
       setKpiRunning(false);
