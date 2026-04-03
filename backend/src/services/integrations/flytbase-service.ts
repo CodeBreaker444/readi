@@ -2,7 +2,6 @@
 
 import { env } from '@/backend/config/env';
 import { supabase } from '@/backend/database/database';
-import { decryptToken, encryptToken } from '@/backend/utils/token-encryption';
 
 
 export interface FlytbaseUserInfo {
@@ -65,18 +64,15 @@ export interface GutmaFlightPreview {
   raw_filename?: string;
 }
 
-/** Encrypt token and persist both token + org-id for the user. */
 export async function saveFlytbaseConfig(
   userId: number,
   plainToken: string,
   orgId: string,
 ): Promise<void> {
-  const encrypted = encryptToken(plainToken.trim());
-
   const { error } = await supabase
     .from('users')
     .update({
-      flytbase_api_token: encrypted,
+      flytbase_api_token: plainToken.trim(),
       flytbase_org_id: orgId.trim(),
     })
     .eq('user_id', userId);
@@ -84,7 +80,6 @@ export async function saveFlytbaseConfig(
   if (error) throw new Error(`saveFlytbaseConfig: ${error.message}`);
 }
 
-/** Returns whether the user has a FlytBase token + org-id stored. */
 export async function hasFlytbaseToken(userId: number): Promise<boolean> {
   const { data, error } = await supabase
     .from('users')
@@ -97,9 +92,7 @@ export async function hasFlytbaseToken(userId: number): Promise<boolean> {
 }
 
 /**
- * Decrypts and returns the stored credentials for internal API calls.
- * Never expose the returned token to the client.
- */
+/** Returns the stored credentials for internal API calls. */
 export async function getFlytbaseCredentials(
   userId: number,
 ): Promise<{ token: string; orgId: string } | null> {
@@ -113,7 +106,7 @@ export async function getFlytbaseCredentials(
   if (!data?.flytbase_api_token || !data?.flytbase_org_id) return null;
 
   return {
-    token: decryptToken(data.flytbase_api_token),
+    token: data.flytbase_api_token,
     orgId: data.flytbase_org_id,
   };
 }

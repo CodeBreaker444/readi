@@ -196,8 +196,7 @@ export function FlytbaseTokenConfig() {
         >
           <HiShieldCheck className="w-4 h-4 shrink-0" />
           <span>
-            Your token is encrypted. It is never logged or exposed outside your
-            account.
+            Your token is stored securely and never exposed to other users or logged.
           </span>
         </div>
 
@@ -315,7 +314,7 @@ export function FlytbaseTokenConfig() {
                   type={showToken ? 'text' : 'password'}
                   placeholder="Paste your FlytBase long-lived API key"
                   value={tokenInput}
-                  onChange={(e) => setTokenInput(e.target.value)}
+                  onChange={(e) => setTokenInput(e.target.value.trim())}
                   disabled={step === 'verifying'}
                   className={`pr-10 text-sm font-mono ${inputClass}`}
                 />
@@ -345,7 +344,7 @@ export function FlytbaseTokenConfig() {
                 type="text"
                 placeholder="e.g. 684fbfd4c264f8f677beb444"
                 value={orgIdInput}
-                onChange={(e) => setOrgIdInput(e.target.value)}
+                onChange={(e) => setOrgIdInput(e.target.value.trim())}
                 disabled={step === 'verifying'}
                 className={`text-sm font-mono ${inputClass}`}
               />

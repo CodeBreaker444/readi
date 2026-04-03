@@ -497,7 +497,66 @@ export async function deleteFlatTraining(attendance_id: number): Promise<void> {
   if (error) throw new Error(`Failed to delete training record: ${error.message}`);
 }
 
-// ─── Users ────────────────────────────────────────────────────────────────────
+
+export interface MonthlyKpiResult {
+  period_end: string;
+  total: number;
+  valid: number;
+  expired: number;
+  pending: number;
+}
+
+/**
+ * Scans all training attendance records for the owner and counts how many
+ * certifications are VALID, EXPIRED, or have no expiry (PENDING) as of the
+ * last day of the given period month (period format: "YYYY-MM-01").
+ */
+export async function recomputeMonthlyKPI(
+  owner_id: number,
+  period: string
+): Promise<MonthlyKpiResult> {
+  const [yearStr, monthStr] = period.split('-');
+  const year = parseInt(yearStr, 10);
+  const month = parseInt(monthStr, 10);
+  const lastDay = new Date(year, month, 0).getDate();  
+  const mm = String(month).padStart(2, '0');
+  const dd = String(lastDay).padStart(2, '0');
+  const period_end = `${year}-${mm}-${dd}`;
+
+  const { data, error } = await supabase
+    .from('training_attendance')
+    .select(
+      `
+      attendance_id,
+      certification_expiry,
+      training:fk_training_id!inner (
+        fk_owner_id
+      )
+    `
+    )
+    .eq('training.fk_owner_id', owner_id);
+
+  if (error) throw new Error(`Failed to recompute monthly KPI: ${error.message}`);
+
+  const rows = data || [];
+  let valid = 0;
+  let expired = 0;
+  let pending = 0;
+
+  for (const row of rows) {
+    const expiry = (row as any).certification_expiry as string | null;
+    if (!expiry) {
+      pending++;
+    } else if (expiry >= period_end) {
+      valid++;
+    } else {
+      expired++;
+    }
+  }
+
+  return { period_end, total: rows.length, valid, expired, pending };
+}
+
 
 export async function getTrainingUsers(owner_id: number, q?: string): Promise<Array<{
   user_id: number;

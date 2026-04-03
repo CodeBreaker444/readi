@@ -31,6 +31,7 @@ import {
 import axios from 'axios';
 import { Award, BookOpen, Filter, Plus, RefreshCw, ShieldCheck, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 
 interface UserOption {
   user_id: number;
@@ -97,7 +98,7 @@ export default function TrainingCoursesPage() {
   useEffect(() => {
     axios.get('/api/training/users').then((res) => {
       if (res.data.code === 1) setUsers(res.data.data);
-    }).catch(() => {});
+    }).catch(() => { });
   }, []);
 
 
@@ -127,7 +128,7 @@ export default function TrainingCoursesPage() {
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    initialState: { pagination: { pageSize: 15 } },
+    initialState: { pagination: { pageSize: 8 } },
   });
 
   const stats = useMemo(() => ({
@@ -206,9 +207,19 @@ export default function TrainingCoursesPage() {
   async function handleRecompute() {
     setRecomputing(true);
     try {
-      await axios.post('/api/training/recompute');
-    } catch (err) {
+      const d = new Date();
+      const period = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
+      const res = await axios.post('/api/training/recompute', { period });
+      if (res.data.code === 1) {
+        const { period_end, total, valid, expired, pending } = res.data;
+        const msg = `${total} total · ${valid} valid · ${expired} expired · ${pending} pending${period_end ? ` (${period_end})` : ''}`;
+        toast.success(msg)
+      } else {
+        toast.error(res.data.error || 'Recompute failed');
+      }
+    } catch (err: any) {
       console.error('Failed to recompute KPI', err);
+      toast.error(err?.response?.data?.error || 'Network error');
     } finally {
       setRecomputing(false);
     }
@@ -275,16 +286,17 @@ export default function TrainingCoursesPage() {
             >
               <RefreshCw size={13} className={loading ? 'animate-spin' : ''} strokeWidth={2.5} />
             </Button>
-            {/* <Button
+            <Button
               variant="outline"
               size="sm"
               onClick={handleRecompute}
               disabled={recomputing}
               className={`h-8 gap-1.5 text-xs ${btnOutline}`}
             >
-              <ShieldCheck size={13} strokeWidth={2.5} />
+              <ShieldCheck size={13} strokeWidth={2.5} className={recomputing ? 'animate-spin' : ''} />
               {recomputing ? 'Updating…' : 'Recompute KPI'}
-            </Button> */}
+            </Button>
+
             <Button size="sm" onClick={openCreate} className="h-8 gap-1.5 text-xs bg-violet-600 hover:bg-violet-700 text-white">
               <Plus size={14} strokeWidth={2.5} />
               New
@@ -329,9 +341,9 @@ export default function TrainingCoursesPage() {
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4">
           {([
-            { label: 'Total Records', value: stats.total,   icon: BookOpen,    color: 'text-violet-400' },
-            { label: 'Valid',          value: stats.valid,   icon: Award,       color: 'text-green-400' },
-            { label: 'Expired',        value: stats.expired, icon: ShieldCheck, color: 'text-red-400' },
+            { label: 'Total Records', value: stats.total, icon: BookOpen, color: 'text-violet-400' },
+            { label: 'Valid', value: stats.valid, icon: Award, color: 'text-green-400' },
+            { label: 'Expired', value: stats.expired, icon: ShieldCheck, color: 'text-red-400' },
           ] as const).map(({ label, value, icon: Icon, color }) => (
             <div key={label} className={`rounded-xl border p-4 ${cardBg}`}>
               <div className="flex items-center justify-between mb-2">
@@ -451,9 +463,8 @@ export default function TrainingCoursesPage() {
                         return (
                           <label
                             key={u.user_id}
-                            className={`flex items-center gap-2.5 px-3 py-2 cursor-pointer transition-colors ${
-                              isDark ? 'hover:bg-white/4' : 'hover:bg-gray-100'
-                            } ${checked ? (isDark ? 'bg-violet-600/10' : 'bg-violet-50') : ''}`}
+                            className={`flex items-center gap-2.5 px-3 py-2 cursor-pointer transition-colors ${isDark ? 'hover:bg-white/4' : 'hover:bg-gray-100'
+                              } ${checked ? (isDark ? 'bg-violet-600/10' : 'bg-violet-50') : ''}`}
                           >
                             <input
                               type="checkbox"

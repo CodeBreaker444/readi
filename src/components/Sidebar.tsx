@@ -103,6 +103,9 @@ const navigationItems: NavItem[] = [
     icon: HiOutlineShieldCheck,
     subItems: [
       { name: 'General Audit Plan', href: '/compliance/general-audit-plan' },
+      { name: 'Safety Target Review', href: '/compliance/safety-target-review' },
+      { name: 'Requirements & Evidence', href: '/compliance/requirements-evidences' },
+      { name: 'Calendar', href: '/compliance/calendar' },
     ]
   },
   {

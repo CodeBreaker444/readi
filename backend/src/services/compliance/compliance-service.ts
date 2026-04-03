@@ -180,6 +180,13 @@ export async function deleteComplianceRequirement(
   requirementId: number,
   ownerId: number
 ): Promise<void> {
+  const { error: evidenceError } = await supabase
+    .from('compliance_evidence')
+    .delete()
+    .eq('fk_requirement_id', requirementId);
+
+  if (evidenceError) throw evidenceError;
+
   const { error } = await supabase
     .from('compliance_requirement')
     .delete()
