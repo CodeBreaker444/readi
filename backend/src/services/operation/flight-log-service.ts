@@ -116,7 +116,6 @@ export async function attachFlytbaseFlightLog(
     throw new Error('GUTMA data unavailable for this flight.');
   }
 
-  // Use the GUTMA filename from the response, same as the preview route
   const filename: string = gutma?.file?.filename ?? `FlytBase_Export_${flightId}.gutma`;
   const s3Key = `flight-logs/mission/${missionId}/${filename}`;
 

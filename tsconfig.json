@@ -24,6 +24,9 @@
       ],
       "@/backend/*": [
         "./backend/src/*"
+      ],
+      "@mcp-server/*": [
+        "./mcp-server/*"
       ]
     },
     "plugins": [
