@@ -39,6 +39,7 @@ const WINDOWS = [
   { label: 'Last 6 hrs', value: 360 },
   { label: 'Last 12 hrs', value: 720 },
   { label: 'Last 24 hrs', value: 1440 },
+  // { label: 'Last week', value: 10080 },
 ];
 
 function formatMs(ms?: number): string {

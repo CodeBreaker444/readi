@@ -1,12 +1,17 @@
 'use client';
 
 import { SessionUser } from '@/lib/auth/server-session';
-import { ChevronDown, LogOut, Moon, Search, Sparkles, Sun, User, UserCircle } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { AlertTriangle, ChevronDown, LogOut, Moon, Search, Send, Sparkles, Sun, User, UserCircle } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '../lib/supabase/client';
 import NotificationDropdown from './NotificationDropdown';
 import ProfileModal from './ProfileModal';
+
+interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
 
 interface TopBarProps {
   isDark: boolean;
@@ -14,24 +19,78 @@ interface TopBarProps {
   userData: SessionUser | null;
 }
 
+const CHAT_RESTRICTED_ROLES = ['SUPERADMIN', 'ADMIN'];
+
 const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
+  const isChatRestricted = CHAT_RESTRICTED_ROLES.includes(userData?.role ?? '');
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
+  const [chatInput, setChatInput] = useState('');
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatLoading, setChatLoading] = useState(false);
+  const [tokenUsage, setTokenUsage] = useState<{ percent: number; remaining: number } | null>(null);
+  const chatInputRef = useRef<HTMLInputElement>(null);
+  const chatBottomRef = useRef<HTMLDivElement>(null);
   const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad|iPod/.test(navigator.userAgent);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
-        setShowSearch(true);
+        if (!isChatRestricted) setShowSearch(true);
       }
       if (e.key === 'Escape') setShowSearch(false);
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, []);
+
+  useEffect(() => {
+    if (showSearch) {
+      setTimeout(() => chatInputRef.current?.focus(), 50);
+      fetch('/api/agent/usage/me')
+        .then((r) => r.json())
+        .then((d) => {
+          if (d?.user) setTokenUsage({ percent: d.user.percent, remaining: d.user.remaining });
+        })
+        .catch(() => null);
+    }
+  }, [showSearch]);
+
+  useEffect(() => {
+    chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatMessages, chatLoading]);
+
+  const handleChatSend = async () => {
+    const question = chatInput.trim();
+    if (!question || chatLoading) return;
+
+    setChatInput('');
+    setChatMessages(prev => [...prev, { role: 'user', content: question }]);
+    setChatLoading(true);
+
+    try {
+      const res = await fetch('/api/agent/ask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question }),
+      });
+      const data = await res.json();
+      setChatMessages(prev => [
+        ...prev,
+        { role: 'assistant', content: data.answer ?? data.error ?? 'No response.' },
+      ]);
+    } catch {
+      setChatMessages(prev => [
+        ...prev,
+        { role: 'assistant', content: 'Failed to connect to the server.' },
+      ]);
+    } finally {
+      setChatLoading(false);
+    }
+  };
 
 
   const handleLogout = async () => {
@@ -60,11 +119,11 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
 
         <div className="flex items-center space-x-4">
           <button
-            onClick={() => setShowSearch(true)}
+            onClick={() => { if (!isChatRestricted) setShowSearch(true); }}
             className={`group relative flex items-center gap-2.5 px-4 py-2 rounded-xl text-sm transition-all duration-200 w-60 ${isDark
                 ? 'bg-slate-800/80 text-slate-400 hover:text-slate-300 hover:bg-slate-800'
                 : 'bg-gray-50/80 text-gray-400 hover:text-gray-500 hover:bg-gray-100/80'
-              }`}
+              } ${isChatRestricted ? 'cursor-not-allowed opacity-70' : ''}`}
             style={{
               border: '1px solid transparent',
               backgroundClip: 'padding-box',
@@ -106,12 +165,21 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
               Ask anything…
             </span>
 
-            <kbd className={`relative hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-medium transition-colors duration-200 ${isDark
-                ? 'bg-slate-700/60 text-slate-500 group-hover:bg-slate-700 group-hover:text-slate-400 border border-slate-600/50'
-                : 'bg-white/80 text-gray-400 group-hover:bg-white group-hover:text-gray-500 border border-gray-200/80 shadow-sm'
+            {isChatRestricted ? (
+              <span className={`relative hidden sm:inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-semibold ${isDark
+                ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                : 'bg-amber-50 text-amber-600 border border-amber-200'
               }`}>
-              {isMac ? <><span className="text-[11px]">⌘</span>K</> : 'Ctrl K'}
-            </kbd>
+                Coming Soon
+              </span>
+            ) : (
+              <kbd className={`relative hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-medium transition-colors duration-200 ${isDark
+                  ? 'bg-slate-700/60 text-slate-500 group-hover:bg-slate-700 group-hover:text-slate-400 border border-slate-600/50'
+                  : 'bg-white/80 text-gray-400 group-hover:bg-white group-hover:text-gray-500 border border-gray-200/80 shadow-sm'
+                }`}>
+                {isMac ? <><span className="text-[11px]">⌘</span>K</> : 'Ctrl K'}
+              </kbd>
+            )}
           </button>
           <button
             onClick={toggleTheme}
@@ -254,58 +322,149 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
 
       {showSearch && (
         <div
-          className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh]"
+          className="fixed inset-0 z-50 flex items-center justify-center"
           onClick={() => setShowSearch(false)}
         >
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
 
           <div
-            className={`relative w-full max-w-xl mx-4 rounded-2xl shadow-2xl border overflow-hidden ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-gray-200'
-              }`}
+            className={`relative w-full max-w-2xl mx-4 rounded-2xl shadow-2xl border flex flex-col overflow-hidden ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-gray-200'}`}
+            style={{ height: '560px' }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className={`flex items-center gap-3 px-4 py-3.5 border-b ${isDark ? 'border-slate-700' : 'border-gray-100'}`}>
-              <Search size={16} className={isDark ? 'text-slate-500' : 'text-gray-400'} />
-              <input
-                autoFocus
-                readOnly
-                placeholder="Ask anything…"
-                className={`flex-1 bg-transparent text-sm outline-none placeholder:text-sm ${isDark ? 'text-white placeholder-slate-500' : 'text-gray-900 placeholder-gray-400'
-                  }`}
-              />
-              <kbd
+            {/* Header */}
+            <div className={`flex items-center justify-between px-5 py-4 border-b shrink-0 ${isDark ? 'border-slate-700/80' : 'border-gray-100'}`}>
+              <div className="flex items-center gap-2.5">
+                <div className={`flex items-center justify-center w-7 h-7 rounded-lg ${isDark ? 'bg-violet-500/15' : 'bg-violet-50'}`}>
+                  <Sparkles size={14} className="text-violet-500" />
+                </div>
+                <div>
+                  <p className={`text-sm font-semibold leading-none ${isDark ? 'text-white' : 'text-gray-900'}`}>READI AI Agent</p>
+                  <p className={`text-[11px] mt-0.5 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
+                    {userData?.role ?? 'Assistant'}
+                  </p>
+                </div>
+              </div>
+              {tokenUsage && tokenUsage.percent >= 70 && (
+                <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-medium ${
+                  tokenUsage.percent >= 90
+                    ? (isDark ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-red-50 border-red-200 text-red-600')
+                    : (isDark ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' : 'bg-amber-50 border-amber-200 text-amber-600')
+                }`}>
+                  <AlertTriangle size={11} />
+                  <span>Only {100 - tokenUsage.percent}% remaining</span>
+                </div>
+              )}
+              <button
                 onClick={() => setShowSearch(false)}
-                className={`cursor-pointer text-[10px] px-1.5 py-0.5 rounded border font-medium ${isDark ? 'bg-slate-800 border-slate-600 text-slate-400' : 'bg-gray-100 border-gray-300 text-gray-400'
-                  }`}
+                className={`text-[10px] font-medium px-2 py-1 rounded border transition-colors ${isDark ? 'bg-slate-800 border-slate-600 text-slate-400 hover:text-slate-200' : 'bg-gray-50 border-gray-200 text-gray-400 hover:text-gray-600'}`}
               >
                 Esc
-              </kbd>
+              </button>
             </div>
 
-            <div className="flex flex-col items-center justify-center gap-3 px-6 py-12">
-              <div className={`flex items-center justify-center w-12 h-12 rounded-2xl ${isDark ? 'bg-violet-500/10' : 'bg-violet-50'}`}>
-                <Sparkles size={22} className="text-violet-500" />
+            {/* Messages area */}
+            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 min-h-0">
+              {chatMessages.length === 0 && !chatLoading ? (
+                <div className="h-full flex flex-col items-center justify-center gap-4 text-center">
+                  <div className={`flex items-center justify-center w-14 h-14 rounded-2xl ${isDark ? 'bg-violet-500/10' : 'bg-violet-50'}`}>
+                    <Sparkles size={26} className="text-violet-500" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <p className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      How can I help you?
+                    </p>
+                    <p className={`text-xs max-w-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+                      Ask about your missions, fleet, alerts, compliance, maintenance, and more.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 w-full max-w-sm mt-2">
+                    {(['How many missions have I completed?', 'List active alerts', 'Show open maintenance tickets', 'What are my KPI values?'] as const).map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => { setChatInput(s); chatInputRef.current?.focus(); }}
+                        className={`text-left text-[11px] px-3 py-2 rounded-xl border transition-colors leading-snug ${isDark
+                          ? 'bg-slate-800/60 border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-300'
+                          : 'bg-gray-50 border-gray-100 text-gray-500 hover:border-gray-200 hover:text-gray-700'}`}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {chatMessages.map((msg, i) => (
+                    <div key={i} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
+                      <div className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 ${msg.role === 'user'
+                        ? 'bg-violet-600'
+                        : (isDark ? 'bg-slate-700' : 'bg-gray-100')}`}>
+                        {msg.role === 'user'
+                          ? <User size={13} className="text-white" />
+                          : <Sparkles size={13} className={isDark ? 'text-violet-400' : 'text-violet-500'} />}
+                      </div>
+                      <div className={`text-sm leading-relaxed max-w-[78%] px-4 py-2.5 rounded-2xl whitespace-pre-wrap ${msg.role === 'user'
+                        ? (isDark
+                          ? 'bg-violet-600 text-white rounded-tr-sm'
+                          : 'bg-violet-600 text-white rounded-tr-sm')
+                        : (isDark
+                          ? 'bg-slate-800 text-slate-200 rounded-tl-sm'
+                          : 'bg-gray-100 text-gray-800 rounded-tl-sm')}`}>
+                        {msg.content}
+                      </div>
+                    </div>
+                  ))}
+                  {chatLoading && (
+                    <div className="flex gap-3">
+                      <div className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 ${isDark ? 'bg-slate-700' : 'bg-gray-100'}`}>
+                        <Sparkles size={13} className={isDark ? 'text-violet-400' : 'text-violet-500'} />
+                      </div>
+                      <div className={`px-4 py-3 rounded-2xl rounded-tl-sm ${isDark ? 'bg-slate-800' : 'bg-gray-100'}`}>
+                        <div className="flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-bounce [animation-delay:-0.3s]" />
+                          <span className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-bounce [animation-delay:-0.15s]" />
+                          <span className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-bounce" />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  <div ref={chatBottomRef} />
+                </>
+              )}
+            </div>
+
+            {/* Input area */}
+            <div className={`shrink-0 px-4 py-3 border-t ${isDark ? 'border-slate-700/80' : 'border-gray-100'}`}>
+              <div className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border transition-colors ${isDark
+                ? 'bg-slate-800 border-slate-600 focus-within:border-violet-500/60'
+                : 'bg-gray-50 border-gray-200 focus-within:border-violet-400/60'}`}>
+                <input
+                  ref={chatInputRef}
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleChatSend();
+                    }
+                  }}
+                  placeholder="Type a message…"
+                  disabled={chatLoading}
+                  className={`flex-1 bg-transparent text-sm outline-none ${isDark ? 'text-white placeholder-slate-500' : 'text-gray-900 placeholder-gray-400'}`}
+                />
+                <button
+                  onClick={handleChatSend}
+                  disabled={chatLoading || !chatInput.trim()}
+                  className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all ${chatInput.trim() && !chatLoading
+                    ? 'bg-violet-600 hover:bg-violet-700 text-white cursor-pointer'
+                    : (isDark ? 'bg-slate-700 text-slate-600 cursor-not-allowed' : 'bg-gray-200 text-gray-400 cursor-not-allowed')}`}
+                >
+                  <Send size={14} />
+                </button>
               </div>
-              <div className="text-center space-y-1">
-                <p className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  AI Chat Agent — Coming Soon
-                </p>
-                <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-                  Ask questions about your fleet, operations, and maintenance — all in one place.
-                </p>
-                <p className={`text-[11px] mt-1 ${isDark ? 'text-slate-600' : 'text-gray-400'}`}>
-                  Press{' '}
-                  <kbd className={`inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-[10px] border ${isDark ? 'bg-slate-800 border-slate-600 text-slate-400' : 'bg-gray-100 border-gray-300 text-gray-500'}`}>
-                    {isMac ? <><span className="text-[12px]">⌘</span>K</> : 'Ctrl K'}
-                  </kbd>{' '}
-                  to open anytime
-                </p>
-              </div>
-              <span className={`mt-1 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium ${isDark ? 'bg-violet-500/10 text-violet-400' : 'bg-violet-50 text-violet-600'
-                }`}>
-                <span className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" />
-                In development
-              </span>
+              <p className={`text-[10px] text-center mt-2 ${isDark ? 'text-slate-600' : 'text-gray-400'}`}>
+                Press <kbd className={`px-1 rounded text-[9px] border ${isDark ? 'border-slate-600 bg-slate-700' : 'border-gray-200 bg-gray-100'}`}>Enter</kbd> to send
+              </p>
             </div>
           </div>
         </div>
