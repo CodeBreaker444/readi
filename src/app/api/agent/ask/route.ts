@@ -164,6 +164,11 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
+        const restrictedRoles = ['SUPERADMIN', 'ADMIN'];
+        if (restrictedRoles.includes(session.user.role)) {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        }
+
         const { question } = await req.json();
 
         if (!question?.trim()) {

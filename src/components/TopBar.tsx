@@ -19,7 +19,10 @@ interface TopBarProps {
   userData: SessionUser | null;
 }
 
+const CHAT_RESTRICTED_ROLES = ['SUPERADMIN', 'ADMIN'];
+
 const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
+  const isChatRestricted = CHAT_RESTRICTED_ROLES.includes(userData?.role ?? '');
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -35,7 +38,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
-        setShowSearch(true);
+        if (!isChatRestricted) setShowSearch(true);
       }
       if (e.key === 'Escape') setShowSearch(false);
     };
@@ -109,11 +112,11 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
 
         <div className="flex items-center space-x-4">
           <button
-            onClick={() => setShowSearch(true)}
+            onClick={() => { if (!isChatRestricted) setShowSearch(true); }}
             className={`group relative flex items-center gap-2.5 px-4 py-2 rounded-xl text-sm transition-all duration-200 w-60 ${isDark
                 ? 'bg-slate-800/80 text-slate-400 hover:text-slate-300 hover:bg-slate-800'
                 : 'bg-gray-50/80 text-gray-400 hover:text-gray-500 hover:bg-gray-100/80'
-              }`}
+              } ${isChatRestricted ? 'cursor-not-allowed opacity-70' : ''}`}
             style={{
               border: '1px solid transparent',
               backgroundClip: 'padding-box',
@@ -155,12 +158,21 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
               Ask anything…
             </span>
 
-            <kbd className={`relative hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-medium transition-colors duration-200 ${isDark
-                ? 'bg-slate-700/60 text-slate-500 group-hover:bg-slate-700 group-hover:text-slate-400 border border-slate-600/50'
-                : 'bg-white/80 text-gray-400 group-hover:bg-white group-hover:text-gray-500 border border-gray-200/80 shadow-sm'
+            {isChatRestricted ? (
+              <span className={`relative hidden sm:inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-semibold ${isDark
+                ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                : 'bg-amber-50 text-amber-600 border border-amber-200'
               }`}>
-              {isMac ? <><span className="text-[11px]">⌘</span>K</> : 'Ctrl K'}
-            </kbd>
+                Coming Soon
+              </span>
+            ) : (
+              <kbd className={`relative hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-medium transition-colors duration-200 ${isDark
+                  ? 'bg-slate-700/60 text-slate-500 group-hover:bg-slate-700 group-hover:text-slate-400 border border-slate-600/50'
+                  : 'bg-white/80 text-gray-400 group-hover:bg-white group-hover:text-gray-500 border border-gray-200/80 shadow-sm'
+                }`}>
+                {isMac ? <><span className="text-[11px]">⌘</span>K</> : 'Ctrl K'}
+              </kbd>
+            )}
           </button>
           <button
             onClick={toggleTheme}
