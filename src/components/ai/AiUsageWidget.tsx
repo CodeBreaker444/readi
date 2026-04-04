@@ -202,13 +202,13 @@ export default function AiUsageWidget({ isDark }: Props) {
               Top users today — limit {fmt(perUserLimit)}/user
             </span>
           </div>
-          {topUsers.map(([userId, tokens]) => {
+          {topUsers.map(([email, tokens]) => {
             const pct = Math.min(100, Math.round((tokens / perUserLimit) * 100));
             return (
-              <div key={userId}>
+              <div key={email}>
                 <div className="flex items-center justify-between mb-0.5">
-                  <span className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-                    User #{userId}
+                  <span className={`text-[11px] truncate max-w-[160px] ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+                    {email}
                   </span>
                   <span className={`text-[11px] font-medium ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>
                     {fmt(tokens)}

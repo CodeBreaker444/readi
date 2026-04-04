@@ -64,9 +64,26 @@ export async function GET() {
 
             const companyTotal = (rows ?? []).reduce((s, r) => s + r.total_tokens, 0);
 
-            const byUser: Record<number, number> = {};
+            const byUserId: Record<number, number> = {};
             for (const r of rows ?? []) {
-                byUser[r.user_id] = (byUser[r.user_id] ?? 0) + r.total_tokens;
+                byUserId[r.user_id] = (byUserId[r.user_id] ?? 0) + r.total_tokens;
+            }
+
+            const userIds = Object.keys(byUserId).map(Number);
+            const { data: userRows } = await supabase
+                .from('users')
+                .select('user_id, email')
+                .in('user_id', userIds);
+
+            const idToEmail: Record<number, string> = {};
+            for (const u of userRows ?? []) {
+                idToEmail[u.user_id] = u.email;
+            }
+
+            const byUser: Record<string, number> = {};
+            for (const [id, tokens] of Object.entries(byUserId)) {
+                const email = idToEmail[Number(id)] ?? `user_${id}`;
+                byUser[email] = tokens;
             }
 
             const { data: allTime } = await supabase

@@ -1,5 +1,6 @@
 'use client';
 
+import AiUsageWidget from '@/components/ai/AiUsageWidget';
 import { cn } from '@/lib/utils';
 import { Clock, Navigation, Plane, TrendingUp, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -315,7 +316,12 @@ export default function DashboardClient({ ownerId, userProfileCode, userId, init
         </div>
       </div>
 
-      {/* Mission tables */}
+      {(userProfileCode === 'ADMIN' || userProfileCode === 'SUPERADMIN') && (
+        <div className="mb-8 max-w-md">
+          <AiUsageWidget isDark={isDark} />
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {[
           { title: 'Past 10 Missions',   eyebrowLabel: 'History',   rows: missions,     empty: 'No past missions' },
