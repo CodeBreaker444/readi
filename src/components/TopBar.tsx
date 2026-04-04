@@ -1,7 +1,7 @@
 'use client';
 
 import { SessionUser } from '@/lib/auth/server-session';
-import { ChevronDown, LogOut, Moon, Search, Send, Sparkles, Sun, User, UserCircle } from 'lucide-react';
+import { AlertTriangle, ChevronDown, LogOut, Moon, Search, Send, Sparkles, Sun, User, UserCircle } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '../lib/supabase/client';
@@ -30,6 +30,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
   const [chatInput, setChatInput] = useState('');
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatLoading, setChatLoading] = useState(false);
+  const [tokenUsage, setTokenUsage] = useState<{ percent: number; remaining: number } | null>(null);
   const chatInputRef = useRef<HTMLInputElement>(null);
   const chatBottomRef = useRef<HTMLDivElement>(null);
   const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad|iPod/.test(navigator.userAgent);
@@ -49,6 +50,12 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
   useEffect(() => {
     if (showSearch) {
       setTimeout(() => chatInputRef.current?.focus(), 50);
+      fetch('/api/agent/usage/me')
+        .then((r) => r.json())
+        .then((d) => {
+          if (d?.user) setTokenUsage({ percent: d.user.percent, remaining: d.user.remaining });
+        })
+        .catch(() => null);
     }
   }, [showSearch]);
 
@@ -338,6 +345,16 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
                   </p>
                 </div>
               </div>
+              {tokenUsage && tokenUsage.percent >= 70 && (
+                <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-medium ${
+                  tokenUsage.percent >= 90
+                    ? (isDark ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-red-50 border-red-200 text-red-600')
+                    : (isDark ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' : 'bg-amber-50 border-amber-200 text-amber-600')
+                }`}>
+                  <AlertTriangle size={11} />
+                  <span>Only {100 - tokenUsage.percent}% remaining</span>
+                </div>
+              )}
               <button
                 onClick={() => setShowSearch(false)}
                 className={`text-[10px] font-medium px-2 py-1 rounded border transition-colors ${isDark ? 'bg-slate-800 border-slate-600 text-slate-400 hover:text-slate-200' : 'bg-gray-50 border-gray-200 text-gray-400 hover:text-gray-600'}`}
