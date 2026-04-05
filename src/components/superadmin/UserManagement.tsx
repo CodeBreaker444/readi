@@ -13,6 +13,7 @@ import axios from 'axios';
 import { Building2, Filter, Plus, Search, User } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import ExportButtons from '../system/ExportButtons';
 import { TablePagination } from '../tables/Pagination';
 import { getUserColumns, UserData } from '../tables/UserColumns';
 import {
@@ -403,7 +404,14 @@ export default function UserManagement({ session }: UserManagementProps) {
           </Table>
         </div>
 
-        <TablePagination table={table} />
+        <div className="flex items-center justify-between px-2">
+          <ExportButtons
+            filename="Users"
+            headers={['ID', 'Username', 'Full Name', 'Email', 'Phone', 'Role', 'Active']}
+            rows={table.getFilteredRowModel().rows.map(r => { const u = r.original as UserData; return [u.user_id, u.username, u.fullname, u.email, u.phone ?? '', u.user_role, u.active]; })}
+          />
+          <TablePagination table={table} />
+        </div>
       </div>
 
       {showAddModal && (

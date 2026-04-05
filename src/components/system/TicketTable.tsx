@@ -10,6 +10,7 @@ import {
 } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
 import { TablePagination } from "../tables/Pagination";
+import ExportButtons from "./ExportButtons";
 import { Badge, PRIORITY_STYLES, STATUS_STYLES, fmtDate } from "./TicketUi";
 
 function ActionIcon({
@@ -400,11 +401,12 @@ export function TicketTable({
         </table>
       </div>
 
-      <div
-        className={`border-t px-2 ${
-          isDark ? "border-slate-700" : "border-slate-200"
-        }`}
-      >
+      <div className={`border-t px-2 flex items-center justify-between ${isDark ? "border-slate-700" : "border-slate-200"}`}>
+        <ExportButtons
+          filename="Maintenance Tickets"
+          headers={['Ticket ID', 'Type', 'System', 'Serial', 'Assigned To', 'Email', 'Status', 'Priority', 'Opened', 'Closed']}
+          rows={tickets.map(t => [t.ticket_id, t.ticket_type, t.drone_code ?? '', t.drone_serial ?? '', t.assigner_name ?? '', t.assigner_email ?? '', t.ticket_status, t.ticket_priority, t.opened_at, t.closed_at ?? ''])}
+        />
         <TablePagination table={table} />
       </div>
     </div>

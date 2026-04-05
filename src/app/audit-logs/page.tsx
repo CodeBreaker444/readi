@@ -1,24 +1,25 @@
 'use client';
 
+import ExportButtons from '@/components/system/ExportButtons';
 import { AuditLog, ENTITY_TYPES, EVENT_TYPE_COLORS, EVENT_TYPES, getAuditLogsColumns, Owner, UserOption } from '@/components/tables/AuditLogsTable';
 import { TablePagination } from '@/components/tables/Pagination';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from '@/components/ui/table';
 import { useTheme } from '@/components/useTheme';
 import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
@@ -405,7 +406,14 @@ export default function AuditLogsPage() {
           </div>
         </div>
 
-        <TablePagination table={table} />
+        <div className="flex items-center justify-between px-2 mt-2">
+          <ExportButtons
+            filename="Audit Logs"
+            headers={['Date', 'Event', 'Section', 'Description', 'User', 'Email', 'Role']}
+            rows={table.getFilteredRowModel().rows.map(r => { const l = r.original as any; return [l.created_at, l.event_type, l.entity_type, l.description ?? '', l.user_name ?? '', l.user_email ?? '', l.user_role ?? '']; })}
+          />
+          <TablePagination table={table} />
+        </div>
       </div>
     </div>
   );

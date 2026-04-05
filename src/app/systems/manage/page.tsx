@@ -419,13 +419,13 @@ const modelColumns = useMemo(
                 </div>
                     <CardContent className="pt-6">
                         {activeTab === 'system' && (
-                            <DataTable columns={systemColumns} data={toolData} loading={loading} />
+                            <DataTable columns={systemColumns} data={toolData} loading={loading} exportFilename="systems" />
                         )}
                         {activeTab === 'model' && (
-                            <DataTable columns={modelColumns} data={models} loading={loadingModels} />
+                            <DataTable columns={modelColumns} data={models} loading={loadingModels} exportFilename="models" />
                         )}
                         {activeTab === 'component' && (
-                            <DataTable columns={componentColumns} data={componentData} loading={loadingComponents} />
+                            <DataTable columns={componentColumns} data={componentData} loading={loadingComponents} exportFilename="components" />
                         )}
                     </CardContent>
                 </Card>

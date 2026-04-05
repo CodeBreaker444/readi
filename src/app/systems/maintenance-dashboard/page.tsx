@@ -3,21 +3,11 @@
 import MaintenanceTable, { SummaryBar } from "@/components/system/MaintenanceTable";
 import { MaintenanceTableSkeleton } from "@/components/tables/MaintenanceTableSkeleton";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { useTheme } from "@/components/useTheme";
 import { MaintenanceDrone } from "@/config/types/maintenance";
 import axios from "axios";
 import { Loader2, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { FaFileExcel, FaFilePdf, FaFileWord } from "react-icons/fa";
-import { HiDownload } from "react-icons/hi";
 import { toast } from "sonner";
 
 const MIN_THRESHOLD = 50;
@@ -309,40 +299,6 @@ export default function MaintenancePage() {
                 threshold={threshold}
                 onApplyThreshold={applyThreshold}
               />
-
-              <div className="mt-3 flex justify-start">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="outline" size="sm"
-                      disabled={!!exporting || loading || data.length === 0}
-                      className={`gap-1.5 text-xs h-7 ${isDark ? 'border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}
-                    >
-                      <HiDownload className="w-3.5 h-3.5" />
-                      {exporting ? 'Exporting…' : 'Export'}
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className={`min-w-47 ${isDark ? 'bg-slate-800 border-slate-700 text-slate-200' : ''}`}>
-                    <DropdownMenuLabel className={`text-[10px] uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Download as</DropdownMenuLabel>
-                    <DropdownMenuSeparator className={isDark ? 'bg-slate-700' : ''} />
-                    <DropdownMenuItem onClick={() => handleServerExport('xlsx')} disabled={!!exporting} className={`text-xs gap-2 cursor-pointer ${isDark ? 'hover:bg-slate-700' : ''}`}>
-                      <FaFileExcel className="w-3.5 h-3.5 text-emerald-600" />
-                      Excel (.xlsx)
-                      {exporting === 'xlsx' && <span className="ml-auto text-[10px] opacity-60">…</span>}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handlePdfExport} disabled={!!exporting} className={`text-xs gap-2 cursor-pointer ${isDark ? 'hover:bg-slate-700' : ''}`}>
-                      <FaFilePdf className="w-3.5 h-3.5 text-red-500" />
-                      PDF (.pdf)
-                      {exporting === 'pdf' && <span className="ml-auto text-[10px] opacity-60">…</span>}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleServerExport('docx')} disabled={!!exporting} className={`text-xs gap-2 cursor-pointer ${isDark ? 'hover:bg-slate-700' : ''}`}>
-                      <FaFileWord className="w-3.5 h-3.5 text-blue-600" />
-                      Word (.docx)
-                      {exporting === 'docx' && <span className="ml-auto text-[10px] opacity-60">…</span>}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
             </div>
           </>
         )}

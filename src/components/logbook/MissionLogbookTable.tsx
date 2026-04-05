@@ -30,6 +30,7 @@ import {
     XCircle
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import ExportButtons from "../system/ExportButtons";
 import { getColumns } from "../tables/LogbookColumn";
 import { TablePagination } from "../tables/Pagination";
 import { Skeleton } from "../ui/skeleton";
@@ -191,7 +192,14 @@ export function MissionLogbookTable({ data, loading, isDark }: LogbookTableProps
                 </Table>
             </div>
 
-            <TablePagination table={table} />
+            <div className="flex items-center justify-between">
+              <ExportButtons
+                filename="Mission Planning Logbook"
+                headers={['Planning ID', 'Client', 'Evaluation', 'Planning', 'Mission Plan', 'Code', 'Version', 'Active']}
+                rows={data.map(d => [d.mission_planning_id, d.client_name, d.evaluation_desc, d.planning_desc, d.mission_planning_desc, d.mission_planning_code, d.mission_planning_ver, d.mission_planning_active])}
+              />
+              <TablePagination table={table} />
+            </div>
         </div>
     );
 }

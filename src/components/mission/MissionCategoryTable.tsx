@@ -4,6 +4,7 @@ import { MissionCategory } from '@/config/types/types';
 import { flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, useReactTable } from '@tanstack/react-table';
 import { FolderOpen } from 'lucide-react';
 import { useMemo } from 'react';
+import ExportButtons from '../system/ExportButtons';
 import { getMissionCategoryColumns } from '../tables/MissionCategoryColumn';
 import { TablePagination } from '../tables/Pagination';
 
@@ -60,11 +61,14 @@ export default function MissionCategoryTable({ data, onDelete, onEdit, isDark }:
           </TableBody>
         </Table>
       </div>
-      {table.getRowModel().rows.length > 0 && (
-        <div className={`border-t ${isDark ? 'border-white/[0.06]' : 'border-gray-100'}`}>
-          <TablePagination table={table} />
-        </div>
-      )}
+      <div className={`border-t flex items-center justify-between px-3 ${isDark ? 'border-white/[0.06]' : 'border-gray-100'}`}>
+        <ExportButtons
+          filename="Mission Categories"
+          headers={['ID', 'Code', 'Name', 'Description']}
+          rows={data.map(d => [d.id, d.code, d.name, d.description])}
+        />
+        <TablePagination table={table} />
+      </div>
     </div>
   );
 }

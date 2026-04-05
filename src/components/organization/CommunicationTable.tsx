@@ -10,6 +10,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { useState } from "react";
+import ExportButtons from "../system/ExportButtons";
 import { getCommunicationColumns } from "../tables/CommunicationColumn";
 import { TablePagination } from "../tables/Pagination";
 
@@ -181,7 +182,14 @@ export function CommunicationTable({
         </div>
       </div>
 
-      <TablePagination table={table} />
+      <div className="flex items-center justify-between">
+        <ExportButtons
+          filename="Communications"
+          headers={['Code', 'Version', 'Description', 'Active', 'Last Update']}
+          rows={data.map(d => [d.communication_code, d.communication_ver, d.communication_desc, d.communication_active, d.last_update ?? ''])}
+        />
+        <TablePagination table={table} />
+      </div>
     </div>
   );
 }

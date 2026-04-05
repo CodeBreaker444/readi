@@ -16,22 +16,25 @@ import {
 import { useState } from 'react';
 import { TablePagination } from '../tables/Pagination';
 import { Skeleton } from '../ui/skeleton';
+import ExportButtons from './ExportButtons';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
   loading?: boolean;
+  exportFilename?: string;
 }
 
 export default function DataTable<TData, TValue>({
   columns,
   data,
   loading = false,
+  exportFilename,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState('');
-    const [pagination, setPagination] = useState({
+  const [pagination, setPagination] = useState({
     pageIndex: 0,
     pageSize: 8,
   });
@@ -54,6 +57,22 @@ export default function DataTable<TData, TValue>({
       globalFilter,
     },
   });
+
+  // Derive export data from the table's current filtered rows (all pages)
+  const exportCols = columns.filter(
+    (col) => 'accessorKey' in col && col.accessorKey,
+  ) as (ColumnDef<TData, TValue> & { accessorKey: string })[];
+
+  const exportHeaders = exportCols.map((col) =>
+    typeof col.header === 'string' ? col.header : String(col.accessorKey).replace(/_/g, ' '),
+  );
+
+  const exportRows = table.getFilteredRowModel().rows.map((row) =>
+    exportCols.map((col) => {
+      const val = (row.original as Record<string, unknown>)[col.accessorKey];
+      return val == null ? '' : String(val);
+    }),
+  );
 
   return (
     <div className="space-y-4">
@@ -113,7 +132,18 @@ export default function DataTable<TData, TValue>({
         </Table>
       </div>
 
-      <TablePagination table={table} />
+      <div className="flex items-center justify-between">
+        {exportFilename && exportHeaders.length > 0 ? (
+          <ExportButtons
+            filename={exportFilename}
+            headers={exportHeaders}
+            rows={exportRows}
+          />
+        ) : (
+          <div />
+        )}
+        <TablePagination table={table} />
+      </div>
     </div>
   );
 }

@@ -106,7 +106,7 @@ export default function OwnersPage() {
       </div>
 
       <div className="px-6">
-        <DataTable columns={columns} data={data} loading={loading} />
+        <DataTable columns={columns} data={data} loading={loading} exportFilename="companies" />
       </div>
 
       <AddOwnerModal

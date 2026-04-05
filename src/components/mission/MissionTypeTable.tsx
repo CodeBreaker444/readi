@@ -19,6 +19,7 @@ import {
 } from '@tanstack/react-table';
 import { Tag } from 'lucide-react';
 import { useMemo } from 'react';
+import ExportButtons from '../system/ExportButtons';
 import { getMissionTypeColumns } from '../tables/MissionTypeColumn';
 import { TablePagination } from '../tables/Pagination';
 
@@ -114,11 +115,14 @@ export default function MissionTypeTable({ data, onDelete, onEdit, isDark }: Mis
         </Table>
       </div>
 
-      {table.getRowModel().rows.length > 0 && (
-        <div className={`border-t ${isDark ? 'border-white/[0.06]' : 'border-gray-100'}`}>
-          <TablePagination table={table} />
-        </div>
-      )}
+      <div className={`border-t flex items-center justify-between px-3 ${isDark ? 'border-white/[0.06]' : 'border-gray-100'}`}>
+        <ExportButtons
+          filename="Mission Types"
+          headers={['ID', 'Code', 'Name', 'Description', 'Label']}
+          rows={data.map(d => [d.id, d.code, d.name, d.description, d.label])}
+        />
+        <TablePagination table={table} />
+      </div>
     </div>
   );
 }

@@ -24,6 +24,7 @@ import { TablePagination } from '../tables/Pagination';
 
 import { Evaluation } from '@/config/types/evaluation';
 import { cn } from '@/lib/utils';
+import ExportButtons from '../system/ExportButtons';
 import { getEvaluationColumns } from '../tables/EvaluationColumn';
 
 export function EvaluationTable({ onView, isDark }: { onView?: (ev: Evaluation) => void; isDark?: boolean }) {
@@ -173,7 +174,14 @@ export function EvaluationTable({ onView, isDark }: { onView?: (ev: Evaluation) 
         </Table>
       </div>
 
-      <TablePagination table={table} />
+      <div className="flex items-center justify-between">
+        <ExportButtons
+          filename="Evaluations"
+          headers={['ID', 'Description', 'Client', 'Status', 'Result', 'Year', 'Request Date', 'User']}
+          rows={evaluations.map(d => [d.evaluation_id, d.evaluation_desc, d.client_name ?? '', d.evaluation_status, d.evaluation_result, d.evaluation_year, d.evaluation_request_date, d.user_name ?? ''])}
+        />
+        <TablePagination table={table} />
+      </div>
 
       <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
         <AlertDialogContent className={isDark ? "bg-slate-900 border-slate-800" : ""}>

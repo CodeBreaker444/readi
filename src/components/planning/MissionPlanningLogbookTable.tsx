@@ -20,6 +20,7 @@ import {
   type SortingState,
 } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
+import ExportButtons from "../system/ExportButtons";
 import { TablePagination } from "../tables/Pagination";
 import { getLogbookColumns } from "../tables/PlanningLogbookColumns";
 
@@ -137,7 +138,14 @@ export default function MissionPlanningLogbookTable({
         </Table>
       </div>
       
-      <TablePagination table={table}/>
+      <div className="flex items-center justify-between">
+        <ExportButtons
+          filename="Mission Planning Logbook"
+          headers={['Plan ID', 'Code', 'Description', 'Version', 'Active', 'Planning', 'Tool', 'Tests']}
+          rows={data.map(d => [d.mission_planning_id, d.mission_planning_code, d.mission_planning_desc, d.mission_planning_ver, d.mission_planning_active, d.planning_desc, d.tool_code, d.tot_test])}
+        />
+        <TablePagination table={table} />
+      </div>
     </div>
   );
 }
