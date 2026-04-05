@@ -272,7 +272,7 @@ export default function EditComponentModal({
   return (
     <>
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className={`!max-w-[900px] w-[90vw] max-h-[90vh] overflow-y-auto ${isDark ? 'bg-slate-800 border-slate-700' : ''}`}>
+      <DialogContent className={`!max-w-[900px] w-[90vw] h-[90vh] overflow-y-auto ${isDark ? 'bg-slate-800 border-slate-700' : ''}`}>
         <DialogHeader className={`border-b pb-3 ${isDark ? 'border-slate-700/60' : 'border-gray-100'}`}>
           <DialogTitle className={isDark ? 'text-white' : ''}>Edit Component</DialogTitle>
         </DialogHeader>
