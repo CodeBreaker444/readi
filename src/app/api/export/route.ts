@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
 
     if (format === 'xlsx') {
       const buf = buildXlsx(headers, rows);
-      return new NextResponse(buf, {
+      return new NextResponse(buf.buffer as ArrayBuffer, {
         headers: {
           'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
           'Content-Disposition': `attachment; filename="${filename}.xlsx"`,
