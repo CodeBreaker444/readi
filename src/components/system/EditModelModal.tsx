@@ -351,9 +351,9 @@ export default function EditModelModal({ open, toolId, onClose, onSuccess, initi
               <Skeleton className={`h-4 w-40 ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
               <Skeleton className={`h-10 w-full ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
             </div>
-            <div className="grid grid-cols-12 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
               {[...Array(4)].map((_, i) => (
-                <div key={i} className="col-span-3 space-y-2">
+                <div key={i} className="col-span-1 sm:col-span-3 space-y-2">
                   <Skeleton className={`h-4 w-20 ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
                   <Skeleton className={`h-10 w-full ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
                 </div>
@@ -386,8 +386,8 @@ export default function EditModelModal({ open, toolId, onClose, onSuccess, initi
               <>
                 <div>
                   <p className={sectionLabelCls}>Identification</p>
-                  <div className="grid grid-cols-12 gap-3">
-                    <div className="col-span-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                    <div className="col-span-1 sm:col-span-3">
                       <Label className={labelCls}>Component Type *</Label>
                       <Select value={formData.model_category} onValueChange={handleCategoryChange}>
                         <SelectTrigger className={selectTriggerCls}><SelectValue placeholder="Select type" /></SelectTrigger>
@@ -397,7 +397,7 @@ export default function EditModelModal({ open, toolId, onClose, onSuccess, initi
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="col-span-3">
+                    <div className="col-span-1 sm:col-span-3">
                       <Label className={labelCls}>Sub-Type *</Label>
                       <Select
                         value={formData.model_subtype}
@@ -414,17 +414,17 @@ export default function EditModelModal({ open, toolId, onClose, onSuccess, initi
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="col-span-3">
+                    <div className="col-span-1 sm:col-span-3">
                       <Label className={labelCls}>Brand (Manufacturer) *</Label>
                       <Input className={inputCls} value={formData.manufacturer} onChange={e => handleChange('manufacturer', e.target.value)} required />
                     </div>
-                    <div className="col-span-3">
+                    <div className="col-span-1 sm:col-span-3">
                       <Label className={labelCls}>Serie (Model Code) *</Label>
                       <Input className={inputCls} value={formData.model_code} onChange={e => handleChange('model_code', e.target.value)} required />
                     </div>
                   </div>
-                  <div className="grid grid-cols-12 gap-3 mt-3">
-                    <div className="col-span-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 mt-3">
+                    <div className="col-span-1 sm:col-span-3">
                       <Label className={labelCls}>Model (Name) *</Label>
                       <Input className={inputCls} value={formData.model_name} onChange={e => handleChange('model_name', e.target.value)} required />
                     </div>
@@ -433,16 +433,16 @@ export default function EditModelModal({ open, toolId, onClose, onSuccess, initi
 
                 <div>
                   <p className={sectionLabelCls}>Classification & Weight</p>
-                  <div className="grid grid-cols-12 gap-3">
-                    <div className="col-span-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                    <div className="col-span-1 sm:col-span-4">
                       <Label className={labelCls}>Version</Label>
                       <Input className={inputCls} value={formData.version} onChange={e => handleChange('version', e.target.value)} />
                     </div>
-                    <div className="col-span-4">
+                    <div className="col-span-1 sm:col-span-4">
                       <Label className={labelCls}>MTOM (kg)</Label>
                       <Input type="number" step="0.01" className={inputCls} value={formData.mtom} onChange={e => handleChange('mtom', e.target.value)} />
                     </div>
-                    <div className="col-span-4">
+                    <div className="col-span-1 sm:col-span-4">
                       <Label className={labelCls}>Weight (kg)</Label>
                       <Input type="number" step="0.01" className={inputCls} value={formData.weight} onChange={e => handleChange('weight', e.target.value)} />
                     </div>
@@ -451,20 +451,20 @@ export default function EditModelModal({ open, toolId, onClose, onSuccess, initi
 
                 <div>
                   <p className={sectionLabelCls}>Operating Conditions</p>
-                  <div className="grid grid-cols-12 gap-3">
-                    <div className="col-span-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                    <div className="col-span-1 sm:col-span-3">
                       <Label className={labelCls}>Wind Min (m/s)</Label>
                       <Input type="number" step="0.1" className={inputCls} value={formData.wind_min} onChange={e => handleChange('wind_min', e.target.value)} />
                     </div>
-                    <div className="col-span-3">
+                    <div className="col-span-1 sm:col-span-3">
                       <Label className={labelCls}>Wind Max (m/s)</Label>
                       <Input type="number" step="0.1" className={inputCls} value={formData.wind_max} onChange={e => handleChange('wind_max', e.target.value)} />
                     </div>
-                    <div className="col-span-3">
+                    <div className="col-span-1 sm:col-span-3">
                       <Label className={labelCls}>Temp Min (°C)</Label>
                       <Input type="number" step="0.1" className={inputCls} value={formData.temp_min} onChange={e => handleChange('temp_min', e.target.value)} />
                     </div>
-                    <div className="col-span-3">
+                    <div className="col-span-1 sm:col-span-3">
                       <Label className={labelCls}>Temp Max (°C)</Label>
                       <Input type="number" step="0.1" className={inputCls} value={formData.temp_max} onChange={e => handleChange('temp_max', e.target.value)} />
                     </div>
@@ -473,20 +473,20 @@ export default function EditModelModal({ open, toolId, onClose, onSuccess, initi
 
                 <div>
                   <p className={sectionLabelCls}>Performance</p>
-                  <div className="grid grid-cols-12 gap-3">
-                    <div className="col-span-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                    <div className="col-span-1 sm:col-span-3">
                       <Label className={labelCls}>Endurance Min (min)</Label>
                       <Input type="number" className={inputCls} value={formData.endurance_min} onChange={e => handleChange('endurance_min', e.target.value)} />
                     </div>
-                    <div className="col-span-3">
+                    <div className="col-span-1 sm:col-span-3">
                       <Label className={labelCls}>Endurance Max (min)</Label>
                       <Input type="number" className={inputCls} value={formData.endurance_max} onChange={e => handleChange('endurance_max', e.target.value)} />
                     </div>
-                    <div className="col-span-3">
+                    <div className="col-span-1 sm:col-span-3">
                       <Label className={labelCls}>Max Speed (km/h)</Label>
                       <Input type="number" className={inputCls} value={formData.max_speed} onChange={e => handleChange('max_speed', e.target.value)} />
                     </div>
-                    <div className="col-span-3">
+                    <div className="col-span-1 sm:col-span-3">
                       <Label className={labelCls}>Max Altitude (m)</Label>
                       <Input type="number" className={inputCls} value={formData.max_altitude} onChange={e => handleChange('max_altitude', e.target.value)} />
                     </div>
@@ -495,8 +495,8 @@ export default function EditModelModal({ open, toolId, onClose, onSuccess, initi
 
                 <div>
                   <p className={sectionLabelCls}>Maintenance</p>
-                  <div className="grid grid-cols-12 gap-3 items-end">
-                    <div className="col-span-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                    <div className="col-span-1 sm:col-span-3">
                       <Label className={labelCls}>Phase-out</Label>
                       <Select value={formData.phase_out} onValueChange={v => handleChange('phase_out', v)}>
                         <SelectTrigger className={selectTriggerCls}><SelectValue /></SelectTrigger>
@@ -506,7 +506,7 @@ export default function EditModelModal({ open, toolId, onClose, onSuccess, initi
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="col-span-3">
+                    <div className="col-span-1 sm:col-span-3">
                       <Label className={labelCls}>Maintenance Cycle</Label>
                       <Select value={formData.maintenance_cycle} onValueChange={handleCycleChange}>
                         <SelectTrigger className={selectTriggerCls}><SelectValue placeholder="Select" /></SelectTrigger>
@@ -520,28 +520,28 @@ export default function EditModelModal({ open, toolId, onClose, onSuccess, initi
                       </Select>
                     </div>
                     {showNone && (
-                      <div className="col-span-6 flex items-end">
+                      <div className="col-span-1 sm:col-span-6 flex items-end">
                         <span className={`inline-flex items-center px-3 py-2 rounded-md text-sm ${isDark ? 'bg-slate-700 text-slate-400' : 'bg-muted text-muted-foreground'}`}>
                           No maintenance cycle required
                         </span>
                       </div>
                     )}
                     {showHours && (
-                      <div className="col-span-2">
+                      <div className="col-span-1 sm:col-span-2">
                         <Label className={labelCls}>Hours Limit </Label>
                         <Input type="number" min={0}   className={inputCls} value={formData.maintenance_cycle_hour}
                           onChange={e => handleCycleInput('maintenance_cycle_hour', e.target.value)}   />
                       </div>
                     )}
                     {showDays && (
-                      <div className="col-span-2">
+                      <div className="col-span-1 sm:col-span-2">
                         <Label className={labelCls}>Days Limit </Label>
                         <Input type="number" min={0}   className={inputCls} value={formData.maintenance_cycle_day}
                           onChange={e => handleCycleInput('maintenance_cycle_day', e.target.value)}  />
                       </div>
                     )}
                     {showFlights && (
-                      <div className="col-span-2">
+                      <div className="col-span-1 sm:col-span-2">
                         <Label className={labelCls}>Flights Limit</Label>
                         <Input type="number" min={0}   className={inputCls} value={formData.maintenance_cycle_flight}
                           onChange={e => handleCycleInput('maintenance_cycle_flight', e.target.value)}  />
@@ -552,16 +552,16 @@ export default function EditModelModal({ open, toolId, onClose, onSuccess, initi
 
                 <div>
                   <p className={sectionLabelCls}>Guarantee & Notes</p>
-                  <div className="grid grid-cols-12 gap-3">
-                    <div className="col-span-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                    <div className="col-span-1 sm:col-span-3">
                       <Label className={labelCls}>Guarantee (years)</Label>
                       <Input type="number" step="0.1" className={inputCls} value={formData.guarantee_years} onChange={e => handleChange('guarantee_years', e.target.value)} />
                     </div>
-                    <div className="col-span-3">
+                    <div className="col-span-1 sm:col-span-3">
                       <Label className={labelCls}>Max Flight Time (min)</Label>
                       <Input type="number" className={inputCls} value={formData.max_flight_time} onChange={e => handleChange('max_flight_time', e.target.value)} />
                     </div>
-                    <div className="col-span-6">
+                    <div className="col-span-1 sm:col-span-6">
                       <Label className={labelCls}>Additional Specifications</Label>
                       <Textarea
                         className={inputCls}

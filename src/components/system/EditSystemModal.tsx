@@ -186,12 +186,12 @@ export default function EditSystemModal({ open, toolId, onClose, onSuccess, clie
             <div className="space-y-8 py-4">
               <div className="space-y-3">
                 <Skeleton className={`h-4 w-32 ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
-                <div className="grid grid-cols-12 gap-3">
-                  <div className="col-span-2 space-y-2">
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                  <div className="col-span-1 sm:col-span-2 space-y-2">
                     <Skeleton className={`h-3 w-10 ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
                     <Skeleton className={`h-10 w-full ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
                   </div>
-                  <div className="col-span-3 space-y-2">
+                  <div className="col-span-1 sm:col-span-3 space-y-2">
                     <Skeleton className={`h-3 w-16 ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
                     <Skeleton className={`h-10 w-full ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
                   </div>
@@ -199,9 +199,9 @@ export default function EditSystemModal({ open, toolId, onClose, onSuccess, clie
               </div>
               <div className="space-y-3">
                 <Skeleton className={`h-4 w-40 ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
-                <div className="grid grid-cols-12 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
                   {[...Array(4)].map((_, i) => (
-                    <div key={i} className="col-span-3 space-y-2">
+                    <div key={i} className="col-span-1 sm:col-span-3 space-y-2">
                       <Skeleton className={`h-3 w-14 ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
                       <Skeleton className={`h-10 w-full ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
                     </div>
@@ -210,9 +210,9 @@ export default function EditSystemModal({ open, toolId, onClose, onSuccess, clie
               </div>
               <div className="space-y-3">
                 <Skeleton className={`h-4 w-44 ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
-                <div className="grid grid-cols-12 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
                   {[...Array(4)].map((_, i) => (
-                    <div key={i} className="col-span-3 space-y-2">
+                    <div key={i} className="col-span-1 sm:col-span-3 space-y-2">
                       <Skeleton className={`h-3 w-14 ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
                       <Skeleton className={`h-10 w-full ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
                     </div>
@@ -228,12 +228,12 @@ export default function EditSystemModal({ open, toolId, onClose, onSuccess, clie
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
                 <p className={sectionLabelCls}>Basic Information</p>
-                <div className="grid grid-cols-12 gap-3">
-                  <div className="col-span-2">
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                  <div className="col-span-1 sm:col-span-2">
                     <Label className={labelCls}>Code *</Label>
                     <Input className={inputCls} value={formData.tool_code} onChange={e => handleChange('tool_code', e.target.value)} required />
                   </div>
-                  <div className="col-span-3">
+                  <div className="col-span-1 sm:col-span-3">
                     <Label className={labelCls}>Description</Label>
                     <Input className={inputCls} value={formData.tool_desc} onChange={e => handleChange('tool_desc', e.target.value)} />
                   </div>
@@ -242,12 +242,12 @@ export default function EditSystemModal({ open, toolId, onClose, onSuccess, clie
 
               <div>
                 <p className={sectionLabelCls}>  Location</p>
-                <div className="grid grid-cols-12 gap-3">
-                  <div className="col-span-3">
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                  <div className="col-span-1 sm:col-span-3">
                     <Label className={labelCls}>Latitude</Label>
                     <Input className={inputCls} value={formData.tool_latitude} onChange={e => handleChange('tool_latitude', e.target.value)} />
                   </div>
-                  <div className="col-span-3">
+                  <div className="col-span-1 sm:col-span-3">
                     <Label className={labelCls}>Longitude</Label>
                     <Input className={inputCls} value={formData.tool_longitude} onChange={e => handleChange('tool_longitude', e.target.value)} />
                   </div>
@@ -256,8 +256,8 @@ export default function EditSystemModal({ open, toolId, onClose, onSuccess, clie
 
               <div>
                 <p className={sectionLabelCls}>Status & Assignment</p>
-                <div className="grid grid-cols-12 gap-3">
-                  <div className="col-span-3">
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                  <div className="col-span-1 sm:col-span-3">
                     <Label className={labelCls}>Status</Label>
                     <Select value={formData.tool_status} onValueChange={v => handleChange('tool_status', v)}>
                       <SelectTrigger className={selectTriggerCls}><SelectValue /></SelectTrigger>
@@ -268,7 +268,7 @@ export default function EditSystemModal({ open, toolId, onClose, onSuccess, clie
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="col-span-3">
+                  <div className="col-span-1 sm:col-span-3">
                     <Label className={labelCls}>Active</Label>
                     <Select value={formData.tool_active} onValueChange={v => handleChange('tool_active', v)}>
                       <SelectTrigger className={selectTriggerCls}><SelectValue /></SelectTrigger>
@@ -278,7 +278,7 @@ export default function EditSystemModal({ open, toolId, onClose, onSuccess, clie
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="col-span-3">
+                  <div className="col-span-1 sm:col-span-3">
                     <Label className={labelCls}>Client</Label>
                     <Select value={formData.fk_client_id} onValueChange={v => handleChange('fk_client_id', v)}>
                       <SelectTrigger className={selectTriggerCls}><SelectValue placeholder="Select" /></SelectTrigger>
@@ -290,7 +290,7 @@ export default function EditSystemModal({ open, toolId, onClose, onSuccess, clie
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="col-span-3">
+                  <div className="col-span-1 sm:col-span-3">
                     <Label className={labelCls}>Location</Label>
                     <Input className={inputCls} value={formData.location} onChange={e => handleChange('location', e.target.value)} />
                   </div>
@@ -299,12 +299,12 @@ export default function EditSystemModal({ open, toolId, onClose, onSuccess, clie
 
               <div>
                 <p className={sectionLabelCls}>Dates & Settings</p>
-                <div className="grid grid-cols-12 gap-3">
-                  <div className="col-span-3">
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                  <div className="col-span-1 sm:col-span-3">
                     <Label className={labelCls}>Activation Date</Label>
                     <Input type="date" className={inputCls} value={formData.date_activation} onChange={e => handleChange('date_activation', e.target.value)} />
                   </div>
-                  <div className="col-span-3">
+                  <div className="col-span-1 sm:col-span-3">
                     <Label className={labelCls}>Maintenance Logbook</Label>
                     <Select value={formData.tool_maintenance_logbook} onValueChange={v => handleChange('tool_maintenance_logbook', v)}>
                       <SelectTrigger className={selectTriggerCls}><SelectValue /></SelectTrigger>
