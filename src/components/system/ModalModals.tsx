@@ -96,7 +96,7 @@ function Modal({
         className={`relative z-10 rounded-2xl shadow-2xl w-full max-w-lg flex flex-col ${
           isDark ? 'bg-slate-800 text-white' : 'bg-white text-slate-900'
         }`}
-        style={{ maxHeight: 'min(90vh, 700px)' }}
+        style={{ height: 'min(90vh, 580px)' }}
       >
         <div className={`flex items-center justify-between px-6 py-4 border-b shrink-0 ${isDark ? 'border-slate-700' : 'border-slate-100'}`}>
           <h2 className="text-base font-semibold">{title}</h2>

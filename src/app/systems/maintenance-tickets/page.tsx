@@ -1,6 +1,6 @@
 'use client';
 
-import { ExportButton, ExportColumn } from '@/components/ExportButton';
+import { ExportColumn } from '@/components/ExportButton';
 import { DownloadModal } from '@/components/system/DownloadModal';
 import {
   AssignTicketModal,
@@ -184,16 +184,6 @@ export default function MaintenanceLogbookPage() {
             isDark={isDark}
           />
 
-          <div className="mt-3 flex justify-start">
-            <ExportButton
-              data={ticketExportData}
-              columns={TICKET_COLUMNS}
-              filename={`maintenance-tickets-${new Date().toISOString().slice(0, 10)}`}
-              title="Maintenance Logbook"
-              isDark={isDark}
-              disabled={ticketsLoading}
-            />
-          </div>
         </div>
       </div>
 

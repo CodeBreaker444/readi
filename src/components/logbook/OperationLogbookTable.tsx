@@ -4,22 +4,23 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { OperationLogbookItem } from "@/config/types/logbook";
 import {
-    ColumnFiltersState,
-    flexRender,
-    getCoreRowModel,
-    getFilteredRowModel,
-    getPaginationRowModel,
-    getSortedRowModel,
-    SortingState,
-    useReactTable,
+  ColumnFiltersState,
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  SortingState,
+  useReactTable,
 } from "@tanstack/react-table";
 import { useState } from "react";
  
 import { cn } from "@/lib/utils";
 import {
-    Search,
+  Search,
 } from "lucide-react";
 import { MdOutlineFlight } from "react-icons/md";
+import ExportButtons from "../system/ExportButtons";
 import { operationLogbookColumns } from "../tables/OperationLogbookColumn";
 import { TablePagination } from "../tables/Pagination";
 
@@ -214,7 +215,14 @@ export function OperationLogbookTable({ data, loading, isDark }: OperationLogboo
         </table>
       </div>
 
-      <TablePagination table={table}   />
+      <div className="flex items-center justify-between px-2">
+        <ExportButtons
+          filename="Operation Logbook"
+          headers={['Mission ID', 'Date Start', 'Date End', 'PIC', 'Client', 'Category', 'Type', 'Vehicle', 'Status', 'Result', 'Plan Code', 'Flown Time', 'Flown Meters', 'Notes']}
+          rows={data.map(d => [d.mission_id, d.date_start, d.date_end, d.pic_fullname, d.client_name, d.mission_category_desc, d.mission_type_desc, d.vehicle_code, d.mission_status_desc, d.mission_result_desc, d.mission_planning_code, d.flown_time, d.flown_meter, d.mission_notes])}
+        />
+        <TablePagination table={table} />
+      </div>
     </div>
   );
 }

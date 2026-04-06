@@ -22,6 +22,7 @@ import {
 } from "@tanstack/react-table";
 import { ChevronDown, ChevronsUpDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
+import ExportButtons from "../system/ExportButtons";
 import { TablePagination } from "../tables/Pagination";
 import { TableSkeleton } from "./TableSkeleton";
 
@@ -159,7 +160,16 @@ export default function PlanningDataTable<T extends { [key: string]: any }>({
         <ScrollBar orientation="horizontal" />
       </ScrollArea>
 
-     {!loading && <TablePagination table={table} />}
+     {!loading && (
+       <div className="flex items-center justify-between px-2">
+         <ExportButtons
+           filename="Planning"
+           headers={table.getFlatHeaders().filter(h => (h.column.columnDef as any).accessorKey).map(h => String(h.column.columnDef.header ?? (h.column.columnDef as any).accessorKey))}
+           rows={table.getFilteredRowModel().rows.map(row => table.getFlatHeaders().filter(h => (h.column.columnDef as any).accessorKey).map(h => { const val = (row.original as any)[(h.column.columnDef as any).accessorKey]; return val == null ? '' : String(val); }))}
+         />
+         <TablePagination table={table} />
+       </div>
+     )}
     </div>
   );
 }

@@ -93,7 +93,7 @@ export function FilesDownloadModal({
         <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
             <DialogContent
                 className={cn(
-                    'max-w-lg w-full',
+                    'max-w-lg w-full h-[580px] flex flex-col',
                     isDark ? 'bg-slate-800 border-slate-700' : '',
                 )}
             >
@@ -138,7 +138,7 @@ export function FilesDownloadModal({
                     </div>
                 </DialogHeader>
 
-                <div className="py-2 space-y-1.5 max-h-[60vh] overflow-y-auto pr-1">
+                <div className="py-2 space-y-1.5 flex-1 overflow-y-auto pr-1">
                     {files.length === 0 ? (
                         <div
                             className={cn(

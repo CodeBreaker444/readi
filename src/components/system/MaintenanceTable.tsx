@@ -18,6 +18,7 @@ import {
 import { SlidersHorizontal } from "lucide-react";
 import { useMemo, useState } from "react";
 import { TablePagination } from "../tables/Pagination";
+import ExportButtons from "./ExportButtons";
 import StatusBadge from "./StatusBadge";
 
 const MIN_THRESHOLD = 50;
@@ -664,7 +665,12 @@ export default function MaintenanceTable({
           </table>
         </div>
 
-        <div className="border-t border-slate-200 px-2">
+        <div className="border-t border-slate-200 px-2 flex items-center justify-between">
+          <ExportButtons
+            filename="Maintenance Dashboard"
+            headers={['Code', 'Serial', 'Status', 'Total Hours', 'Total Flights', 'Last Maintenance']}
+            rows={filtered.map(d => [d.code, d.serial_number ?? '', d.status, d.total_hours, d.total_flights, d.last_maintenance ?? ''])}
+          />
           <TablePagination table={table} />
         </div>
       </div>

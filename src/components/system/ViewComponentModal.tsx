@@ -38,7 +38,7 @@ export default function ViewComponentModal({ open, component, systemCode, onClos
 
     return (
         <Dialog open={open} onOpenChange={onClose}>
-            <DialogContent className="max-w-lg">
+            <DialogContent className="max-w-lg h-[580px] flex flex-col">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         Component Details
@@ -48,7 +48,7 @@ export default function ViewComponentModal({ open, component, systemCode, onClos
                     </DialogTitle>
                 </DialogHeader>
 
-                <div className="space-y-5 pt-1">
+                <div className="space-y-5 pt-1 flex-1 overflow-y-auto">
                     {/* Status + System badge row */}
                     <div className="flex items-center gap-2 flex-wrap">
                         <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${statusCls}`}>

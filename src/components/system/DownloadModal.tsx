@@ -77,7 +77,8 @@ export function DownloadModal({ open, onClose, ticketId, isDark }: Props) {
   return (
     <div className={overlay} onClick={onClose}>
       <div
-        className={`${bg} rounded-xl border ${border} shadow-2xl w-full max-w-lg mx-4 animate-slide-up`}
+        className={`${bg} rounded-xl border ${border} shadow-2xl w-full max-w-lg mx-4 animate-slide-up flex flex-col`}
+        style={{ height: 'min(90vh, 580px)' }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className={`flex items-center justify-between px-5 py-4 border-b ${border}`}>
@@ -101,7 +102,7 @@ export function DownloadModal({ open, onClose, ticketId, isDark }: Props) {
           </button>
         </div>
 
-        <div className="px-5 py-4 max-h-[400px] overflow-y-auto">
+        <div className="px-5 py-4 flex-1 overflow-y-auto">
           {loading ? (
             <div className="space-y-3">
               {[...Array(3)].map((_, i) => (

@@ -47,10 +47,10 @@ export const ROLE_PERMISSIONS: Record<Role, RolePermission[]> = {
     'view_notifications',
     'view_repository',
   ],
-  OPM: ['view_dashboard', 'view_operations', 'view_logs', 'view_repository', 'view_planning', 'view_planning_advanced', 'view_logbooks', 'view_config', 'view_notifications', 'view_client'],
+  OPM: ['view_dashboard', 'view_operations', 'view_logs', 'view_repository', 'view_planning', 'view_planning_advanced', 'view_logbooks', 'view_safety_mgmt', 'view_config', 'view_notifications', 'view_client', 'manage_users'],
   SM:  ['view_dashboard', 'view_safety_mgmt', 'view_repository', 'view_notifications', 'view_config'],
-  AM:  ['view_dashboard', 'view_logs', 'view_repository', 'view_logbooks', 'view_config', 'view_notifications'],
-  CMM: ['view_dashboard', 'view_compliance', 'view_repository', 'view_logbooks', 'view_notifications'],
+  AM:  ['view_dashboard', 'view_logs', 'view_repository', 'view_logbooks', 'view_config', 'view_notifications', 'manage_users'],
+  CMM: ['view_dashboard', 'view_compliance', 'view_repository', 'view_notifications'],
   RM:  ['view_operations', 'view_logs', 'view_logbooks', 'view_notifications'],
   TM:  ['view_dashboard', 'view_training', 'view_repository', 'view_notifications'],
   DC:  ['view_repository', 'view_config', 'view_notifications'],
@@ -69,7 +69,7 @@ export type RoutePermissionEntry = Permission | Permission[];
 
 export const ROUTE_PERMISSIONS: Record<string, RoutePermissionEntry> = {
   '/dashboard': ['view_dashboard', 'view_pilot_dashboard'],
-  '/dashboard/safety-health': ['view_dashboard', 'view_pilot_dashboard'],
+  '/dashboard/safety-health': 'view_dashboard',
   '/planning/new-evaluation': 'view_planning_advanced',
   '/planning/evaluation': 'view_planning_advanced',
   '/planning/planning-mission': 'view_planning',
@@ -113,7 +113,7 @@ export type ApiPermissionEntry = Permission | Permission[] | null;
 
 export const API_ROUTE_PERMISSIONS: Array<{ prefix: string; permission: ApiPermissionEntry }> = [
   { prefix: '/api/profile', permission: null },
-  { prefix: '/api/dashboard', permission: 'view_dashboard' },
+  { prefix: '/api/dashboard', permission: ['view_dashboard', 'view_pilot_dashboard'] },
   { prefix: '/api/evaluation/new-req', permission: 'view_planning_advanced' },
   { prefix: '/api/evaluation/planning', permission: 'view_planning' },
   { prefix: '/api/evaluation/mission-template', permission: 'view_planning' },

@@ -1,55 +1,56 @@
 "use client";
 
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from "@/components/ui/table";
 import {
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
-  type ColumnFiltersState,
-  type SortingState
+    flexRender,
+    getCoreRowModel,
+    getFilteredRowModel,
+    getPaginationRowModel,
+    getSortedRowModel,
+    useReactTable,
+    type ColumnFiltersState,
+    type SortingState
 } from "@tanstack/react-table";
 import {
-  CheckCheck,
-  ChevronDown,
-  ChevronsUpDown,
-  ChevronUp,
-  RefreshCcw
+    CheckCheck,
+    ChevronDown,
+    ChevronsUpDown,
+    ChevronUp,
+    RefreshCcw
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import ExportButtons from "@/components/system/ExportButtons";
 import { getColumns } from "@/components/tables/NotificationColumn";
 import { TablePagination } from "@/components/tables/Pagination";
 import { useTheme } from "@/components/useTheme";
@@ -497,7 +498,14 @@ export default function NotificationsPage() {
                 </Table>
               </div>
 
-              <TablePagination table={table} />
+              <div className="flex items-center justify-between px-2">
+                <ExportButtons
+                  filename="Notifications"
+                  headers={['ID', 'Message', 'Procedure', 'Read', 'Sender', 'Role', 'Created At', 'Read At']}
+                  rows={table.getFilteredRowModel().rows.map(r => { const n = r.original as Notification; return [n.notification_id, n.message, n.procedure_name, n.is_read, n.sender_fullname ?? '', n.sender_profile_code ?? '', n.created_at, n.read_at ?? '']; })}
+                />
+                <TablePagination table={table} />
+              </div>
             </>
           )}
         </CardContent>

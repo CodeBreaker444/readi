@@ -132,7 +132,7 @@ export function ComponentLogModal({
 
   return (
     <Dialog open={open} onOpenChange={o => { if (!o) onClose(); }}>
-      <DialogContent className="!max-w-[640px] w-[95vw] max-h-[80vh] overflow-hidden flex flex-col p-0">
+      <DialogContent className="!max-w-[640px] w-[95vw] h-[80vh] overflow-hidden flex flex-col p-0">
         <DialogHeader className="px-6 pt-5 pb-4 border-b border-slate-200 shrink-0">
           <div className="flex items-start justify-between gap-3 mr-6">
             <div>

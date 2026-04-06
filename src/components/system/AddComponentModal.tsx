@@ -165,7 +165,7 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
   return (
     <>
       <Dialog open={open} onOpenChange={onClose}>
-        <DialogContent className="!max-w-[900px] w-[90vw] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="!max-w-[900px] w-[90vw] h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add New Component</DialogTitle>
           </DialogHeader>

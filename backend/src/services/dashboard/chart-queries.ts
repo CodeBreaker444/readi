@@ -154,7 +154,7 @@ export async function getChartReadiTotalMissionResult(
       const result = Array.isArray(mission.pilot_mission_result)
         ? mission.pilot_mission_result[0]
         : mission.pilot_mission_result;
-      const resultType = result?.result_type || 'Other';
+      const resultType = result?.result_type || 'Pending';
 
       resultMap.set(resultType, (resultMap.get(resultType) || 0) + 1);
     });
