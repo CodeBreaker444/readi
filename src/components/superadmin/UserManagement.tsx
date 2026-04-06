@@ -146,7 +146,6 @@ export default function UserManagement({ session }: UserManagementProps) {
       }
     } catch (e) {
       console.error(e);
-      toast.error('Error deleting user');
     }
   };
 
