@@ -275,8 +275,9 @@ export function UserFormModal({
               <Select
                 value={formData.fk_user_profile_id?.toString()}
                 onValueChange={(value) => setFormData({ ...formData, fk_user_profile_id: parseInt(value) })}
+                disabled={mode === 'edit'}
               >
-                <SelectTrigger>
+                <SelectTrigger className={mode === 'edit' ? 'opacity-60 cursor-not-allowed' : ''}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
