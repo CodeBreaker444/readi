@@ -216,7 +216,6 @@ export async function getSPIKPIData(input: SPIKPIDataInput) {
     const { data: definitions, error: defError } = await supabase
       .from('spi_kpi_definition')
       .select('definition_id, kpi_code, kpi_name, kpi_type, kpi_category, measurement_unit')
-      .eq('fk_owner_id', input.owner_id)
       .in('definition_id', definitionIds);
 
     if (defError) throw new Error(defError.message);

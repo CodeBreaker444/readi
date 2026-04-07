@@ -1,10 +1,13 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { createDocument } from '@/backend/services/document/document-service';
-import { getUserSession } from '@/lib/auth/server-session';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
 
-const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
+export const maxDuration = 60;
+export const dynamic = 'force-dynamic';
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024;  
 const ALLOWED_MIME_TYPES = [
   'application/pdf',
   'application/msword',
@@ -16,30 +19,28 @@ const ALLOWED_MIME_TYPES = [
   'text/plain',
 ];
 
- const DocumentCreateSchema = z.object({
-  doc_type_id:     z.string().min(1, 'Document type is requireda').transform(Number).pipe(z.number().int().positive()),
-  doc_code:        z.string().max(50).optional(),
-  status:         z.enum(['DRAFT', 'IN_REVIEW', 'APPROVED', 'OBSOLETE']).default('DRAFT'),
-  title:           z.string().min(1, "Title is required").max(255),
+const DocumentCreateSchema = z.object({
+  doc_type_id: z.string().min(1, 'Document type is requireda').transform(Number).pipe(z.number().int().positive()),
+  doc_code: z.string().max(50).optional(),
+  status: z.enum(['DRAFT', 'IN_REVIEW', 'APPROVED', 'OBSOLETE']).default('DRAFT'),
+  title: z.string().min(1, "Title is required").max(255),
   confidentiality: z.enum(['INTERNAL', 'PUBLIC', 'CONFIDENTIAL', 'RESTRICTED']).default('INTERNAL'),
-  owner_role:      z.string().max(150).optional(),
-  effective_date:  z.string().optional().nullable(),
-  expiry_date:     z.string().optional().nullable(),
-  description:     z.string().max(2000).optional(),
-  keywords:        z.string().max(500).optional(),
-  tags:            z.string().max(1000).optional(),
-  version_label:   z.string().max(20).optional(),
-  change_log:      z.string().max(500).optional(),
+  owner_role: z.string().max(150).optional(),
+  effective_date: z.string().optional().nullable(),
+  expiry_date: z.string().optional().nullable(),
+  description: z.string().max(2000).optional(),
+  keywords: z.string().max(500).optional(),
+  tags: z.string().max(1000).optional(),
+  version_label: z.string().max(20).optional(),
+  change_log: z.string().max(500).optional(),
 });
 
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
-    const session = await getUserSession();
-    if (!session) {
-      return NextResponse.json({ code: 0, message: 'Unauthorized' }, { status: 401 });
-    }
-    const ownerId = session.user.ownerId;
+    const { session, error } = await requirePermission('view_repository');
+    if (error) return error;
+    const ownerId = session!.user.ownerId;
 
     const fields: Record<string, string> = {};
     for (const [key, value] of formData.entries()) {
@@ -49,7 +50,7 @@ export async function POST(req: NextRequest) {
     const parsed = DocumentCreateSchema.safeParse(fields);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: 'Validation error', details: parsed.error.flatten().fieldErrors },
+        { error: parsed.error.issues[0]?.message ?? 'Validation error' },
         { status: 400 }
       );
     }
@@ -70,31 +71,38 @@ export async function POST(req: NextRequest) {
     logEvent({
       eventType: 'CREATE',
       entityType: 'document',
-      entityId: result?.document_id ,
+      entityId: result?.document_id,
       description: `Created document '${parsed.data.title}'`,
-      userId: session.user.userId,
-      userName: session.user.fullname,
-      userEmail: session.user.email,
-      userRole: session.user.role,
+      userId: session!.user.userId,
+      userName: session!.user.fullname,
+      userEmail: session!.user.email,
+      userRole: session!.user.role,
       ownerId,
       metadata: { code: parsed.data.doc_code, status: parsed.data.status },
     });
 
     return NextResponse.json({ code: 1, message: 'Documento creato', ...result }, { status: 201 });
-  } catch (err:any) {
-    if(err.message == "A document with code already exists.")
-    {
-      return NextResponse.json(
-         { code: 0, error: err.message || 'Internal server error' }, 
-         { status: 400 } 
-       );
+  } catch (err: any) {
+    const msg: string = err?.message ?? '';
 
+    if (msg.includes('disturbed') || msg.includes('locked') || msg.includes('body') || msg.includes('10MB') || msg.includes('exceeded')) {
+      return NextResponse.json(
+        { code: 0, error: 'File is too large. Please choose a file under 10 MB.' },
+        { status: 413 }
+      );
     }
+
+    if (msg === 'A document with code already exists.') {
+      return NextResponse.json(
+        { code: 0, error: msg },
+        { status: 400 }
+      );
+    }
+
     console.error('[document_create]', err);
     return NextResponse.json(
-      { code: 0, error: err.message || 'Internal server error' }, 
-      { status: 500 } 
-    );  
-
+      { code: 0, error: msg || 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

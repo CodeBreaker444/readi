@@ -53,11 +53,13 @@ export default function RepositoryTable() {
     const [histDoc, setHistDoc] = useState<RepositoryDocument | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<RepositoryDocument | null>(null);
 
-    useEffect(() => {
+    const loadDocTypes = useCallback(() => {
         axios.post(`/api/document/type-list`)
             .then((res) => setDocTypes(res.data.items))
             .catch(console.error);
     }, []);
+
+    useEffect(() => { loadDocTypes(); }, [loadDocTypes]);
 
     const loadDocuments = useCallback(async () => {
         setLoading(true);
@@ -345,6 +347,7 @@ export default function RepositoryTable() {
                 onClose={() => setFormOpen(false)}
                 onSaved={loadDocuments}
                 docTypes={docTypes}
+                onTypesReload={loadDocTypes}
                 document={editDoc}
             />
             <HistoryModal

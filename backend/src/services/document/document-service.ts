@@ -16,17 +16,23 @@ function autoIncrementVersion(current?: string | null): string {
 }
 
 
-export async function getDocTypesList(): Promise<{
+export async function getDocTypesList(ownerId?: number): Promise<{
   items: DocType[];
   filters: DocumentFilters;
 }> {
 
-  const { data: types, error } = await supabase
+  let query = supabase
     .from('luc_doc_type')
     .select('*')
     .eq('doc_type_active', 'Y')
     .order('doc_type_category', { ascending: true })
     .order('doc_type_name', { ascending: true });
+
+  if (ownerId) {
+    query = query.or(`fk_owner_id.eq.${ownerId},fk_owner_id.is.null`);
+  }
+
+  const { data: types, error } = await query;
 
   if (error) throw new Error(`getDocTypesList: ${error.message}`);
 
@@ -58,6 +64,70 @@ export async function getDocTypesList(): Promise<{
   };
 }
 
+
+export async function createDocType(input: {
+  doc_type_name: string;
+  doc_type_category: string;
+  owner_id: number;
+}): Promise<DocType> {
+  const baseCode = input.doc_type_name.toUpperCase().replace(/\s+/g, '_').replace(/[^A-Z0-9_]/g, '');
+  const code = `${baseCode}_${input.owner_id}`;
+  const { data, error } = await supabase
+    .from('luc_doc_type')
+    .insert({
+      doc_type_code: code,
+      doc_type_name: input.doc_type_name.trim(),
+      doc_type_category: input.doc_type_category,
+      doc_type_active: 'Y',
+      fk_owner_id: input.owner_id,
+    })
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return {
+    doc_type_id: data.doc_type_id,
+    doc_type_code: data.doc_type_code,
+    doc_type_name: data.doc_type_name,
+    doc_area: data.doc_type_category,
+    doc_name: data.doc_type_name,
+  };
+}
+
+export async function updateDocType(id: number, input: { doc_type_name: string }, ownerId: number): Promise<DocType> {
+  const { data, error } = await supabase
+    .from('luc_doc_type')
+    .update({ doc_type_name: input.doc_type_name.trim() })
+    .eq('doc_type_id', id)
+    .eq('fk_owner_id', ownerId)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error('Not found');
+  return {
+    doc_type_id: data.doc_type_id,
+    doc_type_code: data.doc_type_code,
+    doc_type_name: data.doc_type_name,
+    doc_area: data.doc_type_category,
+    doc_name: data.doc_type_name,
+  };
+}
+
+export async function deleteDocType(id: number, ownerId: number): Promise<void> {
+  const { data: inUse } = await supabase
+    .from('luc_document')
+    .select('document_id')
+    .eq('fk_doc_type_id', id)
+    .eq('document_active', 'Y')
+    .limit(1)
+    .maybeSingle();
+  if (inUse) throw new Error('This type is used by existing documents and cannot be deleted.');
+  const { error } = await supabase
+    .from('luc_doc_type')
+    .update({ doc_type_active: 'N' })
+    .eq('doc_type_id', id)
+    .eq('fk_owner_id', ownerId);
+  if (error) throw new Error(error.message);
+}
 
 export async function listDocuments(input: DocumentListInput): Promise<{
   items: RepositoryDocument[];
