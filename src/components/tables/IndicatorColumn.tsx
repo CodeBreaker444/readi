@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SpiKpiDefinition } from "@/config/types/safetyMng";
 import { createColumnHelper } from "@tanstack/react-table";
-import { Pencil, RefreshCw, ToggleLeft, ToggleRight } from "lucide-react";
+import { ClipboardList, Pencil, RefreshCw, ToggleLeft, ToggleRight } from "lucide-react";
 
 const columnHelper = createColumnHelper<SpiKpiDefinition>();
 
@@ -11,7 +11,8 @@ export const getIndicatorColumns = (
   onEdit: (row: SpiKpiDefinition) => void,
   onToggle: (row: SpiKpiDefinition) => void,
   isToggling: number | null,
-  areaColors: Record<string, string>
+  areaColors: Record<string, string>,
+  onLogValue?: (row: SpiKpiDefinition) => void,
 ) => [
   columnHelper.accessor("indicator_code", {
     header: "Indicator Code",
@@ -79,6 +80,17 @@ export const getIndicatorColumns = (
     header: "",
     cell: ({ row }) => (
       <div className="flex items-center justify-end gap-2">
+        {onLogValue && (
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={() => onLogValue(row.original)}
+            title="Log measurement value"
+            className="h-8 w-8 text-violet-600 hover:text-violet-700 hover:bg-violet-50"
+          >
+            <ClipboardList className="w-3.5 h-3.5" />
+          </Button>
+        )}
         <Button
           size="icon"
           variant="ghost"
@@ -93,8 +105,8 @@ export const getIndicatorColumns = (
           onClick={() => onToggle(row.original)}
           disabled={isToggling === row.original.id}
           className={`h-8 w-8 ${
-            row.original.is_active === 1 
-              ? "text-orange-500 hover:bg-orange-50" 
+            row.original.is_active === 1
+              ? "text-orange-500 hover:bg-orange-50"
               : "text-gray-400 hover:bg-gray-100"
           }`}
         >

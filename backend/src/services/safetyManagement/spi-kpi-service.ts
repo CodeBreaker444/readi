@@ -1,5 +1,35 @@
-import { supabase } from "@/backend/database/database"
-import { SpiKpiCreateInput, SpiKpiDefinition, SpiKpiListInput, SpiKpiToggleInput, SpiKpiUpdateInput } from "@/config/types/safetyMng"
+import { supabase } from "@/backend/database/database";
+import { SpiKpiCreateInput, SpiKpiDefinition, SpiKpiListInput, SpiKpiToggleInput, SpiKpiUpdateInput } from "@/config/types/safetyMng";
+
+export interface SpiKpiMeasurementInput {
+  definition_id: number;
+  owner_id: number;
+  measurement_date: string;
+  actual_value: number;
+  target_value: number;
+  status: 'GREEN' | 'YELLOW' | 'RED';
+}
+
+export async function logSpiKpiMeasurement(input: SpiKpiMeasurementInput): Promise<{ kpi_id: number }> {
+  const { data, error } = await supabase
+    .from('spi_kpi')
+    .upsert(
+      {
+        fk_definition_id: input.definition_id,
+        fk_owner_id: input.owner_id,
+        measurement_date: input.measurement_date,
+        actual_value: input.actual_value,
+        target_value: input.target_value,
+        status: input.status,
+      },
+      { onConflict: 'fk_definition_id,measurement_date' }
+    )
+    .select('kpi_id')
+    .single()
+
+  if (error) throw new Error(error.message)
+  return data
+}
 
 
 function mapRow(row: Record<string, unknown>): SpiKpiDefinition {
