@@ -16,6 +16,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 import { IndicatorFormDialog } from '@/components/safety-management/IndicatorFormDialog'
+import { LogMeasurementDialog } from '@/components/safety-management/LogMeasurementDialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -46,6 +47,9 @@ export default function SpiKpiDefinitionsPage() {
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<SpiKpiDefinition | null>(null)
+  const [logDialogOpen, setLogDialogOpen] = useState(false)
+  const [logTarget, setLogTarget] = useState<SpiKpiDefinition | null>(null)
+  const [isLogging, setIsLogging] = useState(false)
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 8 });
 
   const loadData = useCallback(async () => {
@@ -118,12 +122,37 @@ export default function SpiKpiDefinitionsPage() {
     }
   }
 
+  const handleLogValue = async (payload: {
+    definition_id: number
+    measurement_date: string
+    actual_value: number
+    target_value: number
+    status: 'GREEN' | 'YELLOW' | 'RED'
+  }) => {
+    setIsLogging(true)
+    try {
+      const response = await axios.post('/api/safety/spi-kpi/log-measurement', payload)
+      if (response.data.code === 1) {
+        setLogDialogOpen(false)
+        toast.success('Measurement logged successfully')
+      } else {
+        throw new Error(response.data.error || 'Server returned an error')
+      }
+    } catch (err) {
+      const message = axios.isAxiosError(err) ? err.response?.data?.error : 'Log failed'
+      toast.error(message)
+    } finally {
+      setIsLogging(false)
+    }
+  }
+
   const openNew = () => { setEditing(null); setDialogOpen(true) }
   const openEdit = (row: SpiKpiDefinition) => { setEditing(row); setDialogOpen(true) }
+  const openLogValue = (row: SpiKpiDefinition) => { setLogTarget(row); setLogDialogOpen(true) }
   const applyFilters = () => setAppliedFilters({ ...filters })
 
   const columns = useMemo(
-    () => getIndicatorColumns(isDark, openEdit, handleToggle, isToggling, AREA_COLORS),
+    () => getIndicatorColumns(isDark, openEdit, handleToggle, isToggling, AREA_COLORS, openLogValue),
     [isDark, isToggling]
   )
 
@@ -169,7 +198,6 @@ export default function SpiKpiDefinitionsPage() {
 </div>
 
       <div className="mx-auto px-6 py-8 space-y-6 animate-slide-up">
-
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[
             { label: 'Total Indicators', value: data.length, icon: Activity, color: 'text-blue-500' },
@@ -189,6 +217,12 @@ export default function SpiKpiDefinitionsPage() {
               </div>
             </div>
           ))}
+        </div>
+        <div className={`flex items-center gap-2.5 px-4 py-2 rounded-lg border text-xs ${isDark ? 'bg-violet-500/10 border-violet-500/20 text-violet-300' : 'bg-violet-50 border-violet-200 text-violet-700'}`}>
+          <span className="w-1.5 h-1.5 rounded-full bg-violet-500 shrink-0" />
+          Indicators only appear on the Safety Dashboard once measurement values have been logged. Use the
+          Log Value 
+          button on each row to enter data.
         </div>
 
         <div className={`p-4 rounded-xl border transition-all ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200 shadow-sm'
@@ -303,6 +337,15 @@ export default function SpiKpiDefinitionsPage() {
         onSubmit={handleSave}
         initial={editing}
         loading={isSaving}
+        isDark={isDark}
+      />
+
+      <LogMeasurementDialog
+        open={logDialogOpen}
+        onClose={() => setLogDialogOpen(false)}
+        onSubmit={handleLogValue}
+        indicator={logTarget}
+        loading={isLogging}
         isDark={isDark}
       />
     </div>
