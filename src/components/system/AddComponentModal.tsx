@@ -165,14 +165,14 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
   return (
     <>
       <Dialog open={open} onOpenChange={onClose}>
-        <DialogContent className="!max-w-[900px] w-[90vw] h-[90vh] overflow-y-auto">
+        <DialogContent className="!max-w-[900px] w-[90vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add New Component</DialogTitle>
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="grid grid-cols-12 gap-3 overflow-visible">
-              <div className="col-span-3 min-w-0">
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 overflow-visible">
+              <div className="col-span-1 sm:col-span-3 min-w-0">
                 <Label className="pb-2">System *</Label>
                 <Select value={formData.fk_tool_id} onValueChange={(v) => handleChange('fk_tool_id', v)}>
                   <SelectTrigger className="w-full truncate"><SelectValue placeholder="Select System" /></SelectTrigger>
@@ -184,7 +184,7 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
                 </Select>
               </div>
 
-              <div className="col-span-3">
+              <div className="col-span-1 sm:col-span-3">
                 <div className="flex items-center gap-1.5 pb-2">
                   <Label>Component Type *</Label>
                   <button type="button" onClick={() => setShowManageTypes(true)} className="text-slate-400 hover:text-violet-600 transition-colors" title="Manage types">
@@ -209,18 +209,18 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
                 </Select>
               </div>
 
-              <div className="col-span-3">
+              <div className="col-span-1 sm:col-span-3">
                 <Label className="pb-2">Code</Label>
                 <Input value={formData.component_code} onChange={(e) => handleChange('component_code', e.target.value)} placeholder="e.g. BATT-01" />
               </div>
-              <div className="col-span-3">
+              <div className="col-span-1 sm:col-span-3">
                 <Label className="pb-2">Serial Number</Label>
                 <Input value={formData.component_sn} onChange={(e) => handleChange('component_sn', e.target.value)} />
               </div>
             </div>
 
-            <div className="grid grid-cols-12 gap-3 overflow-visible">
-              <div className="col-span-3 min-w-0">
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 overflow-visible">
+              <div className="col-span-1 sm:col-span-3 min-w-0">
                 <Label className="pb-2">Brand / Model</Label>
                 <Select value={formData.fk_tool_model_id} onValueChange={handleModelSelect}>
                   <SelectTrigger className="w-full truncate"><SelectValue placeholder="Select Model" /></SelectTrigger>
@@ -231,15 +231,15 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
                   </SelectContent>
                 </Select>
               </div>
-              <div className="col-span-9">
+              <div className="col-span-1 sm:col-span-9">
                 <Label className="pb-2">Description</Label>
                 <Input value={formData.component_desc} onChange={(e) => handleChange('component_desc', e.target.value)} placeholder="Component description" />
               </div>
             </div>
 
             {formData.component_type === 'DRONE' && (
-              <div className="grid grid-cols-12 gap-3 overflow-visible">
-                <div className="col-span-3">
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 overflow-visible">
+                <div className="col-span-1 sm:col-span-3">
                   <Label className="pb-2">C2 Platform</Label>
                   <Select value={formData.cc_platform} onValueChange={(v) => handleChange('cc_platform', v)}>
                     <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
@@ -251,7 +251,7 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="col-span-3">
+                <div className="col-span-1 sm:col-span-3">
                   <Label className="pb-2">GCS</Label>
                   <Select value={formData.gcs_type} onValueChange={(v) => handleChange('gcs_type', v)}>
                     <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
@@ -274,8 +274,8 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
                   </button>
                 )}
               </div>
-              <div className="grid grid-cols-12 gap-3 items-end">
-                <div className="col-span-3">
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                <div className="col-span-1 sm:col-span-3">
                   <Label className="pb-2">Cycle Type</Label>
                   <Select value={formData.maintenance_cycle} onValueChange={handleCycleChange}>
                     <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
@@ -289,24 +289,24 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
                   </Select>
                 </div>
                 {showNone && (
-                  <div className="col-span-9 flex items-end">
+                  <div className="col-span-1 sm:col-span-9 flex items-end">
                     <span className="inline-flex items-center px-3 py-2 rounded-md bg-muted text-muted-foreground text-sm">No maintenance cycle required</span>
                   </div>
                 )}
                 {showHours && (
-                  <div className="col-span-2">
+                  <div className="col-span-1 sm:col-span-2">
                     <Label className="pb-2">Hours Limit</Label>
                     <Input type="number" min={0} value={formData.maintenance_cycle_hour} onChange={(e) => handleCycleInput('maintenance_cycle_hour', e.target.value)} />
                   </div>
                 )}
                 {showDays && (
-                  <div className="col-span-2">
+                  <div className="col-span-1 sm:col-span-2">
                     <Label className="pb-2">Day Limit</Label>
                     <Input type="number" min={0} value={formData.maintenance_cycle_day} onChange={(e) => handleCycleInput('maintenance_cycle_day', e.target.value)} />
                   </div>
                 )}
                 {showFlights && (
-                  <div className="col-span-2">
+                  <div className="col-span-1 sm:col-span-2">
                     <Label className="pb-2">Flights Limit</Label>
                     <Input type="number" min={0} value={formData.maintenance_cycle_flight} onChange={(e) => handleCycleInput('maintenance_cycle_flight', e.target.value)} />
                   </div>
@@ -314,27 +314,27 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
               </div>
             </div>
 
-            <div className="grid grid-cols-12 gap-3 overflow-visible">
-              <div className="col-span-3">
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 overflow-visible">
+              <div className="col-span-1 sm:col-span-3">
                 <Label className="pb-2">Activation Date</Label>
                 <Input type="date" value={formData.component_activation_date} onChange={(e) => handleChange('component_activation_date', e.target.value)} />
               </div>
-              <div className="col-span-3">
+              <div className="col-span-1 sm:col-span-3">
                 <Label className="pb-2">Purchase Date</Label>
                 <Input type="date" value={formData.component_purchase_date} onChange={(e) => handleChange('component_purchase_date', e.target.value)} />
               </div>
-              <div className="col-span-3">
+              <div className="col-span-1 sm:col-span-3">
                 <Label className="pb-2">Vendor</Label>
                 <Input value={formData.component_vendor} onChange={(e) => handleChange('component_vendor', e.target.value)} />
               </div>
-              <div className="col-span-3">
+              <div className="col-span-1 sm:col-span-3">
                 <Label className="pb-2">Guarantee (days)</Label>
                 <Input type="number" value={formData.component_guarantee_day} onChange={(e) => handleChange('component_guarantee_day', e.target.value)} />
               </div>
             </div>
 
-            <div className="grid grid-cols-12 gap-3 overflow-visible">
-              <div className="col-span-3">
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 overflow-visible">
+              <div className="col-span-1 sm:col-span-3">
                 <Label className="pb-2">Status *</Label>
                 <Select value={formData.component_status} onValueChange={(v) => handleChange('component_status', v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>

@@ -75,7 +75,7 @@ export default function MissionCategoryPage() {
   return (
     <div className={`min-h-screen ${isDark ? 'bg-[#0a0e1a]' : 'bg-[#f4f6f9]'}`}>
       <div className={`top-0 z-20 backdrop-blur-xl border-b transition-colors ${isDark ? 'bg-[#0a0e1a]/90 border-white/[0.06]' : 'bg-white/80 border-black/[0.06] shadow-[0_1px_2px_rgba(0,0,0,0.04)]'}`}>
-        <div className="mx-auto max-w-[1600px] px-6 py-3.5 flex items-center justify-between">
+        <div className="mx-auto max-w-[1600px] px-3 sm:px-6 py-3.5 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3.5">
             <div className="w-1 h-6 rounded-full bg-violet-600" />
             <div>

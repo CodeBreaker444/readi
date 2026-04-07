@@ -9,8 +9,9 @@ export async function DELETE(request: NextRequest) {
       if (error) return error
 
     const body = await request.json();
+    const isSuperAdmin = session!.user.role === 'SUPERADMIN';
 
-    await deleteUser(body.user_id, session!.user.ownerId);
+    await deleteUser(body.user_id, session!.user.ownerId, isSuperAdmin);
 
     logEvent({
       eventType: 'DELETE',

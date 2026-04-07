@@ -83,7 +83,7 @@ export default function AddSystemModal({ open, onClose, onSuccess, models, clien
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className={`max-w-225! w-[90vw] h-[90vh] overflow-y-auto
+      <DialogContent className={`max-w-225! w-[90vw] max-h-[90vh] overflow-y-auto
         ${isDark ? 'bg-slate-800 border-slate-700' : ''}`}>
         <DialogHeader className={`border-b pb-3 ${isDark ? 'border-slate-700/60' : 'border-gray-100'}`}>
           <DialogTitle className={isDark ? 'text-white' : ''}>Add New System</DialogTitle>
@@ -92,11 +92,11 @@ export default function AddSystemModal({ open, onClose, onSuccess, models, clien
 
           <div>
             <p className={sectionLabelCls}>Basic Information</p>
-            <div className="grid grid-cols-12 gap-3">
-              <div className="col-span-2"><Label className={labelCls}>Code *</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+              <div className="col-span-1 sm:col-span-2"><Label className={labelCls}>Code *</Label>
                 <Input className={inputCls} value={formData.tool_code} onChange={e => handleChange('tool_code', e.target.value)} required />
               </div>
-              <div className="col-span-3"><Label className={labelCls}>Description</Label>
+              <div className="col-span-1 sm:col-span-3"><Label className={labelCls}>Description</Label>
                 <Input className={inputCls} value={formData.tool_description} onChange={e => handleChange('tool_description', e.target.value)} />
               </div>
             </div>
@@ -104,11 +104,11 @@ export default function AddSystemModal({ open, onClose, onSuccess, models, clien
 
           <div>
             <p className={sectionLabelCls}>Location</p>
-            <div className="grid grid-cols-12 gap-3">
-              <div className="col-span-3"><Label className={labelCls}>Latitude</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+              <div className="col-span-1 sm:col-span-3"><Label className={labelCls}>Latitude</Label>
                 <Input className={inputCls} value={formData.latitude} onChange={e => handleChange('latitude', e.target.value)} />
               </div>
-              <div className="col-span-3"><Label className={labelCls}>Longitude</Label>
+              <div className="col-span-1 sm:col-span-3"><Label className={labelCls}>Longitude</Label>
                 <Input className={inputCls} value={formData.longitude} onChange={e => handleChange('longitude', e.target.value)} />
               </div>
             </div>
@@ -116,11 +116,11 @@ export default function AddSystemModal({ open, onClose, onSuccess, models, clien
 
           <div>
             <p className={sectionLabelCls}>Purchase & Activation</p>
-            <div className="grid grid-cols-12 gap-3">
-              <div className="col-span-3"><Label className={labelCls}>Activation Date</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+              <div className="col-span-1 sm:col-span-3"><Label className={labelCls}>Activation Date</Label>
                 <Input type="date" className={inputCls} value={formData.activation_date} onChange={e => handleChange('activation_date', e.target.value)} />
               </div>
-              <div className="col-span-3"><Label className={labelCls}>Active</Label>
+              <div className="col-span-1 sm:col-span-3"><Label className={labelCls}>Active</Label>
                 <Select value={formData.tool_active} onValueChange={v => handleChange('tool_active', v)}>
                   <SelectTrigger className={selectTriggerCls}><SelectValue /></SelectTrigger>
                   <SelectContent className={selectContentCls}>
@@ -133,9 +133,9 @@ export default function AddSystemModal({ open, onClose, onSuccess, models, clien
 
           <div>
             <p className={sectionLabelCls}>Status & Assignment</p>
-            <div className="grid grid-cols-12 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
 
-              <div className="col-span-3"><Label className={labelCls}>Status</Label>
+              <div className="col-span-1 sm:col-span-3"><Label className={labelCls}>Status</Label>
                 <Select value={formData.tool_status} onValueChange={v => handleChange('tool_status', v)}>
                   <SelectTrigger className={selectTriggerCls}><SelectValue /></SelectTrigger>
                   <SelectContent className={selectContentCls}>
@@ -145,7 +145,7 @@ export default function AddSystemModal({ open, onClose, onSuccess, models, clien
                   </SelectContent>
                 </Select>
               </div>
-              <div className="col-span-3"><Label className={labelCls}>Client</Label>
+              <div className="col-span-1 sm:col-span-3"><Label className={labelCls}>Client</Label>
                 <Select value={formData.fk_client_id} onValueChange={v => handleChange('fk_client_id', v)}>
                   <SelectTrigger className={selectTriggerCls}><SelectValue placeholder="Select" /></SelectTrigger>
                   <SelectContent className={selectContentCls}>
@@ -154,15 +154,15 @@ export default function AddSystemModal({ open, onClose, onSuccess, models, clien
                   </SelectContent>
                 </Select>
               </div>
-              <div className="col-span-3"><Label className={labelCls}>Location</Label>
+              <div className="col-span-1 sm:col-span-3"><Label className={labelCls}>Location</Label>
                 <Input className={inputCls} value={formData.location} onChange={e => handleChange('location', e.target.value)} />
               </div>
             </div>
           </div>
           <div>
             <p className={sectionLabelCls}>Documentation</p>
-            <div className="grid grid-cols-12 gap-3">
-              <div className="col-span-6">
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+              <div className="col-span-1 sm:col-span-6">
                 <Label className={labelCls}>Attach Files (manual, certificate, etc.)</Label>
                 <Input
                   type="file"

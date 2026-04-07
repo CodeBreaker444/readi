@@ -283,9 +283,9 @@ export default function EditComponentModal({
               <Skeleton className={`h-4 w-40 ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
               <Skeleton className={`h-10 w-full ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
             </div>
-            <div className="grid grid-cols-12 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
               {[...Array(4)].map((_, i) => (
-                <div key={i} className="col-span-3 space-y-2">
+                <div key={i} className="col-span-1 sm:col-span-3 space-y-2">
                   <Skeleton className={`h-4 w-20 ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
                   <Skeleton className={`h-10 w-full ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
                 </div>
@@ -295,9 +295,9 @@ export default function EditComponentModal({
               <Skeleton className={`h-4 w-24 ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
               <Skeleton className={`h-10 w-3/4 ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
             </div>
-            <div className="grid grid-cols-12 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
               {[...Array(4)].map((_, i) => (
-                <div key={i} className="col-span-3 space-y-2">
+                <div key={i} className="col-span-1 sm:col-span-3 space-y-2">
                   <Skeleton className={`h-4 w-20 ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
                   <Skeleton className={`h-10 w-full ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
                 </div>
@@ -335,8 +335,8 @@ export default function EditComponentModal({
 
             {selectedComponentId && (
               <>
-                <div className="grid grid-cols-12 gap-3">
-                  <div className="col-span-3 min-w-0">
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                  <div className="col-span-1 sm:col-span-3 min-w-0">
                     <Label className={labelCls}>System</Label>
                     <Select value={formData.fk_tool_id} onValueChange={v => handleChange('fk_tool_id', v)}>
                       <SelectTrigger className={`w-full truncate ${selectTriggerCls}`}><SelectValue placeholder="Select System" /></SelectTrigger>
@@ -349,7 +349,7 @@ export default function EditComponentModal({
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="col-span-3">
+                  <div className="col-span-1 sm:col-span-3">
                     <div className="flex items-center gap-1.5 pb-2">
                       <Label className={labelCls.replace(' pb-2', '')}>Component Type *</Label>
                       <button type="button" onClick={() => setShowManageTypes(true)} className="text-slate-400 hover:text-violet-600 transition-colors" title="Manage types">
@@ -373,18 +373,18 @@ export default function EditComponentModal({
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="col-span-3">
+                  <div className="col-span-1 sm:col-span-3">
                     <Label className={labelCls}>Code</Label>
                     <Input className={inputCls} value={formData.component_code} onChange={e => handleChange('component_code', e.target.value)} placeholder="e.g. BATT-01" />
                   </div>
-                  <div className="col-span-3">
+                  <div className="col-span-1 sm:col-span-3">
                     <Label className={labelCls}>Serial Number</Label>
                     <Input className={inputCls} value={formData.component_sn} onChange={e => handleChange('component_sn', e.target.value)} />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-12 gap-3">
-                  <div className="col-span-3 min-w-0">
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                  <div className="col-span-1 sm:col-span-3 min-w-0">
                     <Label className={labelCls}>Brand / Model</Label>
                     <Select value={formData.fk_tool_model_id} onValueChange={handleModelSelect}>
                       <SelectTrigger className={`w-full truncate ${selectTriggerCls}`}><SelectValue placeholder="Select Model" /></SelectTrigger>
@@ -397,15 +397,15 @@ export default function EditComponentModal({
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="col-span-9">
+                  <div className="col-span-1 sm:col-span-9">
                     <Label className={labelCls}>Description</Label>
                     <Input className={inputCls} value={formData.component_desc} onChange={e => handleChange('component_desc', e.target.value)} placeholder="Component description" />
                   </div>
                 </div>
 
                 {formData.component_type === 'DRONE' && (
-                  <div className="grid grid-cols-12 gap-3">
-                    <div className="col-span-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                    <div className="col-span-1 sm:col-span-3">
                       <Label className={labelCls}>C2 Platform</Label>
                       <Select value={formData.cc_platform} onValueChange={v => handleChange('cc_platform', v)}>
                         <SelectTrigger className={selectTriggerCls}><SelectValue placeholder="Select" /></SelectTrigger>
@@ -417,7 +417,7 @@ export default function EditComponentModal({
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="col-span-3">
+                    <div className="col-span-1 sm:col-span-3">
                       <Label className={labelCls}>GCS</Label>
                       <Select value={formData.gcs_type} onValueChange={v => handleChange('gcs_type', v)}>
                         <SelectTrigger className={selectTriggerCls}><SelectValue placeholder="Select" /></SelectTrigger>
@@ -446,8 +446,8 @@ export default function EditComponentModal({
                       </button>
                     )}
                   </div>
-                  <div className="grid grid-cols-12 gap-3 items-end">
-                    <div className="col-span-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                    <div className="col-span-1 sm:col-span-3">
                       <Label className={labelCls}>Cycle Type</Label>
                       <Select value={formData.maintenance_cycle} onValueChange={handleCycleChange}>
                         <SelectTrigger className={selectTriggerCls}><SelectValue placeholder="Select" /></SelectTrigger>
@@ -461,28 +461,28 @@ export default function EditComponentModal({
                       </Select>
                     </div>
                     {showNone && (
-                      <div className="col-span-9 flex items-end">
+                      <div className="col-span-1 sm:col-span-9 flex items-end">
                         <span className={`inline-flex items-center px-3 py-2 rounded-md text-sm ${isDark ? 'bg-slate-700 text-slate-400' : 'bg-muted text-muted-foreground'}`}>
                           No maintenance cycle required
                         </span>
                       </div>
                     )}
                     {showHours && (
-                      <div className="col-span-2">
+                      <div className="col-span-1 sm:col-span-2">
                         <Label className={labelCls}>Hours Limit</Label>
                         <Input type="number" min={0} className={inputCls} value={formData.maintenance_cycle_hour}
                           onChange={e => handleCycleInput('maintenance_cycle_hour', e.target.value)}  />
                       </div>
                     )}
                     {showDays && (
-                      <div className="col-span-2">
+                      <div className="col-span-1 sm:col-span-2">
                         <Label className={labelCls}>Days Limit</Label>
                         <Input type="number" min={0} className={inputCls} value={formData.maintenance_cycle_day}
                           onChange={e => handleCycleInput('maintenance_cycle_day', e.target.value)}  />
                       </div>
                     )}
                     {showFlights && (
-                      <div className="col-span-2">
+                      <div className="col-span-1 sm:col-span-2">
                         <Label className={labelCls}>Flights Limit</Label>
                         <Input type="number" min={0} className={inputCls} value={formData.maintenance_cycle_flight}
                           onChange={e => handleCycleInput('maintenance_cycle_flight', e.target.value)}  />
@@ -491,8 +491,8 @@ export default function EditComponentModal({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-12 gap-3">
-                  <div className="col-span-3">
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                  <div className="col-span-1 sm:col-span-3">
                     <Label className={labelCls}>Status *</Label>
                     <Select value={formData.component_status} onValueChange={v => handleChange('component_status', v)}>
                       <SelectTrigger className={selectTriggerCls}><SelectValue /></SelectTrigger>
@@ -506,20 +506,20 @@ export default function EditComponentModal({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-12 gap-3">
-                  <div className="col-span-3">
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                  <div className="col-span-1 sm:col-span-3">
                     <Label className={labelCls}>Activation Date</Label>
                     <Input type="date" className={inputCls} value={formData.component_activation_date} onChange={e => handleChange('component_activation_date', e.target.value)} />
                   </div>
-                  <div className="col-span-3">
+                  <div className="col-span-1 sm:col-span-3">
                     <Label className={labelCls}>Purchase Date</Label>
                     <Input type="date" className={inputCls} value={formData.component_purchase_date} onChange={e => handleChange('component_purchase_date', e.target.value)} />
                   </div>
-                  <div className="col-span-3">
+                  <div className="col-span-1 sm:col-span-3">
                     <Label className={labelCls}>Vendor</Label>
                     <Input className={inputCls} value={formData.component_vendor} onChange={e => handleChange('component_vendor', e.target.value)} />
                   </div>
-                  <div className="col-span-3">
+                  <div className="col-span-1 sm:col-span-3">
                     <Label className={labelCls}>Guarantee (days)</Label>
                     <Input type="number" className={inputCls} value={formData.component_guarantee_day} onChange={e => handleChange('component_guarantee_day', e.target.value)} />
                   </div>

@@ -75,7 +75,7 @@ export async function getUserListByOwner(ownerId: number, userProfileId: number,
       query = query.eq('fk_owner_id', ownerId);
     }
 
-    query = query.neq('user_id', currentUserId);
+    query = query.eq('user_active', 'Y').neq('user_id', currentUserId);
 
     const { data, error } = await query;
 
@@ -304,36 +304,33 @@ const toIntOrNull = (v: unknown): number | null => {
   }
 }
 
-export async function deleteUser(userId: number, ownerId: number) {
+export async function deleteUser(userId: number, ownerId: number, isSuperAdmin = false) {
   try {
-    const { data: userRecord } = await supabase
+    let lookupQuery = supabase
       .from('users')
-      .select('auth_user_id')
-      .eq('user_id', userId)
-      .eq('fk_owner_id', ownerId)
-      .maybeSingle();
+      .select('auth_user_id, fk_owner_id')
+      .eq('user_id', userId);
 
-    if (!userRecord) {
-      throw new Error('User not found or does not belong to this organization');
+    if (!isSuperAdmin) {
+      lookupQuery = lookupQuery.eq('fk_owner_id', ownerId);
     }
 
-    const { error } = await supabase
+    const { data: userRecord, error: lookupError } = await lookupQuery.maybeSingle();
+
+    if (lookupError) throw lookupError;
+    if (!userRecord) throw new Error('User not found or does not belong to this organization');
+
+    let updateQuery = supabase
       .from('users')
-      .update({ user_active: 'N', updated_at: new Date().toISOString() })
-      .eq('user_id', userId)
-      .eq('fk_owner_id', ownerId);
+      .delete()
+      .eq('user_id', userId);
 
-    if (error) throw error;
-
-    const { data: verified } = await supabase
-      .from('users')
-      .select('user_active')
-      .eq('user_id', userId)
-      .single();
-
-    if (!verified || verified.user_active !== 'N') {
-      throw new Error('User deactivation could not be verified');
+    if (!isSuperAdmin) {
+      updateQuery = updateQuery.eq('fk_owner_id', ownerId);
     }
+
+    const { error: updateError } = await updateQuery;
+    if (updateError) throw updateError;
 
     if (userRecord.auth_user_id) {
       try {
@@ -346,7 +343,7 @@ export async function deleteUser(userId: number, ownerId: number) {
     return { success: true, message: 'User deleted successfully' };
   } catch (error) {
     console.error('Error deleting user:', error);
-    throw new Error('Failed to delete user');
+    throw new Error(error instanceof Error ? error.message : 'Failed to delete user');
   }
 }
 

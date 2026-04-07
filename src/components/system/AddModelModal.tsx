@@ -208,8 +208,8 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <p className="text-sm font-medium text-muted-foreground mb-2">Identification</p>
-            <div className="grid grid-cols-12 gap-3">
-              <div className="col-span-3">
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+              <div className="col-span-1 sm:col-span-3">
                 <Label className="pb-2">Component Type *</Label>
                 <Select value={formData.model_category} onValueChange={handleCategoryChange}>
                   <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
@@ -219,7 +219,7 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
                   </SelectContent>
                 </Select>
               </div>
-              <div className="col-span-3">
+              <div className="col-span-1 sm:col-span-3">
                 <Label className="pb-2">Sub-Type *</Label>
                 <Select
                   value={formData.model_subtype}
@@ -234,17 +234,17 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
                   </SelectContent>
                 </Select>
               </div>
-              <div className="col-span-3">
+              <div className="col-span-1 sm:col-span-3">
                 <Label className="pb-2">Brand (Manufacturer) *</Label>
                 <Input value={formData.manufacturer} onChange={(e) => handleChange('manufacturer', e.target.value)} required />
               </div>
-              <div className="col-span-3">
+              <div className="col-span-1 sm:col-span-3">
                 <Label className="pb-2">Serie (Model Code) *</Label>
                 <Input value={formData.model_code} onChange={(e) => handleChange('model_code', e.target.value)} required />
               </div>
             </div>
-            <div className="grid grid-cols-12 gap-3 mt-3">
-              <div className="col-span-3">
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 mt-3">
+              <div className="col-span-1 sm:col-span-3">
                 <Label className="pb-2">Model (Name) *</Label>
                 <Input value={formData.model_name} onChange={(e) => handleChange('model_name', e.target.value)} required />
               </div>
@@ -253,16 +253,16 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
 
           <div>
             <p className="text-sm font-medium text-muted-foreground mb-2">Classification & Weight</p>
-            <div className="grid grid-cols-12 gap-3">
-              <div className="col-span-4">
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+              <div className="col-span-1 sm:col-span-4">
                 <Label className="pb-2">Version</Label>
                 <Input value={formData.version} onChange={(e) => handleChange('version', e.target.value)} />
               </div>
-              <div className="col-span-4">
+              <div className="col-span-1 sm:col-span-4">
                 <Label className="pb-2">MTOM (kg)</Label>
                 <Input type="number" step="0.01" value={formData.mtom} onChange={(e) => handleChange('mtom', e.target.value)} />
               </div>
-              <div className="col-span-4">
+              <div className="col-span-1 sm:col-span-4">
                 <Label className="pb-2">Weight (kg)</Label>
                 <Input type="number" step="0.01" value={formData.weight} onChange={(e) => handleChange('weight', e.target.value)} />
               </div>
@@ -271,20 +271,20 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
 
           <div>
             <p className="text-sm font-medium text-muted-foreground mb-2">Operating Conditions</p>
-            <div className="grid grid-cols-12 gap-3">
-              <div className="col-span-3">
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+              <div className="col-span-1 sm:col-span-3">
                 <Label className="pb-2">Wind Min (m/s)</Label>
                 <Input type="number" step="0.1" value={formData.wind_min} onChange={(e) => handleChange('wind_min', e.target.value)} />
               </div>
-              <div className="col-span-3">
+              <div className="col-span-1 sm:col-span-3">
                 <Label className="pb-2">Wind Max (m/s)</Label>
                 <Input type="number" step="0.1" value={formData.wind_max} onChange={(e) => handleChange('wind_max', e.target.value)} />
               </div>
-              <div className="col-span-3">
+              <div className="col-span-1 sm:col-span-3">
                 <Label className="pb-2">Temp Min (°C)</Label>
                 <Input type="number" step="0.1" value={formData.temp_min} onChange={(e) => handleChange('temp_min', e.target.value)} />
               </div>
-              <div className="col-span-3">
+              <div className="col-span-1 sm:col-span-3">
                 <Label className="pb-2">Temp Max (°C)</Label>
                 <Input type="number" step="0.1" value={formData.temp_max} onChange={(e) => handleChange('temp_max', e.target.value)} />
               </div>
@@ -293,20 +293,20 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
 
           <div>
             <p className="text-sm font-medium text-muted-foreground mb-2">Performance</p>
-            <div className="grid grid-cols-12 gap-3">
-              <div className="col-span-3">
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+              <div className="col-span-1 sm:col-span-3">
                 <Label className="pb-2">Endurance Min (min)</Label>
                 <Input type="number" value={formData.endurance_min} onChange={(e) => handleChange('endurance_min', e.target.value)} />
               </div>
-              <div className="col-span-3">
+              <div className="col-span-1 sm:col-span-3">
                 <Label className="pb-2">Endurance Max (min)</Label>
                 <Input type="number" value={formData.endurance_max} onChange={(e) => handleChange('endurance_max', e.target.value)} />
               </div>
-              <div className="col-span-3">
+              <div className="col-span-1 sm:col-span-3">
                 <Label className="pb-2">Max Speed (km/h)</Label>
                 <Input type="number" value={formData.max_speed} onChange={(e) => handleChange('max_speed', e.target.value)} />
               </div>
-              <div className="col-span-3">
+              <div className="col-span-1 sm:col-span-3">
                 <Label className="pb-2">Max Altitude (m)</Label>
                 <Input type="number" value={formData.max_altitude} onChange={(e) => handleChange('max_altitude', e.target.value)} />
               </div>
@@ -315,9 +315,9 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
 
           <div>
             <p className="text-sm font-medium text-muted-foreground mb-2">Maintenance</p>
-            <div className="grid grid-cols-12 gap-3 items-end">
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
 
-              <div className="col-span-3">
+              <div className="col-span-1 sm:col-span-3">
                 <Label className="pb-2">Phase-out</Label>
                 <Select value={formData.phase_out} onValueChange={(v) => handleChange('phase_out', v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
@@ -328,7 +328,7 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
                 </Select>
               </div>
 
-              <div className="col-span-3">
+              <div className="col-span-1 sm:col-span-3">
                 <Label className="pb-2">Maintenance Cycle</Label>
                 <Select value={formData.maintenance_cycle} onValueChange={handleCycleChange}>
                   <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
@@ -343,7 +343,7 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
               </div>
 
               {showNone && (
-                <div className="col-span-6 flex items-end">
+                <div className="col-span-1 sm:col-span-6 flex items-end">
                   <span className="inline-flex items-center px-3 py-2 rounded-md bg-muted text-muted-foreground text-sm">
                     No maintenance cycle required
                   </span>
@@ -351,7 +351,7 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
               )}
 
               {showHours && (
-                <div className="col-span-2">
+                <div className="col-span-1 sm:col-span-2">
                   <Label className="pb-2">
                     Hours Limit 
                   </Label>
@@ -365,7 +365,7 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
               )}
 
               {showDays && (
-                <div className="col-span-2">
+                <div className="col-span-1 sm:col-span-2">
                   <Label className="pb-2">
                     Days Limit 
                   </Label>
@@ -379,7 +379,7 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
               )}
 
               {showFlights && (
-                <div className="col-span-2">
+                <div className="col-span-1 sm:col-span-2">
                   <Label className="pb-2">
                     Flights Limit 
                   </Label>
@@ -397,16 +397,16 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
 
           <div>
             <p className="text-sm font-medium text-muted-foreground mb-2">Guarantee & Notes</p>
-            <div className="grid grid-cols-12 gap-3">
-              <div className="col-span-3">
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+              <div className="col-span-1 sm:col-span-3">
                 <Label className="pb-2">Guarantee (years)</Label>
                 <Input type="number" step="0.1" value={formData.guarantee_years} onChange={(e) => handleChange('guarantee_years', e.target.value)} />
               </div>
-              <div className="col-span-3">
+              <div className="col-span-1 sm:col-span-3">
                 <Label className="pb-2">Max Flight Time (min)</Label>
                 <Input type="number" value={formData.max_flight_time} onChange={(e) => handleChange('max_flight_time', e.target.value)} />
               </div>
-              <div className="col-span-6">
+              <div className="col-span-1 sm:col-span-6">
                 <Label className="pb-2">Additional Specifications</Label>
                 <Textarea
                   value={formData.specifications}

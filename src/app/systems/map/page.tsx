@@ -21,7 +21,7 @@ const DroneMap = lazy(() => import("@/components/system/DroneMap"));
 
 
 const STORAGE_KEY = "droneMapFilters.v2";
-const MAP_HEIGHT = "480px";
+const MAP_HEIGHT = typeof window !== "undefined" && window.innerWidth < 640 ? "300px" : "480px";
 
 function defaultFilters(): MapFiltersType {
   return { status: "", clientId: "", search: "", onlyDock: true, onlyInstalled: true };
@@ -151,84 +151,70 @@ export default function DroneToolMapPage() {
   return (
     <div className="min-h-screen" >
       <div
-        className={` top-0 z-10 backdrop-blur-md transition-colors ${isDark
+        className={`top-0 z-10 backdrop-blur-md transition-colors ${isDark
           ? "bg-slate-800 border-b border-slate-700 text-white"
           : "bg-white border-b border-slate-200 text-slate-900 shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
-          } px-6 py-4`}
+          } px-3 sm:px-6 py-4`}
       >
-        <div className="mx-auto max-w-[1800px] flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-1 h-6 rounded-full bg-violet-600" />
-
-            <div>
-              <h1
-                className={`font-semibold text-base tracking-tight ${isDark ? "text-white" : "text-slate-900"
-                  }`}
-              >
-                Drone System Map
-              </h1>
-              <p className={`text-xs ${isDark ? "text-slate-500" : "text-slate-400"}`}>
-                Installed docks & drone systems overview
-              </p>
+        <div className="mx-auto max-w-[1800px] space-y-2 sm:space-y-0 sm:flex sm:items-center sm:justify-between sm:gap-3">
+          <div className="flex items-center justify-between sm:justify-start gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-1 h-6 shrink-0 rounded-full bg-violet-600" />
+              <div>
+                <h1 className={`font-semibold text-base tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>
+                  Drone System Map
+                </h1>
+                <p className={`text-xs ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+                  Installed docks & drone systems overview
+                </p>
+              </div>
             </div>
-          </div>
-
-          <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {
-                fetchToolData();
-                fetchModels();
-                fetchClients();
-              }}
+              onClick={() => { fetchToolData(); fetchModels(); fetchClients(); }}
               disabled={loading}
-              className={`h-8 gap-1.5 text-xs transition-all ${isDark
+              className={`sm:hidden h-8 gap-1.5 text-xs transition-all ${isDark
                 ? "border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white"
-                : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                }`}
+                : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`}
             >
-              {loading ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <RefreshCw className="h-3.5 w-3.5" />
-              )}
-              <span className="hidden xs:inline">Reload</span>
+              {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+            </Button>
+          </div>
+
+          <div className="flex items-center justify-end gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => { fetchToolData(); fetchModels(); fetchClients(); }}
+              disabled={loading}
+              className={`hidden sm:flex h-8 gap-1.5 text-xs transition-all ${isDark
+                ? "border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white"
+                : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`}
+            >
+              {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+              Reload
             </Button>
 
-            <div className="flex gap-2 ml-2 border-l border-slate-200 dark:border-slate-700 pl-4">
-              <Button
-                size="sm"
-                onClick={() => setShowAddTool(true)}
-                className="h-8 gap-1.5 text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white transition-all shadow-sm"
-              >
-                <Plus size={14} />
-                <span className="hidden sm:inline">Add System</span>
-              </Button>
+            <Button size="sm" onClick={() => setShowAddTool(true)}
+              className="h-8 gap-1.5 text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white transition-all shadow-sm">
+              <Plus size={14} /><span className="sm:hidden">System</span><span className="hidden sm:inline">Add System</span>
+            </Button>
 
-              <Button
-                size="sm"
-                onClick={() => setShowAddModel(true)}
-                className="h-8 gap-1.5 text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white transition-all shadow-sm"
-              >
-                <Plus size={14} />
-                <span className="hidden sm:inline">Add Model</span>
-              </Button>
+            <Button size="sm" onClick={() => setShowAddModel(true)}
+              className="h-8 gap-1.5 text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white transition-all shadow-sm">
+              <Plus size={14} /><span className="sm:hidden">Model</span><span className="hidden sm:inline">Add Model</span>
+            </Button>
 
-              <Button
-                size="sm"
-                onClick={() => setShowAddComponent(true)}
-                className="h-8 gap-1.5 text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white transition-all shadow-sm"
-              >
-                <Plus size={14} />
-                <span className="hidden sm:inline">Add Component</span>
-              </Button>
-            </div>
+            <Button size="sm" onClick={() => setShowAddComponent(true)}
+              className="h-8 gap-1.5 text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white transition-all shadow-sm">
+              <Plus size={14} /><span className="sm:hidden">Component</span><span className="hidden sm:inline">Add Component</span>
+            </Button>
           </div>
         </div>
       </div>
 
-      <main className="max-w-7xl mx-auto px-4 py-4 space-y-4">
+      <main className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4 space-y-4">
         <section className={`rounded-xl border shadow-sm p-4
     ${isDark ? "bg-slate-800 border-slate-700" : "bg-white border-gray-200"}`}>
           <MapFilters filters={filters} clients={clients} onChange={handleFilterChange} />

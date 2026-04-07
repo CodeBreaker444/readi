@@ -114,13 +114,23 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
 
   return (
     <>
-      <div className={`h-[69px] ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'} border-b flex items-center justify-between px-6`}>
+      <div className={`h-[69px] ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'} border-b flex items-center justify-between px-3 sm:px-6`}>
         <div />
 
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           <button
             onClick={() => { if (!isChatRestricted) setShowSearch(true); }}
-            className={`group relative flex items-center gap-2.5 px-4 py-2 rounded-xl text-sm transition-all duration-200 w-60 ${isDark
+            className={`sm:hidden flex items-center justify-center w-9 h-9 rounded-xl transition-all duration-200 ${isDark
+                ? 'bg-slate-800/80 text-violet-400 hover:bg-slate-800'
+                : 'bg-gray-50/80 text-violet-500 hover:bg-gray-100/80'
+              } ${isChatRestricted ? 'cursor-not-allowed opacity-70' : ''}`}
+          >
+            <Search size={16} />
+          </button>
+
+          <button
+            onClick={() => { if (!isChatRestricted) setShowSearch(true); }}
+            className={`group relative hidden sm:flex items-center gap-2.5 px-4 py-2 rounded-xl text-sm transition-all duration-200 w-60 ${isDark
                 ? 'bg-slate-800/80 text-slate-400 hover:text-slate-300 hover:bg-slate-800'
                 : 'bg-gray-50/80 text-gray-400 hover:text-gray-500 hover:bg-gray-100/80'
               } ${isChatRestricted ? 'cursor-not-allowed opacity-70' : ''}`}
@@ -145,35 +155,30 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
                 borderRadius: 'inherit',
               }}
             />
-
             <span
               className={`pointer-events-none absolute -inset-px rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-sm ${isDark
-                  ? 'bg-gradient-to-r from-violet-500/10 via-transparent to-indigo-500/10'
-                  : 'bg-gradient-to-r from-violet-400/5 via-transparent to-indigo-400/5'
+                  ? 'bg-linear-to-r from-violet-500/10 via-transparent to-indigo-500/10'
+                  : 'bg-linear-to-r from-violet-400/5 via-transparent to-indigo-400/5'
                 }`}
             />
-
             <div className={`relative flex items-center justify-center w-5 h-5 rounded-md ${isDark
                 ? 'bg-violet-500/10 group-hover:bg-violet-500/15'
                 : 'bg-violet-50 group-hover:bg-violet-100/80'
               } transition-colors duration-200`}>
-              <Search size={12} className={`shrink-0 transition-colors duration-200 ${isDark ? 'text-violet-400' : 'text-violet-500'
-                }`} />
+              <Search size={12} className={`shrink-0 transition-colors duration-200 ${isDark ? 'text-violet-400' : 'text-violet-500'}`} />
             </div>
-
             <span className="relative flex-1 text-left text-[13px] tracking-wide">
               Ask anything…
             </span>
-
             {isChatRestricted ? (
-              <span className={`relative hidden sm:inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-semibold ${isDark
+              <span className={`relative inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-semibold ${isDark
                 ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
                 : 'bg-amber-50 text-amber-600 border border-amber-200'
               }`}>
                 Coming Soon
               </span>
             ) : (
-              <kbd className={`relative hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-medium transition-colors duration-200 ${isDark
+              <kbd className={`relative inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-medium transition-colors duration-200 ${isDark
                   ? 'bg-slate-700/60 text-slate-500 group-hover:bg-slate-700 group-hover:text-slate-400 border border-slate-600/50'
                   : 'bg-white/80 text-gray-400 group-hover:bg-white group-hover:text-gray-500 border border-gray-200/80 shadow-sm'
                 }`}>
@@ -329,7 +334,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
 
           <div
             className={`relative w-full max-w-2xl mx-4 rounded-2xl shadow-2xl border flex flex-col overflow-hidden ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-gray-200'}`}
-            style={{ height: '560px' }}
+            style={{ height: 'min(90vh, 560px)' }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
