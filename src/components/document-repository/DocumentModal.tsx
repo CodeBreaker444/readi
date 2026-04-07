@@ -1,7 +1,7 @@
 'use client';
 
 import type { DocType, RepositoryDocument } from '@/config/types/repository';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Settings2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 import { Button } from "@/components/ui/button";
@@ -25,22 +25,37 @@ import { Textarea } from "@/components/ui/textarea";
 import axios from 'axios';
 import { toast } from 'sonner';
 import { useTheme } from '../useTheme';
+import { ManageDocTypesModal } from './ManageDocTypesModal';
 
 interface Props {
   open: boolean;
   onClose: () => void;
   onSaved: () => void;
   docTypes: DocType[];
+  onTypesReload: () => void;
   document?: RepositoryDocument | null;
 }
 
 const STATUS_OPTIONS = ['DRAFT', 'IN_REVIEW', 'APPROVED', 'OBSOLETE'];
 const CONFIDENTIALITY_OPTIONS = ['INTERNAL', 'PUBLIC', 'CONFIDENTIAL', 'RESTRICTED'];
+const OWNER_ROLE_OPTIONS = [
+  'Pilot in Command',
+  'Operation Manager',
+  'Safety Manager',
+  'Accountable Manager',
+  'Compliance Monitoring Manager',
+  'Maintenance Manager',
+  'Training Manager',
+  'Data Controller',
+  'SLA Manager',
+  'Administrator',
+];
 
-export default function DocumentFormModal({ open, onClose, onSaved, docTypes, document }: Props) {
+export default function DocumentFormModal({ open, onClose, onSaved, docTypes, onTypesReload, document }: Props) {
   const { isDark } = useTheme();
   const fileRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
+  const [manageTypesOpen, setManageTypesOpen] = useState(false);
 
   const [docTypeId, setDocTypeId] = useState('');
   const [docCode, setDocCode] = useState('');
@@ -108,8 +123,13 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, do
 
         const file = fileRef.current?.files?.[0];
         if (!file) { toast.error('Please select a file'); setSaving(false); return; }
+        if (file.size > 10 * 1024 * 1024) {
+          toast.error('File is too large. Please choose a file under 10 MB.', { duration: 6000 });
+          setSaving(false);
+          return;
+        }
         fd.append('file', file);
-        await axios.post(`/api/document/create`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+        await axios.post(`/api/document/create`, fd);
       } else {
         const file = fileRef.current?.files?.[0];
         if (file) {
@@ -118,7 +138,7 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, do
           fd.append('file', file);
           if (versionLabel) fd.append('version_label', versionLabel);
           if (changeLog)    fd.append('change_log', changeLog);
-          await axios.post(`/api/document/upload_revision`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+          await axios.post(`/api/document/upload_revision`, fd);
         }
         await axios.post(`/api/document/update`, {
           document_id:     document!.document_id,
@@ -138,8 +158,14 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, do
       onSaved();
       toast.success('Document saved successfully');
       onClose();
-    } catch {
-      toast.error('Error while saving');
+    } catch (err: any) {
+      const status: number | undefined = err?.response?.status;
+      const serverMsg: string | undefined = err?.response?.data?.error;
+      if (status === 413 || serverMsg?.toLowerCase().includes('large') || serverMsg?.toLowerCase().includes('10 mb')) {
+        toast.error('File is too large. Please choose a file under 10 MB.', { duration: 6000 });
+      } else {
+        toast.error(serverMsg || 'Failed to save document. Please try again.');
+      }
     } finally {
       setSaving(false);
     }
@@ -160,154 +186,184 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, do
   const labelCls = `text-xs font-medium ${isDark ? 'text-slate-400' : 'text-gray-500'}`
 
   return (
-    <Dialog open={open} onOpenChange={(val) => !val && onClose()}>
-      <DialogContent className={`w-[95vw] sm:max-w-2xl max-h-[95vh] flex flex-col p-0 overflow-hidden rounded-xl
-        ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+    <>
+      <Dialog open={open} onOpenChange={(val) => !val && onClose()}>
+        <DialogContent className={`w-[95vw] sm:max-w-2xl max-h-[95vh] flex flex-col p-0 overflow-hidden rounded-xl
+          ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
 
-        <DialogHeader className={`px-6 py-4 border-b ${isDark ? 'border-slate-700/60' : 'border-gray-100'}`}>
-          <DialogTitle className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-            {isEdit ? 'Edit Document' : 'New Document'}
-          </DialogTitle>
-        </DialogHeader>
+          <DialogHeader className={`px-6 py-4 border-b ${isDark ? 'border-slate-700/60' : 'border-gray-100'}`}>
+            <DialogTitle className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              {isEdit ? 'Edit Document' : 'New Document'}
+            </DialogTitle>
+          </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
 
-            <div className="space-y-1.5">
-              <Label className={labelCls}>Type <span className="text-red-500">*</span></Label>
-              <Select value={docTypeId} onValueChange={setDocTypeId}>
-                <SelectTrigger className={`text-sm ${selectTriggerCls}`}>
-                  <SelectValue placeholder="Select type..." />
-                </SelectTrigger>
-                <SelectContent className={selectContentCls}>
-                  {docTypes.map((t) => (
-                    <SelectItem key={t.doc_type_id} value={String(t.doc_type_id)}>
-                      {t.doc_area ? `[${t.doc_area}] ` : ''}{t.doc_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <Label className={labelCls}>Type <span className="text-red-500">*</span></Label>
+                  <button
+                    type="button"
+                    onClick={() => setManageTypesOpen(true)}
+                    title="Manage types"
+                    className={`flex items-center gap-1 text-[10px] font-medium transition-colors ${isDark ? 'text-slate-500 hover:text-violet-400' : 'text-slate-400 hover:text-violet-600'}`}
+                  >
+                    <Settings2 className="h-3 w-3" /> Manage
+                  </button>
+                </div>
+                <Select value={docTypeId} onValueChange={setDocTypeId}>
+                  <SelectTrigger className={`text-sm ${selectTriggerCls}`}>
+                    <SelectValue placeholder="Select type..." />
+                  </SelectTrigger>
+                  <SelectContent className={selectContentCls}>
+                    {docTypes.map((t) => (
+                      <SelectItem key={t.doc_type_id} value={String(t.doc_type_id)}>
+                        {t.doc_area ? `[${t.doc_area}] ` : ''}{t.doc_type_name ?? t.doc_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className={labelCls}>Code</Label>
+                <Input value={docCode} onChange={(e) => setDocCode(e.target.value)}
+                  placeholder="e.g. DOC-001" className={`text-sm ${inputCls}`} />
+              </div>
+
+              <div className="sm:col-span-2 space-y-1.5">
+                <Label className={labelCls}>Title <span className="text-red-500">*</span></Label>
+                <Input value={title} onChange={(e) => setTitle(e.target.value)}
+                  required className={`text-sm ${inputCls}`} />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className={labelCls}>Status</Label>
+                <Select value={status} onValueChange={setStatus}>
+                  <SelectTrigger className={`text-sm ${selectTriggerCls}`}><SelectValue /></SelectTrigger>
+                  <SelectContent className={selectContentCls}>
+                    {STATUS_OPTIONS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className={labelCls}>Confidentiality</Label>
+                <Select value={confidentiality} onValueChange={setConfidentiality}>
+                  <SelectTrigger className={`text-sm ${selectTriggerCls}`}><SelectValue /></SelectTrigger>
+                  <SelectContent className={selectContentCls}>
+                    {CONFIDENTIALITY_OPTIONS.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Owner Role as Select */}
+              <div className="space-y-1.5">
+                <Label className={labelCls}>Owner (Role)</Label>
+                <Select value={ownerRole} onValueChange={setOwnerRole}>
+                  <SelectTrigger className={`text-sm ${selectTriggerCls}`}>
+                    <SelectValue placeholder="Select role..." />
+                  </SelectTrigger>
+                  <SelectContent className={selectContentCls}>
+                    <SelectItem value=" ">— None —</SelectItem>
+                    {OWNER_ROLE_OPTIONS.map((r) => (
+                      <SelectItem key={r} value={r}>{r}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className={labelCls}>Effective Date</Label>
+                <Input type="date" value={effectiveDate} onChange={(e) => setEffectiveDate(e.target.value)}
+                  className={`text-sm ${inputCls}`} />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className={labelCls}>Expiry Date</Label>
+                <Input type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)}
+                  className={`text-sm ${inputCls}`} />
+              </div>
+
+              <div className="sm:col-span-2 space-y-1.5">
+                <Label className={labelCls}>Description</Label>
+                <Textarea rows={3} value={description} onChange={(e) => setDescription(e.target.value)}
+                  className={`text-sm resize-none ${inputCls}`} />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className={labelCls}>Keywords</Label>
+                <Input value={keywords} onChange={(e) => setKeywords(e.target.value)}
+                  placeholder="safety, sms, training" className={`text-sm ${inputCls}`} />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className={labelCls}>Tags (JSON)</Label>
+                <Input value={tags} onChange={(e) => setTags(e.target.value)}
+                  placeholder='["sms","training"]' className={`font-mono text-xs ${inputCls}`} />
+              </div>
+
+              <div className="sm:col-span-2 space-y-1.5">
+                <Label className={labelCls}>
+                  {isEdit ? 'New Revision (Optional — uploaded to S3)' : 'File'}{' '}
+                  {!isEdit && <span className="text-red-500">*</span>}
+                </Label>
+                <Input ref={fileRef} type="file" required={!isEdit}
+                  className={`cursor-pointer text-sm ${inputCls}`} />
+                <p className={`text-[11px] ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
+                  Max size: 10 MB · Formats: PDF, DOCX, XLSX, JPG, PNG, TXT
+                </p>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className={labelCls}>Version</Label>
+                <Input value={versionLabel} onChange={(e) => setVersionLabel(e.target.value)}
+                  placeholder="v1.0" className={`text-sm ${inputCls}`} />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className={labelCls}>Change Log</Label>
+                <Input value={changeLog} onChange={(e) => setChangeLog(e.target.value)}
+                  placeholder="What's new in this version" className={`text-sm ${inputCls}`} />
+              </div>
+
             </div>
-
-            <div className="space-y-1.5">
-              <Label className={labelCls}>Code</Label>
-              <Input value={docCode} onChange={(e) => setDocCode(e.target.value)}
-                placeholder="e.g. DOC-001" className={`text-sm ${inputCls}`} />
-            </div>
-
-            <div className="sm:col-span-2 space-y-1.5">
-              <Label className={labelCls}>Title <span className="text-red-500">*</span></Label>
-              <Input value={title} onChange={(e) => setTitle(e.target.value)}
-                required className={`text-sm ${inputCls}`} />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className={labelCls}>Status</Label>
-              <Select value={status} onValueChange={setStatus}>
-                <SelectTrigger className={`text-sm ${selectTriggerCls}`}><SelectValue /></SelectTrigger>
-                <SelectContent className={selectContentCls}>
-                  {STATUS_OPTIONS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className={labelCls}>Confidentiality</Label>
-              <Select value={confidentiality} onValueChange={setConfidentiality}>
-                <SelectTrigger className={`text-sm ${selectTriggerCls}`}><SelectValue /></SelectTrigger>
-                <SelectContent className={selectContentCls}>
-                  {CONFIDENTIALITY_OPTIONS.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className={labelCls}>Owner (Role)</Label>
-              <Input value={ownerRole} onChange={(e) => setOwnerRole(e.target.value)}
-                placeholder="e.g. Compliance Manager" className={`text-sm ${inputCls}`} />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className={labelCls}>Effective Date</Label>
-              <Input type="date" value={effectiveDate} onChange={(e) => setEffectiveDate(e.target.value)}
-                className={`text-sm ${inputCls}`} />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className={labelCls}>Expiry Date</Label>
-              <Input type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)}
-                className={`text-sm ${inputCls}`} />
-            </div>
-
-            <div className="sm:col-span-2 space-y-1.5">
-              <Label className={labelCls}>Description</Label>
-              <Textarea rows={3} value={description} onChange={(e) => setDescription(e.target.value)}
-                className={`text-sm resize-none ${inputCls}`} />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className={labelCls}>Keywords</Label>
-              <Input value={keywords} onChange={(e) => setKeywords(e.target.value)}
-                placeholder="safety, sms, training" className={`text-sm ${inputCls}`} />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className={labelCls}>Tags (JSON)</Label>
-              <Input value={tags} onChange={(e) => setTags(e.target.value)}
-                placeholder='["sms","training"]' className={`font-mono text-xs ${inputCls}`} />
-            </div>
-
-            <div className="sm:col-span-2 space-y-1.5">
-              <Label className={labelCls}>
-                {isEdit ? 'New Revision (Optional — uploaded to S3)' : 'File'}{' '}
-                {!isEdit && <span className="text-red-500">*</span>}
-              </Label>
-              <Input ref={fileRef} type="file" required={!isEdit}
-                className={`cursor-pointer text-sm ${inputCls}`} />
-              <p className={`text-[11px] ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-                Max size: 20 MB · Formats: PDF, DOCX, XLSX, JPG, PNG, TXT
-              </p>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className={labelCls}>Version</Label>
-              <Input value={versionLabel} onChange={(e) => setVersionLabel(e.target.value)}
-                placeholder="v1.0" className={`text-sm ${inputCls}`} />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className={labelCls}>Change Log</Label>
-              <Input value={changeLog} onChange={(e) => setChangeLog(e.target.value)}
-                placeholder="What's new in this version" className={`text-sm ${inputCls}`} />
-            </div>
-
           </div>
-        </div>
 
-        <DialogFooter className={`px-6 py-4 border-t gap-3 ${isDark ? 'border-slate-700/60' : 'border-gray-100'}`}>
-          <Button
-            variant="outline"
-            onClick={onClose}
-            disabled={saving}
-            className={isDark
-              ? 'border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-slate-100'
-              : 'border-gray-200 text-gray-700 hover:bg-gray-50'
-            }
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSave}
-            disabled={saving}
-            className="bg-violet-600 hover:bg-violet-500 text-white"
-          >
-            {saving ? (
-              <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</>
-            ) : 'Save'}
-          </Button>
-        </DialogFooter>
+          <DialogFooter className={`px-6 py-4 border-t gap-3 ${isDark ? 'border-slate-700/60' : 'border-gray-100'}`}>
+            <Button
+              variant="outline"
+              onClick={onClose}
+              disabled={saving}
+              className={isDark
+                ? 'border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-slate-100'
+                : 'border-gray-200 text-gray-700 hover:bg-gray-50'
+              }
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSave}
+              disabled={saving}
+              className="bg-violet-600 hover:bg-violet-500 text-white"
+            >
+              {saving ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</>
+              ) : 'Save'}
+            </Button>
+          </DialogFooter>
 
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+
+      <ManageDocTypesModal
+        open={manageTypesOpen}
+        onClose={() => setManageTypesOpen(false)}
+        types={docTypes}
+        onReload={onTypesReload}
+        isDark={isDark}
+      />
+    </>
   );
 }

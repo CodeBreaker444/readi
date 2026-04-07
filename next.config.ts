@@ -6,6 +6,9 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     optimizePackageImports: ['lucide-react', 'recharts', 'date-fns', '@radix-ui/react-icons'],
+    serverActions: {
+      bodySizeLimit: '25mb',
+    },
   },
   compress: true,
   images: {
