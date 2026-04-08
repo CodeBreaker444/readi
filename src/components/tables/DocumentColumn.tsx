@@ -3,7 +3,7 @@
 import { RepositoryDocument } from '@/config/types/repository';
 import { ColumnDef } from '@tanstack/react-table';
 import { format } from 'date-fns';
-import { ArrowUpDown, Calendar, DownloadCloud, History, Pencil, Trash2 } from 'lucide-react';
+import { ArrowUpDown, Calendar, Download, History, Pencil, Trash2 } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 
@@ -50,9 +50,10 @@ function fmtDate(d?: string | null) {
  
 
 export interface ColumnActions {
-  onEdit:    (doc: RepositoryDocument) => void;
-  onDelete:  (doc: RepositoryDocument) => void;
-  onHistory: (doc: RepositoryDocument) => void;
+  onEdit:     (doc: RepositoryDocument) => void;
+  onDelete:   (doc: RepositoryDocument) => void;
+  onHistory:  (doc: RepositoryDocument) => void;
+  onDownload: (doc: RepositoryDocument) => void;
 }
 
 export function getRepositoryColumns(actions: ColumnActions): ColumnDef<RepositoryDocument>[] {
@@ -184,9 +185,15 @@ export function getRepositoryColumns(actions: ColumnActions): ColumnDef<Reposito
         const doc = row.original;
         return (
           <div className="flex items-center justify-end gap-1">
-            {doc.file_path && (
-              <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-500 hover:text-violet-600">
-                 <DownloadCloud className="h-4 w-4" />
+            {doc.rev_id && (
+              <Button
+                variant="ghost"
+                size="icon"
+                title="Download"
+                onClick={() => actions.onDownload(doc)}
+                className="h-7 w-7 text-slate-500 hover:text-violet-600 hover:bg-violet-50"
+              >
+                <Download className="h-4 w-4" />
               </Button>
             )}
             <Button

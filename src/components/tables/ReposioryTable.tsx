@@ -13,8 +13,8 @@ import {
 } from '@tanstack/react-table';
 import axios from 'axios';
 import { FilterX, Plus, RotateCcw, Search } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import DocumentFormModal from '../document-repository/DocumentModal';
 import HistoryModal from '../document-repository/HistoryModal';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
@@ -120,13 +120,26 @@ export default function RepositoryTable() {
         setDeleteTarget(doc);
     }, []);
 
+    const handleDownload = useCallback(async (doc: RepositoryDocument) => {
+        if (!doc.rev_id) return;
+        try {
+            const { data } = await axios.post('/api/document/presign-download', { rev_id: doc.rev_id });
+            if (!data?.url) throw new Error('No URL returned');
+            // S3 URL has Content-Disposition: attachment — navigate directly to trigger download
+            window.location.href = data.url;
+        } catch (e: any) {
+            toast.error(e?.response?.data?.error ?? 'Failed to download file.');
+        }
+    }, []);
+
     const columns = useMemo(
         () => getRepositoryColumns({
             onEdit: handleEdit,
             onDelete: handleDeleteTrigger,
-            onHistory: handleHistory
+            onHistory: handleHistory,
+            onDownload: handleDownload,
         }),
-        [handleEdit, handleDeleteTrigger, handleHistory]
+        [handleEdit, handleDeleteTrigger, handleHistory, handleDownload]
     );
     const table = useReactTable({
         data: documents,

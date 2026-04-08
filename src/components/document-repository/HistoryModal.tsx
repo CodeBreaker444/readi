@@ -5,7 +5,6 @@ import { format } from 'date-fns';
 import { Clock, Download, FileText, Loader2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
-import { getDownloadUrl } from '@/actions/repository';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,14 +26,15 @@ interface Props {
   document: RepositoryDocument | null;
 }
 
-function RevDownloadButton({ filePath }: { filePath: string }) {
+function RevDownloadButton({ revId }: { revId: number }) {
   const [loading, setLoading] = useState(false);
 
   async function handleClick() {
     setLoading(true);
     try {
-      const url = await getDownloadUrl(filePath);
-      window.open(url, '_blank', 'noopener,noreferrer');
+      const { data } = await axios.post('/api/document/presign-download', { rev_id: revId });
+      if (!data?.url) throw new Error('No URL returned');
+      window.location.href = data.url;
     } catch {
       toast.error('Download failed. Please try again.');
     } finally {
@@ -199,7 +199,7 @@ export default function HistoryModal({ open, onClose, document }: Props) {
                 </div>
 
                 <div className="w-full sm:w-auto pt-1 sm:pt-0">
-                  <RevDownloadButton filePath={rev.file_path} />
+                  <RevDownloadButton revId={rev.rev_id} />
                 </div>
               </div>
             ))}
