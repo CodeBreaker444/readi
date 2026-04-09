@@ -71,6 +71,12 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // External API endpoints authenticated via X-API-KEY — skip cookie auth entirely
+  const API_KEY_ROUTES = ['/api/missions'];
+  if (API_KEY_ROUTES.some((r) => pathname === r || pathname.startsWith(r + '/'))) {
+    return NextResponse.next();
+  }
+
   const publicRoutes = ['/auth/login', '/auth/activate', '/auth/update-password', '/auth/setup-2fa', '/auth/verify-mfa']
   const authFlowRoutes = [
     '/auth/change-password',
