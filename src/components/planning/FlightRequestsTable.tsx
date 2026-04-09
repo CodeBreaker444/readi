@@ -84,6 +84,7 @@ export default function FlightRequestsTable() {
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [assigning, setAssigning] = useState<number | null>(null);
+  const [denying, setDenying] = useState<number | null>(null);
 
   const [planModal, setPlanModal] = useState<{ request_id: number; mission_id: string } | null>(null);
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
@@ -104,6 +105,19 @@ export default function FlightRequestsTable() {
   }, [filterStatus]);
 
   useEffect(() => { load(); }, [load]);
+
+  async function handleDeny(request_id: number) {
+    setDenying(request_id);
+    try {
+      await axios.post('/api/planning/flight-requests/deny', { request_id });
+      toast.success('Request denied');
+      await load();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error ?? 'Failed to deny request');
+    } finally {
+      setDenying(null);
+    }
+  }
 
   async function handleAcknowledge(request_id: number) {
     setAssigning(request_id);
@@ -175,7 +189,7 @@ export default function FlightRequestsTable() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className={isDark ? 'bg-slate-800 border-slate-700 text-slate-200' : ''}>
-                {['ALL', 'NEW', 'ACKNOWLEDGED','ASSIGNED'].map((s) => (
+                {['ALL', 'NEW', 'ACKNOWLEDGED', 'ASSIGNED', 'REJECTED'].map((s) => (
                   <SelectItem key={s} value={s}>{s}</SelectItem>
                 ))}
               </SelectContent>
@@ -261,31 +275,48 @@ export default function FlightRequestsTable() {
                     {format(new Date(r.created_at), 'dd MMM HH:mm')}
                   </td>
                   <td className={tdCls}>
-                    {r.dcc_status === 'NEW' && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleAcknowledge(r.request_id)}
-                        disabled={assigning === r.request_id}
-                        className={`h-7 text-xs gap-1 ${isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : ''}`}
-                      >
-                        {assigning === r.request_id
-                          ? <Loader2 className="h-3 w-3 animate-spin" />
-                          : <CheckCircle2 className="h-3 w-3" />}
-                        Acknowledge
-                      </Button>
-                    )}
-                    {r.dcc_status === 'ACKNOWLEDGED' && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => openPlanModal(r.request_id, r.external_mission_id)}
-                        className={`h-7 text-xs gap-1 ${isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : ''}`}
-                      >
-                        <Send className="h-3 w-3" />
-                        Move to Planning
-                      </Button>
-                    )}
+                    <div className="flex items-center gap-1.5">
+                      {r.dcc_status === 'NEW' && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleAcknowledge(r.request_id)}
+                          disabled={assigning === r.request_id || denying === r.request_id}
+                          className={`h-7 text-xs gap-1 ${isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : ''}`}
+                        >
+                          {assigning === r.request_id
+                            ? <Loader2 className="h-3 w-3 animate-spin" />
+                            : <CheckCircle2 className="h-3 w-3" />}
+                          Acknowledge
+                        </Button>
+                      )}
+                      {r.dcc_status === 'ACKNOWLEDGED' && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openPlanModal(r.request_id, r.external_mission_id)}
+                          disabled={denying === r.request_id}
+                          className={`h-7 text-xs gap-1 ${isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : ''}`}
+                        >
+                          <Send className="h-3 w-3" />
+                          Move to Planning
+                        </Button>
+                      )}
+                      {(r.dcc_status === 'NEW' || r.dcc_status === 'ACKNOWLEDGED') && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDeny(r.request_id)}
+                          disabled={assigning === r.request_id || denying === r.request_id}
+                          className={`h-7 text-xs gap-1 border-red-500/40 text-red-500 hover:bg-red-500/10 ${isDark ? 'hover:border-red-500/60' : ''}`}
+                        >
+                          {denying === r.request_id
+                            ? <Loader2 className="h-3 w-3 animate-spin" />
+                            : <X className="h-3 w-3" />}
+                          Deny
+                        </Button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
