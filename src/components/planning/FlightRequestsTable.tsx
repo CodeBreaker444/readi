@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import axios from 'axios';
 import { format } from 'date-fns';
-import { AlertCircle, CheckCircle2, Clock, Loader2, MapPin, RotateCcw, Send, X } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Clock, FileUp, Loader2, MapPin, RotateCcw, Send, X } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useTheme } from '../useTheme';
@@ -85,6 +85,9 @@ export default function FlightRequestsTable() {
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [assigning, setAssigning] = useState<number | null>(null);
   const [denying, setDenying] = useState<number | null>(null);
+  const [logModal, setLogModal] = useState<{ request_id: number; mission_id: string } | null>(null);
+  const [flightId, setFlightId] = useState('');
+  const [pushingLog, setPushingLog] = useState(false);
 
   const [planModal, setPlanModal] = useState<{ request_id: number; mission_id: string } | null>(null);
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
@@ -129,6 +132,24 @@ export default function FlightRequestsTable() {
       toast.error(err?.response?.data?.error ?? 'Failed to acknowledge');
     } finally {
       setAssigning(null);
+    }
+  }
+
+  async function handlePushLog() {
+    if (!logModal || !flightId.trim()) return;
+    setPushingLog(true);
+    try {
+      await axios.post('/api/planning/flight-requests/logs', {
+        request_id: logModal.request_id,
+        flight_id: flightId.trim(),
+      });
+      toast.success('Flight log pushed to DCC');
+      setLogModal(null);
+      setFlightId('');
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? 'Failed to push log');
+    } finally {
+      setPushingLog(false);
     }
   }
 
@@ -316,6 +337,17 @@ export default function FlightRequestsTable() {
                           Deny
                         </Button>
                       )}
+                      {r.dcc_status === 'ASSIGNED' && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => { setLogModal({ request_id: r.request_id, mission_id: r.external_mission_id }); setFlightId(''); }}
+                          className={`h-7 text-xs gap-1 ${isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : ''}`}
+                        >
+                          <FileUp className="h-3 w-3" />
+                          Push Log
+                        </Button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -324,6 +356,55 @@ export default function FlightRequestsTable() {
           </table>
         </div>
       </div>
+
+      {logModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className={`w-full max-w-sm rounded-2xl border shadow-xl p-6 space-y-4 ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-gray-200'}`}>
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Push FlytBase Log</h2>
+                <p className={`text-xs mt-0.5 font-mono ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{logModal.mission_id}</p>
+              </div>
+              <button
+                onClick={() => setLogModal(null)}
+                className={`p-1 rounded-lg transition-colors ${isDark ? 'text-slate-400 hover:text-white hover:bg-slate-700' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="space-y-1.5">
+              <p className={`text-xs font-medium ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>FlytBase Flight ID</p>
+              <input
+                type="text"
+                value={flightId}
+                onChange={(e) => setFlightId(e.target.value)}
+                placeholder="e.g. fb-flight-abc123"
+                className={`w-full rounded-lg border px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-violet-500/40
+                  ${isDark ? 'bg-slate-800 border-slate-600 text-slate-200 placeholder:text-slate-500' : 'bg-white border-gray-200 text-gray-900 placeholder:text-gray-400'}`}
+              />
+            </div>
+            <div className="flex gap-2 pt-1">
+              <Button
+                size="sm"
+                onClick={handlePushLog}
+                disabled={!flightId.trim() || pushingLog}
+                className="flex-1 h-8 text-xs bg-violet-600 hover:bg-violet-500 text-white"
+              >
+                {pushingLog ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <FileUp className="h-3.5 w-3.5 mr-1" />}
+                Push to DCC
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setLogModal(null)}
+                className={`h-8 text-xs ${isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : ''}`}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {planModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
