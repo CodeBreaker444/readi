@@ -32,10 +32,6 @@ export const TablePagination: FC<Props> = ({ table }) => {
     <div className="my-5 flex flex-col-reverse items-start justify-between gap-2 px-2 md:flex-row md:items-center">
 
       <div className={`flex w-full flex-row justify-between gap-2 text-sm md:w-fit ${textMuted}`}>
-        <span>
-          {table.getFilteredSelectedRowModel().rows.length} of{' '}
-          {table.getState().pagination.pageSize} row(s) selected.
-        </span>
         <div className={`flex items-center justify-center text-sm font-medium md:hidden ${textMuted}`}>
           Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
         </div>

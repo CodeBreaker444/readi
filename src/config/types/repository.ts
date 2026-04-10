@@ -57,6 +57,7 @@ export interface RepositoryDocument {
   keywords?: string | null;          
   tags?: string | null;              
   version_label?: string | null;
+  change_log?: string | null;
   file_name?: string | null;
   file_path?: string | null;
   s3_url?: string | null;            

@@ -146,6 +146,9 @@ export async function listDocuments(input: DocumentListInput): Promise<{
       effective_date,
       expiry_date,
       version_number,
+      owner_role,
+      keywords,
+      tags,
       created_at,
       updated_at,
       luc_doc_type (
@@ -209,14 +212,15 @@ export async function listDocuments(input: DocumentListInput): Promise<{
       description:       d.document_description,
       status:            (d.document_status ?? 'DRAFT') as RepositoryDocument['status'],
       confidentiality:   'INTERNAL',
-      owner_role:        d.document_code,           
+      owner_role:        (d as any).owner_role ?? null,
       effective_date:    d.effective_date,
       expiry_date:       d.expiry_date,
-      keywords:          null,
-      tags:              null,
+      keywords:          (d as any).keywords ?? null,
+      tags:              (d as any).tags ?? null,
       version_label:     rev?.revision_number ?? d.version_number ?? null,
+      change_log:        rev?.changes_summary ?? null,
       file_name:         rev?.revision_description ?? null,
-      file_path:         rev?.file_path ?? null,   
+      file_path:         rev?.file_path ?? null,
       s3_url:            rev?.file_path ? buildS3Url(rev.file_path) : null,
       rev_id:            rev?.revision_id ?? null,
       default_owner_role: null,
@@ -231,8 +235,10 @@ export async function listDocuments(input: DocumentListInput): Promise<{
 
 export async function createDocument(
   input: DocumentCreateInput,
-  file: File,
-  ownerId: number 
+  s3Key: string,
+  fileName: string,
+  fileSize: number,
+  ownerId: number,
 ): Promise<{ document_id: number }> {
 
   if (input.doc_code) {
@@ -260,6 +266,9 @@ export async function createDocument(
       effective_date:       toNullableDate(input.effective_date),
       expiry_date:          toNullableDate(input.expiry_date),
       version_number:       input.version_label ?? 'v1.0',
+      owner_role:           input.owner_role ?? null,
+      keywords:             input.keywords ?? null,
+      tags:                 input.tags ?? null,
       is_current_version:   true,
       document_active:      'Y',
     })
@@ -270,21 +279,17 @@ export async function createDocument(
 
   const documentId = doc.document_id;
 
-  const s3Key = buildS3Key(documentId, file.name);
-  await uploadFileToS3(s3Key, file);
-
   const { error: revErr } = await supabase.from('luc_document_rev').insert({
-    fk_document_id:      documentId,
-    revision_number:     input.version_label ?? 'v1.0',
-    revision_date:       new Date().toISOString().slice(0, 10),
-    revision_description: file.name,
-    file_path:           s3Key,                       
-    file_size:           file.size,
-    changes_summary:     input.change_log ?? 'Initial version',
+    fk_document_id:       documentId,
+    revision_number:      input.version_label ?? 'v1.0',
+    revision_date:        new Date().toISOString().slice(0, 10),
+    revision_description: fileName,
+    file_path:            s3Key,
+    file_size:            fileSize,
+    changes_summary:      input.change_log ?? 'Initial version',
   });
 
   if (revErr) {
-    //delete S3 file if DB insert failed
     await deleteFileFromS3(s3Key).catch(() => {});
     throw new Error(`createDocument revision: ${revErr.message}`);
   }
@@ -305,6 +310,9 @@ export async function updateDocument(input: DocumentUpdateInput): Promise<void> 
       document_status:      input.status,
       effective_date:       toNullableDate(input.effective_date),
       expiry_date:          toNullableDate(input.expiry_date),
+      owner_role:           input.owner_role ?? null,
+      keywords:             input.keywords ?? null,
+      tags:                 input.tags ?? null,
     })
     .eq('document_id', input.document_id)
     .eq('document_active', 'Y');
@@ -354,7 +362,9 @@ export async function getDocumentHistory(
 
 export async function uploadDocumentRevision(
   input: DocumentUploadRevisionInput,
-  file: File
+  s3Key: string,
+  fileName: string,
+  fileSize: number,
 ): Promise<{ rev_id: number }> {
 
   const { data: latest } = await supabase
@@ -367,25 +377,21 @@ export async function uploadDocumentRevision(
 
   const newVersion = input.version_label ?? autoIncrementVersion(latest?.revision_number);
 
-  const s3Key = buildS3Key(input.document_id, file.name);
-  await uploadFileToS3(s3Key, file);
-
   const { data: rev, error: revErr } = await supabase
     .from('luc_document_rev')
     .insert({
       fk_document_id:       input.document_id,
       revision_number:      newVersion,
       revision_date:        new Date().toISOString().slice(0, 10),
-      revision_description: file.name,
+      revision_description: fileName,
       file_path:            s3Key,
-      file_size:            file.size,
+      file_size:            fileSize,
       changes_summary:      input.change_log ?? null,
     })
     .select('revision_id')
     .single();
 
   if (revErr || !rev) {
-    await deleteFileFromS3(s3Key).catch(() => {});
     throw new Error(`uploadDocumentRevision: ${revErr?.message}`);
   }
 
@@ -412,6 +418,6 @@ export async function getRevisionDownloadUrl(
     throw new Error('Revision not found or has no file');
   }
 
-  const url = await getPresignedDownloadUrl(data.file_path, 900);
+  const url = await getPresignedDownloadUrl(data.file_path, 900, data.revision_description ?? undefined);
   return { url, file_name: data.revision_description };
 }

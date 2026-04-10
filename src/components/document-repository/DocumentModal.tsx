@@ -80,22 +80,37 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
       setStatus(document.status);
       setTitle(document.title);
       setConfidentiality(document.confidentiality);
-      setOwnerRole(document.owner_role ?? '');
+      setOwnerRole(document.owner_role || '__none__');
       setEffectiveDate(document.effective_date?.slice(0, 10) ?? '');
       setExpiryDate(document.expiry_date?.slice(0, 10) ?? '');
       setDescription(document.description ?? '');
       setKeywords(document.keywords ?? '');
       setTags(document.tags ?? '');
-      setVersionLabel('');
-      setChangeLog('');
+      setVersionLabel(document.version_label ?? '');
+      setChangeLog(document.change_log ?? '');
     } else {
       setDocTypeId(''); setDocCode(''); setStatus('DRAFT'); setTitle('');
-      setConfidentiality('INTERNAL'); setOwnerRole(''); setEffectiveDate('');
+      setConfidentiality('INTERNAL'); setOwnerRole('__none__'); setEffectiveDate('');
       setExpiryDate(''); setDescription(''); setKeywords(''); setTags('');
       setVersionLabel(''); setChangeLog('');
     }
     if (fileRef.current) fileRef.current.value = '';
   }, [document, open]);
+
+  const MAX_FILE_SIZE = 25 * 1024 * 1024;
+
+  async function uploadToS3(file: File): Promise<{ s3_key: string }> {
+    const { data: presign } = await axios.post('/api/document/presign-upload', {
+      file_name:    file.name,
+      content_type: file.type,
+      file_size:    file.size,
+    });
+    if (!presign?.upload_url) throw new Error('Failed to get upload URL');
+    await axios.put(presign.upload_url, file, {
+      headers: { 'Content-Type': file.type },
+    });
+    return { s3_key: presign.s3_key };
+  }
 
   async function handleSave() {
     if (!docTypeId) { toast.error('Please select a document type'); return; }
@@ -106,48 +121,60 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
     setSaving(true);
     try {
       if (!isEdit) {
-        const fd = new FormData();
-        fd.append('doc_type_id', docTypeId);
-        if (docCode)       fd.append('doc_code', docCode);
-        fd.append('status', status);
-        fd.append('title', title);
-        fd.append('confidentiality', confidentiality);
-        if (ownerRole)     fd.append('owner_role', ownerRole);
-        if (effectiveDate) fd.append('effective_date', effectiveDate);
-        if (expiryDate)    fd.append('expiry_date', expiryDate);
-        if (description)   fd.append('description', description);
-        if (keywords)      fd.append('keywords', keywords);
-        if (tags)          fd.append('tags', tags);
-        if (versionLabel)  fd.append('version_label', versionLabel);
-        if (changeLog)     fd.append('change_log', changeLog);
-
         const file = fileRef.current?.files?.[0];
         if (!file) { toast.error('Please select a file'); setSaving(false); return; }
-        if (file.size > 10 * 1024 * 1024) {
-          toast.error('File is too large. Please choose a file under 10 MB.', { duration: 6000 });
+        if (file.size > MAX_FILE_SIZE) {
+          toast.error('File is too large. Please choose a file under 25 MB.', { duration: 6000 });
           setSaving(false);
           return;
         }
-        fd.append('file', file);
-        await axios.post(`/api/document/create`, fd);
+
+        const { s3_key } = await uploadToS3(file);
+
+        await axios.post('/api/document/create', {
+          doc_type_id:     Number(docTypeId),
+          s3_key,
+          file_name:       file.name,
+          file_size:       file.size,
+          doc_code:        docCode || undefined,
+          status,
+          title,
+          confidentiality,
+          owner_role:      ownerRole === '__none__' ? undefined : ownerRole || undefined,
+          effective_date:  effectiveDate || undefined,
+          expiry_date:     expiryDate || undefined,
+          description:     description || undefined,
+          keywords:        keywords || undefined,
+          tags:            tags || undefined,
+          version_label:   versionLabel || undefined,
+          change_log:      changeLog || undefined,
+        });
       } else {
         const file = fileRef.current?.files?.[0];
         if (file) {
-          const fd = new FormData();
-          fd.append('document_id', String(document!.document_id));
-          fd.append('file', file);
-          if (versionLabel) fd.append('version_label', versionLabel);
-          if (changeLog)    fd.append('change_log', changeLog);
-          await axios.post(`/api/document/upload_revision`, fd);
+          if (file.size > MAX_FILE_SIZE) {
+            toast.error('File is too large. Please choose a file under 25 MB.', { duration: 6000 });
+            setSaving(false);
+            return;
+          }
+          const { s3_key } = await uploadToS3(file);
+          await axios.post('/api/document/upload-revision', {
+            document_id:   document!.document_id,
+            s3_key,
+            file_name:     file.name,
+            file_size:     file.size,
+            version_label: versionLabel || undefined,
+            change_log:    changeLog || undefined,
+          });
         }
-        await axios.post(`/api/document/update`, {
+        await axios.post('/api/document/update', {
           document_id:     document!.document_id,
           doc_type_id:     Number(docTypeId),
           doc_code:        docCode || null,
           status:          status as never,
           title,
           confidentiality: confidentiality as never,
-          owner_role:      ownerRole || null,
+          owner_role:      ownerRole === '__none__' ? null : ownerRole || null,
           effective_date:  effectiveDate || null,
           expiry_date:     expiryDate || null,
           description:     description || null,
@@ -159,13 +186,8 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
       toast.success('Document saved successfully');
       onClose();
     } catch (err: any) {
-      const status: number | undefined = err?.response?.status;
       const serverMsg: string | undefined = err?.response?.data?.error;
-      if (status === 413 || serverMsg?.toLowerCase().includes('large') || serverMsg?.toLowerCase().includes('10 mb')) {
-        toast.error('File is too large. Please choose a file under 10 MB.', { duration: 6000 });
-      } else {
-        toast.error(serverMsg || 'Failed to save document. Please try again.');
-      }
+      toast.error(serverMsg || 'Failed to save document. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -266,7 +288,7 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
                     <SelectValue placeholder="Select role..." />
                   </SelectTrigger>
                   <SelectContent className={selectContentCls}>
-                    <SelectItem value=" ">— None —</SelectItem>
+                    <SelectItem value="__none__">— None —</SelectItem>
                     {OWNER_ROLE_OPTIONS.map((r) => (
                       <SelectItem key={r} value={r}>{r}</SelectItem>
                     ))}
@@ -312,7 +334,7 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
                 <Input ref={fileRef} type="file" required={!isEdit}
                   className={`cursor-pointer text-sm ${inputCls}`} />
                 <p className={`text-[11px] ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-                  Max size: 10 MB · Formats: PDF, DOCX, XLSX, JPG, PNG, TXT
+                  Max size: 25 MB · Formats: PDF, DOCX, XLSX, JPG, PNG, TXT
                 </p>
               </div>
 

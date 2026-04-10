@@ -10,6 +10,7 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
     Collapsible,
     CollapsibleContent,
@@ -20,6 +21,7 @@ import { useTheme } from '@/components/useTheme';
 import { Evaluation, EvaluationTask } from '@/config/types/evaluation';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
+import { format } from 'date-fns';
 import {
     ChevronDown,
     ClipboardList,
@@ -27,6 +29,7 @@ import {
     Map,
     MessageSquarePlus,
     Pencil,
+    Send,
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FC, useEffect, useState } from 'react';
@@ -54,6 +57,9 @@ export const EvaluationDetailContent: FC<Props> = ({ ownerId }) => {
 
     const [commModalOpen, setCommModalOpen] = useState(false);
     const [commModalTask, setCommModalTask] = useState<EvaluationTask | null>(null);
+
+    const [flightRequests, setFlightRequests] = useState<any[]>([]);
+    const [frLoading, setFrLoading] = useState(false);
 
     const params = {
         e_id: searchParams.get('e_id') ?? '',
@@ -91,6 +97,20 @@ export const EvaluationDetailContent: FC<Props> = ({ ownerId }) => {
         }
 
         fetchEvaluation();
+
+        async function fetchFlightRequests() {
+            setFrLoading(true);
+            try {
+                const res = await axios.get(`/api/evaluation/${eId}/flight-requests`);
+                setFlightRequests(res.data.items ?? []);
+            } catch {
+                toast.error('Failed to load associated flight requests');
+            } finally {
+                setFrLoading(false);
+            }
+        }
+
+        fetchFlightRequests();
     }, [searchParams]);
 
     function handleNewCommunication() {
@@ -232,6 +252,63 @@ export const EvaluationDetailContent: FC<Props> = ({ ownerId }) => {
                                 evaluationId={evaluationId}
                                 clientId={clientId}
                             />
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border-slate-200 shadow-sm">
+                        <CardHeader className="pb-3">
+                            <div className="flex items-center gap-2">
+                                <Send className="w-4 h-4 text-violet-500" />
+                                <CardTitle className="text-sm font-semibold">Linked Flight Requests</CardTitle>
+                            </div>
+                            <CardDescription className="text-xs">
+                                External mission requests assigned to this evaluation
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {frLoading ? (
+                                <div className="space-y-2">
+                                    {[1, 2, 3].map((i) => <Skeleton key={i} className="h-10 w-full rounded-lg" />)}
+                                </div>
+                            ) : flightRequests.length === 0 ? (
+                                <p className="text-xs text-slate-400 py-4 text-center">No flight requests linked to this evaluation.</p>
+                            ) : (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-xs">
+                                        <thead>
+                                            <tr className="border-b border-slate-100">
+                                                {['Mission ID', 'Type', 'Target', 'Priority', 'Operator', 'Status', 'Received'].map((h) => (
+                                                    <th key={h} className="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-400">{h}</th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-50">
+                                            {flightRequests.map((r: any) => (
+                                                <tr key={r.request_id} className="hover:bg-slate-50/60">
+                                                    <td className="px-3 py-2.5 font-mono font-semibold text-violet-600">{r.external_mission_id}</td>
+                                                    <td className="px-3 py-2.5 text-slate-600">{r.mission_type ?? '—'}</td>
+                                                    <td className="px-3 py-2.5 text-slate-600">{r.target ?? '—'}</td>
+                                                    <td className="px-3 py-2.5">
+                                                        {r.priority ? (
+                                                            <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold
+                                                                ${r.priority === 'HIGH' ? 'bg-red-100 text-red-700' : r.priority === 'MEDIUM' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}`}>
+                                                                {r.priority}
+                                                            </span>
+                                                        ) : '—'}
+                                                    </td>
+                                                    <td className="px-3 py-2.5 font-mono text-slate-500">{r.operator ?? '—'}</td>
+                                                    <td className="px-3 py-2.5">
+                                                        <span className="inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold bg-violet-100 text-violet-700">
+                                                            {r.dcc_status}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-3 py-2.5 text-slate-400">{format(new Date(r.created_at), 'dd MMM yyyy HH:mm')}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                 </div>

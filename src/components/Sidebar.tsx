@@ -58,7 +58,8 @@ const navigationItems: NavItem[] = [
       { name: 'P01 – Evaluation', href: '/planning/evaluation' },
       { name: 'P02 – Planning Dashboard', href: '/planning/planning-dashboard' },
           // { name: 'P03 – Test Mission', href: '/planning/test-mission' },
-      { name: 'P04 – Mission Templates', href: '/planning/mission-template' }
+      { name: 'P04 – Mission Templates', href: '/planning/mission-template' },
+      { name: 'Flight Requests', href: '/planning/flight-requests' }
     ]
   },
   {
@@ -183,6 +184,12 @@ const configurationItems: SubNavItem[] = [
     href: '/company',
     icon: HiOutlineBriefcase,
     subItems: [{ name: 'Company Directory', href: '/company' }],
+  },
+  {
+    name: 'Settings',
+    href: '/settings/security',
+    icon: HiOutlineShieldCheck,
+    subItems: [{ name: 'Security & API Keys', href: '/settings/security' }],
   },
 ];
 
