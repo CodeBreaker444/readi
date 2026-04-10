@@ -14,6 +14,7 @@ import { BoardHeader } from "./BoardHeader";
 import { DailyDeclarationModal } from "./DailyDeclarationModal";
 import { KanbanColumn } from "./KanbanColumn";
 import { MaintenanceCycleModal } from "./MaintenanceCycleModal";
+import { MissionTaskActionsDialog } from "./MissionTaskActionsDialog";
 import { MissionCompleteModal } from "./MissionCompleteModal";
 
 type ColumnId = "scheduled" | "in_progress" | "done";
@@ -66,6 +67,7 @@ export function OperationBoard() {
     const [completedMission, setCompletedMission] = useState<Mission | null>(null);
     const [maintenanceMission, setMaintenanceMission] = useState<Mission | null>(null);
     const [showDeclarationModal, setShowDeclarationModal] = useState(false);
+    const [taskMissionId, setTaskMissionId] = useState<number | null>(null);
     const dragMeta = useRef<{
         missionId: number;
         sourceColumn: ColumnId;
@@ -235,6 +237,7 @@ export function OperationBoard() {
                             onDragStart={handleDragStart}
                             onDrop={handleDrop}
                             onViewDetails={(m) => setSelectedMission(m)}
+                            onOpenTasks={(m) => setTaskMissionId(m.mission_id)}
                             onUpdateMaintenance={(m) => setMaintenanceMission(m)}
                             isDragOver={dragOverColumn === col.id}
                             onDragOver={(e) => handleDragOver(e, col.id)}
@@ -301,6 +304,15 @@ export function OperationBoard() {
                 mission={selectedMission}
                 isDark={isDark}
                 onClose={() => setSelectedMission(null)}
+            />
+
+            <MissionTaskActionsDialog
+                open={taskMissionId !== null}
+                missionId={taskMissionId}
+                onClose={() => {
+                    setTaskMissionId(null);
+                    loadBoard(true);
+                }}
             />
         </div>
     );

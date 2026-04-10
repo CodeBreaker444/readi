@@ -13,6 +13,7 @@ interface KanbanColumnProps {
   onDragStart: (e: React.DragEvent, missionId: number, sourceColumn: string) => void;
   onDrop: (e: React.DragEvent, targetColumn: string) => void;
   onViewDetails: (mission: Mission) => void;
+  onOpenTasks?: (mission: Mission) => void;
   onUpdateMaintenance?: (mission: Mission) => void;
   isDragOver: boolean;
   onDragOver: (e: React.DragEvent) => void;
@@ -29,6 +30,7 @@ export function KanbanColumn({
   onDragStart,
   onDrop,
   onViewDetails,
+  onOpenTasks,
   onUpdateMaintenance,
   isDragOver,
   onDragOver,
@@ -86,6 +88,7 @@ export function KanbanColumn({
             draggable
             onDragStart={(e) => onDragStart(e, mission.mission_id, columnId)}
             onViewDetails={onViewDetails}
+            onOpenTasks={onOpenTasks}
             onUpdateMaintenance={onUpdateMaintenance ? () => onUpdateMaintenance(mission) : undefined}
             isDark={isDark}
           />

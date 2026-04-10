@@ -14,6 +14,7 @@ interface MissionCardProps {
   draggable?: boolean;
   onDragStart?: (e: React.DragEvent, missionId: number) => void;
   onViewDetails?: (mission: Mission) => void;
+  onOpenTasks?: (mission: Mission) => void;
   onUpdateMaintenance?: () => void;
   isDark: boolean
 }
@@ -88,7 +89,7 @@ const maintenanceStatusConfig: Record<
   },
 };
 
-export function MissionCard({ mission, draggable, onDragStart, onViewDetails, onUpdateMaintenance, isDark}: MissionCardProps) {
+export function MissionCard({ mission, draggable, onDragStart, onViewDetails, onOpenTasks, onUpdateMaintenance, isDark}: MissionCardProps) {
 
   const statusCfg = statusConfig[mission.mission_status_code] ?? statusConfig["00"];
   const statusColor = isDark ? statusCfg.darkColor : statusCfg.lightColor;
@@ -260,7 +261,21 @@ export function MissionCard({ mission, draggable, onDragStart, onViewDetails, on
       </CardContent>
 
       <CardFooter className={`flex items-center justify-between gap-2 border-t px-4 py-2 ${isDark ? "border-white/4" : "border-slate-100"}`}>
-        <div>
+        <div className="flex items-center gap-2">
+          {onOpenTasks && (
+            <Button
+              size="sm"
+              onClick={() => onOpenTasks(mission)}
+              className={cn(
+                "h-7 px-2.5 text-[11px] font-semibold",
+                isDark
+                  ? "bg-green-600 text-white hover:bg-green-500"
+                  : "bg-green-600 text-white hover:bg-green-700"
+              )}
+            >
+              Complete Tasks
+            </Button>
+          )}
           {mission.mission_status_code === "10" && onUpdateMaintenance && (
             <TooltipProvider delayDuration={300}>
               <Tooltip>
