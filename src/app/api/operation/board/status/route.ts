@@ -1,4 +1,5 @@
 import { logEvent } from "@/backend/services/auditLog/audit-log";
+import { notifyDccExecution, notifyDccTermination } from "@/backend/services/mission/dcc-callback-service";
 import { updateMissionStatus } from "@/backend/services/operation/operation-board-service";
 import { checkDailyDeclaration } from "@/backend/services/operation/pilot-declaration-service";
 import { requirePermission } from "@/lib/auth/api-auth";
@@ -62,6 +63,13 @@ export async function POST(req: NextRequest) {
         userRole: session!.user.role,
         ownerId: session!.user.ownerId,
       });
+
+      // Notify DCC of state transition — non-blocking
+      if (parsed.data.workflow_mission_status === '_START') {
+        notifyDccExecution(parsed.data.mission_id).catch(() => {});
+      } else if (parsed.data.workflow_mission_status === '_END') {
+        notifyDccTermination(parsed.data.mission_id, 1).catch(() => {});
+      }
     }
 
     return NextResponse.json(result, { status: result.code === 1 ? 200 : 422 });

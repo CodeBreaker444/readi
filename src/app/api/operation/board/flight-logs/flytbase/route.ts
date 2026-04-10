@@ -1,3 +1,4 @@
+import { notifyDccLogging } from '@/backend/services/mission/dcc-callback-service';
 import { attachFlytbaseFlightLog } from '@/backend/services/operation/flight-log-service';
 import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
@@ -21,6 +22,11 @@ export async function POST(req: NextRequest) {
     }
 
     await attachFlytbaseFlightLog(missionId, session!.user.userId, flightId);
+
+    // Notify DCC with the FlytBase flight report URI — non-blocking
+    const logUri = `${process.env.FLYTBASE_URL ?? ''}/v2/flight/report/download/gutma?flightIds=${encodeURIComponent(flightId)}`;
+    notifyDccLogging(missionId, logUri).catch(() => {});
+
     return NextResponse.json({ code: 1, message: 'Flight log attached from FlytBase' });
   } catch (err: any) {
     console.error('[flight-logs/flytbase] POST error:', err);
