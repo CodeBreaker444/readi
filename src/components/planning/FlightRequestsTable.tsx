@@ -1,5 +1,6 @@
 'use client';
 
+import { FlightRequestDetailModal } from '@/components/planning/FlightRequestDetailModal';
 import { Evaluation, FlightRequest, createFlightRequestColumns } from '@/components/tables/flightRequestsColumns';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
@@ -15,23 +16,26 @@ import { useTheme } from '../useTheme';
 
 export default function FlightRequestsTable() {
   const { isDark } = useTheme();
-  const [requests, setRequests] = useState<FlightRequest[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [filterStatus, setFilterStatus] = useState('ALL');
-  const [assigning, setAssigning] = useState<number | null>(null);
-  const [denying, setDenying]     = useState<number | null>(null);
-  const [deleting, setDeleting]       = useState<number | null>(null);
-  const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
+  const [requests, setRequests]             = useState<FlightRequest[]>([]);
+  const [loading, setLoading]               = useState(true);
+  const [filterStatus, setFilterStatus]     = useState('ALL');
+  const [assigning, setAssigning]           = useState<number | null>(null);
+  const [denying, setDenying]               = useState<number | null>(null);
+  const [deleting, setDeleting]             = useState<number | null>(null);
+  const [deleteConfirm, setDeleteConfirm]   = useState<number | null>(null);
+  const [updatingStatus, setUpdatingStatus] = useState<{ id: number; status: string } | null>(null);
 
-  const [logModal, setLogModal] = useState<{ request_id: number; mission_id: string } | null>(null);
-  const [flightId, setFlightId] = useState('');
+  const [selectedRequest, setSelectedRequest] = useState<FlightRequest | null>(null);
+
+  const [logModal, setLogModal]   = useState<{ request_id: number; mission_id: string } | null>(null);
+  const [flightId, setFlightId]   = useState('');
   const [pushingLog, setPushingLog] = useState(false);
 
-  const [planModal, setPlanModal] = useState<{ request_id: number; mission_id: string } | null>(null);
-  const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
-  const [evalLoading, setEvalLoading] = useState(false);
+  const [planModal, setPlanModal]       = useState<{ request_id: number; mission_id: string } | null>(null);
+  const [evaluations, setEvaluations]   = useState<Evaluation[]>([]);
+  const [evalLoading, setEvalLoading]   = useState(false);
   const [selectedEvalId, setSelectedEvalId] = useState('');
-  const [submitting, setSubmitting] = useState(false);
+  const [submitting, setSubmitting]     = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -52,6 +56,7 @@ export default function FlightRequestsTable() {
     try {
       await axios.post('/api/planning/flight-requests/deny', { request_id });
       toast.success('Request denied');
+      setSelectedRequest(null);
       await load();
     } catch (err: any) {
       toast.error(err?.response?.data?.error ?? 'Failed to deny request');
@@ -65,6 +70,7 @@ export default function FlightRequestsTable() {
     try {
       await axios.post('/api/planning/flight-requests/assign', { request_id });
       toast.success('Request acknowledged');
+      setSelectedRequest(null);
       await load();
     } catch (err: any) {
       toast.error(err?.response?.data?.error ?? 'Failed to acknowledge');
@@ -86,6 +92,24 @@ export default function FlightRequestsTable() {
       toast.error(err?.response?.data?.error ?? 'Failed to delete');
     } finally {
       setDeleting(null);
+    }
+  }
+
+  async function handleUpdateStatus(request_id: number, status: string) {
+    setUpdatingStatus({ id: request_id, status });
+    try {
+      await axios.patch(`/api/planning/flight-requests/${request_id}`, { dcc_status: status });
+      toast.success(`Status updated to ${status}`);
+      setRequests((prev) =>
+        prev.map((r) => r.request_id === request_id ? { ...r, dcc_status: status } : r),
+      );
+      if (selectedRequest?.request_id === request_id) {
+        setSelectedRequest((prev) => prev ? { ...prev, dcc_status: status } : prev);
+      }
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error ?? 'Failed to update status');
+    } finally {
+      setUpdatingStatus(null);
     }
   }
 
@@ -140,30 +164,23 @@ export default function FlightRequestsTable() {
   }
 
   const columns = useMemo(() => createFlightRequestColumns({
-    assigning,
-    denying,
     deleting,
+    updatingStatus,
     isDark,
-    onAcknowledge: handleAcknowledge,
-    onDeny: handleDeny,
+    onView: setSelectedRequest,
     onDelete: (id) => setDeleteConfirm(id),
-    onOpenPlanModal: openPlanModal,
-    onOpenLogModal: (request_id, mission_id) => { setLogModal({ request_id, mission_id }); setFlightId(''); },
-  }), [assigning, denying, deleting, isDark]);
+    onUpdateStatus: handleUpdateStatus,
+  }), [deleting, updatingStatus, isDark]);
 
   const table = useReactTable({
     data: requests,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    initialState: {
-      pagination: {
-        pageSize: 8,
-      },
-    },
+    initialState: { pagination: { pageSize: 8 } },
   });
 
-  const card = isDark ? 'bg-slate-800/80 border-slate-700/60' : 'bg-white border-gray-200';
+  const card  = isDark ? 'bg-slate-800/80 border-slate-700/60' : 'bg-white border-gray-200';
   const thCls = `px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-gray-400'}`;
   const tdCls = `px-4 py-3 text-xs ${isDark ? 'text-slate-300' : 'text-gray-700'}`;
 
@@ -186,7 +203,7 @@ export default function FlightRequestsTable() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className={isDark ? 'bg-slate-800 border-slate-700 text-slate-200' : ''}>
-                {['ALL', 'NEW', 'ACKNOWLEDGED', 'ASSIGNED', 'REJECTED'].map((s) => (
+                {['ALL', 'NEW', 'ACKNOWLEDGED', 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED', 'ISSUE', 'REJECTED'].map((s) => (
                   <SelectItem key={s} value={s}>{s}</SelectItem>
                 ))}
               </SelectContent>
@@ -203,10 +220,10 @@ export default function FlightRequestsTable() {
       <div className="max-w-[1600px] mx-auto w-full px-6 pt-6">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
           {[
-            { label: 'Total', value: requests.length, icon: Send, color: 'text-violet-500' },
-            { label: 'New', value: requests.filter((r) => r.dcc_status === 'NEW').length, icon: AlertCircle, color: 'text-blue-500' },
-            { label: 'Acknowledged', value: requests.filter((r) => r.dcc_status === 'ACKNOWLEDGED').length, icon: Clock, color: 'text-yellow-500' },
-            { label: 'Assigned', value: requests.filter((r) => r.dcc_status === 'ASSIGNED').length, icon: CheckCircle2, color: 'text-violet-500' },
+            { label: 'Total',        value: requests.length,                                                 icon: Send,          color: 'text-violet-500' },
+            { label: 'New',          value: requests.filter((r) => r.dcc_status === 'NEW').length,           icon: AlertCircle,   color: 'text-blue-500'   },
+            { label: 'Acknowledged', value: requests.filter((r) => r.dcc_status === 'ACKNOWLEDGED').length,  icon: Clock,         color: 'text-yellow-500' },
+            { label: 'Assigned',     value: requests.filter((r) => r.dcc_status === 'ASSIGNED').length,      icon: CheckCircle2,  color: 'text-violet-500' },
           ].map(({ label, value, icon: Icon, color }) => (
             <div key={label} className={`rounded-xl border p-4 flex items-center gap-3 ${card}`}>
               <Icon className={`h-5 w-5 ${color}`} />
@@ -223,51 +240,64 @@ export default function FlightRequestsTable() {
       <div className="max-w-[1600px] mx-auto w-full px-6 pb-8">
         <div className={`rounded-xl border shadow-sm ${card}`}>
           <div className="overflow-x-auto">
-          <table className="w-full min-w-[1000px]">
-            <thead className={isDark ? 'bg-slate-700/50' : 'bg-gray-50/80'}>
-              {table.getHeaderGroups().map((hg) => (
-                <tr key={hg.id}>
-                  {hg.headers.map((header) => (
-                    <th key={header.id} className={thCls}>
-                      {flexRender(header.column.columnDef.header, header.getContext())}
-                    </th>
-                  ))}
-                </tr>
-              ))}
-            </thead>
-            <tbody className={`divide-y ${isDark ? 'divide-slate-700/40' : 'divide-gray-50'}`}>
-              {loading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i}>
-                    {Array.from({ length: columns.length }).map((_, j) => (
-                      <td key={j} className="px-4 py-3"><Skeleton className="h-4 w-full rounded" /></td>
+            <table className="w-full min-w-[1000px]">
+              <thead className={isDark ? 'bg-slate-700/50' : 'bg-gray-50/80'}>
+                {table.getHeaderGroups().map((hg) => (
+                  <tr key={hg.id}>
+                    {hg.headers.map((header) => (
+                      <th key={header.id} className={thCls}>
+                        {flexRender(header.column.columnDef.header, header.getContext())}
+                      </th>
                     ))}
                   </tr>
-                ))
-              ) : table.getRowModel().rows.length === 0 ? (
-                <tr>
-                  <td colSpan={columns.length} className={`py-14 text-center text-sm ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-                    <MapPin className="h-8 w-8 mx-auto mb-2 opacity-20" />
-                    No flight requests found.
-                  </td>
-                </tr>
-              ) : (
-                table.getRowModel().rows.map((row) => (
-                  <tr key={row.id} className={isDark ? 'hover:bg-slate-700/20' : 'hover:bg-gray-50/80'}>
-                    {row.getVisibleCells().map((cell) => (
-                      <td key={cell.id} className={tdCls}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </td>
-                    ))}
+                ))}
+              </thead>
+              <tbody className={`divide-y ${isDark ? 'divide-slate-700/40' : 'divide-gray-50'}`}>
+                {loading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <tr key={i}>
+                      {Array.from({ length: columns.length }).map((_, j) => (
+                        <td key={j} className="px-4 py-3"><Skeleton className="h-4 w-full rounded" /></td>
+                      ))}
+                    </tr>
+                  ))
+                ) : table.getRowModel().rows.length === 0 ? (
+                  <tr>
+                    <td colSpan={columns.length} className={`py-14 text-center text-sm ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
+                      <MapPin className="h-8 w-8 mx-auto mb-2 opacity-20" />
+                      No flight requests found.
+                    </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-          </div> 
+                ) : (
+                  table.getRowModel().rows.map((row) => (
+                    <tr key={row.id} className={isDark ? 'hover:bg-slate-700/20' : 'hover:bg-gray-50/80'}>
+                      {row.getVisibleCells().map((cell) => (
+                        <td key={cell.id} className={tdCls}>
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </td>
+                      ))}
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
         <TablePagination table={table} />
       </div>
+
+      {/* Detail modal */}
+      <FlightRequestDetailModal
+        request={selectedRequest}
+        isDark={isDark}
+        assigning={assigning}
+        denying={denying}
+        onClose={() => setSelectedRequest(null)}
+        onAcknowledge={handleAcknowledge}
+        onDeny={handleDeny}
+        onOpenPlanModal={openPlanModal}
+        onOpenLogModal={(request_id, mission_id) => { setLogModal({ request_id, mission_id }); setFlightId(''); }}
+      />
 
       {/* Delete confirm dialog */}
       <AlertDialog open={deleteConfirm !== null} onOpenChange={(open) => { if (!open) setDeleteConfirm(null); }}>
@@ -282,10 +312,7 @@ export default function FlightRequestsTable() {
             <AlertDialogCancel className={isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700 bg-transparent cursor-pointer' : 'cursor-pointer'}>
               Cancel
             </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              className="bg-red-600 cursor-pointer hover:bg-red-500 text-white"
-            >
+            <AlertDialogAction onClick={handleDelete} className="bg-red-600 cursor-pointer hover:bg-red-500 text-white">
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

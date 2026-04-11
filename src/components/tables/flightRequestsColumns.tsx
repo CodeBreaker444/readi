@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { ColumnDef } from '@tanstack/react-table';
 import { format } from 'date-fns';
-import { CheckCircle2, FileUp, Loader2, Send, Trash2, X } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ExternalLink, Loader2, Trash2 } from 'lucide-react';
 
 export interface FlightRequest {
   request_id: number;
@@ -29,15 +29,12 @@ export interface Evaluation {
 }
 
 export interface FlightRequestColumnHandlers {
-  assigning: number | null;
-  denying: number | null;
   deleting: number | null;
+  updatingStatus: { id: number; status: string } | null;
   isDark: boolean;
-  onAcknowledge: (request_id: number) => void;
-  onDeny: (request_id: number) => void;
+  onView: (request: FlightRequest) => void;
   onDelete: (request_id: number) => void;
-  onOpenPlanModal: (request_id: number, mission_id: string) => void;
-  onOpenLogModal: (request_id: number, mission_id: string) => void;
+  onUpdateStatus: (request_id: number, status: string) => void;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -45,6 +42,9 @@ const STATUS_COLORS: Record<string, string> = {
   ACKNOWLEDGED: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/30',
   ASSIGNED:     'bg-violet-500/10 text-violet-500 border-violet-500/30',
   REJECTED:     'bg-red-500/10 text-red-500 border-red-500/30',
+  IN_PROGRESS:  'bg-orange-500/10 text-orange-500 border-orange-500/30',
+  COMPLETED:    'bg-green-500/10 text-green-600 border-green-500/30',
+  ISSUE:        'bg-red-500/10 text-red-400 border-red-400/30',
 };
 
 const PRIORITY_COLORS: Record<string, string> = {
@@ -84,8 +84,7 @@ function WaypointCell({ wp }: { wp: any }) {
 }
 
 export function createFlightRequestColumns(handlers: FlightRequestColumnHandlers): ColumnDef<FlightRequest>[] {
-  const { assigning, denying, deleting, isDark, onAcknowledge, onDeny, onDelete, onOpenPlanModal, onOpenLogModal } = handlers;
-  const btnBase = `h-7 text-xs gap-1 ${isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : ''}`;
+  const { deleting, updatingStatus, isDark, onView, onDelete, onUpdateStatus } = handlers;
 
   return [
     {
@@ -109,6 +108,14 @@ export function createFlightRequestColumns(handlers: FlightRequestColumnHandlers
       cell: ({ getValue }) => getValue<string>() ?? '—',
     },
     {
+      id: 'operator',
+      header: 'Operator',
+      accessorKey: 'operator',
+      cell: ({ getValue }) => (
+        <span className="font-mono">{getValue<string>() ?? '—'}</span>
+      ),
+    },
+    {
       id: 'localization',
       header: 'Localization',
       accessorKey: 'localization',
@@ -119,15 +126,6 @@ export function createFlightRequestColumns(handlers: FlightRequestColumnHandlers
       header: 'Waypoint',
       accessorKey: 'waypoint',
       cell: ({ getValue }) => <WaypointCell wp={getValue()} />,
-    },
-    {
-      id: 'start_datetime',
-      header: 'Start Date',
-      accessorKey: 'start_datetime',
-      cell: ({ getValue }) => {
-        const v = getValue<string | null>();
-        return v ? format(new Date(v), 'dd MMM yyyy HH:mm') : '—';
-      },
     },
     {
       id: 'priority',
@@ -142,14 +140,6 @@ export function createFlightRequestColumns(handlers: FlightRequestColumnHandlers
           </span>
         );
       },
-    },
-    {
-      id: 'operator',
-      header: 'Operator',
-      accessorKey: 'operator',
-      cell: ({ getValue }) => (
-        <span className="font-mono">{getValue<string>() ?? '—'}</span>
-      ),
     },
     {
       id: 'dcc_status',
@@ -170,49 +160,72 @@ export function createFlightRequestColumns(handlers: FlightRequestColumnHandlers
       header: 'Actions',
       cell: ({ row }) => {
         const r = row.original;
-        const busy = assigning === r.request_id || denying === r.request_id;
+        const isDeleting = deleting === r.request_id;
+        const anyUpdating = updatingStatus?.id === r.request_id;
+        const isUpdating  = (status: string) => anyUpdating && updatingStatus?.status === status;
+
+        const showStateButtons = ['ASSIGNED', 'IN_PROGRESS'].includes(r.dcc_status);
+
         return (
-          <div className="flex items-center gap-1.5">
-            {r.dcc_status === 'NEW' && (
-              <Button size="sm" variant="outline" disabled={busy} className={btnBase}
-                onClick={() => onAcknowledge(r.request_id)}>
-                {assigning === r.request_id
-                  ? <Loader2 className="h-3 w-3 animate-spin" />
-                  : <CheckCircle2 className="h-3 w-3" />}
-                Acknowledge
-              </Button>
-            )}
-            {r.dcc_status === 'ACKNOWLEDGED' && (
-              <Button size="sm" variant="outline" disabled={denying === r.request_id} className={btnBase}
-                onClick={() => onOpenPlanModal(r.request_id, r.external_mission_id)}>
-                <Send className="h-3 w-3" />
-                Move to Planning
-              </Button>
-            )}
-            {(r.dcc_status === 'NEW' || r.dcc_status === 'ACKNOWLEDGED') && (
-              <Button size="sm" variant="outline" disabled={busy} className={`h-7 text-xs gap-1 border-red-500/40 text-red-500 hover:bg-red-500/10 ${isDark ? 'hover:border-red-500/60' : ''}`}
-                onClick={() => onDeny(r.request_id)}>
-                {denying === r.request_id
-                  ? <Loader2 className="h-3 w-3 animate-spin" />
-                  : <X className="h-3 w-3" />}
-                Deny
-              </Button>
-            )}
-            {r.dcc_status === 'ASSIGNED' && (
-              <Button size="sm" variant="outline" className={btnBase}
-                onClick={() => onOpenLogModal(r.request_id, r.external_mission_id)}>
-                <FileUp className="h-3 w-3" />
-                Push Log
-              </Button>
-            )}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {/* View button — opens detail modal */}
             <Button
               size="sm"
               variant="outline"
-              disabled={deleting === r.request_id}
+              onClick={() => onView(r)}
+              className={`h-7 text-xs gap-1 ${isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : ''}`}
+            >
+              <ExternalLink className="h-3 w-3" />
+              View
+            </Button>
+
+            {/* State progression buttons */}
+            {showStateButtons && (
+              <>
+                {r.dcc_status !== 'IN_PROGRESS' && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={anyUpdating}
+                    onClick={() => onUpdateStatus(r.request_id, 'IN_PROGRESS')}
+                    className={`h-7 text-xs gap-1 border-orange-500/40 text-orange-500 hover:bg-orange-500/10 ${isDark ? 'hover:border-orange-500/60' : ''}`}
+                  >
+                    {isUpdating('IN_PROGRESS') ? <Loader2 className="h-3 w-3 animate-spin" /> : <AlertCircle className="h-3 w-3" />}
+                    In Progress
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={anyUpdating}
+                  onClick={() => onUpdateStatus(r.request_id, 'COMPLETED')}
+                  className={`h-7 text-xs gap-1 border-green-500/40 text-green-600 hover:bg-green-500/10 ${isDark ? 'hover:border-green-500/60' : ''}`}
+                >
+                  {isUpdating('COMPLETED') ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />}
+                  Completed
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={anyUpdating}
+                  onClick={() => onUpdateStatus(r.request_id, 'ISSUE')}
+                  className={`h-7 text-xs gap-1 border-red-500/40 text-red-500 hover:bg-red-500/10 ${isDark ? 'hover:border-red-500/60' : ''}`}
+                >
+                  {isUpdating('ISSUE') ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+                  Issue
+                </Button>
+              </>
+            )}
+
+            {/* Delete */}
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={isDeleting}
               onClick={() => onDelete(r.request_id)}
               className={`h-7 w-7 p-0 border-red-500/30 text-red-500 hover:bg-red-500/10 ${isDark ? 'hover:border-red-500/50' : ''}`}
             >
-              {deleting === r.request_id
+              {isDeleting
                 ? <Loader2 className="h-3 w-3 animate-spin" />
                 : <Trash2 className="h-3 w-3" />}
             </Button>
