@@ -95,6 +95,9 @@ export interface Operation {
   fk_planning_id?: number | null;
   fk_mission_type_id?: number | null;
   fk_mission_category_id?: number | null;
+  fk_luc_procedure_id?: number | null;
+  luc_procedure_progress?: Record<string, Record<string, string>> | null;
+  luc_completed_at?: string | null;
   pilot_name?: string | null;
   tool_code?: string | null;
   status_name?: string | null;

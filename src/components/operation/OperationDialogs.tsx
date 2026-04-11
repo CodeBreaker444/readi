@@ -58,6 +58,7 @@ interface ToolOption { tool_id: number; tool_name: string; tool_code: string }
 interface MissionTypeOption { mission_type_id: number; type_name: string }
 interface MissionCategoryOption { category_id: number; category_name: string }
 interface PlanningOption { planning_id: number; planning_name: string; fk_client_id: number; client_name: string }
+interface LucProcedureOption { procedure_id: number; procedure_name: string; procedure_code: string }
 
 interface OperationForm {
     mission_name: string;
@@ -79,6 +80,7 @@ interface OperationForm {
     flight_duration: string;
     distance_flown: string;
     fk_planning_id: string;
+    fk_luc_procedure_id: string;
 }
 
 interface OperationFormProps {
@@ -117,6 +119,7 @@ const EMPTY_FORM: OperationForm = {
     flight_duration: '',
     distance_flown: '',
     fk_planning_id: '',
+    fk_luc_procedure_id: '',
 };
 
 export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: OperationFormProps) {
@@ -129,6 +132,7 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
     const [missionTypes, setMissionTypes] = useState<MissionTypeOption[]>([]);
     const [missionCategories, setMissionCategories] = useState<MissionCategoryOption[]>([]);
     const [plannings, setPlannings] = useState<PlanningOption[]>([]);
+    const [lucProcedures, setLucProcedures] = useState<LucProcedureOption[]>([]);
     const [loadingOptions, setLoadingOptions] = useState(false);
     const [form, setForm] = useState<OperationForm>(EMPTY_FORM);
 
@@ -142,6 +146,7 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
                 setMissionTypes(res.data.types ?? []);
                 setMissionCategories(res.data.categories ?? []);
                 setPlannings(res.data.plannings ?? []);
+                setLucProcedures(res.data.lucProcedures ?? []);
             })
             .catch(() => toast.error('Failed to load form options'))
             .finally(() => setLoadingOptions(false));
@@ -169,6 +174,7 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
                 flight_duration: initial.flight_duration?.toString() ?? '',
                 distance_flown: initial.distance_flown?.toString() ?? '',
                 fk_planning_id: (initial as any).fk_planning_id?.toString() ?? '',
+                fk_luc_procedure_id: initial.fk_luc_procedure_id?.toString() ?? '',
             });
         } else {
             setForm(EMPTY_FORM);
@@ -185,6 +191,10 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
         startTransition(async () => {
             try {
                 if (!isEdit && form.is_recurring) {
+                    if (!form.fk_luc_procedure_id) {
+                        toast.error('LUC procedure is required');
+                        return;
+                    }
                     const startDate = form.scheduled_start.slice(0, 10);
                     if (startDate > form.recur_until) {
                         toast.error('Recurrence end date must be on or after the start date');
@@ -212,6 +222,7 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
                         fk_mission_type_id: form.fk_mission_type_id ? parseInt(form.fk_mission_type_id) : undefined,
                         fk_mission_category_id: form.fk_mission_category_id ? parseInt(form.fk_mission_category_id) : undefined,
                         fk_planning_id: form.fk_planning_id ? parseInt(form.fk_planning_id) : undefined,
+                        fk_luc_procedure_id: parseInt(form.fk_luc_procedure_id, 10),
                         location: form.location || undefined,
                         notes: form.notes || undefined,
                         is_recurring: true,
@@ -223,6 +234,11 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
                     toast.success(`${res.data.count} recurring operations created successfully`);
                     onSuccess?.();
                     onClose();
+                    return;
+                }
+
+                if (!isEdit && !form.fk_luc_procedure_id) {
+                    toast.error('LUC procedure is required');
                     return;
                 }
 
@@ -242,6 +258,7 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
                     flight_duration: form.flight_duration ? parseInt(form.flight_duration) : undefined,
                     distance_flown: form.distance_flown ? parseFloat(form.distance_flown) : undefined,
                     fk_planning_id: form.fk_planning_id ? parseInt(form.fk_planning_id) : undefined,
+                    ...(!isEdit ? { fk_luc_procedure_id: parseInt(form.fk_luc_procedure_id, 10) } : {}),
                 };
 
                 let saved: { data: Operation };
@@ -264,6 +281,7 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
     const selectedTool = tools.find((t) => t.tool_id.toString() === form.fk_tool_id);
     const selectedType = missionTypes.find((t) => t.mission_type_id.toString() === form.fk_mission_type_id);
     const selectedCategory = missionCategories.find((c) => c.category_id.toString() === form.fk_mission_category_id);
+    const selectedLuc = lucProcedures.find((p) => p.procedure_id.toString() === form.fk_luc_procedure_id);
 
     const canGoNext = () => {
         if (step === 0) return !!form.mission_name.trim() && !!form.mission_code.trim();
@@ -283,6 +301,7 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
             }
             return true;
         }
+        if (step === 2) return isEdit || !!form.fk_luc_procedure_id;
         if (step === 3) return !!form.fk_pilot_user_id;
         return true;
     };
@@ -593,6 +612,34 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
                                     </SelectContent>
                                 </Select>
                             </div>
+                            <div className="grid gap-1.5">
+                                <Label>
+                                    LUC procedure (Mission)
+                                    {!isEdit && <span className="text-red-500"> *</span>}
+                                </Label>
+                                <Select
+                                    key={`luc-${lucProcedures.length}`}
+                                    value={form.fk_luc_procedure_id}
+                                    onValueChange={(v) => setForm((f) => ({ ...f, fk_luc_procedure_id: v }))}
+                                    disabled={loadingOptions}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder={loadingOptions ? 'Loading…' : lucProcedures.length === 0 ? 'No MISSION procedures' : 'Select LUC procedure'} />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {lucProcedures.map((p) => (
+                                            <SelectItem key={p.procedure_id} value={p.procedure_id.toString()}>
+                                                {p.procedure_code} — {p.procedure_name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                {!loadingOptions && lucProcedures.length === 0 && (
+                                    <p className="text-xs text-destructive">
+                                        Create an active LUC procedure with status &quot;MISSION&quot; under Organization first.
+                                    </p>
+                                )}
+                            </div>
                         </div>
                     )}
 
@@ -639,6 +686,10 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
                                     <ReviewRow label="Tool" value={selectedTool ? `${selectedTool.tool_name} (${selectedTool.tool_code})` : undefined} />
                                     <ReviewRow label="Type" value={selectedType?.type_name} />
                                     <ReviewRow label="Category" value={selectedCategory?.category_name} />
+                                    <ReviewRow
+                                        label="LUC procedure"
+                                        value={selectedLuc ? `${selectedLuc.procedure_code} — ${selectedLuc.procedure_name}` : undefined}
+                                    />
                                     {form.is_recurring && (
                                         <>
                                             <ReviewRow label="Recurrence" value="Weekly" />
@@ -698,7 +749,7 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
                     ) : (
                         <Button size="sm"
                             onClick={handleSubmit}
-                            disabled={isPending || !form.mission_name.trim() || !form.fk_pilot_user_id}
+                            disabled={isPending || !form.mission_name.trim() || !form.fk_pilot_user_id || (!isEdit && !form.fk_luc_procedure_id)}
                             className="gap-2 bg-violet-600 hover:bg-violet-700 text-white min-w-[140px]">
                             {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                             {isEdit ? 'Save Changes' : form.is_recurring ? 'Create Recurring' : 'Create Operation'}

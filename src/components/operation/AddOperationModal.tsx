@@ -30,6 +30,7 @@ interface FormData {
     fk_mission_type_id: number | null
     fk_mission_category_id: number | null
     fk_planning_id: number | null
+    fk_luc_procedure_id?: number
     location?: string
     notes?: string
     status_name: string
@@ -58,6 +59,7 @@ const createOperationCalendarSchema = z.object({
     fk_mission_type_id: z.number().int().nullable().optional(),
     fk_mission_category_id: z.number().int().nullable().optional(),
     fk_planning_id: z.number().int().nullable().optional(),
+    fk_luc_procedure_id: z.number().int().positive('LUC procedure is required'),
     location: z.string().optional(),
     notes: z.string().optional(),
     status_name: z.string().min(1),
@@ -73,7 +75,7 @@ const createOperationCalendarSchema = z.object({
     { message: 'Recurrence end date is required', path: ['recur_until'] }
 )
 
-type OptionItem = { id: number; label: string; in_maintenance?: boolean }
+type OptionItem = { id: number; label: string; in_maintenance?: boolean; steps?: any }
 
 const now = new Date()
 const pad = (n: number) => String(n).padStart(2, '0')
@@ -86,6 +88,7 @@ export function AddOperationModal({ open, onClose, onSuccess, isDark }: AddOpera
     const [tools, setTools] = useState<OptionItem[]>([])
     const [missionTypes, setMissionTypes] = useState<OptionItem[]>([])
     const [missionCategories, setMissionCategories] = useState<OptionItem[]>([])
+    const [lucProcedures, setLucProcedures] = useState<OptionItem[]>([])
     const [addedIds, setAddedIds] = useState<number[]>([])
 
     const {
@@ -149,6 +152,13 @@ export function AddOperationModal({ open, onClose, onSuccess, isDark }: AddOpera
                         label: c.category_name,
                     }))
                 )
+                setLucProcedures(
+                    (d.lucProcedures ?? []).map((p: any) => ({
+                        id: p.procedure_id,
+                        label: `${p.procedure_code} — ${p.procedure_name}`,
+                        steps: p.procedure_steps,
+                    }))
+                )
             } catch {
                 toast.error('Failed to load options')
             }
@@ -159,7 +169,12 @@ export function AddOperationModal({ open, onClose, onSuccess, isDark }: AddOpera
     const onSubmit = async (data: FormData) => {
         setIsSubmitting(true)
         try {
-            const res = await axios.post('/api/operation/calendar/create', data)
+            const selectedProc = lucProcedures.find(p => p.id === data.fk_luc_procedure_id)
+            const payload = {
+                ...data,
+                luc_procedure_steps: selectedProc?.steps ?? null,
+            }
+            const res = await axios.post('/api/operation/calendar/create', payload)
             const result = res.data
             if (!result.success) {
                 toast.error(result.error ?? 'Something went wrong')
@@ -188,7 +203,7 @@ export function AddOperationModal({ open, onClose, onSuccess, isDark }: AddOpera
     const labelClass = `text-sm font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}`
     const errorClass = 'text-red-400 text-xs mt-1'
 
-    type NumberFieldName = 'fk_pilot_user_id' | 'fk_tool_id' | 'fk_mission_type_id' | 'fk_mission_category_id' | 'fk_planning_id'
+    type NumberFieldName = 'fk_pilot_user_id' | 'fk_tool_id' | 'fk_mission_type_id' | 'fk_mission_category_id' | 'fk_planning_id' | 'fk_luc_procedure_id'
 
     const SelectField = ({
         name,
@@ -326,6 +341,18 @@ export function AddOperationModal({ open, onClose, onSuccess, isDark }: AddOpera
                         <Label className={labelClass}>Notes</Label>
                         <Input {...register('notes')} placeholder="Optional notes..." className={`mt-1 ${inputClass}`} />
                     </div>
+
+                    <SelectField
+                        name="fk_luc_procedure_id"
+                        label="LUC procedure (Mission)"
+                        options={lucProcedures}
+                        placeholder="Select LUC procedure"
+                    />
+                    {!lucProcedures.length && (
+                        <p className={`text-xs ${isDark ? 'text-amber-400' : 'text-amber-700'}`}>
+                            No active LUC procedures with status MISSION. Add one under Organization → LUC procedures.
+                        </p>
+                    )}
 
                     <div className={`rounded-lg border p-4 space-y-4 ${isDark ? 'border-slate-600 bg-slate-700/40' : 'border-slate-200 bg-slate-50'}`}>
                         <div className="flex items-center gap-2">

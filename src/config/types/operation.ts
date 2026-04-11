@@ -19,6 +19,9 @@ export interface Operation {
   fk_planning_id: number | null;
   fk_mission_type_id?: number | null;
   fk_mission_category_id?: number | null;
+  fk_luc_procedure_id?: number | null;
+  luc_procedure_progress?: Record<string, Record<string, string>> | null;
+  luc_completed_at?: string | null;
   pilot_name?: string;
   tool_code?: string;
   status_name?: string;
@@ -48,6 +51,9 @@ export type CreateOperationSchema = {
   fk_pilot_user_id: number;
   fk_tool_id?: number | null;
   fk_planning_id?: number | null;
+  fk_mission_type_id?: number | null;
+  fk_mission_category_id?: number | null;
+  fk_luc_procedure_id: number;
 };
 export type UpdateOperationSchema = {
   mission_code?: string;
@@ -180,6 +186,9 @@ export interface Mission {
   link_loss: number;
   deviation_flag: number;
   maintenance_status?: 'OK' | 'ALERT' | 'DUE' | 'IN_MAINTENANCE';
+  fk_luc_procedure_id: number | null;
+  luc_procedure_progress: Record<string, Record<string, string>> | null;
+  luc_completed_at: string | null;
 }
 
 export interface MissionBoardData {
@@ -249,6 +258,9 @@ export type CreateOperationCalendarInput = {
   days_of_week?: number[]
   recur_until?: string
   mission_group_label?: string
+  // LUC procedure (required for new calendar missions)
+  fk_luc_procedure_id: number
+  luc_procedure_steps?: Record<string, unknown> | null
 }
 
 export type CalendarEvent = OperationCalendarEvent

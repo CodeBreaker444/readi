@@ -8,15 +8,25 @@ import { getApiRoutePermission, Role, roleHasPermission, ROUTE_PERMISSIONS, Rout
  * Used only for permission checks in middleware (UX layer).
  * Actual signature verification happens in getUserSession() inside API handlers.
  */
-function decodeJwtRole(token: string): Role | null {
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
   try {
     const parts = token.split('.')
     if (parts.length !== 3) return null
-    const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'))
-    return (payload?.role as Role) ?? null
+    return JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'))
   } catch {
     return null
   }
+}
+
+function isJwtExpired(token: string): boolean {
+  const payload = decodeJwtPayload(token)
+  if (!payload || typeof payload.exp !== 'number') return true
+  return payload.exp < Math.floor(Date.now() / 1000)
+}
+
+function decodeJwtRole(token: string): Role | null {
+  const payload = decodeJwtPayload(token)
+  return (payload?.role as Role) ?? null
 }
 
 function hasRoutePermission(role: Role, entry: RoutePermissionEntry): boolean {
@@ -95,6 +105,13 @@ export async function updateSession(request: NextRequest) {
   }
 
   const jwtToken = request.cookies.get('readi_auth_token')?.value
+
+  if (jwtToken && isJwtExpired(jwtToken)) {
+    const loginUrl = new URL('/auth/login', request.url)
+    const redirectResponse = NextResponse.redirect(loginUrl)
+    redirectResponse.cookies.delete('readi_auth_token')
+    return redirectResponse
+  }
 
   if (jwtToken) {
     const forcePwChange = request.cookies.get('force_pw_change')?.value === '1'

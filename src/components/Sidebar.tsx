@@ -189,7 +189,10 @@ const configurationItems: SubNavItem[] = [
     name: 'Settings',
     href: '/settings/security',
     icon: HiOutlineShieldCheck,
-    subItems: [{ name: 'Security & API Keys', href: '/settings/security' }],
+    subItems: [
+      { name: 'Security & API Keys', href: '/settings/security' },
+      { name: 'Integrations', href: '/settings/integrations' },
+    ],
   },
 ];
 

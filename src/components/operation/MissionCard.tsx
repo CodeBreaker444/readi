@@ -6,7 +6,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Mission, MissionStatusCode } from "@/config/types/operation";
 import { cn } from "@/lib/utils";
-import { Calendar, CheckCircle2, Clock, Crosshair, Gauge, Tag, User, Wrench } from "lucide-react";
+import { Calendar, CheckCircle2, ClipboardList, Clock, Crosshair, Gauge, Tag, User, Wrench } from "lucide-react";
 import { MissionLimitsPanel } from "./MissionLimitsPanel";
 
 interface MissionCardProps {
@@ -14,6 +14,8 @@ interface MissionCardProps {
   draggable?: boolean;
   onDragStart?: (e: React.DragEvent, missionId: number) => void;
   onViewDetails?: (mission: Mission) => void;
+  onOpenTasks?: (mission: Mission) => void;
+  onOpenLuc?: (mission: Mission) => void;
   onUpdateMaintenance?: () => void;
   isDark: boolean
 }
@@ -88,7 +90,24 @@ const maintenanceStatusConfig: Record<
   },
 };
 
-export function MissionCard({ mission, draggable, onDragStart, onViewDetails, onUpdateMaintenance, isDark}: MissionCardProps) {
+type LucSectionKey = "checklist" | "communication" | "assignment";
+
+function lucSectionSummaries(progress: Mission["luc_procedure_progress"]) {
+  const keys: LucSectionKey[] = ["checklist", "communication", "assignment"];
+  const labels: Record<LucSectionKey, string> = {
+    checklist: "Checklist",
+    communication: "Comm",
+    assignment: "Assign.",
+  };
+  return keys.map((key) => {
+    const o = progress?.[key] ?? {};
+    const entries = Object.values(o);
+    const done = entries.filter((v) => v === "Y").length;
+    return { key, label: labels[key], done, total: entries.length };
+  });
+}
+
+export function MissionCard({ mission, draggable, onDragStart, onViewDetails, onOpenTasks, onOpenLuc, onUpdateMaintenance, isDark}: MissionCardProps) {
 
   const statusCfg = statusConfig[mission.mission_status_code] ?? statusConfig["00"];
   const statusColor = isDark ? statusCfg.darkColor : statusCfg.lightColor;
@@ -257,10 +276,79 @@ export function MissionCard({ mission, draggable, onDragStart, onViewDetails, on
         </div>
 
         <MissionLimitsPanel limitJson={mission.mission_planning_limit_json} isDark={isDark} />
+
+        {onOpenLuc != null && mission.fk_luc_procedure_id != null && (
+          <div className={cn("mt-3 border-t pt-2", isDark ? "border-white/[0.08]" : "border-slate-100")}>
+            <div className="flex flex-wrap items-end justify-between gap-2">
+              <div className="min-w-0 flex-1 space-y-1">
+                <p className={cn("text-[10px] font-semibold uppercase tracking-wide", isDark ? "text-slate-500" : "text-slate-500")}>
+                  LUC procedure tasks
+                </p>
+                {mission.luc_completed_at ? (
+                  <div
+                    className={cn(
+                      "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium",
+                      isDark
+                        ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                        : "border-emerald-200 bg-emerald-50 text-emerald-700"
+                    )}
+                  >
+                    <CheckCircle2 className="h-3 w-3 shrink-0" />
+                    All LUC tasks completed
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-1.5">
+                    {lucSectionSummaries(mission.luc_procedure_progress).map(({ key, label, done, total }) =>
+                      total === 0 ? null : (
+                        <span
+                          key={key}
+                          className={cn(
+                            "rounded-md border px-1.5 py-0.5 font-mono text-[9px]",
+                            isDark ? "border-slate-600 bg-slate-800/80 text-slate-300" : "border-slate-200 bg-slate-50 text-slate-700"
+                          )}
+                        >
+                          {label} {done}/{total}
+                        </span>
+                      )
+                    )}
+                  </div>
+                )}
+              </div>
+              {!mission.luc_completed_at && (
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => onOpenLuc(mission)}
+                  className={cn(
+                    "h-7 shrink-0 px-2.5 text-[11px] font-semibold",
+                    isDark ? "bg-violet-600 text-white hover:bg-violet-500" : "bg-violet-600 text-white hover:bg-violet-700"
+                  )}
+                >
+                  <ClipboardList className="mr-1 h-3.5 w-3.5" />
+                  Complete LUC tasks
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
       </CardContent>
 
       <CardFooter className={`flex items-center justify-between gap-2 border-t px-4 py-2 ${isDark ? "border-white/4" : "border-slate-100"}`}>
-        <div>
+        <div className="flex items-center gap-2">
+          {onOpenTasks && (
+            <Button
+              size="sm"
+              onClick={() => onOpenTasks(mission)}
+              className={cn(
+                "h-7 px-2.5 text-[11px] font-semibold",
+                isDark
+                  ? "bg-green-600 text-white hover:bg-green-500"
+                  : "bg-green-600 text-white hover:bg-green-700"
+              )}
+            >
+              Complete Tasks
+            </Button>
+          )}
           {mission.mission_status_code === "10" && onUpdateMaintenance && (
             <TooltipProvider delayDuration={300}>
               <Tooltip>

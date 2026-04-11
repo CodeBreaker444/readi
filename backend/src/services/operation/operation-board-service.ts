@@ -20,6 +20,9 @@ const MISSION_SELECT = `
       mission_name,
       recurring_group_id,
       mission_group_label,
+      fk_luc_procedure_id,
+      luc_procedure_progress,
+      luc_completed_at,
       users!pilot_mission_fk_pilot_user_id_fkey(first_name, last_name),
       tool!pilot_mission_fk_tool_id_fkey(tool_code, tool_name, tool_id),
       pilot_mission_status!pilot_mission_fk_mission_status_id_fkey(status_code, status_name, status_order),
@@ -200,6 +203,9 @@ function transformMissionRow(row: Record<string, unknown>): Mission | null {
       rth_unplanned: 0,
       link_loss: 0,
       deviation_flag: 0,
+      fk_luc_procedure_id: (row.fk_luc_procedure_id as number | null) ?? null,
+      luc_procedure_progress: (row.luc_procedure_progress as Mission["luc_procedure_progress"]) ?? null,
+      luc_completed_at: (row.luc_completed_at as string | null) ?? null,
     };
   } catch {
     return null;

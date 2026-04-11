@@ -1,4 +1,5 @@
 import { supabase } from '@/backend/database/database';
+import { seedLucProcedureProgressFromSteps } from '@/backend/services/operation/luc-procedure-progress';
 import { assertToolNotInMaintenance } from '@/backend/services/system/maintenance-ticket';
 import {
   CreateOperationCalendarInput,
@@ -86,6 +87,32 @@ export const createOperationCalendarEntry = async (
 
   const statusName = input.status_name ?? 'Scheduled';
 
+  if (!input.fk_luc_procedure_id) {
+    throw new Error('LUC procedure is required');
+  }
+
+  let stepsSource: unknown = input.luc_procedure_steps;
+  if (!stepsSource) {
+    const { data: procRow, error: procErr } = await supabase
+      .from('luc_procedure')
+      .select('procedure_steps')
+      .eq('procedure_id', input.fk_luc_procedure_id)
+      .eq('fk_owner_id', ownerId)
+      .eq('procedure_status', 'MISSION')
+      .eq('procedure_active', 'Y')
+      .maybeSingle();
+    if (procErr) throw new Error(`LUC procedure lookup failed: ${procErr.message}`);
+    if (!procRow) throw new Error('LUC procedure not found or not available for missions');
+    stepsSource = procRow.procedure_steps;
+  }
+
+  const luc_procedure_progress =
+    seedLucProcedureProgressFromSteps(stepsSource) ?? {
+      checklist: {},
+      communication: {},
+      assignment: {},
+    };
+
   const base = {
     fk_owner_id: ownerId,
     mission_name: input.mission_name,
@@ -96,6 +123,8 @@ export const createOperationCalendarEntry = async (
     fk_mission_type_id: input.fk_mission_type_id ?? null,
     fk_mission_category_id: input.fk_mission_category_id ?? null,
     fk_planning_id: input.fk_planning_id ?? null,
+    fk_luc_procedure_id: input.fk_luc_procedure_id,
+    luc_procedure_progress,
     location: input.location ?? null,
     notes: input.notes ?? null,
   }

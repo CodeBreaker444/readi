@@ -1,3 +1,5 @@
+import { notifyDccAcceptance } from '@/backend/services/mission/dcc-callback-service';
+import type { DccCallbackResult } from '@/types/dcc-callback';
 import { assignFlightRequest } from '@/backend/services/mission/flight-request-service';
 import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
@@ -29,7 +31,12 @@ export async function POST(req: NextRequest) {
       parsed.data.planning_id,
     );
 
-    return NextResponse.json({ code: 1, message: 'Flight request updated' });
+    let dcc: DccCallbackResult | undefined;
+    if (parsed.data.planning_id) {
+      dcc = await notifyDccAcceptance(session!.user.ownerId, parsed.data.planning_id);
+    }
+
+    return NextResponse.json({ code: 1, message: 'Flight request updated', ...(dcc ? { dcc } : {}) });
   } catch (err: any) {
     return NextResponse.json({ code: 0, error: err.message }, { status: 500 });
   }
