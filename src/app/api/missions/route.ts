@@ -1,4 +1,4 @@
-import { createFlightRequest } from '@/backend/services/mission/flight-request-service';
+import { createFlightRequest, flightRequestExists } from '@/backend/services/mission/flight-request-service';
 import { requireApiKey } from '@/lib/auth/api-key-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -52,6 +52,14 @@ export async function POST(req: NextRequest) {
       missionId, type, target, localization,
       waypoint, startDateTime, priority, notes, operator,
     } = parsed.data;
+
+    // Reject duplicate missionId for this owner
+    if (await flightRequestExists(missionId, session!.owner_id)) {
+      return NextResponse.json(
+        { code: 0, status: 'ERROR', message: `Mission ID '${missionId}' already exists` },
+        { status: 409 },
+      );
+    }
 
     const result = await createFlightRequest({
       owner_id:            session!.owner_id,

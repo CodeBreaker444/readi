@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
 
     // Notify DCC — non-blocking
     const logUri = `${env.FLYTBASE_URL ?? ''}/v2/flight/report/download/gutma?flightIds=${encodeURIComponent(flight_id)}`;
-    notifyDccLogging(missionId, logUri).catch(() => {});
+    notifyDccLogging(session!.user.ownerId, missionId, logUri).catch(() => {});
 
     return NextResponse.json({ code: 1, message: 'Flight log pushed to DCC' });
   } catch (err: any) {

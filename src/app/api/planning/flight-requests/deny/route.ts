@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
     await updateFlightRequestStatus(request_id, session!.user.ownerId, 'REJECTED');
 
     // Fire DCC callback — non-blocking
-    notifyDccDenial(fr.external_mission_id as string, note).catch(() => {});
+    notifyDccDenial(session!.user.ownerId, fr.external_mission_id as string, note).catch(() => {});
 
     return NextResponse.json({ code: 1, message: 'Flight request denied' });
   } catch (err: any) {

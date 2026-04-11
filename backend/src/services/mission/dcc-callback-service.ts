@@ -1,7 +1,11 @@
 import 'server-only';
 
-import { env } from '@/backend/config/env';
 import { supabase } from '@/backend/database/database';
+import { getDccCallbackUrl } from './dcc-settings-service';
+
+// ---------------------------------------------------------------------------
+// Helpers — resolve external IDs
+// ---------------------------------------------------------------------------
 
 /**
  * Returns the external_mission_id the DCC system uses for callbacks,
@@ -35,6 +39,19 @@ export async function getExternalMissionIdForMission(missionId: number): Promise
 }
 
 /**
+ * Returns owner_id for a given pilot_mission — needed to look up DCC URL.
+ */
+async function getOwnerIdForMission(missionId: number): Promise<number | null> {
+  const { data } = await supabase
+    .from('pilot_mission')
+    .select('planning!pilot_mission_fk_planning_id_fkey(fk_owner_id)')
+    .eq('pilot_mission_id', missionId)
+    .single();
+
+  return (data?.planning as any)?.fk_owner_id ?? null;
+}
+
+/**
  * Best-effort lookup for the DCC drone UUID stored in tool.dcc_drone_id.
  * Returns null if the column does not exist or is not set.
  */
@@ -58,10 +75,10 @@ async function getDccDroneIdForPlanning(planningId: number): Promise<string | nu
 // Low-level fetch helper
 // ---------------------------------------------------------------------------
 
-async function dccPost(path: string, body?: unknown): Promise<void> {
-  const base = env.DCC_CALLBACK_URL;
+async function dccPost(ownerId: number, path: string, body?: unknown): Promise<void> {
+  const base = await getDccCallbackUrl(ownerId);
   if (!base) {
-    console.warn(`[DCC] DCC_CALLBACK_URL not configured — skipping callback to ${path}`);
+    console.warn(`[DCC] No DCC integration configured for owner ${ownerId} — skipping callback to ${path}`);
     return;
   }
 
@@ -85,12 +102,16 @@ async function dccPost(path: string, body?: unknown): Promise<void> {
   }
 }
 
- 
+// ---------------------------------------------------------------------------
+// Public callbacks — all fire-and-forget (never throw)
+// ---------------------------------------------------------------------------
+
 /**
  * POST /dcc/missions/{missionId}/acceptance
  * Called when OPM assigns a flight_request to a planning mission.
  */
 export async function notifyDccAcceptance(
+  ownerId: number,
   planningId: number,
   externalMissionId?: string,
 ): Promise<void> {
@@ -110,7 +131,7 @@ export async function notifyDccAcceptance(
       return;
     }
 
-    await dccPost(`/dcc/missions/${missionId}/acceptance`, { droneId });
+    await dccPost(ownerId, `/dcc/missions/${missionId}/acceptance`, { droneId });
   } catch (err: any) {
     console.error('[DCC] notifyDccAcceptance error:', err?.message ?? err);
   }
@@ -121,11 +142,12 @@ export async function notifyDccAcceptance(
  * Called when OPM denies a flight_request.
  */
 export async function notifyDccDenial(
+  ownerId: number,
   externalMissionId: string,
   note?: string,
 ): Promise<void> {
   try {
-    await dccPost(`/dcc/missions/${externalMissionId}/denial`, { note: note ?? '' });
+    await dccPost(ownerId, `/dcc/missions/${externalMissionId}/denial`, { note: note ?? '' });
   } catch (err: any) {
     console.error('[DCC] notifyDccDenial error:', err?.message ?? err);
   }
@@ -137,12 +159,15 @@ export async function notifyDccDenial(
  */
 export async function notifyDccExecution(missionId: number): Promise<void> {
   try {
-    const externalId = await getExternalMissionIdForMission(missionId);
-    if (!externalId) {
-      console.warn('[DCC] execution: no external_mission_id for mission', missionId);
+    const [externalId, ownerId] = await Promise.all([
+      getExternalMissionIdForMission(missionId),
+      getOwnerIdForMission(missionId),
+    ]);
+    if (!externalId || !ownerId) {
+      console.warn('[DCC] execution: could not resolve IDs for mission', missionId);
       return;
     }
-    await dccPost(`/dcc/missions/${externalId}/execution`);
+    await dccPost(ownerId, `/dcc/missions/${externalId}/execution`);
   } catch (err: any) {
     console.error('[DCC] notifyDccExecution error:', err?.message ?? err);
   }
@@ -159,12 +184,15 @@ export async function notifyDccTermination(
   note?: string,
 ): Promise<void> {
   try {
-    const externalId = await getExternalMissionIdForMission(missionId);
-    if (!externalId) {
-      console.warn('[DCC] termination: no external_mission_id for mission', missionId);
+    const [externalId, ownerId] = await Promise.all([
+      getExternalMissionIdForMission(missionId),
+      getOwnerIdForMission(missionId),
+    ]);
+    if (!externalId || !ownerId) {
+      console.warn('[DCC] termination: could not resolve IDs for mission', missionId);
       return;
     }
-    await dccPost(`/dcc/missions/${externalId}/termination`, { result, note: note ?? '' });
+    await dccPost(ownerId, `/dcc/missions/${externalId}/termination`, { result, note: note ?? '' });
   } catch (err: any) {
     console.error('[DCC] notifyDccTermination error:', err?.message ?? err);
   }
@@ -172,9 +200,10 @@ export async function notifyDccTermination(
 
 /**
  * POST /dcc/missions/{missionId}/logging
- * Called when a flight log is attached (FlytBase or manual).
+ * Called when a flight log is pushed from the requests page.
  */
 export async function notifyDccLogging(
+  ownerId: number,
   missionId: number,
   uri: string,
 ): Promise<void> {
@@ -184,7 +213,7 @@ export async function notifyDccLogging(
       console.warn('[DCC] logging: no external_mission_id for mission', missionId);
       return;
     }
-    await dccPost(`/dcc/missions/${externalId}/logging`, { uri });
+    await dccPost(ownerId, `/dcc/missions/${externalId}/logging`, { uri });
   } catch (err: any) {
     console.error('[DCC] notifyDccLogging error:', err?.message ?? err);
   }

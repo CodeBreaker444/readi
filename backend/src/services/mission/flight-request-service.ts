@@ -39,6 +39,21 @@ export interface FlightRequest {
 }
 
 
+export async function flightRequestExists(
+  external_mission_id: string,
+  owner_id: number,
+): Promise<boolean> {
+  const { data } = await supabase
+    .from('flight_requests')
+    .select('request_id')
+    .eq('external_mission_id', external_mission_id)
+    .eq('fk_owner_id', owner_id)
+    .limit(1)
+    .single();
+
+  return !!data;
+}
+
 export async function createFlightRequest(input: CreateFlightRequestInput): Promise<{ request_id: number }> {
   const { data, error } = await supabase
     .from('flight_requests')

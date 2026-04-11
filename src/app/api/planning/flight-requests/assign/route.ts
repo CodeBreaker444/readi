@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
 
     // When linked to a planning mission, notify DCC of acceptance — non-blocking
     if (parsed.data.planning_id) {
-      notifyDccAcceptance(parsed.data.planning_id).catch(() => {});
+      notifyDccAcceptance(session!.user.ownerId, parsed.data.planning_id).catch(() => {});
     }
 
     return NextResponse.json({ code: 1, message: 'Flight request updated' });
