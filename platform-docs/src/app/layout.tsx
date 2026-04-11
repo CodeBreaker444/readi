@@ -1,7 +1,5 @@
-import { Layout } from '@/components/Layout'
-import { Redirects } from '@/lib/redirects'
-import '@/styles/page.css'
-import '@/styles/tailwind.css'
+import { Layout } from '../components/Layout'
+import { Redirects } from '../lib/redirects'
 import clsx from 'clsx'
 import { type Metadata } from 'next'
 import { Inter } from 'next/font/google'
@@ -23,11 +21,11 @@ const lexend = localFont({
 
 export const metadata: Metadata = {
    title: {
-    template: '%s - DeepInspect3D',
-    default: 'DeepInspect3D Platform',
+    template: '%s - Readi Documentation',
+    default: 'Readi Documentation',
   },
   description:
-    'Help, tutorials & documentation for DeepInspect3D Platform',
+    'Help, tutorials & documentation for Readi Documentation',
 }
 
 export default function RootLayout({

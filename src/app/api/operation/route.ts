@@ -32,6 +32,7 @@ const createOperationSchema = z.object({
   fk_planning_id: z.number().int().positive().nullable().optional(),
   fk_mission_type_id: z.number().int().positive().nullable().optional(),
   fk_mission_category_id: z.number().int().positive().nullable().optional(),
+  fk_luc_procedure_id: z.number().int().positive(),
   actual_end: z.string().nullable().optional(),
 });
 
@@ -50,6 +51,7 @@ const createRecurringSchema = z.object({
   days_of_week: z.array(z.number().int().min(0).max(6)).min(1),
   recur_until: z.string(),
   mission_group_label: z.string().nullable().optional(),
+  fk_luc_procedure_id: z.number().int().positive(),
   is_recurring: z.literal(true),
 });
 

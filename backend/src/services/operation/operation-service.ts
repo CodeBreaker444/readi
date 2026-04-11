@@ -1,4 +1,5 @@
 import { supabase } from '@/backend/database/database';
+import { seedLucProcedureProgressFromSteps } from '@/backend/services/operation/luc-procedure-progress';
 import { AttachmentUploadResponse, CreateOperationSchema, ListOperationsQuerySchema, Operation, OperationAttachment, OperationsListResponse, UpdateOperationSchema } from '@/config/types/operation';
 import { buildS3Url, deleteFileFromS3, getPresignedDownloadUrl, REGION, uploadFileToS3 } from '@/lib/s3Client';
 
@@ -38,6 +39,7 @@ export async function listOperations(
       fk_planning_id,
       fk_mission_type_id,
       fk_mission_category_id,
+      fk_luc_procedure_id,
       fk_owner_id,
       status_name,
       created_at,
@@ -116,6 +118,29 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
     throw new Error(`An operation with code ${codeToChild} already exists.`);
   }
 
+  const fkLuc = input.fk_luc_procedure_id;
+  if (!fkLuc) {
+    throw new Error('LUC procedure is required');
+  }
+  const { data: procRow, error: procErr } = await supabase
+    .from('luc_procedure')
+    .select('procedure_steps')
+    .eq('procedure_id', fkLuc)
+    .eq('fk_owner_id', ownerId)
+    .eq('procedure_status', 'MISSION')
+    .eq('procedure_active', 'Y')
+    .maybeSingle();
+  if (procErr) throw new Error(`LUC procedure lookup failed: ${procErr.message}`);
+  if (!procRow) {
+    throw new Error('LUC procedure not found or not available for missions');
+  }
+  const luc_procedure_progress =
+    seedLucProcedureProgressFromSteps(procRow.procedure_steps) ?? {
+      checklist: {},
+      communication: {},
+      assignment: {},
+    };
+
   const { data: inserted, error } = await supabase
     .from('pilot_mission')
     .insert({
@@ -134,6 +159,9 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
       fk_planning_id: input.fk_planning_id ?? null,
       fk_mission_type_id: (input as any).fk_mission_type_id ?? null,
       fk_mission_category_id: (input as any).fk_mission_category_id ?? null,
+      fk_luc_procedure_id: fkLuc,
+      luc_procedure_progress,
+      luc_completed_at: null,
     })
     .select('pilot_mission_id')
     .single();
@@ -307,6 +335,7 @@ export async function createRecurringOperations(
     fk_mission_type_id?: number | null;
     fk_mission_category_id?: number | null;
     fk_planning_id?: number | null;
+    fk_luc_procedure_id: number;
     location?: string | null;
     notes?: string | null;
     days_of_week: number[];
@@ -316,6 +345,25 @@ export async function createRecurringOperations(
   ownerId: number
 ): Promise<{ count: number; first_id: number }> {
   const recurringGroupId = crypto.randomUUID();
+
+  const { data: procRow, error: procErr } = await supabase
+    .from('luc_procedure')
+    .select('procedure_steps')
+    .eq('procedure_id', input.fk_luc_procedure_id)
+    .eq('fk_owner_id', ownerId)
+    .eq('procedure_status', 'MISSION')
+    .eq('procedure_active', 'Y')
+    .maybeSingle();
+  if (procErr) throw new Error(`LUC procedure lookup failed: ${procErr.message}`);
+  if (!procRow) {
+    throw new Error('LUC procedure not found or not available for missions');
+  }
+  const luc_procedure_progress =
+    seedLucProcedureProgressFromSteps(procRow.procedure_steps) ?? {
+      checklist: {},
+      communication: {},
+      assignment: {},
+    };
 
   const startMatch = input.scheduled_start.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
   if (!startMatch) throw new Error('Invalid scheduled_start format. Expected YYYY-MM-DDTHH:mm');
@@ -363,6 +411,9 @@ export async function createRecurringOperations(
         fk_mission_type_id: input.fk_mission_type_id ?? null,
         fk_mission_category_id: input.fk_mission_category_id ?? null,
         fk_planning_id: input.fk_planning_id ?? null,
+        fk_luc_procedure_id: input.fk_luc_procedure_id,
+        luc_procedure_progress,
+        luc_completed_at: null,
         location: input.location ?? null,
         notes: input.notes ?? null,
         mission_code: instanceCode,
@@ -562,4 +613,17 @@ export async function getPlanningOptions(ownerId: number) {
     fk_client_id: p.fk_client_id,
     client_name: Array.isArray(p.client) ? p.client[0]?.client_name : p.client?.client_name ?? '',
   }));
+}
+
+export async function getLucProcedureOptions(ownerId: number) {
+  const { data, error } = await supabase
+    .from('luc_procedure')
+    .select('procedure_id, procedure_name, procedure_code, procedure_steps')
+    .eq('fk_owner_id', ownerId)
+    .eq('procedure_status', 'MISSION')
+    .eq('procedure_active', 'Y')
+    .order('procedure_name');
+
+  if (error) throw new Error(`LUC procedures error: ${error.message}`);
+  return data ?? [];
 }

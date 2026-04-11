@@ -21,8 +21,6 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
-    "ignoreDeprecations": "6.0",
-    "baseUrl": "src",
     "plugins": [
       {
         "name": "next"
@@ -30,11 +28,11 @@
     ],
     "paths": {
       "@/*": [
-        "*"
+        "./src/*"
       ],
       "@config/*": [
-        "config/*"
-      ],
+        "./src/config/*"
+      ]
     }
   },
   "include": [

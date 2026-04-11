@@ -2,8 +2,6 @@
 
 import { FlightRequest } from '@/components/tables/flightRequestsColumns';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { CheckCircle2, FileUp, Loader2, MapPin, Send, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -46,7 +44,6 @@ const PRIORITY_COLORS: Record<string, string> = {
   LOW: 'bg-green-100 text-green-700',
 };
 
-/* ── Leaflet waypoint map ─────────────────────────────────────────── */
 function WaypointMap({ waypoint, isDark }: { waypoint: any; isDark: boolean }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
@@ -121,7 +118,6 @@ function WaypointMap({ waypoint, isDark }: { waypoint: any; isDark: boolean }) {
   );
 }
 
-/* ── Detail row helper ───────────────────────────────────────────── */
 function DetailRow({ label, value, isDark }: { label: string; value: React.ReactNode; isDark: boolean }) {
   return (
     <div className="flex items-start gap-3 py-2.5">
@@ -131,7 +127,6 @@ function DetailRow({ label, value, isDark }: { label: string; value: React.React
   );
 }
 
-/* ── Main modal ──────────────────────────────────────────────────── */
 export function FlightRequestDetailModal({
   request, isDark, assigning, denying, onClose,
   onAcknowledge, onDeny, onOpenPlanModal, onOpenLogModal,

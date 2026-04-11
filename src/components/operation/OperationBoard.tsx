@@ -15,6 +15,7 @@ import { DailyDeclarationModal } from "./DailyDeclarationModal";
 import { KanbanColumn } from "./KanbanColumn";
 import { MaintenanceCycleModal } from "./MaintenanceCycleModal";
 import { MissionCompleteModal } from "./MissionCompleteModal";
+import { MissionLucProcedureModal } from "./MissionLucProcedureModal";
 
 type ColumnId = "scheduled" | "in_progress" | "done";
 
@@ -65,6 +66,7 @@ export function OperationBoard() {
     const [selectedMission, setSelectedMission] = useState<Mission | null>(null);
     const [completedMission, setCompletedMission] = useState<Mission | null>(null);
     const [maintenanceMission, setMaintenanceMission] = useState<Mission | null>(null);
+    const [lucMission, setLucMission] = useState<Mission | null>(null);
     const [showDeclarationModal, setShowDeclarationModal] = useState(false);
     const dragMeta = useRef<{
         missionId: number;
@@ -236,6 +238,7 @@ export function OperationBoard() {
                             onDrop={handleDrop}
                             onViewDetails={(m) => setSelectedMission(m)}
                             onUpdateMaintenance={(m) => setMaintenanceMission(m)}
+                            onOpenLuc={(m) => setLucMission(m)}
                             isDragOver={dragOverColumn === col.id}
                             onDragOver={(e) => handleDragOver(e, col.id)}
                             onDragLeave={handleDragLeave}
@@ -302,6 +305,14 @@ export function OperationBoard() {
                 isDark={isDark}
                 onClose={() => setSelectedMission(null)}
             />
+
+            {lucMission && (
+                <MissionLucProcedureModal
+                    mission={lucMission}
+                    isDark={isDark}
+                    onClose={() => setLucMission(null)}
+                />
+            )}
         </div>
     );
 }

@@ -40,9 +40,12 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts"
-, "src/components/planning/function.js"  ],
+    ".next/dev/types/**/*.ts",
+    "src/components/planning/function.js"
+  ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "platform-docs",
+    "platform-docs/**"
   ]
 }
