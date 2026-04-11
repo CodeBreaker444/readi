@@ -64,11 +64,10 @@ export async function POST(req: NextRequest) {
 
     await attachFlytbaseFlightLog(missionId, session!.user.userId, flight_id);
 
-    // Notify DCC — non-blocking
     const logUri = `${env.FLYTBASE_URL ?? ''}/v2/flight/report/download/gutma?flightIds=${encodeURIComponent(flight_id)}`;
-    notifyDccLogging(session!.user.ownerId, missionId, logUri).catch(() => {});
+    const dcc = await notifyDccLogging(session!.user.ownerId, missionId, logUri);
 
-    return NextResponse.json({ code: 1, message: 'Flight log pushed to DCC' });
+    return NextResponse.json({ code: 1, message: 'Flight log pushed to DCC', dcc });
   } catch (err: any) {
     console.error('[flight-requests/logs] POST error:', err);
     const message = err instanceof Error ? err.message : 'Unknown error';

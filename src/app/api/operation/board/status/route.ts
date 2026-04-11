@@ -1,4 +1,5 @@
 import { logEvent } from "@/backend/services/auditLog/audit-log";
+import type { DccCallbackResult } from "@/types/dcc-callback";
 import { notifyDccExecution, notifyDccTermination } from "@/backend/services/mission/dcc-callback-service";
 import { updateMissionStatus } from "@/backend/services/operation/operation-board-service";
 import { checkDailyDeclaration } from "@/backend/services/operation/pilot-declaration-service";
@@ -46,6 +47,8 @@ export async function POST(req: NextRequest) {
 
     const result = await updateMissionStatus({ ...parsed.data, owner_id: session!.user.ownerId });
 
+    let dcc: DccCallbackResult | undefined;
+
     if (result.code === 1) {
       const actionMap: Record<string, string> = {
         _START: 'started',
@@ -64,15 +67,17 @@ export async function POST(req: NextRequest) {
         ownerId: session!.user.ownerId,
       });
 
-      // Notify DCC of state transition — non-blocking
       if (parsed.data.workflow_mission_status === '_START') {
-        notifyDccExecution(parsed.data.mission_id).catch(() => {});
+        dcc = await notifyDccExecution(parsed.data.mission_id);
       } else if (parsed.data.workflow_mission_status === '_END') {
-        notifyDccTermination(parsed.data.mission_id, 1).catch(() => {});
+        dcc = await notifyDccTermination(parsed.data.mission_id, 1);
       }
     }
 
-    return NextResponse.json(result, { status: result.code === 1 ? 200 : 422 });
+    return NextResponse.json(
+      dcc ? { ...result, dcc } : result,
+      { status: result.code === 1 ? 200 : 422 },
+    );
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ code: 0, message }, { status: 500 });

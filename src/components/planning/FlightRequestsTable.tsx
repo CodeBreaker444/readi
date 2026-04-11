@@ -10,6 +10,8 @@ import { flexRender, getCoreRowModel, getPaginationRowModel, useReactTable } fro
 import axios from 'axios';
 import { AlertCircle, CheckCircle2, Clock, FileUp, Loader2, MapPin, RotateCcw, Send, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { toastAfterDccAction } from '@/lib/dcc-toast';
+import type { DccCallbackResult } from '@/types/dcc-callback';
 import { toast } from 'sonner';
 import { TablePagination } from '../tables/Pagination';
 import { useTheme } from '../useTheme';
@@ -54,8 +56,11 @@ export default function FlightRequestsTable() {
   async function handleDeny(request_id: number) {
     setDenying(request_id);
     try {
-      await axios.post('/api/planning/flight-requests/deny', { request_id });
-      toast.success('Request denied');
+      const { data } = await axios.post<{ code: number; dcc?: DccCallbackResult }>(
+        '/api/planning/flight-requests/deny',
+        { request_id },
+      );
+      toastAfterDccAction('Request denied', data.dcc);
       setSelectedRequest(null);
       await load();
     } catch (err: any) {
@@ -117,11 +122,14 @@ export default function FlightRequestsTable() {
     if (!logModal || !flightId.trim()) return;
     setPushingLog(true);
     try {
-      await axios.post('/api/planning/flight-requests/logs', {
-        request_id: logModal.request_id,
-        flight_id: flightId.trim(),
-      });
-      toast.success('Flight log pushed to DCC');
+      const { data } = await axios.post<{ code: number; dcc?: DccCallbackResult }>(
+        '/api/planning/flight-requests/logs',
+        {
+          request_id: logModal.request_id,
+          flight_id: flightId.trim(),
+        },
+      );
+      toastAfterDccAction('Flight log pushed to DCC', data.dcc);
       setLogModal(null);
       setFlightId('');
     } catch (err: any) {
@@ -149,11 +157,14 @@ export default function FlightRequestsTable() {
     if (!planModal || !selectedEvalId) return;
     setSubmitting(true);
     try {
-      await axios.post('/api/planning/flight-requests/assign', {
-        request_id: planModal.request_id,
-        planning_id: Number(selectedEvalId),
-      });
-      toast.success('Flight request linked to planning mission');
+      const { data } = await axios.post<{ code: number; dcc?: DccCallbackResult }>(
+        '/api/planning/flight-requests/assign',
+        {
+          request_id: planModal.request_id,
+          planning_id: Number(selectedEvalId),
+        },
+      );
+      toastAfterDccAction('Flight request linked to planning mission', data.dcc);
       setPlanModal(null);
       await load();
     } catch (err: any) {

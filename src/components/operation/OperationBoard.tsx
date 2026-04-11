@@ -8,7 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Mission, MissionBoardData } from "@/config/types/operation";
+import { toastAfterDccAction } from "@/lib/dcc-toast";
 import { cn } from "@/lib/utils";
+import type { DccCallbackResult } from "@/types/dcc-callback";
 import { useTheme } from "../useTheme";
 import { BoardHeader } from "./BoardHeader";
 import { DailyDeclarationModal } from "./DailyDeclarationModal";
@@ -126,7 +128,11 @@ export function OperationBoard() {
         }));
 
         try {
-            await axios.post('/api/operation/board/status', {
+            const { data } = await axios.post<{
+                code: number;
+                message?: string;
+                dcc?: DccCallbackResult;
+            }>("/api/operation/board/status", {
                 mission_id: missionId,
                 vehicle_id: mission.fk_vehicle_id,
                 status_id: COLUMN_STATUS_MAP[target],
@@ -136,10 +142,14 @@ export function OperationBoard() {
 
             pendingDragRef.current = null;
 
-            toast.success(
-                target === "in_progress" ? "Mission started" : "Mission completed",
-                { description: `Mission #${missionId} moved to ${target.replace("_", " ")}` }
-            );
+            const mainTitle =
+                target === "in_progress" ? "Mission started" : "Mission completed";
+            const moveDesc = `Mission #${missionId} moved to ${target.replace("_", " ")}`;
+            if (data.dcc) {
+                toastAfterDccAction(`${mainTitle} — ${moveDesc}`, data.dcc);
+            } else {
+                toast.success(mainTitle, { description: moveDesc });
+            }
 
             if (target === "done") {
                 setCompletedMission({ ...mission, fk_status_id: COLUMN_STATUS_MAP[target] });
