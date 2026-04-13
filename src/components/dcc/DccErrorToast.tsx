@@ -97,18 +97,18 @@ export default function DccErrorToast({ toastId, title, dcc }: Props) {
           </div>
 
           <div className="flex justify-between items-center pt-2 border-t">
-            {isSuperAdmin && (
+            {!isSuperAdmin && (
               <p className="text-xs text-muted-foreground">
                 {reported
-                  ? 'Bug reported to audit log.'
-                  : 'Log this error to the audit dashboard.'}
+                  ? 'Reported to admin team.'
+                  : 'Report this error to the admin team.'}
               </p>
             )}
-            <div className={`flex gap-2 ${!isSuperAdmin ? 'ml-auto' : ''}`}>
+            <div className={`flex gap-2 ${isSuperAdmin ? 'ml-auto' : ''}`}>
               <Button variant="outline" size="sm" onClick={() => setModalOpen(false)}>
                 Close
               </Button>
-              {isSuperAdmin && (
+              {!isSuperAdmin && (
                 <Button
                   size="sm"
                   variant={reported ? 'outline' : 'destructive'}
