@@ -76,15 +76,15 @@ async function getDccDroneIdForPlanning(planningId: number): Promise<string | nu
 
     const { data: component } = await supabase
       .from('tool_component')
-      .select('component_id')
+      .select('dcc_drone_id')
       .eq('fk_tool_id', toolId)
       .eq('component_type', 'DRONE')
       .eq('component_active', 'Y')
+      .not('dcc_drone_id', 'is', null)
       .limit(1)
       .single();
 
-    const componentId = (component as any)?.component_id;
-    return componentId != null ? String(componentId) : null;
+    return (component as any)?.dcc_drone_id ?? null;
   } catch {
     return null;
   }
@@ -171,13 +171,13 @@ export async function notifyDccAcceptance(
     const droneId = await getDccDroneIdForPlanning(planningId);
     if (!droneId) {
       console.warn(
-        `[DCC] acceptance: no DRONE component attached to the tool for planning ${planningId}. ` +
-          'Attach a DRONE component to the system to enable this callback.',
+        `[DCC] acceptance: no DRONE component with dcc_drone_id found for planning ${planningId}. ` +
+          'Set dcc_drone_id (UUID) on the DRONE component to enable this callback.',
       );
       return {
         path: `/dcc/missions/${missionId}/acceptance`,
         outcome: 'skipped',
-        message: 'No DRONE component on assigned system — DCC acceptance not sent',
+        message: 'No dcc_drone_id on DRONE component — DCC acceptance not sent',
       };
     }
 

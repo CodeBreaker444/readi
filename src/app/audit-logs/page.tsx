@@ -5,6 +5,7 @@ import { AuditLog, ENTITY_TYPES, EVENT_TYPE_COLORS, EVENT_TYPES, getAuditLogsCol
 import { TablePagination } from '@/components/tables/Pagination';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import {
     Select,
     SelectContent,
@@ -46,6 +47,14 @@ export default function AuditLogsPage() {
   const [search, setSearch] = useState('');
 
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 8 });
+  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
+
+  const toggleRow = (id: number) =>
+    setExpandedRows((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
 
   const filteredLogs = search
     ? logs.filter(
@@ -344,60 +353,101 @@ export default function AuditLogsPage() {
                 ) : (
                   table.getRowModel().rows.map((row) => {
                     const log = row.original;
+                    const isDccReport = log.entity_type === 'dcc_bug_report';
+                    const isExpanded = expandedRows.has(log.id);
+                    const dcc = isDccReport ? (log.metadata as any)?.dcc : null;
+                    const colSpan = table.getAllColumns().length;
                     return (
-                      <TableRow
-                        key={row.id}
-                        className={`group ${
-                          isDark
-                            ? 'border-white/[0.06] hover:bg-white/[0.02]'
-                            : 'border-gray-50 hover:bg-gray-50/50'
-                        }`}
-                      >
-                        <TableCell className="text-[11px] tabular-nums whitespace-nowrap">
-                          <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>
-                            {new Date(log.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-                          </span>
-                          <br />
-                          <span className={isDark ? 'text-gray-500' : 'text-gray-400'}>
-                            {new Date(log.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <span
-                            className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-bold tracking-tight ${
-                              EVENT_TYPE_COLORS[log.event_type] ?? ''
-                            }`}
-                          >
-                            {log.event_type}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <span className={`text-[11px] font-medium capitalize ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                            {log.entity_type.replace(/_/g, ' ')}
-                          </span>
-                        </TableCell>
-                        <TableCell className={`text-[11px] leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                          {log.description ?? '—'}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-col">
-                            <span className={`text-[11px] font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                              {log.user_name ?? 'System'}
+                      <>
+                        <TableRow
+                          key={row.id}
+                          className={`group ${isDccReport ? 'cursor-pointer' : ''} ${
+                            isDark
+                              ? 'border-white/[0.06] hover:bg-white/[0.02]'
+                              : 'border-gray-50 hover:bg-gray-50/50'
+                          }`}
+                          onClick={isDccReport ? () => toggleRow(log.id) : undefined}
+                        >
+                          <TableCell className="text-[11px] tabular-nums whitespace-nowrap">
+                            <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>
+                              {new Date(log.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                             </span>
-                            <span className="text-[10px] text-gray-500 opacity-80">{log.user_email}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-[10px] font-medium text-gray-500 uppercase tracking-tighter">
-                            {log.user_role ?? '—'}
-                          </span>
-                        </TableCell>
-                        {isSuperAdmin && (
-                          <TableCell className="text-[11px] text-gray-500">
-                            {owners.find((o) => o.owner_id === log.owner_id)?.owner_name ?? log.owner_id}
+                            <br />
+                            <span className={isDark ? 'text-gray-500' : 'text-gray-400'}>
+                              {new Date(log.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                            </span>
                           </TableCell>
+                          <TableCell>
+                            <span
+                              className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-bold tracking-tight ${
+                                EVENT_TYPE_COLORS[log.event_type] ?? ''
+                              }`}
+                            >
+                              {log.event_type}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              {isDccReport && (
+                                isExpanded
+                                  ? <ChevronDown className="h-3 w-3 text-amber-500 shrink-0" />
+                                  : <ChevronRight className="h-3 w-3 text-amber-500 shrink-0" />
+                              )}
+                              <span className={`text-[11px] font-medium capitalize ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                                {log.entity_type.replace(/_/g, ' ')}
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell className={`text-[11px] leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                            {log.description ?? '—'}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-col">
+                              <span className={`text-[11px] font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                                {log.user_name ?? 'System'}
+                              </span>
+                              <span className="text-[10px] text-gray-500 opacity-80">{log.user_email}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-[10px] font-medium text-gray-500 uppercase tracking-tighter">
+                              {log.user_role ?? '—'}
+                            </span>
+                          </TableCell>
+                          {isSuperAdmin && (
+                            <TableCell className="text-[11px] text-gray-500">
+                              {owners.find((o) => o.owner_id === log.owner_id)?.owner_name ?? log.owner_id}
+                            </TableCell>
+                          )}
+                        </TableRow>
+                        {isDccReport && isExpanded && dcc && (
+                          <TableRow key={`${row.id}-dcc`} className={isDark ? 'border-white/[0.06]' : 'border-gray-50'}>
+                            <TableCell colSpan={colSpan} className="py-0 px-0">
+                              <div className={`mx-4 mb-3 rounded-lg border p-3 text-xs ${isDark ? 'bg-amber-950/20 border-amber-800/30' : 'bg-amber-50 border-amber-200'}`}>
+                                <p className={`text-[10px] font-bold uppercase tracking-wider mb-2 ${isDark ? 'text-amber-400' : 'text-amber-700'}`}>
+                                  DCC Error Details
+                                </p>
+                                <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 md:grid-cols-4">
+                                  <DccField label="Endpoint" value={dcc.path} mono />
+                                  <DccField label="Outcome" value={dcc.outcome} />
+                                  <DccField label="Message" value={dcc.message} />
+                                  {dcc.httpStatus != null && (
+                                    <DccField label="HTTP Status" value={String(dcc.httpStatus)} />
+                                  )}
+                                </div>
+                                {dcc.responseBody?.trim() && (
+                                  <div className="mt-2">
+                                    <p className={`text-[10px] font-medium mb-1 ${isDark ? 'text-amber-400/70' : 'text-amber-600'}`}>Response Body</p>
+                                    <pre className={`text-[10px] rounded p-2 overflow-x-auto whitespace-pre-wrap break-all max-h-32 ${isDark ? 'bg-black/30 text-amber-200' : 'bg-white text-amber-900'}`}>
+                                      {dcc.responseBody.trim()}
+                                    </pre>
+                                  </div>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
                         )}
-                      </TableRow>
+                      </>
                     );
                   })
                 )}
@@ -415,6 +465,15 @@ export default function AuditLogsPage() {
           <TablePagination table={table} />
         </div>
       </div>
+    </div>
+  );
+}
+
+function DccField({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+  return (
+    <div>
+      <p className="text-[10px] font-medium text-muted-foreground">{label}</p>
+      <p className={`mt-0.5 ${mono ? 'font-mono text-[10px]' : 'text-xs'}`}>{value}</p>
     </div>
   );
 }

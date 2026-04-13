@@ -47,7 +47,7 @@ export const ENTITY_TYPES = [
   'user', 'mission_type', 'mission_category', 'mission_status', 'mission_result',
   'operation', 'document', 'system', 'maintenance_ticket', 'client',
   'shift', 'organization_procedure', 'checklist', 'assignment', 'communication',
-  'spi_kpi', 'company',
+  'spi_kpi', 'company', 'dcc_bug_report',
 ];
 
 export const getAuditLogsColumns = (isSuperAdmin: boolean, owners: Owner[]): ColumnDef<AuditLog>[] => {

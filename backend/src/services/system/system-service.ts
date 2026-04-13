@@ -516,7 +516,8 @@ export async function getComponentList(ownerId: number, toolId?: number) {
     maintenance_cycle,
     maintenance_cycle_hour,
     maintenance_cycle_day,
-    maintenance_cycle_flight
+    maintenance_cycle_flight,
+    dcc_drone_id
   `;
 
   if (toolIds.length === 0) {
@@ -564,6 +565,7 @@ export async function getComponentList(ownerId: number, toolId?: number) {
       maintenance_cycle_hour: item.maintenance_cycle_hour ?? '',
       maintenance_cycle_day: item.maintenance_cycle_day ?? '',
       maintenance_cycle_flight: item.maintenance_cycle_flight ?? '',
+      dcc_drone_id: item.dcc_drone_id ?? null,
     })),
   };
 }
@@ -618,6 +620,7 @@ export async function addComponent(componentData: any) {
       maintenance_cycle_hour: finalHour ?? null,
       maintenance_cycle_day: finalDay ?? null,
       maintenance_cycle_flight: finalFlight ?? null,
+      dcc_drone_id: componentData.dcc_drone_id || null,
       component_metadata: {
         cc_platform: componentData.cc_platform || null,
         gcs_type: componentData.gcs_type || null,
@@ -651,6 +654,7 @@ export async function updateComponent(componentId: number, componentData: any) {
       component_description: componentData.component_desc || null,
       serial_number: componentData.component_sn || null,
       installation_date: componentData.component_activation_date || null,
+      dcc_drone_id: componentData.dcc_drone_id ?? null,
       maintenance_cycle: componentData.maintenance_cycle || null,
       maintenance_cycle_hour: componentData.maintenance_cycle_hour ?? null,
       maintenance_cycle_day: componentData.maintenance_cycle_day ?? null,

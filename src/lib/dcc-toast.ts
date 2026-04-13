@@ -1,5 +1,7 @@
-import { toast } from 'sonner';
+import DccErrorToast from '@/components/dcc/DccErrorToast';
 import type { DccCallbackResult } from '@/types/dcc-callback';
+import { createElement } from 'react';
+import { toast } from 'sonner';
 
 export type { DccCallbackResult };
 
@@ -10,13 +12,20 @@ function truncate(s: string): string {
   return `${s.slice(0, MAX_BODY)}…`;
 }
 
-/** a second line / description for Sonner from `dcc` on API responses. */
 export function formatDccToastDescription(dcc: DccCallbackResult | null | undefined): string | undefined {
   if (!dcc) return undefined;
   const parts: string[] = [`DCC ${dcc.path}`, dcc.message];
   if (dcc.httpStatus != null) parts.push(`HTTP ${dcc.httpStatus}`);
   if (dcc.responseBody?.trim()) parts.push(`Body: ${truncate(dcc.responseBody.trim())}`);
   return parts.join(' · ');
+}
+
+/** Show a persistent DCC error toast  no auto dismiss, click to see details and report. */
+function showDccErrorToast(title: string, dcc: DccCallbackResult) {
+  toast.custom(
+    (toastId) => createElement(DccErrorToast, { toastId, title, dcc }),
+    { duration: Infinity },
+  );
 }
 
 /** Show primary toast + optional DCC detail */
@@ -27,7 +36,7 @@ export function toastWithDcc(
   const dccDesc = formatDccToastDescription(dcc);
   const show = outcomeToast.variant === 'success' ? toast.success : toast.error;
   if (dcc?.outcome === 'http_error' || dcc?.outcome === 'network_error') {
-    show(outcomeToast.title, { description: dccDesc ?? undefined, duration: 8000 });
+    showDccErrorToast(outcomeToast.title, dcc);
     return;
   }
   if (dcc?.outcome === 'skipped') {
@@ -37,7 +46,7 @@ export function toastWithDcc(
   show(outcomeToast.title, { description: dccDesc, duration: dccDesc ? 6000 : 4000 });
 }
 
-/** After a successful API action that optionally called DCC — main action succeeded; surface DCC outcome in the toast. */
+/** After a successful API action that optionally called DCC */
 export function toastAfterDccAction(mainTitle: string, dcc: DccCallbackResult | null | undefined) {
   const desc = formatDccToastDescription(dcc);
   if (!dcc) {
@@ -45,7 +54,7 @@ export function toastAfterDccAction(mainTitle: string, dcc: DccCallbackResult | 
     return;
   }
   if (dcc.outcome === 'http_error' || dcc.outcome === 'network_error') {
-    toast.warning(mainTitle, { description: desc, duration: 9000 });
+    showDccErrorToast(mainTitle, dcc);
     return;
   }
   toast.success(mainTitle, { description: desc, duration: 6500 });
