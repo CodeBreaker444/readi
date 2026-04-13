@@ -75,7 +75,7 @@ const createOperationCalendarSchema = z.object({
     { message: 'Recurrence end date is required', path: ['recur_until'] }
 )
 
-type OptionItem = { id: number; label: string; in_maintenance?: boolean; steps?: any }
+type OptionItem = { id: number; label: string; in_maintenance?: boolean; has_drone_component?: boolean; steps?: any }
 
 const now = new Date()
 const pad = (n: number) => String(n).padStart(2, '0')
@@ -138,6 +138,7 @@ export function AddOperationModal({ open, onClose, onSuccess, isDark }: AddOpera
                         id: t.tool_id,
                         label: `${t.tool_code} — ${t.tool_name}`,
                         in_maintenance: t.in_maintenance ?? false,
+                        has_drone_component: t.has_drone_component,
                     }))
                 )
                 setMissionTypes(
@@ -241,14 +242,21 @@ export function AddOperationModal({ open, onClose, onSuccess, isDark }: AddOpera
                                 <SelectItem
                                     key={o.id}
                                     value={String(o.id)}
-                                    disabled={o.in_maintenance}
+                                    disabled={o.in_maintenance || o.has_drone_component === false}
                                     className={isDark ? 'text-white focus:bg-slate-600' : ''}
                                 >
                                     <span className="flex items-center gap-2">
-                                        {o.label}
+                                        <span className={o.has_drone_component === false ? 'opacity-40' : ''}>
+                                            {o.label}
+                                        </span>
                                         {o.in_maintenance && (
                                             <span className="text-[10px] font-semibold text-blue-600 bg-blue-50 border border-blue-200 rounded px-1.5 py-0.5 leading-none">
                                                 IN MAINTENANCE
+                                            </span>
+                                        )}
+                                        {o.has_drone_component === false && (
+                                            <span className="text-[10px] font-semibold text-gray-500 bg-gray-100 border border-gray-300 rounded px-1.5 py-0.5 leading-none">
+                                                Drone not Attached
                                             </span>
                                         )}
                                     </span>

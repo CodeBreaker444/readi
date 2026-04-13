@@ -546,19 +546,32 @@ export async function getToolOptions(ownerId: number) {
   if (tools.length === 0) return tools;
 
   const toolIds = tools.map((t: any) => t.tool_id);
-  const { data: openTickets } = await supabase
-    .from('maintenance_ticket')
-    .select('fk_tool_id')
-    .in('fk_tool_id', toolIds)
-    .neq('ticket_status', 'CLOSED');
+
+  const [{ data: openTickets }, { data: droneComponents }] = await Promise.all([
+    supabase
+      .from('maintenance_ticket')
+      .select('fk_tool_id')
+      .in('fk_tool_id', toolIds)
+      .neq('ticket_status', 'CLOSED'),
+    supabase
+      .from('tool_component')
+      .select('fk_tool_id')
+      .in('fk_tool_id', toolIds)
+      .eq('component_type', 'DRONE')
+      .eq('component_active', 'Y'),
+  ]);
 
   const inMaintenanceSet = new Set<number>(
     (openTickets ?? []).map((t: any) => t.fk_tool_id)
+  );
+  const hasDroneSet = new Set<number>(
+    (droneComponents ?? []).map((c: any) => c.fk_tool_id)
   );
 
   return tools.map((t: any) => ({
     ...t,
     in_maintenance: inMaintenanceSet.has(t.tool_id),
+    has_drone_component: hasDroneSet.has(t.tool_id),
   }));
 }
 

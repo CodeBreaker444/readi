@@ -57,20 +57,34 @@ async function getOwnerIdForMission(missionId: number): Promise<number | null> {
 }
 
 /**
- * Best-effort lookup for the DCC drone UUID stored in tool.dcc_drone_id.
- * Returns null if the column does not exist or is not set.
+ * Returns the component_id (as string) of the DRONE component attached to the
+ * tool assigned to this planning mission. Returns null if no tool is assigned
+ * or no DRONE component is attached.
  */
 async function getDccDroneIdForPlanning(planningId: number): Promise<string | null> {
   try {
-    const { data } = await supabase
+    const { data: mission } = await supabase
       .from('pilot_mission')
-      .select('tool!pilot_mission_fk_tool_id_fkey(dcc_drone_id)')
+      .select('fk_tool_id')
       .eq('fk_planning_id', planningId)
       .not('fk_tool_id', 'is', null)
       .limit(1)
       .single();
 
-    return (data?.tool as any)?.dcc_drone_id ?? null;
+    const toolId = (mission as any)?.fk_tool_id;
+    if (!toolId) return null;
+
+    const { data: component } = await supabase
+      .from('tool_component')
+      .select('component_id')
+      .eq('fk_tool_id', toolId)
+      .eq('component_type', 'DRONE')
+      .eq('component_active', 'Y')
+      .limit(1)
+      .single();
+
+    const componentId = (component as any)?.component_id;
+    return componentId != null ? String(componentId) : null;
   } catch {
     return null;
   }
@@ -95,6 +109,9 @@ async function dccPost(ownerId: number, path: string, body?: unknown): Promise<D
       body: body !== undefined ? JSON.stringify(body) : undefined,
       signal: AbortSignal.timeout(10_000),
     });
+
+    console.log('dcc response:', res.status, res.statusText,res.body);
+    
 
     const text = await res.text().catch(() => '');
     const responseBody = text ? truncateBody(text) : undefined;
@@ -154,13 +171,13 @@ export async function notifyDccAcceptance(
     const droneId = await getDccDroneIdForPlanning(planningId);
     if (!droneId) {
       console.warn(
-        `[DCC] acceptance: no dcc_drone_id found for planning ${planningId}. ` +
-          'Add tool.dcc_drone_id (UUID) to enable this callback.',
+        `[DCC] acceptance: no DRONE component attached to the tool for planning ${planningId}. ` +
+          'Attach a DRONE component to the system to enable this callback.',
       );
       return {
         path: `/dcc/missions/${missionId}/acceptance`,
         outcome: 'skipped',
-        message: 'No dcc_drone_id on assigned tool — DCC acceptance not sent',
+        message: 'No DRONE component on assigned system — DCC acceptance not sent',
       };
     }
 

@@ -54,7 +54,7 @@ const STATUS_TO_CALENDAR: Record<string, string> = {
 }
 
 interface PilotOption { user_id: number; first_name: string; last_name: string }
-interface ToolOption { tool_id: number; tool_name: string; tool_code: string }
+interface ToolOption { tool_id: number; tool_name: string; tool_code: string; in_maintenance?: boolean; has_drone_component?: boolean }
 interface MissionTypeOption { mission_type_id: number; type_name: string }
 interface MissionCategoryOption { category_id: number; category_name: string }
 interface PlanningOption { planning_id: number; planning_name: string; fk_client_id: number; client_name: string }
@@ -554,8 +554,26 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
                                     </SelectTrigger>
                                     <SelectContent>
                                         {tools.map((t) => (
-                                            <SelectItem key={t.tool_id} value={t.tool_id.toString()}>
-                                                {t.tool_name} ({t.tool_code})
+                                            <SelectItem
+                                                key={t.tool_id}
+                                                value={t.tool_id.toString()}
+                                                disabled={t.in_maintenance || t.has_drone_component === false}
+                                            >
+                                                <span className="flex items-center gap-2">
+                                                    <span className={t.has_drone_component === false ? 'opacity-40' : ''}>
+                                                        {t.tool_name} ({t.tool_code})
+                                                    </span>
+                                                    {t.in_maintenance && (
+                                                        <span className="text-[10px] font-semibold text-blue-600 bg-blue-50 border border-blue-200 rounded px-1.5 py-0.5 leading-none">
+                                                            IN MAINTENANCE
+                                                        </span>
+                                                    )}
+                                                    {t.has_drone_component === false && (
+                                                        <span className="text-[10px] font-semibold text-gray-500 bg-gray-100 border border-gray-300 rounded px-1.5 py-0.5 leading-none">
+                                                            Drone not Attached
+                                                        </span>
+                                                    )}
+                                                </span>
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
