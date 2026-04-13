@@ -33,6 +33,7 @@ const EMPTY_FORM = {
   component_sn: '',
   cc_platform: '',
   gcs_type: '',
+  dcc_drone_id: '',
   component_activation_date: '',
   component_purchase_date: '',
   component_vendor: '',
@@ -105,6 +106,7 @@ export default function EditComponentModal({
       component_sn: comp.component_sn || '',
       cc_platform: comp.cc_platform || '',
       gcs_type: comp.gcs_type || '',
+      dcc_drone_id: comp.dcc_drone_id || '',
       component_activation_date: comp.component_activation_date?.split('T')[0] || '',
       component_purchase_date: comp.component_purchase_date?.split('T')[0] || '',
       component_vendor: comp.component_vendor || '',
@@ -233,6 +235,7 @@ export default function EditComponentModal({
         component_sn: formData.component_sn || null,
         cc_platform: formData.cc_platform || null,
         gcs_type: formData.gcs_type || null,
+        dcc_drone_id: formData.dcc_drone_id || null,
         component_activation_date: formData.component_activation_date || null,
         component_purchase_date: formData.component_purchase_date || null,
         component_vendor: formData.component_vendor || null,
@@ -427,6 +430,15 @@ export default function EditComponentModal({
                           <SelectItem value="_GCS">Ground Control Station</SelectItem>
                         </SelectContent>
                       </Select>
+                    </div>
+                    <div className="col-span-1 sm:col-span-6">
+                      <Label className={labelCls}>DCC Drone ID (UUID)</Label>
+                      <Input
+                        className={inputCls}
+                        value={formData.dcc_drone_id}
+                        onChange={e => handleChange('dcc_drone_id', e.target.value)}
+                        placeholder="e.g. e47c7fa4-f6c7-4bc2-9d55-84ad69bf2a95"
+                      />
                     </div>
                   </div>
                 )}

@@ -28,6 +28,7 @@ const INITIAL_FORM = {
   component_sn: '',
   cc_platform: '',
   gcs_type: '',
+  dcc_drone_id: '',
   component_activation_date: '',
   component_purchase_date: '',
   component_vendor: '',
@@ -135,6 +136,7 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
         component_sn: formData.component_sn,
         cc_platform: formData.cc_platform || null,
         gcs_type: formData.gcs_type || null,
+        dcc_drone_id: formData.dcc_drone_id || null,
         component_activation_date: formData.component_activation_date || null,
         component_purchase_date: formData.component_purchase_date || null,
         component_vendor: formData.component_vendor || null,
@@ -261,6 +263,14 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
                       <SelectItem value="_GCS">Ground Control Station</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+                <div className="col-span-1 sm:col-span-6">
+                  <Label className="pb-2">DCC Drone ID (UUID)</Label>
+                  <Input
+                    value={formData.dcc_drone_id}
+                    onChange={(e) => handleChange('dcc_drone_id', e.target.value)}
+                    placeholder="e.g. e47c7fa4-f6c7-4bc2-9d55-84ad69bf2a95"
+                  />
                 </div>
               </div>
             )}

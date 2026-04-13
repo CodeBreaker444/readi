@@ -19,6 +19,7 @@ const schema = z.object({
   component_status: z.string().default('OPERATIONAL'),
   cc_platform: z.string().optional().nullable(),
   gcs_type: z.string().optional().nullable(),
+  dcc_drone_id: z.string().uuid().optional().nullable(),
   maintenance_cycle: z.string().optional().nullable(),
   maintenance_cycle_hour: z.number().optional().nullable(),
   maintenance_cycle_day: z.number().optional().nullable(),
