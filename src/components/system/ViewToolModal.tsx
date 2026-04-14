@@ -109,7 +109,6 @@ export default function ViewSystemModal({ open, toolId, onClose }: ViewSystemMod
         rows: [
           ['Total Missions', String(toolData.tot_mission ?? 0)],
           ['Flight Time',    `${Math.round((toolData.tot_flown_time || 0) / 60)} min`],
-          ['Distance',       `${((toolData.tot_flown_meter || 0) / 1000).toFixed(2)} km`],
         ],
       });
     }
@@ -390,7 +389,7 @@ export default function ViewSystemModal({ open, toolId, onClose }: ViewSystemMod
 
                 <div className="border-t pt-4">
                   <h3 className="text-lg font-semibold mb-3">Flight Statistics</h3>
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-2 gap-4">
                     <div className="bg-blue-50 p-4 rounded-lg">
                       <p className="text-sm text-gray-600">Total Missions</p>
                       <p className="text-2xl font-bold">{toolData?.tot_mission ?? 0}</p>
@@ -404,10 +403,6 @@ export default function ViewSystemModal({ open, toolId, onClose }: ViewSystemMod
                           return `${Number(hours).toFixed(1)} h`;
                         })()}
                       </p>
-                    </div>
-                    <div className="bg-purple-50 p-4 rounded-lg">
-                      <p className="text-sm text-gray-600">Distance</p>
-                      <p className="text-2xl font-bold">{((toolData?.tot_flown_meter || 0) / 1000).toFixed(2)} km</p>
                     </div>
                   </div>
                 </div>
