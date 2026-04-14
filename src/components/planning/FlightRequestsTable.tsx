@@ -2,6 +2,19 @@
 
 import { FlightRequestDetailModal } from '@/components/planning/FlightRequestDetailModal';
 import { FlightRequest, createFlightRequestColumns } from '@/components/tables/flightRequestsColumns';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+import { toastAfterDccAction } from '@/lib/dcc-toast';
+import type { DccCallbackResult } from '@/types/dcc-callback';
+import { flexRender, getCoreRowModel, getPaginationRowModel, useReactTable } from '@tanstack/react-table';
+import axios from 'axios';
+import { AlertCircle, CheckCircle2, Clock, FileUp, Loader2, MapPin, RotateCcw, Send, X } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
+import { TablePagination } from '../tables/Pagination';
+import { useTheme } from '../useTheme';
 
 interface Planning {
   planning_id: number;
@@ -9,21 +22,8 @@ interface Planning {
   planning_desc: string;
   client_name: string;
   planning_status: string;
-  fk_evaluation_id: number;
+  has_valid_drone: boolean;
 }
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Skeleton } from '@/components/ui/skeleton';
-import { flexRender, getCoreRowModel, getPaginationRowModel, useReactTable } from '@tanstack/react-table';
-import axios from 'axios';
-import { AlertCircle, CheckCircle2, Clock, FileUp, Loader2, MapPin, RotateCcw, Send, X } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { toastAfterDccAction } from '@/lib/dcc-toast';
-import type { DccCallbackResult } from '@/types/dcc-callback';
-import { toast } from 'sonner';
-import { TablePagination } from '../tables/Pagination';
-import { useTheme } from '../useTheme';
 
 export default function FlightRequestsTable() {
   const { isDark } = useTheme();
@@ -153,8 +153,8 @@ export default function FlightRequestsTable() {
     setSelectedEvalId('');
     setEvalLoading(true);
     try {
-      const { data } = await axios.get('/api/evaluation/planning');
-      setPlannings(data.data ?? []);
+      const { data } = await axios.get('/api/planning/flight-requests/assignable-plannings');
+      setPlannings(data.items ?? []);
     } catch {
       toast.error('Failed to load planning missions');
     } finally {
@@ -398,20 +398,36 @@ export default function FlightRequestsTable() {
                 <p className={`text-xs py-3 text-center ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>No planning missions found.</p>
               ) : (
                 <div className={`rounded-lg border overflow-hidden divide-y max-h-56 overflow-y-auto ${isDark ? 'border-slate-700 divide-slate-700' : 'border-gray-200 divide-gray-100'}`}>
-                  {plannings.map((pl) => (
-                    <button key={pl.planning_id} onClick={() => setSelectedEvalId(String(pl.planning_id))}
-                      className={`w-full text-left px-4 py-2.5 flex items-center gap-3 transition-colors text-xs ${selectedEvalId === String(pl.planning_id) ? isDark ? 'bg-violet-600/20 text-violet-300' : 'bg-violet-50 text-violet-700' : isDark ? 'hover:bg-slate-800 text-slate-300' : 'hover:bg-gray-50 text-gray-700'}`}>
-                      <span className={`w-2 h-2 rounded-full shrink-0 ${selectedEvalId === String(pl.planning_id) ? 'bg-violet-500' : isDark ? 'bg-slate-600' : 'bg-gray-300'}`} />
-                      <span className="flex-1 min-w-0">
-                        <span className="font-mono font-semibold mr-2">PLN-{pl.planning_id}</span>
-                        <span className="font-medium">{pl.client_name}</span>
-                        {pl.planning_desc && <span className={`ml-1 truncate ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>— {pl.planning_desc}</span>}
-                      </span>
-                      <span className={`ml-auto shrink-0 text-[10px] px-1.5 py-0.5 rounded-full ${isDark ? 'bg-slate-700 text-slate-400' : 'bg-gray-100 text-gray-500'}`}>
-                        {pl.planning_status}
-                      </span>
-                    </button>
-                  ))}
+                  {plannings.map((pl) => {
+                    const isSelected = selectedEvalId === String(pl.planning_id);
+                    const disabled = !pl.has_valid_drone;
+                    return (
+                      <button
+                        key={pl.planning_id}
+                        disabled={disabled}
+                        onClick={() => !disabled && setSelectedEvalId(String(pl.planning_id))}
+                        title={disabled ? 'No drone with DCC ID assigned to this planning' : undefined}
+                        className={`w-full text-left px-4 py-2.5 flex items-center gap-3 transition-colors text-xs
+                          ${disabled
+                            ? isDark ? 'opacity-40 cursor-not-allowed text-slate-500' : 'opacity-40 cursor-not-allowed text-gray-400'
+                            : isSelected
+                              ? isDark ? 'bg-violet-600/20 text-violet-300' : 'bg-violet-50 text-violet-700'
+                              : isDark ? 'hover:bg-slate-800 text-slate-300' : 'hover:bg-gray-50 text-gray-700'
+                          }`}
+                      >
+                        <span className={`w-2 h-2 rounded-full shrink-0 ${isSelected ? 'bg-violet-500' : disabled ? isDark ? 'bg-slate-700' : 'bg-gray-200' : isDark ? 'bg-slate-600' : 'bg-gray-300'}`} />
+                        <span className="flex-1 min-w-0">
+                          <span className="font-mono font-semibold mr-2">PLN-{pl.planning_id}</span>
+                          <span className="font-medium">{pl.client_name}</span>
+                          {pl.planning_desc && <span className={`ml-1 truncate ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>— {pl.planning_desc}</span>}
+                        </span>
+                        {disabled
+                          ? <span className={`ml-auto shrink-0 text-[10px] px-1.5 py-0.5 rounded-full ${isDark ? 'bg-slate-800 text-slate-600' : 'bg-gray-100 text-gray-400'}`}>No Drone with DCC ID</span>
+                          : <span className={`ml-auto shrink-0 text-[10px] px-1.5 py-0.5 rounded-full ${isDark ? 'bg-slate-700 text-slate-400' : 'bg-gray-100 text-gray-500'}`}>{pl.planning_status}</span>
+                        }
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>

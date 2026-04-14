@@ -87,12 +87,7 @@ export default function DccErrorToast({ toastId, title, dcc }: Props) {
               <Row label="HTTP Status" value={String(dcc.httpStatus)} />
             )}
             {dcc.responseBody?.trim() && (
-              <div>
-                <p className="text-xs font-medium text-muted-foreground mb-1">Response Body</p>
-                <pre className="text-xs bg-muted rounded p-2 overflow-x-auto whitespace-pre-wrap break-all max-h-40">
-                  {dcc.responseBody.trim()}
-                </pre>
-              </div>
+              <ResponseBody raw={dcc.responseBody.trim()} />
             )}
           </div>
 
@@ -124,6 +119,72 @@ export default function DccErrorToast({ toastId, title, dcc }: Props) {
       </Dialog>
     </>
   );
+}
+
+function ResponseBody({ raw }: { raw: string }) {
+  let parsed: unknown = null;
+  try { parsed = JSON.parse(raw); } catch { /* not JSON */ }
+
+  return (
+    <div>
+      <p className="text-xs font-medium text-muted-foreground mb-1">Response Body</p>
+      {parsed !== null ? (
+        <div className="text-xs bg-muted rounded p-2 overflow-x-auto max-h-52 overflow-y-auto">
+          <JsonValue value={parsed} depth={0} />
+        </div>
+      ) : (
+        <pre className="text-xs bg-muted rounded p-2 overflow-x-auto whitespace-pre-wrap break-all max-h-52">
+          {raw}
+        </pre>
+      )}
+    </div>
+  );
+}
+
+function JsonValue({ value, depth }: { value: unknown; depth: number }) {
+  const indent = depth * 12;
+
+  if (value === null) return <span className="text-slate-400">null</span>;
+  if (typeof value === 'boolean') return <span className="text-blue-500">{String(value)}</span>;
+  if (typeof value === 'number') return <span className="text-emerald-600">{value}</span>;
+  if (typeof value === 'string') return <span className="text-amber-700">"{value}"</span>;
+
+  if (Array.isArray(value)) {
+    if (value.length === 0) return <span className="text-slate-500">[]</span>;
+    return (
+      <span>
+        {'['}
+        {value.map((item, i) => (
+          <div key={i} style={{ paddingLeft: indent + 12 }}>
+            <JsonValue value={item} depth={depth + 1} />
+            {i < value.length - 1 && <span className="text-slate-400">,</span>}
+          </div>
+        ))}
+        <div style={{ paddingLeft: indent }}>{']'}</div>
+      </span>
+    );
+  }
+
+  if (typeof value === 'object') {
+    const entries = Object.entries(value as Record<string, unknown>);
+    if (entries.length === 0) return <span className="text-slate-500">{'{}'}</span>;
+    return (
+      <span>
+        {'{'}
+        {entries.map(([k, v], i) => (
+          <div key={k} style={{ paddingLeft: indent + 12 }}>
+            <span className="text-violet-600 font-medium">"{k}"</span>
+            <span className="text-slate-500">: </span>
+            <JsonValue value={v} depth={depth + 1} />
+            {i < entries.length - 1 && <span className="text-slate-400">,</span>}
+          </div>
+        ))}
+        <div style={{ paddingLeft: indent }}>{'}'}</div>
+      </span>
+    );
+  }
+
+  return <span>{String(value)}</span>;
 }
 
 function Row({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
