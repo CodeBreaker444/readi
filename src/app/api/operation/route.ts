@@ -2,8 +2,10 @@ import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { createOperation, createRecurringOperations, listOperations } from '@/backend/services/operation/operation-service';
 import { assertToolNotInMaintenance } from '@/backend/services/system/maintenance-ticket';
 import { CreateOperationSchema, ListOperationsQuerySchema } from '@/config/types/operation';
+import { internalError } from '@/lib/api-error';
 import { requirePermission } from '@/lib/auth/api-auth';
 import { getUserSession } from '@/lib/auth/server-session';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import { ZodError, z } from 'zod';
 
@@ -80,7 +82,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Validation failed', details: err.flatten() }, { status: 400 });
     }
     console.error('[GET /api/operation]', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+       return internalError(E.SV001, err);  
   }
 }
 
@@ -147,6 +149,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Validation failed', details: err.flatten() }, { status: 400 });
     }
     console.error('[POST /api/operation]', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return internalError(E.SV001, err);  
   }
 }

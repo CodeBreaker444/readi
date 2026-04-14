@@ -1,5 +1,7 @@
 import { getComponentList, getDroneList, getUserList } from '@/backend/services/system/maintenance-ticket';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { apiError, internalError, zodError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
 
@@ -23,10 +25,7 @@ export async function GET(req: NextRequest) {
     });
 
     if (!validation.success) {
-      return NextResponse.json(
-        { code: 0, message: 'Validation failed', errors: validation.error.flatten().fieldErrors },
-        { status: 400 }
-      );
+      return zodError(E.VL001, validation.error);
     }
 
     const { type, tool_id, profile } = validation.data;
@@ -35,16 +34,14 @@ export async function GET(req: NextRequest) {
 
     switch (type) {
       case 'drones': {
-        if (!owner_id)
-          return NextResponse.json({ status: 'ERROR', message: 'Missing owner_id' }, { status: 400 });
+        if (!owner_id) return apiError(E.SS002, 400);
 
         const drones = await getDroneList(owner_id);
         return NextResponse.json({ status: 'OK', data: drones });
       }
 
       case 'components': {
-        if (!tool_id)
-          return NextResponse.json({ status: 'ERROR', message: 'Missing tool_id' }, { status: 400 });
+        if (!tool_id) return apiError(E.VL002, 400);
 
         const components = await getComponentList(Number(tool_id));
         return NextResponse.json({ status: 'OK', data: components });
@@ -61,8 +58,8 @@ export async function GET(req: NextRequest) {
           { status: 400 }
         );
     }
-  } catch (err: any) {
+  } catch (err) {
     console.error('[GET /api/system/maintenance/lookups]', err);
-    return NextResponse.json({ status: 'ERROR', message: err.message }, { status: 500 });
+    return internalError(E.SV001, err);
   }
 }

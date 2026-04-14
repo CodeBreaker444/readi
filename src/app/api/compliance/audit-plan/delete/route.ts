@@ -4,6 +4,8 @@ import {
 import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { apiError, internalError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 
 
 const DeleteSchema = z.object({
@@ -27,25 +29,25 @@ export async function POST(req: NextRequest) {
 
         const ownerId = session!.user.ownerId;
         if (!ownerId) {
-            return NextResponse.json({ code: 0, error: 'Owner not found in session' }, { status: 403 });
+            return apiError(E.AU003, 403);
         }
 
         await deleteComplianceRequirement(parsed.data.requirement_id, ownerId);
 
         return NextResponse.json({ code: 1, message: 'Requirement deleted' });
-    } catch (err: unknown) {
-        console.error('[compliance/delete] error:', err);
+    } catch (error: any) {
+        console.error('[compliance/delete] error:', error);
         if (
-            typeof err === 'object' &&
-            err !== null &&
-            'code' in err &&
-            (err as { code: string }).code === '23503'
+            typeof error === 'object' &&
+            error !== null &&
+            'code' in error &&
+            (error as { code: string }).code === '23503'
         ) {
             return NextResponse.json(
                 { code: 0, error: 'This requirement has linked evidence and cannot be deleted. Remove the associated evidence first.' },
                 { status: 409 }
             );
         }
-        return NextResponse.json({ code: 0, error: 'Internal server error' }, { status: 500 });
+        return internalError(E.AU002, error);
     }
 }

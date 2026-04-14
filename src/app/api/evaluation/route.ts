@@ -1,6 +1,8 @@
 
 import { getEvaluationList } from '@/backend/services/planning/evaluation-service';
+import { internalError } from '@/lib/api-error';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(req: NextRequest) {
@@ -12,12 +14,11 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       code: 1,
-      status: 'SUCCESS',
-      message: 'success',
+      message: 'Evaluation list fetched successfully',
       data: evaluations,
+      dataRows: evaluations.length,
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    return NextResponse.json({ code: 0, message }, { status: 500 });
+    return internalError(E.SV001, err); 
   }
 }

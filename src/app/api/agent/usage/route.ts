@@ -2,7 +2,8 @@ import { getUserSession } from "@/lib/auth/server-session";
 import { getSupabase } from "@mcp-server/lib/supabase";
 import { NextResponse } from "next/server";
 import { TOKEN_LIMITS } from "../../../../lib/token-limits";
-
+import { forbidden, internalError, unauthorized } from "@/lib/api-error";
+import { E } from "@/lib/error-codes";
 export const dynamic = "force-dynamic";
 
 function todayStart(): string {
@@ -15,7 +16,7 @@ export async function GET() {
     try {
         const session = await getUserSession();
         if (!session) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+            return unauthorized(E.AU001);
         }
 
         const { role, ownerId } = session.user;
@@ -114,10 +115,9 @@ export async function GET() {
             });
         }
 
-        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        return forbidden(E.PX001);
 
-    } catch (error: any) {
-        console.error("Usage API error:", error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (err) {
+        return internalError(E.SV001, err);
     }
 }

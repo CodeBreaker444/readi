@@ -1,5 +1,7 @@
 import { getLUCProceduresList } from '@/backend/services/planning/lucProcedures';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { internalError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
@@ -13,12 +15,13 @@ export async function GET(request: NextRequest) {
     const ownerId = session!.user.ownerId;
     const result = await getLUCProceduresList(ownerId, sector);
 
-    return NextResponse.json(result);
+    return NextResponse.json({
+      code: 1,
+      message: 'LUC procedures list fetched successfully',
+      data: result.procedures,
+      dataRows: result.procedures.length,
+    });
   } catch (error) {
-    console.error('API Error:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Internal server error' },
-      { status: 500 }
-    );
+    return internalError(E.SV001, error);
   }
 }

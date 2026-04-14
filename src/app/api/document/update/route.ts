@@ -1,5 +1,7 @@
 import { updateDocument } from '@/backend/services/document/document-service';
+import { internalError, zodError } from '@/lib/api-error';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
 
@@ -24,15 +26,12 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const parsed = DocumentUpdateSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: 'Validation error', details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
-      );
+      return zodError(E.VL001, parsed.error);
     }
     await updateDocument(parsed.data);
     return NextResponse.json({ code: 1, message: 'Documento aggiornato' });
-  } catch (err) {
-    console.error('[document_update]', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  }
+  } catch (error: any) {
+    console.error('[document_update]', error);
+    return internalError(E.AU002, error);
+    }
 }

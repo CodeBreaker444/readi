@@ -1,13 +1,15 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { closeTicket } from '@/backend/services/system/maintenance-ticket';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { internalError, zodError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
 
 const closeTicketSchema = z.object({
-  ticket_id: z.coerce.number(), 
+  ticket_id: z.coerce.number(),
   note: z.string().optional(),
-  closed_by: z.string().optional(), 
+  closed_by: z.string().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -19,11 +21,7 @@ export async function POST(req: NextRequest) {
     const validation = closeTicketSchema.safeParse(body);
 
     if (!validation.success) {
-      return NextResponse.json({
-        code: 0,
-        message: 'Validation failed',
-        errors: validation.error.flatten().fieldErrors,
-      }, { status: 400 });
+      return zodError(E.VL001, validation.error);
     }
 
     await closeTicket({
@@ -45,8 +43,8 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ status: 'OK' });
-  } catch (err: any) {
+  } catch (err) {
     console.error('[POST /api/maintenance/tickets/close]', err);
-    return NextResponse.json({ status: 'ERROR', message: err.message }, { status: 500 });
+    return internalError(E.SV001, err);
   }
 }

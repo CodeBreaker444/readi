@@ -1,5 +1,7 @@
 import { importMissionFromLog } from '@/backend/services/operation/importOperation-service';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { internalError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
@@ -32,10 +34,10 @@ export async function POST(req: NextRequest) {
       typeId:     Number(formData.get('mission_type'))         || 0,
       planId:     formData.get('mission_plan') === 'N'
                     ? null : Number(formData.get('mission_plan')) || null,
-      statusId:   Number(formData.get('mission_status'))       || 0,   
+      statusId:   Number(formData.get('mission_status'))       || 0,
       resultId:   Number(formData.get('mission_result'))       || 0,
       pilotId:    Number(formData.get('pilot_id'))             || 0,
-      location:   String(formData.get('mission_location')     ?? ''),  
+      location:   String(formData.get('mission_location')     ?? ''),
       groupLabel: String(formData.get('mission_group_label')  ?? ''),
       notes:      String(formData.get('mission_notes')        ?? ''),
     };
@@ -47,13 +49,10 @@ export async function POST(req: NextRequest) {
       status: 'SUCCESS',
       newMissionIds: result.newMissionIds,
       operations:    result.operations,
-      skipped:       result.skipped,      
+      skipped:       result.skipped,
     });
-  } catch (err: any) {
-    console.error('[POST /api/operation/import]', err?.message);
-    return NextResponse.json(
-      { code: 0, message: err?.message ?? 'Import failed' },
-      { status: 500 }
-    );
+  } catch (err) {
+    console.error('[POST /api/operation/import]', err);
+    return internalError(E.SV001, err);
   }
 }

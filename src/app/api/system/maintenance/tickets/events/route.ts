@@ -1,5 +1,7 @@
 import { getTicketEvents } from '@/backend/services/system/maintenance-ticket';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { internalError, zodError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
 
@@ -17,20 +19,13 @@ export async function GET(req: NextRequest) {
 
     const validation = getEventsSchema.safeParse({ ticket_id });
     if (!validation.success) {
-      return NextResponse.json(
-        {
-          code: 0,
-          message: 'Validation failed',
-          errors: validation.error.flatten().fieldErrors,
-        },
-        { status: 400 }
-      );
+      return zodError(E.VL001, validation.error);
     }
 
     const events = await getTicketEvents(Number(ticket_id));
     return NextResponse.json({ status: 'OK', events });
-  } catch (err: any) {
+  } catch (err) {
     console.error('[GET /api/maintenance/tickets/events]', err);
-    return NextResponse.json({ status: 'ERROR', message: err.message }, { status: 500 });
+    return internalError(E.SV001, err);
   }
 }

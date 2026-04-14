@@ -1,5 +1,7 @@
 import { listDocuments } from '@/backend/services/document/document-service';
+import { internalError, zodError } from '@/lib/api-error';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
 
@@ -20,18 +22,13 @@ export async function POST(req: NextRequest) {
         const { session, error } = await requirePermission('view_repository');
         if (error) return error;
         const parsed = DocumentListSchema.safeParse(body);
-
         if (!parsed.success) {
-            return NextResponse.json(
-                { error: 'Validation error', details: parsed.error.flatten().fieldErrors },
-                { status: 400 }
-            );
+            return zodError(E.VL001, parsed.error);
         }
-
         const data = await listDocuments({ ...parsed.data, ownerId: session!.user.ownerId });
-        return NextResponse.json(data);
-    } catch (err) {
-        console.error('[document_list]', err);
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+        return NextResponse.json({ code: 1, message: 'Success', ...data });
+    } catch (error: any) {
+        console.error('[document_list]', error);
+        return internalError(E.AU002, error);
     }
 }

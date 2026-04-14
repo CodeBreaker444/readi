@@ -3,7 +3,9 @@ import type { DccCallbackResult } from "@/types/dcc-callback";
 import { notifyDccExecution, notifyDccTermination } from "@/backend/services/mission/dcc-callback-service";
 import { updateMissionStatus } from "@/backend/services/operation/operation-board-service";
 import { checkDailyDeclaration } from "@/backend/services/operation/pilot-declaration-service";
+import { internalError } from "@/lib/api-error";
 import { requirePermission } from "@/lib/auth/api-auth";
+import { E } from "@/lib/error-codes";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -78,8 +80,7 @@ export async function POST(req: NextRequest) {
       dcc ? { ...result, dcc } : result,
       { status: result.code === 1 ? 200 : 422 },
     );
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json({ code: 0, message }, { status: 500 });
+  } catch (err) {
+    return internalError(E.SV001, err);
   }
 }

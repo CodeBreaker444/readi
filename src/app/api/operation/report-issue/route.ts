@@ -3,6 +3,8 @@ import { sendNotificationToRoles } from '@/backend/services/notification/notific
 import { getComponentsForMaintenanceCycle } from '@/backend/services/operation/maintenance-cycle-service';
 import { assertNoOpenTicketForTool, createTicket, hasOpenTicketForTool, setComponentsOperationalStatus, setSystemOperationalStatus } from '@/backend/services/system/maintenance-ticket';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { apiError, internalError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(req: NextRequest) {
@@ -22,8 +24,8 @@ export async function GET(req: NextRequest) {
       has_open_ticket: hasOpen,
       components: systemData?.components ?? [],
     });
-  } catch (err: any) {
-    return NextResponse.json({ status: 'ERROR', message: err.message }, { status: 500 });
+  } catch (err) {
+    return internalError(E.SV001, err);
   }
 }
 
@@ -36,17 +38,17 @@ export async function POST(req: NextRequest) {
     const { fk_tool_id, issue_description, priority, selected_component_ids } = body;
 
     if (!fk_tool_id || typeof fk_tool_id !== 'number') {
-      return NextResponse.json({ status: 'ERROR', message: 'fk_tool_id is required' }, { status: 400 });
+      return apiError(E.VL001, 400, { fk_tool_id: ['fk_tool_id is required'] });
     }
 
     if (!issue_description || typeof issue_description !== 'string' || !issue_description.trim()) {
-      return NextResponse.json({ status: 'ERROR', message: 'issue_description is required' }, { status: 400 });
+      return apiError(E.VL001, 400, { issue_description: ['issue_description is required'] });
     }
 
     try {
       await assertNoOpenTicketForTool(fk_tool_id);
     } catch (err: any) {
-      return NextResponse.json({ status: 'ERROR', message: err.message }, { status: 409 });
+      return apiError(E.BL005, 409);
     }
 
     const ticket_id = await createTicket({
@@ -96,8 +98,8 @@ export async function POST(req: NextRequest) {
     ).catch(() => { });
 
     return NextResponse.json({ status: 'OK', ticket_id });
-  } catch (err: any) {
+  } catch (err) {
     console.error('[POST /api/operation/report-issue]', err);
-    return NextResponse.json({ status: 'ERROR', message: err.message }, { status: 500 });
+    return internalError(E.SV001, err);
   }
 }

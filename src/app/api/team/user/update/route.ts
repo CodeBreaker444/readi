@@ -1,5 +1,7 @@
 import { updateUser } from '@/backend/services/user/user-management';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { internalError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
@@ -33,15 +35,7 @@ export async function POST(request: NextRequest) {
       message: 'User updated successfully',
       param: body,
     });
-  } catch (error) {
-    console.error('API Error:', error);
-    return NextResponse.json(
-      {
-        code: 0,
-        status: 'ERROR',
-        error: error instanceof Error ? error.message : 'Internal server error'
-      },
-      { status: 500 }
-    );
+  } catch (err) {
+    return internalError(E.SV001, err);
   }
 }

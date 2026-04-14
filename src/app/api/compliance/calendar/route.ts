@@ -1,6 +1,8 @@
 import { getComplianceRequirements } from '@/backend/services/compliance/compliance-service';
 import { requirePermission } from '@/lib/auth/api-auth';
 import { NextResponse } from 'next/server';
+import { apiError, internalError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 
 const STATUS_COLOR: Record<string, string> = {
   COMPLIANT: '#10b981',
@@ -16,7 +18,7 @@ export async function GET() {
 
     const ownerId = session!.user.ownerId;
     if (!ownerId) {
-      return NextResponse.json({ code: 0, error: 'Owner not found in session' }, { status: 403 });
+      return apiError(E.AU003, 403);
     }
 
     const { data } = await getComplianceRequirements({ owner_id: ownerId, limit: 200 });
@@ -38,8 +40,8 @@ export async function GET() {
       }));
 
     return NextResponse.json({ code: 1, message: 'Success', data: events });
-  } catch (err) {
-    console.error('[compliance/calendar] error:', err);
-    return NextResponse.json({ code: 0, error: 'Internal server error' }, { status: 500 });
+  } catch (error: any) {
+    console.error('[compliance/calendar] error:', error);
+    return internalError(E.AU002, error);
   }
 }

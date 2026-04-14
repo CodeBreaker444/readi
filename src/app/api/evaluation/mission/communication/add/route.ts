@@ -1,5 +1,7 @@
 import { addCommunicationGeneral } from "@/backend/services/planning/planning-dashboard";
 import { requirePermission } from "@/lib/auth/api-auth";
+import { apiError, internalError } from "@/lib/api-error";
+import { E } from "@/lib/error-codes";
 import { buildS3Url, uploadFileToS3 } from "@/lib/s3Client";
 import { NextResponse } from "next/server";
 
@@ -21,10 +23,10 @@ const sentByUserId = formData.get("sent_by_user_id")
     const file = formData.get("communication_file") as File | null;
 
     if (!message?.trim()) {
-      return NextResponse.json({ code: 0, message: "Message is required" }, { status: 400 });
+      return apiError(E.VL001, 400, { message: ["Message is required"] });
     }
     if (communicationTo.length === 0) {
-      return NextResponse.json({ code: 0, message: "At least one recipient is required" }, { status: 400 });
+      return apiError(E.VL001, 400, { communication_to: ["At least one recipient is required"] });
     }
 
     let fileName: string | null = null;
@@ -61,7 +63,7 @@ const sentByUserId = formData.get("sent_by_user_id")
     });
 
     return NextResponse.json({ code: 1, message: "Sent successfully", data: { communication_id: commId } });
-  } catch (err: any) {
-    return NextResponse.json({ code: 0, message: err.message }, { status: 500 });
+  } catch (err) {
+    return internalError(E.SV001, err);
   }
 }

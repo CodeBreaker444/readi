@@ -1,6 +1,8 @@
 import { supabase } from '@/backend/database/database';
 import { createToken } from '@/lib/auth/jwt-utils';
 import { Role } from '@/lib/auth/roles';
+import { apiError, internalError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 import bcrypt from 'bcrypt';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
@@ -10,10 +12,7 @@ export async function POST(request: NextRequest) {
     const { email, password } = await request.json();
 
     if (!email || !password) {
-      return NextResponse.json(
-        { success: false, error: 'Email and password are required' },
-        { status: 400 }
-      );
+      return apiError(E.AU004, 400);
     }
 
     const { data: userData, error: userError } = await supabase
@@ -23,25 +22,16 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (userError || !userData) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid email or password' },
-        { status: 401 }
-      );
+      return apiError(E.AU005, 401);
     }
 
     const isPasswordValid = await bcrypt.compare(password, userData.password_hash);
     if (!isPasswordValid) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid email or password' },
-        { status: 401 }
-      );
+      return apiError(E.AU006, 401);
     }
 
     if (userData.user_active !== 'Y') {
-      return NextResponse.json(
-        { success: false, error: 'Account not activated. Please check your email.' },
-        { status: 403 }
-      );
+      return apiError(E.AU007, 403);
     }
 
     if (userData.user_role !== 'SUPERADMIN') {
@@ -52,15 +42,8 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (ownerError || !ownerData || ownerData.owner_active !== 'Y') {
-        return NextResponse.json(
-          {
-            success: false,
-            error: ownerData
-              ? `Organization "${ownerData.owner_name}" is inactive.`
-              : 'Organization not found.',
-          },
-          { status: 403 }
-        );
+        if (!ownerData) return apiError(E.NF002, 404);
+        return apiError(E.BL002, 403);
       }
     }
 
@@ -116,8 +99,8 @@ export async function POST(request: NextRequest) {
       },
     });
 
-  } catch (error: any) {
-    console.error('Login error:', error);
-    return NextResponse.json({ success: false, error: 'Login failed.' }, { status: 500 });
+  } catch (err) {
+    console.error('Login error:', err);
+    return internalError(E.SV001, err);
   }
 }

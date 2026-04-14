@@ -1,5 +1,7 @@
 import { getComponentsForMaintenanceCycle } from "@/backend/services/operation/maintenance-cycle-service";
 import { requirePermission } from "@/lib/auth/api-auth";
+import { internalError } from "@/lib/api-error";
+import { E } from "@/lib/error-codes";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
@@ -20,9 +22,8 @@ export async function GET(req: NextRequest) {
       session!.user.ownerId
     );
     return NextResponse.json({ code: 1, message: "Success", data });
-  } catch (error) {
-    console.error("[maintenance-cycle] GET error:", error);
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json({ code: 0, message }, { status: 500 });
+  } catch (err) {
+    console.error("[maintenance-cycle] GET error:", err);
+    return internalError(E.SV001, err);
   }
 }

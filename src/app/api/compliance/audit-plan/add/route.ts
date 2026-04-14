@@ -5,7 +5,8 @@ import {
 import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-
+import { apiError, internalError, zodError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 
 const CreateSchema = z.object({
     requirement_code: z.string().min(1).max(50),
@@ -31,15 +32,12 @@ export async function POST(req: NextRequest) {
         const body = await req.json();
         const parsed = CreateSchema.safeParse(body);
         if (!parsed.success) {
-            return NextResponse.json(
-                { code: 0, error: 'Validation failed', details: parsed.error.flatten() },
-                { status: 400 }
-            );
+            return zodError(E.VL001, parsed.error);
         }
 
         const ownerId = session!.user.ownerId;
         if (!ownerId) {
-            return NextResponse.json({ code: 0, error: 'Owner not found in session' }, { status: 403 });
+            return apiError(E.AU003, 403);
         }
 
         const created = await createComplianceRequirement({
@@ -48,8 +46,7 @@ export async function POST(req: NextRequest) {
         });
 
         return NextResponse.json({ code: 1, message: 'Requirement created', data: created });
-    } catch (err) {
-        console.error('[compliance/add] error:', err);
-        return NextResponse.json({ code: 0, error: 'Internal server error' }, { status: 500 });
+    } catch (error: any) {
+        return internalError(E.AU002, error);
     }
 }

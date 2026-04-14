@@ -6,6 +6,8 @@ import {
   verifyFlytbaseTokenAndGetUser,
 } from '@/backend/services/integrations/flytbase-service';
 import { requireAuth } from '@/lib/auth/api-auth';
+import { internalError, zodError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -21,9 +23,9 @@ export async function GET() {
 
     const exists = await hasFlytbaseToken(session!.user.userId);
     return NextResponse.json({ success: true, hasToken: exists });
-  } catch (err: any) {
+  } catch (err) {
     console.error('[GET /api/integrations/flytbase/token]', err);
-    return NextResponse.json({ success: false, message: err.message }, { status: 500 });
+    return internalError(E.SV001, err);
   }
 }
 
@@ -35,10 +37,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const parsed = saveSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { success: false, errors: parsed.error.issues },
-        { status: 400 },
-      );
+      return zodError(E.VL001, parsed.error);
     }
 
     const flytbaseUser = await verifyFlytbaseTokenAndGetUser(
@@ -64,10 +63,9 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, flytbaseUser });
-  } catch (err: any) {
+  } catch (err) {
     console.error('[POST /api/integrations/flytbase/token]', err);
-    const status = err.message?.includes('Invalid FlytBase') ? 422 : 500;
-    return NextResponse.json({ success: false, message: err.message }, { status });
+    return internalError(E.SV001, err);
   }
 }
 
@@ -90,8 +88,8 @@ export async function DELETE() {
     });
 
     return NextResponse.json({ success: true });
-  } catch (err: any) {
+  } catch (err) {
     console.error('[DELETE /api/integrations/flytbase/token]', err);
-    return NextResponse.json({ success: false, message: err.message }, { status: 500 });
+    return internalError(E.SV001, err);
   }
 }

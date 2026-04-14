@@ -1,6 +1,8 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { updateTool } from '@/backend/services/system/system-service';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { internalError, zodError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -30,10 +32,7 @@ export async function POST(
 
     const parsed = schema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { code: 0, status: 'ERROR', message: 'Validation failed', errors: parsed.error.flatten().fieldErrors },
-        { status: 400 }
-      );
+      return zodError(E.VL001, parsed.error);
     }
 
     const result = await updateTool(Number(id), parsed.data);
@@ -53,7 +52,7 @@ export async function POST(
     }
 
     return NextResponse.json(result);
-  } catch (error: any) {
-    return NextResponse.json({ code: 0, status: 'ERROR', message: error.message }, { status: 500 });
+  } catch (err) {
+    return internalError(E.SV001, err);
   }
 }

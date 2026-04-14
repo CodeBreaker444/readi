@@ -1,5 +1,7 @@
 import { AuditEventType, getAuditLogs } from '@/backend/services/auditLog/audit-log';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { internalError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
@@ -8,7 +10,6 @@ export async function GET(request: NextRequest) {
     if (error) return error;
 
     const { role, ownerId } = session!.user;
-
     const { searchParams } = new URL(request.url);
 
     // SUPERADMIN can query any owner or all owners; everyone else is locked to their own owner
@@ -20,34 +21,30 @@ export async function GET(request: NextRequest) {
       targetOwnerId = ownerId;
     }
 
-    const userId    = searchParams.get('user_id');
+    const userId = searchParams.get('user_id');
     const eventType = searchParams.get('event_type') as AuditEventType | null;
     const entityType = searchParams.get('entity_type');
-    const dateFrom  = searchParams.get('date_from');
-    const dateTo    = searchParams.get('date_to');
-    const page      = parseInt(searchParams.get('page') ?? '1', 10);
-    const pageSize  = parseInt(searchParams.get('page_size') ?? '50', 10);
+    const dateFrom = searchParams.get('date_from');
+    const dateTo = searchParams.get('date_to');
+    const page = parseInt(searchParams.get('page') ?? '1', 10);
+    const pageSize = parseInt(searchParams.get('page_size') ?? '50', 10);
 
     const result = await getAuditLogs({
-      ownerId:    targetOwnerId,
-      userId:     userId ? parseInt(userId, 10) : undefined,
-      eventType:  eventType ?? undefined,
+      ownerId: targetOwnerId,
+      userId: userId ? parseInt(userId, 10) : undefined,
+      eventType: eventType ?? undefined,
       entityType: entityType ?? undefined,
-      dateFrom:   dateFrom ?? undefined,
-      dateTo:     dateTo   ?? undefined,
+      dateFrom: dateFrom ?? undefined,
+      dateTo: dateTo ?? undefined,
       page,
-      pageSize:   Math.min(pageSize, 200), 
+      pageSize: Math.min(pageSize, 200),
     });
 
     return NextResponse.json({
       code: 1,
       ...result,
     });
-  } catch (error: any) {
-    console.error('Audit logs API error:', error);
-    return NextResponse.json(
-      { code: 0, message: error.message ?? 'Internal server error' },
-      { status: 500 }
-    );
+  } catch (err) {
+    return internalError(E.SV001, err);
   }
 }

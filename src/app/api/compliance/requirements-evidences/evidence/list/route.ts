@@ -2,6 +2,9 @@ import { listEvidenceByRequirement } from '@/backend/services/compliance/complia
 import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { internalError, zodError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
+import { apiError } from '@/lib/api-error';
 
 const QuerySchema = z.object({
   requirement_id: z.coerce.number().int().positive(),
@@ -15,21 +18,18 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const parsed = QuerySchema.safeParse({ requirement_id: searchParams.get('requirement_id') });
     if (!parsed.success) {
-      return NextResponse.json(
-        { code: 0, error: 'requirement_id is required', details: parsed.error.flatten() },
-        { status: 400 }
-      );
+      return zodError(E.VL001, parsed.error);
     }
 
     const ownerId = session!.user.ownerId;
     if (!ownerId) {
-      return NextResponse.json({ code: 0, error: 'Owner not found in session' }, { status: 403 });
+      return apiError(E.AU003, 403);
     }
 
     const data = await listEvidenceByRequirement(parsed.data.requirement_id, ownerId);
     return NextResponse.json({ code: 1, message: 'Success', data });
-  } catch (err) {
-    console.error('[evidence/list] error:', err);
-    return NextResponse.json({ code: 0, error: 'Internal server error' }, { status: 500 });
+  } catch (error: any) {
+    console.error('[evidence/list] error:', error);
+    return internalError(E.AU002, error);
   }
 }

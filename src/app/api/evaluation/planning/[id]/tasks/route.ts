@@ -1,5 +1,7 @@
 import { getPlanningTasks, updatePlanningTask } from '@/backend/services/planning/planning-dashboard';
 import { requirePermission } from '@/lib/auth/api-auth';
+import {  apiError, internalError, zodError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
 
@@ -22,12 +24,12 @@ export async function GET(
 
         const { id } = planningIdParamSchema.parse(await params);
         const result = await getPlanningTasks(session!.user.ownerId, id);
-        return NextResponse.json({ success: true, ...result });
+        return NextResponse.json({ code: 1, message: 'Planning tasks fetched successfully', data: result.tasks, dataRows: result.tasks.length });
     } catch (err: any) {
         if (err.name === 'ZodError') {
             return NextResponse.json({ success: false, errors: err.flatten().fieldErrors }, { status: 400 });
         }
-        return NextResponse.json({ success: false, message: err.message ?? 'Server error' }, { status: 500 });
+        return internalError(E.SV001, err);
     }
 }
 
@@ -49,13 +51,10 @@ export async function PUT(
             validated.task_status,
         );
         if (!result.success) {
-            return NextResponse.json({ success: false, message: result.message ?? 'Task update failed' }, { status: 422 });
+            return apiError(E.BL001, 422, { message: [result.message ?? ''] });
         }
-        return NextResponse.json({ success: true });
-    } catch (err: any) {
-        if (err.name === 'ZodError') {
-            return NextResponse.json({ success: false, errors: err.flatten().fieldErrors }, { status: 400 });
-        }
-        return NextResponse.json({ success: false, message: err.message ?? 'Server error' }, { status: 500 });
-    }
+        return NextResponse.json({ code: 1, message: 'Planning task updated successfully' });
+  } catch (err) {
+    return internalError(E.SV001, err);
+  }
 }

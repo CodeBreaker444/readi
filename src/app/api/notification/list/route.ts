@@ -1,5 +1,7 @@
 import { listNotifications } from "@/backend/services/notification/notification-service";
 import { requirePermission } from "@/lib/auth/api-auth";
+import { internalError, zodError } from "@/lib/api-error";
+import { E } from "@/lib/error-codes";
 import { NextRequest, NextResponse } from "next/server";
 import z from "zod";
 
@@ -24,19 +26,13 @@ export async function POST(req: NextRequest) {
     const parsed = notificationListSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { success: false, message: parsed.error  },
-        { status: 400 }
-      );
+      return zodError(E.VL001, parsed.error);
     }
 
     const items = await listNotifications(parsed.data,userId);
 
     return NextResponse.json({ success: true, data: items });
-  } catch (err: any) {
-    return NextResponse.json(
-      { success: false, message: err.message ?? "Internal server error" },
-      { status: 500 }
-    );
+  } catch (err) {
+    return internalError(E.SV001, err);
   }
 }

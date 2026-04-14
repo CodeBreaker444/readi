@@ -1,7 +1,8 @@
 import { listClients } from '@/backend/services/client/client-service';
 import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
-
+import { internalError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 export async function GET(req: NextRequest) {
   try {
     const { session, error } = await requirePermission('view_client')
@@ -9,7 +10,7 @@ export async function GET(req: NextRequest) {
 
     const result = await listClients(session!.user.ownerId);
     return NextResponse.json(result);
-  } catch {
-    return NextResponse.json({ code: 0, error: 'Internal server error' }, { status: 500 });
+  } catch (error) {
+      return internalError(E.AU002, error);
   }
 }

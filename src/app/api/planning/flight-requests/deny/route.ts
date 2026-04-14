@@ -1,6 +1,8 @@
 import { notifyDccDenial } from '@/backend/services/mission/dcc-callback-service';
 import { updateFlightRequestStatus } from '@/backend/services/mission/flight-request-service';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { apiError, internalError, zodError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { supabase } from '@/backend/database/database';
@@ -18,10 +20,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const parsed = Schema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { code: 0, error: parsed.error.issues[0]?.message ?? 'Validation error' },
-        { status: 400 },
-      );
+      return zodError(E.VL001, parsed.error);
     }
 
     const { request_id, note } = parsed.data;
@@ -35,11 +34,11 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (!fr) {
-      return NextResponse.json({ code: 0, error: 'Flight request not found' }, { status: 404 });
+      return apiError(E.NF021, 404);
     }
 
     if (fr.dcc_status === 'REJECTED') {
-      return NextResponse.json({ code: 0, error: 'Request is already rejected' }, { status: 422 });
+      return apiError(E.BL003, 422);
     }
 
     await updateFlightRequestStatus(request_id, session!.user.ownerId, 'REJECTED');
@@ -47,7 +46,7 @@ export async function POST(req: NextRequest) {
     const dcc = await notifyDccDenial(session!.user.ownerId, fr.external_mission_id as string, note);
 
     return NextResponse.json({ code: 1, message: 'Flight request denied', dcc });
-  } catch (err: any) {
-    return NextResponse.json({ code: 0, error: err.message }, { status: 500 });
+  } catch (err) {
+    return internalError(E.SV001, err);
   }
 }

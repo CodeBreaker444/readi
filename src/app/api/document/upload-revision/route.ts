@@ -1,5 +1,7 @@
 import { uploadDocumentRevision } from '@/backend/services/document/document-service';
+import { internalError, zodError } from '@/lib/api-error';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
 
@@ -20,10 +22,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const parsed = Schema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: 'Validation error', details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
-      );
+      return zodError(E.VL001, parsed.error);
     }
 
     const { document_id, s3_key, file_name, file_size, version_label, change_log } = parsed.data;
@@ -36,8 +35,8 @@ export async function POST(req: NextRequest) {
     );
 
     return NextResponse.json({ code: 1, message: 'Revision uploaded', ...result });
-  } catch (err) {
-    console.error('[document_upload_revision]', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } catch (error: any) {
+    console.error('[document_upload_revision]', error);
+    return internalError(E.AU002, error);
   }
 }

@@ -1,5 +1,7 @@
 import { markAllNotificationsRead } from "@/backend/services/notification/notification-service";
 import { requirePermission } from "@/lib/auth/api-auth";
+import { internalError } from "@/lib/api-error";
+import { E } from "@/lib/error-codes";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
@@ -15,10 +17,7 @@ export async function POST(req: NextRequest) {
       success: true,
       message: `${result.updated} notification(s) marked as read.`,
     });
-  } catch (err: any) {
-    return NextResponse.json(
-      { success: false, message: err.message ?? "Internal server error" },
-      { status: 500 }
-    );
+  } catch (err) {
+    return internalError(E.SV001, err);
   }
 }

@@ -1,5 +1,7 @@
 import { createApiKey, listApiKeys } from '@/backend/services/mission/flight-request-service';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { apiError, internalError, zodError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -15,8 +17,8 @@ export async function GET() {
 
     const keys = await listApiKeys(session!.user.ownerId);
     return NextResponse.json({ code: 1, items: keys });
-  } catch (err: any) {
-    return NextResponse.json({ code: 0, error: err.message }, { status: 500 });
+  } catch (err) {
+    return internalError(E.SV001, err);
   }
 }
 
@@ -28,10 +30,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const parsed = CreateSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { code: 0, error: parsed.error.issues[0]?.message ?? 'Validation error' },
-        { status: 400 }
-      );
+      return zodError(E.VL001, parsed.error);
     }
 
     const result = await createApiKey(
@@ -42,7 +41,7 @@ export async function POST(req: NextRequest) {
     );
 
     return NextResponse.json({ code: 1, ...result }, { status: 201 });
-  } catch (err: any) {
-    return NextResponse.json({ code: 0, error: err.message }, { status: 500 });
+  } catch (err) {
+    return internalError(E.SV001, err);
   }
 }

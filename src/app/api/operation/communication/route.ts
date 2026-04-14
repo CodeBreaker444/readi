@@ -1,5 +1,7 @@
 import { sendGeneralCommunication } from '@/backend/services/operation/communication-service';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { internalError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
@@ -44,11 +46,8 @@ export async function POST(req: NextRequest) {
     const result = await sendGeneralCommunication(params);
 
     return NextResponse.json({ code: 1, message: 'Sent', newId: result.newId });
-  } catch (err: any) {
+  } catch (err) {
     console.error('[POST /api/operation/communication]', err);
-    return NextResponse.json(
-      { code: 0, message: err?.message ?? 'Failed to send communication' },
-      { status: 500 }
-    );
+    return internalError(E.SV001, err);
   }
 }

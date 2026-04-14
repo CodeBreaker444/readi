@@ -1,6 +1,8 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { addMissionStatus } from '@/backend/services/mission/status-service';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { internalError, zodError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -18,18 +20,10 @@ export async function POST(request: NextRequest) {
     if (error) return error;
 
     const body = await request.json();
-    
+
     const validation = missionStatusSchema.safeParse(body);
     if (!validation.success) {
-      return NextResponse.json(
-        { 
-          code: 0, 
-          status: 'ERROR', 
-          message: 'Validation failed',
-          errors: validation.error 
-        },
-        { status: 400 }
-      );
+      return zodError(E.VL001, validation.error);
     }
 
     const ownerId = session!.user.ownerId;
@@ -55,10 +49,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(result);
-  } catch (error: any) {
-    return NextResponse.json(
-      { code: 0, status: 'ERROR', message: error.message },
-      { status: 500 }
-    );
+  } catch (err) {
+    return internalError(E.SV001, err);
   }
 }

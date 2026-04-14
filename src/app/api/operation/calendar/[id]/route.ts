@@ -1,5 +1,7 @@
 import { deleteOperationCalendarEntry } from '@/backend/services/operation/operation-calendar-service'
 import { requirePermission } from '@/lib/auth/api-auth'
+import { internalError } from '@/lib/api-error'
+import { E } from '@/lib/error-codes'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function DELETE(
@@ -17,8 +19,8 @@ export async function DELETE(
 
     await deleteOperationCalendarEntry(operationId, session!.user.ownerId)
     return NextResponse.json({ success: true })
-  } catch (err: any) {
+  } catch (err) {
     console.error('[DELETE /api/operation/calendar/[id]]', err)
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 })
+    return internalError(E.SV001, err)
   }
 }

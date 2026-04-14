@@ -2,6 +2,8 @@ import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { createTicket } from '@/backend/services/system/maintenance-ticket';
 import { CreateTicketPayload } from '@/config/types/maintenance';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { internalError, zodError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
 
@@ -16,17 +18,10 @@ export async function POST(req: NextRequest) {
 
         const { session, error } = await requirePermission('view_config');
         if (error) return error;
-        
+
     const validation = createTicketSchema.safeParse(body);
     if (!validation.success) {
-      return NextResponse.json(
-        {
-          code: 0,
-          message: 'Validation failed',
-          errors: validation.error.flatten(),
-        },
-        { status: 400 }
-      );
+      return zodError(E.VL001, validation.error);
     }
     const userId= session!.user.userId
     const ownerId = session!.user.ownerId
@@ -52,8 +47,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ status: 'OK', ticket_id });
 
-  } catch (err: any) {
+  } catch (err) {
     console.error('[POST /api/maintenance/tickets/create]', err);
-    return NextResponse.json({ status: 'ERROR', message: err.message }, { status: 500 });
+    return internalError(E.SV001, err);
   }
 }

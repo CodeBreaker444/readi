@@ -1,5 +1,7 @@
 import { importCategories, importClinets, importDrones, importPilots, importPlans, importStatus, importTypes } from '@/backend/services/operation/importOperation-service';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { internalError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(req: NextRequest) {
@@ -68,8 +70,8 @@ export async function GET(req: NextRequest) {
       default:
         return NextResponse.json({ error: 'Unknown type' }, { status: 400 });
     }
-  } catch (err: any) {
+  } catch (err) {
     console.error('[GET /api/operation/import/options]', err);
-    return NextResponse.json({ error: err?.message ?? 'Error' }, { status: 500 });
+    return internalError(E.SV001, err);
   }
 }

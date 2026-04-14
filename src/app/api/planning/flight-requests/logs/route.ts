@@ -3,6 +3,8 @@ import { supabase } from '@/backend/database/database';
 import { attachFlytbaseFlightLog } from '@/backend/services/operation/flight-log-service';
 import { requirePermission } from '@/lib/auth/api-auth';
 import { env } from '@/backend/config/env';
+import { apiError, internalError, zodError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -19,10 +21,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const parsed = Schema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { code: 0, message: parsed.error.issues[0]?.message ?? 'Validation error' },
-        { status: 400 },
-      );
+      return zodError(E.VL001, parsed.error);
     }
 
     const { request_id, flight_id } = parsed.data;
@@ -36,13 +35,10 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (!fr) {
-      return NextResponse.json({ code: 0, message: 'Flight request not found' }, { status: 404 });
+      return apiError(E.NF021, 404);
     }
     if (!fr.fk_planning_id) {
-      return NextResponse.json(
-        { code: 0, message: 'Request must be assigned to a planning mission before pushing logs' },
-        { status: 422 },
-      );
+      return apiError(E.BL003, 422);
     }
 
     const { data: pm } = await supabase
@@ -54,10 +50,7 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (!pm) {
-      return NextResponse.json(
-        { code: 0, message: 'No mission found for this planning. Create a mission first.' },
-        { status: 422 },
-      );
+      return apiError(E.NF003, 404);
     }
 
     const missionId = pm.pilot_mission_id as number;
@@ -68,12 +61,8 @@ export async function POST(req: NextRequest) {
     const dcc = await notifyDccLogging(session!.user.ownerId, missionId, logUri);
 
     return NextResponse.json({ code: 1, message: 'Flight log pushed to DCC', dcc });
-  } catch (err: any) {
+  } catch (err) {
     console.error('[flight-requests/logs] POST error:', err);
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    const status =
-      err?.code === 'FLYTBASE_TIMEOUT' ? 504 :
-      message.includes('No FlytBase')  ? 422 : 500;
-    return NextResponse.json({ code: 0, message }, { status });
+    return internalError(E.SV001, err);
   }
 }

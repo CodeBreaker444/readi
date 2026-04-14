@@ -2,6 +2,8 @@ import { notifyDccAcceptance } from '@/backend/services/mission/dcc-callback-ser
 import type { DccCallbackResult } from '@/types/dcc-callback';
 import { assignFlightRequest } from '@/backend/services/mission/flight-request-service';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { internalError, zodError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -18,10 +20,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const parsed = Schema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { code: 0, error: parsed.error.issues[0]?.message ?? 'Validation error' },
-        { status: 400 }
-      );
+      return zodError(E.VL001, parsed.error);
     }
 
     await assignFlightRequest(
@@ -37,7 +36,7 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ code: 1, message: 'Flight request updated', ...(dcc ? { dcc } : {}) });
-  } catch (err: any) {
-    return NextResponse.json({ code: 0, error: err.message }, { status: 500 });
+  } catch (err) {
+    return internalError(E.SV001, err);
   }
 }

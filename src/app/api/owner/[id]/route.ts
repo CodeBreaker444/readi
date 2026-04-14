@@ -1,6 +1,8 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { deleteOwner, updateOwner } from '@/backend/services/company/owner-service';
 import { getUserSession } from '@/lib/auth/server-session';
+import { internalError, unauthorized, forbidden } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 import { NextResponse } from 'next/server';
 import z from 'zod';
 
@@ -13,10 +15,10 @@ const editOwnerValidation = z.object({
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
         const session = await getUserSession();
-        if (!session) return NextResponse.json({ code: 0, message: "Unauthorized" }, { status: 401 });
+        if (!session) return unauthorized(E.AU001);
 
         if (session.user.role !== 'SUPERADMIN') {
-            return NextResponse.json({ code: 0, message: "Forbidden" }, { status: 403 });
+            return forbidden(E.PX004);
         }
 
         const { id } = await params;
@@ -45,8 +47,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
         return NextResponse.json({ code: 1, message: 'Updated', data });
 
-    } catch (err: any) {
-        return NextResponse.json({ code: 0, message: err.message }, { status: 500 });
+    } catch (err) {
+        return internalError(E.SV001, err);
     }
 }
 
@@ -56,10 +58,10 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
         const session = await getUserSession();
         const deletedByUserId = session?.user?.id
 
-        if (!session) return NextResponse.json({ code: 0, message: "Unauthorized" }, { status: 401 });
+        if (!session) return unauthorized(E.AU001);
 
         if (session.user.role !== 'SUPERADMIN') {
-            return NextResponse.json({ code: 0, message: "Forbidden" }, { status: 403 });
+            return forbidden(E.PX004);
         }
 
         await deleteOwner(id, Number(deletedByUserId));
@@ -78,7 +80,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
 
         return NextResponse.json({ code: 1, message: 'Company deactivated and archived' });
         
-    } catch (err: any) {
-        return NextResponse.json({ code: 0, message: err.message }, { status: 500 });
+    } catch (err) {
+        return internalError(E.SV001, err);
     }
 }

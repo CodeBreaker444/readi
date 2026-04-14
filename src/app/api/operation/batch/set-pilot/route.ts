@@ -1,6 +1,8 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { batchSetPilot } from '@/backend/services/operation/operation-service';
+import { internalError } from '@/lib/api-error';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import { z, ZodError } from 'zod';
 
@@ -48,6 +50,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Validation failed', details: err.flatten() }, { status: 400 });
     }
     console.error('[POST /api/operation/batch/set-pilot]', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return internalError(E.SV001,err)   
   }
 }

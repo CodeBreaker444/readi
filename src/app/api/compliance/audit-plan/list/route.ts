@@ -4,7 +4,8 @@ import {
 import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-
+import { apiError, internalError, zodError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 
 const QuerySchema = z.object({
     requirement_type: z.string().optional(),
@@ -33,15 +34,12 @@ export async function GET(req: NextRequest) {
 
         const parsed = QuerySchema.safeParse(raw);
         if (!parsed.success) {
-            return NextResponse.json(
-                { code: 0, error: 'Invalid query parameters', details: parsed.error.flatten() },
-                { status: 400 }
-            );
+            return zodError(E.VL001, parsed.error);
         }
 
         const ownerId = session!.user.ownerId;
         if (!ownerId) {
-            return NextResponse.json({ code: 0, error: 'Owner not found in session' }, { status: 403 });
+            return apiError(E.AU003, 403);
         }
 
         const result = await getComplianceRequirements({
@@ -50,11 +48,8 @@ export async function GET(req: NextRequest) {
         });
 
         return NextResponse.json({ code: 1, message: 'Success', ...result });
-    } catch (err) {
-        console.error('[compliance/list] error:', err);
-        return NextResponse.json(
-            { code: 0, error: 'Internal server error' },
-            { status: 500 }
-        );
+    } catch (error: any) {
+        console.error('[compliance/list] error:', error);
+        return internalError(E.AU002, error);
     }
 }

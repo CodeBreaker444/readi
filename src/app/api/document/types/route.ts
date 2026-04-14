@@ -1,5 +1,7 @@
 import { createDocType } from '@/backend/services/document/document-service';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { internalError, zodError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
 
@@ -15,12 +17,11 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const parsed = schema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ code: 0, error: parsed.error.issues[0].message }, { status: 400 });
+      return zodError(E.VL001, parsed.error);
     }
     const data = await createDocType({ ...parsed.data, owner_id: session!.user.ownerId });
     return NextResponse.json({ code: 1, data }, { status: 201 });
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    return NextResponse.json({ code: 0, error: message }, { status: 500 });
+  } catch (err) {
+    return internalError(E.SV001, err);
   }
 }

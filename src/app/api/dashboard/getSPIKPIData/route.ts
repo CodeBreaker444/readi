@@ -1,5 +1,7 @@
 import { getSPIKPIData } from '@/backend/services/dashboard/dashboard';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { internalError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
@@ -11,8 +13,7 @@ export async function POST(req: NextRequest) {
     const userId = session!.user.userId;
     const result = await getSPIKPIData({ owner_id: ownerId, user_id: userId });
     return NextResponse.json(result);
-  } catch (error: any) {
-    console.error('[GET /api/operation/communication/recipients]', error);
-    return NextResponse.json({ error: error?.message ?? 'Error' }, { status: 500 });
+  } catch (err) {
+    return internalError(E.SV001, err);
   }
 }

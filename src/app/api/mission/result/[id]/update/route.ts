@@ -1,13 +1,15 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { updateMissionResult } from '@/backend/services/mission/result-service';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { internalError, zodError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
 
 const updateMissionResultSchema = z.object({
   mission_result_code: z.string().min(1, 'Result code is required').max(50, 'Code too long'),
   mission_result_desc: z.string().min(1, 'Result description is required').max(255, 'Description too long'),
-}); 
+});
 
 export async function POST(
   request: NextRequest,
@@ -18,18 +20,10 @@ export async function POST(
      if (error) return error;
 
     const body = await request.json();
-    
+
     const validation = updateMissionResultSchema.safeParse(body);
     if (!validation.success) {
-      return NextResponse.json(
-        { 
-          code: 0, 
-          status: 'ERROR', 
-          message: 'Validation failed',
-          errors: validation.error 
-        },
-        { status: 400 }
-      );
+      return zodError(E.VL001, validation.error);
     }
 
     const ownerId = session!.user.ownerId;
@@ -55,10 +49,7 @@ export async function POST(
     }
 
     return NextResponse.json(result);
-  } catch (error: any) {
-    return NextResponse.json(
-      { code: 0, status: 'ERROR', message: error.message },
-      { status: 500 }
-    );
+  } catch (err) {
+    return internalError(E.SV001, err);
   }
 }
