@@ -1,6 +1,8 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { addComponent } from '@/backend/services/system/system-service';
+import { internalError, zodError } from '@/lib/api-error';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -34,13 +36,7 @@ export async function POST(req: NextRequest) {
     const { session, error } = await requirePermission('view_config');
     if (error) return error;
 
-    if (!validation.success) {
-      return NextResponse.json({
-        code: 0,
-        message: 'Validation failed',
-        errors: validation.error.flatten().fieldErrors,
-      }, { status: 400 });
-    }
+    if (!validation.success) return zodError(E.VL008, validation.error);
 
     const d = validation.data;
 
@@ -81,7 +77,7 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json(result);
-  } catch (error: any) {
-    return NextResponse.json({ code: 0, message: error.message }, { status: 500 });
+  } catch (err) {
+    return internalError(E.SV001, err);
   }
 }

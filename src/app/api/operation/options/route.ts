@@ -1,5 +1,7 @@
 import { getLucProcedureOptions, getMissionCategoryOptions, getMissionTypeOptions, getPilotOptions, getPlanningOptions, getToolOptions } from '@/backend/services/operation/operation-service';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { internalError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
@@ -27,7 +29,7 @@ export async function GET() {
             plannings,
             lucProcedures,
         });
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (err) {
+        return internalError(E.SV001, err);
     }
 }

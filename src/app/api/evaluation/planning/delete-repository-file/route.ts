@@ -1,5 +1,7 @@
 import { deleteRepositoryFile } from "@/backend/services/planning/planning-dashboard";
 import { requirePermission } from "@/lib/auth/api-auth";
+import { internalError, zodError } from "@/lib/api-error";
+import { E } from "@/lib/error-codes";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -18,10 +20,7 @@ export async function POST(request: Request) {
     const parsed = schema.safeParse(body);
     
     if (!parsed.success) {
-      return NextResponse.json(
-        { code: 0, message: "Validation failed", details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
-      );
+      return zodError(E.VL001, parsed.error);
     }
 
     const { file_id, file_type, s3_key } = parsed.data;
@@ -35,11 +34,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ code: 1, message: "File deleted successfully" });
     
-  } catch (err: any) {
+  } catch (err) {
     console.error("API Route Error:", err);
-    return NextResponse.json(
-      { code: 0, message: err.message || "Internal Server Error" },
-      { status: 500 }
-    );
+    return internalError(E.SV001, err);
   }
 }

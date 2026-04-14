@@ -2,6 +2,8 @@ import { deleteEvidence } from '@/backend/services/compliance/compliance-evidenc
 import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { apiError, internalError, zodError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 
 const DeleteSchema = z.object({
   evidence_id: z.number().int().positive(),
@@ -15,22 +17,19 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const parsed = DeleteSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { code: 0, error: 'Validation failed', details: parsed.error.flatten() },
-        { status: 400 }
-      );
+      return zodError(E.VL001, parsed.error);
     }
 
     const ownerId = session!.user.ownerId;
     if (!ownerId) {
-      return NextResponse.json({ code: 0, error: 'Owner not found in session' }, { status: 403 });
+      return apiError(E.AU003, 403);
     }
 
     await deleteEvidence(parsed.data.evidence_id, ownerId);
 
     return NextResponse.json({ code: 1, message: 'Evidence deleted' });
-  } catch (err) {
-    console.error('[evidence/delete] error:', err);
-    return NextResponse.json({ code: 0, error: 'Internal server error' }, { status: 500 });
-  }
+  } catch (error: any) {
+      console.error('[evidence/delete] error:', error);
+      return internalError(E.AU002, error);
+    }
 }

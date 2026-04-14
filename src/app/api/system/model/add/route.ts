@@ -2,6 +2,8 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { addModel } from '@/backend/services/system/system-service';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { internalError, zodError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -26,14 +28,7 @@ export async function POST(req: NextRequest) {
     const validation = ModelSchema.safeParse(body);
 
     if (!validation.success) {
-      return NextResponse.json(
-        {
-          code: 0,
-          message: 'Validation failed',
-          errors: validation.error,
-        },
-        { status: 400 }
-      );
+      return zodError(E.VL001, validation.error);
     }
 
     const d = validation.data;
@@ -69,11 +64,8 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json(result);
-  } catch (error: any) {
-    console.error('Model API Error:', error);
-    return NextResponse.json(
-      { code: 0, message: error.message },
-      { status: 500 }
-    );
+  } catch (err) {
+    console.error('Model API Error:', err);
+    return internalError(E.SV001, err);
   }
 }

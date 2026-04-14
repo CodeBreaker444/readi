@@ -1,22 +1,24 @@
 import { logEvent } from "@/backend/services/auditLog/audit-log";
 import { addOwnerWithAdmin, getOwners } from "@/backend/services/company/owner-service";
 import { getUserSession } from "@/lib/auth/server-session";
+import { internalError, unauthorized, forbidden } from "@/lib/api-error";
+import { E } from "@/lib/error-codes";
 import { NextResponse } from "next/server";
 import z from "zod";
 
 const GET = async () => {
     try {
         const session = await getUserSession();
-        if (!session) return NextResponse.json({ code: 0, message: "Unauthorized" }, { status: 401 });
+        if (!session) return unauthorized(E.AU001);
 
         if (session.user.role !== 'SUPERADMIN') {
-            return NextResponse.json({ code: 0, message: "Forbidden" }, { status: 403 });
+            return forbidden(E.PX004);
         }
 
         const owners = await getOwners();
         return NextResponse.json({ code: 1, data: owners });
-    } catch (err: any) {
-        return NextResponse.json({ code: 0, message: err.message }, { status: 500 });
+    } catch (err) {
+        return internalError(E.SV001, err);
     }
 }
 
@@ -30,10 +32,10 @@ const ownerValidation = z.object({
 const POST = async (req: Request) => {
     try {
         const session = await getUserSession();
-        if (!session) return NextResponse.json({ code: 0, message: "Unauthorized" }, { status: 401 });
+        if (!session) return unauthorized(E.AU001);
 
         if (session.user.role !== 'SUPERADMIN') {
-            return NextResponse.json({ code: 0, message: "Forbidden" }, { status: 403 });
+            return forbidden(E.PX004);
         }
 
         const body = await req.json();
@@ -72,8 +74,8 @@ const POST = async (req: Request) => {
             },
         });
 
-    } catch (err: any) {
-        return NextResponse.json({ code: 0, message: err.message }, { status: 400 });
+    } catch (err) {
+        return internalError(E.SV001, err);
     }
 }
 

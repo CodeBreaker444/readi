@@ -1,5 +1,7 @@
 import { recomputeMonthlyKPI } from '@/backend/services/training/training-service';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { internalError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
@@ -26,11 +28,7 @@ export async function POST(req: NextRequest) {
     const result = await recomputeMonthlyKPI(user.ownerId, period);
 
     return NextResponse.json({ code: 1, ...result });
-  } catch (err: any) {
-    console.error('[POST /api/training/recompute]', err);
-    return NextResponse.json(
-      { code: 0, error: err?.message ?? 'Error' },
-      { status: 500 }
-    );
+  } catch (err) {
+    return internalError(E.SV001, err);
   }
 }

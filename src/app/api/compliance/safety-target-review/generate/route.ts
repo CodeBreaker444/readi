@@ -2,6 +2,8 @@ import { generateTargetProposals } from '@/backend/services/compliance/complianc
 import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { internalError, zodError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 
 const QuerySchema = z.object({
   months: z.coerce.number().int().min(1).max(24).default(6),
@@ -15,16 +17,13 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const parsed = QuerySchema.safeParse({ months: searchParams.get('months') });
     if (!parsed.success) {
-      return NextResponse.json(
-        { code: 0, error: 'Invalid query parameters', details: parsed.error.flatten() },
-        { status: 400 }
-      );
+      return zodError(E.VL001, parsed.error);
     }
 
     const result = await generateTargetProposals(parsed.data.months, session!.user.userId);
     return NextResponse.json({ code: 1, message: 'Success', ...result });
-  } catch (err) {
-    console.error('[safety-target-review/generate] error:', err);
-    return NextResponse.json({ code: 0, error: 'Internal server error' }, { status: 500 });
+  } catch (error: any) {
+    console.error('[safety-target-review/generate] error:', error);
+    return internalError(E.AU002, error);
   }
 }

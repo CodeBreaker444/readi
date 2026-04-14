@@ -1,6 +1,8 @@
 
 import { addMissionPlanningLogbook } from "@/backend/services/planning/planning-dashboard";
 import { requirePermission } from "@/lib/auth/api-auth";
+import { internalError, zodError } from "@/lib/api-error";
+import { E } from "@/lib/error-codes";
 import { buildS3Url, uploadFileToS3 } from "@/lib/s3Client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -41,14 +43,7 @@ export async function POST(request: Request) {
 
     const parsed = schema.safeParse(rawObj);
     if (!parsed.success) {
-      return NextResponse.json(
-        {
-          code: 0,
-          message: "Validation failed",
-          errors: parsed.error.flatten().fieldErrors,
-        },
-        { status: 400 }
-      );
+      return zodError(E.VL001, parsed.error);
     }
 
     const file = formData.get("mission_planning_file") as File | null;
@@ -99,11 +94,8 @@ export async function POST(request: Request) {
 });
 
     return NextResponse.json({ code: 1, message: "Success", data });
-  } catch (err: any) {
+  } catch (err) {
     console.error("add-mission-planning-logbook error:", err);
-    return NextResponse.json(
-      { code: 0, message: err.message },
-      { status: 500 }
-    );
+    return internalError(E.SV001, err);
   }
 }

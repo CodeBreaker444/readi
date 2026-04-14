@@ -4,6 +4,8 @@ import {
   insertPilotDeclaration,
 } from "@/backend/services/operation/pilot-declaration-service";
 import { requirePermission } from "@/lib/auth/api-auth";
+import { internalError } from "@/lib/api-error";
+import { E } from "@/lib/error-codes";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -28,9 +30,8 @@ export async function GET(req: NextRequest) {
 
     const declarations = await getPilotDeclarations(session!.user.userId, date);
     return NextResponse.json({ code: 1, data: declarations, dataRows: declarations.length });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json({ code: 0, message }, { status: 500 });
+  } catch (err) {
+    return internalError(E.SV001, err);
   }
 }
 
@@ -61,8 +62,7 @@ export async function POST(req: NextRequest) {
       declaration_data: parsed.data.declaration_data,
     });
     return NextResponse.json({ code: 1, message: "Declaration saved", data: declaration });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json({ code: 0, message }, { status: 500 });
+  } catch (err) {
+    return internalError(E.SV001, err);
   }
 }

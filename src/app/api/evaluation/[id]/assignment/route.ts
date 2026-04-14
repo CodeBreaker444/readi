@@ -1,5 +1,7 @@
 import { sendAssignment } from '@/backend/services/planning/evaluation-detail';
+import { internalError } from '@/lib/api-error';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
 
@@ -45,17 +47,14 @@ export async function POST(
     }
 
     return NextResponse.json({ success: true, message: result.message });
-  } catch (err: any) {
-    if (err.name === 'ZodError') {
+  } catch (error: any) {
+    if (error.name === 'ZodError') {
       return NextResponse.json(
-        { success: false, errors: err.flatten().fieldErrors },
+        { success: false, errors: error.flatten().fieldErrors },
         { status: 400 },
       );
     }
-    console.error('POST /assignment route error:', err);
-    return NextResponse.json(
-      { success: false, message: err.message ?? 'Server error' },
-      { status: 500 },
-    );
+    console.error('POST /assignment route error:', error);
+    return internalError(E.AU002, error);
   }
 }

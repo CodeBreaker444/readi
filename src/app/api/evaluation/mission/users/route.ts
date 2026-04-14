@@ -1,5 +1,7 @@
 import { getUsers } from "@/backend/services/planning/planning-dashboard";
 import { requirePermission } from "@/lib/auth/api-auth";
+import { internalError } from "@/lib/api-error";
+import { E } from "@/lib/error-codes";
 import { NextResponse } from "next/server";
 
  
@@ -14,7 +16,7 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ code: 1, data: users });
-  } catch (err: any) {
-    return NextResponse.json({ code: 0, message: err.message }, { status: 500 });
+  } catch (err) {
+    return internalError(E.SV001, err);
   }
 }

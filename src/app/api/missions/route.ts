@@ -1,5 +1,7 @@
 import { createFlightRequest, flightRequestExists } from '@/backend/services/mission/flight-request-service';
 import { requireApiKey } from '@/lib/auth/api-key-auth';
+import { internalError, zodError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -37,15 +39,7 @@ export async function POST(req: NextRequest) {
     const parsed = MissionSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        {
-          code: 0,
-          status: 'ERROR',
-          message: 'Validation failed',
-          errors: parsed.error.flatten().fieldErrors,
-        },
-        { status: 400 }
-      );
+      return zodError(E.VL001, parsed.error);
     }
 
     const {
@@ -84,11 +78,8 @@ export async function POST(req: NextRequest) {
       timestamp:  Math.floor(Date.now() / 1000),
       dataRows:   1,
     });
-  } catch (err: any) {
+  } catch (err) {
     console.error('[POST /api/missions]', err);
-    return NextResponse.json(
-      { code: 0, status: 'ERROR', message: err.message ?? 'Internal server error' },
-      { status: 500 }
-    );
+    return internalError(E.SV001, err);
   }
 }

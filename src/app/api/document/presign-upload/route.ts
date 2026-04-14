@@ -1,6 +1,8 @@
 import { getPresignedUploadUrl } from '@/lib/s3Client';
 import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
+import { internalError, zodError, } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 
 const ALLOWED_TYPES = [
   'application/pdf',
@@ -38,8 +40,8 @@ export async function POST(req: NextRequest) {
     const upload_url = await getPresignedUploadUrl(s3_key, content_type, 300);
 
     return NextResponse.json({ code: 1, upload_url, s3_key });
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    return NextResponse.json({ code: 0, error: message }, { status: 500 });
+  } catch (error: any) {
+    console.error('[presign_upload]', error);
+    return internalError(E.SV001, error);
   }
 }

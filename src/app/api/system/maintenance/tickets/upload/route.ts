@@ -1,5 +1,7 @@
 import { uploadAttachment } from '@/backend/services/system/maintenance-ticket';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { apiError, internalError, zodError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
 
@@ -25,23 +27,13 @@ export async function POST(req: NextRequest) {
     });
 
     if (!validation.success) {
-      return NextResponse.json(
-        {
-          status: 'ERROR',
-          message: 'Validation failed',
-          errors: validation.error.flatten().fieldErrors,
-        },
-        { status: 400 }
-      );
+      return zodError(E.VL001, validation.error);
     }
 
     const { ticket_id, file, attachment_desc } = validation.data;
 
     if (file.size > MAX_SIZE_BYTES) {
-      return NextResponse.json(
-        { status: 'ERROR', message: 'File exceeds 10 MB limit' },
-        { status: 413 }
-      );
+      return apiError(E.VL007, 413);
     }
 
     const result = await uploadAttachment(
@@ -58,12 +50,9 @@ export async function POST(req: NextRequest) {
       s3_url: result.s3_url,
     });
 
-  } catch (err: any) {
+  } catch (err) {
     console.error('[POST /api/system/maintenance/tickets/upload]', err);
-    return NextResponse.json(
-      { status: 'ERROR', message: err.message },
-      { status: 500 }
-    );
+    return internalError(E.SV001, err);
   }
 }
 

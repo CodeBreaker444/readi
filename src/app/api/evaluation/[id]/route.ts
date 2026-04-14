@@ -4,6 +4,8 @@ import {
   updateEvaluation,
 } from '@/backend/services/planning/evaluation-detail';
 import { getUserSession } from '@/lib/auth/server-session';
+import { forbidden, internalError, unauthorized, zodError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 
 import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
@@ -20,23 +22,17 @@ export async function GET(
 ) {
   try {
     const session = await getUserSession()
-    if (!session) return NextResponse.json({ code: 0, message: 'Unauthorized' }, { status: 401 });
-    if (!ALLOWED_ROLES.includes(session.user.role)) return NextResponse.json({ code: 0, message: 'Forbidden' }, { status: 403 });
+    if (!session) return unauthorized(E.AU001);
+    if (!ALLOWED_ROLES.includes(session.user.role)) return forbidden(E.PX001);
     const {id: evaluationId } = evaluationIdParamSchema.parse(await params);
 
     const data = await getEvaluationById(session.user.ownerId, evaluationId);
     return NextResponse.json({ success: true, data });
   } catch (err: any) {
     if (err.name === 'ZodError') {
-      return NextResponse.json(
-        { success: false, errors: err.flatten().fieldErrors },
-        { status: 400 },
-      );
+      return zodError(E.VL001, err);
     }
-    return NextResponse.json(
-      { success: false, message: err.message ?? 'Server error' },
-      { status: 500 },
-    );
+    return internalError(E.SV001, err);
   }
 }
 
@@ -62,8 +58,8 @@ export async function PUT(
 ) {
   try {
     const session = await getUserSession()
-    if (!session) return NextResponse.json({ code: 0, message: 'Unauthorized' }, { status: 401 });
-    if (!ALLOWED_ROLES.includes(session.user.role)) return NextResponse.json({ code: 0, message: 'Forbidden' }, { status: 403 });
+    if (!session) return unauthorized(E.AU001);
+    if (!ALLOWED_ROLES.includes(session.user.role)) return forbidden(E.PX001);
     evaluationIdParamSchema.parse(await params);
 
     const body = await req.json();
@@ -86,15 +82,9 @@ export async function PUT(
     });
   } catch (err: any) {
     if (err.name === 'ZodError') {
-      return NextResponse.json(
-        { success: false, errors: err.flatten().fieldErrors },
-        { status: 400 },
-      );
+      return zodError(E.VL001, err);
     }
-    return NextResponse.json(
-      { success: false, message: err.message ?? 'Server error' },
-      { status: 500 },
-    );
+    return internalError(E.SV001, err);
   }
 }
 
@@ -104,8 +94,8 @@ export async function DELETE(
 ) {
   try {
     const session = await getUserSession()
-    if (!session) return NextResponse.json({ code: 0, message: 'Unauthorized' }, { status: 401 });
-    if (!ALLOWED_ROLES.includes(session.user.role)) return NextResponse.json({ code: 0, message: 'Forbidden' }, { status: 403 });
+    if (!session) return unauthorized(E.AU001);
+    if (!ALLOWED_ROLES.includes(session.user.role)) return forbidden(E.PX001);
     const { id: evaluationId } = evaluationIdParamSchema.parse(await params);
 
     const result = await deleteEvaluation(session.user.ownerId, evaluationId);
@@ -120,14 +110,8 @@ export async function DELETE(
     return NextResponse.json({ success: true, message: result.message });
   } catch (err: any) {
     if (err.name === 'ZodError') {
-      return NextResponse.json(
-        { success: false, errors: err.flatten().fieldErrors },
-        { status: 400 },
-      );
+      return zodError(E.VL001, err);
     }
-    return NextResponse.json(
-      { success: false, message: err.message ?? 'Server error' },
-      { status: 500 },
-    );
+    return internalError(E.SV001, err);
   }
 }

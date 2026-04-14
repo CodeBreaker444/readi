@@ -1,6 +1,8 @@
 import { supabase } from '@/backend/database/database';
 import { updateFlightRequestStatus } from '@/backend/services/mission/flight-request-service';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { internalError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 
 const ALLOWED_STATUSES = ['IN_PROGRESS', 'COMPLETED', 'ISSUE'];
@@ -26,8 +28,8 @@ export async function PATCH(
     await updateFlightRequestStatus(requestId, session!.user.ownerId, dcc_status);
 
     return NextResponse.json({ code: 1, message: 'Status updated' });
-  } catch (err: any) {
-    return NextResponse.json({ code: 0, error: err.message }, { status: 500 });
+  } catch (err) {
+    return internalError(E.SV001, err);
   }
 }
 
@@ -53,7 +55,7 @@ export async function DELETE(
     if (dbError) throw new Error(dbError.message);
 
     return NextResponse.json({ code: 1, message: 'Flight request deleted' });
-  } catch (err: any) {
-    return NextResponse.json({ code: 0, error: err.message }, { status: 500 });
+  } catch (err) {
+    return internalError(E.SV001, err);
   }
 }

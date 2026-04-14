@@ -1,5 +1,7 @@
 import { getSPIKPITrend } from '@/backend/services/dashboard/dashboard';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { internalError, zodError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
 
@@ -13,7 +15,9 @@ export async function POST(req: NextRequest) {
     if (error) return error;
 
     const body = await req.json();
-    const { name } = SPIKPITrendSchema.parse(body);
+    const parsed = SPIKPITrendSchema.safeParse(body);
+    if (!parsed.success) return zodError(E.VL001, parsed.error);
+    const { name } = parsed.data;
 
     const result = await getSPIKPITrend({
       owner_id: session!.user.ownerId,
@@ -22,16 +26,7 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json(result);
-  } catch (error: any) {
-    if (error.name === 'ZodError') {
-      return NextResponse.json(
-        { code: 0, status: 'ERROR', message: 'Validation failed', errors: error.errors },
-        { status: 400 }
-      );
-    }
-    return NextResponse.json(
-      { code: 0, status: 'ERROR', message: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+  } catch (err) {
+    return internalError(E.SV001, err);
   }
 }

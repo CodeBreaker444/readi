@@ -4,6 +4,8 @@ import {
     updateAssignment,
 } from '@/backend/services/organization/assignment-service'
 import { requirePermission } from '@/lib/auth/api-auth'
+import { apiError, internalError, zodError } from '@/lib/api-error'
+import { E } from '@/lib/error-codes'
 import { NextRequest, NextResponse } from 'next/server'
 import z from 'zod'
 
@@ -15,20 +17,13 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
     const id = parseInt((await params).id)
     if (isNaN(id)) {
-      return NextResponse.json(
-        { code: 0, message: 'Invalid ID', dataRows: 0, data: null },
-        { status: 400 }
-      )
+      return apiError(E.VL002, 400)
     }
 
     const result = await getAssignmentById(session!.user.ownerId, id)
     return NextResponse.json({ ...result, message: 'Assignment retrieved successfully' }, { status: 200 })
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unexpected error'
-    return NextResponse.json(
-      { code: 0, message, dataRows: 0, data: null },
-      { status: 500 }
-    )
+  } catch (err) {
+    return internalError(E.SV001, err)
   }
 }
 
@@ -53,16 +48,7 @@ export async function PUT(request: NextRequest,  { params }: { params: Promise<{
     const parsed = updateSchema.safeParse(body)
 
     if (!parsed.success) {
-      return NextResponse.json(
-        {
-          code: 0,
-          message: 'Validation failed',
-          errors: parsed.error.flatten().fieldErrors,
-          dataRows: 0,
-          data: null,
-        },
-        { status: 400 }
-      )
+      return zodError(E.VL001, parsed.error)
     }
 
     const result = await updateAssignment({
@@ -73,12 +59,8 @@ export async function PUT(request: NextRequest,  { params }: { params: Promise<{
     })
 
     return NextResponse.json({ ...result, message: 'Assignment updated successfully' }, { status: 200 })
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unexpected error'
-    return NextResponse.json(
-      { code: 0, message, dataRows: 0, data: null },
-      { status: 500 }
-    )
+  } catch (err) {
+    return internalError(E.SV001, err)
   }
 }
 
@@ -90,19 +72,12 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
 
     const id = parseInt((await params).id)
     if (isNaN(id)) {
-      return NextResponse.json(
-        { code: 0, message: 'Invalid ID', dataRows: 0, data: null },
-        { status: 400 }
-      )
+      return apiError(E.VL002, 400)
     }
 
     const result = await deleteAssignment(session!.user.ownerId, id)
     return NextResponse.json({...result, message: 'Assignment deleted successfully'}, { status: 200 })
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unexpected error'
-    return NextResponse.json(
-      { code: 0, message, dataRows: 0, data: null },
-      { status: 500 }
-    )
+  } catch (err) {
+    return internalError(E.SV001, err)
   }
 }

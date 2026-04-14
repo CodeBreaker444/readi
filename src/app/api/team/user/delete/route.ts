@@ -1,6 +1,8 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { deleteUser } from '@/backend/services/user/user-management';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { internalError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function DELETE(request: NextRequest) {
@@ -30,15 +32,7 @@ export async function DELETE(request: NextRequest) {
       status: 'SUCCESS',
       message: 'User deleted successfully',
     });
-  } catch (error) {
-    console.error('API Error:', error);
-    return NextResponse.json(
-      { 
-        code: 0,
-        status: 'ERROR',
-        error: error instanceof Error ? error.message : 'Internal server error' 
-      },
-      { status: 500 }
-    );
+  } catch (err) {
+    return internalError(E.SV001, err);
   }
 }

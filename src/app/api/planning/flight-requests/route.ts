@@ -1,5 +1,7 @@
 import { listFlightRequests } from '@/backend/services/mission/flight-request-service';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { internalError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
@@ -12,7 +14,7 @@ export async function POST(req: NextRequest) {
 
     const items = await listFlightRequests(session!.user.ownerId, status);
     return NextResponse.json({ code: 1, items, dataRows: items.length });
-  } catch (err: any) {
-    return NextResponse.json({ code: 0, error: err.message }, { status: 500 });
+  } catch (err) {
+    return internalError(E.SV001, err);
   }
 }

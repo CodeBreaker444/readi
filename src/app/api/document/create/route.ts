@@ -1,6 +1,8 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { createDocument } from '@/backend/services/document/document-service';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { apiError, internalError, zodError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
 
@@ -35,10 +37,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const parsed = DocumentCreateSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { code: 0, error: parsed.error.issues[0]?.message ?? 'Validation error' },
-        { status: 400 }
-      );
+      return zodError(E.VL001, parsed.error);
     }
 
     const { s3_key, file_name, file_size, owner_role, description, keywords, tags, version_label, change_log, ...rest } = parsed.data;
@@ -69,14 +68,13 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ code: 1, message: 'Document created', ...result }, { status: 201 });
-  } catch (err: any) {
-    const msg: string = err?.message ?? '';
-
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : '';
     if (msg === 'A document with code already exists.') {
-      return NextResponse.json({ code: 0, error: msg }, { status: 400 });
+      return apiError(E.DB005, 409);
     }
 
     console.error('[document_create]', err);
-    return NextResponse.json({ code: 0, error: msg || 'Internal server error' }, { status: 500 });
+    return internalError(E.SV001, err);
   }
 }

@@ -1,5 +1,7 @@
 import { getSystemList } from '@/backend/services/system/system-service';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { internalError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
@@ -16,10 +18,7 @@ export async function POST(request: NextRequest) {
     const result = await getSystemList(ownerId, clientId, active);
 
     return NextResponse.json(result);
-  } catch (error: any) {
-    return NextResponse.json(
-      { code: 0, status: 'ERROR', message: error.message },
-      { status: 500 }
-    );
+  } catch (err) {
+    return internalError(E.SV001, err);
   }
 }

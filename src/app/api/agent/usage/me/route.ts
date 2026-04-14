@@ -2,14 +2,15 @@ import { getUserSession } from "@/lib/auth/server-session";
 import { getPlatformDailyTokens, getUserDailyTokens } from "@/lib/token-tracker";
 import { NextResponse } from "next/server";
 import { TOKEN_LIMITS } from "../../../../../lib/token-limits";
-
+import { internalError, unauthorized } from "@/lib/api-error";
+import { E } from "@/lib/error-codes";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
     try {
         const session = await getUserSession();
         if (!session) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+            return unauthorized(E.AU001);
         }
 
         const [userUsed, platformUsed] = await Promise.all([
@@ -34,8 +35,7 @@ export async function GET() {
                 percent: platformPercent,
             },
         });
-    } catch (error: any) {
-        console.error("Usage/me error:", error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (err) {
+        return internalError(E.SV001, err);
     }
 }

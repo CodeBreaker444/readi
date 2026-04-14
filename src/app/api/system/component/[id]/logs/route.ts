@@ -1,6 +1,8 @@
 import { getAuditLogs } from '@/backend/services/auditLog/audit-log';
 import { getComponentTicketEvents } from '@/backend/services/system/maintenance-ticket';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { internalError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
@@ -31,7 +33,7 @@ export async function GET(
       audit_logs: auditResult.data,
       ticket_events: ticketEvents,
     });
-  } catch (err: any) {
-    return NextResponse.json({ code: 0, message: err.message }, { status: 500 });
+  } catch (err) {
+    return internalError(E.SV001, err);
   }
 }

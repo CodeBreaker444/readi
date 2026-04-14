@@ -1,5 +1,7 @@
 import { deleteCommunication } from "@/backend/services/organization/communication-service";
 import { requirePermission } from "@/lib/auth/api-auth";
+import { internalError, zodError } from "@/lib/api-error";
+import { E } from "@/lib/error-codes";
 import { type NextRequest, NextResponse } from "next/server";
 import z from "zod";
 
@@ -19,10 +21,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { code: 0, message: "Validation failed", errors: parsed.error.flatten() },
-        { status: 400 }
-      );
+      return zodError(E.VL001, parsed.error);
     }
 
     const ownerId = session!.user.ownerId;
@@ -32,8 +31,7 @@ export async function POST(request: NextRequest) {
     const status = result.code === 1 ? 200 : 422;
     return NextResponse.json(result, { status });
 
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Internal server error";
-    return NextResponse.json({ code: 0, message }, { status: 500 });
+  } catch (err) {
+    return internalError(E.SV001, err);
   }
 }

@@ -4,6 +4,8 @@ import {
   getEvaluationFiles
 } from '@/backend/services/planning/evaluation-detail';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { apiError, internalError, zodError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
 
@@ -24,15 +26,9 @@ export async function GET(
     return NextResponse.json({ success: true, data });
   } catch (err: any) {
     if (err.name === 'ZodError') {
-      return NextResponse.json(
-        { success: false, errors: err.flatten().fieldErrors },
-        { status: 400 },
-      );
+      return zodError(E.VL001, err);
     }
-    return NextResponse.json(
-      { success: false, message: err.message ?? 'Server error' },
-      { status: 500 },
-    );
+    return internalError(E.SV001, err);
   }
 }
 
@@ -59,10 +55,7 @@ export async function POST(
 
     const file = formData.get('evaluation_file') as File | null;
     if (!file || !(file instanceof File)) {
-      return NextResponse.json(
-        { success: false, message: 'No file provided' },
-        { status: 400 },
-      );
+      return apiError(E.UP004, 400);
     }
 
     const result = await addEvaluationFile(
@@ -74,24 +67,15 @@ export async function POST(
     );
 
     if (!result.success) {
-      return NextResponse.json(
-        { success: false, message: result.message },
-        { status: 422 },
-      );
+      return apiError(E.SV002, 422);
     }
 
     return NextResponse.json({ success: true, data: result.data });
   } catch (err: any) {
     if (err.name === 'ZodError') {
-      return NextResponse.json(
-        { success: false, errors: err.flatten().fieldErrors },
-        { status: 400 },
-      );
+      return zodError(E.VL001, err);
     }
-    return NextResponse.json(
-      { success: false, message: err.message ?? 'Server error' },
-      { status: 500 },
-    );
+    return internalError(E.SV001, err);
   }
 }
 
@@ -106,32 +90,20 @@ export async function DELETE(
     const fileId = Number(req.nextUrl.searchParams.get('fileId'));
 
     if (!fileId || isNaN(fileId)) {
-      return NextResponse.json(
-        { success: false, message: 'fileId query param required' },
-        { status: 400 },
-      );
+      return apiError(E.VL004, 400);
     }
 
     const result = await deleteEvaluationFile(session!.user.ownerId, id, fileId);
 
     if (!result.success) {
-      return NextResponse.json(
-        { success: false, message: result.message },
-        { status: 422 },
-      );
+      return apiError(E.SV002, 422);
     }
 
     return NextResponse.json({ success: true });
   } catch (err: any) {
     if (err.name === 'ZodError') {
-      return NextResponse.json(
-        { success: false, errors: err.flatten().fieldErrors },
-        { status: 400 },
-      );
+      return zodError(E.VL001, err);
     }
-    return NextResponse.json(
-      { success: false, message: err.message ?? 'Server error' },
-      { status: 500 },
-    );
+    return internalError(E.SV001, err);
   }
 }

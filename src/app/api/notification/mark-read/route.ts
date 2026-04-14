@@ -1,5 +1,7 @@
 import { markNotificationRead } from "@/backend/services/notification/notification-service";
 import { requirePermission } from "@/lib/auth/api-auth";
+import { internalError, zodError } from "@/lib/api-error";
+import { E } from "@/lib/error-codes";
 import { NextRequest, NextResponse } from "next/server";
 import z from "zod";
 
@@ -15,19 +17,13 @@ export async function POST(req: NextRequest) {
 
     const parsed = markReadSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { success: false, message: parsed.error },
-        { status: 400 }
-      );
+      return zodError(E.VL001, parsed.error);
     }
 
     await markNotificationRead(parsed.data,session!.user.userId );
 
     return NextResponse.json({ success: true, message: "Marked as read." });
-  } catch (err: any) {
-    return NextResponse.json(
-      { success: false, message: err.message ?? "Internal server error" },
-      { status: 500 }
-    );
+  } catch (err) {
+    return internalError(E.SV001, err);
   }
 }

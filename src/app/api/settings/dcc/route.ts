@@ -1,5 +1,7 @@
 import { getDccIntegration, upsertDccIntegration } from '@/backend/services/mission/dcc-settings-service';
+import { internalError, zodError } from '@/lib/api-error';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -16,7 +18,7 @@ export async function GET() {
     const integration = await getDccIntegration(session!.user.ownerId);
     return NextResponse.json({ code: 1, data: integration ?? null });
   } catch (err: any) {
-    return NextResponse.json({ code: 0, error: err.message }, { status: 500 });
+    return internalError(E.SV001, err);
   }
 }
 
@@ -28,10 +30,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const parsed = SaveSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { code: 0, error: parsed.error.issues[0]?.message ?? 'Validation error' },
-        { status: 400 },
-      );
+      return zodError(E.VL001, parsed.error);
     }
 
     await upsertDccIntegration(
@@ -42,6 +41,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ code: 1, message: 'DCC integration saved' });
   } catch (err: any) {
-    return NextResponse.json({ code: 0, error: err.message }, { status: 500 });
+    return internalError(E.SV001, err);
   }
 }

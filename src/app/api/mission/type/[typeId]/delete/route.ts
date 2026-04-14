@@ -1,6 +1,8 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { deleteMissionType } from '@/backend/services/mission/mission-type';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { internalError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(
@@ -28,10 +30,7 @@ export async function POST(
     });
 
     return NextResponse.json(result);
-  } catch (error: any) {
-    return NextResponse.json(
-      { code: 0, status: 'ERROR', message: error.message },
-      { status: 500 }
-    );
+  } catch (err) {
+    return internalError(E.SV001, err);
   }
 }

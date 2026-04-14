@@ -1,5 +1,7 @@
 import { fetchUsers } from '@/backend/services/operation/communication-service';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { internalError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(req: NextRequest) {
@@ -23,8 +25,7 @@ export async function GET(req: NextRequest) {
     }));
 
     return NextResponse.json({ recipients, procedure });
-  } catch (err: any) {
-    console.error('[GET /api/operation/communication/recipients]', err);
-    return NextResponse.json({ error: err?.message ?? 'Error' }, { status: 500 });
+  } catch (err) {
+    return internalError(E.SV001, err);
   }
 }

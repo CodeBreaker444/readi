@@ -1,6 +1,8 @@
 import { fetchCommunicationList } from "@/backend/services/organization/communication-service";
 import { requirePermission } from "@/lib/auth/api-auth";
 import { type NextRequest, NextResponse } from "next/server";
+import { internalError } from "@/lib/api-error";
+import { E } from "@/lib/error-codes";
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,13 +14,12 @@ export async function GET(request: NextRequest) {
     const data = await fetchCommunicationList(ownerId);
 
       return NextResponse.json({
-             data,
-            message: 'Communication list fetched successfully',
-            code: 1,
-            dataRows: 1,
-        }, { status: 200 });
+        code: 1,
+        message: 'Communication list fetched successfully',
+        data,
+        dataRows: data.dataRows,
+    });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Internal server error";
-    return NextResponse.json({ code: 0, message }, { status: 500 });
+    return internalError(E.SV001, error);
   }
 }

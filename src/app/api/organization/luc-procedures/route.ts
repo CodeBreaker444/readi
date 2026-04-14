@@ -3,6 +3,8 @@ import z from 'zod';
 
 import { createLucProcedure, getLucProcedures } from '@/backend/services/organization/lcu-service';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { E } from '@/lib/error-codes';
+import { internalError, zodError } from '@/lib/api-error';
 
 export async function GET(request: NextRequest) {
     try {
@@ -21,8 +23,7 @@ export async function GET(request: NextRequest) {
             dataRows: procedures.length,
         }, { status: 200 });
     } catch (error) {
-        const message = error instanceof Error ? error.message : 'Unexpected error';
-        return NextResponse.json({ message, code: 0, data: [], dataRows: 0 }, { status: 500 });
+        return internalError(E.SV001, error );
     }
 }
 
@@ -48,10 +49,7 @@ export async function POST(request: NextRequest) {
 
         const validation = createSchema.safeParse(body);
         if (!validation.success) {
-            return NextResponse.json(
-                { message: `Validation error: ${JSON.stringify(validation.error.issues, null, 2)}`, code: 0, data: null, dataRows: 0 },
-                { status: 400 }
-            );
+            return zodError(E.VL001, validation.error);
         }
 
         const created = await createLucProcedure({
@@ -68,7 +66,6 @@ export async function POST(request: NextRequest) {
             dataRows: 1,
         }, { status: 201 });
     } catch (error) {
-        const message = error instanceof Error ? error.message : 'Unexpected error';
-        return NextResponse.json({ message, code: 0, data: null, dataRows: 0 }, { status: 500 });
+        return internalError(E.SV001, error);
     }
 }

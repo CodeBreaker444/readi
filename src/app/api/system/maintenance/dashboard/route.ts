@@ -1,5 +1,7 @@
 import { getMaintenanceDashboard } from "@/backend/services/system/maintenance-service";
+import { internalError, zodError } from "@/lib/api-error";
 import { requirePermission } from "@/lib/auth/api-auth";
+import { E } from "@/lib/error-codes";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -22,14 +24,7 @@ export async function POST(req: NextRequest) {
 
     const parsed = MaintenanceDashboardSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        {
-          code: 0,
-          message: "Validation error",
-          errors: parsed.error.flatten((i) => i.message).fieldErrors,
-        },
-        { status: 400 }
-      );
+      return zodError(E.VL001, parsed.error);
     }
 
     const data = await getMaintenanceDashboard({
@@ -44,16 +39,6 @@ export async function POST(req: NextRequest) {
       data,
     });
   } catch (error) {
-    console.error("[maintenance/dashboard] error:", error);
-    return NextResponse.json(
-      {
-        code: 0,
-        message:
-          error instanceof Error ? error.message : "Internal server error",
-        data: [],
-        dataRows: 0,
-      },
-      { status: 500 }
-    );
+    return internalError(E.SV001, error);
   }
 }

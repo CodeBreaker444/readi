@@ -1,5 +1,7 @@
 import { countNodes, getOrganizationTree } from "@/backend/services/organization/organization-service";
 import { requirePermission } from "@/lib/auth/api-auth";
+import {  internalError, notFound } from "@/lib/api-error";
+import { E } from "@/lib/error-codes";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
@@ -10,28 +12,20 @@ export async function GET(request: Request) {
     const ownerId = session!.user.ownerId;
 
     if (!ownerId || isNaN(Number(ownerId))) {
-      return NextResponse.json(
-        { message: "error", error: `Invalid ownerId in session: "${ownerId}"` },
-        { status: 400 }
-      );
+      return notFound(E.VL001);
     }
 
     const tree = await getOrganizationTree(Number(ownerId));
     const totalNodes = countNodes(tree);
 
     return NextResponse.json({
-      message:  "success",
+      code: 1,
+      message:  "Organization chart fetched successfully",
       dataRows: totalNodes,
-      data:     tree,
+      data:     tree, 
     });
 
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : String(error);
-    console.error("[/api/organization] 500 →", message);
-
-    return NextResponse.json(
-      { message: "error", error: message },    
-      { status: 500 }
-    );
+  } catch (error) {
+    return internalError(E.SV001, error);
   }
 }

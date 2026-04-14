@@ -1,5 +1,7 @@
 import { getOperationCalendarEvents } from '@/backend/services/operation/operation-calendar-service'
 import { requirePermission } from '@/lib/auth/api-auth'
+import { internalError } from '@/lib/api-error'
+import { E } from '@/lib/error-codes'
 import { NextResponse } from 'next/server'
 
 export async function GET() {
@@ -9,8 +11,8 @@ export async function GET() {
 
     const { calendarEvents } = await getOperationCalendarEvents(session!.user.ownerId)
     return NextResponse.json({ success: true, data: calendarEvents })
-  } catch (err: any) {
+  } catch (err) {
     console.error('[GET /api/operation/calendar]', err)
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 })
+    return internalError(E.SV001, err)
   }
 }

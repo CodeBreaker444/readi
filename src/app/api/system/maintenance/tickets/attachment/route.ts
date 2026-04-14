@@ -1,6 +1,9 @@
 import { getTicketAttachments } from "@/backend/services/system/maintenance-ticket";
+import { internalError, zodError } from "@/lib/api-error";
 import { requirePermission } from "@/lib/auth/api-auth";
+import { E } from "@/lib/error-codes";
 import { NextRequest, NextResponse } from "next/server";
+import z from "zod";
 
 export async function GET(req: NextRequest) {
   try {
@@ -8,11 +11,10 @@ export async function GET(req: NextRequest) {
       if (error) return error;
 
     const ticketId = req.nextUrl.searchParams.get("ticket_id");
-    if (!ticketId) {
-      return NextResponse.json(
-        { code: 0, message: "ticket_id is required", data: [] },
-        { status: 400 }
-      );
+ 
+    const validation = z.object({ ticket_id: z.string().min(1, "ticket_id is required") }).safeParse({ ticket_id: ticketId });
+    if (!validation.success) {
+      return zodError(E.VL001, validation.error);
     }
 
     const data = await getTicketAttachments(Number(ticketId));
@@ -24,13 +26,6 @@ export async function GET(req: NextRequest) {
     });
   } catch (error) {
     console.error("[attachments] error:", error);
-    return NextResponse.json(
-      {
-        code: 0,
-        message: error instanceof Error ? error.message : "Internal server error",
-        data: [],
-      },
-      { status: 500 }
-    );
+    return internalError(E.SV001, error);
   }
 }

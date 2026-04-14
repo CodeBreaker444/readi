@@ -4,6 +4,8 @@ import {
   getTrainingAttendance,
 } from '@/backend/services/training/training-service';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { internalError, zodError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -52,17 +54,13 @@ export async function GET(req: NextRequest) {
     });
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { code: 0, error: 'Validation failed', details: parsed.error.issues },
-        { status: 422 }
-      );
+      return zodError(E.VL001, parsed.error);
     }
 
     const data = await getTrainingAttendance(parsed.data.training_id);
     return NextResponse.json({ code: 1, data });
-  } catch (err: any) {
-    console.error('[GET /api/training/attendance]', err);
-    return NextResponse.json({ code: 0, error: err?.message ?? 'Error' }, { status: 500 });
+  } catch (err) {
+    return internalError(E.SV001, err);
   }
 }
 
@@ -76,10 +74,7 @@ export async function POST(req: NextRequest) {
     if (body.action === 'delete') {
       const parsed = deleteAttendanceSchema.safeParse(body);
       if (!parsed.success) {
-        return NextResponse.json(
-          { code: 0, error: 'Validation failed', details: parsed.error.issues },
-          { status: 422 }
-        );
+        return zodError(E.VL001, parsed.error);
       }
       await deleteTrainingAttendance(parsed.data.attendance_id);
       return NextResponse.json({ code: 1, message: 'Deleted' });
@@ -87,16 +82,12 @@ export async function POST(req: NextRequest) {
 
     const parsed = addAttendanceSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { code: 0, error: 'Validation failed', details: parsed.error.issues },
-        { status: 422 }
-      );
+      return zodError(E.VL001, parsed.error);
     }
 
     const newId = await addTrainingAttendance(parsed.data);
     return NextResponse.json({ code: 1, message: 'Added', id: newId }, { status: 201 });
-  } catch (err: any) {
-    console.error('[POST /api/training/attendance]', err);
-    return NextResponse.json({ code: 0, error: err?.message ?? 'Error' }, { status: 500 });
+  } catch (err) {
+    return internalError(E.SV001, err);
   }
 }

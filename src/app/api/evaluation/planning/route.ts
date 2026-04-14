@@ -1,6 +1,8 @@
 
 import { addPlanningWithAssignment, deletePlanning, getPlanningData, getPlanningList, updatePlanning } from "@/backend/services/planning/planning-dashboard";
 import { requirePermission } from "@/lib/auth/api-auth";
+import { forbidden, internalError, zodError } from "@/lib/api-error";
+import { E } from "@/lib/error-codes";
 import { NextRequest, NextResponse } from "next/server";
 import z from "zod";
 
@@ -20,8 +22,8 @@ export async function GET(req: NextRequest) {
 
         const result = await getPlanningList(session!.user.ownerId);
         return NextResponse.json({ code: 1, message: "success", ...result });
-    } catch (err: any) {
-        return NextResponse.json({ code: 0, message: err.message }, { status: 500 });
+    } catch (err) {
+        return internalError(E.SV001, err);
     }
 }
 
@@ -68,14 +70,7 @@ export async function POST(req: NextRequest) {
     const parsed = addEvaluationPlanningSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        {
-          code: 0,
-          message: "Validation failed",
-          errors: parsed.error.flatten().fieldErrors,
-        },
-        { status: 400 }
-      );
+      return zodError(E.VL001, parsed.error);
     }
 
     const data = await addPlanningWithAssignment(
@@ -93,11 +88,8 @@ export async function POST(req: NextRequest) {
       message: "Planning created successfully",
       data,
     });
-  } catch (err: any) {
-    return NextResponse.json(
-      { code: 0, message: err.message ?? "Internal server error" },
-      { status: 500 }
-    );
+  } catch (err) {
+    return internalError(E.SV001, err);
   }
 }
 
@@ -111,17 +103,16 @@ export async function PUT(req: NextRequest) {
     try {
         const { session, error } = await requirePermission('view_planning');
         if (error) return error;
-        if (!PLANNING_ALLOWED_ROLES.includes(session!.user.role)) return NextResponse.json({ code: 0, message: 'Forbidden' }, { status: 403 });
+        if (!PLANNING_ALLOWED_ROLES.includes(session!.user.role)) return forbidden(E.PX004);
 
         const body = await req.json();
         const parsed = updatePlanningSchema.safeParse(body);
-        if (!parsed.success)
-            return NextResponse.json({ code: 0, message: "Validation failed", errors: parsed.error.flatten().fieldErrors }, { status: 400 });
+        if (!parsed.success) return zodError(E.VL001, parsed.error);
 
         const data = await updatePlanning(parsed.data, session!.user.ownerId);
         return NextResponse.json({ code: 1, message: "Planning updated", data });
-    } catch (err: any) {
-        return NextResponse.json({ code: 0, message: err.message }, { status: 500 });
+    } catch (err) {
+        return internalError(E.SV001, err);
     }
 }
 
@@ -136,12 +127,11 @@ export async function DELETE(req: NextRequest) {
 
         const body = await req.json();
         const parsed = deletePlanningSchema.safeParse(body);
-        if (!parsed.success)
-            return NextResponse.json({ code: 0, message: "Validation failed" }, { status: 400 });
+        if (!parsed.success) return zodError(E.VL001, parsed.error);
 
         await deletePlanning(session!.user.ownerId, parsed.data.planning_id);
         return NextResponse.json({ code: 1, message: "Planning deleted" });
-    } catch (err: any) {
-        return NextResponse.json({ code: 0, message: err.message }, { status: 500 });
+    } catch (err) {
+        return internalError(E.SV001, err);
     }
 }

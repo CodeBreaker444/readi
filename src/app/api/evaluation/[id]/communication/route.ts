@@ -1,5 +1,7 @@
 import { sendEvaluationCommunication } from '@/backend/services/planning/evaluation-detail';
+import { internalError } from '@/lib/api-error';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -48,9 +50,6 @@ export async function POST(
                 { status: 400 },
             );
         }
-        return NextResponse.json(
-            { code: 0, message: err.message ?? 'Server error' },
-            { status: 500 },
-        );
+        return internalError(E.AU002, err);   
     }
 }

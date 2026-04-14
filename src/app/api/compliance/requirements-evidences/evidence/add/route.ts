@@ -1,5 +1,8 @@
 import { addEvidence } from '@/backend/services/compliance/compliance-evidence-service';
+import { apiError, internalError } from '@/lib/api-error';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { zodError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -19,16 +22,13 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const parsed = AddEvidenceSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { code: 0, error: 'Validation failed', details: parsed.error.flatten() },
-        { status: 400 }
-      );
+      return zodError(E.VL001, parsed.error);
     }
 
     const ownerId = session!.user.ownerId;
     const userId = session!.user.id;
     if (!ownerId) {
-      return NextResponse.json({ code: 0, error: 'Owner not found in session' }, { status: 403 });
+      return apiError(E.AU003, 403);
     }
 
     const created = await addEvidence({
@@ -38,8 +38,8 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ code: 1, message: 'Evidence added', data: created });
-  } catch (err) {
-    console.error('[evidence/add] error:', err);
-    return NextResponse.json({ code: 0, error: 'Internal server error' }, { status: 500 });
+  } catch (error: any) { 
+    console.error('[evidence/add] error:', error);
+    return internalError(E.AU002, error); 
   }
 }

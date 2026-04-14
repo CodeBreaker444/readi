@@ -1,5 +1,7 @@
 import { addClient } from '@/backend/services/client/client-service';
 import { getUserSession } from '@/lib/auth/server-session';
+import { internalError, unauthorized, zodError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -25,19 +27,18 @@ export async function POST(req: NextRequest) {
         const session = await getUserSession()
 
         if (!session) {
-            return NextResponse.json({ message: "Unauthorized" }, { status: 401 })
+            return unauthorized(E.AU001);
         }
         const body = await req.json();
         const parsed = schema.safeParse(body);
 
         if (!parsed.success) {
-            const errorMessages = parsed.error.issues.map((e) => e.message).join(', ');
-            return NextResponse.json({ code: 0, error: errorMessages }, { status: 400 });
+            return zodError(E.VL001, parsed.error);
         }
 
         const result = await addClient({ ...parsed.data, fk_owner_id: session.user.ownerId });
         return NextResponse.json(result);
-    } catch {
-        return NextResponse.json({ code: 0, error: 'Internal server error' }, { status: 500 });
+    } catch (err) {
+        return internalError(E.SV001, err);
     }
 }

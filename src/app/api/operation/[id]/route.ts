@@ -1,8 +1,12 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
+import { notifyDccAcceptance } from '@/backend/services/mission/dcc-callback-service';
 import { deleteOperation, getOperation, updateOperation } from '@/backend/services/operation/operation-service';
 import { UpdateOperationSchema } from '@/config/types/operation';
+import { internalError, notFound, zodError } from '@/lib/api-error';
 import { requirePermission } from '@/lib/auth/api-auth';
 import { getUserSession } from '@/lib/auth/server-session';
+import { E } from '@/lib/error-codes';
+import type { DccCallbackResult } from '@/types/dcc-callback';
 import { NextRequest, NextResponse } from 'next/server';
 import { ZodError, z } from 'zod';
 
@@ -42,14 +46,14 @@ export async function GET(_req: NextRequest, { params }: Params) {
     if (error) return error;
 
     const id = parseInt((await params).id, 10);
+    if (isNaN(id)) return zodError(E.VL002, { flatten: () => ({ fieldErrors: {} }) });
 
     const operation = await getOperation(id);
-    if (!operation) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    if (!operation) return notFound(E.NF004);
 
     return NextResponse.json(operation);
   } catch (err) {
-    console.error('[GET /api/operation/:id]', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return internalError(E.SV001, err);
   }
 }
 
@@ -59,40 +63,43 @@ export async function PUT(req: NextRequest, { params }: Params) {
     if (error) return error;
 
     const id = parseInt((await params).id, 10);
+    if (isNaN(id)) return zodError(E.VL002, { flatten: () => ({ fieldErrors: {} }) });
 
     const body = await req.json();
     const validated = updateOperationSchema.parse(body) as UpdateOperationSchema;
     const updated = await updateOperation(id, validated);
 
-    if (session) {
-      logEvent({
-        eventType: 'UPDATE',
-        entityType: 'operation',
-        entityId: id,
-        description: `Updated operation #${id}${validated.mission_name ? ` '${validated.mission_name}'` : ''}`,
-        userId: session.user.userId,
-        userName: session.user.fullname,
-        userEmail: session.user.email,
-        userRole: session.user.role,
-        ownerId: session.user.ownerId,
-      });
+    logEvent({
+      eventType: 'UPDATE',
+      entityType: 'operation',
+      entityId: id,
+      description: `Updated operation #${id}${validated.mission_name ? ` '${validated.mission_name}'` : ''}`,
+      userId: session!.user.userId,
+      userName: session!.user.fullname,
+      userEmail: session!.user.email,
+      userRole: session!.user.role,
+      ownerId: session!.user.ownerId,
+    });
+
+    // If a drone was just assigned to a mission that has a DCC planning link,
+    // fire DCC acceptance now (it was skipped earlier when the drone wasn't set yet).
+    let dcc: DccCallbackResult | undefined;
+    const planningId = (updated as any)?.fk_planning_id ?? validated.fk_planning_id;
+    if (validated.fk_tool_id && planningId) {
+      dcc = await notifyDccAcceptance(session!.user.ownerId, planningId);
     }
 
-    return NextResponse.json(updated);
+    return NextResponse.json({ ...updated, ...(dcc ? { dcc } : {}) });
   } catch (err) {
-    if (err instanceof ZodError) {
-      return NextResponse.json({ error: 'Validation failed', details: err.flatten() }, { status: 400 });
-    }
-    console.error('[PUT /api/operations/:id]', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    if (err instanceof ZodError) return zodError(E.VL011, err);
+    return internalError(E.SV001, err);
   }
 }
-
 
 export async function DELETE(_req: NextRequest, { params }: Params) {
   try {
     const id = parseInt((await params).id, 10);
-    if (isNaN(id)) return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
+    if (isNaN(id)) return zodError(E.VL002, { flatten: () => ({ fieldErrors: {} }) });
 
     const session = await getUserSession();
     await deleteOperation(id);
@@ -113,7 +120,6 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
 
     return new NextResponse(null, { status: 204 });
   } catch (err) {
-    console.error('[DELETE /api/operation/:id]', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return internalError(E.SV001, err);
   }
 }

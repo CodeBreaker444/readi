@@ -1,6 +1,8 @@
  
 import { getProfile, updateProfile } from '@/backend/services/user/user-profile';
+import { internalError } from '@/lib/api-error';
 import { requireAuth } from '@/lib/auth/api-auth';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
 
@@ -27,10 +29,7 @@ export async function GET() {
 
     return NextResponse.json({ success: true, user });
   } catch (err: any) {
-    return NextResponse.json(
-      { success: false, message: err.message ?? 'Server error' },
-      { status: 500 },
-    );
+    return internalError(E.SV001, err);
   }
 }
 
@@ -111,9 +110,6 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       );
     }
-    return NextResponse.json(
-      { success: false, message: err.message ?? 'Server error' },
-      { status: 500 },
-    );
+    return internalError(E.SV001, err);
   }
 }

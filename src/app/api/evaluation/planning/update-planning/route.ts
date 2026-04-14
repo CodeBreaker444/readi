@@ -1,6 +1,8 @@
 
 import { updatePlanning } from "@/backend/services/planning/planning-dashboard";
 import { requirePermission } from "@/lib/auth/api-auth";
+import { internalError, zodError } from "@/lib/api-error";
+import { E } from "@/lib/error-codes";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -22,16 +24,13 @@ export async function POST(request: Request) {
         
         const parsed = schema.safeParse(body);
         if (!parsed.success) {
-            return NextResponse.json(
-                { code: 0, message: parsed.error },
-                { status: 400 }
-            );
+            return zodError(E.VL001, parsed.error);
         }
 
         await updatePlanning(parsed.data,session!.user.ownerId);
 
         return NextResponse.json({ code: 1, message: "Updated" });
-    } catch (err: any) {
-        return NextResponse.json({ code: 0, message: err.message }, { status: 500 });
+    } catch (err) {
+        return internalError(E.SV001, err);
     }
 }

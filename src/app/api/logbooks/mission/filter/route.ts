@@ -1,5 +1,7 @@
 import { getClientList, getEvaluationList, getPilotList, getPlanningList } from "@/backend/services/logbook/mission-service";
 import { requirePermission } from "@/lib/auth/api-auth";
+import { internalError } from "@/lib/api-error";
+import { E } from "@/lib/error-codes";
 import { NextRequest, NextResponse } from "next/server";
 
 
@@ -19,10 +21,7 @@ export async function POST(request: NextRequest) {
         ]);
 
         return NextResponse.json({ code: 200, status: "SUCCESS", clients, pilots, evaluations, plannings });
-    } catch (err: any) {
-        return NextResponse.json(
-            { code: 0, status: "ERROR", message: err?.message ?? "Internal server error" },
-            { status: 500 }
-        );
+    } catch (err) {
+        return internalError(E.SV001, err);
     }
 }

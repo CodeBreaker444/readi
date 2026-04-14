@@ -3,6 +3,8 @@ import {
     getAssignmentsByOwner,
 } from '@/backend/services/organization/assignment-service'
 import { requirePermission } from '@/lib/auth/api-auth'
+import { internalError, zodError } from '@/lib/api-error'
+import { E } from '@/lib/error-codes'
 import { NextRequest, NextResponse } from 'next/server'
 import z from 'zod'
 
@@ -14,12 +16,8 @@ export async function GET() {
 
     const result = await getAssignmentsByOwner(session!.user.ownerId)
     return NextResponse.json({ code: 1, data: result, dataRows: result.length, message: 'Assignments retrieved successfully' }, { status: 200 })
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unexpected error'
-    return NextResponse.json(
-      { code: 0, message, dataRows: 0, data: [] },
-      { status: 500 }
-    )
+  } catch (err) {
+    return internalError(E.SV001, err)
   }
 }
 
@@ -41,16 +39,7 @@ export async function POST(request: NextRequest) {
     const parsed = createSchema.safeParse(body)
 
     if (!parsed.success) {
-      return NextResponse.json(
-        {
-          code: 0,
-          message: 'Validation failed',
-          errors: parsed.error.flatten().fieldErrors,
-          dataRows: 0,
-          data: null,
-        },
-        { status: 400 }
-      )
+      return zodError(E.VL001, parsed.error)
     }
 
     const result = await createAssignment({
@@ -64,11 +53,7 @@ export async function POST(request: NextRequest) {
       data: result, 
       message: 'Assignment created successfully' 
     }, { status: 201 })
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unexpected error'
-    return NextResponse.json(
-      { code: 0, message, dataRows: 0, data: null },
-      { status: 500 }
-    )
+  } catch (err) {
+    return internalError(E.SV001, err)
   }
 }

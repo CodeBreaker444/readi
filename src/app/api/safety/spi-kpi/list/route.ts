@@ -1,6 +1,8 @@
 import { listSpiKpiDefinitions } from '@/backend/services/safetyManagement/spi-kpi-service'
 import { AREAS, TYPES } from '@/config/types/safetyMng'
 import { requirePermission } from '@/lib/auth/api-auth'
+import { internalError, zodError } from '@/lib/api-error'
+import { E } from '@/lib/error-codes'
 import { NextRequest, NextResponse } from 'next/server'
 import z from 'zod'
 
@@ -26,16 +28,12 @@ export async function GET(req: NextRequest) {
         })
 
         if (!parsed.success) {
-            return NextResponse.json(
-                { code: 0, error: parsed.error.issues[0].message },
-                { status: 400 }
-            )
+            return zodError(E.VL001, parsed.error)
         }
 
         const data = await listSpiKpiDefinitions(parsed.data)
         return NextResponse.json({ code: 1, data })
-    } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : 'Unknown error'
-        return NextResponse.json({ code: 0, error: message }, { status: 500 })
+    } catch (err) {
+        return internalError(E.SV001, err)
     }
 }

@@ -1,5 +1,7 @@
 import { supabase } from '@/backend/database/database';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { internalError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 
 type Params = { params: Promise<{ id: string }> };
@@ -38,8 +40,8 @@ export async function GET(_req: NextRequest, { params }: Params) {
       luc_completed_at: mission.luc_completed_at,
       procedure: procedure_steps,
     });
-  } catch (err: any) {
-    return NextResponse.json({ code: 0, error: err.message }, { status: 500 });
+  } catch (err) {
+    return internalError(E.SV001, err);
   }
 }
 
@@ -93,7 +95,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     if (uErr) throw new Error(uErr.message);
 
     return NextResponse.json({ code: 1, progress, all_completed: allDone });
-  } catch (err: any) {
-    return NextResponse.json({ code: 0, error: err.message }, { status: 500 });
+  } catch (err) {
+    return internalError(E.SV001, err);
   }
 }

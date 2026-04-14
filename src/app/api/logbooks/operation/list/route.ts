@@ -1,5 +1,7 @@
 import { getOperationLogbookList } from "@/backend/services/logbook/flight-logbook-service";
 import { requirePermission } from "@/lib/auth/api-auth";
+import { internalError, zodError } from "@/lib/api-error";
+import { E } from "@/lib/error-codes";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -25,17 +27,7 @@ export async function POST(request: NextRequest) {
     const parsed = schema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        {
-          code: 0,
-          status: "VALIDATION_ERROR",
-          message: "Invalid input",
-          errors: parsed.error.flatten().fieldErrors,
-          dataRows: 0,
-          data: [],
-        },
-        { status: 400 }
-      );
+      return zodError(E.VL001, parsed.error);
     }
 
     const result = await getOperationLogbookList({
@@ -44,10 +36,7 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json(result, { status: 200 });
-  } catch (err: any) {
-    return NextResponse.json(
-      { code: 0, status: "ERROR", message: err?.message ?? "Internal server error", dataRows: 0, data: [] },
-      { status: 500 }
-    );
+  } catch (err) {
+    return internalError(E.SV001, err);
   }
 }

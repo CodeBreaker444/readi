@@ -1,5 +1,7 @@
 import { deleteComponentType, getComponentTypes, getComponentsUsingType, updateComponentType } from '@/backend/services/system/component-type-service';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { internalError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -18,18 +20,17 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const usage = await getComponentsUsingType(session!.user.ownerId, targetType.type_value);
 
     if (usage.length > 0 && !confirm_impact) {
-      return NextResponse.json({ 
-        code: 2,  
-        message: 'Impact detected', 
-        usage 
+      return NextResponse.json({
+        code: 2,
+        message: 'Impact detected',
+        usage
       });
     }
 
     await updateComponentType(session!.user.ownerId, Number(id), type_label);
     return NextResponse.json({ code: 1, message: 'Updated' });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    return NextResponse.json({ code: 0, message }, { status: 500 });
+    return internalError(E.SV001, err);
   }
 }
 
@@ -41,7 +42,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
 
     await deleteComponentType(session!.user.ownerId, Number(id));
     return NextResponse.json({ code: 1, message: 'Deleted' });
-  } catch (err: any) {
-    return NextResponse.json({ code: 0, message: err.message }, { status: 400 });
+  } catch (err) {
+    return internalError(E.SV001, err);
   }
 }

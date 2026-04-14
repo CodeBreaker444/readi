@@ -1,5 +1,7 @@
 import { saveChecklistResult } from '@/backend/services/organization/checklist-service';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { internalError, zodError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -19,10 +21,7 @@ export async function POST(req: NextRequest) {
     const parsed = postSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { code: 0, message: parsed.error.issues[0].message },
-        { status: 400 },
-      );
+      return zodError(E.VL001, parsed.error);
     }
 
     const { checklist_data, evaluation_id, task_id } = parsed.data;
@@ -30,8 +29,7 @@ export async function POST(req: NextRequest) {
     await saveChecklistResult(evaluation_id, task_id, checklist_data);
 
     return NextResponse.json({ code: 1, message: 'Checklist result saved' });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unexpected error';
-    return NextResponse.json({ code: 0, message }, { status: 500 });
+  } catch (err) {
+    return internalError(E.SV001, err);
   }
 }

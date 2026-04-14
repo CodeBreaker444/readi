@@ -1,5 +1,7 @@
 import { deleteFlatTraining } from '@/backend/services/training/training-service';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { internalError, zodError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
 
@@ -14,16 +16,12 @@ export async function POST(req: NextRequest) {
 
     const parsed = deleteSchema.safeParse(await req.json());
     if (!parsed.success) {
-      return NextResponse.json(
-        { code: 0, error: 'Validation failed', details: parsed.error.issues },
-        { status: 422 }
-      );
+      return zodError(E.VL001, parsed.error);
     }
 
     await deleteFlatTraining(parsed.data.attendance_id);
     return NextResponse.json({ code: 1, message: 'Deleted' });
-  } catch (err: any) {
-    console.error('[POST /api/training/delete]', err);
-    return NextResponse.json({ code: 0, error: err?.message ?? 'Error' }, { status: 500 });
+  } catch (err) {
+    return internalError(E.SV001, err);
   }
 }

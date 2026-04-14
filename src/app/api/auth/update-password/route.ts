@@ -1,5 +1,7 @@
 import { supabase } from '@/backend/database/database'
 import { verifyToken } from '@/lib/auth/jwt-utils'
+import { dbError, internalError, unauthorized, zodError } from '@/lib/api-error'
+import { E } from '@/lib/error-codes'
 import bcrypt from 'bcrypt'
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
@@ -20,14 +22,7 @@ export async function POST(request: NextRequest) {
     const validation = validateSchema.safeParse(body)
 
     if (!validation.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Validation failed',
-          details: validation.error.flatten().fieldErrors
-        },
-        { status: 400 }
-      )
+      return zodError(E.VL001, validation.error)
     }
 
     const { newPassword } = validation.data
@@ -36,13 +31,13 @@ export async function POST(request: NextRequest) {
     const token = cookieStore.get('readi_auth_token')?.value
 
     if (!token) {
-      return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 })
+      return unauthorized(E.AU001)
     }
 
     const payload = verifyToken(token)
     
     if (!payload || !payload.sub) {
-      return NextResponse.json({ success: false, error: 'Invalid token' }, { status: 401 })
+      return unauthorized(E.AU010)
     }
 
     const { data: userData, error: userFetchError } = await supabase
@@ -52,7 +47,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (userFetchError || !userData) {
-      return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 })
+      return NextResponse.json({ code: 0, error: 'User not found' }, { status: 404 })
     }
 
     const saltRounds = 10;
@@ -65,10 +60,7 @@ export async function POST(request: NextRequest) {
       )
 
       if (authUpdateError) {
-        return NextResponse.json(
-          { success: false, error: `Auth service error: ${authUpdateError.message}` },
-          { status: 500 }
-        )
+        return internalError(E.AU008, authUpdateError)
       }
     }
 
@@ -81,7 +73,7 @@ export async function POST(request: NextRequest) {
       .eq('user_id', payload.sub)
 
     if (updateError) {
-      return NextResponse.json({ success: false, error: 'Failed to update database' }, { status: 500 })
+      return dbError(E.DB003, updateError)
     }
 
     const { error: settingsError } = await supabase
@@ -105,8 +97,8 @@ export async function POST(request: NextRequest) {
       message: 'Password changed successfully'
     })
 
-  } catch (error: any) {
-    console.error('Change password error:', error)
-    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })
+  } catch (err) {
+    console.error('Change password error:', err)
+    return internalError(E.SV001, err)
   }
 }
