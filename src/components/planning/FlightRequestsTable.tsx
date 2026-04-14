@@ -1,7 +1,16 @@
 'use client';
 
 import { FlightRequestDetailModal } from '@/components/planning/FlightRequestDetailModal';
-import { Evaluation, FlightRequest, createFlightRequestColumns } from '@/components/tables/flightRequestsColumns';
+import { FlightRequest, createFlightRequestColumns } from '@/components/tables/flightRequestsColumns';
+
+interface Planning {
+  planning_id: number;
+  planning_code: string;
+  planning_desc: string;
+  client_name: string;
+  planning_status: string;
+  fk_evaluation_id: number;
+}
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -33,9 +42,9 @@ export default function FlightRequestsTable() {
   const [flightId, setFlightId]   = useState('');
   const [pushingLog, setPushingLog] = useState(false);
 
-  const [planModal, setPlanModal]       = useState<{ request_id: number; mission_id: string } | null>(null);
-  const [evaluations, setEvaluations]   = useState<Evaluation[]>([]);
-  const [evalLoading, setEvalLoading]   = useState(false);
+  const [planModal, setPlanModal]           = useState<{ request_id: number; mission_id: string } | null>(null);
+  const [plannings, setPlannings]           = useState<Planning[]>([]);
+  const [evalLoading, setEvalLoading]       = useState(false);
   const [selectedEvalId, setSelectedEvalId] = useState('');
   const [submitting, setSubmitting]     = useState(false);
 
@@ -144,8 +153,8 @@ export default function FlightRequestsTable() {
     setSelectedEvalId('');
     setEvalLoading(true);
     try {
-      const { data } = await axios.get('/api/evaluation');
-      setEvaluations(data.data ?? []);
+      const { data } = await axios.get('/api/evaluation/planning');
+      setPlannings(data.data ?? []);
     } catch {
       toast.error('Failed to load planning missions');
     } finally {
@@ -385,21 +394,21 @@ export default function FlightRequestsTable() {
               <p className={`text-xs font-medium ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Select a planning mission</p>
               {evalLoading ? (
                 <div className="space-y-2">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-9 w-full rounded-lg" />)}</div>
-              ) : evaluations.length === 0 ? (
+              ) : plannings.length === 0 ? (
                 <p className={`text-xs py-3 text-center ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>No planning missions found.</p>
               ) : (
                 <div className={`rounded-lg border overflow-hidden divide-y max-h-56 overflow-y-auto ${isDark ? 'border-slate-700 divide-slate-700' : 'border-gray-200 divide-gray-100'}`}>
-                  {evaluations.map((ev) => (
-                    <button key={ev.evaluation_id} onClick={() => setSelectedEvalId(String(ev.evaluation_id))}
-                      className={`w-full text-left px-4 py-2.5 flex items-center gap-3 transition-colors text-xs ${selectedEvalId === String(ev.evaluation_id) ? isDark ? 'bg-violet-600/20 text-violet-300' : 'bg-violet-50 text-violet-700' : isDark ? 'hover:bg-slate-800 text-slate-300' : 'hover:bg-gray-50 text-gray-700'}`}>
-                      <span className={`w-2 h-2 rounded-full shrink-0 ${selectedEvalId === String(ev.evaluation_id) ? 'bg-violet-500' : isDark ? 'bg-slate-600' : 'bg-gray-300'}`} />
+                  {plannings.map((pl) => (
+                    <button key={pl.planning_id} onClick={() => setSelectedEvalId(String(pl.planning_id))}
+                      className={`w-full text-left px-4 py-2.5 flex items-center gap-3 transition-colors text-xs ${selectedEvalId === String(pl.planning_id) ? isDark ? 'bg-violet-600/20 text-violet-300' : 'bg-violet-50 text-violet-700' : isDark ? 'hover:bg-slate-800 text-slate-300' : 'hover:bg-gray-50 text-gray-700'}`}>
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${selectedEvalId === String(pl.planning_id) ? 'bg-violet-500' : isDark ? 'bg-slate-600' : 'bg-gray-300'}`} />
                       <span className="flex-1 min-w-0">
-                        <span className="font-mono font-semibold mr-2">EVAL_{ev.evaluation_id}</span>
-                        <span className="font-medium">{ev.client_name}</span>
-                        {ev.evaluation_desc && <span className={`ml-1 truncate ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>— {ev.evaluation_desc}</span>}
+                        <span className="font-mono font-semibold mr-2">PLN-{pl.planning_id}</span>
+                        <span className="font-medium">{pl.client_name}</span>
+                        {pl.planning_desc && <span className={`ml-1 truncate ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>— {pl.planning_desc}</span>}
                       </span>
                       <span className={`ml-auto shrink-0 text-[10px] px-1.5 py-0.5 rounded-full ${isDark ? 'bg-slate-700 text-slate-400' : 'bg-gray-100 text-gray-500'}`}>
-                        {ev.evaluation_status}
+                        {pl.planning_status}
                       </span>
                     </button>
                   ))}
