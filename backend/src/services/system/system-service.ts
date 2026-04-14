@@ -61,12 +61,28 @@ export async function getSystemList(
 
   const toolIds = (data || []).map((t) => t.tool_id);
   let missionData: Record<number, { count: number; time: number; distance: number }> = {};
+  const toolsInMaintenance = new Set<number>();
 
   if (toolIds.length > 0) {
-    const { data: missions } = await supabase
-      .from('pilot_mission')
-      .select('fk_tool_id, flight_duration, distance_flown')
-      .in('fk_tool_id', toolIds);
+    const [{ data: missions }, { data: openTickets }, { data: openComponentTickets }] = await Promise.all([
+      supabase
+        .from('pilot_mission')
+        .select('fk_tool_id, flight_duration, distance_flown')
+        .in('fk_tool_id', toolIds),
+      // Tools with open maintenance tickets
+      supabase
+        .from('maintenance_ticket')
+        .select('fk_tool_id')
+        .in('fk_tool_id', toolIds)
+        .neq('ticket_status', 'CLOSED'),
+      // Tools whose components are in maintenance
+      supabase
+        .from('tool_component')
+        .select('fk_tool_id')
+        .in('fk_tool_id', toolIds)
+        .eq('component_active', 'Y')
+        .eq('component_metadata->>component_status', 'MAINTENANCE'),
+    ]);
 
     (missions || []).forEach((m) => {
       if (!missionData[m.fk_tool_id]) {
@@ -76,6 +92,9 @@ export async function getSystemList(
       missionData[m.fk_tool_id].time += m.flight_duration || 0;
       missionData[m.fk_tool_id].distance += m.distance_flown || 0;
     });
+
+    (openTickets || []).forEach((t) => toolsInMaintenance.add(t.fk_tool_id));
+    (openComponentTickets || []).forEach((c) => toolsInMaintenance.add(c.fk_tool_id));
   }
 
   let filtered = data || [];
@@ -120,7 +139,7 @@ export async function getSystemList(
           client_name: clientMap[metaClientId] || '',
           tool_latitude: item.tool_metadata?.latitude,
           tool_longitude: item.tool_metadata?.longitude,
-          tool_status: item.tool_metadata?.status || 'OPERATIONAL',
+          tool_status: toolsInMaintenance.has(item.tool_id) ? 'MAINTENANCE' : (item.tool_metadata?.status || 'OPERATIONAL'),
           tot_mission: missionData[item.tool_id]?.count || 0,
           tot_flown_time: missionData[item.tool_id]?.time || 0,
           tot_flown_meter: missionData[item.tool_id]?.distance || 0,
@@ -517,6 +536,11 @@ export async function getComponentList(ownerId: number, toolId?: number) {
     maintenance_cycle_hour,
     maintenance_cycle_day,
     maintenance_cycle_flight,
+    current_usage_hours,
+    current_maintenance_hours,
+    current_maintenance_days,
+    current_maintenance_flights,
+    last_maintenance_date,
     dcc_drone_id
   `;
 
@@ -565,6 +589,11 @@ export async function getComponentList(ownerId: number, toolId?: number) {
       maintenance_cycle_hour: item.maintenance_cycle_hour ?? '',
       maintenance_cycle_day: item.maintenance_cycle_day ?? '',
       maintenance_cycle_flight: item.maintenance_cycle_flight ?? '',
+      current_usage_hours: Number(item.current_usage_hours) || 0,
+      current_maintenance_hours: Number(item.current_maintenance_hours) || 0,
+      current_maintenance_days: Number(item.current_maintenance_days) || 0,
+      current_maintenance_flights: Number(item.current_maintenance_flights) || 0,
+      last_maintenance_date: item.last_maintenance_date || null,
       dcc_drone_id: item.dcc_drone_id ?? null,
     })),
   };

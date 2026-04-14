@@ -335,8 +335,8 @@ const modelColumns = useMemo(
     );
 
     const tabConfig: { key: ActiveTab; label: string }[] = [
-        { key: 'system', label: 'System' },
-        { key: 'model', label: 'Model' },
+        { key: 'system', label: 'Systems' },
+        { key: 'model', label: 'Models' },
         { key: 'component', label: 'Components' },
     ];
 

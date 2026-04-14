@@ -293,7 +293,7 @@ export default function ViewSystemModal({ open, toolId, onClose }: ViewSystemMod
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center justify-between gap-3 mr-6">
             <DialogTitle>
@@ -363,7 +363,10 @@ export default function ViewSystemModal({ open, toolId, onClose }: ViewSystemMod
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-500">Status</p>
-                    <Badge variant={toolData?.tool_status === 'OPERATIONAL' ? 'default' : 'secondary'}>
+                    <Badge variant={
+                      toolData?.tool_status === 'MAINTENANCE' ? 'destructive' :
+                      toolData?.tool_status === 'OPERATIONAL' ? 'default' : 'secondary'
+                    }>
                       {toolData?.tool_status || 'UNKNOWN'}
                     </Badge>
                   </div>
@@ -393,8 +396,14 @@ export default function ViewSystemModal({ open, toolId, onClose }: ViewSystemMod
                       <p className="text-2xl font-bold">{toolData?.tot_mission ?? 0}</p>
                     </div>
                     <div className="bg-green-50 p-4 rounded-lg">
-                      <p className="text-sm text-gray-600">Flight Time</p>
-                      <p className="text-2xl font-bold">{Math.round((toolData?.tot_flown_time || 0) / 60)} min</p>
+                      <p className="text-sm text-gray-600">Total Hours</p>
+                      <p className="text-2xl font-bold">
+                        {(() => {
+                          const droneComp = (components as any[]).find(c => c.component_type === 'DRONE');
+                          const hours = droneComp?.current_usage_hours || toolData?.tot_flown_time || 0;
+                          return `${Number(hours).toFixed(1)} h`;
+                        })()}
+                      </p>
                     </div>
                     <div className="bg-purple-50 p-4 rounded-lg">
                       <p className="text-sm text-gray-600">Distance</p>
@@ -406,14 +415,6 @@ export default function ViewSystemModal({ open, toolId, onClose }: ViewSystemMod
 
               <TabsContent value="specifications" className="space-y-4 pt-4">
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">GCS Type</p>
-                    <p className="text-base">{toolData?.tool_gcs_type || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">C2 Platform</p>
-                    <p className="text-base">{toolData?.tool_ccPlatform || 'N/A'}</p>
-                  </div>
                   <div>
                     <p className="text-sm font-medium text-gray-500">Latitude</p>
                     <p className="text-base">{toolData?.tool_latitude || 'N/A'}</p>
@@ -454,10 +455,23 @@ export default function ViewSystemModal({ open, toolId, onClose }: ViewSystemMod
                               </Badge>
                             )}
                           </div>
-                          <div className="mt-2 grid grid-cols-3 gap-2 text-sm">
+                          <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
                             <div><span className="text-gray-500">Code:</span> {component.component_code || component.factory_serie || '—'}</div>
                             <div><span className="text-gray-500">Serial:</span> {component.component_sn || 'N/A'}</div>
-                            <div><span className="text-gray-500">Usage:</span> {component.component_cycles || 0} hrs</div>
+                          </div>
+                          <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
+                            <div className="bg-gray-50 rounded px-2 py-1">
+                              <p className="text-gray-400">Since last maint.</p>
+                              <p className="font-semibold">{Number(component.current_maintenance_hours || 0).toFixed(1)} h</p>
+                            </div>
+                            <div className="bg-gray-50 rounded px-2 py-1">
+                              <p className="text-gray-400">Days</p>
+                              <p className="font-semibold">{component.current_maintenance_days ?? 0} d</p>
+                            </div>
+                            <div className="bg-gray-50 rounded px-2 py-1">
+                              <p className="text-gray-400">Flights</p>
+                              <p className="font-semibold">{component.current_maintenance_flights ?? 0}</p>
+                            </div>
                           </div>
                         </div>
                       );
