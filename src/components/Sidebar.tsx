@@ -584,7 +584,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
           <>
             {filteredNavigationItems.map((item) => {
               const Icon = item.icon;
-              const isActive = activeItem === item.href;
+              const isActive = isRouteActive(item.href, item.subItems);
               const isExpanded = expandedItems.includes(item.href);
               const hasSubItems = !!item.subItems && item.subItems.length > 0;
 
@@ -660,7 +660,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
                           className={`
                             flex items-center justify-between px-3 py-1.5 rounded-r-md
                             transition-all duration-150 cursor-pointer
-                            ${getItemClass(configItem.href, isActive)}
+                            ${getItemClass(configItem.href, isParentActive)}
                           `}
                           style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}
                         >
