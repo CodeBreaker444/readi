@@ -65,6 +65,20 @@ export async function POST(request: NextRequest) {
       param: body,
     });
   } catch (err) {
+    const msg = err instanceof Error ? err.message : '';
+    if (msg.startsWith('PENDING_ACTIVATION:')) {
+      const userId = msg.split(':')[1];
+      return NextResponse.json(
+        {
+          code: 0,
+          status: 'PENDING_ACTIVATION',
+          message: 'This email belongs to a user who has not yet activated their account.',
+          pending_user_id: Number(userId),
+          error_list: ['A pending invitation already exists for this email. Use "Resend Invite" to send a new activation link.'],
+        },
+        { status: 409 },
+      );
+    }
     return internalError(E.SV001, err);
   }
 }
