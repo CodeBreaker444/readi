@@ -423,6 +423,10 @@ export default function FlightRequestsTable() {
                 <p className={`text-xs ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
                   This request is not yet assigned to a planning mission. Assign it first.
                 </p>
+              ) : logStatus.reason === 'no_mission' ? (
+                <p className={`text-xs ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
+                  The assigned planning has no mission configured. Open the planning and assign a system to it first.
+                </p>
               ) : logStatus.logs.length > 0 ? (
                 <div className="space-y-1.5">
                   {logStatus.logs.map((l) => {

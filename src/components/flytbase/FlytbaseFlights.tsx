@@ -42,10 +42,6 @@ const WINDOWS = [
   // { label: 'Last week', value: 10080 },
 ];
 
-function formatMs(ms?: number): string {
-  if (ms == null) return '—';
-  return new Date(ms).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-}
 
 function formatDuration(secs?: number): string {
   if (secs == null) return '—';
@@ -307,16 +303,22 @@ export function FlytbaseFlights({ token }: Props) {
                             <p className={`text-xs font-medium truncate ${textPrimary}`}>
                               {flight.flight_name ?? flight.flight_id}
                             </p>
-                            {(flight.drone_name || flight.mission_name) && (
-                              <p className={`text-[11px] truncate mt-0.5 ${textSecondary}`}>
-                                {[flight.drone_name, flight.mission_name].filter(Boolean).join(' · ')}
-                              </p>
-                            )}
+                            <p className={`text-[10px] font-mono truncate mt-0.5 ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>
+                              {flight.flight_id}
+                            </p>
+                            <div className={`flex items-center gap-1.5 mt-0.5 text-[11px] ${textSecondary}`}>
+                              {flight.drone_name && (
+                                <span className="truncate font-medium">{flight.drone_name}</span>
+                              )}
+                            </div>
                             <div className={`flex items-center gap-2 mt-1 text-[10px] ${textSecondary}`}>
                               {flight.start_time && (
                                 <span className="flex items-center gap-1">
                                   <HiClock className="w-3 h-3" />
-                                  {formatMs(flight.start_time)}
+                                  {new Date(flight.start_time).toLocaleString([], {
+                                    month: 'short', day: 'numeric',
+                                    hour: '2-digit', minute: '2-digit',
+                                  })}
                                 </span>
                               )}
                               {flight.duration != null && (
