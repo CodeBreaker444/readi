@@ -198,6 +198,43 @@ function extractJwtClaims(token: string): Record<string, string> {
  * Fetch completed flights from the past `windowMinutes` minutes.
  * Returns the flights sorted newest-first.
  */
+export async function fetchLatestFlights(
+  token: string,
+  orgId: string,
+): Promise<{ flights: FlytbaseFlight[]; total: number }> {
+  const params = new URLSearchParams({ page: '1', limit: '20', archived: 'false' });
+
+  const response = await fetch(`${env.FLYTBASE_URL}/v2/flight?${params.toString()}`, {
+    method: 'GET',
+    headers: flytbaseHeaders(token, orgId),
+  });
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => response.statusText);
+    throw new Error(`FlytBase flights API error ${response.status}: ${text}`);
+  }
+
+  const body = await response.json();
+  const rawFlights: Record<string, unknown>[] = body?.flightLogs ?? [];
+  const total: number = (body?.total as { value?: number })?.value ?? rawFlights.length;
+
+  const flights: FlytbaseFlight[] = rawFlights.map((f) => ({
+    flight_id:    String(f.flight_id ?? ''),
+    flight_name:  f.flight_name  != null ? String(f.flight_name)  : undefined,
+    start_time:   f.start_time   != null ? Number(f.start_time)   : undefined,
+    end_time:     f.end_time     != null ? Number(f.end_time)      : undefined,
+    duration:     f.duration     != null ? Number(f.duration)      : undefined,
+    distance:     f.distance     != null ? Number(f.distance)      : undefined,
+    drone_name:   f.drone_name   != null ? String(f.drone_name)    : undefined,
+    drone_id:     f.drone_id     != null ? String(f.drone_id)      : undefined,
+    pilot_name:   f.pilot_name   != null ? String(f.pilot_name)    : undefined,
+    mission_name: f.mission_name != null ? String(f.mission_name)  : undefined,
+    status:       f.status       != null ? String(f.status)        : undefined,
+  }));
+
+  return { flights, total };
+}
+
 export async function fetchRecentFlights(
   token: string,
   orgId: string,

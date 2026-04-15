@@ -7,10 +7,12 @@ import { useState } from 'react';
 import {
   HiChip,
   HiClock,
+  HiInformationCircle,
   HiLocationMarker,
   HiMap,
   HiOutlineDocumentText,
   HiTable,
+  HiUser,
 } from 'react-icons/hi';
 
 const FlightPathMapDynamic = dynamic(
@@ -30,6 +32,23 @@ interface Flight {
   mission_name?: string;
 }
 
+interface GutmaEvent {
+  event_type?: string;
+  event_info?: string;
+  event_timestamp?: string | number;
+  controller_name?: string;
+  controller_type?: string;
+}
+
+interface GutmaPayloadItem {
+  model?: string;
+  serial_number?: string;
+  firmware_version?: string;
+  cycle_count?: number;
+  design_capacity?: number;
+  type?: string;
+}
+
 interface GutmaPreview {
   flight_id: string;
   filename?: string;
@@ -45,6 +64,10 @@ interface GutmaPreview {
     name?: string;
     serial_number?: string;
   };
+  pilot?: string | null;
+  logging_start?: string | null;
+  events?: GutmaEvent[];
+  payload?: GutmaPayloadItem[];
   waypoints: FlightWaypoint[];
   total_waypoints: number;
   start_time?: string;
@@ -74,7 +97,7 @@ export function GutmaPreviewPanel({
   flight, preview, loading, isDark, previewError,
   canArchive, archiving, archived, onArchive,
 }: Props) {
-  const [tab, setTab] = useState<'map' | 'gutma'>('map');
+  const [tab, setTab] = useState<'map' | 'gutma' | 'info'>('map');
 
   const card = isDark ? 'bg-[#0c0f1a] border-slate-800' : 'bg-white border-slate-200 shadow-sm';
   const textPrimary = isDark ? 'text-white' : 'text-slate-900';
@@ -88,7 +111,7 @@ export function GutmaPreviewPanel({
     preview.waypoints.some((wp) => wp.latitude != null && wp.longitude != null)
   );
 
-  function TabButton({ id, icon, label }: { id: 'map' | 'gutma'; icon: React.ReactNode; label: string }) {
+  function TabButton({ id, icon, label }: { id: 'map' | 'gutma' | 'info'; icon: React.ReactNode; label: string }) {
     const active = tab === id;
     return (
       <button
@@ -161,8 +184,9 @@ export function GutmaPreviewPanel({
 
       {!loading && preview && (
         <div className={`flex border-b ${tabBorder} px-3`}>
-          <TabButton id="map"   icon={<HiMap   className="w-3.5 h-3.5" />} label="Map" />
-          <TabButton id="gutma" icon={<HiTable className="w-3.5 h-3.5" />} label="GUTMA Log" />
+          <TabButton id="map"   icon={<HiMap               className="w-3.5 h-3.5" />} label="Map" />
+          <TabButton id="gutma" icon={<HiTable             className="w-3.5 h-3.5" />} label="GUTMA Log" />
+          <TabButton id="info"  icon={<HiInformationCircle className="w-3.5 h-3.5" />} label="Flight Info" />
         </div>
       )}
 
@@ -201,6 +225,108 @@ export function GutmaPreviewPanel({
               <div className={`rounded-lg border p-8 text-center ${sectionBg}`}>
                 <HiMap className={`w-8 h-8 mx-auto mb-2 ${textSecondary}`} />
                 <p className={`text-xs ${textSecondary}`}>No GPS coordinates found in this GUTMA file.</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {!loading && preview && tab === 'info' && (
+          <div className="space-y-5">
+            {/* Pilot / Logging start */}
+            {(preview.pilot || preview.logging_start) && (
+              <Section title="Flight Details" icon={<HiUser className="w-3.5 h-3.5" />} isDark={isDark}>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {preview.pilot && (
+                    <StatBox label="Pilot in Command" value={preview.pilot} isDark={isDark} />
+                  )}
+                  {preview.logging_start && (
+                    <StatBox
+                      label="Logging Start"
+                      value={new Date(preview.logging_start).toLocaleString()}
+                      isDark={isDark}
+                    />
+                  )}
+                </div>
+              </Section>
+            )}
+
+            {/* Events */}
+            {preview.events && preview.events.length > 0 && (
+              <Section
+                title="Events"
+                subtitle={`${preview.events.length} event${preview.events.length !== 1 ? 's' : ''}`}
+                icon={<HiClock className="w-3.5 h-3.5" />}
+                isDark={isDark}
+              >
+                <div className="overflow-x-auto rounded-lg border" style={{ borderColor: isDark ? '#1e293b' : '#e2e8f0' }}>
+                  <table className="w-full text-[11px]">
+                    <thead>
+                      <tr className={`border-b ${tableBorder}`}>
+                        {['#', 'Timestamp', 'Type', 'Info', 'Controller'].map((h) => (
+                          <th key={h} className={`px-3 py-2 text-left font-medium uppercase tracking-wider whitespace-nowrap ${textSecondary}`}>
+                            {h}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className={`divide-y ${isDark ? 'divide-slate-800' : 'divide-slate-100'}`}>
+                      {preview.events.map((ev, i) => {
+                        const ts = ev.event_timestamp;
+                        const tsFormatted = ts != null
+                          ? (typeof ts === 'number'
+                            ? new Date(ts).toISOString().slice(11, 23)
+                            : String(ts))
+                          : '—';
+                        return (
+                          <tr key={i} className={`${isDark ? 'hover:bg-slate-800/40' : 'hover:bg-slate-50'} transition-colors`}>
+                            <td className={`px-3 py-1.5 font-mono ${textSecondary}`}>{i + 1}</td>
+                            <td className={`px-3 py-1.5 font-mono ${textSecondary}`}>{tsFormatted}</td>
+                            <td className={`px-3 py-1.5 font-mono font-medium ${textPrimary}`}>{ev.event_type ?? '—'}</td>
+                            <td className={`px-3 py-1.5 ${textPrimary}`}>{ev.event_info ?? '—'}</td>
+                            <td className={`px-3 py-1.5 font-mono ${textSecondary}`}>
+                              {ev.controller_name ?? ev.controller_type ?? '—'}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </Section>
+            )}
+
+            {/* Payload / Battery */}
+            {preview.payload && preview.payload.length > 0 && (
+              <Section
+                title="Payload / Battery"
+                subtitle={`${preview.payload.length} item${preview.payload.length !== 1 ? 's' : ''}`}
+                icon={<HiChip className="w-3.5 h-3.5" />}
+                isDark={isDark}
+              >
+                <div className="space-y-3">
+                  {preview.payload.map((item, i) => (
+                    <div key={i} className={`rounded-lg border p-3 ${isDark ? 'bg-slate-800/40 border-slate-700/50' : 'bg-slate-50 border-slate-200'}`}>
+                      <p className={`text-[10px] uppercase tracking-wider font-medium mb-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                        {item.type ?? `Battery ${i + 1}`}
+                      </p>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        {item.model && <StatBox label="Model" value={item.model} isDark={isDark} />}
+                        {item.serial_number && <StatBox label="Serial Number" value={item.serial_number} isDark={isDark} mono />}
+                        {item.firmware_version && <StatBox label="Firmware" value={item.firmware_version} isDark={isDark} mono />}
+                        {item.cycle_count != null && <StatBox label="Cycle Count" value={String(item.cycle_count)} isDark={isDark} />}
+                        {item.design_capacity != null && <StatBox label="Design Capacity" value={`${item.design_capacity} mAh`} isDark={isDark} />}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Section>
+            )}
+
+            {/* Empty state */}
+            {!preview.pilot && !preview.logging_start && (!preview.events || preview.events.length === 0) && (!preview.payload || preview.payload.length === 0) && (
+              <div className={`rounded-lg border p-8 text-center ${sectionBg}`}>
+                <HiInformationCircle className={`w-8 h-8 mx-auto mb-2 ${textSecondary}`} />
+                <p className={`text-xs ${textSecondary}`}>No additional flight info available in this GUTMA file.</p>
               </div>
             )}
           </div>

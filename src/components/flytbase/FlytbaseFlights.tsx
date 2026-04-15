@@ -59,9 +59,12 @@ function formatDistance(m?: number): string {
   return m >= 1000 ? `${(m / 1000).toFixed(2)} km` : `${Math.round(m)} m`;
 }
 
+type FilterMode = 'window' | 'latest';
+
 export function FlytbaseFlights({ token }: Props) {
   const { isDark } = useTheme();
   const [window, setWindow] = useState(1440);
+  const [filterMode, setFilterMode] = useState<FilterMode>('window');
   const [flights, setFlights] = useState<Flight[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -74,7 +77,7 @@ export function FlytbaseFlights({ token }: Props) {
   const [archived, setArchived] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
 
-  const fetchFlights = useCallback(async (win: number) => {
+  const fetchFlights = useCallback(async (win: number, mode: FilterMode) => {
     if (!token) {
       setError('no_token');
       setLoading(false);
@@ -87,7 +90,10 @@ export function FlytbaseFlights({ token }: Props) {
     setPresignedUploadUrl(null);
     setArchived(false);
     try {
-      const res = await axios.get(`/api/flytbase/flights?window=${win}`);
+      const url = mode === 'latest'
+        ? '/api/flytbase/flights?mode=latest'
+        : `/api/flytbase/flights?window=${win}`;
+      const res = await axios.get(url);
       setFlights(res.data.flights ?? []);
       setTotal(res.data.total ?? 0);
     } catch (err: any) {
@@ -99,8 +105,8 @@ export function FlytbaseFlights({ token }: Props) {
   }, [token]);
 
   useEffect(() => {
-    fetchFlights(window);
-  }, [fetchFlights, window]);
+    fetchFlights(window, filterMode);
+  }, [fetchFlights, window, filterMode]);
 
   async function handleSelectFlight(flight: Flight) {
     if (selectedFlight?.flight_id === flight.flight_id) return;
@@ -184,9 +190,9 @@ export function FlytbaseFlights({ token }: Props) {
                 {WINDOWS.map((w) => (
                   <button
                     key={w.value}
-                    onClick={() => setWindow(w.value)}
+                    onClick={() => { setFilterMode('window'); setWindow(w.value); }}
                     className={`px-2.5 py-1 rounded text-[11px] font-medium ${
-                      window === w.value
+                      filterMode === 'window' && window === w.value
                         ? 'bg-violet-600 text-white'
                         : isDark
                         ? 'text-slate-400 bg-slate-800'
@@ -196,12 +202,24 @@ export function FlytbaseFlights({ token }: Props) {
                     {w.label}
                   </button>
                 ))}
+                <button
+                  onClick={() => setFilterMode('latest')}
+                  className={`px-2.5 py-1 rounded text-[11px] font-medium ${
+                    filterMode === 'latest'
+                      ? 'bg-violet-600 text-white'
+                      : isDark
+                      ? 'text-slate-400 bg-slate-800'
+                      : 'text-slate-500 bg-slate-100'
+                  }`}
+                >
+                  Latest 20
+                </button>
               </div>
 
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => fetchFlights(window)}
+                onClick={() => fetchFlights(window, filterMode)}
                 className={`h-8 gap-1.5 text-xs ${isDark ? 'border-slate-700 bg-slate-800 text-slate-300' : 'border-slate-200 text-slate-600'}`}
               >
                 <HiRefresh className="h-3.5 w-3.5" />
@@ -269,7 +287,9 @@ export function FlytbaseFlights({ token }: Props) {
                     <div className="px-4 py-10 text-center">
                       <HiClock className={`w-6 h-6 mx-auto mb-2 ${textSecondary}`} />
                       <p className={`text-xs ${textSecondary}`}>
-                        No flights found in the last {window} minutes.
+                        {filterMode === 'latest'
+                          ? 'No recent flights found.'
+                          : `No flights found in the last ${window} minutes.`}
                       </p>
                     </div>
                   )}
