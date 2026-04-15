@@ -1,7 +1,7 @@
 'use client';
 
 import { ColumnDef } from '@tanstack/react-table';
-import { Mail, Pencil, Trash2 } from 'lucide-react';
+import { Loader2, Mail, Pencil, RotateCcw, Trash2 } from 'lucide-react';
 import {
     Tooltip,
     TooltipContent,
@@ -16,6 +16,7 @@ export interface UserData {
   email: string;
   phone?: string;
   active: number;
+  is_pending: boolean;
   user_role: string;
   user_unique_code: string;
   fk_user_profile_id?: number;
@@ -31,12 +32,16 @@ interface GetUserColumnsOptions {
   isDark: boolean;
   onEdit: (user: UserData) => void;
   onDelete: (user: UserData) => void;
+  onResendInvite: (user: UserData) => void;
+  resendingUserId: number | null;
 }
 
 export function getUserColumns({
   isDark,
   onEdit,
   onDelete,
+  onResendInvite,
+  resendingUserId,
 }: GetUserColumnsOptions): ColumnDef<UserData>[] {
   const headerClass = `text-[11px] font-semibold uppercase tracking-widest ${isDark ? 'text-gray-400' : 'text-gray-400'}`;
 
@@ -108,17 +113,24 @@ export function getUserColumns({
       header: () => <span className={headerClass}>Status</span>,
       cell: ({ row }) => {
         const isActive = row.original.active === 1;
+        const isPending = row.original.is_pending;
+        if (isActive) {
+          return (
+            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wide border ${isDark ? 'bg-emerald-950/60 text-emerald-300 border-emerald-700/50' : 'bg-emerald-50 text-emerald-600 border-emerald-200'}`}>
+              Active
+            </span>
+          );
+        }
+        if (isPending) {
+          return (
+            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wide border ${isDark ? 'bg-amber-950/60 text-amber-300 border-amber-700/50' : 'bg-amber-50 text-amber-600 border-amber-200'}`}>
+              Pending
+            </span>
+          );
+        }
         return (
-          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wide border ${
-            isActive
-              ? isDark
-                ? 'bg-emerald-950/60 text-emerald-300 border-emerald-700/50'
-                : 'bg-emerald-50 text-emerald-600 border-emerald-200'
-              : isDark
-                ? 'bg-rose-950/60 text-rose-300 border-rose-700/50'
-                : 'bg-rose-50 text-rose-600 border-rose-200'
-          }`}>
-            {isActive ? 'Active' : 'Inactive'}
+          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wide border ${isDark ? 'bg-rose-950/60 text-rose-300 border-rose-700/50' : 'bg-rose-50 text-rose-600 border-rose-200'}`}>
+            Inactive
           </span>
         );
       },
@@ -160,6 +172,30 @@ export function getUserColumns({
         return (
           <TooltipProvider delayDuration={100}>
             <div className="flex items-center justify-end gap-1">
+              {user.is_pending && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => onResendInvite(user)}
+                      disabled={resendingUserId === user.user_id}
+                      className={`p-1.5 rounded-lg transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed ${
+                        isDark
+                          ? 'bg-amber-500/10 hover:bg-amber-500/25 text-amber-400 hover:text-amber-300 border border-amber-700/40 hover:border-amber-500/60'
+                          : 'bg-amber-50 hover:bg-amber-100 text-amber-500 hover:text-amber-600 border border-amber-200 hover:border-amber-300'
+                      }`}
+                    >
+                      {resendingUserId === user.user_id
+                        ? <Loader2 size={14} strokeWidth={2} className="animate-spin" />
+                        : <RotateCcw size={14} strokeWidth={2} />
+                      }
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-xs">
+                    {resendingUserId === user.user_id ? 'Sending…' : 'Resend invite'}
+                  </TooltipContent>
+                </Tooltip>
+              )}
+
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button

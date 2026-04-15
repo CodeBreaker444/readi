@@ -75,6 +75,7 @@ export default function UserManagement({ session }: UserManagementProps) {
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [userToDelete, setUserToDelete] = useState<UserData | null>(null);
+  const [resendingUserId, setResendingUserId] = useState<number | null>(null);
 
 
   useEffect(() => {
@@ -122,6 +123,27 @@ export default function UserManagement({ session }: UserManagementProps) {
   const handleDelete = (user: UserData) => {
     setUserToDelete(user);
     setShowDeleteDialog(true);
+  };
+
+  const handleResendInvite = async (user: UserData) => {
+    setResendingUserId(user.user_id);
+    try {
+      const res = await fetch('/api/team/user/resend-invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.user_id }),
+      });
+      const data = await res.json();
+      if (data.code === 1) {
+        toast.success(`Activation email resent to ${user.email}`);
+      } else {
+        toast.error(data.message || 'Failed to resend invite');
+      }
+    } catch {
+      toast.error('Error resending invite');
+    } finally {
+      setResendingUserId(null);
+    }
   };
 
   const confirmDelete = async () => {
@@ -187,7 +209,15 @@ export default function UserManagement({ session }: UserManagementProps) {
         fetchUsers();
       } else toast.error(data.error || 'Failed to create user');
     } catch (err: any) {
-      const msg = err?.response?.data?.error_list?.[0] || 'Error creating user';
+      const responseData = err?.response?.data;
+      if (responseData?.status === 'PENDING_ACTIVATION') {
+        toast.error(responseData.error_list?.[0] || responseData.message, {
+          description: 'Find the user in the list and click the resend invite button.',
+          duration: 6000,
+        });
+        return;
+      }
+      const msg = responseData?.error_list?.[0] || responseData?.message || 'Error creating user';
       toast.error(msg);
     }
   };
@@ -227,7 +257,7 @@ export default function UserManagement({ session }: UserManagementProps) {
   const stats = useMemo(() => ({
     total: users.length,
     active: users.filter((u) => u.active === 1).length,
-    inactive: users.filter((u) => u.active === 0).length,
+    inactive: users.filter((u) => u.active === 0 && !u.is_pending).length,
     managers: users.filter((u) => u.is_manager === 'Y').length,
   }), [users]);
 
@@ -235,12 +265,15 @@ export default function UserManagement({ session }: UserManagementProps) {
     const s = searchTerm.toLowerCase();
     const matchesSearch = user.fullname?.toLowerCase().includes(s) || user.email?.toLowerCase().includes(s) || user.username?.toLowerCase().includes(s);
     const matchesRole = roleFilter === 'ALL' || user.user_role === roleFilter;
-    const matchesStatus = statusFilter === 'ALL' || (statusFilter === 'ACTIVE' && user.active === 1) || (statusFilter === 'INACTIVE' && user.active === 0);
+    const matchesStatus = statusFilter === 'ALL'
+      || (statusFilter === 'ACTIVE' && user.active === 1)
+      || (statusFilter === 'PENDING' && user.is_pending)
+      || (statusFilter === 'INACTIVE' && user.active === 0 && !user.is_pending);
     const matchesCompany = !isSuperAdmin || companyFilter === 'ALL' || user.owner_name === companyFilter;
     return matchesSearch && matchesRole && matchesStatus && matchesCompany;
   }), [users, searchTerm, roleFilter, statusFilter, companyFilter, isSuperAdmin]);
 
-  const columns = useMemo(() => getUserColumns({ isDark, onEdit: handleEdit, onDelete: handleDelete }), [isDark, handleEdit, handleDelete]);
+  const columns = useMemo(() => getUserColumns({ isDark, onEdit: handleEdit, onDelete: handleDelete, onResendInvite: handleResendInvite, resendingUserId }), [isDark, handleEdit, handleDelete, handleResendInvite, resendingUserId]);
 
   const table = useReactTable({
     data: filteredData,
@@ -334,6 +367,7 @@ export default function UserManagement({ session }: UserManagementProps) {
                 <SelectContent>
                   <SelectItem value="ALL">All Status</SelectItem>
                   <SelectItem value="ACTIVE">Active</SelectItem>
+                  <SelectItem value="PENDING">Pending Activation</SelectItem>
                   <SelectItem value="INACTIVE">Inactive</SelectItem>
                 </SelectContent>
               </Select>
@@ -363,7 +397,7 @@ export default function UserManagement({ session }: UserManagementProps) {
 
         <div className={`rounded-xl border overflow-hidden shadow-sm ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
           <Table>
-            <TableHeader className={isDark ? 'bg-slate-700' : 'bg-gradient-to-r from-blue-50 to-indigo-50'}>
+            <TableHeader className={isDark ? 'bg-slate-700' : 'bg-linear-to-r from-blue-50 to-indigo-50'}>
               {table.getHeaderGroups().map((hg) => (
                 <TableRow key={hg.id} className={isDark ? 'border-slate-600 hover:bg-transparent' : 'hover:bg-transparent'}>
                   {hg.headers.map((header) => (

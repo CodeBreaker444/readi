@@ -49,6 +49,7 @@ export async function getUserListByOwner(ownerId: number, userProfileId: number,
         user_active,
         user_role,
         user_unique_code,
+        auth_user_id,
         is_viewer,
         is_manager,
         fk_owner_id,
@@ -75,7 +76,7 @@ export async function getUserListByOwner(ownerId: number, userProfileId: number,
       query = query.eq('fk_owner_id', ownerId);
     }
 
-    query = query.eq('user_active', 'Y').neq('user_id', currentUserId);
+    query = query.neq('user_id', currentUserId);
 
     const { data, error } = await query;
 
@@ -91,6 +92,8 @@ export async function getUserListByOwner(ownerId: number, userProfileId: number,
       user_unique_code: user.user_unique_code || '',
       fk_user_profile_id: user.fk_user_profile_id || getRoleIdFromCode(user.user_role) || 0,
       active: user.user_active === 'Y' ? 1 : 0,
+      // Never activated (no auth account yet) = pending invite
+      is_pending: user.user_active !== 'Y' && !user.auth_user_id,
       is_viewer: user.is_viewer,
       is_manager: user.is_manager,
       fk_territorial_unit: user.fk_territorial_unit,
@@ -121,12 +124,16 @@ export async function createUser(userData: UserCreateData) {
 
     const { data: existingUser } = await supabase
       .from('users')
-      .select('user_id, email, username')
+      .select('user_id, email, username, user_active, auth_user_id')
       .or(`email.ilike.${userData.email},username.eq.${userData.username}`)
       .maybeSingle();
 
     if (existingUser) {
       if (existingUser.email?.toLowerCase() === userData.email.toLowerCase()) {
+        const isPending = existingUser.user_active !== 'Y' && !existingUser.auth_user_id;
+        if (isPending) {
+          throw new Error('PENDING_ACTIVATION:' + existingUser.user_id);
+        }
         throw new Error('A user with this email already exists');
       }
       if (existingUser.username === userData.username) {
@@ -385,3 +392,51 @@ export const generateActivationToken = (length: number): string => {
   crypto.getRandomValues(array);
   return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
 };
+
+export async function resendUserInvite(userId: number, ownerId: number, isSuperAdmin = false) {
+  let lookupQuery = supabase
+    .from('users')
+    .select('user_id, email, username, first_name, last_name, user_active, auth_user_id, user_unique_code, fk_owner_id')
+    .eq('user_id', userId);
+
+  if (!isSuperAdmin) {
+    lookupQuery = lookupQuery.eq('fk_owner_id', ownerId);
+  }
+
+  const { data: user, error: fetchError } = await lookupQuery.maybeSingle();
+
+  if (fetchError) throw fetchError;
+  if (!user) throw new Error('User not found');
+  if (user.user_active === 'Y' || user.auth_user_id) {
+    throw new Error('User is already activated');
+  }
+
+  const newKey = generateActivationToken(128);
+
+  const { error: updateError } = await supabase
+    .from('users')
+    .update({ _key_: newKey, updated_at: new Date().toISOString() })
+    .eq('user_id', userId);
+
+  if (updateError) throw updateError;
+
+  const fullname = `${user.first_name} ${user.last_name}`.trim() || user.username;
+  const activationLink = `${env.APP_URL}/auth/activate?o=${user.fk_owner_id}&email=${encodeURIComponent(user.email)}&username=${encodeURIComponent(user.username)}&id=${newKey}`;
+
+  const emailResult = await sendUserActivationEmail(
+    user.email,
+    fullname,
+    {
+      organization: 'ReADI Control Center',
+      username: user.username,
+      passcode: user.user_unique_code,
+      loginlink: activationLink,
+    }
+  );
+
+  return {
+    success: true,
+    message: 'Activation email resent successfully',
+    emailSent: emailResult.message,
+  };
+}
