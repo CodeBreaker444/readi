@@ -339,7 +339,7 @@ export async function addOwnerWithAdmin(payload: AddOwnerWithAdminPayload) {
 
         if (profileError) throw new Error(profileError.message);
 
-        const activationLink = `${env.APP_URL}/auth/activate?o=${owner.owner_id}&email=${payload.admin_email}&username=${payload.admin_username}&id=${key}`;
+        const activationLink = `${env.APP_URL}/auth/activate?o=${owner.owner_id}&email=${encodeURIComponent(payload.admin_email)}&username=${encodeURIComponent(payload.admin_username)}&id=${key}`;
 
         const emailResult = await sendUserActivationEmail(
             payload.admin_email,
