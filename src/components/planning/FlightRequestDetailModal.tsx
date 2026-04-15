@@ -226,7 +226,7 @@ export function FlightRequestDetailModal({
                         size="sm"
                         disabled={busy}
                         onClick={() => onAcknowledge(request.request_id)}
-                        className="w-full h-9 text-xs bg-violet-600 hover:bg-violet-500 text-white gap-2"
+                        className="w-full cursor-pointer h-9 text-xs bg-violet-600 hover:bg-violet-500 text-white gap-2"
                       >
                         {assigning === request.request_id
                           ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Acknowledging…</>
@@ -238,7 +238,7 @@ export function FlightRequestDetailModal({
                         size="sm"
                         disabled={busy}
                         onClick={() => { onOpenPlanModal(request.request_id, request.external_mission_id); onClose(); }}
-                        className="w-full h-9 text-xs bg-violet-600 hover:bg-violet-500 text-white gap-2"
+                        className="w-full h-9 cursor-pointer text-xs bg-violet-600 hover:bg-violet-500 text-white gap-2"
                       >
                         <Send className="h-3.5 w-3.5" />
                         Move to Planning
@@ -249,7 +249,7 @@ export function FlightRequestDetailModal({
                       variant="outline"
                       disabled={busy}
                       onClick={() => onDeny(request.request_id)}
-                      className={`w-full h-9 text-xs gap-2 border-red-500/40 text-red-500 hover:bg-red-500/10 ${isDark ? 'hover:border-red-500/60' : ''}`}
+                      className={`w-full cursor-pointer h-9 text-xs gap-2 border-red-500/40 text-red-500 hover:bg-red-500/10 ${isDark ? 'hover:border-red-500/60' : ''}`}
                     >
                       {denying === request.request_id
                         ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Denying…</>
@@ -265,7 +265,7 @@ export function FlightRequestDetailModal({
                   <Button
                     size="sm"
                     onClick={() => { onOpenLogModal(request.request_id, request.external_mission_id); onClose(); }}
-                    className="w-full h-9 text-xs bg-violet-600 hover:bg-violet-500 text-white gap-2"
+                    className="w-full cursor-pointer h-9 text-xs bg-violet-600 hover:bg-violet-500 text-white gap-2"
                   >
                     <FileUp className="h-3.5 w-3.5" />
                     Push FlytBase Log

@@ -1,21 +1,15 @@
 import {
+  fetchLatestFlights,
   fetchRecentFlights,
   getFlytbaseCredentials,
 } from '@/backend/services/integrations/flytbase-service';
 import { requireAuth } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
- 
 export async function GET(req: NextRequest) {
   try {
     const { session, error } = await requireAuth();
     if (error) return error;
-
-    const windowParam = req.nextUrl.searchParams.get('window');
-    const windowMinutes = Math.min(
-      Math.max(1, parseInt(windowParam ?? '1440', 10) || 1440),
-      1440,
-    );
 
     const creds = await getFlytbaseCredentials(session!.user.userId);
     if (!creds) {
@@ -25,12 +19,20 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const { flights, total } = await fetchRecentFlights(
-      creds.token,
-      creds.orgId,
-      windowMinutes,
+    const mode = req.nextUrl.searchParams.get('mode');
+
+    if (mode === 'latest') {
+      const { flights, total } = await fetchLatestFlights(creds.token, creds.orgId);
+      return NextResponse.json({ success: true, flights, total, mode: 'latest' });
+    }
+
+    const windowParam = req.nextUrl.searchParams.get('window');
+    const windowMinutes = Math.min(
+      Math.max(1, parseInt(windowParam ?? '1440', 10) || 1440),
+      1440,
     );
 
+    const { flights, total } = await fetchRecentFlights(creds.token, creds.orgId, windowMinutes);
     return NextResponse.json({ success: true, flights, total, windowMinutes });
   } catch (err: any) {
     console.error('[GET /api/integrations/flytbase/flights]', err);

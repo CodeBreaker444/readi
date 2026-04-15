@@ -1,17 +1,29 @@
-import { notifyDccLogging } from '@/backend/services/mission/dcc-callback-service';
-import { supabase } from '@/backend/database/database';
-import { attachFlytbaseFlightLog } from '@/backend/services/operation/flight-log-service';
-import { requirePermission } from '@/lib/auth/api-auth';
 import { env } from '@/backend/config/env';
+import { notifyDccLogging } from '@/backend/services/mission/dcc-callback-service';
+import {
+  getFlightRequestById,
+  getLatestFlightLogForMission,
+  getPilotMissionByPlanningId,
+} from '@/backend/services/mission/flight-request-service';
+import { attachFlytbaseFlightLog } from '@/backend/services/operation/flight-log-service';
 import { apiError, internalError, zodError } from '@/lib/api-error';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
-const Schema = z.object({
+const LinkSchema = z.object({
+  action:     z.literal('link'),
   request_id: z.number().int().positive(),
   flight_id:  z.string().min(1, 'flight_id is required'),
 });
+
+const PushSchema = z.object({
+  action:     z.literal('push'),
+  request_id: z.number().int().positive(),
+});
+
+const Schema = z.discriminatedUnion('action', [LinkSchema, PushSchema]);
 
 export async function POST(req: NextRequest) {
   try {
@@ -24,40 +36,35 @@ export async function POST(req: NextRequest) {
       return zodError(E.VL001, parsed.error);
     }
 
-    const { request_id, flight_id } = parsed.data;
-
     // Resolve flight_request → planning_id → pilot_mission_id
-    const { data: fr } = await supabase
-      .from('flight_requests')
-      .select('fk_planning_id, dcc_status, external_mission_id')
-      .eq('request_id', request_id)
-      .eq('fk_owner_id', session!.user.ownerId)
-      .single();
+    const fr = await getFlightRequestById(parsed.data.request_id, session!.user.ownerId);
 
-    if (!fr) {
-      return apiError(E.NF021, 404);
-    }
-    if (!fr.fk_planning_id) {
-      return apiError(E.BL003, 422);
-    }
+    if (!fr) return apiError(E.NF021, 404);
+    if (!fr.fk_planning_id) return apiError(E.BL003, 422);
 
-    const { data: pm } = await supabase
-      .from('pilot_mission')
-      .select('pilot_mission_id')
-      .eq('fk_planning_id', fr.fk_planning_id)
-      .order('pilot_mission_id', { ascending: true })
-      .limit(1)
-      .single();
+    const pm = await getPilotMissionByPlanningId(fr.fk_planning_id);
 
-    if (!pm) {
-      return apiError(E.NF003, 404);
+    if (!pm) return apiError(E.NF003, 404);
+
+    const missionId = pm.pilot_mission_id;
+
+    // LINK: archive GUTMA to S3, record in mission_flight_logs
+    if (parsed.data.action === 'link') {
+      await attachFlytbaseFlightLog(missionId, session!.user.userId, parsed.data.flight_id);
+      return NextResponse.json({ code: 1, message: 'Flight log archived to S3' });
     }
 
-    const missionId = pm.pilot_mission_id as number;
+    // PUSH: notify DCC using already-stored log 
+    const storedLog = await getLatestFlightLogForMission(missionId);
 
-    await attachFlytbaseFlightLog(missionId, session!.user.userId, flight_id);
+    if (!storedLog?.flytbase_flight_id) {
+      return NextResponse.json(
+        { code: 0, message: 'No archived FlytBase log found for this mission. Archive a log first.' },
+        { status: 422 },
+      );
+    }
 
-    const logUri = `${env.FLYTBASE_URL ?? ''}/v2/flight/report/download/gutma?flightIds=${encodeURIComponent(flight_id)}`;
+    const logUri = `${env.FLYTBASE_URL ?? ''}/v2/flight/report/download/gutma?flightIds=${encodeURIComponent(storedLog.flytbase_flight_id)}`;
     const dcc = await notifyDccLogging(session!.user.ownerId, missionId, logUri);
 
     return NextResponse.json({ code: 1, message: 'Flight log pushed to DCC', dcc });
