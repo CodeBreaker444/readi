@@ -198,6 +198,34 @@ function extractJwtClaims(token: string): Record<string, string> {
  * Fetch completed flights from the past `windowMinutes` minutes.
  * Returns the flights sorted newest-first.
  */
+function mapFlightLog(f: Record<string, unknown>): FlytbaseFlight {
+  const drone   = f.drone_details   as Record<string, unknown> | null | undefined;
+  const mission = (f.missions as Record<string, unknown>[] | null | undefined)?.[0];
+
+  const startIso = (mission?.mission_start_time ?? f.timestamp) as string | null | undefined;
+  const endIso   = mission?.mission_end_time as string | null | undefined;
+
+  const startMs = startIso ? new Date(startIso).getTime() : undefined;
+  const endMs   = endIso   ? new Date(endIso).getTime()   : undefined;
+  const duration = startMs != null && endMs != null
+    ? Math.round((endMs - startMs) / 1000)
+    : undefined;
+
+  return {
+    flight_id:    String(f.flight_id ?? ''),
+    flight_name:  mission?.mission_name != null ? String(mission.mission_name) : undefined,
+    start_time:   startMs,
+    end_time:     endMs,
+    duration,
+    distance:     mission?.mission_length != null ? Number(mission.mission_length) : undefined,
+    drone_name:   drone?.drone_name != null ? String(drone.drone_name) : undefined,
+    drone_id:     drone?.drone_id   != null ? String(drone.drone_id)   : undefined,
+    pilot_name:   undefined, // not available in flight listing; only in GUTMA download
+    mission_name: mission?.mission_name != null ? String(mission.mission_name) : undefined,
+    status:       undefined,
+  };
+}
+
 export async function fetchLatestFlights(
   token: string,
   orgId: string,
@@ -218,20 +246,7 @@ export async function fetchLatestFlights(
   const rawFlights: Record<string, unknown>[] = body?.flightLogs ?? [];
   const total: number = (body?.total as { value?: number })?.value ?? rawFlights.length;
 
-  const flights: FlytbaseFlight[] = rawFlights.map((f) => ({
-    flight_id:    String(f.flight_id ?? ''),
-    flight_name:  f.flight_name  != null ? String(f.flight_name)  : undefined,
-    start_time:   f.start_time   != null ? Number(f.start_time)   : undefined,
-    end_time:     f.end_time     != null ? Number(f.end_time)      : undefined,
-    duration:     f.duration     != null ? Number(f.duration)      : undefined,
-    distance:     f.distance     != null ? Number(f.distance)      : undefined,
-    drone_name:   f.drone_name   != null ? String(f.drone_name)    : undefined,
-    drone_id:     f.drone_id     != null ? String(f.drone_id)      : undefined,
-    pilot_name:   f.pilot_name   != null ? String(f.pilot_name)    : undefined,
-    mission_name: f.mission_name != null ? String(f.mission_name)  : undefined,
-    status:       f.status       != null ? String(f.status)        : undefined,
-  }));
-
+  const flights = rawFlights.map(mapFlightLog);
   return { flights, total };
 }
 
@@ -265,20 +280,7 @@ export async function fetchRecentFlights(
   const rawFlights: Record<string, unknown>[] = body?.flightLogs ?? [];
   const total: number = (body?.total as { value?: number })?.value ?? rawFlights.length;
 
-  const flights: FlytbaseFlight[] = rawFlights.map((f) => ({
-    flight_id: String(f.flight_id ?? ''),
-    flight_name: f.flight_name != null ? String(f.flight_name) : undefined,
-    start_time: f.start_time != null ? Number(f.start_time) : undefined,
-    end_time: f.end_time != null ? Number(f.end_time) : undefined,
-    duration: f.duration != null ? Number(f.duration) : undefined,
-    distance: f.distance != null ? Number(f.distance) : undefined,
-    drone_name: f.drone_name != null ? String(f.drone_name) : undefined,
-    drone_id: f.drone_id != null ? String(f.drone_id) : undefined,
-    pilot_name: f.pilot_name != null ? String(f.pilot_name) : undefined,
-    mission_name: f.mission_name != null ? String(f.mission_name) : undefined,
-    status: f.status != null ? String(f.status) : undefined,
-  }));
-
+  const flights = rawFlights.map(mapFlightLog);
   return { flights, total };
 }
 
