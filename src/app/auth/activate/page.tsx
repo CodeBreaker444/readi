@@ -15,7 +15,7 @@ export default function ActivatePage() {
   useEffect(() => {
     const activateAccount = async () => {
       const activationKey = searchParams.get('id')
-      const email = searchParams.get('email')
+      const email = (searchParams.get('email') ?? '').replace(/ /g, '+') || null
       const usernameParam = searchParams.get('username')
       const ownerId = searchParams.get('o')
 

@@ -208,7 +208,7 @@ export async function createUser(userData: UserCreateData) {
       .from('user_settings')
       .insert({ fk_user_id: newUser.user_id, setting_key: 'password_changed', setting_value: 'false' });
 
-    const activationLink = `${env.APP_URL}/auth/activate?o=${userData.owner_id}&email=${userData.email}&username=${userData.username}&id=${key}`;
+    const activationLink = `${env.APP_URL}/auth/activate?o=${userData.owner_id}&email=${encodeURIComponent(userData.email)}&username=${encodeURIComponent(userData.username)}&id=${key}`;
 
     console.log('activation link:', activationLink);
     console.log('pass:', uid);
