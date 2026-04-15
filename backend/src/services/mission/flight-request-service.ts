@@ -257,6 +257,76 @@ export async function listAssignablePlannings(owner_id: number): Promise<Assigna
   });
 }
 
+export interface FlightRequestWithPlanning {
+  fk_planning_id: number | null;
+  dcc_status: string;
+  external_mission_id: string | null;
+}
+
+export async function getFlightRequestById(
+  request_id: number,
+  owner_id: number,
+): Promise<FlightRequestWithPlanning | null> {
+  const { data } = await supabase
+    .from('flight_requests')
+    .select('fk_planning_id, dcc_status, external_mission_id')
+    .eq('request_id', request_id)
+    .eq('fk_owner_id', owner_id)
+    .single();
+
+  return data ?? null;
+}
+
+export async function getPilotMissionByPlanningId(
+  planning_id: number,
+): Promise<{ pilot_mission_id: number } | null> {
+  const { data } = await supabase
+    .from('pilot_mission')
+    .select('pilot_mission_id')
+    .eq('fk_planning_id', planning_id)
+    .order('pilot_mission_id', { ascending: true })
+    .limit(1)
+    .single();
+
+  return data ?? null;
+}
+
+export interface MissionFlightLog {
+  log_id: number;
+  log_source: string | null;
+  original_filename: string | null;
+  flytbase_flight_id: string | null;
+  uploaded_at: string | null;
+}
+
+export async function getMissionFlightLogs(
+  mission_id: number,
+): Promise<MissionFlightLog[]> {
+  const { data, error } = await supabase
+    .from('mission_flight_logs')
+    .select('log_id, log_source, original_filename, flytbase_flight_id, uploaded_at')
+    .eq('fk_mission_id', mission_id)
+    .order('uploaded_at', { ascending: false });
+
+  if (error) throw new Error(`getMissionFlightLogs: ${error.message}`);
+  return data ?? [];
+}
+
+export async function getLatestFlightLogForMission(
+  mission_id: number,
+): Promise<{ flytbase_flight_id: string } | null> {
+  const { data } = await supabase
+    .from('mission_flight_logs')
+    .select('flytbase_flight_id')
+    .eq('fk_mission_id', mission_id)
+    .not('flytbase_flight_id', 'is', null)
+    .order('uploaded_at', { ascending: false })
+    .limit(1)
+    .single();
+
+  return data ?? null;
+}
+
 export async function deleteApiKey(api_key_id: number, owner_id: number): Promise<void> {
   const { error } = await supabase
     .from('api_keys')
