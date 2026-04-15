@@ -7,6 +7,7 @@ import { useState } from 'react';
 import {
   HiChip,
   HiClock,
+  HiFlag,
   HiInformationCircle,
   HiLocationMarker,
   HiMap,
@@ -91,6 +92,16 @@ function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+function formatDuration(secs: number): string {
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  return m > 0 ? `${m}m ${s}s` : `${s}s`;
+}
+
+function formatDistance(m: number): string {
+  return m >= 1000 ? `${(m / 1000).toFixed(2)} km` : `${Math.round(m)} m`;
 }
 
 export function GutmaPreviewPanel({
@@ -237,9 +248,14 @@ export function GutmaPreviewPanel({
                           <span className="text-[11px] truncate">{flight.drone_name}</span>
                         </div>
                       )}
-                      {(preview.aircraft?.product_name || preview.aircraft?.model) && (
+                      {preview.aircraft?.product_name && (
                         <p className="text-[10px] text-slate-300 pl-4.5 truncate">
-                          {preview.aircraft.product_name ?? preview.aircraft.model}
+                          {preview.aircraft.product_name}
+                        </p>
+                      )}
+                      {preview.aircraft?.model && (
+                        <p className="text-[10px] text-slate-400 pl-4.5 truncate">
+                          {preview.aircraft.model}
                         </p>
                       )}
                       {preview.aircraft?.serial_number && (
@@ -262,20 +278,40 @@ export function GutmaPreviewPanel({
 
         {!loading && preview && tab === 'info' && (
           <div className="space-y-5">
-            {/* Pilot / Logging start */}
-            {(preview.pilot || preview.logging_start) && (
+            {/* Flight metadata — always shown when any field exists */}
+            {(flight.pilot_name || preview.pilot || flight.mission_name || flight.start_time || flight.end_time || flight.duration != null || flight.distance != null || preview.logging_start) && (
               <Section title="Flight Details" icon={<HiUser className="w-3.5 h-3.5" />} isDark={isDark}>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {preview.pilot && (
-                    <StatBox label="Pilot in Command" value={preview.pilot} isDark={isDark} />
+                  {(preview.pilot || flight.pilot_name) && (
+                    <StatBox label="Pilot in Command" value={preview.pilot ?? flight.pilot_name!} isDark={isDark} />
+                  )}
+                  {flight.mission_name && (
+                    <StatBox label="Mission" value={flight.mission_name} isDark={isDark} />
+                  )}
+                  {flight.start_time && (
+                    <StatBox label="Start Time" value={new Date(flight.start_time).toLocaleString()} isDark={isDark} />
+                  )}
+                  {flight.end_time && (
+                    <StatBox label="End Time" value={new Date(flight.end_time).toLocaleString()} isDark={isDark} />
+                  )}
+                  {flight.duration != null && (
+                    <StatBox label="Duration" value={formatDuration(flight.duration)} isDark={isDark} />
+                  )}
+                  {flight.distance != null && (
+                    <StatBox label="Distance" value={formatDistance(flight.distance)} isDark={isDark} />
                   )}
                   {preview.logging_start && (
-                    <StatBox
-                      label="Logging Start"
-                      value={new Date(preview.logging_start).toLocaleString()}
-                      isDark={isDark}
-                    />
+                    <StatBox label="Logging Start" value={new Date(preview.logging_start).toLocaleString()} isDark={isDark} />
                   )}
+                </div>
+              </Section>
+            )}
+
+            {/* Mission */}
+            {flight.mission_name === undefined && flight.drone_name && (
+              <Section title="Asset" icon={<HiFlag className="w-3.5 h-3.5" />} isDark={isDark}>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {flight.drone_name && <StatBox label="Drone" value={flight.drone_name} isDark={isDark} />}
                 </div>
               </Section>
             )}
