@@ -163,8 +163,8 @@ export default function FlightRequestsTable() {
     try {
       const { data } = await axios.get('/api/flytbase/flights?mode=latest');
       setAvailableFlights(data.flights ?? []);
-    } catch {
-      // non-fatal — user can still type manually
+    } catch (err: any){
+      toast.error(err)
     } finally {
       setFlightsLoading(false);
     }
@@ -180,7 +180,6 @@ export default function FlightRequestsTable() {
         flight_id: selectedFlightId,
       });
       toast.success('Log archived to S3');
-      // Refresh log status
       const { data } = await axios.get(`/api/planning/flight-requests/${logModal.request_id}/log-status`);
       setLogStatus({ has_log: data.has_log, logs: data.logs ?? [] });
       setSelectedFlightId('');
@@ -399,12 +398,10 @@ export default function FlightRequestsTable() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Push Log modal */}
       {logModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className={`w-full max-w-lg rounded-2xl border shadow-xl p-6 space-y-5 ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-gray-200'}`}>
 
-            {/* Header */}
             <div className="flex items-center justify-between">
               <div>
                 <h2 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Push Log to DCC</h2>
@@ -415,7 +412,6 @@ export default function FlightRequestsTable() {
               </button>
             </div>
 
-            {/* Step 1 — S3 status */}
             <div className={`rounded-xl border p-4 space-y-1 ${isDark ? 'border-slate-700 bg-slate-800/40' : 'border-gray-200 bg-gray-50'}`}>
               <p className={`text-[10px] uppercase tracking-wider font-semibold mb-2 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Step 1 — Log in S3</p>
               {logStatusLoading ? (
@@ -427,25 +423,42 @@ export default function FlightRequestsTable() {
                 <p className={`text-xs ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
                   This request is not yet assigned to a planning mission. Assign it first.
                 </p>
-              ) : logStatus.has_log ? (
+              ) : logStatus.logs.length > 0 ? (
                 <div className="space-y-1.5">
-                  {logStatus.logs.map((l) => (
-                    <div key={l.log_id} className={`flex items-center gap-2 rounded-lg px-3 py-2 border ${isDark ? 'bg-emerald-950/30 border-emerald-800/40' : 'bg-emerald-50 border-emerald-200'}`}>
-                      <CheckCircle2 className={`h-3.5 w-3.5 shrink-0 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} />
-                      <span className={`text-xs font-mono flex-1 truncate ${isDark ? 'text-emerald-300' : 'text-emerald-700'}`}>{l.original_filename}</span>
-                      <span className={`text-[10px] shrink-0 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-                        {new Date(l.uploaded_at).toLocaleDateString()}
-                      </span>
-                    </div>
-                  ))}
+                  {logStatus.logs.map((l) => {
+                    const isFlytbase = !!l.flytbase_flight_id;
+                    return (
+                      <div key={l.log_id} className={`flex items-center gap-2 rounded-lg px-3 py-2 border ${
+                        isFlytbase
+                          ? isDark ? 'bg-emerald-950/30 border-emerald-800/40' : 'bg-emerald-50 border-emerald-200'
+                          : isDark ? 'bg-slate-800/60 border-slate-700' : 'bg-gray-100 border-gray-200'
+                      }`}>
+                        <CheckCircle2 className={`h-3.5 w-3.5 shrink-0 ${isFlytbase ? isDark ? 'text-emerald-400' : 'text-emerald-600' : isDark ? 'text-slate-500' : 'text-gray-400'}`} />
+                        <span className={`text-xs font-mono flex-1 truncate ${isFlytbase ? isDark ? 'text-emerald-300' : 'text-emerald-700' : isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+                          {l.original_filename}
+                        </span>
+                        <span className={`text-[10px] shrink-0 px-1.5 py-0.5 rounded-full ${
+                          isFlytbase
+                            ? isDark ? 'bg-emerald-900/40 text-emerald-400' : 'bg-emerald-100 text-emerald-700'
+                            : isDark ? 'bg-slate-700 text-slate-400' : 'bg-gray-200 text-gray-500'
+                        }`}>
+                          {isFlytbase ? 'FlytBase' : 'manual'}
+                        </span>
+                      </div>
+                    );
+                  })}
+                  {!logStatus.has_log && (
+                    <p className={`text-xs pt-1 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
+                      Manual logs cannot be pushed to DCC. Archive a FlytBase flight below.
+                    </p>
+                  )}
                 </div>
               ) : (
                 <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>No log archived yet. Select a flight below to archive it.</p>
               )}
             </div>
 
-            {/* Step 1b — Flight picker (only when no log linked) */}
-            {logStatus && !logStatus.has_log && logStatus.reason !== 'not_assigned' && (
+            {logStatus && !logStatus.has_log && !['not_assigned', 'no_mission'].includes(logStatus.reason ?? '') && (
               <div className="space-y-2">
                 <p className={`text-[10px] uppercase tracking-wider font-semibold ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Select a FlytBase Flight to Archive</p>
                 {flightsLoading ? (

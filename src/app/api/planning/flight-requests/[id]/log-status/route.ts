@@ -3,7 +3,7 @@ import {
   getMissionFlightLogs,
   getPilotMissionByPlanningId,
 } from '@/backend/services/mission/flight-request-service';
-import { internalError } from '@/lib/api-error';
+import { apiError, internalError } from '@/lib/api-error';
 import { requirePermission } from '@/lib/auth/api-auth';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
@@ -25,7 +25,7 @@ export async function GET(
     const fr = await getFlightRequestById(requestId, session!.user.ownerId);
 
     if (!fr) {
-      return NextResponse.json({ code: 0, error: 'Flight request not found' }, { status: 404 });
+     return apiError(E.NF021, 404);
     }
     if (!fr.fk_planning_id) {
       return NextResponse.json({ code: 1, has_log: false, logs: [], reason: 'not_assigned' });
@@ -40,10 +40,11 @@ export async function GET(
 
     // Get linked logs
     const logs = await getMissionFlightLogs(pm.pilot_mission_id);
+    const hasFlytbaseLog = logs.some((l) => !!l.flytbase_flight_id);
 
     return NextResponse.json({
       code: 1,
-      has_log: logs.length > 0,
+      has_log: hasFlytbaseLog,
       logs,
       mission_id: pm.pilot_mission_id,
     });

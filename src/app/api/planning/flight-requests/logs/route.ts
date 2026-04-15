@@ -1,3 +1,4 @@
+import { env } from '@/backend/config/env';
 import { notifyDccLogging } from '@/backend/services/mission/dcc-callback-service';
 import {
   getFlightRequestById,
@@ -5,9 +6,8 @@ import {
   getPilotMissionByPlanningId,
 } from '@/backend/services/mission/flight-request-service';
 import { attachFlytbaseFlightLog } from '@/backend/services/operation/flight-log-service';
-import { requirePermission } from '@/lib/auth/api-auth';
-import { env } from '@/backend/config/env';
 import { apiError, internalError, zodError } from '@/lib/api-error';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -48,13 +48,13 @@ export async function POST(req: NextRequest) {
 
     const missionId = pm.pilot_mission_id;
 
-    // ── LINK: archive GUTMA to S3, record in mission_flight_logs ──────────────
+    // LINK: archive GUTMA to S3, record in mission_flight_logs
     if (parsed.data.action === 'link') {
       await attachFlytbaseFlightLog(missionId, session!.user.userId, parsed.data.flight_id);
       return NextResponse.json({ code: 1, message: 'Flight log archived to S3' });
     }
 
-    // ── PUSH: notify DCC using already-stored log ──────────────────────────────
+    // PUSH: notify DCC using already-stored log 
     const storedLog = await getLatestFlightLogForMission(missionId);
 
     if (!storedLog?.flytbase_flight_id) {
