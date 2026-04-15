@@ -176,7 +176,7 @@ export function GutmaPreviewPanel({
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                 </svg>
               )}
-              {archiving ? 'Archiving…' : 'Archive to S3'}
+              {archiving ? 'Archiving…' : 'Archive to Readi'}
             </button>
           )}
         </div>
