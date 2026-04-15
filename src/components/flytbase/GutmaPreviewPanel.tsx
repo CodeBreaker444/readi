@@ -216,11 +216,41 @@ export function GutmaPreviewPanel({
         {!loading && preview && tab === 'map' && (
           <div className="space-y-5">
             {hasMap ? (
-              <FlightPathMapDynamic
-                waypoints={preview.waypoints}
-                height="420px"
-                isDark={isDark}
-              />
+              <div className="relative">
+                <FlightPathMapDynamic
+                  waypoints={preview.waypoints}
+                  height="420px"
+                  isDark={isDark}
+                />
+                {(flight.pilot_name || preview.pilot || flight.drone_name || preview.aircraft?.product_name || preview.aircraft?.model) && (
+                  <div className="absolute bottom-3 left-3 z-400 opacity-20 pointer-events-none select-none">
+                    <div className="rounded-lg px-3 py-2.5 bg-slate-900 border border-slate-500 shadow-lg text-white min-w-37.5">
+                      {(preview.pilot || flight.pilot_name) && (
+                        <div className="flex items-center gap-1.5 mb-1.5">
+                          <HiUser className="w-3 h-3 shrink-0 text-slate-300" />
+                          <span className="text-[11px] font-medium truncate">{preview.pilot ?? flight.pilot_name}</span>
+                        </div>
+                      )}
+                      {flight.drone_name && (
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          <HiChip className="w-3 h-3 shrink-0 text-slate-300" />
+                          <span className="text-[11px] truncate">{flight.drone_name}</span>
+                        </div>
+                      )}
+                      {(preview.aircraft?.product_name || preview.aircraft?.model) && (
+                        <p className="text-[10px] text-slate-300 pl-4.5 truncate">
+                          {preview.aircraft.product_name ?? preview.aircraft.model}
+                        </p>
+                      )}
+                      {preview.aircraft?.serial_number && (
+                        <p className="text-[10px] font-mono text-slate-400 pl-4.5 truncate">
+                          {preview.aircraft.serial_number}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             ) : (
               <div className={`rounded-lg border p-8 text-center ${sectionBg}`}>
                 <HiMap className={`w-8 h-8 mx-auto mb-2 ${textSecondary}`} />
