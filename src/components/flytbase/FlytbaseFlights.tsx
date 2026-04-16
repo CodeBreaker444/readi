@@ -39,9 +39,7 @@ const WINDOWS = [
   { label: 'Last 6 hrs', value: 360 },
   { label: 'Last 12 hrs', value: 720 },
   { label: 'Last 24 hrs', value: 1440 },
-  // { label: 'Last week', value: 10080 },
 ];
-
 
 function formatDuration(secs?: number): string {
   if (secs == null) return '—';
@@ -68,10 +66,12 @@ export function FlytbaseFlights({ token }: Props) {
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [preview, setPreview] = useState<any | null>(null);
-  const [presignedUploadUrl, setPresignedUploadUrl] = useState<string | null>(null);
+  /** true once the GUTMA is already in S3 (loaded from cache or just archived) */
+  const [canArchive, setCanArchive] = useState(false);
   const [archiving, setArchiving] = useState(false);
   const [archived, setArchived] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
+  const [archiveError, setArchiveError] = useState<{ message: string; missing_sns: string[] } | null>(null);
 
   const fetchFlights = useCallback(async (win: number, mode: FilterMode) => {
     if (!token) {
@@ -83,8 +83,9 @@ export function FlytbaseFlights({ token }: Props) {
     setError(null);
     setSelectedFlight(null);
     setPreview(null);
-    setPresignedUploadUrl(null);
+    setCanArchive(false);
     setArchived(false);
+    setArchiveError(null);
     try {
       const url = mode === 'latest'
         ? '/api/flytbase/flights?mode=latest'
@@ -109,9 +110,10 @@ export function FlytbaseFlights({ token }: Props) {
 
     setSelectedFlight(flight);
     setPreview(null);
-    setPresignedUploadUrl(null);
+    setCanArchive(false);
     setArchived(false);
     setPreviewError(null);
+    setArchiveError(null);
     setPreviewLoading(true);
 
     try {
@@ -126,7 +128,8 @@ export function FlytbaseFlights({ token }: Props) {
       if (body.fromCache) {
         setArchived(true);
       } else {
-        setPresignedUploadUrl(body.presignedUploadUrl ?? null);
+        // preview loaded fresh from FlytBase — ready to archive
+        setCanArchive(true);
       }
     } catch (err: any) {
       const msg = err?.message ?? 'Failed to load flight log.';
@@ -138,18 +141,39 @@ export function FlytbaseFlights({ token }: Props) {
   }
 
   async function handleArchive() {
-    if (!presignedUploadUrl || !preview) return;
+    if (!selectedFlight || !preview) return;
     setArchiving(true);
+    setArchiveError(null);
     try {
-      const res = await fetch(presignedUploadUrl, {
-        method: 'PUT',
+      const res = await fetch('/api/flytbase/flights/archive', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(preview),
+        body: JSON.stringify({ flightId: selectedFlight.flight_id, preview }),
       });
-      if (!res.ok) throw new Error(`Upload failed (${res.status})`);
+      const body = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        if (body?.code === 'SN_MISMATCH') {
+          setArchiveError({ message: body.message, missing_sns: body.missing_sns ?? [] });
+          return;
+        }
+        throw new Error(body?.message ?? `Archive failed (${res.status})`);
+      }
+
       setArchived(true);
-      setPresignedUploadUrl(null);
-      toast.success('Flight log archived to S3.');
+      setCanArchive(false);
+
+      const updated = body.updated_components ?? [];
+      const durationSecs = body.duration_seconds ?? 0;
+      const missionSynced = body.mission_synced ?? false;
+
+      let detail = updated.length > 0
+        ? `Updated ${updated.length} component${updated.length !== 1 ? 's' : ''}`
+        : '';
+      if (durationSecs > 0) detail += ` · ${formatDuration(durationSecs)}`;
+      if (missionSynced) detail += ' · Mission synced';
+
+      toast.success('Flight log archived to Readi.', { description: detail || undefined });
     } catch (err: any) {
       toast.error(err?.message ?? 'Failed to archive flight log.');
     } finally {
@@ -271,7 +295,7 @@ export function FlytbaseFlights({ token }: Props) {
                   )}
                 </div>
 
-                <div className="divide-y divide-slate-800/50">
+                <div className="divide-y divide-slate-800/50 overflow-y-auto max-h-150 scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent">
                   {loading && Array.from({ length: 5 }).map((_, i) => (
                     <div key={i} className="px-4 py-3 space-y-1.5">
                       <Skeleton className={`h-3 w-2/3 ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`} />
@@ -359,9 +383,10 @@ export function FlytbaseFlights({ token }: Props) {
                     loading={previewLoading}
                     isDark={isDark}
                     previewError={previewError}
-                    canArchive={!!presignedUploadUrl && !archived}
+                    canArchive={canArchive && !archived}
                     archiving={archiving}
                     archived={archived}
+                    archiveError={archiveError}
                     onArchive={handleArchive}
                   />
                 )}

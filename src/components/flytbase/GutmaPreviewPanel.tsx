@@ -84,6 +84,7 @@ interface Props {
   canArchive?: boolean;
   archiving?: boolean;
   archived?: boolean;
+  archiveError?: { message: string; missing_sns: string[] } | null;
   onArchive?: () => void;
 }
  
@@ -106,7 +107,7 @@ function formatDistance(m: number): string {
 
 export function GutmaPreviewPanel({
   flight, preview, loading, isDark, previewError,
-  canArchive, archiving, archived, onArchive,
+  canArchive, archiving, archived, archiveError, onArchive,
 }: Props) {
   const [tab, setTab] = useState<'map' | 'gutma' | 'info'>('map');
 
@@ -192,6 +193,28 @@ export function GutmaPreviewPanel({
           )}
         </div>
       </div>
+
+      {/* Serial-number validation error — shown inline below the header */}
+      {archiveError && (
+        <div className={`flex items-start gap-3 px-5 py-3 border-b text-xs ${isDark ? 'bg-red-950/20 border-red-800/30' : 'bg-red-50 border-red-200'}`}>
+          <svg className={`w-4 h-4 mt-0.5 shrink-0 ${isDark ? 'text-red-400' : 'text-red-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+          </svg>
+          <div>
+            <p className={`font-medium ${isDark ? 'text-red-300' : 'text-red-700'}`}>{archiveError.message}</p>
+            {archiveError.missing_sns.length > 0 && (
+              <ul className={`mt-1 space-y-0.5 ${isDark ? 'text-red-400' : 'text-red-600'}`}>
+                {archiveError.missing_sns.map((sn) => (
+                  <li key={sn} className="font-mono">{sn}</li>
+                ))}
+              </ul>
+            )}
+            <p className={`mt-1 ${isDark ? 'text-red-500' : 'text-red-500'}`}>
+              Register these serial numbers in your equipment inventory before archiving.
+            </p>
+          </div>
+        </div>
+      )}
 
       {!loading && preview && (
         <div className={`flex border-b ${tabBorder} px-3`}>

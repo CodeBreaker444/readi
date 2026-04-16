@@ -20,6 +20,7 @@ import {
   Loader2,
   Plane,
   RefreshCw,
+  Sparkles,
   Wrench,
   Zap,
 } from "lucide-react";
@@ -77,6 +78,8 @@ interface FlytbaseFlight {
   distance?: number;
   drone_name?: string;
   pilot_name?: string;
+  mission_name?: string;
+  status?: string;
 }
 
 interface Props {
@@ -130,6 +133,14 @@ function hhmmToMinutes(hhmm: number): number {
 function addHhmmHours(a: number, b: number): number {
   const totalMin = hhmmToMinutes(a) + hhmmToMinutes(b);
   return Math.floor(totalMin / 60) + (totalMin % 60) / 100;
+}
+
+function secondsToHhmm(seconds: number): number {
+  if (seconds <= 0) return 0;
+  const totalMinutes = Math.round(seconds / 60);
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  return h + m / 100;
 }
 
 function formatHhmmHours(value: number): string {
@@ -190,16 +201,16 @@ function formatLastMaintenance(dateStr: string | null): string {
   return d.toLocaleDateString();
 }
 
-function formatFlightTime(ms?: number): string {
-  if (!ms) return "—";
-  return new Date(ms).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
-}
-
 function formatDuration(sec?: number): string {
   if (!sec) return "—";
   const m = Math.floor(sec / 60);
   const s = sec % 60;
   return m > 0 ? `${m}m ${s}s` : `${s}s`;
+}
+
+function formatDistance(m?: number): string {
+  if (m == null) return "—";
+  return m >= 1000 ? `${(m / 1000).toFixed(2)} km` : `${Math.round(m)} m`;
 }
 
 
@@ -224,6 +235,8 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
   const [selectedFlight, setSelectedFlight] = useState<string | null>(null);
   const [attachingFlight, setAttachingFlight] = useState(false);
   const [flightsError, setFlightsError] = useState<string | null>(null);
+  const [autoSyncingFlight, setAutoSyncingFlight] = useState(false);
+  const [autoSyncedIds, setAutoSyncedIds] = useState<Set<number>>(new Set());
 
   const loadMaintenance = useCallback(async () => {
     setLoadingMaint(true);
@@ -383,6 +396,85 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
         setSelectedFlight(null);
         setFlights([]);
         loadLogs();
+
+        // Auto-sync GUTMA data into maintenance inputs
+        const flightId = selectedFlight;
+        setAutoSyncingFlight(true);
+        try {
+          const { data: previewRes } = await axios.get(
+            `/api/flytbase/flights/preview?flightId=${flightId}`
+          );
+          if (previewRes.success && previewRes.data && systemData) {
+            const preview = previewRes.data;
+
+            // Compute flight duration in HH.mm format
+            let durationHhmm = 0;
+            if (preview.start_time && preview.end_time) {
+              const start = new Date(preview.start_time).getTime();
+              const end = new Date(preview.end_time).getTime();
+              if (!isNaN(start) && !isNaN(end) && end > start) {
+                durationHhmm = secondsToHhmm(Math.round((end - start) / 1000));
+              }
+            }
+
+            // Collect all SNs from GUTMA
+            const gutmaSnMap = new Map<string, "aircraft" | "gcs" | "battery">();
+            if (preview.aircraft?.serial_number?.trim()) {
+              gutmaSnMap.set(preview.aircraft.serial_number.trim(), "aircraft");
+            }
+            if (preview.gcs?.serial_number?.trim()) {
+              gutmaSnMap.set(preview.gcs.serial_number.trim(), "gcs");
+            }
+            for (const p of preview.payload ?? []) {
+              if (p.serial_number?.trim()) {
+                gutmaSnMap.set(p.serial_number.trim(), "battery");
+              }
+            }
+
+            // Match components and auto-fill inputs
+            const newSyncedIds = new Set<number>();
+            setInputs((prev) => {
+              const next = { ...prev };
+              for (const comp of systemData.components) {
+                if (!comp.serial_number) continue;
+                const sn = comp.serial_number.trim();
+                if (!gutmaSnMap.has(sn)) continue;
+
+                newSyncedIds.add(comp.component_id);
+                const current = next[comp.component_id] ?? { component_id: comp.component_id, add_flights: 0, add_hours: 0 };
+                next[comp.component_id] = {
+                  ...current,
+                  add_flights: comp.limit_flight > 0 ? 1 : current.add_flights,
+                  add_hours: comp.limit_hour > 0 && durationHhmm > 0 ? durationHhmm : current.add_hours,
+                };
+              }
+              return next;
+            });
+            setHoursRaw((prev) => {
+              const next = { ...prev };
+              for (const comp of systemData.components) {
+                if (!comp.serial_number) continue;
+                if (!gutmaSnMap.has(comp.serial_number.trim())) continue;
+                if (comp.limit_hour > 0 && durationHhmm > 0) {
+                  next[comp.component_id] = String(durationHhmm);
+                }
+              }
+              return next;
+            });
+            setAutoSyncedIds(newSyncedIds);
+
+            if (newSyncedIds.size > 0) {
+              toast.success(
+                `Auto-filled usage for ${newSyncedIds.size} component${newSyncedIds.size > 1 ? "s" : ""} from GUTMA`
+              );
+              setActiveTab("maintenance");
+            }
+          }
+        } catch {
+          // GUTMA auto-sync is best-effort — don't surface error to user
+        } finally {
+          setAutoSyncingFlight(false);
+        }
       } else {
         setFlightsError(data.message ?? "Failed to attach flight");
       }
@@ -500,14 +592,20 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
                       const hasFlightLimit = comp.limit_flight > 0;
                       const hasHourLimit = comp.limit_hour > 0;
                       const hasDayLimit = comp.limit_day > 0;
+                      const isAutoSynced = autoSyncedIds.has(comp.component_id);
 
                       return (
                         <div
                           key={comp.component_id}
-                          className={cn("rounded-xl border p-4 transition-colors", isDark ? "border-white/[0.06] bg-slate-900/40" : "border-slate-200 bg-white")}
+                          className={cn(
+                            "rounded-xl border p-4 transition-colors",
+                            isAutoSynced
+                              ? isDark ? "border-emerald-500/30 bg-emerald-500/5" : "border-emerald-300 bg-emerald-50/60"
+                              : isDark ? "border-white/6 bg-slate-900/40" : "border-slate-200 bg-white"
+                          )}
                         >
                           <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
                               <span className={cn("px-2 py-0.5 rounded text-[10px] font-medium", isDark ? "bg-slate-700 text-slate-300" : "bg-slate-100 text-slate-600")}>
                                 {comp.component_type ?? "Component"}
                               </span>
@@ -516,6 +614,15 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
                               )}
                               {comp.serial_number && (
                                 <span className={cn("text-[10px] font-mono", isDark ? "text-slate-500" : "text-slate-400")}>SN: {comp.serial_number}</span>
+                              )}
+                              {isAutoSynced && (
+                                <span className={cn(
+                                  "inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wide border",
+                                  isDark ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" : "bg-emerald-50 text-emerald-600 border-emerald-200"
+                                )}>
+                                  <Sparkles className="h-2.5 w-2.5" />
+                                  Auto-synced
+                                </span>
                               )}
                             </div>
                             <Badge variant="outline" className={cn("text-[9px] font-medium px-1.5 py-0", isDark ? cfg.dark : cfg.light)}>
@@ -750,36 +857,86 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
                 )}
 
                 {flights.length > 0 && (
-                  <div className="space-y-1.5">
-                    {flights.map((f) => (
-                      <button
-                        key={f.flight_id}
-                        type="button"
-                        onClick={() => setSelectedFlight(f.flight_id === selectedFlight ? null : f.flight_id)}
-                        className={cn(
-                          "w-full flex items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition-colors",
-                          selectedFlight === f.flight_id
-                            ? isDark ? "border-violet-500/40 bg-violet-500/10" : "border-violet-300 bg-violet-50"
-                            : isDark ? "border-white/[0.06] bg-slate-900/40 hover:bg-slate-900/60" : "border-slate-200 bg-white hover:bg-slate-50"
-                        )}
-                      >
-                        <div className="flex-1 min-w-0">
-                          <p className={cn("text-xs font-medium", isDark ? "text-slate-200" : "text-slate-700")}>
-                            {f.flight_name || f.flight_id}
-                          </p>
-                        </div>
-                        {selectedFlight === f.flight_id && (
-                          <CheckCircle2 className={cn("h-4 w-4 shrink-0", isDark ? "text-violet-400" : "text-violet-600")} />
-                        )}
-                      </button>
-                    ))}
+                  <div className="space-y-2 mt-1">
+                    <div className={cn(
+                      "rounded-xl border overflow-hidden divide-y",
+                      isDark ? "border-slate-800 divide-slate-800/60" : "border-slate-200 divide-slate-100"
+                    )}>
+                      {flights.map((f) => {
+                        const isSelected = selectedFlight === f.flight_id;
+                        return (
+                          <button
+                            key={f.flight_id}
+                            type="button"
+                            onClick={() => setSelectedFlight(f.flight_id === selectedFlight ? null : f.flight_id)}
+                            className={cn(
+                              "w-full text-left px-4 py-3 transition-colors",
+                              isSelected
+                                ? isDark
+                                  ? "bg-violet-950/40 border-l-2 border-violet-500"
+                                  : "bg-violet-50 border-l-2 border-violet-500"
+                                : isDark
+                                  ? "hover:bg-slate-800/50"
+                                  : "hover:bg-slate-50"
+                            )}
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="min-w-0 flex-1">
+                                <p className={cn("text-xs font-medium truncate", isDark ? "text-white" : "text-slate-900")}>
+                                  {f.flight_name ?? f.flight_id}
+                                </p>
+                                <p className={cn("text-[10px] font-mono truncate mt-0.5", isDark ? "text-slate-600" : "text-slate-400")}>
+                                  {f.flight_id}
+                                </p>
+                                {f.drone_name && (
+                                  <p className={cn("text-[11px] font-medium truncate mt-0.5", isDark ? "text-slate-400" : "text-slate-500")}>
+                                    {f.drone_name}
+                                  </p>
+                                )}
+                                <div className={cn("flex items-center gap-2 mt-1 text-[10px] flex-wrap", isDark ? "text-slate-500" : "text-slate-400")}>
+                                  {f.start_time && (
+                                    <span className="flex items-center gap-1">
+                                      <Clock className="h-2.5 w-2.5" />
+                                      {new Date(f.start_time).toLocaleString([], {
+                                        month: "short", day: "numeric",
+                                        hour: "2-digit", minute: "2-digit",
+                                      })}
+                                    </span>
+                                  )}
+                                  {f.duration != null && <span>{formatDuration(f.duration)}</span>}
+                                  {f.distance != null && <span>{formatDistance(f.distance)}</span>}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                {f.status && (
+                                  <span className={cn(
+                                    "text-[10px] px-1.5 py-0 rounded border",
+                                    isDark ? "border-slate-700 text-slate-400" : "border-slate-200 text-slate-500"
+                                  )}>
+                                    {f.status}
+                                  </span>
+                                )}
+                                {isSelected
+                                  ? <CheckCircle2 className={cn("h-4 w-4", isDark ? "text-violet-400" : "text-violet-600")} />
+                                  : <svg className={cn("h-3.5 w-3.5", isDark ? "text-slate-500" : "text-slate-400")} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                                }
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
 
                     <Button
                       onClick={handleAttachFlight}
-                      disabled={!selectedFlight || attachingFlight}
-                      className="w-full mt-2 h-9 bg-violet-600 hover:bg-violet-500 text-white text-sm"
+                      disabled={!selectedFlight || attachingFlight || autoSyncingFlight}
+                      className="w-full h-9 bg-violet-600 hover:bg-violet-500 text-white text-sm"
                     >
-                      {attachingFlight ? <><Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> Attaching…</> : "Attach Selected Flight Log"}
+                      {attachingFlight
+                        ? <><Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> Attaching…</>
+                        : autoSyncingFlight
+                          ? <><Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> Syncing GUTMA…</>
+                          : "Attach Selected Flight Log"}
                     </Button>
                   </div>
                 )}
