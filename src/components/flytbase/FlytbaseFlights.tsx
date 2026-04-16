@@ -295,7 +295,7 @@ export function FlytbaseFlights({ token }: Props) {
                   )}
                 </div>
 
-                <div className="divide-y divide-slate-800/50">
+                <div className="divide-y divide-slate-800/50 overflow-y-auto max-h-150 scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent">
                   {loading && Array.from({ length: 5 }).map((_, i) => (
                     <div key={i} className="px-4 py-3 space-y-1.5">
                       <Skeleton className={`h-3 w-2/3 ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`} />
