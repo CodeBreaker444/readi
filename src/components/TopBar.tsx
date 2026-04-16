@@ -1,9 +1,10 @@
 'use client';
 
+import { Skeleton } from '@/components/ui/skeleton';
 import { SessionUser } from '@/lib/auth/server-session';
-import { AlertTriangle, ChevronDown, LogOut, Moon, Search, Send, Settings, Sparkles, Sun, User, UserCircle, UserCog, X, Check, FileText } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { AlertTriangle, Check, ChevronDown, FileText, LogOut, Moon, Search, Send, Settings, Sparkles, Sun, User, UserCircle, UserCog, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '../lib/supabase/client';
 import NotificationDropdown from './NotificationDropdown';
@@ -168,7 +169,6 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
         <div />
 
         <div className="flex items-center gap-2 sm:gap-4">
-          {/* AI chat button — mobile */}
           <button
             onClick={() => { if (!isChatRestricted) setShowSearch(true); }}
             className={`sm:hidden flex items-center justify-center w-9 h-9 rounded-xl transition-all duration-200 ${isDark
@@ -179,7 +179,6 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
             <Search size={16} />
           </button>
 
-          {/* AI chat button — desktop */}
           <button
             onClick={() => { if (!isChatRestricted) setShowSearch(true); }}
             className={`group relative hidden sm:flex items-center gap-2.5 px-4 py-2 rounded-xl text-sm transition-all duration-200 w-60 ${isDark
@@ -217,7 +216,6 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
             )}
           </button>
 
-          {/* Theme toggle */}
           <button
             onClick={toggleTheme}
             className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-slate-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}
@@ -303,7 +301,6 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
 
       <ProfileModal isOpen={showProfileModal} onClose={() => setShowProfileModal(false)} isDark={isDark} userData={userData} />
 
-      {/* ── AI Chat Modal ── */}
       {showSearch && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => setShowSearch(false)}>
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
@@ -313,7 +310,6 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
             style={{ height: 'min(90vh, 600px)' }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Modal header */}
             <div className={`flex items-center justify-between px-5 py-4 border-b shrink-0 ${isDark ? 'border-slate-700/80' : 'border-gray-100'}`}>
               <div className="flex items-center gap-2.5 min-w-0">
                 <div className={`flex items-center justify-center w-7 h-7 rounded-lg shrink-0 ${isDark ? 'bg-violet-500/15' : 'bg-violet-50'}`}>
@@ -328,7 +324,6 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
                   </p>
                 </div>
 
-                {/* Admin OPM impersonation picker */}
                 {isAdmin && (
                   <div className="relative ml-2">
                     <button
@@ -350,44 +345,87 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
 
                     {showOpmPicker && (
                       <div
-                        className={`absolute left-0 top-full mt-1.5 w-64 rounded-xl border shadow-2xl z-50 overflow-hidden ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}
+                        className={`absolute left-0 top-full mt-1.5 w-72 rounded-xl border shadow-2xl z-50 overflow-hidden ${isDark ? 'bg-slate-900 border-slate-700/80' : 'bg-white border-gray-200'}`}
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <div className={`px-3 pt-3 pb-1 text-[9px] font-bold uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-                          Chat as OPM user
+                        {/* Header */}
+                        <div className={`flex items-center gap-2 px-3 py-2.5 border-b ${isDark ? 'border-slate-700/60' : 'border-gray-100'}`}>
+                          <UserCog size={12} className={isDark ? 'text-slate-500' : 'text-gray-400'} />
+                          <span className={`text-[10px] font-bold uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
+                            Chat as OPM user
+                          </span>
                         </div>
-                        <div className="p-1.5 space-y-0.5 max-h-52 overflow-y-auto">
+
+                        <div className="p-1.5 max-h-56 overflow-y-auto space-y-0.5">
                           {opmLoading ? (
-                            <div className={`px-3 py-4 text-center text-[11px] ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-                              Loading OPM users…
-                            </div>
+                            // Skeleton rows
+                            Array.from({ length: 4 }).map((_, i) => (
+                              <div key={i} className={`flex items-center gap-3 px-3 py-2 rounded-lg ${isDark ? 'bg-slate-800/40' : 'bg-gray-50/60'}`}>
+                                <Skeleton className={`w-7 h-7 rounded-full shrink-0 ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
+                                <div className="flex-1 space-y-1.5">
+                                  <Skeleton className={`h-2.5 w-28 rounded ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
+                                  <Skeleton className={`h-2 w-36 rounded ${isDark ? 'bg-slate-700/70' : 'bg-gray-100'}`} />
+                                </div>
+                              </div>
+                            ))
                           ) : opmUsers.length === 0 ? (
-                            <div className={`px-3 py-4 text-center text-[11px] ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
+                            <div className={`px-3 py-6 text-center text-[11px] ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
                               No OPM users found
                             </div>
                           ) : (
-                            opmUsers.map((u) => (
-                              <button
-                                key={u.userId}
-                                onClick={() => selectOpm(u)}
-                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-[11px] transition-colors ${
-                                  impersonatedOpm?.userId === u.userId
-                                    ? (isDark ? 'bg-amber-500/15 text-amber-300' : 'bg-amber-50 text-amber-700')
-                                    : (isDark ? 'hover:bg-slate-700 text-slate-300' : 'hover:bg-gray-50 text-gray-700')
-                                }`}
-                              >
-                                <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${isDark ? 'bg-emerald-500/15' : 'bg-emerald-50'}`}>
-                                  <User size={10} className={isDark ? 'text-emerald-400' : 'text-emerald-600'} />
-                                </div>
-                                <div className="min-w-0 flex-1">
-                                  <p className="font-semibold truncate">{u.fullname}</p>
-                                  <p className="opacity-50 truncate text-[9px]">{u.email}</p>
-                                </div>
-                                {impersonatedOpm?.userId === u.userId && <Check size={10} className="shrink-0 text-amber-400" />}
-                              </button>
-                            ))
+                            opmUsers.map((u) => {
+                              const isActive = impersonatedOpm?.userId === u.userId;
+                              const initial = u.fullname?.charAt(0)?.toUpperCase() ?? '?';
+                              return (
+                                <button
+                                  key={u.userId}
+                                  onClick={() => selectOpm(u)}
+                                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${
+                                    isActive
+                                      ? isDark ? 'bg-amber-500/15 border border-amber-500/25' : 'bg-amber-50 border border-amber-200'
+                                      : isDark ? 'hover:bg-slate-800 border border-transparent' : 'hover:bg-gray-50 border border-transparent'
+                                  }`}
+                                >
+                                  {/* Avatar with initial */}
+                                  <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-[11px] font-bold ${
+                                    isActive
+                                      ? isDark ? 'bg-amber-500/20 text-amber-400' : 'bg-amber-100 text-amber-700'
+                                      : isDark ? 'bg-slate-700 text-slate-300' : 'bg-gray-100 text-gray-600'
+                                  }`}>
+                                    {initial}
+                                  </div>
+                                  <div className="min-w-0 flex-1">
+                                    <p className={`text-[11px] font-semibold truncate ${
+                                      isActive
+                                        ? isDark ? 'text-amber-300' : 'text-amber-700'
+                                        : isDark ? 'text-slate-200' : 'text-gray-800'
+                                    }`}>
+                                      {u.fullname}
+                                    </p>
+                                    <p className={`text-[10px] truncate mt-0.5 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
+                                      {u.username ? `@${u.username}` : u.email}
+                                    </p>
+                                  </div>
+                                  {isActive && <Check size={11} className={`shrink-0 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />}
+                                </button>
+                              );
+                            })
                           )}
                         </div>
+
+                        {impersonatedOpm && (
+                          <div className={`border-t px-2 py-1.5 ${isDark ? 'border-slate-700/60' : 'border-gray-100'}`}>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); clearOpm(); setShowOpmPicker(false); }}
+                              className={`w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-medium transition-colors ${
+                                isDark ? 'text-slate-500 hover:text-rose-400 hover:bg-rose-500/10' : 'text-gray-400 hover:text-rose-500 hover:bg-rose-50'
+                              }`}
+                            >
+                              <X size={10} />
+                              Clear OPM view
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -417,7 +455,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
                 )}
                 <button
                   onClick={() => setShowSearch(false)}
-                  className={`text-[10px] font-medium px-2 py-1 rounded border transition-colors ${isDark ? 'bg-slate-800 border-slate-600 text-slate-400 hover:text-slate-200' : 'bg-gray-50 border-gray-200 text-gray-400 hover:text-gray-600'}`}
+                  className={`text-[10px] cursor-pointer font-medium px-2 py-1 rounded border transition-colors ${isDark ? 'bg-slate-800 border-slate-600 text-slate-400 hover:text-slate-200' : 'bg-gray-50 border-gray-200 text-gray-400 hover:text-gray-600'}`}
                 >
                   Esc
                 </button>
