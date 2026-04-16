@@ -1,4 +1,4 @@
-import { Role } from "./types";
+import { Role, LLMProvider, LLMConfig } from "./types";
 
 export const PROFILE_TO_ROLE: Record<number, Role> = {
     8: "PIC",
@@ -111,6 +111,30 @@ export const ROLE_ALLOWED_TABLES: Record<string, string[]> = {
         "alert_log",
         "client",
     ],
+    // ADMIN inherits OPM tables — when impersonating OPM the impersonated user's tables apply
+    ADMIN: [
+        "pilot_mission",
+        "planning",
+        "planning_logbook",
+        "pilot_mission_result",
+        "calendar_shift",
+        "checklist",
+        "luc_document",
+        "users",
+        "tool",
+        "tool_maintenance",
+        "tool_component",
+        "maintenance_ticket",
+        "audit",
+        "audit_finding",
+        "compliance_requirement",
+        "safety_report",
+        "alert_log",
+        "training",
+        "notification",
+        "repository_file",
+        "client",
+    ],
 };
 
 export const BLOCKED_COLUMNS: string[] = [
@@ -124,61 +148,56 @@ export const BLOCKED_COLUMNS: string[] = [
     "estimated_cost",
 ];
 
-export const ROLE_SUGGESTIONS: Record<string, string[]> = {
-    PIC: [
-        "How many missions have I completed?",
-        "What is my total flight time?",
-        "Show my cancelled missions",
-        "What was my last mission?",
-    ],
-    OPM: [
-        "How many missions are planned this month?",
-        "Show all completed missions",
-        "List active flight plans",
-        "How many pilots are active?",
-    ],
-    SM: [
-        "How many safety reports are open?",
-        "Show critical severity reports",
-        "What are my KPI values?",
-        "List all active alerts",
-    ],
-    AM: [
-        "Show tools needing calibration",
-        "How many audits are completed?",
-        "List active compliance requirements",
-        "Show planned missions",
-    ],
-    CMM: [
-        "How many audit findings are open?",
-        "Show compliance requirements",
-        "What KPIs are at risk?",
-        "List recent audits",
-    ],
-    MM: [
-        "How many maintenance tickets are open?",
-        "Which tools need calibration?",
-        "Show overdue maintenance",
-        "List tool components",
-    ],
-    TM: [
-        "How many training courses are active?",
-        "Show training completion rates",
-        "Who has certifications expiring?",
-        "List all training sessions",
-    ],
-    DC: [
-        "How many active users are there?",
-        "Show user permissions",
-        "List viewer-only users",
-        "How many documents are uploaded?",
-    ],
-    SLA: [
-        "Show open maintenance tickets",
-        "How many missions completed this month?",
-        "List active alerts",
-        "What KPIs are breached?",
-    ],
+
+export const ROLE_SUGGESTIONS: Record<string, Record<string, string[]>> = {
+    EN: {
+        PIC: ["How many missions have I completed?", "What is my total flight time?", "Show my cancelled missions", "What was my last mission?"],
+        OPM: ["How many missions are planned this month?", "Show all completed missions", "List active flight plans", "How many pilots are active?"],
+        SM: ["How many safety reports are open?", "Show critical severity reports", "What are my KPI values?", "List all active alerts"],
+        AM: ["Show tools needing calibration", "How many audits are completed?", "List active compliance requirements", "Show planned missions"],
+        CMM: ["How many audit findings are open?", "Show compliance requirements", "What KPIs are at risk?", "List recent audits"],
+        MM: ["How many maintenance tickets are open?", "Which tools need calibration?", "Show overdue maintenance", "List tool components"],
+        TM: ["How many training courses are active?", "Show training completion rates", "Who has certifications expiring?", "List all training sessions"],
+        DC: ["How many active users are there?", "Show user permissions", "List viewer-only users", "How many documents are uploaded?"],
+        SLA: ["Show open maintenance tickets", "How many missions completed this month?", "List active alerts", "What KPIs are breached?"],
+        ADMIN: ["How many missions are planned this month?", "Show all compliance requirements", "List all active alerts", "How many users are active?"],
+    },
+    IT: {
+        PIC: ["Quante missioni ho completato?", "Qual è il mio tempo di volo totale?", "Mostra le mie missioni cancellate", "Qual è stata la mia ultima missione?"],
+        OPM: ["Quante missioni sono pianificate questo mese?", "Mostra tutte le missioni completate", "Elenca i piani di volo attivi", "Quanti piloti sono attivi?"],
+        SM: ["Quanti rapporti di sicurezza sono aperti?", "Mostra i rapporti con gravità critica", "Quali sono i valori dei miei KPI?", "Elenca tutti gli avvisi attivi"],
+        AM: ["Mostra gli strumenti che necessitano di calibrazione", "Quanti audit sono stati completati?", "Elenca i requisiti di conformità attivi", "Mostra le missioni pianificate"],
+        CMM: ["Quanti risultati di audit sono aperti?", "Mostra i requisiti di conformità", "Quali KPI sono a rischio?", "Elenca gli audit recenti"],
+        MM: ["Quanti ticket di manutenzione sono aperti?", "Quali strumenti necessitano di calibrazione?", "Mostra le manutenzioni in ritardo", "Elenca i componenti degli strumenti"],
+        TM: ["Quanti corsi di formazione sono attivi?", "Mostra i tassi di completamento della formazione", "Chi ha certificazioni in scadenza?", "Elenca tutte le sessioni di formazione"],
+        DC: ["Quanti utenti attivi ci sono?", "Mostra i permessi utente", "Elenca gli utenti in sola visualizzazione", "Quanti documenti sono stati caricati?"],
+        SLA: ["Mostra i ticket di manutenzione aperti", "Quante missioni completate questo mese?", "Elenca gli avvisi attivi", "Quali KPI sono violati?"],
+        ADMIN: ["Quante missioni sono pianificate questo mese?", "Mostra tutti i requisiti di conformità", "Elenca tutti gli avvisi attivi", "Quanti utenti sono attivi?"],
+    },
+    DE: {
+        PIC: ["Wie viele Missionen habe ich abgeschlossen?", "Was ist meine gesamte Flugzeit?", "Zeige meine stornierten Missionen", "Was war meine letzte Mission?"],
+        OPM: ["Wie viele Missionen sind diesen Monat geplant?", "Zeige alle abgeschlossenen Missionen", "Liste aktive Flugpläne auf", "Wie viele Piloten sind aktiv?"],
+        SM: ["Wie viele Sicherheitsberichte sind offen?", "Zeige Berichte mit kritischem Schweregrad", "Was sind meine KPI-Werte?", "Liste alle aktiven Alarme auf"],
+        AM: ["Zeige Werkzeuge, die kalibriert werden müssen", "Wie viele Audits wurden abgeschlossen?", "Liste aktive Compliance-Anforderungen auf", "Zeige geplante Missionen"],
+        CMM: ["Wie viele Audit-Ergebnisse sind offen?", "Zeige Compliance-Anforderungen", "Welche KPIs sind gefährdet?", "Liste kürzliche Audits auf"],
+        MM: ["Wie viele Wartungstickets sind offen?", "Welche Werkzeuge benötigen Kalibrierung?", "Zeige überfällige Wartungen", "Liste Werkzeugkomponenten auf"],
+        TM: ["Wie viele Schulungskurse sind aktiv?", "Zeige Abschlussquoten von Schulungen", "Wer hat ablaufende Zertifizierungen?", "Liste alle Schulungen auf"],
+        DC: ["Wie viele aktive Benutzer gibt es?", "Zeige Benutzerberechtigungen", "Liste Nur-Lese-Benutzer auf", "Wie viele Dokumente sind hochgeladen?"],
+        SLA: ["Zeige offene Wartungstickets", "Wie viele Missionen diesen Monat abgeschlossen?", "Liste aktive Alarme auf", "Welche KPIs sind verletzt?"],
+        ADMIN: ["Wie viele Missionen sind diesen Monat geplant?", "Zeige alle Compliance-Anforderungen", "Liste alle aktiven Alarme auf", "Wie viele Benutzer sind aktiv?"],
+    },
+    FR: {
+        PIC: ["Combien de missions ai-je terminées ?", "Quel est mon temps de vol total ?", "Afficher mes missions annulées", "Quelle a été ma dernière mission ?"],
+        OPM: ["Combien de missions sont prévues ce mois-ci ?", "Afficher toutes les missions terminées", "Lister les plans de vol actifs", "Combien de pilotes sont actifs ?"],
+        SM: ["Combien de rapports de sécurité sont ouverts ?", "Afficher les rapports de gravité critique", "Quelles sont les valeurs de mes KPI ?", "Lister toutes les alertes actives"],
+        AM: ["Afficher les outils nécessitant une calibration", "Combien d'audits sont terminés ?", "Lister les exigences de conformité actives", "Afficher les missions prévues"],
+        CMM: ["Combien de conclusions d'audit sont ouvertes ?", "Afficher les exigences de conformité", "Quels KPI sont à risque ?", "Lister les audits récents"],
+        MM: ["Combien de tickets de maintenance sont ouverts ?", "Quels outils ont besoin de calibration ?", "Afficher les maintenances en retard", "Lister les composants des outils"],
+        TM: ["Combien de cours de formation sont actifs ?", "Afficher les taux de réussite des formations", "Qui a des certifications expirant bientôt ?", "Lister toutes les sessions de formation"],
+        DC: ["Combien d'utilisateurs actifs y a-t-il ?", "Afficher les permissions utilisateurs", "Lister les utilisateurs en lecture seule", "Combien de documents sont téléchargés ?"],
+        SLA: ["Afficher les tickets de maintenance ouverts", "Combien de missions terminées ce mois-ci ?", "Lister les alertes actives", "Quels KPI sont violés ?"],
+        ADMIN: ["Combien de missions sont prévues ce mois-ci ?", "Afficher toutes les exigences de conformité", "Lister toutes les alertes actives", "Combien d'utilisateurs sont actifs ?"],
+    },
 };
 
 export const ROLE_COLORS: Record<string, string> = {
@@ -191,4 +210,31 @@ export const ROLE_COLORS: Record<string, string> = {
     TM: "bg-teal-600",
     DC: "bg-indigo-600",
     SLA: "bg-rose-600",
+    ADMIN: "bg-red-600",
 };
+
+export const PROVIDERS: Record<LLMProvider, LLMConfig> = {
+    groq: {
+        provider: "groq",
+        model: "llama-3.3-70b-versatile",
+        description: "Cloud-based Llama 3.3 (High Performance)",
+    },
+};
+
+export const TABLES_WITH_OWNER = [
+    "pilot_mission", "planning", "planning_logbook", "safety_report",
+    "spi_kpi", "spi_kpi_definition", "spi_kpi_log", "audit", "audit_finding",
+    "tool", "maintenance_ticket", "training", "client",
+    "compliance_requirement", "compliance_status_log", "checklist",
+    "luc_document", "calendar_shift", "users", "notification",
+    "compliance_evidence", "repository_file",
+];
+
+export const COLUMNS_TO_SUMMARY = [
+    "status_name", "maintenance_status", "audit_status", "report_status",
+    "finding_status", "alert_status", "severity", "audit_type", "report_type"
+];
+
+// Knowledge base hard limits
+export const KB_MAX_PDF_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
+export const KB_MAX_PDF_COUNT = 10;

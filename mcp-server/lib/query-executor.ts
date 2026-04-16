@@ -1,11 +1,83 @@
 import { getSupabase } from "./supabase";
-import { BLOCKED_COLUMNS } from "./constants";
+import { BLOCKED_COLUMNS, TABLES_WITH_OWNER } from "./constants";
 import { QueryPlan } from "./types";
 
+/**
+ * Returns true if the value is a valid SQL column identifier.
+ */
+function isValidColumn(val: any): val is string {
+    if (!val || typeof val !== "string") return false;
+    if (val === "undefined" || val === "null" || val === "*") return false;
+    return /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(val.trim());
+}
+
+/**
+ * Sanitizes LLM-generated query plans before execution.
+ * Small models often output SQL expressions (count(*), count(col)) or "undefined"
+ * as column names — this normalizes them into valid plans.
+ */
+function sanitizeQueryPlan(plan: QueryPlan): QueryPlan {
+    const sanitized = { ...plan };
+
+    const countExprRegex = /^count\s*\(/i;
+    const sumExprRegex = /^sum\s*\(/i;
+    const avgExprRegex = /^avg\s*\(/i;
+
+    const rawCols = sanitized.select_columns ?? [];
+
+    // If LLM put count(*) or count(col) directly in select_columns, convert to COUNT aggregation
+    const hasCountExpr = rawCols.some((c: string) => countExprRegex.test(c));
+    if (hasCountExpr && !sanitized.aggregation) {
+        sanitized.aggregation = "COUNT";
+    }
+
+    // Strip all SQL expressions and invalid values from columns
+    sanitized.select_columns = rawCols.filter((c: string) => {
+        if (!c || c === "undefined" || c === "null") return false;
+        if (countExprRegex.test(c) || sumExprRegex.test(c) || avgExprRegex.test(c)) return false;
+        if (c !== "*" && !isValidColumn(c)) return false;
+        return true;
+    });
+
+    // If columns became empty after sanitization, fall back to *
+    if (sanitized.select_columns.length === 0) {
+        sanitized.select_columns = ["*"];
+    }
+
+    // Ensure aggregation is a valid value
+    const validAggregations = ["COUNT", "SUM", "AVG", "LIST", null];
+    if (!validAggregations.includes(sanitized.aggregation)) {
+        sanitized.aggregation = "LIST";
+    }
+
+    // If aggregation is SUM/AVG but no valid aggregation_column, fall back to LIST
+    if ((sanitized.aggregation === "SUM" || sanitized.aggregation === "AVG") && !isValidColumn(sanitized.aggregation_column)) {
+        sanitized.aggregation = "LIST";
+    }
+
+    // Validate date_filter — null it out if its column is invalid
+    if (sanitized.date_filter) {
+        if (!isValidColumn(sanitized.date_filter.column)) {
+            sanitized.date_filter = null;
+        }
+    }
+
+    // Validate extra_filter — null it out if its column is invalid
+    if (sanitized.extra_filter) {
+        if (!isValidColumn(sanitized.extra_filter.column)) {
+            sanitized.extra_filter = null;
+        }
+    }
+
+    return sanitized;
+}
 
 export async function executeQueryPlan(plan: QueryPlan, userId: number, ownerID: number, role: string): Promise<any[]> {
 
     const supabase = getSupabase();
+
+    // Sanitize the LLM-generated plan before any DB interaction
+    plan = sanitizeQueryPlan(plan);
 
     const safeCols = (plan.select_columns ?? []).filter((c: string) => !BLOCKED_COLUMNS.includes(c));
 
@@ -23,16 +95,7 @@ export async function executeQueryPlan(plan: QueryPlan, userId: number, ownerID:
         count: plan.aggregation === "COUNT" ? "exact" : undefined,
     });
 
-    const tablesWithOwner = [
-        "pilot_mission", "planning", "planning_logbook", "safety_report",
-        "spi_kpi", "spi_kpi_definition", "spi_kpi_log", "audit", "audit_finding",
-        "tool", "maintenance_ticket", "training", "client",
-        "compliance_requirement", "compliance_status_log", "checklist",
-        "luc_document", "calendar_shift", "users", "notification",
-        "compliance_evidence", "repository_file",
-    ];
-
-    if (tablesWithOwner.includes(plan.table))
+    if (TABLES_WITH_OWNER.includes(plan.table))
         q = q.eq("fk_owner_id", ownerID);
 
     if (role === "PIC" && plan.table === "pilot_mission")
@@ -52,32 +115,30 @@ export async function executeQueryPlan(plan: QueryPlan, userId: number, ownerID:
         q = q.eq(plan.extra_filter.column, val);
     }
 
-    if (!plan.aggregation || plan.aggregation === "LIST") {
-        q = q.limit(20);
-    }
+    // Removed strict limit to ensure accurate record counting for local models
+    // q = q.limit(20);
 
-    const { data, error, count } = await q;
+    const { data: rawData, error, count } = await q;
 
-    if (error)
-        throw error;
+    if (error) throw error;
+
+    const debugInfo = {
+        ownerID, userId, role,
+        table: plan.table,
+        count: rawData?.length || 0
+    };
 
     if (plan.aggregation === "COUNT") {
-        return [{ count: count ?? (data?.length ?? 0) }];
+        return [{ count: count ?? (rawData?.length ?? 0), _debug: debugInfo }];
     }
 
-    if (data && Array.isArray(data)) {
-        return data.map((row: any) => {
-            const clean: any = {};
-            for (const [key, val] of Object.entries(row)) {
-                if (!BLOCKED_COLUMNS.includes(key)) {
-                    clean[key] = val;
-                }
-            }
-            return clean;
-        });
-    }
-
-    return data ?? [];
+    return (rawData || []).map((row: any) => {
+        const clean: any = { _debug: debugInfo };
+        for (const [key, val] of Object.entries(row)) {
+            if (!BLOCKED_COLUMNS.includes(key)) clean[key] = val;
+        }
+        return clean;
+    });
 }
 
 function dateRange(range: string): { start: string; end: string } {

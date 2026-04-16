@@ -1,6 +1,6 @@
 // Shared interfaces and types for the READI Agent
 
-export type Role = "PIC" | "OPM" | "SM" | "AM" | "CMM" | "MM" | "TM" | "DC" | "SLA";
+export type Role = "PIC" | "OPM" | "SM" | "AM" | "CMM" | "MM" | "TM" | "DC" | "SLA" | "ADMIN";
 
 export interface UserSession {
     userId: number;
@@ -13,6 +13,7 @@ export interface UserSession {
 export interface Message {
     role: "user" | "assistant";
     content: string;
+    references?: Array<{ url: string; title: string; source: string }>;
 }
 
 export interface QueryPlan {
@@ -33,4 +34,12 @@ export interface QueryPlan {
 export interface ExecutionResult {
     data: any[];
     error: string | null;
+}
+
+export type LLMProvider = "groq";
+
+export interface LLMConfig {
+    provider: LLMProvider;
+    model: string;
+    description: string;
 }
