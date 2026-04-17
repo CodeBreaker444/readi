@@ -1040,5 +1040,145 @@
       "noRecords": "Keine Einträge gefunden",
       "actions": "Aktionen"
     }
+  },
+  "operations": {
+    "table": {
+      "title": "Betrieb",
+      "subtitle": "Pilotenmissionen & Flugoperationen",
+      "communication": "Kommunikation",
+      "import": "Importieren",
+      "newOperation": "Neue Operation",
+      "stats": {
+        "total": "Gesamt",
+        "planned": "Geplant",
+        "inProgress": "In Bearbeitung",
+        "completed": "Abgeschlossen"
+      },
+      "filters": {
+        "searchPlaceholder": "Operationen suchen…",
+        "allStatuses": "Alle Status",
+        "allPilots": "Alle Piloten",
+        "reset": "Zurücksetzen"
+      },
+      "status": {
+        "planned": "Geplant",
+        "inProgress": "In Bearbeitung",
+        "completed": "Abgeschlossen",
+        "cancelled": "Abgebrochen",
+        "aborted": "Abgebrochen"
+      },
+      "counter": "{{count}} Operationen",
+      "batch": {
+        "selected": "{{count}} ausgewählt",
+        "setPilot": "Pilot setzen…",
+        "settingPilot": "Pilot wird gesetzt…",
+        "autofillTasks": "Aufgaben autofüllen",
+        "autofilling": "Wird autogefüllt…",
+        "changeStatus": "Status ändern…",
+        "updating": "Wird aktualisiert…",
+        "setPlanned": "Als Geplant setzen",
+        "setInProgress": "Als In Bearbeitung setzen",
+        "setCompleted": "Als Abgeschlossen setzen",
+        "setCancelled": "Als Abgebrochen setzen",
+        "setAborted": "Als Abgebrochen setzen",
+        "deleteSelected": "Ausgewählte löschen",
+        "deleting": "Wird gelöscht…"
+      },
+      "empty": "Keine Operationen gefunden",
+      "detail": {
+        "timeline": "Zeitplan",
+        "scheduled": "Geplant",
+        "endTime": "Endzeit",
+        "personnelEquipment": "Personal & Ausrüstung",
+        "pilotInCommand": "Pilot in Command",
+        "droneSystem": "Drohnensystem",
+        "missionId": "Missions-ID",
+        "location": "Standort",
+        "flightResults": "Flugergebnisse",
+        "duration": "Dauer",
+        "distance": "Distanz",
+        "maxAltitude": "Maximale Höhe",
+        "pilotNotes": "Pilotennotizen",
+        "maintenance": "Wartung",
+        "updateMaintenanceCycles": "Wartungszyklen aktualisieren",
+        "logFlightsHours": "Flüge & Stunden für {{code}} nach dieser Mission protokollieren.",
+        "updateMaintenance": "Wartung aktualisieren",
+        "reportIssue": "Problem melden"
+      },
+      "toast": {
+        "deleteSuccess": "{{count}} Operation(en) gelöscht",
+        "deleteError": "Einige Operationen konnten nicht gelöscht werden",
+        "statusSuccess": "{{count}} Operation(en) auf {{status}} aktualisiert",
+        "statusError": "Einige Operationen konnten nicht aktualisiert werden",
+        "pilotWarning": "Keine geplanten Operationen ausgewählt. Pilot kann nur bei geplanten Missionen gesetzt werden.",
+        "pilotSuccess": "Pilot für {{count}} Operation(en) gesetzt",
+        "pilotSkipped": "{{count}} übersprungen (nicht geplant).",
+        "pilotError": "Pilot konnte nicht gesetzt werden",
+        "autofillWarning": "Keine geeigneten Operationen. Autofüllen erfordert abgeschlossene Missionen mit zugewiesenem Piloten.",
+        "autofillSuccess": "{{count}} Operation(en) automatisch ausgefüllt",
+        "autofillSkipped": "{{count}} übersprungen (nicht abgeschlossen oder kein Pilot).",
+        "autofillError": "Aufgaben konnten nicht automatisch ausgefüllt werden"
+      }
+    },
+    "board": {
+      "title": "Operations-Board",
+      "subtitle": "Echtzeit-Missionsworkflow-Management",
+      "refresh": "Aktualisieren",
+      "columns": {
+        "scheduled": "Geplant",
+        "inProgress": "In Bearbeitung",
+        "done": "Erledigt"
+      },
+      "status": {
+        "scheduled": "Geplant",
+        "inProgress": "In Bearbeitung",
+        "completed": "Abgeschlossen",
+        "cancelled": "Abgebrochen"
+      },
+      "detail": {
+        "timeline": "Zeitplan",
+        "scheduled": "Geplant",
+        "completed": "Abgeschlossen",
+        "personnelEquipment": "Personal & Ausrüstung",
+        "pilotInCommand": "Pilot in Command",
+        "missionType": "Missionstyp",
+        "category": "Kategorie",
+        "planning": "Planung",
+        "flightResults": "Flugergebnisse",
+        "duration": "Dauer",
+        "distance": "Distanz",
+        "notes": "Notizen",
+        "missionGroup": "Missionsgruppe"
+      },
+      "toast": {
+        "loadError": "Board konnte nicht geladen werden",
+        "missionStarted": "Mission gestartet",
+        "missionCompleted": "Mission abgeschlossen",
+        "statusUpdateFailed": "Statusaktualisierung fehlgeschlagen",
+        "invalidMove": "Ungültige Verschiebung",
+        "revertSuccess": "Mission zurück zu In Bearbeitung verschoben",
+        "revertDesc": "Bitte aktualisieren Sie den Wartungszyklus, um die Mission abzuschließen.",
+        "revertError": "Missionsstatus konnte nicht zurückgesetzt werden"
+      }
+    },
+    "calendar": {
+      "title": "Operations-Kalender",
+      "subtitle": "Missionsplanung und Zuweisungen verwalten",
+      "addOperation": "Operation hinzufügen",
+      "missionOverview": "Missionsübersicht",
+      "loading": "Laden…",
+      "legend": {
+        "scheduled": "Geplant",
+        "inProgress": "In Bearbeitung",
+        "completed": "Abgeschlossen",
+        "cancelled": "Abgebrochen"
+      },
+      "calendarButtons": {
+        "today": "Heute",
+        "week": "Woche",
+        "month": "Monat",
+        "list": "Liste"
+      }
+    }
   }
 }

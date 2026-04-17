@@ -1040,5 +1040,145 @@
       "noRecords": "No records found",
       "actions": "Actions"
     }
+  },
+  "operations": {
+    "table": {
+      "title": "Operations",
+      "subtitle": "Pilot missions & flight operations",
+      "communication": "Communication",
+      "import": "Import",
+      "newOperation": "New Operation",
+      "stats": {
+        "total": "Total",
+        "planned": "Planned",
+        "inProgress": "In Progress",
+        "completed": "Completed"
+      },
+      "filters": {
+        "searchPlaceholder": "Search operations…",
+        "allStatuses": "All Statuses",
+        "allPilots": "All Pilots",
+        "reset": "Reset"
+      },
+      "status": {
+        "planned": "Planned",
+        "inProgress": "In Progress",
+        "completed": "Completed",
+        "cancelled": "Cancelled",
+        "aborted": "Aborted"
+      },
+      "counter": "{{count}} operations",
+      "batch": {
+        "selected": "{{count}} selected",
+        "setPilot": "Set pilot…",
+        "settingPilot": "Setting pilot…",
+        "autofillTasks": "Autofill Tasks",
+        "autofilling": "Autofilling…",
+        "changeStatus": "Change status…",
+        "updating": "Updating…",
+        "setPlanned": "Set Planned",
+        "setInProgress": "Set In Progress",
+        "setCompleted": "Set Completed",
+        "setCancelled": "Set Cancelled",
+        "setAborted": "Set Aborted",
+        "deleteSelected": "Delete Selected",
+        "deleting": "Deleting…"
+      },
+      "empty": "No operations found",
+      "detail": {
+        "timeline": "Timeline",
+        "scheduled": "Scheduled",
+        "endTime": "End Time",
+        "personnelEquipment": "Personnel & Equipment",
+        "pilotInCommand": "Pilot in Command",
+        "droneSystem": "Drone System",
+        "missionId": "Mission ID",
+        "location": "Location",
+        "flightResults": "Flight Results",
+        "duration": "Duration",
+        "distance": "Distance",
+        "maxAltitude": "Max Altitude",
+        "pilotNotes": "Pilot Notes",
+        "maintenance": "Maintenance",
+        "updateMaintenanceCycles": "Update maintenance cycles",
+        "logFlightsHours": "Log flights & hours for {{code}} after this mission.",
+        "updateMaintenance": "Update Maintenance",
+        "reportIssue": "Report Issue"
+      },
+      "toast": {
+        "deleteSuccess": "{{count}} operation(s) deleted",
+        "deleteError": "Failed to delete some operations",
+        "statusSuccess": "{{count}} operation(s) updated to {{status}}",
+        "statusError": "Failed to update some operations",
+        "pilotWarning": "No Planned operations selected. Pilot can only be set on Planned missions.",
+        "pilotSuccess": "Pilot set for {{count}} operation(s)",
+        "pilotSkipped": "{{count}} skipped (not Planned).",
+        "pilotError": "Failed to set pilot",
+        "autofillWarning": "No eligible operations. Autofill requires Completed missions with a pilot assigned.",
+        "autofillSuccess": "Autofilled {{count}} operation(s)",
+        "autofillSkipped": "{{count}} skipped (not Completed or no pilot).",
+        "autofillError": "Failed to autofill tasks"
+      }
+    },
+    "board": {
+      "title": "Operation Board",
+      "subtitle": "Real-time mission workflow management",
+      "refresh": "Refresh",
+      "columns": {
+        "scheduled": "Scheduled",
+        "inProgress": "In Progress",
+        "done": "Done"
+      },
+      "status": {
+        "scheduled": "Scheduled",
+        "inProgress": "In Progress",
+        "completed": "Completed",
+        "cancelled": "Cancelled"
+      },
+      "detail": {
+        "timeline": "Timeline",
+        "scheduled": "Scheduled",
+        "completed": "Completed",
+        "personnelEquipment": "Personnel & Equipment",
+        "pilotInCommand": "Pilot in Command",
+        "missionType": "Mission Type",
+        "category": "Category",
+        "planning": "Planning",
+        "flightResults": "Flight Results",
+        "duration": "Duration",
+        "distance": "Distance",
+        "notes": "Notes",
+        "missionGroup": "Mission Group"
+      },
+      "toast": {
+        "loadError": "Failed to load board",
+        "missionStarted": "Mission started",
+        "missionCompleted": "Mission completed",
+        "statusUpdateFailed": "Status update failed",
+        "invalidMove": "Invalid move",
+        "revertSuccess": "Mission moved back to In Progress",
+        "revertDesc": "Please update the maintenance cycle to complete the mission.",
+        "revertError": "Failed to revert mission status"
+      }
+    },
+    "calendar": {
+      "title": "Operation Calendar",
+      "subtitle": "Manage mission scheduling and assignments",
+      "addOperation": "Add Operation",
+      "missionOverview": "Mission Overview",
+      "loading": "Loading…",
+      "legend": {
+        "scheduled": "Scheduled",
+        "inProgress": "In Progress",
+        "completed": "Completed",
+        "cancelled": "Cancelled"
+      },
+      "calendarButtons": {
+        "today": "Today",
+        "week": "Week",
+        "month": "Month",
+        "list": "List"
+      }
+    }
   }
 }
