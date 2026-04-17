@@ -1042,6 +1042,19 @@
     }
   },
   "operations": {
+    "declaration": {
+    "title": "Daily Pilot Declaration",
+    "subtitle": "Confirm all items to proceed with starting a mission today.",
+    "rested": "I am adequately rested and not fatigued",
+    "fit": "I am physically and mentally fit to fly",
+    "medication": "I am not under the influence of medication that may impair my performance",
+    "briefed": "I have reviewed the mission plan and area of operation",
+    "equipment": "Equipment and drone systems have been inspected and are airworthy",
+    "submit": "Submit Declaration",
+    "saving": "Saving...",
+    "warning": "Please confirm all checklist items before submitting.",
+    "error": "Failed to save declaration"
+  },
     "table": {
       "title": "Operations",
       "subtitle": "Pilot missions & flight operations",
@@ -1159,6 +1172,27 @@
         "revertSuccess": "Mission moved back to In Progress",
         "revertDesc": "Please update the maintenance cycle to complete the mission.",
         "revertError": "Failed to revert mission status"
+      },
+      "card": {
+        "status": {
+          "done": "Done",
+          "pending": "Pending"
+        },
+        "maintenanceStatus": {
+          "ok": "Maintenance OK",
+          "alert": "Maintenance Alert",
+          "due": "Maintenance Due",
+          "inMaintenance": "In Maintenance"
+        },
+        "notAssigned": "Not Assigned",
+        "lucAllCompleted": "All LUC tasks completed",
+        "lucProcedureTasks": "LUC procedure tasks",
+        "completeLucTasks": "Complete LUC tasks",
+        "completeTasks": "Complete Tasks",
+        "updateMaintenance": "Update Maintenance",
+        "updateMaintenanceCycle": "Update maintenance cycle",
+        "missionDetails": "Mission details",
+        "view": "View"
       }
     },
     "calendar": {
@@ -1178,6 +1212,63 @@
         "week": "Week",
         "month": "Month",
         "list": "List"
+      }
+    },
+    "missionComplete": {
+      "title": "Mission Complete",
+      "tabs": {
+        "maintenance": "Maintenance",
+        "flightLogs": "Flight Logs"
+      },
+      "maintenance": {
+        "noComponents": "No components configured for this system.",
+        "system": "System",
+        "lastUpdated": "Last updated:",
+        "addUsage": "Add Usage",
+        "flights": "Flights",
+        "hours": "Hours",
+        "hmin": "h.min",
+        "daysTracked": "Days are tracked automatically from the last maintenance date.",
+        "overdue": "Maintenance is overdue — schedule maintenance soon",
+        "autoSynced": "Auto-synced"
+      },
+      "logs": {
+        "attachedLogs": "Attached Logs",
+        "noLogs": "No flight logs attached yet.",
+        "manualUpload": "Manual Upload",
+        "chooseFile": "Choose GUTMA file (.zip, .json, .xml)",
+        "uploading": "Uploading…",
+        "fetchFromFlytbase": "Fetch from FlytBase",
+        "fetchFlights": "Fetch Flights",
+        "attachFlight": "Attach Selected Flight Log",
+        "attaching": "Attaching…",
+        "syncingGutma": "Syncing GUTMA…",
+        "sourceFlytbase": "FlytBase",
+        "sourceManual": "Manual",
+        "timeWindows": {
+          "1hr": "Last 1 hr",
+          "6hrs": "Last 6 hrs",
+          "12hrs": "Last 12 hrs",
+          "24hrs": "Last 24 hrs"
+        }
+      },
+      "footer": {
+        "updateWarning": "Update maintenance to complete mission",
+        "backToInProgress": "Back to In Progress",
+        "close": "Close",
+        "updateMaintenance": "Update Maintenance",
+        "updating": "Updating…"
+      },
+      "toast": {
+        "loadError": "Failed to load maintenance data",
+        "updateSuccess": "Maintenance tracking updated",
+        "invalidFileType": "Invalid file type. Allowed: {{types}}",
+        "uploadSuccess": "Flight log uploaded",
+        "uploadFailed": "Upload failed",
+        "noFlightsFound": "No flights found in this time window.",
+        "attachSuccess": "Flight log attached from FlytBase",
+        "autoSyncSuccess_one": "Auto-filled usage for {{count}} component from GUTMA",
+        "autoSyncSuccess_other": "Auto-filled usage for {{count}} components from GUTMA"
       }
     }
   }

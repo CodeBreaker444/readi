@@ -7,6 +7,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Mission, MissionStatusCode } from "@/config/types/operation";
 import { cn } from "@/lib/utils";
 import { Calendar, CheckCircle2, ClipboardList, Clock, Crosshair, Gauge, Tag, User, Wrench } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { MissionLimitsPanel } from "./MissionLimitsPanel";
 
 interface MissionCardProps {
@@ -22,34 +23,29 @@ interface MissionCardProps {
 
 const statusConfig: Record<
   MissionStatusCode,
-  { label: string; darkColor: string; lightColor: string; dot: string }
+  { darkColor: string; lightColor: string; dot: string }
 > = {
   "00": {
-    label: "Scheduled",
     darkColor: "bg-blue-500/10 text-blue-400 border-blue-500/30",
     lightColor: "bg-blue-50 text-blue-600 border-blue-200",
     dot: "bg-blue-400",
   },
   "05": {
-    label: "In Progress",
     darkColor: "bg-amber-500/10 text-amber-400 border-amber-500/30",
     lightColor: "bg-amber-50 text-amber-600 border-amber-200",
     dot: "bg-amber-400 animate-pulse",
   },
   "10": {
-    label: "Done",
     darkColor: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
     lightColor: "bg-emerald-50 text-emerald-600 border-emerald-200",
     dot: "bg-emerald-400",
   },
   "99": {
-    label: "Cancelled",
     darkColor: "bg-red-500/10 text-red-400 border-red-500/30",
     lightColor: "bg-red-50 text-red-600 border-red-200",
     dot: "bg-red-400",
   },
   "101": {
-    label: "Pending",
     darkColor: "bg-slate-500/10 text-slate-400 border-slate-500/30",
     lightColor: "bg-slate-100 text-slate-500 border-slate-200",
     dot: "bg-slate-400",
@@ -58,31 +54,27 @@ const statusConfig: Record<
 
 const maintenanceStatusConfig: Record<
   string,
-  { label: string; darkDot: string; lightDot: string; darkBg: string; lightBg: string }
+  { darkDot: string; lightDot: string; darkBg: string; lightBg: string }
 > = {
   OK: {
-    label: "Maintenance OK",
     darkDot: "bg-emerald-400",
     lightDot: "bg-emerald-500",
     darkBg: "bg-emerald-500/10 border-emerald-500/30",
     lightBg: "bg-emerald-50 border-emerald-200",
   },
   ALERT: {
-    label: "Maintenance Alert",
     darkDot: "bg-amber-400 animate-pulse",
     lightDot: "bg-amber-500 animate-pulse",
     darkBg: "bg-amber-500/10 border-amber-500/30",
     lightBg: "bg-amber-50 border-amber-200",
   },
   DUE: {
-    label: "Maintenance Due",
     darkDot: "bg-rose-400",
     lightDot: "bg-rose-500",
     darkBg: "bg-rose-500/10 border-rose-500/30",
     lightBg: "bg-rose-50 border-rose-200",
   },
   IN_MAINTENANCE: {
-    label: "In Maintenance",
     darkDot: "bg-blue-400 animate-pulse",
     lightDot: "bg-blue-500 animate-pulse",
     darkBg: "bg-blue-500/10 border-blue-500/30",
@@ -107,7 +99,23 @@ function lucSectionSummaries(progress: Mission["luc_procedure_progress"]) {
   });
 }
 
+const STATUS_LABEL_KEY: Record<MissionStatusCode, string> = {
+  "00": "operations.board.status.scheduled",
+  "05": "operations.board.status.inProgress",
+  "10": "operations.board.card.status.done",
+  "99": "operations.board.status.cancelled",
+  "101": "operations.board.card.status.pending",
+};
+
+const MAINTENANCE_LABEL_KEY: Record<string, string> = {
+  OK: "operations.board.card.maintenanceStatus.ok",
+  ALERT: "operations.board.card.maintenanceStatus.alert",
+  DUE: "operations.board.card.maintenanceStatus.due",
+  IN_MAINTENANCE: "operations.board.card.maintenanceStatus.inMaintenance",
+};
+
 export function MissionCard({ mission, draggable, onDragStart, onViewDetails, onOpenTasks, onOpenLuc, onUpdateMaintenance, isDark}: MissionCardProps) {
+  const { t } = useTranslation();
 
   const statusCfg = statusConfig[mission.mission_status_code] ?? statusConfig["00"];
   const statusColor = isDark ? statusCfg.darkColor : statusCfg.lightColor;
@@ -174,7 +182,7 @@ export function MissionCard({ mission, draggable, onDragStart, onViewDetails, on
                         <span className={cn("h-1.5 w-1.5 rounded-full", isDark ? mCfg.darkDot : mCfg.lightDot)} />
                       </span>
                     </TooltipTrigger>
-                    <TooltipContent side="top" className="text-xs">{mCfg.label}</TooltipContent>
+                    <TooltipContent side="top" className="text-xs">{t(MAINTENANCE_LABEL_KEY[mission.maintenance_status!])}</TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               );
@@ -196,7 +204,7 @@ export function MissionCard({ mission, draggable, onDragStart, onViewDetails, on
         <div className="flex flex-wrap gap-1.5">
           <span className={cn("inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium", statusColor)}>
             <span className={cn("h-1.5 w-1.5 rounded-full", statusCfg.dot)} />
-            {statusCfg.label}
+            {t(STATUS_LABEL_KEY[mission.mission_status_code] ?? STATUS_LABEL_KEY["00"])}
           </span>
           {mission.mission_category_desc && (
             <Badge
@@ -232,7 +240,7 @@ export function MissionCard({ mission, draggable, onDragStart, onViewDetails, on
               ? "rounded border border-red-500/30 bg-red-500/10 px-1.5 py-0.5 text-[10px] text-red-400"
               : "rounded border border-red-200 bg-red-50 px-1.5 py-0.5 text-[10px] text-red-600"
             }>
-              Not Assigned
+              {t("operations.board.card.notAssigned")}
             </span>
           ) : (
             <span className={isDark ? "text-slate-300" : "text-slate-700"}>{mission.pic_fullname}</span>
@@ -282,7 +290,7 @@ export function MissionCard({ mission, draggable, onDragStart, onViewDetails, on
             <div className="flex flex-wrap items-end justify-between gap-2">
               <div className="min-w-0 flex-1 space-y-1">
                 <p className={cn("text-[10px] font-semibold uppercase tracking-wide", isDark ? "text-slate-500" : "text-slate-500")}>
-                  LUC procedure tasks
+                  {t("operations.board.card.lucProcedureTasks")}
                 </p>
                 {mission.luc_completed_at ? (
                   <div
@@ -294,7 +302,7 @@ export function MissionCard({ mission, draggable, onDragStart, onViewDetails, on
                     )}
                   >
                     <CheckCircle2 className="h-3 w-3 shrink-0" />
-                    All LUC tasks completed
+                    {t("operations.board.card.lucAllCompleted")}
                   </div>
                 ) : (
                   <div className="flex flex-wrap gap-1.5">
@@ -325,7 +333,7 @@ export function MissionCard({ mission, draggable, onDragStart, onViewDetails, on
                   )}
                 >
                   <ClipboardList className="mr-1 h-3.5 w-3.5" />
-                  Complete LUC tasks
+                  {t("operations.board.card.completeLucTasks")}
                 </Button>
               )}
             </div>
@@ -346,7 +354,7 @@ export function MissionCard({ mission, draggable, onDragStart, onViewDetails, on
                   : "bg-green-600 text-white hover:bg-green-700"
               )}
             >
-              Complete Tasks
+              {t("operations.board.card.completeTasks")}
             </Button>
           )}
           {mission.mission_status_code === "10" && onUpdateMaintenance && (
@@ -363,11 +371,11 @@ export function MissionCard({ mission, draggable, onDragStart, onViewDetails, on
                     )}
                   >
                     <Wrench className="h-2.5 w-2.5" />
-                    Update Maintenance
+                    {t("operations.board.card.updateMaintenance")}
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="text-xs">
-                  Update maintenance cycle
+                  {t("operations.board.card.updateMaintenanceCycle")}
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -385,11 +393,11 @@ export function MissionCard({ mission, draggable, onDragStart, onViewDetails, on
                 }`}
                 onClick={() => onViewDetails?.(mission)}
               >
-                View
+                {t("operations.board.card.view")}
               </Button>
             </TooltipTrigger>
             <TooltipContent side="top" className="text-xs">
-              Mission details
+              {t("operations.board.card.missionDetails")}
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>

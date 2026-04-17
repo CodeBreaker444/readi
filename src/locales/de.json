@@ -1042,6 +1042,19 @@
     }
   },
   "operations": {
+    "declaration": {
+    "title": "Tägliche Pilotenerklärung",
+    "subtitle": "Bestätigen Sie alle Punkte, um heute mit der Mission zu beginnen.",
+    "rested": "Ich bin ausreichend ausgeruht und nicht übermüdet",
+    "fit": "Ich bin körperlich und geistig flugtauglich",
+    "medication": "Ich stehe nicht unter dem Einfluss von Medikamenten, die meine Leistung beeinträchtigen könnten",
+    "briefed": "Ich habe den Missionsplan und das Einsatzgebiet überprüft",
+    "equipment": "Die Ausrüstung und die Drohnensysteme wurden inspiziert und sind lufttüchtig",
+    "submit": "Erklärung absenden",
+    "saving": "Speichern...",
+    "warning": "Bitte bestätigen Sie alle Checklistenpunkte vor dem Absenden.",
+    "error": "Fehler beim Speichern der Erklärung"
+  },
     "table": {
       "title": "Betrieb",
       "subtitle": "Pilotenmissionen & Flugoperationen",
@@ -1159,6 +1172,27 @@
         "revertSuccess": "Mission zurück zu In Bearbeitung verschoben",
         "revertDesc": "Bitte aktualisieren Sie den Wartungszyklus, um die Mission abzuschließen.",
         "revertError": "Missionsstatus konnte nicht zurückgesetzt werden"
+      },
+      "card": {
+        "status": {
+          "done": "Erledigt",
+          "pending": "Ausstehend"
+        },
+        "maintenanceStatus": {
+          "ok": "Wartung OK",
+          "alert": "Wartungshinweis",
+          "due": "Wartung fällig",
+          "inMaintenance": "In Wartung"
+        },
+        "notAssigned": "Nicht zugewiesen",
+        "lucAllCompleted": "Alle LUC-Aufgaben abgeschlossen",
+        "lucProcedureTasks": "LUC-Verfahrensaufgaben",
+        "completeLucTasks": "LUC-Aufgaben abschließen",
+        "completeTasks": "Aufgaben abschließen",
+        "updateMaintenance": "Wartung aktualisieren",
+        "updateMaintenanceCycle": "Wartungszyklus aktualisieren",
+        "missionDetails": "Missionsdetails",
+        "view": "Ansehen"
       }
     },
     "calendar": {
@@ -1178,6 +1212,63 @@
         "week": "Woche",
         "month": "Monat",
         "list": "Liste"
+      }
+    },
+    "missionComplete": {
+      "title": "Mission abgeschlossen",
+      "tabs": {
+        "maintenance": "Wartung",
+        "flightLogs": "Flugprotokolle"
+      },
+      "maintenance": {
+        "noComponents": "Keine Komponenten für dieses System konfiguriert.",
+        "system": "System",
+        "lastUpdated": "Zuletzt aktualisiert:",
+        "addUsage": "Nutzung hinzufügen",
+        "flights": "Flüge",
+        "hours": "Stunden",
+        "hmin": "h.min",
+        "daysTracked": "Tage werden automatisch ab dem letzten Wartungsdatum erfasst.",
+        "overdue": "Wartung ist überfällig — Wartung bald einplanen",
+        "autoSynced": "Auto-synchronisiert"
+      },
+      "logs": {
+        "attachedLogs": "Angehängte Protokolle",
+        "noLogs": "Noch keine Flugprotokolle angehängt.",
+        "manualUpload": "Manueller Upload",
+        "chooseFile": "GUTMA-Datei auswählen (.zip, .json, .xml)",
+        "uploading": "Wird hochgeladen…",
+        "fetchFromFlytbase": "Von FlytBase abrufen",
+        "fetchFlights": "Flüge abrufen",
+        "attachFlight": "Ausgewähltes Flugprotokoll anhängen",
+        "attaching": "Wird angehängt…",
+        "syncingGutma": "GUTMA wird synchronisiert…",
+        "sourceFlytbase": "FlytBase",
+        "sourceManual": "Manuell",
+        "timeWindows": {
+          "1hr": "Letzte 1 Std",
+          "6hrs": "Letzte 6 Std",
+          "12hrs": "Letzte 12 Std",
+          "24hrs": "Letzte 24 Std"
+        }
+      },
+      "footer": {
+        "updateWarning": "Wartung aktualisieren, um Mission abzuschließen",
+        "backToInProgress": "Zurück zu In Bearbeitung",
+        "close": "Schließen",
+        "updateMaintenance": "Wartung aktualisieren",
+        "updating": "Wird aktualisiert…"
+      },
+      "toast": {
+        "loadError": "Wartungsdaten konnten nicht geladen werden",
+        "updateSuccess": "Wartungsverfolgung aktualisiert",
+        "invalidFileType": "Ungültiger Dateityp. Erlaubt: {{types}}",
+        "uploadSuccess": "Flugprotokoll hochgeladen",
+        "uploadFailed": "Upload fehlgeschlagen",
+        "noFlightsFound": "Keine Flüge in diesem Zeitfenster gefunden.",
+        "attachSuccess": "Flugprotokoll von FlytBase angehängt",
+        "autoSyncSuccess_one": "Nutzung für {{count}} Komponente aus GUTMA ausgefüllt",
+        "autoSyncSuccess_other": "Nutzung für {{count}} Komponenten aus GUTMA ausgefüllt"
       }
     }
   }

@@ -1,9 +1,5 @@
 "use client";
 
-import axios from "axios";
-import { Activity, Calendar, CheckCircle2, Clock, Crosshair, FileText, MapPin, Navigation, Tag, User, Wrench } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -11,6 +7,11 @@ import { Mission, MissionBoardData } from "@/config/types/operation";
 import { toastAfterDccAction } from "@/lib/dcc-toast";
 import { cn } from "@/lib/utils";
 import type { DccCallbackResult } from "@/types/dcc-callback";
+import axios from "axios";
+import { Activity, Calendar, CheckCircle2, Clock, Crosshair, FileText, MapPin, Navigation, Tag, User, Wrench } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { useTheme } from "../useTheme";
 import { BoardHeader } from "./BoardHeader";
 import { DailyDeclarationModal } from "./DailyDeclarationModal";
@@ -20,28 +21,6 @@ import { MissionCompleteModal } from "./MissionCompleteModal";
 import { MissionLucProcedureModal } from "./MissionLucProcedureModal";
 
 type ColumnId = "scheduled" | "in_progress" | "done";
-
-const COLUMNS: {
-    id: ColumnId;
-    title: string;
-    accentClass: { dark: string; light: string };
-}[] = [
-    {
-        id: "scheduled",
-        title: "Scheduled",
-        accentClass: { dark: "border-blue-500/20", light: "border-blue-400/30" },
-    },
-    {
-        id: "in_progress",
-        title: "In Progress",
-        accentClass: { dark: "border-amber-500/20", light: "border-amber-400/30" },
-    },
-    {
-        id: "done",
-        title: "Done",
-        accentClass: { dark: "border-emerald-500/20", light: "border-emerald-400/30" },
-    },
-];
 
 const COLUMN_STATUS_MAP: Record<ColumnId, number> = {
     scheduled: 1,
@@ -57,6 +36,7 @@ const VALID_TRANSITIONS: Record<string, ColumnId[]> = {
 
 export function OperationBoard() {
     const { isDark } = useTheme();
+    const { t } = useTranslation();
     const [board, setBoard] = useState<MissionBoardData>({
         scheduled: [],
         in_progress: [],
@@ -70,6 +50,7 @@ export function OperationBoard() {
     const [maintenanceMission, setMaintenanceMission] = useState<Mission | null>(null);
     const [lucMission, setLucMission] = useState<Mission | null>(null);
     const [showDeclarationModal, setShowDeclarationModal] = useState(false);
+    
     const dragMeta = useRef<{
         missionId: number;
         sourceColumn: ColumnId;
@@ -81,6 +62,28 @@ export function OperationBoard() {
         mission: Mission;
     } | null>(null);
 
+    const COLUMNS: {
+        id: ColumnId;
+        title: string;
+        accentClass: { dark: string; light: string };
+    }[] = [
+        {
+            id: "scheduled",
+            title: t("operations.board.columns.scheduled"),
+            accentClass: { dark: "border-blue-500/20", light: "border-blue-400/30" },
+        },
+        {
+            id: "in_progress",
+            title: t("operations.board.columns.inProgress"),
+            accentClass: { dark: "border-amber-500/20", light: "border-amber-400/30" },
+        },
+        {
+            id: "done",
+            title: t("operations.board.columns.done"),
+            accentClass: { dark: "border-emerald-500/20", light: "border-emerald-400/30" },
+        },
+    ];
+
     const loadBoard = useCallback(async (silent = false) => {
         if (!silent) setLoading(true);
         else setRefreshing(true);
@@ -88,14 +91,14 @@ export function OperationBoard() {
             const res = await axios.get(`/api/operation/board`);
             setBoard(res.data.data);
         } catch (e) {
-            toast.error("Failed to load board", {
+            toast.error(t("operations.board.toast.loadError"), {
                 description: e instanceof Error ? e.message : "Unknown error",
             });
         } finally {
             setLoading(false);
             setRefreshing(false);
         }
-    }, []);
+    }, [t]);
 
     useEffect(() => {
         loadBoard();
@@ -143,8 +146,11 @@ export function OperationBoard() {
             pendingDragRef.current = null;
 
             const mainTitle =
-                target === "in_progress" ? "Mission started" : "Mission completed";
-            const moveDesc = `Mission #${missionId} moved to ${target.replace("_", " ")}`;
+                target === "in_progress" ? t("operations.board.toast.missionStarted") : t("operations.board.toast.missionCompleted");
+            
+            const targetLabel = target === "in_progress" ? t("operations.board.columns.inProgress") : t("operations.board.columns.done");
+            const moveDesc = `Mission #${missionId} → ${targetLabel}`;
+
             if (data.dcc) {
                 toastAfterDccAction(`${mainTitle} — ${moveDesc}`, data.dcc);
             } else {
@@ -167,12 +173,12 @@ export function OperationBoard() {
                 pendingDragRef.current = { missionId, sourceColumn, target, mission };
                 setShowDeclarationModal(true);
             } else {
-                toast.error("Status update failed", {
+                toast.error(t("operations.board.toast.statusUpdateFailed"), {
                     description: responseData?.message ?? "Unknown error",
                 });
             }
         }
-    }, []);
+    }, [t]);
 
     const handleRevertMission = useCallback(async (mission: Mission) => {
         setBoard((prev) => ({
@@ -189,8 +195,8 @@ export function OperationBoard() {
                 workflow_mission_status: "_REVERT",
                 pilot_id: mission.fk_pic_id,
             });
-            toast.warning("Mission moved back to In Progress", {
-                description: "Please update the maintenance cycle to complete the mission.",
+            toast.warning(t("operations.board.toast.revertSuccess"), {
+                description: t("operations.board.toast.revertDesc"),
             });
         } catch {
             setBoard((prev) => ({
@@ -198,9 +204,9 @@ export function OperationBoard() {
                 in_progress: prev.in_progress.filter((m) => m.mission_id !== mission.mission_id),
                 done: [...prev.done, mission],
             }));
-            toast.error("Failed to revert mission status");
+            toast.error(t("operations.board.toast.revertError"));
         }
-    }, []);
+    }, [t]);
 
     const handleDrop = async (e: React.DragEvent, targetColumn: string) => {
         e.preventDefault();
@@ -216,8 +222,8 @@ export function OperationBoard() {
 
         const allowed = VALID_TRANSITIONS[sourceColumn] ?? [];
         if (!allowed.includes(target)) {
-            toast.warning("Invalid move", {
-                description: `Cannot move from ${sourceColumn.replace("_", " ")} to ${target.replace("_", " ")}`,
+            toast.warning(t("operations.board.toast.invalidMove"), {
+                description: `${sourceColumn} ⇸ ${target}`,
             });
             return;
         }
@@ -229,7 +235,7 @@ export function OperationBoard() {
     };
 
     return (
-        <div className={`min-h-screen transition-colors duration-300 ${isDark ? "bg-[#080c12]" : "bg-slate-50"} `}>
+        <div className={cn("min-h-screen transition-colors duration-300", isDark ? "bg-[#080c12]" : "bg-slate-50")}>
             <BoardHeader onRefresh={() => loadBoard(true)} isRefreshing={refreshing} isDark={isDark} />
 
             {loading ? (
@@ -327,27 +333,17 @@ export function OperationBoard() {
     );
 }
 
-const STATUS_LABEL: Record<string, { label: string; cls: string; darkCls: string }> = {
-    "00": { label: "Scheduled", cls: "bg-blue-50 text-blue-700 border-blue-200", darkCls: "bg-blue-500/10 text-blue-400 border-blue-500/30" },
-    "05": { label: "In Progress", cls: "bg-amber-50 text-amber-700 border-amber-200", darkCls: "bg-amber-500/10 text-amber-400 border-amber-500/30" },
-    "10": { label: "Completed", cls: "bg-emerald-50 text-emerald-700 border-emerald-200", darkCls: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" },
-    "99": { label: "Cancelled", cls: "bg-red-50 text-red-700 border-red-200", darkCls: "bg-red-500/10 text-red-400 border-red-500/30" },
-};
-
-function DetailItem({ icon, label, value }: { icon: React.ReactNode; label: string; value: React.ReactNode }) {
-    return (
-        <div className="flex items-start gap-3">
-            <div className="mt-0.5 p-1.5 rounded-md bg-muted text-muted-foreground shrink-0">{icon}</div>
-            <div className="min-w-0">
-                <p className="text-xs text-muted-foreground">{label}</p>
-                <p className="text-sm font-medium">{value || "—"}</p>
-            </div>
-        </div>
-    );
-}
-
 function MissionDetailSheet({ mission, isDark, onClose }: { mission: Mission | null; isDark: boolean; onClose: () => void }) {
+    const { t } = useTranslation();
     const isDone = mission?.fk_status_id === 3;
+    
+    const STATUS_LABEL: Record<string, { label: string; cls: string; darkCls: string }> = {
+        "00": { label: t("operations.board.status.scheduled"), cls: "bg-blue-50 text-blue-700 border-blue-200", darkCls: "bg-blue-500/10 text-blue-400 border-blue-500/30" },
+        "05": { label: t("operations.board.status.inProgress"), cls: "bg-amber-50 text-amber-700 border-amber-200", darkCls: "bg-amber-500/10 text-amber-400 border-amber-500/30" },
+        "10": { label: t("operations.board.status.completed"), cls: "bg-emerald-50 text-emerald-700 border-emerald-200", darkCls: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" },
+        "99": { label: t("operations.board.status.cancelled"), cls: "bg-red-50 text-red-700 border-red-200", darkCls: "bg-red-500/10 text-red-400 border-red-500/30" },
+    };
+
     const statusCfg = mission ? (STATUS_LABEL[mission.mission_status_code] ?? STATUS_LABEL["00"]) : null;
 
     return (
@@ -376,25 +372,20 @@ function MissionDetailSheet({ mission, isDark, onClose }: { mission: Mission | n
                             <SheetTitle className={cn("text-left text-base mt-1", isDark ? "text-white" : "")}>
                                 {mission.vehicle_code}{mission.vehicle_desc ? ` — ${mission.vehicle_desc}` : ""}
                             </SheetTitle>
-                            {mission.client_name && (
-                                <p className="text-sm text-muted-foreground text-left">{mission.client_name}</p>
-                            )}
                         </SheetHeader>
 
                         <div className="space-y-6">
                             <section className="space-y-3">
-                                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Timeline</h3>
+                                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t("operations.board.detail.timeline")}</h3>
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className={cn("rounded-lg border p-3 space-y-1", isDark ? "bg-slate-800 border-slate-700" : "bg-muted/30")}>
-                                        <p className="text-xs text-muted-foreground flex items-center gap-1"><Calendar className="h-3 w-3" /> Scheduled</p>
+                                        <p className="text-xs text-muted-foreground flex items-center gap-1"><Calendar className="h-3 w-3" /> {t("operations.board.detail.scheduled")}</p>
                                         <p className="text-sm font-medium">{mission.date_start || "—"}</p>
-                                        {mission.time_start && <p className="text-xs text-muted-foreground">{mission.time_start}</p>}
                                     </div>
                                     {mission.date_end && (
                                         <div className={cn("rounded-lg border p-3 space-y-1", isDark ? "bg-slate-800 border-slate-700" : "bg-muted/30")}>
-                                            <p className="text-xs text-muted-foreground flex items-center gap-1"><CheckCircle2 className="h-3 w-3 text-emerald-500" /> Completed</p>
+                                            <p className="text-xs text-muted-foreground flex items-center gap-1"><CheckCircle2 className="h-3 w-3 text-emerald-500" /> {t("operations.board.detail.completed")}</p>
                                             <p className="text-sm font-medium">{mission.date_end}</p>
-                                            {mission.time_end && <p className="text-xs text-muted-foreground">{mission.time_end}</p>}
                                         </div>
                                     )}
                                 </div>
@@ -403,18 +394,12 @@ function MissionDetailSheet({ mission, isDark, onClose }: { mission: Mission | n
                             <div className="h-px bg-border" />
 
                             <section className="space-y-3">
-                                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Personnel &amp; Equipment</h3>
+                                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t("operations.board.detail.personnelEquipment")}</h3>
                                 <div className="space-y-2">
-                                    <DetailItem icon={<User className="h-3.5 w-3.5" />} label="Pilot in Command" value={mission.pic_fullname} />
-                                    {mission.mission_type_desc && (
-                                        <DetailItem icon={<Crosshair className="h-3.5 w-3.5" />} label="Mission Type" value={mission.mission_type_desc} />
-                                    )}
-                                    {mission.mission_category_desc && (
-                                        <DetailItem icon={<Tag className="h-3.5 w-3.5" />} label="Category" value={mission.mission_category_desc} />
-                                    )}
-                                    {mission.mission_planning_code && (
-                                        <DetailItem icon={<MapPin className="h-3.5 w-3.5" />} label="Planning" value={`${mission.mission_planning_code}${mission.mission_planning_desc ? ` · ${mission.mission_planning_desc}` : ""}`} />
-                                    )}
+                                    <DetailItem icon={<User className="h-3.5 w-3.5" />} label={t("operations.board.detail.pilotInCommand")} value={mission.pic_fullname} />
+                                    <DetailItem icon={<Crosshair className="h-3.5 w-3.5" />} label={t("operations.board.detail.missionType")} value={mission.mission_type_desc} />
+                                    <DetailItem icon={<Tag className="h-3.5 w-3.5" />} label={t("operations.board.detail.category")} value={mission.mission_category_desc} />
+                                    <DetailItem icon={<MapPin className="h-3.5 w-3.5" />} label={t("operations.board.detail.planning")} value={mission.mission_planning_code} />
                                 </div>
                             </section>
 
@@ -422,17 +407,17 @@ function MissionDetailSheet({ mission, isDark, onClose }: { mission: Mission | n
                                 <>
                                     <div className="h-px bg-border" />
                                     <section className="space-y-3">
-                                        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Flight Results</h3>
+                                        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t("operations.board.detail.flightResults")}</h3>
                                         <div className="grid grid-cols-2 gap-3">
                                             {mission.flown_time != null && (
                                                 <div className={cn("rounded-lg border p-3 space-y-1", isDark ? "bg-emerald-950/20 border-emerald-800" : "bg-emerald-50 border-emerald-200")}>
-                                                    <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> Duration</p>
+                                                    <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> {t("operations.board.detail.duration")}</p>
                                                     <p className={cn("text-lg font-bold tabular-nums", isDark ? "text-emerald-400" : "text-emerald-700")}>{mission.flown_time} min</p>
                                                 </div>
                                             )}
                                             {mission.flown_meter != null && (
                                                 <div className={cn("rounded-lg border p-3 space-y-1", isDark ? "bg-emerald-950/20 border-emerald-800" : "bg-emerald-50 border-emerald-200")}>
-                                                    <p className="text-xs text-muted-foreground flex items-center gap-1"><Navigation className="h-3 w-3" /> Distance</p>
+                                                    <p className="text-xs text-muted-foreground flex items-center gap-1"><Navigation className="h-3 w-3" /> {t("operations.board.detail.distance")}</p>
                                                     <p className={cn("text-lg font-bold tabular-nums", isDark ? "text-emerald-400" : "text-emerald-700")}>{(mission.flown_meter / 1000).toFixed(1)} km</p>
                                                 </div>
                                             )}
@@ -446,7 +431,7 @@ function MissionDetailSheet({ mission, isDark, onClose }: { mission: Mission | n
                                     <div className="h-px bg-border" />
                                     <section className="space-y-3">
                                         <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                                            <FileText className="h-3.5 w-3.5" /> Notes
+                                            <FileText className="h-3.5 w-3.5" /> {t("operations.board.detail.notes")}
                                         </h3>
                                         <div className={cn("rounded-lg border p-3", isDark ? "bg-slate-800 border-slate-700" : "bg-muted/30")}>
                                             <p className="text-sm whitespace-pre-wrap">{mission.mission_notes}</p>
@@ -458,7 +443,7 @@ function MissionDetailSheet({ mission, isDark, onClose }: { mission: Mission | n
                             {mission.mission_group_label && (
                                 <>
                                     <div className="h-px bg-border" />
-                                    <DetailItem icon={<Activity className="h-3.5 w-3.5" />} label="Mission Group" value={mission.mission_group_label} />
+                                    <DetailItem icon={<Activity className="h-3.5 w-3.5" />} label={t("operations.board.detail.missionGroup")} value={mission.mission_group_label} />
                                 </>
                             )}
                         </div>
@@ -469,28 +454,30 @@ function MissionDetailSheet({ mission, isDark, onClose }: { mission: Mission | n
     );
 }
 
+function DetailItem({ icon, label, value }: { icon: React.ReactNode; label: string; value: React.ReactNode }) {
+    return (
+        <div className="flex items-start gap-3">
+            <div className="mt-0.5 p-1.5 rounded-md bg-muted text-muted-foreground shrink-0">{icon}</div>
+            <div className="min-w-0">
+                <p className="text-xs text-muted-foreground">{label}</p>
+                <p className="text-sm font-medium">{value || "—"}</p>
+            </div>
+        </div>
+    );
+}
+
 function BoardSkeleton({ isDark }: { isDark: boolean }) {
     return (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3 m-4">
             {[0, 1, 2].map((i) => (
-                <div
-                    key={i}
-                    className={`rounded-xl border p-3 ${
-                        isDark
-                            ? "border-white/6 bg-slate-950/50"
-                            : "border-slate-200 bg-white shadow-sm"
-                    }`}
-                >
-                    <div className={`mb-3 flex items-center justify-between border-b pb-3 ${isDark ? "border-white/6" : "border-slate-200"}`}>
-                        <Skeleton className={`h-4 w-20 ${isDark ? "bg-white/6" : "bg-slate-100"}`} />
-                        <Skeleton className={`h-5 w-5 rounded-full ${isDark ? "bg-white/6" : "bg-slate-100"}`} />
+                <div key={i} className={cn("rounded-xl border p-3", isDark ? "border-white/6 bg-slate-950/50" : "border-slate-200 bg-white shadow-sm")}>
+                    <div className={cn("mb-3 flex items-center justify-between border-b pb-3", isDark ? "border-white/6" : "border-slate-200")}>
+                        <Skeleton className={cn("h-4 w-20", isDark ? "bg-white/6" : "bg-slate-100")} />
+                        <Skeleton className={cn("h-5 w-5 rounded-full", isDark ? "bg-white/6" : "bg-slate-100")} />
                     </div>
                     <div className="space-y-3">
                         {[...Array(i === 1 ? 2 : 1)].map((_, j) => (
-                            <Skeleton
-                                key={j}
-                                className={`h-44 w-full rounded-lg ${isDark ? "bg-white/4" : "bg-slate-100"}`}
-                            />
+                            <Skeleton key={j} className={cn("h-44 w-full rounded-lg", isDark ? "bg-white/4" : "bg-slate-100")} />
                         ))}
                     </div>
                 </div>
