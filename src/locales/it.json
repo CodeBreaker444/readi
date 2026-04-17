@@ -319,17 +319,18 @@
       "update": "Aggiorna profilo",
       "updating": "Aggiornamento..."
     },
-    "qualifications": {
-      "title": "Qualifiche",
-      "empty": "Nessuna qualifica registrata.",
-      "expired": "Scaduta",
-      "from": "Dal",
-      "expires": "Scade",
-      "none": "-",
+    "curriculum": {
+      "title": "Curriculum Formativo",
+      "empty": "Nessun record di formazione trovato.",
+      "active": "Attivi",
+      "history": "Storico",
+      "valid": "Valido",
+      "expired": "Scaduto",
+      "noExpiry": "Senza Scadenza",
       "headers": {
-        "qualification": "Qualifica",
-        "type": "Tipo",
-        "startDate": "Data inizio",
+        "course": "Corso",
+        "certificate": "Attestato",
+        "completionDate": "Data completamento",
         "expiryDate": "Data scadenza",
         "status": "Stato"
       }

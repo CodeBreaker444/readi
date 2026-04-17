@@ -1,7 +1,7 @@
 'use client';
 import { SessionUser } from '@/lib/auth/server-session';
 import axios from 'axios';
-import { Award, Camera, Loader2, User } from 'lucide-react';
+import { Camera, CheckCircle2, Clock, GraduationCap, Loader2, User } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -35,21 +35,101 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
-interface Qualification {
-  qualification_id: number;
-  qualification_name: string;
-  qualification_type: string;
-  description: string | null;
-  start_date: string | null;
+interface TrainingCurriculumRecord {
+  attendance_id: number;
+  training_name: string;
+  training_type: string | null;
+  certificate_type: string | null;
+  session_code: string | null;
+  completion_date: string | null;
   expiry_date: string | null;
-  status: string;
+  status: 'VALID' | 'EXPIRED' | null;
 }
+
+const CERT_TYPE_LABELS: Record<string, string> = {
+  PARTICIPATION: 'Certificate of Participation',
+  QUALIFICATION: 'Qualification',
+};
 
 interface ProfileModalProps {
   isOpen: boolean;
   onClose: () => void;
   isDark: boolean;
   userData: SessionUser | null;
+}
+
+function CurriculumTable({
+  rows,
+  formatDate,
+  t,
+  muted = false,
+}: {
+  rows: TrainingCurriculumRecord[];
+  formatDate: (d: string) => string;
+  t: (key: string) => string;
+  muted?: boolean;
+}) {
+  const rowCls = muted ? 'opacity-60' : '';
+  return (
+    <div className={`rounded-md border overflow-hidden ${rowCls}`}>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>{t('profile.curriculum.headers.course')}</TableHead>
+            <TableHead>{t('profile.curriculum.headers.certificate')}</TableHead>
+            <TableHead>{t('profile.curriculum.headers.completionDate')}</TableHead>
+            <TableHead>{t('profile.curriculum.headers.expiryDate')}</TableHead>
+            <TableHead className="text-right">{t('profile.curriculum.headers.status')}</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {rows.map((r) => (
+            <TableRow key={r.attendance_id}>
+              <TableCell>
+                <p className="font-medium text-sm">{r.training_name}</p>
+                {r.training_type && (
+                  <p className="text-xs text-muted-foreground mt-0.5">{r.training_type}</p>
+                )}
+              </TableCell>
+              <TableCell>
+                {r.certificate_type ? (
+                  <Badge
+                    variant="outline"
+                    className={
+                      r.certificate_type === 'QUALIFICATION'
+                        ? 'border-amber-300 text-amber-700 dark:border-amber-700 dark:text-amber-300'
+                        : 'border-teal-300 text-teal-700 dark:border-teal-700 dark:text-teal-300'
+                    }
+                  >
+                    {CERT_TYPE_LABELS[r.certificate_type] ?? r.certificate_type}
+                  </Badge>
+                ) : (
+                  <span className="text-xs text-muted-foreground">—</span>
+                )}
+              </TableCell>
+              <TableCell className="text-sm text-muted-foreground">
+                {r.completion_date ? formatDate(r.completion_date) : '—'}
+              </TableCell>
+              <TableCell className={`text-sm ${r.status === 'EXPIRED' ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
+                {r.expiry_date ? formatDate(r.expiry_date) : '—'}
+              </TableCell>
+              <TableCell className="text-right">
+                {r.status === 'VALID' ? (
+                  <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/40 dark:text-emerald-300">
+                    {t('profile.curriculum.valid')}
+                  </Badge>
+                ) : r.status === 'EXPIRED' ? (
+                  <Badge variant="destructive">{t('profile.curriculum.expired')}</Badge>
+                ) : (
+                  <Badge variant="secondary">{t('profile.curriculum.noExpiry')}</Badge>
+                )}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
 }
 
 const ProfileModal: React.FC<ProfileModalProps> = ({
@@ -73,7 +153,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     type: '',
     signature: '',
   });
-  const [qualifications, setQualifications] = useState<Qualification[]>([]);
+  const [curriculum, setCurriculum] = useState<TrainingCurriculumRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [avatar, setAvatar] = useState<File | null>(null);
@@ -95,15 +175,9 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   const fetchUserProfile = async () => {
     try {
       setLoading(true);
-      const [profileRes, qualsRes] = await Promise.all([
+      const [profileRes, curriculumRes] = await Promise.all([
         axios.get('/api/profile'),
-        userData?.userId
-          ? axios
-              .get(
-                `/api/team/user/qualifications?user_id=${userData.userId}`
-              )
-              .catch(() => null)
-          : Promise.resolve(null),
+        axios.get('/api/training/curriculum').catch(() => null),
       ]);
 
       const data = profileRes.data;
@@ -124,8 +198,8 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
         }
       }
 
-      if (qualsRes?.data?.data) {
-        setQualifications(qualsRes.data.data);
+      if (curriculumRes?.data?.data) {
+        setCurriculum(curriculumRes.data.data);
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -411,13 +485,13 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Award className="h-4 w-4 text-primary" />
-                  <CardTitle className="text-base">{t('profile.qualifications.title')}</CardTitle>
+                  <GraduationCap className="h-4 w-4 text-primary" />
+                  <CardTitle className="text-base">{t('profile.curriculum.title')}</CardTitle>
                 </div>
-                <Badge variant="secondary">{qualifications.length}</Badge>
+                <Badge variant="secondary">{curriculum.length}</Badge>
               </div>
             </CardHeader>
-            <CardContent className="pt-0">
+            <CardContent className="pt-0 space-y-5">
               {loading ? (
                 <div className="space-y-3">
                   {[1, 2, 3].map((n) => (
@@ -426,162 +500,50 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                       <Skeleton className="h-4 w-20 sm:w-24" />
                       <Skeleton className="h-4 w-16 sm:w-20" />
                       <Skeleton className="h-5 w-16 rounded-full" />
-                      <Skeleton className="h-5 w-14 rounded-full" />
                     </div>
                   ))}
                 </div>
-              ) : qualifications.length === 0 ? (
+              ) : curriculum.length === 0 ? (
                 <div className="text-center py-10 text-muted-foreground">
-                  <Award className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                  <p className="text-sm">{t('profile.qualifications.empty')}</p>
+                  <GraduationCap className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                  <p className="text-sm">{t('profile.curriculum.empty')}</p>
                 </div>
               ) : (
                 <>
-                  <div className="space-y-3 md:hidden">
-                    {qualifications.map((q) => {
-                      const today = new Date();
-                      const expired = q.expiry_date
-                        ? new Date(q.expiry_date) < today
-                        : false;
-                      const isActive = q.status === 'Active' && !expired;
+                  {/* Valid / Active */}
+                  {curriculum.filter((r) => r.status === 'VALID' || r.status === null).length > 0 && (
+                    <div>
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                        <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+                          {t('profile.curriculum.active')}
+                        </p>
+                      </div>
+                      <CurriculumTable
+                        rows={curriculum.filter((r) => r.status === 'VALID' || r.status === null)}
+                        formatDate={formatDate}
+                        t={t}
+                      />
+                    </div>
+                  )}
 
-                      return (
-                        <div
-                          key={q.qualification_id}
-                          className="rounded-lg border p-3.5 space-y-2.5"
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="min-w-0">
-                              <p className="font-medium text-sm truncate">
-                                {q.qualification_name}
-                              </p>
-                              {q.description && (
-                                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                                  {q.description}
-                                </p>
-                              )}
-                            </div>
-                            <Badge
-                              variant={isActive ? 'default' : 'destructive'}
-                              className={
-                                isActive
-                                  ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/40 dark:text-emerald-300 shrink-0'
-                                  : 'shrink-0'
-                              }
-                            >
-                              {expired ? t('profile.qualifications.expired') : q.status}
-                            </Badge>
-                          </div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <Badge
-                              variant="outline"
-                              className={
-                                q.qualification_type === 'Certification'
-                                  ? 'border-blue-300 text-blue-700 dark:border-blue-700 dark:text-blue-300'
-                                  : 'border-amber-300 text-amber-700 dark:border-amber-700 dark:text-amber-300'
-                              }
-                            >
-                              {q.qualification_type}
-                            </Badge>
-                            {q.start_date && (
-                              <span className="text-xs text-muted-foreground">
-                                {t('profile.qualifications.from')}: {formatDate(q.start_date)}
-                              </span>
-                            )}
-                            {q.expiry_date && (
-                              <span
-                                className={`text-xs ${
-                                  expired
-                                    ? 'text-destructive font-medium'
-                                    : 'text-muted-foreground'
-                                }`}
-                              >
-                                {t('profile.qualifications.expires')}: {formatDate(q.expiry_date)}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  <div className="hidden md:block rounded-md border overflow-hidden">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>{t('profile.qualifications.headers.qualification')}</TableHead>
-                          <TableHead>{t('profile.qualifications.headers.type')}</TableHead>
-                          <TableHead>{t('profile.qualifications.headers.startDate')}</TableHead>
-                          <TableHead>{t('profile.qualifications.headers.expiryDate')}</TableHead>
-                          <TableHead className="text-right">{t('profile.qualifications.headers.status')}</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {qualifications.map((q) => {
-                          const today = new Date();
-                          const expired = q.expiry_date
-                            ? new Date(q.expiry_date) < today
-                            : false;
-                          const isActive = q.status === 'Active' && !expired;
-
-                          return (
-                            <TableRow key={q.qualification_id}>
-                              <TableCell>
-                                <div>
-                                  <p className="font-medium text-sm">
-                                    {q.qualification_name}
-                                  </p>
-                                  {q.description && (
-                                    <p className="text-xs text-muted-foreground mt-0.5">
-                                      {q.description}
-                                    </p>
-                                  )}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <Badge
-                                  variant="outline"
-                                  className={
-                                    q.qualification_type === 'Certification'
-                                      ? 'border-blue-300 text-blue-700 dark:border-blue-700 dark:text-blue-300'
-                                      : 'border-amber-300 text-amber-700 dark:border-amber-700 dark:text-amber-300'
-                                  }
-                                >
-                                  {q.qualification_type}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-sm text-muted-foreground">
-                                {q.start_date ? formatDate(q.start_date) : t('profile.qualifications.none')}
-                              </TableCell>
-                              <TableCell
-                                className={`text-sm ${
-                                  expired
-                                    ? 'text-destructive font-medium'
-                                    : 'text-muted-foreground'
-                                }`}
-                              >
-                                {q.expiry_date
-                                  ? formatDate(q.expiry_date)
-                                  : t('profile.qualifications.none')}
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <Badge
-                                  variant={isActive ? 'default' : 'destructive'}
-                                  className={
-                                    isActive
-                                      ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/40 dark:text-emerald-300'
-                                      : ''
-                                  }
-                                >
-                                  {expired ? t('profile.qualifications.expired') : q.status}
-                                </Badge>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </div>
+                  {/* Expired / History */}
+                  {curriculum.filter((r) => r.status === 'EXPIRED').length > 0 && (
+                    <div>
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                          {t('profile.curriculum.history')}
+                        </p>
+                      </div>
+                      <CurriculumTable
+                        rows={curriculum.filter((r) => r.status === 'EXPIRED')}
+                        formatDate={formatDate}
+                        t={t}
+                        muted
+                      />
+                    </div>
+                  )}
                 </>
               )}
             </CardContent>

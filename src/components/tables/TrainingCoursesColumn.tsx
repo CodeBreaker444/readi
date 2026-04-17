@@ -14,6 +14,16 @@ const TYPE_STYLES: Record<string, string> = {
   OTHER:     'bg-slate-500/10 text-slate-500 border-slate-500/20',
 };
 
+const CERT_TYPE_STYLES: Record<string, string> = {
+  PARTICIPATION: 'bg-teal-500/10 text-teal-500 border-teal-500/20',
+  QUALIFICATION: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
+};
+
+const CERT_TYPE_LABELS: Record<string, string> = {
+  PARTICIPATION: 'Participation',
+  QUALIFICATION: 'Qualification',
+};
+
 function fmtDate(val: string | null) {
   if (!val) return '—';
   const [y, m, d] = val.split('-');
@@ -63,6 +73,20 @@ export function getTrainingCoursesColumns(
         return (
           <Badge variant="outline" className={`text-[10px] font-bold tracking-tight ${TYPE_STYLES[type] ?? TYPE_STYLES.OTHER}`}>
             {type}
+          </Badge>
+        );
+      },
+    },
+    {
+      accessorKey: 'certificate_type',
+      header: 'Certificate',
+      size: 140,
+      cell: ({ getValue }) => {
+        const ct = getValue() as string | null;
+        if (!ct) return <span className={`text-[11px] ${dimmed}`}>—</span>;
+        return (
+          <Badge variant="outline" className={`text-[10px] font-bold tracking-tight ${CERT_TYPE_STYLES[ct] ?? 'bg-slate-500/10 text-slate-500 border-slate-500/20'}`}>
+            {CERT_TYPE_LABELS[ct] ?? ct}
           </Badge>
         );
       },

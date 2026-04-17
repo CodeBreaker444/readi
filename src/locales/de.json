@@ -319,17 +319,18 @@
       "update": "Profil aktualisieren",
       "updating": "Aktualisierung..."
     },
-    "qualifications": {
-      "title": "Qualifikationen",
-      "empty": "Keine Qualifikationen vorhanden.",
+    "curriculum": {
+      "title": "Schulungscurriculum",
+      "empty": "Keine Schulungsaufzeichnungen gefunden.",
+      "active": "Aktiv",
+      "history": "Verlauf",
+      "valid": "Gültig",
       "expired": "Abgelaufen",
-      "from": "Von",
-      "expires": "Lauft ab",
-      "none": "-",
+      "noExpiry": "Kein Ablaufdatum",
       "headers": {
-        "qualification": "Qualifikation",
-        "type": "Typ",
-        "startDate": "Startdatum",
+        "course": "Kurs",
+        "certificate": "Zertifikat",
+        "completionDate": "Abschlussdatum",
         "expiryDate": "Ablaufdatum",
         "status": "Status"
       }

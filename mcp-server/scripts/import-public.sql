@@ -2249,6 +2249,7 @@ CREATE TABLE public.training (
     training_name character varying(255) NOT NULL,
     training_description text,
     training_type character varying(50),
+    certificate_type character varying(50),
     training_duration integer,
     training_cost numeric(15,2),
     trainer_user_id integer,

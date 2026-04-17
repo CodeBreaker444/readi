@@ -319,17 +319,18 @@
       "update": "Update Profile",
       "updating": "Updating..."
     },
-    "qualifications": {
-      "title": "Qualifications",
-      "empty": "No qualifications on record.",
+    "curriculum": {
+      "title": "Training Curriculum",
+      "empty": "No training records found.",
+      "active": "Active",
+      "history": "History",
+      "valid": "Valid",
       "expired": "Expired",
-      "from": "From",
-      "expires": "Expires",
-      "none": "-",
+      "noExpiry": "No Expiry",
       "headers": {
-        "qualification": "Qualification",
-        "type": "Type",
-        "startDate": "Start Date",
+        "course": "Course",
+        "certificate": "Certificate",
+        "completionDate": "Completion Date",
         "expiryDate": "Expiry Date",
         "status": "Status"
       }

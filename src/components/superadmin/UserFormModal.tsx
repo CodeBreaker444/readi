@@ -16,9 +16,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import axios from 'axios';
-import { Loader2, Plus, Trash2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Loader2 } from 'lucide-react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 
 const ROLE_OPTIONS = [
@@ -34,25 +33,6 @@ const ROLE_OPTIONS = [
   { value: 17, label: 'Administrator (ADMIN)' },
 ];
 
-export interface QualificationEntry {
-  qualification_id?: number;
-  qualification_name: string;
-  qualification_type: string;
-  description: string;
-  start_date: string;
-  expiry_date: string;
-  status: string;
-  _toDelete?: boolean;
-}
-
-const emptyQualification = (): QualificationEntry => ({
-  qualification_name: '',
-  qualification_type: 'Certification',
-  description: '',
-  start_date: '',
-  expiry_date: '',
-  status: 'Active',
-});
 
 interface UserFormModalProps {
   isOpen: boolean;
@@ -107,45 +87,7 @@ export function UserFormModal({
     };
   });
 
-  const [qualifications, setQualifications] = useState<QualificationEntry[]>([]);
-  const [loadingQuals, setLoadingQuals] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    if (mode === 'edit' && userData?.user_id) {
-      setLoadingQuals(true);
-      axios
-        .get(`/api/team/user/qualifications?user_id=${userData.user_id}`)
-        .then((res) => setQualifications(res.data.data ?? []))
-        .catch(() => {})
-        .finally(() => setLoadingQuals(false));
-    } else {
-      setQualifications([]);
-    }
-  }, [isOpen, mode, userData?.user_id]);
-
-  const addQualification = () => {
-    const active = qualifications.filter((q) => !q._toDelete);
-    if (active.length >= 10) return;
-    setQualifications((prev) => [...prev, emptyQualification()]);
-  };
-
-  const removeQualification = (index: number) => {
-    setQualifications((prev) =>
-      prev.map((q, i) => {
-        if (i !== index) return q;
-        if (q.qualification_id) return { ...q, _toDelete: true };
-        return null as any;
-      }).filter(Boolean)
-    );
-  };
-
-  const updateQualification = (index: number, field: keyof QualificationEntry, value: string) => {
-    setQualifications((prev) =>
-      prev.map((q, i) => (i === index ? { ...q, [field]: value } : q))
-    );
-  };
 
   const handleSubmit = (e: React.SyntheticEvent) => {
     e.preventDefault();
@@ -158,15 +100,10 @@ export function UserFormModal({
       return;
     }
     setIsSubmitting(true);
-    Promise.resolve(onSubmit({ ...formData, qualifications })).finally(() => {
+    Promise.resolve(onSubmit(formData)).finally(() => {
       setIsSubmitting(false);
     });
   };
-
-  const inputCls = `h-8 text-sm ${isDark ? 'bg-slate-900 border-slate-700 text-white' : ''}`;
-  const labelCls = `text-xs font-medium ${isDark ? 'text-slate-300' : 'text-slate-600'}`;
-  const visibleQuals = qualifications.filter((q) => !q._toDelete);
-  const canAddMore = visibleQuals.length < 10;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -357,139 +294,6 @@ export function UserFormModal({
               </Select>
             </div>
           )}
-
-          <div className={`rounded-lg border p-4 space-y-3 ${isDark ? 'border-slate-600 bg-slate-700/30' : 'border-slate-200 bg-slate-50'}`}>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-slate-800'}`}>
-                  Qualifications
-                </p>
-                <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                  {visibleQuals.length}/10 added
-                </p>
-              </div>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={addQualification}
-                disabled={!canAddMore || loadingQuals}
-                className={`h-8 gap-1.5 text-xs ${isDark ? 'border-slate-600 bg-slate-700 text-slate-200 hover:bg-slate-600' : ''}`}
-              >
-                <Plus className="h-3.5 w-3.5" />
-                Add Qualification
-              </Button>
-            </div>
-
-            {loadingQuals ? (
-              <p className={`text-xs text-center py-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                Loading qualifications…
-              </p>
-            ) : visibleQuals.length === 0 ? (
-              <p className={`text-xs text-center py-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                No qualifications added yet.
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {qualifications.map((q, i) => {
-                  if (q._toDelete) return null;
-                  return (
-                    <div
-                      key={i}
-                      className={`rounded-lg border p-3 space-y-2 ${isDark ? 'border-slate-600 bg-slate-800' : 'border-slate-200 bg-white'}`}
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <span className={`text-xs font-semibold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-                          Qualification #{visibleQuals.indexOf(q) + 1}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => removeQualification(i)}
-                          className="p-1 rounded text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <Label className={labelCls}>Name *</Label>
-                          <Input
-                            className={`mt-1 ${inputCls}`}
-                            placeholder="e.g. EASA Part-FCL"
-                            value={q.qualification_name}
-                            onChange={(e) => updateQualification(i, 'qualification_name', e.target.value)}
-                            required
-                          />
-                        </div>
-                        <div>
-                          <Label className={labelCls}>Type *</Label>
-                          <Select
-                            value={q.qualification_type}
-                            onValueChange={(v) => updateQualification(i, 'qualification_type', v)}
-                          >
-                            <SelectTrigger className={`mt-1 h-8 text-sm ${isDark ? 'bg-slate-900 border-slate-700' : ''}`}>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Certification">Certification</SelectItem>
-                              <SelectItem value="Training">Training</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-
-                      <div>
-                        <Label className={labelCls}>Description</Label>
-                        <Input
-                          className={`mt-1 ${inputCls}`}
-                          placeholder="Optional description…"
-                          value={q.description}
-                          onChange={(e) => updateQualification(i, 'description', e.target.value)}
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-3 gap-2">
-                        <div>
-                          <Label className={labelCls}>Start Date</Label>
-                          <Input
-                            type="date"
-                            className={`mt-1 ${inputCls}`}
-                            value={q.start_date}
-                            onChange={(e) => updateQualification(i, 'start_date', e.target.value)}
-                          />
-                        </div>
-                        <div>
-                          <Label className={labelCls}>Expiry Date</Label>
-                          <Input
-                            type="date"
-                            className={`mt-1 ${inputCls}`}
-                            value={q.expiry_date}
-                            onChange={(e) => updateQualification(i, 'expiry_date', e.target.value)}
-                          />
-                        </div>
-                        <div>
-                          <Label className={labelCls}>Status</Label>
-                          <Select
-                            value={q.status}
-                            onValueChange={(v) => updateQualification(i, 'status', v)}
-                          >
-                            <SelectTrigger className={`mt-1 h-8 text-sm ${isDark ? 'bg-slate-900 border-slate-700' : ''}`}>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Active">Active</SelectItem>
-                              <SelectItem value="Inactive">Inactive</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
 
           <div className="flex justify-end gap-3 mt-6">
             <Button type="button" variant="outline" onClick={onClose}>

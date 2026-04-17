@@ -347,6 +347,7 @@ export interface FlatTrainingRecord {
   user_role: string | null;
   training_name: string;
   training_type: string | null;
+  certificate_type: string | null;
   session_code: string | null;
   completion_date: string | null;
   expiry_date: string | null;
@@ -358,6 +359,7 @@ export interface AddFlatTrainingInput {
   user_ids: number[];
   training_name: string;
   training_type?: string | null;
+  certificate_type?: string | null;
   session_code?: string | null;
   completion_date?: string | null;
   expiry_date?: string | null;
@@ -368,9 +370,22 @@ export interface UpdateFlatTrainingInput {
   fk_training_id: number;
   training_name: string;
   training_type?: string | null;
+  certificate_type?: string | null;
   session_code?: string | null;
   completion_date?: string | null;
   expiry_date?: string | null;
+}
+
+export interface TrainingCurriculumRecord {
+  attendance_id: number;
+  fk_training_id: number;
+  training_name: string;
+  training_type: string | null;
+  certificate_type: string | null;
+  session_code: string | null;
+  completion_date: string | null;
+  expiry_date: string | null;
+  status: 'VALID' | 'EXPIRED' | null;
 }
 
 export async function getFlatTrainingList(owner_id: number): Promise<FlatTrainingRecord[]> {
@@ -390,6 +405,7 @@ export async function getFlatTrainingList(owner_id: number): Promise<FlatTrainin
         training_id,
         training_name,
         training_type,
+        certificate_type,
         fk_owner_id
       ),
       user:fk_user_id (
@@ -420,6 +436,7 @@ export async function getFlatTrainingList(owner_id: number): Promise<FlatTrainin
       user_role: row.user?.user_role ?? null,
       training_name: row.training?.training_name ?? '',
       training_type: row.training?.training_type ?? null,
+      certificate_type: row.training?.certificate_type ?? null,
       session_code: row.certification_number ?? null,
       completion_date: row.certification_date ?? null,
       expiry_date: row.certification_expiry ?? null,
@@ -429,7 +446,7 @@ export async function getFlatTrainingList(owner_id: number): Promise<FlatTrainin
 }
 
 export async function addFlatTraining(input: AddFlatTrainingInput): Promise<number[]> {
-  const { owner_id, user_ids, training_name, training_type, session_code, completion_date, expiry_date } = input;
+  const { owner_id, user_ids, training_name, training_type, certificate_type, session_code, completion_date, expiry_date } = input;
 
   // Create new training catalog entry for this session
   const { data: created, error: createErr } = await supabase
@@ -438,6 +455,7 @@ export async function addFlatTraining(input: AddFlatTrainingInput): Promise<numb
       fk_owner_id: owner_id,
       training_name,
       training_type: training_type ?? null,
+      certificate_type: certificate_type ?? null,
       training_active: 'Y',
     })
     .select('training_id')
@@ -467,11 +485,11 @@ export async function addFlatTraining(input: AddFlatTrainingInput): Promise<numb
 }
 
 export async function updateFlatTraining(input: UpdateFlatTrainingInput): Promise<void> {
-  const { attendance_id, fk_training_id, training_name, training_type, session_code, completion_date, expiry_date } = input;
+  const { attendance_id, fk_training_id, training_name, training_type, certificate_type, session_code, completion_date, expiry_date } = input;
 
   await supabase
     .from('training')
-    .update({ training_name, training_type: training_type ?? null, updated_at: new Date().toISOString() })
+    .update({ training_name, training_type: training_type ?? null, certificate_type: certificate_type ?? null, updated_at: new Date().toISOString() })
     .eq('training_id', fk_training_id);
 
   const { error } = await supabase
@@ -557,6 +575,53 @@ export async function recomputeMonthlyKPI(
   return { period_end, total: rows.length, valid, expired, pending };
 }
 
+
+export async function getTrainingCurriculum(user_id: number, owner_id: number): Promise<TrainingCurriculumRecord[]> {
+  const today = new Date().toISOString().split('T')[0];
+
+  const { data, error } = await supabase
+    .from('training_attendance')
+    .select(
+      `
+      attendance_id,
+      fk_training_id,
+      certification_number,
+      certification_date,
+      certification_expiry,
+      training:fk_training_id!inner (
+        training_id,
+        training_name,
+        training_type,
+        certificate_type,
+        fk_owner_id
+      )
+    `
+    )
+    .eq('fk_user_id', user_id)
+    .eq('training.fk_owner_id', owner_id)
+    .order('certification_expiry', { ascending: false, nullsFirst: false });
+
+  if (error) throw new Error(`Failed to fetch curriculum: ${error.message}`);
+
+  return (data || []).map((row: any) => {
+    const expiryDate = row.certification_expiry as string | null;
+    let status: 'VALID' | 'EXPIRED' | null = null;
+    if (expiryDate) {
+      status = expiryDate >= today ? 'VALID' : 'EXPIRED';
+    }
+    return {
+      attendance_id: row.attendance_id,
+      fk_training_id: row.fk_training_id,
+      training_name: row.training?.training_name ?? '',
+      training_type: row.training?.training_type ?? null,
+      certificate_type: row.training?.certificate_type ?? null,
+      session_code: row.certification_number ?? null,
+      completion_date: row.certification_date ?? null,
+      expiry_date: row.certification_expiry ?? null,
+      status,
+    };
+  });
+}
 
 export async function getTrainingUsers(owner_id: number, q?: string): Promise<Array<{
   user_id: number;
