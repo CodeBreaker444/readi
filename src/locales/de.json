@@ -791,7 +791,32 @@
       "pushError": "Protokoll konnte nicht gesendet werden",
       "loadPlanningsError": "Planungsmissionen konnten nicht geladen werden",
       "linkSuccess": "Fluganfrage mit Planungsmission verknüpft",
-      "linkError": "Verschieben zur Planung fehlgeschlagen"
+      "linkError": "Verschieben zur Planung fehlgeschlagen",
+      "statuses": {
+        "ALL": "Alle",
+        "NEW": "Neu",
+        "ACKNOWLEDGED": "Bestätigt",
+        "ASSIGNED": "Zugewiesen",
+        "IN_PROGRESS": "In Bearbeitung",
+        "COMPLETED": "Abgeschlossen",
+        "ISSUE": "Problem",
+        "REJECTED": "Abgelehnt"
+      },
+      "columns": {
+        "missionId": "Missions-ID",
+        "type": "Typ",
+        "target": "Ziel",
+        "operator": "Operator",
+        "localization": "Lokalisierung",
+        "waypoint": "Wegpunkt",
+        "priority": "Priorität",
+        "status": "Status",
+        "received": "Empfangen",
+        "actions": "Aktionen"
+      },
+      "actions": {
+        "view": "Ansehen"
+      }
     },
     "flightRequestDetail": {
       "title": "Fluganfrage",
@@ -1487,6 +1512,44 @@
         "duplicatesSkipped_one": "{{count}} Duplikat übersprungen",
         "duplicatesSkipped_other": "{{count}} Duplikate übersprungen"
       }
+    }
+  },
+  "repository": {
+    "title": "Dokumentenablage",
+    "subtitle": "Compliance-Dokumente der Organisation verwalten und nachverfolgen",
+    "newDocument": "Neues Dokument",
+    "searchPlaceholder": "Titel, Code, Beschreibung suchen...",
+    "allAreas": "Alle Bereiche",
+    "allStatuses": "Alle Status",
+    "reset": "Zurucksetzen",
+    "noDocuments": "Keine Dokumente entsprechen den Suchkriterien.",
+    "deleteTitle": "Sind Sie absolut sicher?",
+    "deleteDescriptionPrefix": "Dies wird dauerhaft löschen",
+    "deleteDescriptionSuffix": "und die zugehörigen Daten von unseren Servern entfernen. Diese Aktion kann nicht rückgängig gemacht werden.",
+    "deleteDocument": "Dokument löschen",
+    "actions": {
+      "download": "Herunterladen",
+      "revisionHistory": "Versionsverlauf"
+    },
+    "columns": {
+      "code": "# Code",
+      "title": "Titel",
+      "typeArea": "Typ & Bereich",
+      "type": "Typ",
+      "area": "Bereich",
+      "status": "Status",
+      "version": "Version",
+      "validity": "Gültigkeit",
+      "effectiveDate": "Gültig ab",
+      "expiryDate": "Ablaufdatum",
+      "fileName": "Dateiname",
+      "actions": "Aktionen"
+    },
+    "toast": {
+      "deleteSuccess": "Dokument erfolgreich gelöscht.",
+      "deleteError": "Fehler beim Löschen.",
+      "downloadFailed": "Datei konnte nicht heruntergeladen werden.",
+      "noDownloadUrl": "Keine URL zurückgegeben"
     }
   },
   "dccToast": {

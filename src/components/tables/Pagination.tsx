@@ -46,7 +46,7 @@ export const TablePagination: FC<Props> = ({ table }) => {
       <div className="flex w-full items-center justify-between space-x-6 md:w-fit lg:space-x-8">
         <div className="flex items-center space-x-2">
           <p className={`text-sm font-medium ${textLabel}`}>
-            {t('planning.missionTemplate.filterLogbook', { defaultValue: 'Rows per page' })}
+            Rows per page
           </p>
           <Select
             value={`${table.getState().pagination.pageSize}`}

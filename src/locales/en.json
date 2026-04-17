@@ -791,7 +791,32 @@
       "pushError": "Push failed",
       "loadPlanningsError": "Failed to load planning missions",
       "linkSuccess": "Flight request linked to planning mission",
-      "linkError": "Moving to planning failed"
+      "linkError": "Moving to planning failed",
+      "statuses": {
+        "ALL": "All",
+        "NEW": "New",
+        "ACKNOWLEDGED": "Acknowledged",
+        "ASSIGNED": "Assigned",
+        "IN_PROGRESS": "In Progress",
+        "COMPLETED": "Completed",
+        "ISSUE": "Issue",
+        "REJECTED": "Rejected"
+      },
+      "columns": {
+        "missionId": "Mission ID",
+        "type": "Type",
+        "target": "Target",
+        "operator": "Operator",
+        "localization": "Localization",
+        "waypoint": "Waypoint",
+        "priority": "Priority",
+        "status": "Status",
+        "received": "Received",
+        "actions": "Actions"
+      },
+      "actions": {
+        "view": "View"
+      }
     },
     "flightRequestDetail": {
       "title": "Flight Request",
@@ -1487,6 +1512,44 @@
         "duplicatesSkipped_one": "{{count}} duplicate skipped",
         "duplicatesSkipped_other": "{{count}} duplicates skipped"
       }
+    }
+  },
+  "repository": {
+    "title": "Document Repository",
+    "subtitle": "Manage and track organizational compliance documents",
+    "newDocument": "New Document",
+    "searchPlaceholder": "Search title, code, description...",
+    "allAreas": "All Areas",
+    "allStatuses": "All Statuses",
+    "reset": "Reset",
+    "noDocuments": "No documents match your search criteria.",
+    "deleteTitle": "Are you absolutely sure?",
+    "deleteDescriptionPrefix": "This will permanently delete",
+    "deleteDescriptionSuffix": "and remove its data from our servers. This action cannot be undone.",
+    "deleteDocument": "Delete Document",
+    "actions": {
+      "download": "Download",
+      "revisionHistory": "Revision history"
+    },
+    "columns": {
+      "code": "# Code",
+      "title": "Title",
+      "typeArea": "Type & Area",
+      "type": "Type",
+      "area": "Area",
+      "status": "Status",
+      "version": "Version",
+      "validity": "Validity",
+      "effectiveDate": "Effective Date",
+      "expiryDate": "Expiry Date",
+      "fileName": "File Name",
+      "actions": "Actions"
+    },
+    "toast": {
+      "deleteSuccess": "Document deleted successfully.",
+      "deleteError": "Error during deletion.",
+      "downloadFailed": "Failed to download file.",
+      "noDownloadUrl": "No URL returned"
     }
   },
   "dccToast": {

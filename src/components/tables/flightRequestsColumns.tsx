@@ -32,6 +32,7 @@ export interface FlightRequestColumnHandlers {
   deleting: number | null;
   updatingStatus: { id: number; status: string } | null;
   isDark: boolean;
+  t: (key: string) => string;
   onView: (request: FlightRequest) => void;
   onDelete: (request_id: number) => void;
   onUpdateStatus: (request_id: number, status: string) => void;
@@ -53,10 +54,10 @@ const PRIORITY_COLORS: Record<string, string> = {
   LOW:    'bg-green-100 text-green-700',
 };
 
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ status, t }: { status: string; t: (key: string) => string }) {
   return (
     <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold border ${STATUS_COLORS[status] ?? 'bg-gray-100 text-gray-600 border-gray-200'}`}>
-      {status}
+      {t(`planning.flightRequests.statuses.${status}`)}
     </span>
   );
 }
@@ -84,12 +85,12 @@ function WaypointCell({ wp }: { wp: any }) {
 }
 
 export function createFlightRequestColumns(handlers: FlightRequestColumnHandlers): ColumnDef<FlightRequest>[] {
-  const { deleting, updatingStatus, isDark, onView, onDelete, onUpdateStatus } = handlers;
+  const { deleting, updatingStatus, isDark, t, onView, onDelete, onUpdateStatus } = handlers;
 
   return [
     {
       id: 'external_mission_id',
-      header: 'Mission ID',
+      header: t('planning.flightRequests.columns.missionId'),
       accessorKey: 'external_mission_id',
       cell: ({ getValue }) => (
         <span className="font-mono font-semibold text-violet-400">{getValue<string>()}</span>
@@ -97,19 +98,19 @@ export function createFlightRequestColumns(handlers: FlightRequestColumnHandlers
     },
     {
       id: 'mission_type',
-      header: 'Type',
+      header: t('planning.flightRequests.columns.type'),
       accessorKey: 'mission_type',
       cell: ({ getValue }) => getValue<string>() ?? '—',
     },
     {
       id: 'target',
-      header: 'Target',
+      header: t('planning.flightRequests.columns.target'),
       accessorKey: 'target',
       cell: ({ getValue }) => getValue<string>() ?? '—',
     },
     {
       id: 'operator',
-      header: 'Operator',
+      header: t('planning.flightRequests.columns.operator'),
       accessorKey: 'operator',
       cell: ({ getValue }) => (
         <span className="font-mono">{getValue<string>() ?? '—'}</span>
@@ -117,19 +118,19 @@ export function createFlightRequestColumns(handlers: FlightRequestColumnHandlers
     },
     {
       id: 'localization',
-      header: 'Localization',
+      header: t('planning.flightRequests.columns.localization'),
       accessorKey: 'localization',
       cell: ({ getValue }) => <LocalizationCell loc={getValue()} />,
     },
     {
       id: 'waypoint',
-      header: 'Waypoint',
+      header: t('planning.flightRequests.columns.waypoint'),
       accessorKey: 'waypoint',
       cell: ({ getValue }) => <WaypointCell wp={getValue()} />,
     },
     {
       id: 'priority',
-      header: 'Priority',
+      header: t('planning.flightRequests.columns.priority'),
       accessorKey: 'priority',
       cell: ({ getValue }) => {
         const v = getValue<string | null>();
@@ -143,13 +144,13 @@ export function createFlightRequestColumns(handlers: FlightRequestColumnHandlers
     },
     {
       id: 'dcc_status',
-      header: 'Status',
+      header: t('planning.flightRequests.columns.status'),
       accessorKey: 'dcc_status',
-      cell: ({ getValue }) => <StatusBadge status={getValue<string>()} />,
+      cell: ({ getValue }) => <StatusBadge status={getValue<string>()} t={t} />,
     },
     {
       id: 'created_at',
-      header: 'Received',
+      header: t('planning.flightRequests.columns.received'),
       accessorKey: 'created_at',
       cell: ({ getValue }) => (
         <span className="text-[11px]">{format(new Date(getValue<string>()), 'dd MMM HH:mm')}</span>
@@ -157,7 +158,7 @@ export function createFlightRequestColumns(handlers: FlightRequestColumnHandlers
     },
     {
       id: 'actions',
-      header: 'Actions',
+      header: t('planning.flightRequests.columns.actions'),
       cell: ({ row }) => {
         const r = row.original;
         const isDeleting = deleting === r.request_id;
@@ -176,7 +177,7 @@ export function createFlightRequestColumns(handlers: FlightRequestColumnHandlers
               className={`h-7 text-xs gap-1 ${isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : ''}`}
             >
               <ExternalLink className="h-3 w-3" />
-              View
+              {t('planning.flightRequests.actions.view')}
             </Button>
 
             {/* State progression buttons */}
@@ -191,7 +192,7 @@ export function createFlightRequestColumns(handlers: FlightRequestColumnHandlers
                     className={`h-7 text-xs gap-1 border-orange-500/40 text-orange-500 hover:bg-orange-500/10 ${isDark ? 'hover:border-orange-500/60' : ''}`}
                   >
                     {isUpdating('IN_PROGRESS') ? <Loader2 className="h-3 w-3 animate-spin" /> : <AlertCircle className="h-3 w-3" />}
-                    In Progress
+                    {t('planning.flightRequests.statuses.IN_PROGRESS')}
                   </Button>
                 )}
                 <Button
@@ -202,7 +203,7 @@ export function createFlightRequestColumns(handlers: FlightRequestColumnHandlers
                   className={`h-7 text-xs gap-1 border-green-500/40 text-green-600 hover:bg-green-500/10 ${isDark ? 'hover:border-green-500/60' : ''}`}
                 >
                   {isUpdating('COMPLETED') ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />}
-                  Completed
+                  {t('planning.flightRequests.statuses.COMPLETED')}
                 </Button>
                 <Button
                   size="sm"
@@ -212,7 +213,7 @@ export function createFlightRequestColumns(handlers: FlightRequestColumnHandlers
                   className={`h-7 text-xs gap-1 border-red-500/40 text-red-500 hover:bg-red-500/10 ${isDark ? 'hover:border-red-500/60' : ''}`}
                 >
                   {isUpdating('ISSUE') ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
-                  Issue
+                  {t('planning.flightRequests.statuses.ISSUE')}
                 </Button>
               </>
             )}

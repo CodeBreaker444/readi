@@ -791,7 +791,32 @@
       "pushError": "Invio fallito",
       "loadPlanningsError": "Errore nel caricamento delle missioni di pianificazione",
       "linkSuccess": "Richiesta di volo collegata alla missione di pianificazione",
-      "linkError": "Spostamento in pianificazione fallito"
+      "linkError": "Spostamento in pianificazione fallito",
+      "statuses": {
+        "ALL": "Tutte",
+        "NEW": "Nuove",
+        "ACKNOWLEDGED": "Ricevute",
+        "ASSIGNED": "Assegnate",
+        "IN_PROGRESS": "In corso",
+        "COMPLETED": "Completate",
+        "ISSUE": "Problema",
+        "REJECTED": "Rifiutate"
+      },
+      "columns": {
+        "missionId": "ID Missione",
+        "type": "Tipo",
+        "target": "Destinazione",
+        "operator": "Operatore",
+        "localization": "Localizzazione",
+        "waypoint": "Waypoint",
+        "priority": "Priorità",
+        "status": "Stato",
+        "received": "Ricevuta",
+        "actions": "Azioni"
+      },
+      "actions": {
+        "view": "Visualizza"
+      }
     },
     "flightRequestDetail": {
       "title": "Richiesta di Volo",
@@ -1489,6 +1514,44 @@
         "duplicatesSkipped_one": "{{count}} duplicato ignorato",
         "duplicatesSkipped_other": "{{count}} duplicati ignorati"
       }
+    }
+  },
+  "repository": {
+    "title": "Archivio Documenti",
+    "subtitle": "Gestisci e traccia i documenti di conformita organizzativa",
+    "newDocument": "Nuovo Documento",
+    "searchPlaceholder": "Cerca titolo, codice, descrizione...",
+    "allAreas": "Tutte le Aree",
+    "allStatuses": "Tutti gli Stati",
+    "reset": "Reimposta",
+    "noDocuments": "Nessun documento corrisponde ai criteri di ricerca.",
+    "deleteTitle": "Sei assolutamente sicuro?",
+    "deleteDescriptionPrefix": "Questo eliminerà definitivamente",
+    "deleteDescriptionSuffix": "e rimuoverà i relativi dati dai nostri server. Questa azione non può essere annullata.",
+    "deleteDocument": "Elimina Documento",
+    "actions": {
+      "download": "Scarica",
+      "revisionHistory": "Storico revisioni"
+    },
+    "columns": {
+      "code": "# Codice",
+      "title": "Titolo",
+      "typeArea": "Tipo e Area",
+      "type": "Tipo",
+      "area": "Area",
+      "status": "Stato",
+      "version": "Versione",
+      "validity": "Validità",
+      "effectiveDate": "Data Efficacia",
+      "expiryDate": "Data Scadenza",
+      "fileName": "Nome File",
+      "actions": "Azioni"
+    },
+    "toast": {
+      "deleteSuccess": "Documento eliminato con successo.",
+      "deleteError": "Errore durante l'eliminazione.",
+      "downloadFailed": "Download file non riuscito.",
+      "noDownloadUrl": "Nessun URL restituito"
     }
   },
   "dccToast": {
