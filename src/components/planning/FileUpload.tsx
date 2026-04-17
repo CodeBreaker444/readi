@@ -2,6 +2,7 @@
 import axios from 'axios';
 import { FileText, Upload, X } from 'lucide-react';
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 interface EvaluationFile {
@@ -31,6 +32,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
   isDark = false,
   disabled = false,
 }) => {
+  const { t } = useTranslation();
   const [description, setDescription] = useState('');
   const [version, setVersion] = useState('1.0');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -39,7 +41,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (disabled) {
       e.preventDefault();
-      toast.error('Please create an evaluation request first before uploading files');
+      toast.error(t('planning.files.pleaseCreateFirst'));
       e.target.value = '';
       return;
     }
@@ -48,11 +50,11 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
   const handleUpload = async () => {
     if (disabled) {
-      toast.error('Please create an evaluation request first before uploading files');
+      toast.error(t('planning.files.pleaseCreateFirst'));
       return;
     }
     if (!selectedFile || !description) {
-      toast.error('Please provide a description and select a file');
+      toast.error(t('planning.files.provideDescFile'));
       return;
     }
     setUploading(true);
@@ -68,7 +70,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      if (!response.data.success) throw new Error('Failed to upload file');
+      if (!response.data.success) throw new Error(t('planning.files.uploadFailed'));
 
       onFileAdded(response.data.file);
       setDescription('');
@@ -76,10 +78,10 @@ const FileUpload: React.FC<FileUploadProps> = ({
       setSelectedFile(null);
       const fileInput = document.getElementById('file-input') as HTMLInputElement;
       if (fileInput) fileInput.value = '';
-      toast.success('File uploaded successfully');
+      toast.success(t('planning.files.fileUploadSuccess'));
     } catch (error) {
       console.error('Error uploading file:', error);
-      toast.error('Error uploading file');
+      toast.error(t('planning.files.fileUploadError'));
     } finally {
       setUploading(false);
     }
@@ -88,12 +90,12 @@ const FileUpload: React.FC<FileUploadProps> = ({
   const handleRemove = async (fileId: number) => {
     try {
       const response = await axios.delete(`/api/evaluation/new-req/files/${fileId}`);
-      if (!response.data.success) throw new Error('Failed to remove file');
+      if (!response.data.success) throw new Error(t('planning.files.deleteFailed'));
       onFileRemoved(fileId);
-      toast.success('File removed successfully');
+      toast.success(t('planning.files.fileRemoveSuccess'));
     } catch (error) {
       console.error('Error removing file:', error);
-      toast.error('Error removing file');
+      toast.error(t('planning.files.fileRemoveError'));
     }
   };
 
@@ -115,7 +117,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
         <div className={`rounded-xl border ${isDark ? 'border-gray-700/60 bg-gray-900/50' : 'border-gray-200 bg-gray-50'} p-4`}>
           <h3 className={`text-sm font-semibold mb-3 flex items-center gap-2 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
             <FileText size={15} className={isDark ? 'text-blue-400' : 'text-blue-600'} />
-            Attached Files
+            {t('planning.files.attached')}
             <span className={`ml-auto text-xs font-normal px-2 py-0.5 rounded-full ${isDark ? 'bg-gray-700 text-gray-400' : 'bg-gray-200 text-gray-500'}`}>
               {files.length}
             </span>
@@ -146,7 +148,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
                   className={`cursor-pointer flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-lg transition-colors ${
                     isDark ? 'text-gray-500 hover:text-red-400 hover:bg-red-500/15' : 'text-gray-400 hover:text-red-600 hover:bg-red-50'
                   }`}
-                  title="Remove file"
+                  title={t('planning.files.removeFile')}
                 >
                   <X size={15} />
                 </button>
@@ -159,34 +161,34 @@ const FileUpload: React.FC<FileUploadProps> = ({
       <div className={`rounded-xl border ${isDark ? 'border-gray-700/60' : 'border-gray-200'} p-4`}>
         <h3 className={`text-sm font-semibold mb-4 flex items-center gap-2 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
           <Upload size={15} className={isDark ? 'text-violet-400' : 'text-violet-600'} />
-          Add New File
+          {t('planning.files.addNew')}
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
-            <label htmlFor="file-description" className={labelClass}>Description</label>
+            <label htmlFor="file-description" className={labelClass}>{t('planning.files.description')}</label>
             <input
               type="text"
               id="file-description"
               value={description}
               onChange={(e) => {
                 if (disabled) {
-                  toast.error('Please create an evaluation request first before uploading files');
+                  toast.error(t('planning.files.pleaseCreateFirst'));
                   return;
                 }
                 setDescription(e.target.value);
               }}
               onFocus={() => {
-                if (disabled) toast.error('Please create an evaluation request first before uploading files');
+                if (disabled) toast.error(t('planning.files.pleaseCreateFirst'));
               }}
               className={`${inputClass} cursor-text`}
-              placeholder="Enter description"
+              placeholder={t('planning.files.enterDesc')}
               readOnly={disabled}
             />
           </div>
 
           <div>
-            <label htmlFor="file-version" className={labelClass}>Version</label>
+            <label htmlFor="file-version" className={labelClass}>{t('planning.files.version')}</label>
             <input
               type="text"
               id="file-version"
@@ -202,7 +204,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
           </div>
 
           <div>
-            <label htmlFor="file-input" className={labelClass}>File</label>
+            <label htmlFor="file-input" className={labelClass}>{t('planning.files.file')}</label>
             <input
               type="file"
               id="file-input"
@@ -210,7 +212,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
               onClick={(e) => {
                 if (disabled) {
                   e.preventDefault();
-                  toast.error('Please create an evaluation request first before uploading files');
+                  toast.error(t('planning.files.pleaseCreateFirst'));
                 }
               }}
               className={`${inputClass} cursor-pointer file:mr-3 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-medium ${
@@ -240,12 +242,12 @@ const FileUpload: React.FC<FileUploadProps> = ({
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
-                  Uploading...
+                  {t('planning.files.uploading')}
                 </>
               ) : (
                 <>
                   <Upload size={15} />
-                  Add File
+                  {t('planning.files.addFile')}
                 </>
               )}
             </button>

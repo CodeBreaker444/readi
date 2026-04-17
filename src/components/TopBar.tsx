@@ -3,8 +3,10 @@
 import { Skeleton } from '@/components/ui/skeleton';
 import { SessionUser } from '@/lib/auth/server-session';
 import { AlertTriangle, Check, ChevronDown, FileText, LogOut, Moon, Search, Send, Settings, Sparkles, Sun, User, UserCircle, UserCog, X } from 'lucide-react';
+import { LanguageSelect } from './LanguageSelect';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { supabase } from '../lib/supabase/client';
 import NotificationDropdown from './NotificationDropdown';
@@ -33,6 +35,7 @@ interface TopBarProps {
 const CHAT_RESTRICTED_ROLES = ['SUPERADMIN'];
 
 const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
+  const { t } = useTranslation();
   const isChatRestricted = CHAT_RESTRICTED_ROLES.includes(userData?.role ?? '');
   const isAdmin = userData?.role === 'ADMIN';
 
@@ -146,7 +149,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
       window.location.href = '/auth/login';
     } catch (error) {
       console.error('Unexpected logout error:', error);
-      toast.error('An unexpected error occurred. Please try again.');
+      toast.error(t('topbar.unexpectedLogoutError'));
     } finally {
       setIsLoggingOut(false);
     }
@@ -204,10 +207,10 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
             <div className={`relative flex items-center justify-center w-5 h-5 rounded-md ${isDark ? 'bg-violet-500/10 group-hover:bg-violet-500/15' : 'bg-violet-50 group-hover:bg-violet-100/80'} transition-colors duration-200`}>
               <Search size={12} className={`shrink-0 transition-colors duration-200 ${isDark ? 'text-violet-400' : 'text-violet-500'}`} />
             </div>
-            <span className="relative flex-1 text-left text-[13px] tracking-wide">Ask anything…</span>
+            <span className="relative flex-1 text-left text-[13px] tracking-wide">{t('topbar.askAnything')}</span>
             {isChatRestricted ? (
               <span className={`relative inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-semibold ${isDark ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' : 'bg-amber-50 text-amber-600 border border-amber-200'}`}>
-                Coming Soon
+                {t('topbar.comingSoon')}
               </span>
             ) : (
               <kbd className={`relative inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-medium transition-colors duration-200 ${isDark ? 'bg-slate-700/60 text-slate-500 group-hover:bg-slate-700 group-hover:text-slate-400 border border-slate-600/50' : 'bg-white/80 text-gray-400 group-hover:bg-white group-hover:text-gray-500 border border-gray-200/80 shadow-sm'}`}>
@@ -216,10 +219,12 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
             )}
           </button>
 
+          <LanguageSelect isDark={isDark} />
+
           <button
             onClick={toggleTheme}
             className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-slate-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}
-            aria-label="Toggle theme"
+            aria-label={t('topbar.toggleTheme')}
           >
             {isDark ? <Sun size={20} /> : <Moon size={20} />}
           </button>
@@ -277,7 +282,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
                     <div className={`p-1.5 rounded-md transition-colors ${isDark ? 'bg-slate-700/50 group-hover:bg-slate-600/70' : 'bg-gray-100 group-hover:bg-gray-200'}`}>
                       <UserCircle size={16} />
                     </div>
-                    <span className="text-sm font-medium">Profile</span>
+                    <span className="text-sm font-medium">{t('topbar.profile')}</span>
                   </button>
                 </div>
 
@@ -290,7 +295,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
                     <div className={`p-1.5 rounded-md transition-colors ${isDark ? 'bg-red-500/10 group-hover:bg-red-500/20' : 'bg-red-50 group-hover:bg-red-100'}`}>
                       <LogOut size={16} />
                     </div>
-                    <span className="text-sm font-medium">{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
+                    <span className="text-sm font-medium">{isLoggingOut ? t('topbar.loggingOut') : t('topbar.logout')}</span>
                   </button>
                 </div>
               </div>
@@ -316,10 +321,10 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
                   <Sparkles size={14} className="text-violet-500" />
                 </div>
                 <div className="min-w-0">
-                  <p className={`text-sm font-semibold leading-none ${isDark ? 'text-white' : 'text-gray-900'}`}>READI AI Agent</p>
+                  <p className={`text-sm font-semibold leading-none ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('chat.title')}</p>
                   <p className={`text-[11px] mt-0.5 truncate ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
                     {impersonatedOpm
-                      ? `Admin — acting as ${impersonatedOpm.fullname} (OPM)`
+                      ? t('chat.actingAs', { name: impersonatedOpm.fullname })
                       : (userData?.role ?? 'Assistant')}
                   </p>
                 </div>
@@ -333,10 +338,10 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
                           ? (isDark ? 'bg-amber-500/15 border-amber-500/30 text-amber-400' : 'bg-amber-50 border-amber-200 text-amber-700')
                           : (isDark ? 'bg-slate-700/60 border-slate-600 text-slate-400 hover:text-slate-300' : 'bg-gray-100 border-gray-200 text-gray-500 hover:text-gray-700')
                       }`}
-                      title="Act as OPM user"
+                      title={t('chat.actAsOpmUser')}
                     >
                       <UserCog size={11} />
-                      <span>{impersonatedOpm ? impersonatedOpm.username || impersonatedOpm.fullname : 'OPM View'}</span>
+                      <span>{impersonatedOpm ? impersonatedOpm.username || impersonatedOpm.fullname : t('chat.opmView')}</span>
                       {impersonatedOpm
                         ? <X size={9} className="cursor-pointer" onClick={(e) => { e.stopPropagation(); clearOpm(); }} />
                         : <ChevronDown size={9} className="opacity-60" />
@@ -352,7 +357,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
                         <div className={`flex items-center gap-2 px-3 py-2.5 border-b ${isDark ? 'border-slate-700/60' : 'border-gray-100'}`}>
                           <UserCog size={12} className={isDark ? 'text-slate-500' : 'text-gray-400'} />
                           <span className={`text-[10px] font-bold uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-                            Chat as OPM user
+                            {t('chat.chatAsOpm')}
                           </span>
                         </div>
 
@@ -370,7 +375,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
                             ))
                           ) : opmUsers.length === 0 ? (
                             <div className={`px-3 py-6 text-center text-[11px] ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-                              No OPM users found
+                              {t('chat.noOpmUsers')}
                             </div>
                           ) : (
                             opmUsers.map((u) => {
@@ -422,7 +427,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
                               }`}
                             >
                               <X size={10} />
-                              Clear OPM view
+                              {t('chat.clearOpmView')}
                             </button>
                           </div>
                         )}
@@ -440,15 +445,15 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
                       : (isDark ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' : 'bg-amber-50 border-amber-200 text-amber-600')
                   }`}>
                     <AlertTriangle size={11} />
-                    <span>Only {100 - tokenUsage.percent}% remaining</span>
+                    <span>{t('chat.tokenWarning', { percent: 100 - tokenUsage.percent })}</span>
                   </div>
                 )}
                 {isAdmin && (
                   <button
                     onClick={() => { setShowSearch(false); router.push('/knowledge-config'); }}
                     className={`p-1.5 rounded-lg transition-colors ${isDark ? 'text-slate-400 hover:bg-slate-700 hover:text-violet-400' : 'text-gray-400 hover:bg-gray-100 hover:text-violet-600'}`}
-                    aria-label="Knowledge Base Config"
-                    title="Knowledge Base Config"
+                    aria-label={t('knowledge.title')}
+                    title={t('knowledge.title')}
                   >
                     <Settings size={15} />
                   </button>
@@ -470,23 +475,23 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
                     <Sparkles size={26} className="text-violet-500" />
                   </div>
                   <div className="space-y-1.5">
-                    <p className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>How can I help you?</p>
+                    <p className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('chat.howCanIHelp')}</p>
                     <p className={`text-xs max-w-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
                       {isAdmin && impersonatedOpm
-                        ? `Chatting as ${impersonatedOpm.fullname} — OPM data access active.`
-                        : 'Ask about your missions, fleet, alerts, compliance, maintenance, and more.'}
+                        ? t('chat.descriptionOpm', { name: impersonatedOpm.fullname })
+                        : t('chat.description')}
                     </p>
                   </div>
                   <div className="grid grid-cols-2 gap-2 w-full max-w-sm mt-2">
-                    {(['How many missions have I completed?', 'List active alerts', 'Show open maintenance tickets', 'What are my KPI values?'] as const).map((s) => (
+                    {(['chat.missions', 'chat.alerts', 'chat.maintenance', 'chat.kpi'] as const).map((key) => (
                       <button
-                        key={s}
-                        onClick={() => { setChatInput(s); chatInputRef.current?.focus(); }}
+                        key={key}
+                        onClick={() => { setChatInput(t(key)); chatInputRef.current?.focus(); }}
                         className={`text-left text-[11px] px-3 py-2 rounded-xl border transition-colors leading-snug ${isDark
                           ? 'bg-slate-800/60 border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-300'
                           : 'bg-gray-50 border-gray-100 text-gray-500 hover:border-gray-200 hover:text-gray-700'}`}
                       >
-                        {s}
+                        {t(key)}
                       </button>
                     ))}
                   </div>
@@ -556,7 +561,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
               {/* Impersonation banner */}
               {isAdmin && impersonatedOpm && (
                 <div className={`flex items-center justify-between mb-2 px-3 py-1.5 rounded-lg text-[11px] font-medium ${isDark ? 'bg-amber-500/10 border border-amber-500/20 text-amber-400' : 'bg-amber-50 border border-amber-200 text-amber-700'}`}>
-                  <span>Acting as <strong>{impersonatedOpm.fullname}</strong> (OPM)</span>
+                  <span>{t('chat.actingAs', { name: impersonatedOpm.fullname })}</span>
                   <button onClick={clearOpm} className="hover:opacity-70 transition-opacity ml-2">
                     <X size={11} />
                   </button>
@@ -575,7 +580,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
                       handleChatSend();
                     }
                   }}
-                  placeholder={isAdmin && impersonatedOpm ? `Ask as ${impersonatedOpm.fullname}…` : 'Type a message…'}
+                  placeholder={isAdmin && impersonatedOpm ? t('chat.placeholderAs', { name: impersonatedOpm.fullname }) : t('chat.placeholder')}
                   disabled={chatLoading}
                   className={`flex-1 bg-transparent text-sm outline-none ${isDark ? 'text-white placeholder-slate-500' : 'text-gray-900 placeholder-gray-400'}`}
                 />
@@ -590,7 +595,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
                 </button>
               </div>
               <p className={`text-[10px] text-center mt-2 ${isDark ? 'text-slate-600' : 'text-gray-400'}`}>
-                Press <kbd className={`px-1 rounded text-[9px] border ${isDark ? 'border-slate-600 bg-slate-700' : 'border-gray-200 bg-gray-100'}`}>Enter</kbd> to send
+                {t('chat.pressEnterPrefix')} <kbd className={`px-1 rounded text-[9px] border ${isDark ? 'border-slate-600 bg-slate-700' : 'border-gray-200 bg-gray-100'}`}>Enter</kbd> {t('chat.pressEnterSuffix')}
               </p>
             </div>
           </div>

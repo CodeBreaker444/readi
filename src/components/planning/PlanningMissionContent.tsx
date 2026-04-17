@@ -34,15 +34,17 @@ import type {
 } from "@/config/types/evaluation-planning";
 import { SessionUser } from "@/lib/auth/server-session";
 import axios from "axios";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import Breadcrumbs from "../Breadcrumbs";
 import { useTheme } from "../useTheme";
 import { PlanningMissionSkeleton } from "./PlanningMissionSkeleton";
 import { PlanningTaskTableSection } from "./PlanningTaskTableSection";
-interface PlanningMissionProps{
-  user:SessionUser
+interface PlanningMissionProps {
+  user: SessionUser
 }
-export const PlanningMissionContent:FC<PlanningMissionProps> = ({ user })=> {
+export const PlanningMissionContent: FC<PlanningMissionProps> = ({ user }) => {
+  const { t } = useTranslation();
   const { isDark } = useTheme();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -112,15 +114,14 @@ export const PlanningMissionContent:FC<PlanningMissionProps> = ({ user })=> {
       setRepoLogbookFiles(repoLogbookRes.data.data ?? []);
       setRepoTestFiles(repoTestRes.data.data ?? []);
 
-
     } catch (err: any) {
       console.error("Failed to load page data:", err);
-      toast.error("Failed to load mission data.");
+      toast.error(t("planning.missionPlanning.loadError"));
     } finally {
       setLoading(false);
       setInitialLoad(false);
     }
-  }, [p_id, c_id, initialLoad]);
+  }, [p_id, c_id, initialLoad, t]);
 
   useEffect(() => {
     loadPageData();
@@ -148,11 +149,11 @@ export const PlanningMissionContent:FC<PlanningMissionProps> = ({ user })=> {
       await axios.post("/api/evaluation/planning/delete-mission-planning", {
         mission_planning_id: idToDelete,
       });
-      toast.success("Logbook entry deleted successfully");
+      toast.success(t("planning.missionPlanning.deleteSuccess"));
     } catch (err) {
       setLogbookList(previousList);
       console.error("Delete failed:", err);
-      toast.error("Failed to delete. The list has been restored.");
+      toast.error(t("planning.missionPlanning.deleteFailed"));
     } finally {
       setIdToDelete(null);
       setDeleteDialogOpen(false);
@@ -169,11 +170,11 @@ export const PlanningMissionContent:FC<PlanningMissionProps> = ({ user })=> {
       );
       await loadPageData();
       setOpenedRowId(null);
-      toast.success("Mission added successfully");
+      toast.success(t("planning.missionPlanning.addSuccess"));
       return { success: true };
     } catch (err: any) {
       console.error("Add failed:", err);
-      toast.error("Failed to add mission.");
+      toast.error(t("planning.missionPlanning.addFailed"));
       return { success: false };
     }
   };
@@ -184,10 +185,11 @@ export const PlanningMissionContent:FC<PlanningMissionProps> = ({ user })=> {
     try {
       await axios.post("/api/evaluation/planning/update-planning", formData);
       await loadPageData();
-      toast.success("Planning updated");
+      toast.success(t("planning.missionPlanning.updated"));
       return { success: true };
     } catch (err) {
       console.error("Update failed:", err);
+      toast.error(t("planning.evaluation.updateFailed"));
       return { success: false };
     }
   };
@@ -222,10 +224,10 @@ export const PlanningMissionContent:FC<PlanningMissionProps> = ({ user })=> {
 
   const breadcrumbItems = [
     {
-      label: "Mission Planning Dashboard",
+      label: t("planning.dashboard.title"),
       href: "/planning/planning-dashboard",
     },
-    { label: "Planning Mission", href: "#" },
+    { label: t("planning.missionPlanning.planningMission"), href: "#" },
   ];
 
   return (
@@ -244,7 +246,7 @@ export const PlanningMissionContent:FC<PlanningMissionProps> = ({ user })=> {
                 className={`font-semibold text-base tracking-tight flex items-center gap-2 ${isDark ? "text-white" : "text-slate-900"
                   }`}
               >
-                Mission Mission
+                {t("planning.missionPlanning.planningMission")}
                 {planningData?.planning_code && (
                   <span
                     className={`font-normal text-sm opacity-70 ${isDark ? "text-slate-400" : "text-slate-500"
@@ -258,7 +260,7 @@ export const PlanningMissionContent:FC<PlanningMissionProps> = ({ user })=> {
                 className={`text-xs ${isDark ? "text-slate-500" : "text-slate-400"
                   }`}
               >
-                Manage mission logbooks and operational planning parameters
+                {t("planning.missionPlanning.subtitle")}
               </p>
             </div>
           </div>
@@ -271,7 +273,7 @@ export const PlanningMissionContent:FC<PlanningMissionProps> = ({ user })=> {
         <Card className={isDark ? "bg-slate-900 border-slate-800" : "bg-white"}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className={`text-base ${isDark ? "text-slate-100" : "text-slate-900"}`}>
-              Edit Mission Planning Request
+              {t("planning.evaluation.editTitle")}
             </CardTitle>
             <Button
               variant="ghost"
@@ -299,7 +301,7 @@ export const PlanningMissionContent:FC<PlanningMissionProps> = ({ user })=> {
         <Card className={isDark ? "bg-slate-900 border-slate-800" : "bg-white"}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className={`text-base ${isDark ? "text-slate-100" : "text-slate-900"}`}>
-              Mission Planning Logbook Add New
+              {t("planning.missionPlanning.addNew")}
             </CardTitle>
             <Button
               variant="ghost"
@@ -329,7 +331,7 @@ export const PlanningMissionContent:FC<PlanningMissionProps> = ({ user })=> {
       <Card className={isDark ? "bg-slate-900 border-slate-800" : "bg-white"}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className={`text-base ${isDark ? "text-slate-100" : "text-slate-900"}`}>
-            Mission Planning Logbook
+            {t("planning.missionPlanning.logbook")}
           </CardTitle>
           <Button
             variant="ghost"
@@ -367,7 +369,7 @@ export const PlanningMissionContent:FC<PlanningMissionProps> = ({ user })=> {
       <Card className={isDark ? "bg-slate-900 border-slate-800" : ""}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className={`text-base ${isDark ? "text-slate-100" : ""}`}>
-            Repository Files
+            {t("planning.missionPlanning.repositoryFiles")}
           </CardTitle>
           <Button
             variant="ghost"
@@ -393,28 +395,17 @@ export const PlanningMissionContent:FC<PlanningMissionProps> = ({ user })=> {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent className={isDark ? "bg-slate-900 border-slate-800" : ""}>
           <AlertDialogHeader>
-            <AlertDialogTitle className={isDark ? "text-slate-100" : ""}>
-              Are you absolutely sure?
+            <AlertDialogTitle>
+              {t("planning.missionPlanning.deleteTitle")}
             </AlertDialogTitle>
-            <AlertDialogDescription className={isDark ? "text-slate-400" : ""}>
-              This action cannot be undone. This will permanently delete the
-              mission logbook entry and all associated data.
+            <AlertDialogDescription>
+              {t("planning.missionPlanning.deleteDesc")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel
-              className={isDark ? "bg-slate-800 border-slate-700 text-slate-300" : ""}
-            >
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={(e) => {
-                e.preventDefault();
-                handleDeleteLogbook();
-              }}
-              className="bg-red-600 text-white hover:bg-red-700 disabled:opacity-70"
-            >
-              Delete
+            <AlertDialogCancel>{t("planning.form.no")}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteLogbook} className="bg-red-600">
+              {t("planning.actions.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

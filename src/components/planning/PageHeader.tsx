@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 interface PageHeaderProps {
   title: string;
@@ -17,6 +18,7 @@ export default function PageHeader({
   selectedLabel,
   dropdownItems,
 }: PageHeaderProps) {
+  const { t } = useTranslation();
   return (
     <div
       className={cn(
@@ -68,7 +70,7 @@ export default function PageHeader({
                     : "border-slate-300 hover:bg-slate-50 text-slate-600"
                 )}
               >
-                Actions
+                {t("common.actions")}
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>

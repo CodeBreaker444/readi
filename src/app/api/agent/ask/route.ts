@@ -10,7 +10,7 @@ import { getSupabase } from "@mcp-server/lib/supabase";
 import { NextRequest, NextResponse } from "next/server";
 import { GROQ_MODEL } from "../../../../lib/token-limits";
 import { E } from "@/lib/error-codes";
-import { apiError, forbidden, internalError, unauthorized } from "@/lib/api-error";
+import { internalError } from "@/lib/api-error";
 
 export const dynamic = "force-dynamic";
 
@@ -192,17 +192,17 @@ export async function POST(req: NextRequest) {
         const session = await getUserSession();
 
         if (!session) {
-            return unauthorized(E.AU001);
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
         if (RESTRICTED_ROLES.includes(session.user.role)) {
-            return forbidden(E.PX001);
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
 
         const { question } = await req.json();
 
         if (!question?.trim()) {
-            return apiError(E.VL001, 400);
+            return NextResponse.json({ error: "question required" }, { status: 400 });
         }
 
         const user = {
@@ -214,7 +214,7 @@ export async function POST(req: NextRequest) {
         // Enforce token limits before running any expensive AI calls
         const limitCheck = await checkTokenLimits(user.userId);
         if (!limitCheck.allowed) {
-            return apiError(E.PX001, 429);
+            return NextResponse.json({ error: limitCheck.reason }, { status: 429 });
         }
 
         const groq = getGroq();
@@ -299,7 +299,8 @@ export async function POST(req: NextRequest) {
             }
         });
 
-    } catch (err) {
-      return internalError(E.SV001, err);
+    } catch (error: any) {
+        console.error("Agent Error:", error);
+      return internalError(E.AU001, error);
     }
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Model } from 'survey-core';
 import 'survey-core/survey-core.min.css';
 import { Survey } from 'survey-react-ui';
@@ -21,6 +22,7 @@ export function ChecklistRenderer({
   isDark = false,
 }: ChecklistRendererProps) {
   const [surveyModel, setSurveyModel] = useState<Model | null>(null);
+  const { t } = useTranslation();
 
   useEffect(() => {
     try {

@@ -2,15 +2,16 @@
 
 import { Badge } from "@/components/ui/badge";
 import {
-    Card,
-    CardContent,
-    CardHeader,
+  Card,
+  CardContent,
+  CardHeader,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Planning } from "@/config/types/evaluation-planning";
 import { cn } from "@/lib/utils";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Search } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import PlanningDataTable from "./PlanningDataTable";
 
 interface PlanningTableCardProps {
@@ -34,6 +35,7 @@ export default function PlanningTableCard({
   selectedRowId,
   onRowClick,
 }: PlanningTableCardProps) {
+  const { t } = useTranslation(); 
   const textMuted = isDark ? "text-slate-400" : "text-slate-500";
 
   return (
@@ -52,10 +54,10 @@ export default function PlanningTableCard({
                 isDark ? "text-white" : "text-slate-900"
               )}
             >
-              Planning — Operational Scenario Request Logbook
+              {t('planning.dashboard.logbookTitle')}
             </h2>
             <p className={cn("text-xs mt-0.5", textMuted)}>
-              Log of Operational Scenario Requests
+              {t('planning.dashboard.logbookDescription')}
             </p>
           </div>
 
@@ -69,7 +71,7 @@ export default function PlanningTableCard({
               />
               <Input
                 type="text"
-                placeholder="Search planning..."
+                placeholder={t('planning.dashboard.search')}
                 value={globalFilter}
                 onChange={(e) => onGlobalFilterChange(e.target.value)}
                 className={cn(
@@ -90,7 +92,7 @@ export default function PlanningTableCard({
                   : "bg-slate-100 text-slate-500 hover:bg-slate-100"
               )}
             >
-              {data.length} records
+              {data.length} {t('planning.dashboard.records')}
             </Badge>
           </div>
         </div>
@@ -106,7 +108,7 @@ export default function PlanningTableCard({
           onGlobalFilterChange={onGlobalFilterChange}
           selectedRowId={selectedRowId}
           onRowClick={onRowClick}
-          emptyMessage="No planning records found"
+          emptyMessage={t('planning.dashboard.noRecords')}
         />
       </CardContent>
     </Card>

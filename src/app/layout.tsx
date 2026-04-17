@@ -1,6 +1,7 @@
 import { Toaster } from "@/components/ui/sonner";
 import { Geist, Geist_Mono } from "next/font/google";
 import ClientLayoutWrapper from "../components/ClientLayoutWrapper";
+import { I18nProvider } from "../components/I18nProvider";
 import { ThemeProvider } from "../components/ThemeProvider";
 import { getUserSession } from "../lib/auth/server-session";
 import "./globals.css";
@@ -31,10 +32,12 @@ export default async function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <ThemeProvider>
-          <Toaster />
-          <ClientLayoutWrapper sessionPromise={sessionPromise}>
-            {children}
-          </ClientLayoutWrapper>
+          <I18nProvider>
+            <Toaster />
+            <ClientLayoutWrapper sessionPromise={sessionPromise}>
+              {children}
+            </ClientLayoutWrapper>
+          </I18nProvider>
         </ThemeProvider>
       </body>
     </html>

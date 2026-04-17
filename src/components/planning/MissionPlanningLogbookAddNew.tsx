@@ -13,6 +13,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { DroneTool } from "@/config/types/evaluation-planning";
 import { useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 interface MissionPlanningLogbookAddNewProps {
   isDark: boolean;
@@ -33,6 +34,7 @@ export default function MissionPlanningLogbookAddNew({
   onSubmit,
   defaultLimitJson = "",
 }: MissionPlanningLogbookAddNewProps) {
+  const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -84,6 +86,7 @@ export default function MissionPlanningLogbookAddNew({
       setSubmitting(false);
     }
   };
+
   const labelStyle = isDark ? "text-slate-400" : "text-slate-700";
   const inputStyle = isDark
     ? "bg-slate-950 border-slate-800 text-slate-200 placeholder:text-slate-600 focus:ring-violet-500"
@@ -92,13 +95,13 @@ export default function MissionPlanningLogbookAddNew({
   return (
     <div className={`p-4 space-y-4 ${isDark ? "bg-slate-900/50" : "bg-transparent"}`}>
       <p className={`text-sm ${isDark ? "text-slate-500" : "text-muted-foreground"}`}>
-        Fill the form for adding a new mission planning.
+        {t("planning.missionPlanning.fillForm")}
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
           <div className="md:col-span-1 space-y-2">
-            <Label className={labelStyle}>Mission Code</Label>
+            <Label className={labelStyle}>{t("planning.form.missionCode")}</Label>
             <Input
               name="mission_planning_code"
               value={form.mission_planning_code}
@@ -107,7 +110,7 @@ export default function MissionPlanningLogbookAddNew({
             />
           </div>
           <div className="md:col-span-2 space-y-2">
-            <Label className={labelStyle}>Description</Label>
+            <Label className={labelStyle}>{t("planning.form.description")}</Label>
             <Input
               name="mission_planning_desc"
               value={form.mission_planning_desc}
@@ -116,7 +119,7 @@ export default function MissionPlanningLogbookAddNew({
             />
           </div>
           <div className="md:col-span-3 space-y-2">
-            <Label className={labelStyle}>Mission Operation Limits</Label>
+            <Label className={labelStyle}>{t("planning.form.missionOperationLimits")}</Label>
             <Textarea
               name="mission_planning_limit_json"
               rows={4}
@@ -129,7 +132,7 @@ export default function MissionPlanningLogbookAddNew({
 
         <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
           <div className="md:col-span-1 space-y-2">
-            <Label className={labelStyle}>Active</Label>
+            <Label className={labelStyle}>{t("planning.form.active")}</Label>
             <Select
               value={form.mission_planning_active}
               onValueChange={(val) => handleSelectChange("mission_planning_active", val)}
@@ -138,13 +141,13 @@ export default function MissionPlanningLogbookAddNew({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className={isDark ? "bg-slate-900 border-slate-800 text-slate-200" : ""}>
-                <SelectItem value="N">No</SelectItem>
-                <SelectItem value="Y">Yes</SelectItem>
+                <SelectItem value="N">{t("planning.form.no")}</SelectItem>
+                <SelectItem value="Y">{t("planning.form.yes")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="md:col-span-2 space-y-2">
-            <Label className={labelStyle}>Version</Label>
+            <Label className={labelStyle}>{t("planning.form.version")}</Label>
             <Input
               name="mission_planning_ver"
               value={form.mission_planning_ver}
@@ -153,18 +156,18 @@ export default function MissionPlanningLogbookAddNew({
             />
           </div>
           <div className="md:col-span-3 space-y-2">
-            <Label className={labelStyle}>Drone</Label>
+            <Label className={labelStyle}>{t("planning.form.drone")}</Label>
             <Select
               value={form.mission_planning_tool}
               onValueChange={(val) => handleSelectChange("mission_planning_tool", val)}
             >
               <SelectTrigger className={inputStyle}>
-                <SelectValue placeholder="Select a drone" />
+                <SelectValue placeholder={t("planning.form.selectDrone")} />
               </SelectTrigger>
 
               <SelectContent className={isDark ? "bg-slate-900 border-slate-800 text-slate-200" : ""}>
                 <SelectItem value="0" className="text-muted-foreground opacity-70">
-                  Select a drone
+                  {t("planning.form.selectDrone")}
                 </SelectItem>
 
                 {droneTools.map((tool) => (
@@ -182,7 +185,7 @@ export default function MissionPlanningLogbookAddNew({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
           <div className="space-y-2">
-            <Label className={labelStyle}>Upload Mission Planning File</Label>
+            <Label className={labelStyle}>{t("planning.form.uploadFile")}</Label>
             <Input
               type="file"
               ref={fileInputRef}
@@ -196,7 +199,7 @@ export default function MissionPlanningLogbookAddNew({
               disabled={submitting}
               className="w-full md:w-auto bg-violet-600 hover:bg-violet-700 text-white transition-all px-8"
             >
-              {submitting ? "Adding..." : "Add New Mission Planning"}
+              {submitting ? t("planning.actions.adding") : t("planning.missionPlanning.addNewEntry")}
             </Button>
           </div>
         </div>

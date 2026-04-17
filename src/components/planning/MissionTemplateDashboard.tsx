@@ -36,6 +36,7 @@ import {
 import axios from 'axios';
 import { FileText, Loader2, Search } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 interface FilterOption {
@@ -59,6 +60,7 @@ interface MissionTemplateDashboardProps {
 const MissionTemplateDashboard: React.FC<MissionTemplateDashboardProps> = ({
     isDark = false,
 }) => {
+    const { t } = useTranslation();
     const [loading, setLoading] = useState(true);
     const [data, setData] = useState<MissionTemplateRow[]>([]);
     const [sorting, setSorting] = useState<SortingState>([]);
@@ -108,14 +110,14 @@ const MissionTemplateDashboard: React.FC<MissionTemplateDashboardProps> = ({
             if (res.data.code === 1) {
                 setData(res.data.data ?? []);
             } else {
-                toast.error(res.data.message || 'Failed to fetch logbook');
+                toast.error(res.data.message || t('planning.missionTemplate.fetchError'));
             }
         } catch {
-            toast.error('Error fetching mission templates');
+            toast.error(t('planning.missionTemplate.loadError'));
         } finally {
             setLoading(false);
         }
-    }, [filters]);
+    }, [filters, t]);
 
     useEffect(() => {
         fetchFilterOptions();
@@ -126,7 +128,7 @@ const MissionTemplateDashboard: React.FC<MissionTemplateDashboardProps> = ({
         fetchLogbook();
     };
 
-    const columns = useMemo(() => getMissionTemplateColumns({ isDark }), [isDark]);
+    const columns = useMemo(() => getMissionTemplateColumns({ isDark, t }), [isDark, t]);
 
     const table = useReactTable({
         data,
@@ -138,8 +140,6 @@ const MissionTemplateDashboard: React.FC<MissionTemplateDashboardProps> = ({
         getSortedRowModel: getSortedRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
     });
-
-
 
     return (
         <div className={`min-h-screen  ${isDark ? 'bg-slate-950' : 'bg-slate-50'}`}>
@@ -154,10 +154,10 @@ const MissionTemplateDashboard: React.FC<MissionTemplateDashboardProps> = ({
                         <div className="w-1 h-6 rounded-full bg-violet-600" />
                         <div>
                             <h1 className={`font-semibold text-base tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                                Mission Template Logbook
+                                {t('planning.missionTemplate.title')}
                             </h1>
                             <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                                Planning logbook entries with download access
+                                {t('planning.missionTemplate.subtitle')}
                             </p>
                         </div>
                     </div>
@@ -171,7 +171,7 @@ const MissionTemplateDashboard: React.FC<MissionTemplateDashboardProps> = ({
                         <div className="space-y-4">
                             <div className="space-y-2">
                                 <div className="flex items-center gap-2">
-                                    <Label className={isDark ? 'text-slate-300' : ''}>Client</Label>
+                                    <Label className={isDark ? 'text-slate-300' : ''}>{t('planning.form.client')}</Label>
                                     <span className={`px-1.5 py-0.5 text-[10px] rounded-full ${isDark ? 'bg-slate-800 text-slate-500' : 'bg-slate-100 text-slate-500'}`}>
                                         {clients.length}
                                     </span>
@@ -181,10 +181,10 @@ const MissionTemplateDashboard: React.FC<MissionTemplateDashboardProps> = ({
                                     onValueChange={(v) => setFilters(p => ({ ...p, clientId: Number(v) }))}
                                 >
                                     <SelectTrigger className={isDark ? 'bg-slate-800 border-slate-700 text-slate-200' : ''}>
-                                        <SelectValue placeholder="All Clients" />
+                                        <SelectValue placeholder={t('planning.missionTemplate.allClients')} />
                                     </SelectTrigger>
                                     <SelectContent className={isDark ? 'bg-slate-800 border-slate-700' : ''}>
-                                        <SelectItem value="0" className={isDark ? 'text-slate-200 focus:bg-slate-700' : ''}>All Clients</SelectItem>
+                                        <SelectItem value="0" className={isDark ? 'text-slate-200 focus:bg-slate-700' : ''}>{t('planning.missionTemplate.allClients')}</SelectItem>
                                         {clients.map((c) => (
                                             <SelectItem key={c.id} value={String(c.id)} className={isDark ? 'text-slate-200 focus:bg-slate-700' : ''}>{c.name}</SelectItem>
                                         ))}
@@ -194,7 +194,7 @@ const MissionTemplateDashboard: React.FC<MissionTemplateDashboardProps> = ({
 
                             <div className="space-y-2">
                                 <div className="flex items-center gap-2">
-                                    <Label className={isDark ? 'text-slate-300' : ''}>PIC</Label>
+                                    <Label className={isDark ? 'text-slate-300' : ''}>{t('planning.missionTemplate.pic')}</Label>
                                     <span className={`px-1.5 py-0.5 text-[10px] rounded-full ${isDark ? 'bg-slate-800 text-slate-500' : 'bg-slate-100 text-slate-500'}`}>
                                         {pilots.length}
                                     </span>
@@ -204,10 +204,10 @@ const MissionTemplateDashboard: React.FC<MissionTemplateDashboardProps> = ({
                                     onValueChange={(v) => setFilters(p => ({ ...p, pilotId: Number(v) }))}
                                 >
                                     <SelectTrigger className={isDark ? 'bg-slate-800 border-slate-700 text-slate-200' : ''}>
-                                        <SelectValue placeholder="All Pilots" />
+                                        <SelectValue placeholder={t('planning.missionTemplate.allPilots')} />
                                     </SelectTrigger>
                                     <SelectContent className={isDark ? 'bg-slate-800 border-slate-700' : ''}>
-                                        <SelectItem value="0" className={isDark ? 'text-slate-200 focus:bg-slate-700' : ''}>All Pilots</SelectItem>
+                                        <SelectItem value="0" className={isDark ? 'text-slate-200 focus:bg-slate-700' : ''}>{t('planning.missionTemplate.allPilots')}</SelectItem>
                                         {pilots.map((p) => (
                                             <SelectItem key={p.id} value={String(p.id)} className={isDark ? 'text-slate-200 focus:bg-slate-700' : ''}>{p.name}</SelectItem>
                                         ))}
@@ -219,7 +219,7 @@ const MissionTemplateDashboard: React.FC<MissionTemplateDashboardProps> = ({
                         <div className="space-y-4">
                             <div className="space-y-2">
                                 <div className="flex items-center gap-2">
-                                    <Label className={isDark ? 'text-slate-300' : ''}>Evaluation</Label>
+                                    <Label className={isDark ? 'text-slate-300' : ''}>{t('planning.evaluation.evaluation')}</Label>
                                     <span className={`px-1.5 py-0.5 text-[10px] rounded-full ${isDark ? 'bg-slate-800 text-slate-500' : 'bg-slate-100 text-slate-500'}`}>
                                         {evaluations.length}
                                     </span>
@@ -229,10 +229,10 @@ const MissionTemplateDashboard: React.FC<MissionTemplateDashboardProps> = ({
                                     onValueChange={(v) => setFilters(p => ({ ...p, evaluationId: Number(v) }))}
                                 >
                                     <SelectTrigger className={isDark ? 'bg-slate-800 border-slate-700 text-slate-200' : ''}>
-                                        <SelectValue placeholder="All Evaluations" />
+                                        <SelectValue placeholder={t('planning.missionTemplate.allEvaluations')} />
                                     </SelectTrigger>
                                     <SelectContent className={isDark ? 'bg-slate-800 border-slate-700' : ''}>
-                                        <SelectItem value="0" className={isDark ? 'text-slate-200 focus:bg-slate-700' : ''}>All Evaluations</SelectItem>
+                                        <SelectItem value="0" className={isDark ? 'text-slate-200 focus:bg-slate-700' : ''}>{t('planning.missionTemplate.allEvaluations')}</SelectItem>
                                         {evaluations.map((ev) => (
                                             <SelectItem key={ev.id} value={String(ev.id)} className={isDark ? 'text-slate-200 focus:bg-slate-700' : ''}>{ev.name}</SelectItem>
                                         ))}
@@ -241,7 +241,7 @@ const MissionTemplateDashboard: React.FC<MissionTemplateDashboardProps> = ({
                             </div>
 
                             <div className="space-y-2">
-                                <Label className={isDark ? 'text-slate-300' : ''}>Date Range</Label>
+                                <Label className={isDark ? 'text-slate-300' : ''}>{t('planning.missionTemplate.dateRange')}</Label>
                                 <div className="flex items-center gap-2">
                                     <Input
                                         type="date"
@@ -249,7 +249,7 @@ const MissionTemplateDashboard: React.FC<MissionTemplateDashboardProps> = ({
                                         onChange={(e) => setFilters(p => ({ ...p, dateStart: e.target.value }))}
                                         className={`flex-1 ${isDark ? 'bg-slate-800 border-slate-700 text-slate-200' : ''}`}
                                     />
-                                    <span className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>to</span>
+                                    <span className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t('planning.missionTemplate.to')}</span>
                                     <Input
                                         type="date"
                                         value={filters.dateEnd}
@@ -263,7 +263,7 @@ const MissionTemplateDashboard: React.FC<MissionTemplateDashboardProps> = ({
                         <div className="space-y-4">
                             <div className="space-y-2">
                                 <div className="flex items-center gap-2">
-                                    <Label className={isDark ? 'text-slate-300' : ''}>Planning</Label>
+                                    <Label className={isDark ? 'text-slate-300' : ''}>{t('planning.evaluation.linkedFlightRequests')}</Label>
                                     <span className={`px-1.5 py-0.5 text-[10px] rounded-full ${isDark ? 'bg-slate-800 text-slate-500' : 'bg-slate-100 text-slate-500'}`}>
                                         {plannings.length}
                                     </span>
@@ -273,10 +273,10 @@ const MissionTemplateDashboard: React.FC<MissionTemplateDashboardProps> = ({
                                     onValueChange={(v) => setFilters(p => ({ ...p, planningId: Number(v) }))}
                                 >
                                     <SelectTrigger className={isDark ? 'bg-slate-800 border-slate-700 text-slate-200' : ''}>
-                                        <SelectValue placeholder="All Plannings" />
+                                        <SelectValue placeholder={t('planning.missionTemplate.allPlannings')} />
                                     </SelectTrigger>
                                     <SelectContent className={isDark ? 'bg-slate-800 border-slate-700' : ''}>
-                                        <SelectItem value="0" className={isDark ? 'text-slate-200 focus:bg-slate-700' : ''}>All Plannings</SelectItem>
+                                        <SelectItem value="0" className={isDark ? 'text-slate-200 focus:bg-slate-700' : ''}>{t('planning.missionTemplate.allPlannings')}</SelectItem>
                                         {plannings.map((pl) => (
                                             <SelectItem key={pl.id} value={String(pl.id)} className={isDark ? 'text-slate-200 focus:bg-slate-700' : ''}>{pl.name}</SelectItem>
                                         ))}
@@ -292,7 +292,7 @@ const MissionTemplateDashboard: React.FC<MissionTemplateDashboardProps> = ({
                                     className="w-full h-10 gap-2 bg-violet-600 hover:bg-violet-700 text-white"
                                 >
                                     {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                                    Search Logbook
+                                    {t('planning.missionTemplate.filterLogbook')}
                                 </Button>
                             </div>
                         </div>
@@ -312,7 +312,7 @@ const MissionTemplateDashboard: React.FC<MissionTemplateDashboardProps> = ({
                                 className={`text-sm font-semibold ${isDark ? 'text-slate-200' : 'text-slate-700'
                                     }`}
                             >
-                                Logbook Entries
+                                {t('planning.missionTemplate.logbookEntries')}
                             </span>
                         </div>
                         <div className="relative w-56">
@@ -320,7 +320,7 @@ const MissionTemplateDashboard: React.FC<MissionTemplateDashboardProps> = ({
                             <Input
                                 className={`pl-8 h-8 text-xs ${isDark ? 'bg-slate-950 border-slate-800 text-slate-200' : ''
                                     }`}
-                                placeholder="Filter table..."
+                                placeholder={t('planning.missionTemplate.filterTable')}
                                 value={globalFilter ?? ''}
                                 onChange={(e) => setGlobalFilter(e.target.value)}
                             />
@@ -380,7 +380,7 @@ const MissionTemplateDashboard: React.FC<MissionTemplateDashboardProps> = ({
                                             className={`text-center text-xs py-10 ${isDark ? 'text-slate-500' : 'text-slate-400'
                                                 }`}
                                         >
-                                            No logbook entries found.
+                                            {t('planning.missionTemplate.noEntries')}
                                         </TableCell>
                                     </TableRow>
                                 ) : (
@@ -389,7 +389,7 @@ const MissionTemplateDashboard: React.FC<MissionTemplateDashboardProps> = ({
                                             key={row.id}
                                             className={
                                                 isDark
-                                                    ? 'border-slate-800 hover:bg-slate-800/50'
+                                                    ? 'border-slate-800 hover:bg-slate-800/40'
                                                     : 'hover:bg-slate-50/50'
                                             }
                                         >

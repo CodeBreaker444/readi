@@ -1,6 +1,7 @@
 'use client';
 import { cn } from '@/lib/utils';
 import React, { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface IndicatorTrendChartProps {
   indicatorName: string;
@@ -13,6 +14,7 @@ interface IndicatorTrendChartProps {
 const IndicatorTrendChart: React.FC<IndicatorTrendChartProps> = ({
   indicatorName, labels, values, target, isDark = false,
 }) => {
+  const { t } = useTranslation();
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstance = useRef<any>(null);
 
@@ -22,7 +24,7 @@ const IndicatorTrendChart: React.FC<IndicatorTrendChartProps> = ({
   const deltaSign = delta >= 0 ? '+' : '';
   const targetPct = target > 0 ? Math.min(100, Math.round((latest / target) * 100)) : 0;
   const statusColor = targetPct >= 90 ? '#10b981' : targetPct >= 60 ? '#f59e0b' : '#ef4444';
-  const statusLabel = targetPct >= 90 ? 'On Target' : targetPct >= 60 ? 'Marginal' : 'Below Target';
+  const statusLabel = targetPct >= 90 ? t('shi.indicatorTrend.status.onTarget') : targetPct >= 60 ? t('shi.indicatorTrend.status.marginal') : t('shi.indicatorTrend.status.belowTarget');
   const statusBadge = targetPct >= 90
     ? isDark ? 'bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/25' : 'bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200'
     : targetPct >= 60
@@ -50,7 +52,7 @@ const IndicatorTrendChart: React.FC<IndicatorTrendChartProps> = ({
         },
         series: [
           { name: indicatorName, data: values },
-          { name: 'Target', data: Array(values.length).fill(targetVal), type: 'line' },
+          { name: t('shi.indicatorTrend.targetSeriesName'), data: Array(values.length).fill(targetVal), type: 'line' },
         ],
         xaxis: {
           categories: labels,
@@ -125,7 +127,7 @@ const IndicatorTrendChart: React.FC<IndicatorTrendChartProps> = ({
       <div className={cn('px-5 py-4 border-b flex items-start justify-between gap-4', isDark ? 'border-slate-700/60' : 'border-gray-100')}>
         <div className="min-w-0">
           <p className={cn('text-xs font-semibold uppercase tracking-widest mb-0.5', isDark ? 'text-slate-500' : 'text-gray-400')}>
-            Indicator Trend
+            {t('shi.indicatorTrend.title')}
           </p>
           <h2 className={cn('text-sm font-semibold truncate', isDark ? 'text-white' : 'text-gray-800')}>
             {indicatorName}
@@ -139,9 +141,9 @@ const IndicatorTrendChart: React.FC<IndicatorTrendChartProps> = ({
       {/* KPI row */}
       <div className={cn('grid grid-cols-3 divide-x', isDark ? 'divide-slate-700/60' : 'divide-gray-100')}>
         {[
-          { label: 'Latest', value: latest.toFixed(2) },
-          { label: 'Target', value: target.toFixed(2) },
-          { label: 'vs Prev', value: `${deltaSign}${delta.toFixed(2)}`, color: delta >= 0 ? (isDark ? 'text-emerald-400' : 'text-emerald-600') : (isDark ? 'text-red-400' : 'text-red-500') },
+          { label: t('shi.indicatorTrend.kpi.latest'), value: latest.toFixed(2) },
+          { label: t('shi.indicatorTrend.targetSeriesName'), value: target.toFixed(2) },
+          { label: t('shi.indicatorTrend.kpi.vsPrev'), value: `${deltaSign}${delta.toFixed(2)}`, color: delta >= 0 ? (isDark ? 'text-emerald-400' : 'text-emerald-600') : (isDark ? 'text-red-400' : 'text-red-500') },
         ].map(({ label, value, color }) => (
           <div key={label} className="px-5 py-3 flex flex-col gap-0.5">
             <span className={cn('text-[10px] font-semibold uppercase tracking-widest', isDark ? 'text-slate-500' : 'text-gray-400')}>{label}</span>
@@ -154,7 +156,7 @@ const IndicatorTrendChart: React.FC<IndicatorTrendChartProps> = ({
       <div className={cn('px-5 py-3 border-t', isDark ? 'border-slate-700/60' : 'border-gray-100')}>
         <div className="flex items-center justify-between mb-1.5">
           <span className={cn('text-[10px] font-semibold uppercase tracking-wider', isDark ? 'text-slate-500' : 'text-gray-400')}>
-            Target progress
+            {t('shi.indicatorTrend.progress')}
           </span>
           <span className="text-[11px] font-bold tabular-nums" style={{ color: statusColor }}>{targetPct}%</span>
         </div>
@@ -175,7 +177,7 @@ const IndicatorTrendChart: React.FC<IndicatorTrendChartProps> = ({
           </div>
           <div className="flex items-center gap-1.5">
             <span className={cn('h-[2px] w-4 inline-block border-t-2 border-dashed', isDark ? 'border-slate-600' : 'border-slate-300')} />
-            <span className={cn('text-[10px]', isDark ? 'text-slate-400' : 'text-gray-500')}>Target</span>
+            <span className={cn('text-[10px]', isDark ? 'text-slate-400' : 'text-gray-500')}>{t('shi.indicatorTrend.targetSeriesName')}</span>
           </div>
         </div>
         <div ref={chartRef} />

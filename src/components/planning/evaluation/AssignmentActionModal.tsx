@@ -3,6 +3,7 @@
 import axios from 'axios';
 import { Loader2, Send } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -49,6 +50,7 @@ export function AssignmentActionModal({
     onClose,
     onSent,
 }: Props) {
+    const { t } = useTranslation();
     const [users, setUsers] = useState<OrgUser[]>([]);
     const [toUserId, setToUserId] = useState('');
     const [message, setMessage] = useState('');
@@ -73,7 +75,7 @@ export function AssignmentActionModal({
             const res = await axios.post('/api/evaluation/mission/users', { owner_id: ownerId });
             setUsers(res.data.data ?? []);
         } catch {
-            toast.error('Failed to load users');
+            toast.error(t('planning.assignment.loadError'));
         } finally {
             setLoadingUsers(false);
         }

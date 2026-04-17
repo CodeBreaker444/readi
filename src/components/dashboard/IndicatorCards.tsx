@@ -1,6 +1,7 @@
 'use client';
 import { cn } from '@/lib/utils';
 import React, { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface Indicator {
   indicator_name: string;
@@ -15,29 +16,30 @@ interface IndicatorCardsProps {
   isDark?: boolean;
 }
 
-const getStatusConfig = (status: 'GREEN' | 'YELLOW' | 'RED', isDark: boolean) => {
+const getStatusConfig = (status: 'GREEN' | 'YELLOW' | 'RED', isDark: boolean, t: any) => {
   if (status === 'GREEN') return {
     dot:   'bg-emerald-500',
     bar:   'bg-emerald-500',
     badge: isDark ? 'bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/25' : 'bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200',
-    label: 'Good',
+    label: t('shi.indicatorCards.status.good'),
   };
   if (status === 'YELLOW') return {
     dot:   'bg-yellow-500',
     bar:   'bg-yellow-500',
     badge: isDark ? 'bg-yellow-500/10 text-yellow-400 ring-1 ring-yellow-500/25' : 'bg-yellow-50 text-yellow-600 ring-1 ring-yellow-200',
-    label: 'Marginal',
+    label: t('shi.indicatorCards.status.marginal'),
   };
   return {
     dot:   'bg-red-500',
     bar:   'bg-red-500',
     badge: isDark ? 'bg-red-500/10 text-red-400 ring-1 ring-red-500/25' : 'bg-red-50 text-red-600 ring-1 ring-red-200',
-    label: 'Alert',
+    label: t('shi.indicatorCards.status.alert'),
   };
 };
 
 const IndicatorCards: React.FC<IndicatorCardsProps> = ({ dataByArea, isDark = false }) => {
   const gaugeRefs = useRef<Map<string, any>>(new Map());
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -109,7 +111,7 @@ const IndicatorCards: React.FC<IndicatorCardsProps> = ({ dataByArea, isDark = fa
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {indicators.map((ind, i) => {
               const id  = `gauge_${area}_${i}`;
-              const cfg = getStatusConfig(ind.status, isDark);
+              const cfg = getStatusConfig(ind.status, isDark, t);
               const pct = ind.target > 0 ? Math.min(100, Math.round((ind.value / ind.target) * 100)) : 0;
 
               return (
@@ -140,13 +142,13 @@ const IndicatorCards: React.FC<IndicatorCardsProps> = ({ dataByArea, isDark = fa
                     {/* Values row */}
                     <div className={cn('grid grid-cols-2 divide-x rounded-lg overflow-hidden', isDark ? 'divide-slate-700 bg-slate-700/30' : 'divide-gray-100 bg-gray-50')}>
                       <div className="px-3 py-2 flex flex-col gap-0.5">
-                        <span className={cn('text-[9px] font-bold uppercase tracking-widest', isDark ? 'text-slate-500' : 'text-gray-400')}>Value</span>
+                        <span className={cn('text-[9px] font-bold uppercase tracking-widest', isDark ? 'text-slate-500' : 'text-gray-400')}>{t('shi.indicatorCards.value')}</span>
                         <span className={cn('text-sm font-bold tabular-nums', isDark ? 'text-white' : 'text-gray-900')}>
                           {ind.value}{ind.unit || ''}
                         </span>
                       </div>
                       <div className="px-3 py-2 flex flex-col gap-0.5">
-                        <span className={cn('text-[9px] font-bold uppercase tracking-widest', isDark ? 'text-slate-500' : 'text-gray-400')}>Target</span>
+                        <span className={cn('text-[9px] font-bold uppercase tracking-widest', isDark ? 'text-slate-500' : 'text-gray-400')}>{t('shi.indicatorCards.target')}</span>
                         <span className={cn('text-sm font-bold tabular-nums', isDark ? 'text-slate-300' : 'text-gray-600')}>
                           {ind.target}{ind.unit || ''}
                         </span>
@@ -156,7 +158,7 @@ const IndicatorCards: React.FC<IndicatorCardsProps> = ({ dataByArea, isDark = fa
                     {/* Progress bar */}
                     <div>
                       <div className="flex items-center justify-between mb-1">
-                        <span className={cn('text-[10px]', isDark ? 'text-slate-500' : 'text-gray-400')}>Progress</span>
+                        <span className={cn('text-[10px]', isDark ? 'text-slate-500' : 'text-gray-400')}>{t('shi.indicatorCards.progress')}</span>
                         <span className={cn('text-[10px] font-semibold tabular-nums', isDark ? 'text-slate-300' : 'text-gray-600')}>{pct}%</span>
                       </div>
                       <div className={cn('h-1.5 w-full rounded-full overflow-hidden', isDark ? 'bg-slate-700' : 'bg-gray-100')}>

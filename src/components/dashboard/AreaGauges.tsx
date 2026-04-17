@@ -1,6 +1,7 @@
 'use client';
 import { cn } from '@/lib/utils';
 import React, { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface AreaGaugesProps {
   dataByArea: Record<string, any[]>;
@@ -15,6 +16,7 @@ const computeAreaIndex = (indicators: any[]) => {
 };
 
 const AreaGauges: React.FC<AreaGaugesProps> = ({ dataByArea, isDark = false }) => {
+  const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const gaugeRefs    = useRef<Map<string, any>>(new Map());
 
@@ -69,15 +71,15 @@ const AreaGauges: React.FC<AreaGaugesProps> = ({ dataByArea, isDark = false }) =
       {/* Header */}
       <div className={cn('px-5 py-4 border-b flex items-center justify-between', isDark ? 'border-slate-700/60' : 'border-gray-100')}>
         <div>
-          <p className={cn('text-xs font-semibold uppercase tracking-widest mb-0.5', isDark ? 'text-slate-500' : 'text-gray-400')}>Breakdown</p>
-          <h2 className={cn('text-sm font-semibold', isDark ? 'text-white' : 'text-gray-800')}>Safety Score by Area</h2>
+          <p className={cn('text-xs font-semibold uppercase tracking-widest mb-0.5', isDark ? 'text-slate-500' : 'text-gray-400')}>{t('shi.areaGauges.breakdown')}</p>
+          <h2 className={cn('text-sm font-semibold', isDark ? 'text-white' : 'text-gray-800')}>{t('shi.areaGauges.title')}</h2>
         </div>
         {/* Zone legend */}
         <div className="hidden sm:flex items-center gap-4">
           {[
-            { color: 'bg-emerald-500', label: '≥85%' },
-            { color: 'bg-yellow-500',  label: '70–84%' },
-            { color: 'bg-red-500',     label: '<70%' },
+            { color: 'bg-emerald-500', label: t('shi.areaGauges.legend.good') },
+            { color: 'bg-yellow-500',  label: t('shi.areaGauges.legend.mid') },
+            { color: 'bg-red-500',     label: t('shi.areaGauges.legend.bad') },
           ].map(({ color, label }) => (
             <div key={label} className="flex items-center gap-1.5">
               <span className={cn('h-2 w-2 rounded-sm shrink-0', color)} />
@@ -118,7 +120,12 @@ const AreaGauges: React.FC<AreaGaugesProps> = ({ dataByArea, isDark = false }) =
 
               {/* Indicator count */}
               <span className={cn('text-[10px]', isDark ? 'text-slate-500' : 'text-gray-400')}>
-                {indicators.length} indicator{indicators.length !== 1 ? 's' : ''}
+                {t(
+                  indicators.length === 1
+                    ? 'shi.areaGauges.indicatorCount.singular'
+                    : 'shi.areaGauges.indicatorCount.plural',
+                  { count: indicators.length },
+                )}
               </span>
             </div>
           );

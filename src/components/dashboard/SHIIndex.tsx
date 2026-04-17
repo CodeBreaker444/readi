@@ -2,6 +2,7 @@
 import { SessionUser } from '@/lib/auth/server-session';
 import { cn } from '@/lib/utils';
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../useTheme';
 import AreaGauges from './AreaGauges';
 import IndicatorCards from './IndicatorCards';
@@ -15,6 +16,7 @@ interface shiIndexProps { user: SessionUser }
 
 const SHIIndex: React.FC<shiIndexProps> = (user) => {
   const { isDark } = useTheme();
+  const { t } = useTranslation();
   const [shiData, setSHIData] = useState<SHIData | null>(null);
   const [shiTrend, setSHITrend] = useState<TrendData | null>(null);
   const [selectedIndicator, setSelectedIndicator] = useState<string>('');
@@ -92,16 +94,16 @@ const SHIIndex: React.FC<shiIndexProps> = (user) => {
             <div className="w-1 h-6 rounded-full bg-violet-600" />
             <div>
               <p className={`font-semibold text-base tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>
-                Safety Management
+                {t('shi.safetyManagement')}
               </p>
               <h1 className={`text-xs ${isDark ? "text-slate-500" : "text-slate-400"}`}>
-                Safety Health Index
+                {t('shi.indexTitle')}
               </h1>
             </div>
           </div>
           <div className={cn('hidden sm:flex items-center gap-2 text-xs px-3 py-1.5 rounded-full border', isDark ? 'border-slate-700 text-slate-400' : 'border-gray-200 text-gray-500')}>
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
-            EASA Model
+            {t('shi.easaModel')}
           </div>
         </div>
       </div>
@@ -128,8 +130,8 @@ const SHIIndex: React.FC<shiIndexProps> = (user) => {
         <div className={cn(card)}>
           <div className={cn(cardHeader, 'flex items-start justify-between gap-4')}>
             <div>
-              <p className={eyebrow}>Trend Analysis</p>
-              <h2 className={cardTitle}>Indicator Trend</h2>
+              <p className={eyebrow}>{t('shi.trendAnalysis')}</p>
+              <h2 className={cardTitle}>{t('shi.indicatorTrend.title')}</h2>
             </div>
             <select
               value={selectedIndicator}
@@ -152,7 +154,7 @@ const SHIIndex: React.FC<shiIndexProps> = (user) => {
               />
             ) : (
               <div className={cn('flex items-center justify-center h-40 text-xs', isDark ? 'text-slate-500' : 'text-gray-400')}>
-                Select an indicator to view trend
+                {t('shi.indicatorTrend.selectIndicatorToView')}
               </div>
             )}
           </div>

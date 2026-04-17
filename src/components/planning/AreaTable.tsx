@@ -1,6 +1,7 @@
 'use client';
 import { Pencil, Trash2 } from 'lucide-react';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface DrawnArea {
   id: string;
@@ -18,6 +19,8 @@ interface AreaTableProps {
 }
 
 const AreaTable: React.FC<AreaTableProps> = ({ areas, onEdit, onDelete, isDark = false }) => {
+  const { t } = useTranslation();
+
   const formatArea = (area: number): string => {
     if (area < 10000) return `${area.toFixed(2)} m²`;
     return `${(area / 1_000_000).toFixed(2)} km²`;
@@ -39,10 +42,10 @@ const AreaTable: React.FC<AreaTableProps> = ({ areas, onEdit, onDelete, isDark =
       <table className="w-full border-collapse">
         <thead>
           <tr>
-            <th className={thClass}>Flight Area</th>
-            <th className={thClass}>Measure</th>
-            <th className={thClass}>Center Lat / Lon</th>
-            <th className={thClass}>Actions</th>
+            <th className={thClass}>{t('planning.map.flightArea')}</th>
+            <th className={thClass}>{t('planning.map.measure')}</th>
+            <th className={thClass}>{t('planning.map.centerLatLon')}</th>
+            <th className={thClass}>{t('planning.table.actions')}</th>
           </tr>
         </thead>
         <tbody>
@@ -58,7 +61,7 @@ const AreaTable: React.FC<AreaTableProps> = ({ areas, onEdit, onDelete, isDark =
                   <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 20l-5.447-2.724A2 2 0 013 15.382V5.618a2 2 0 012.553-1.894L9 5m0 15l6-3m-6 3V5m6 15l4.447 2.224A2 2 0 0021 18.382V8.618a2 2 0 00-2.553-1.894L15 8m0 12V8m0 0L9 5" />
                   </svg>
-                  <span>No areas drawn yet</span>
+                  <span>{t('planning.map.noAreaDrawn')}</span>
                 </div>
               </td>
             </tr>
@@ -89,10 +92,10 @@ const AreaTable: React.FC<AreaTableProps> = ({ areas, onEdit, onDelete, isDark =
                             ? 'bg-amber-500/15 text-amber-400 hover:bg-amber-500/25'
                             : 'bg-amber-50 text-amber-700 hover:bg-amber-100'
                         }`}
-                        title="Edit"
+                        title={t('planning.actions.edit')}
                       >
                         <Pencil size={12} />
-                        Edit
+                        {t('planning.actions.edit')}
                       </button>
                     )}
                     {onDelete && (
@@ -103,10 +106,10 @@ const AreaTable: React.FC<AreaTableProps> = ({ areas, onEdit, onDelete, isDark =
                             ? 'bg-red-500/15 text-red-400 hover:bg-red-500/25'
                             : 'bg-red-50 text-red-700 hover:bg-red-100'
                         }`}
-                        title="Delete"
+                        title={t('planning.actions.delete')}
                       >
                         <Trash2 size={12} />
-                        Delete
+                        {t('planning.actions.delete')}
                       </button>
                     )}
                   </div>

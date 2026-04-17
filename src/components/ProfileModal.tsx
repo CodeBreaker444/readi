@@ -3,6 +3,7 @@ import { SessionUser } from '@/lib/auth/server-session';
 import axios from 'axios';
 import { Award, Camera, Loader2, User } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { Badge } from '@/components/ui/badge';
@@ -57,6 +58,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   isDark,
   userData,
 }) => {
+  const { t } = useTranslation();
   const canEditEmail =
     userData?.role === 'ADMIN' || userData?.role === 'SUPERADMIN';
 
@@ -127,7 +129,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
-      toast.error('Failed to load profile data');
+      toast.error(t('profile.errors.load'));
     } finally {
       setLoading(false);
     }
@@ -154,7 +156,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
       const file = e.target.files[0];
 
       if (file.size > 10 * 1024 * 1024) {
-        toast.error('Avatar must be under 10MB');
+        toast.error(t('profile.errors.avatarSize'));
         return;
       }
       if (
@@ -162,7 +164,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           file.type
         )
       ) {
-        toast.error('Avatar must be JPEG, PNG, WebP, or GIF');
+        toast.error(t('profile.errors.avatarFormat'));
         return;
       }
 
@@ -194,7 +196,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
       const result = response.data;
 
       if (result.updateResult) {
-        toast.success('Profile updated successfully');
+        toast.success(t('profile.success.updated'));
         if (result.avatarUrl) {
           setCurrentAvatarUrl(result.avatarUrl);
           setAvatarPreview(null);
@@ -203,11 +205,11 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
         onClose();
         window.location.reload();
       } else {
-        toast.error(result.message || 'Failed to update profile');
+        toast.error(result.message || t('profile.errors.update'));
       }
     } catch (error) {
       console.error('Error updating profile:', error);
-      toast.error('Error updating profile');
+      toast.error(t('profile.errors.update'));
     } finally {
       setSaving(false);
     }
@@ -227,8 +229,8 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
       <DialogContent className="w-[95vw] max-w-6xl lg:max-w-5xl max-h-[90vh] overflow-y-auto p-0 gap-0">
         <DialogHeader className="px-4 sm:px-6 py-4 sm:py-5 border-b">
           <DialogTitle className="text-base sm:text-lg font-semibold truncate">
-            User Profile:{' '}
-            {userData?.fullname || userData?.username || 'Unknown User'}
+            {t('profile.title')}:{' '}
+            {userData?.fullname || userData?.username || t('profile.unknownUser')}
           </DialogTitle>
         </DialogHeader>
 
@@ -242,7 +244,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                       {displayAvatar ? (
                         <img
                           src={displayAvatar}
-                          alt="Profile"
+                          alt={t('profile.avatarAlt')}
                           className="w-full h-full object-cover"
                           onError={(e) => {
                             (e.target as HTMLImageElement).style.display =
@@ -276,7 +278,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                   </div>
                   <div className="text-left md:text-center min-w-0">
                     <p className="text-sm font-medium truncate">
-                      {formData.fullName || 'User'}
+                      {formData.fullName || t('profile.userFallback')}
                     </p>
                     <p className="text-xs text-muted-foreground truncate">
                       {formData.email}
@@ -294,25 +296,25 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
                 <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-5 gap-y-4">
                   <div className="space-y-1.5">
-                    <Label htmlFor="fullName">Full Name</Label>
+                    <Label htmlFor="fullName">{t('profile.fields.fullName')}</Label>
                     <Input
                       id="fullName"
                       name="fullName"
                       value={formData.fullName}
                       onChange={handleInputChange}
-                      placeholder="Enter full name"
+                      placeholder={t('profile.placeholders.fullName')}
                     />
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="email">{t('profile.fields.email')}</Label>
                     <Input
                       id="email"
                       name="email"
                       type="email"
                       value={formData.email}
                       onChange={handleInputChange}
-                      placeholder="Enter email address"
+                      placeholder={t('profile.placeholders.email')}
                       disabled={!canEditEmail}
                       readOnly={!canEditEmail}
                       className={!canEditEmail ? 'opacity-60 cursor-not-allowed' : ''}
@@ -320,25 +322,25 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label htmlFor="phone">Phone</Label>
+                    <Label htmlFor="phone">{t('profile.fields.phone')}</Label>
                     <Input
                       id="phone"
                       name="phone"
                       type="tel"
                       value={formData.phone}
                       onChange={handleInputChange}
-                      placeholder="Enter phone number"
+                      placeholder={t('profile.placeholders.phone')}
                     />
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label htmlFor="timezone">Timezone</Label>
+                    <Label htmlFor="timezone">{t('profile.fields.timezone')}</Label>
                     <Select
                       value={formData.timezone}
                       onValueChange={(val) => handleSelectChange('timezone', val)}
                     >
                       <SelectTrigger id="timezone">
-                        <SelectValue placeholder="Select timezone" />
+                        <SelectValue placeholder={t('profile.placeholders.timezone')} />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="UTC">UTC</SelectItem>
@@ -352,41 +354,41 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label htmlFor="department">Department</Label>
+                    <Label htmlFor="department">{t('profile.fields.department')}</Label>
                     <Input
                       id="department"
                       name="department"
                       value={formData.department}
                       onChange={handleInputChange}
-                      placeholder="Enter department"
+                      placeholder={t('profile.placeholders.department')}
                     />
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label htmlFor="type">Type</Label>
+                    <Label htmlFor="type">{t('profile.fields.type')}</Label>
                     <Select
                       value={formData.type}
                       onValueChange={(val) => handleSelectChange('type', val)}
                     >
                       <SelectTrigger id="type">
-                        <SelectValue placeholder="Select type" />
+                        <SelectValue placeholder={t('profile.placeholders.type')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="admin">Admin</SelectItem>
-                        <SelectItem value="user">User</SelectItem>
-                        <SelectItem value="operator">Operator</SelectItem>
+                        <SelectItem value="admin">{t('profile.types.admin')}</SelectItem>
+                        <SelectItem value="user">{t('profile.types.user')}</SelectItem>
+                        <SelectItem value="operator">{t('profile.types.operator')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
                   <div className="space-y-1.5 sm:col-span-2 lg:col-span-3">
-                    <Label htmlFor="signature">Signature</Label>
+                    <Label htmlFor="signature">{t('profile.fields.signature')}</Label>
                     <Input
                       id="signature"
                       name="signature"
                       value={formData.signature}
                       onChange={handleInputChange}
-                      placeholder="Enter signature"
+                      placeholder={t('profile.placeholders.signature')}
                     />
                   </div>
 
@@ -397,7 +399,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                       className="w-full bg-violet-600 hover:bg-violet-700 cursor-pointer"
                     >
                       {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-                      {saving ? 'Updating...' : 'Update Profile'}
+                      {saving ? t('profile.actions.updating') : t('profile.actions.update')}
                     </Button>
                   </div>
                 </div>
@@ -410,7 +412,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Award className="h-4 w-4 text-primary" />
-                  <CardTitle className="text-base">Qualifications</CardTitle>
+                  <CardTitle className="text-base">{t('profile.qualifications.title')}</CardTitle>
                 </div>
                 <Badge variant="secondary">{qualifications.length}</Badge>
               </div>
@@ -431,7 +433,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
               ) : qualifications.length === 0 ? (
                 <div className="text-center py-10 text-muted-foreground">
                   <Award className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                  <p className="text-sm">No qualifications on record.</p>
+                  <p className="text-sm">{t('profile.qualifications.empty')}</p>
                 </div>
               ) : (
                 <>
@@ -467,7 +469,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                                   : 'shrink-0'
                               }
                             >
-                              {expired ? 'Expired' : q.status}
+                              {expired ? t('profile.qualifications.expired') : q.status}
                             </Badge>
                           </div>
                           <div className="flex flex-wrap items-center gap-2">
@@ -483,7 +485,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                             </Badge>
                             {q.start_date && (
                               <span className="text-xs text-muted-foreground">
-                                From: {formatDate(q.start_date)}
+                                {t('profile.qualifications.from')}: {formatDate(q.start_date)}
                               </span>
                             )}
                             {q.expiry_date && (
@@ -494,7 +496,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                                     : 'text-muted-foreground'
                                 }`}
                               >
-                                Expires: {formatDate(q.expiry_date)}
+                                {t('profile.qualifications.expires')}: {formatDate(q.expiry_date)}
                               </span>
                             )}
                           </div>
@@ -507,11 +509,11 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Qualification</TableHead>
-                          <TableHead>Type</TableHead>
-                          <TableHead>Start Date</TableHead>
-                          <TableHead>Expiry Date</TableHead>
-                          <TableHead className="text-right">Status</TableHead>
+                          <TableHead>{t('profile.qualifications.headers.qualification')}</TableHead>
+                          <TableHead>{t('profile.qualifications.headers.type')}</TableHead>
+                          <TableHead>{t('profile.qualifications.headers.startDate')}</TableHead>
+                          <TableHead>{t('profile.qualifications.headers.expiryDate')}</TableHead>
+                          <TableHead className="text-right">{t('profile.qualifications.headers.status')}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -549,7 +551,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                                 </Badge>
                               </TableCell>
                               <TableCell className="text-sm text-muted-foreground">
-                                {q.start_date ? formatDate(q.start_date) : '—'}
+                                {q.start_date ? formatDate(q.start_date) : t('profile.qualifications.none')}
                               </TableCell>
                               <TableCell
                                 className={`text-sm ${
@@ -560,7 +562,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                               >
                                 {q.expiry_date
                                   ? formatDate(q.expiry_date)
-                                  : '—'}
+                                  : t('profile.qualifications.none')}
                               </TableCell>
                               <TableCell className="text-right">
                                 <Badge
@@ -571,7 +573,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                                       : ''
                                   }
                                 >
-                                  {expired ? 'Expired' : q.status}
+                                  {expired ? t('profile.qualifications.expired') : q.status}
                                 </Badge>
                               </TableCell>
                             </TableRow>
@@ -588,7 +590,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
         <div className="flex justify-end gap-3 px-4 sm:px-6 py-4 border-t">
           <Button variant="outline" onClick={onClose}>
-            Close
+            {t('common.close')}
           </Button>
         </div>
       </DialogContent>
