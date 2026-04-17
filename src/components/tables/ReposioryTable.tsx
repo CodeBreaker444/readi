@@ -13,9 +13,9 @@ import {
 } from '@tanstack/react-table';
 import axios from 'axios';
 import { FilterX, Plus, RotateCcw, Search } from 'lucide-react';
-import { toast } from 'sonner';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import DocumentFormModal from '../document-repository/DocumentModal';
 import HistoryModal from '../document-repository/HistoryModal';
 import ExportButtons from '../system/ExportButtons';
@@ -128,7 +128,6 @@ export default function RepositoryTable() {
         try {
             const { data } = await axios.post('/api/document/presign-download', { rev_id: doc.rev_id });
             if (!data?.url) throw new Error(t('repository.toast.noDownloadUrl'));
-            // S3 URL has Content-Disposition: attachment — navigate directly to trigger download
             window.location.href = data.url;
         } catch (e: any) {
             toast.error(e?.response?.data?.error ?? t('repository.toast.downloadFailed'));

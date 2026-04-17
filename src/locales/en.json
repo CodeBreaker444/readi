@@ -1514,7 +1514,7 @@
       }
     }
   },
-  "repository": {
+ "repository": {
     "title": "Document Repository",
     "subtitle": "Manage and track organizational compliance documents",
     "newDocument": "New Document",
@@ -1542,8 +1542,36 @@
       "validity": "Validity",
       "effectiveDate": "Effective Date",
       "expiryDate": "Expiry Date",
-      "fileName": "File Name",
+      "fileName": "File",
       "actions": "Actions"
+    },
+    "form": {
+      "newTitle": "New Document",
+      "editTitle": "Edit Document",
+      "manage": "Manage",
+      "manageTypes": "Manage document types",
+      "selectType": "Select type...",
+      "confidentiality": "Confidentiality",
+      "ownerRole": "Owner (Role)",
+      "selectRole": "Select role...",
+      "none": "None",
+      "description": "Description",
+      "keywords": "Keywords",
+      "tags": "Tags (JSON)",
+      "newRevision": "New Revision (Optional — uploaded to S3)",
+      "maxSize": "Max size: 25 MB · Formats: PDF, DOCX, XLSX, JPG, PNG, TXT",
+      "changeLog": "Change Log",
+      "changeLogPlaceholder": "What's new in this version",
+      "cancel": "Cancel",
+      "save": "Save",
+      "saving": "Saving...",
+      "errorType": "Please select a document type",
+      "errorTitle": "Document title is required",
+      "errorDates": "Expiry date must be after the effective date",
+      "errorFile": "Please select a file",
+      "errorFileSize": "File is too large. Please choose a file under 25 MB.",
+      "saveSuccess": "Document saved successfully",
+      "saveError": "Failed to save document. Please try again."
     },
     "toast": {
       "deleteSuccess": "Document deleted successfully.",

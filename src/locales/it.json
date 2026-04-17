@@ -1516,22 +1516,22 @@
       }
     }
   },
-  "repository": {
+ "repository": {
     "title": "Archivio Documenti",
-    "subtitle": "Gestisci e traccia i documenti di conformita organizzativa",
+    "subtitle": "Gestisci e monitora i documenti di conformità aziendale",
     "newDocument": "Nuovo Documento",
     "searchPlaceholder": "Cerca titolo, codice, descrizione...",
-    "allAreas": "Tutte le Aree",
-    "allStatuses": "Tutti gli Stati",
-    "reset": "Reimposta",
+    "allAreas": "Tutte le aree",
+    "allStatuses": "Tutti gli stati",
+    "reset": "Ripristina",
     "noDocuments": "Nessun documento corrisponde ai criteri di ricerca.",
     "deleteTitle": "Sei assolutamente sicuro?",
-    "deleteDescriptionPrefix": "Questo eliminerà definitivamente",
-    "deleteDescriptionSuffix": "e rimuoverà i relativi dati dai nostri server. Questa azione non può essere annullata.",
+    "deleteDescriptionPrefix": "Questo eliminerà permanentemente",
+    "deleteDescriptionSuffix": "e rimuoverà i relativi dati dai nostri server. L'azione non è reversibile.",
     "deleteDocument": "Elimina Documento",
     "actions": {
       "download": "Scarica",
-      "revisionHistory": "Storico revisioni"
+      "revisionHistory": "Cronologia revisioni"
     },
     "columns": {
       "code": "# Codice",
@@ -1542,15 +1542,43 @@
       "status": "Stato",
       "version": "Versione",
       "validity": "Validità",
-      "effectiveDate": "Data Efficacia",
-      "expiryDate": "Data Scadenza",
-      "fileName": "Nome File",
+      "effectiveDate": "Data di decorrenza",
+      "expiryDate": "Data di scadenza",
+      "fileName": "File",
       "actions": "Azioni"
+    },
+    "form": {
+      "newTitle": "Nuovo Documento",
+      "editTitle": "Modifica Documento",
+      "manage": "Gestisci",
+      "manageTypes": "Gestisci tipi di documento",
+      "selectType": "Seleziona tipo...",
+      "confidentiality": "Riservatezza",
+      "ownerRole": "Proprietario (Ruolo)",
+      "selectRole": "Seleziona ruolo...",
+      "none": "Nessuno",
+      "description": "Descrizione",
+      "keywords": "Parole chiave",
+      "tags": "Tag (JSON)",
+      "newRevision": "Nuova Revisione (Opzionale — caricata su S3)",
+      "maxSize": "Dimensione massima: 25 MB · Formati: PDF, DOCX, XLSX, JPG, PNG, TXT",
+      "changeLog": "Registro modifiche",
+      "changeLogPlaceholder": "Cosa c'è di nuovo in questa versione",
+      "cancel": "Annulla",
+      "save": "Salva",
+      "saving": "Salvataggio...",
+      "errorType": "Selezionare un tipo di documento",
+      "errorTitle": "Il titolo del documento è obbligatorio",
+      "errorDates": "La data di scadenza deve essere successiva alla data di decorrenza",
+      "errorFile": "Selezionare un file",
+      "errorFileSize": "Il file è troppo grande. Scegli un file inferiore a 25 MB.",
+      "saveSuccess": "Documento salvato con successo",
+      "saveError": "Errore durante il salvataggio del documento. Riprova."
     },
     "toast": {
       "deleteSuccess": "Documento eliminato con successo.",
       "deleteError": "Errore durante l'eliminazione.",
-      "downloadFailed": "Download file non riuscito.",
+      "downloadFailed": "Impossibile scaricare il file.",
       "noDownloadUrl": "Nessun URL restituito"
     }
   },

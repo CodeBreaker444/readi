@@ -3,6 +3,7 @@
 import type { DocType, RepositoryDocument } from '@/config/types/repository';
 import { Loader2, Settings2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from "@/components/ui/button";
 import {
@@ -52,6 +53,7 @@ const OWNER_ROLE_OPTIONS = [
 ];
 
 export default function DocumentFormModal({ open, onClose, onSaved, docTypes, onTypesReload, document }: Props) {
+  const { t } = useTranslation();
   const { isDark } = useTheme();
   const fileRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
@@ -101,9 +103,9 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
 
   async function uploadToS3(file: File): Promise<{ s3_key: string }> {
     const { data: presign } = await axios.post('/api/document/presign-upload', {
-      file_name:    file.name,
+      file_name:     file.name,
       content_type: file.type,
-      file_size:    file.size,
+      file_size:     file.size,
     });
     if (!presign?.upload_url) throw new Error('Failed to get upload URL');
     await axios.put(presign.upload_url, file, {
@@ -113,18 +115,18 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
   }
 
   async function handleSave() {
-    if (!docTypeId) { toast.error('Please select a document type'); return; }
-    if (!title.trim()) { toast.error('Document title is required'); return; }
+    if (!docTypeId) { toast.error(t('repository.form.errorType')); return; }
+    if (!title.trim()) { toast.error(t('repository.form.errorTitle')); return; }
     if (effectiveDate && expiryDate && expiryDate < effectiveDate) {
-      toast.error('Expiry date must be after the effective date'); return;
+      toast.error(t('repository.form.errorDates')); return;
     }
     setSaving(true);
     try {
       if (!isEdit) {
         const file = fileRef.current?.files?.[0];
-        if (!file) { toast.error('Please select a file'); setSaving(false); return; }
+        if (!file) { toast.error(t('repository.form.errorFile')); setSaving(false); return; }
         if (file.size > MAX_FILE_SIZE) {
-          toast.error('File is too large. Please choose a file under 25 MB.', { duration: 6000 });
+          toast.error(t('repository.form.errorFileSize'), { duration: 6000 });
           setSaving(false);
           return;
         }
@@ -136,24 +138,24 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
           s3_key,
           file_name:       file.name,
           file_size:       file.size,
-          doc_code:        docCode || undefined,
+          doc_code:         docCode || undefined,
           status,
           title,
           confidentiality,
-          owner_role:      ownerRole === '__none__' ? undefined : ownerRole || undefined,
-          effective_date:  effectiveDate || undefined,
+          owner_role:       ownerRole === '__none__' ? undefined : ownerRole || undefined,
+          effective_date:   effectiveDate || undefined,
           expiry_date:     expiryDate || undefined,
           description:     description || undefined,
-          keywords:        keywords || undefined,
-          tags:            tags || undefined,
+          keywords:         keywords || undefined,
+          tags:             tags || undefined,
           version_label:   versionLabel || undefined,
-          change_log:      changeLog || undefined,
+          change_log:       changeLog || undefined,
         });
       } else {
         const file = fileRef.current?.files?.[0];
         if (file) {
           if (file.size > MAX_FILE_SIZE) {
-            toast.error('File is too large. Please choose a file under 25 MB.', { duration: 6000 });
+            toast.error(t('repository.form.errorFileSize'), { duration: 6000 });
             setSaving(false);
             return;
           }
@@ -164,30 +166,30 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
             file_name:     file.name,
             file_size:     file.size,
             version_label: versionLabel || undefined,
-            change_log:    changeLog || undefined,
+            change_log:     changeLog || undefined,
           });
         }
         await axios.post('/api/document/update', {
           document_id:     document!.document_id,
           doc_type_id:     Number(docTypeId),
-          doc_code:        docCode || null,
-          status:          status as never,
+          doc_code:         docCode || null,
+          status:           status as never,
           title,
           confidentiality: confidentiality as never,
-          owner_role:      ownerRole === '__none__' ? null : ownerRole || null,
-          effective_date:  effectiveDate || null,
+          owner_role:       ownerRole === '__none__' ? null : ownerRole || null,
+          effective_date:   effectiveDate || null,
           expiry_date:     expiryDate || null,
           description:     description || null,
-          keywords:        keywords || null,
-          tags:            tags || null,
+          keywords:         keywords || null,
+          tags:             tags || null,
         });
       }
       onSaved();
-      toast.success('Document saved successfully');
+      toast.success(t('repository.form.saveSuccess'));
       onClose();
     } catch (err: any) {
       const serverMsg: string | undefined = err?.response?.data?.error;
-      toast.error(serverMsg || 'Failed to save document. Please try again.');
+      toast.error(serverMsg || t('repository.form.saveError'));
     } finally {
       setSaving(false);
     }
@@ -215,7 +217,7 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
 
           <DialogHeader className={`px-6 py-4 border-b ${isDark ? 'border-slate-700/60' : 'border-gray-100'}`}>
             <DialogTitle className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              {isEdit ? 'Edit Document' : 'New Document'}
+              {isEdit ? t('repository.form.editTitle') : t('repository.form.newTitle')}
             </DialogTitle>
           </DialogHeader>
 
@@ -224,19 +226,19 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
 
               <div className="space-y-1.5">
                 <div className="flex items-center gap-2">
-                  <Label className={labelCls}>Type <span className="text-red-500">*</span></Label>
+                  <Label className={labelCls}>{t('repository.columns.type')} <span className="text-red-500">*</span></Label>
                   <button
                     type="button"
                     onClick={() => setManageTypesOpen(true)}
-                    title="Manage types"
+                    title={t('repository.form.manageTypes')}
                     className={`flex items-center gap-1 text-[10px] font-medium transition-colors ${isDark ? 'text-slate-500 hover:text-violet-400' : 'text-slate-400 hover:text-violet-600'}`}
                   >
-                    <Settings2 className="h-3 w-3" /> Manage
+                    <Settings2 className="h-3 w-3" /> {t('repository.form.manage')}
                   </button>
                 </div>
                 <Select value={docTypeId} onValueChange={setDocTypeId}>
                   <SelectTrigger className={`text-sm ${selectTriggerCls}`}>
-                    <SelectValue placeholder="Select type..." />
+                    <SelectValue placeholder={t('repository.form.selectType')} />
                   </SelectTrigger>
                   <SelectContent className={selectContentCls}>
                     {docTypes.map((t) => (
@@ -249,19 +251,19 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
               </div>
 
               <div className="space-y-1.5">
-                <Label className={labelCls}>Code</Label>
+                <Label className={labelCls}>{t('repository.columns.code')}</Label>
                 <Input value={docCode} onChange={(e) => setDocCode(e.target.value)}
                   placeholder="e.g. DOC-001" className={`text-sm ${inputCls}`} />
               </div>
 
               <div className="sm:col-span-2 space-y-1.5">
-                <Label className={labelCls}>Title <span className="text-red-500">*</span></Label>
+                <Label className={labelCls}>{t('repository.columns.title')} <span className="text-red-500">*</span></Label>
                 <Input value={title} onChange={(e) => setTitle(e.target.value)}
                   required className={`text-sm ${inputCls}`} />
               </div>
 
               <div className="space-y-1.5">
-                <Label className={labelCls}>Status</Label>
+                <Label className={labelCls}>{t('repository.columns.status')}</Label>
                 <Select value={status} onValueChange={setStatus}>
                   <SelectTrigger className={`text-sm ${selectTriggerCls}`}><SelectValue /></SelectTrigger>
                   <SelectContent className={selectContentCls}>
@@ -271,7 +273,7 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
               </div>
 
               <div className="space-y-1.5">
-                <Label className={labelCls}>Confidentiality</Label>
+                <Label className={labelCls}>{t('repository.form.confidentiality')}</Label>
                 <Select value={confidentiality} onValueChange={setConfidentiality}>
                   <SelectTrigger className={`text-sm ${selectTriggerCls}`}><SelectValue /></SelectTrigger>
                   <SelectContent className={selectContentCls}>
@@ -280,15 +282,14 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
                 </Select>
               </div>
 
-              {/* Owner Role as Select */}
               <div className="space-y-1.5">
-                <Label className={labelCls}>Owner (Role)</Label>
+                <Label className={labelCls}>{t('repository.form.ownerRole')}</Label>
                 <Select value={ownerRole} onValueChange={setOwnerRole}>
                   <SelectTrigger className={`text-sm ${selectTriggerCls}`}>
-                    <SelectValue placeholder="Select role..." />
+                    <SelectValue placeholder={t('repository.form.selectRole')} />
                   </SelectTrigger>
                   <SelectContent className={selectContentCls}>
-                    <SelectItem value="__none__">— None —</SelectItem>
+                    <SelectItem value="__none__">— {t('repository.form.none')} —</SelectItem>
                     {OWNER_ROLE_OPTIONS.map((r) => (
                       <SelectItem key={r} value={r}>{r}</SelectItem>
                     ))}
@@ -297,57 +298,57 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
               </div>
 
               <div className="space-y-1.5">
-                <Label className={labelCls}>Effective Date</Label>
+                <Label className={labelCls}>{t('repository.columns.effectiveDate')}</Label>
                 <Input type="date" value={effectiveDate} onChange={(e) => setEffectiveDate(e.target.value)}
                   className={`text-sm ${inputCls}`} />
               </div>
 
               <div className="space-y-1.5">
-                <Label className={labelCls}>Expiry Date</Label>
+                <Label className={labelCls}>{t('repository.columns.expiryDate')}</Label>
                 <Input type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)}
                   className={`text-sm ${inputCls}`} />
               </div>
 
               <div className="sm:col-span-2 space-y-1.5">
-                <Label className={labelCls}>Description</Label>
+                <Label className={labelCls}>{t('repository.form.description')}</Label>
                 <Textarea rows={3} value={description} onChange={(e) => setDescription(e.target.value)}
                   className={`text-sm resize-none ${inputCls}`} />
               </div>
 
               <div className="space-y-1.5">
-                <Label className={labelCls}>Keywords</Label>
+                <Label className={labelCls}>{t('repository.form.keywords')}</Label>
                 <Input value={keywords} onChange={(e) => setKeywords(e.target.value)}
                   placeholder="safety, sms, training" className={`text-sm ${inputCls}`} />
               </div>
 
               <div className="space-y-1.5">
-                <Label className={labelCls}>Tags (JSON)</Label>
+                <Label className={labelCls}>{t('repository.form.tags')}</Label>
                 <Input value={tags} onChange={(e) => setTags(e.target.value)}
                   placeholder='["sms","training"]' className={`font-mono text-xs ${inputCls}`} />
               </div>
 
               <div className="sm:col-span-2 space-y-1.5">
                 <Label className={labelCls}>
-                  {isEdit ? 'New Revision (Optional — uploaded to S3)' : 'File'}{' '}
+                  {isEdit ? t('repository.form.newRevision') : t('repository.columns.fileName')}{' '}
                   {!isEdit && <span className="text-red-500">*</span>}
                 </Label>
                 <Input ref={fileRef} type="file" required={!isEdit}
                   className={`cursor-pointer text-sm ${inputCls}`} />
                 <p className={`text-[11px] ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-                  Max size: 25 MB · Formats: PDF, DOCX, XLSX, JPG, PNG, TXT
+                  {t('repository.form.maxSize')}
                 </p>
               </div>
 
               <div className="space-y-1.5">
-                <Label className={labelCls}>Version</Label>
+                <Label className={labelCls}>{t('repository.columns.version')}</Label>
                 <Input value={versionLabel} onChange={(e) => setVersionLabel(e.target.value)}
                   placeholder="v1.0" className={`text-sm ${inputCls}`} />
               </div>
 
               <div className="space-y-1.5">
-                <Label className={labelCls}>Change Log</Label>
+                <Label className={labelCls}>{t('repository.form.changeLog')}</Label>
                 <Input value={changeLog} onChange={(e) => setChangeLog(e.target.value)}
-                  placeholder="What's new in this version" className={`text-sm ${inputCls}`} />
+                  placeholder={t('repository.form.changeLogPlaceholder')} className={`text-sm ${inputCls}`} />
               </div>
 
             </div>
@@ -363,7 +364,7 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
                 : 'border-gray-200 text-gray-700 hover:bg-gray-50'
               }
             >
-              Cancel
+              {t('repository.form.cancel')}
             </Button>
             <Button
               onClick={handleSave}
@@ -371,8 +372,8 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
               className="bg-violet-600 hover:bg-violet-500 text-white"
             >
               {saving ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</>
-              ) : 'Save'}
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{t('repository.form.saving')}</>
+              ) : t('repository.form.save')}
             </Button>
           </DialogFooter>
 
