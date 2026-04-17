@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import type { DocType } from '@/config/types/repository';
 import axios from 'axios';
 import { Check, Loader2, Pencil, Plus, Trash2, X } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 const AREA_OPTIONS = [
@@ -24,6 +24,7 @@ interface Props {
 }
 
 export function ManageDocTypesModal({ open, onClose, types, onReload, isDark }: Props) {
+  const [localTypes, setLocalTypes] = useState<DocType[]>(types);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editLabel, setEditLabel] = useState('');
   const [savingId, setSavingId] = useState<number | null>(null);
@@ -32,6 +33,10 @@ export function ManageDocTypesModal({ open, onClose, types, onReload, isDark }: 
   const [newName, setNewName] = useState('');
   const [newArea, setNewArea] = useState('');
   const [adding, setAdding] = useState(false);
+
+  useEffect(() => {
+    setLocalTypes(types);
+  }, [types, open]);
 
   const bg = isDark ? 'bg-[#0f1419] border-white/[0.08]' : 'bg-white';
   const rowBg = isDark ? 'bg-slate-900/40 border-white/[0.06]' : 'bg-white border-slate-200';
@@ -55,6 +60,13 @@ export function ManageDocTypesModal({ open, onClose, types, onReload, isDark }: 
     try {
       const { data } = await axios.patch(`/api/document/types/${typeId}`, { doc_type_name: editLabel.trim() });
       if (data.code === 1) {
+        setLocalTypes((prev) =>
+          prev.map((item) =>
+            item.doc_type_id === typeId
+              ? { ...item, doc_type_name: editLabel.trim(), doc_name: editLabel.trim() }
+              : item,
+          ),
+        );
         toast.success('Type updated');
         setEditingId(null);
         onReload();
@@ -73,6 +85,7 @@ export function ManageDocTypesModal({ open, onClose, types, onReload, isDark }: 
     try {
       const { data } = await axios.delete(`/api/document/types/${typeId}`);
       if (data.code === 1) {
+        setLocalTypes((prev) => prev.filter((item) => item.doc_type_id !== typeId));
         toast.success('Type removed');
         onReload();
       } else {
@@ -95,6 +108,9 @@ export function ManageDocTypesModal({ open, onClose, types, onReload, isDark }: 
         doc_type_category: newArea,
       });
       if (data.code === 1) {
+        if (data.data) {
+          setLocalTypes((prev) => [...prev, data.data as DocType]);
+        }
         toast.success('Type added');
         setNewName('');
         setNewArea('');
@@ -118,7 +134,7 @@ export function ManageDocTypesModal({ open, onClose, types, onReload, isDark }: 
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto px-5 py-3 space-y-1.5">
-          {types.map((t) => (
+          {localTypes.map((t) => (
             <div key={t.doc_type_id} className={`flex items-center gap-2 rounded-lg border px-3 py-2 ${rowBg}`}>
               {editingId === t.doc_type_id ? (
                 <>
@@ -168,7 +184,7 @@ export function ManageDocTypesModal({ open, onClose, types, onReload, isDark }: 
               )}
             </div>
           ))}
-          {types.length === 0 && (
+          {localTypes.length === 0 && (
             <p className={`text-xs text-center py-6 ${muted}`}>No types defined yet.</p>
           )}
         </div>
