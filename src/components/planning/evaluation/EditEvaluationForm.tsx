@@ -14,6 +14,7 @@ import { Evaluation, EvaluationResult, EvaluationStatus } from '@/config/types/e
 import axios from 'axios';
 import { Loader2, Save } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 interface Props {
@@ -22,6 +23,7 @@ interface Props {
 }
 
 export function EditEvaluationForm({ evaluation, onUpdated }: Props) {
+  const { t } = useTranslation();
   const [form, setForm] = useState({
     evaluation_request_date: '',
     evaluation_year: '',
@@ -65,10 +67,10 @@ export function EditEvaluationForm({ evaluation, onUpdated }: Props) {
         ...form,
         evaluation_year: Number(form.evaluation_year),
       });
-      toast.success('Evaluation updated');
+      toast.success(t('planning.evaluation.updated'));
       onUpdated?.({ ...evaluation, ...form, evaluation_year: Number(form.evaluation_year) });
     } catch {
-      toast.error('Update failed');
+      toast.error(t('planning.evaluation.updateFailed'));
     } finally {
       setIsSaving(false);
     }
@@ -80,7 +82,7 @@ export function EditEvaluationForm({ evaluation, onUpdated }: Props) {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="space-y-1.5 sm:col-span-2">
-          <Label className="text-xs font-medium text-slate-500">Client</Label>
+          <Label className="text-xs font-medium text-slate-500">{t('planning.form.client')}</Label>
           <Input
             value={evaluation.client_name ?? ''}
             disabled
@@ -88,7 +90,7 @@ export function EditEvaluationForm({ evaluation, onUpdated }: Props) {
           />
         </div>
         <div className="space-y-1.5">
-          <Label className="text-xs font-medium text-slate-500">Request Date</Label>
+          <Label className="text-xs font-medium text-slate-500">{t('planning.form.requestDate')}</Label>
           <Input
             value={form.evaluation_request_date}
             onChange={(e) => handleChange('evaluation_request_date', e.target.value)}
@@ -97,7 +99,7 @@ export function EditEvaluationForm({ evaluation, onUpdated }: Props) {
           />
         </div>
         <div className="space-y-1.5">
-          <Label className="text-xs font-medium text-slate-500">Year Reference</Label>
+          <Label className="text-xs font-medium text-slate-500">{t('planning.form.yearReference')}</Label>
           <Input
             value={form.evaluation_year}
             onChange={(e) => handleChange('evaluation_year', e.target.value)}
@@ -108,7 +110,7 @@ export function EditEvaluationForm({ evaluation, onUpdated }: Props) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <div className="space-y-1.5">
-          <Label className="text-xs font-medium text-slate-500">Description</Label>
+          <Label className="text-xs font-medium text-slate-500">{t('planning.form.description')}</Label>
           <Input
             value={form.evaluation_desc}
             onChange={(e) => handleChange('evaluation_desc', e.target.value)}
@@ -116,7 +118,7 @@ export function EditEvaluationForm({ evaluation, onUpdated }: Props) {
           />
         </div>
         <div className="space-y-1.5">
-          <Label className="text-xs font-medium text-slate-500">Offer Ref</Label>
+          <Label className="text-xs font-medium text-slate-500">{t('planning.form.offerRef')}</Label>
           <Input
             value={form.evaluation_offer}
             onChange={(e) => handleChange('evaluation_offer', e.target.value)}
@@ -124,7 +126,7 @@ export function EditEvaluationForm({ evaluation, onUpdated }: Props) {
           />
         </div>
         <div className="space-y-1.5">
-          <Label className="text-xs font-medium text-slate-500">Sales Manager</Label>
+          <Label className="text-xs font-medium text-slate-500">{t('planning.form.salesManager')}</Label>
           <Input
             value={form.evaluation_sale_manager}
             onChange={(e) => handleChange('evaluation_sale_manager', e.target.value)}
@@ -135,7 +137,7 @@ export function EditEvaluationForm({ evaluation, onUpdated }: Props) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <Label className="text-xs font-medium text-slate-500">Status</Label>
+          <Label className="text-xs font-medium text-slate-500">{t('planning.form.status')}</Label>
           <Select
             value={form.evaluation_status}
             onValueChange={(v) => handleChange('evaluation_status', v)}
@@ -144,16 +146,16 @@ export function EditEvaluationForm({ evaluation, onUpdated }: Props) {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="NEW">New Task</SelectItem>
-              <SelectItem value="PROGRESS">In Progress</SelectItem>
-              <SelectItem value="REVIEW">Feedback Request</SelectItem>
-              <SelectItem value="SUSPENDED">Suspended</SelectItem>
-              <SelectItem value="COMPLETED">Completed</SelectItem>
+              <SelectItem value="NEW">{t('planning.status.newTask')}</SelectItem>
+              <SelectItem value="PROGRESS">{t('planning.status.inProgress')}</SelectItem>
+              <SelectItem value="REVIEW">{t('planning.status.feedbackRequest')}</SelectItem>
+              <SelectItem value="SUSPENDED">{t('planning.status.suspended')}</SelectItem>
+              <SelectItem value="COMPLETED">{t('planning.status.done')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
         <div className="space-y-1.5">
-          <Label className="text-xs font-medium text-slate-500">Result</Label>
+          <Label className="text-xs font-medium text-slate-500">{t('planning.form.result')}</Label>
           <Select
             value={form.evaluation_result}
             onValueChange={(v) => handleChange('evaluation_result', v)}
@@ -162,9 +164,9 @@ export function EditEvaluationForm({ evaluation, onUpdated }: Props) {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="PROCESSING">Processing</SelectItem>
-              <SelectItem value="RESULT_POSITIVE">Completed Positive</SelectItem>
-              <SelectItem value="RESULT_NEGATIVE">Completed Refused</SelectItem>
+              <SelectItem value="PROCESSING">{t('planning.status.processing')}</SelectItem>
+              <SelectItem value="RESULT_POSITIVE">{t('planning.status.completedPositive')}</SelectItem>
+              <SelectItem value="RESULT_NEGATIVE">{t('planning.status.completedRefused')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -177,7 +179,7 @@ export function EditEvaluationForm({ evaluation, onUpdated }: Props) {
           ) : (
             <Save className="h-3.5 w-3.5" />
           )}
-          Update
+          {t('planning.actions.update')}
         </Button>
       </div>
     </form>

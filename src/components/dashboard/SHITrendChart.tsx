@@ -1,6 +1,7 @@
 'use client';
 import { cn } from '@/lib/utils';
 import React, { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface SHITrendChartProps {
   labels: string[];
@@ -9,6 +10,7 @@ interface SHITrendChartProps {
 }
 
 const SHITrendChart: React.FC<SHITrendChartProps> = ({ labels, values, isDark = false }) => {
+  const { t } = useTranslation();
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstance = useRef<any>(null);
 
@@ -20,7 +22,7 @@ const SHITrendChart: React.FC<SHITrendChartProps> = ({ labels, values, isDark = 
   const peak = Math.max(...values);
 
   const statusColor = latest >= 85 ? '#10b981' : latest >= 70 ? '#f59e0b' : '#ef4444';
-  const statusLabel = latest >= 85 ? 'Excellent' : latest >= 70 ? 'Marginal' : 'Unsatisfactory';
+  const statusLabel = latest >= 85 ? t('shi.shiTrend.status.excellent') : latest >= 70 ? t('shi.shiTrend.status.marginal') : t('shi.shiTrend.status.unsatisfactory');
   const statusBadge = latest >= 85
     ? isDark ? 'bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/25' : 'bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200'
     : latest >= 70
@@ -42,7 +44,7 @@ const SHITrendChart: React.FC<SHITrendChartProps> = ({ labels, values, isDark = 
           background: 'transparent',
           animations: { enabled: true, easing: 'easeinout', speed: 600 },
         },
-        series: [{ name: 'SHI', data: values }],
+        series: [{ name: t('shi.shiTrend.seriesName'), data: values }],
         xaxis: {
           categories: labels,
           labels: { style: { colors: isDark ? '#475569' : '#94a3b8', fontSize: '10px', fontFamily: 'DM Sans, system-ui' } },
@@ -118,10 +120,10 @@ const SHITrendChart: React.FC<SHITrendChartProps> = ({ labels, values, isDark = 
       <div className={cn('px-5 py-4 border-b flex items-start justify-between gap-4', isDark ? 'border-slate-700/60' : 'border-gray-100')}>
         <div>
           <p className={cn('text-xs font-semibold uppercase tracking-widest mb-0.5', isDark ? 'text-slate-500' : 'text-gray-400')}>
-            Trend
+            {t('shi.shiTrend.trendLabel')}
           </p>
           <h2 className={cn('text-sm font-semibold', isDark ? 'text-white' : 'text-gray-800')}>
-            Monthly SHI Trend
+            {t('shi.shiTrend.monthlyTitle')}
           </h2>
         </div>
         <span className={cn('inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold shrink-0', statusBadge)}>
@@ -132,11 +134,11 @@ const SHITrendChart: React.FC<SHITrendChartProps> = ({ labels, values, isDark = 
       {/* KPI row */}
       <div className={cn('grid grid-cols-4 divide-x', isDark ? 'divide-slate-700/60' : 'divide-gray-100')}>
         {[
-          { label: 'Current', value: latest.toFixed(1) + '%' },
-          { label: 'Average', value: avg.toFixed(1) + '%' },
-          { label: 'Peak', value: peak.toFixed(1) + '%' },
+          { label: t('shi.shiTrend.kpi.current'), value: latest.toFixed(1) + '%' },
+          { label: t('shi.shiTrend.kpi.average'), value: avg.toFixed(1) + '%' },
+          { label: t('shi.shiTrend.kpi.peak'), value: peak.toFixed(1) + '%' },
           {
-            label: 'vs Prev',
+            label: t('shi.shiTrend.kpi.vsPrev'),
             value: `${deltaSign}${delta.toFixed(1)}%`,
             color: delta >= 0 ? (isDark ? 'text-emerald-400' : 'text-emerald-600') : (isDark ? 'text-red-400' : 'text-red-500'),
           },
@@ -151,9 +153,9 @@ const SHITrendChart: React.FC<SHITrendChartProps> = ({ labels, values, isDark = 
       {/* Zone legend */}
       <div className={cn('px-5 py-2.5 border-t flex items-center gap-4', isDark ? 'border-slate-700/60' : 'border-gray-100')}>
         {[
-          { color: 'bg-emerald-500', label: 'Excellent ≥85%' },
-          { color: 'bg-yellow-500',  label: 'Marginal 70–84%' },
-          { color: 'bg-red-500',     label: 'Unsatisfactory <70%' },
+          { color: 'bg-emerald-500', label: t('shi.shiTrend.zoneLegend.excellent') },
+          { color: 'bg-yellow-500',  label: t('shi.shiTrend.zoneLegend.marginal') },
+          { color: 'bg-red-500',     label: t('shi.shiTrend.zoneLegend.unsatisfactory') },
         ].map(({ color, label }) => (
           <div key={label} className="flex items-center gap-1.5">
             <span className={cn('h-2 w-2 rounded-sm shrink-0', color)} />

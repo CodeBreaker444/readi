@@ -8,6 +8,7 @@ import {
 import axios from 'axios';
 import { FileText, Loader2, Upload } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { getEvaluationFileColumns } from '@/components/tables/EvaluationFileColumn';
@@ -35,6 +36,7 @@ export function EvaluationDetailFilePanel({ evaluationId, clientId }: Props) {
   const [files, setFiles] = useState<EvaluationFile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const { t } = useTranslation();  
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const descRef = useRef<HTMLInputElement>(null);
@@ -47,7 +49,7 @@ export function EvaluationDetailFilePanel({ evaluationId, clientId }: Props) {
       const res = await axios.get(`/api/evaluation/${evaluationId}/files`);
       setFiles(res.data.data ?? []);
     } catch {
-      toast.error('Failed to load files');
+      toast.error(t('planning.files.loadError'));
     } finally {
       setIsLoading(false);
     }
@@ -60,7 +62,7 @@ export function EvaluationDetailFilePanel({ evaluationId, clientId }: Props) {
   async function handleUpload(e: React.FormEvent) {
     e.preventDefault();
     const file = fileInputRef.current?.files?.[0];
-    if (!file) return toast.error('Please select a file');
+    if (!file) return toast.error(t('planning.files.selectFileError'));
 
     const fd = new FormData();
     fd.append('evaluation_file', file);
@@ -73,12 +75,12 @@ export function EvaluationDetailFilePanel({ evaluationId, clientId }: Props) {
       await axios.post(`/api/evaluation/${evaluationId}/files`, fd, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      toast.success('File uploaded');
+      toast.success(t('planning.files.uploadSuccess'));
       fetchFiles();
       if (fileInputRef.current) fileInputRef.current.value = '';
       if (descRef.current) descRef.current.value = '';
     } catch {
-      toast.error('Upload failed');
+      toast.error(t('planning.files.uploadFailed'));
     } finally {
       setIsUploading(false);
     }
@@ -89,12 +91,12 @@ export function EvaluationDetailFilePanel({ evaluationId, clientId }: Props) {
       await axios.delete(
         `/api/evaluation/${evaluationId}/files?fileId=${file.evaluation_file_id}`,
       );
-      toast.success('File deleted');
+      toast.success(t('planning.files.deleteSuccess'));
       setFiles((prev) =>
         prev.filter((f) => f.evaluation_file_id !== file.evaluation_file_id),
       );
     } catch {
-      toast.error('Delete failed');
+      toast.error(t('planning.files.deleteFailed'));
     }
   }
 
@@ -114,7 +116,7 @@ export function EvaluationDetailFilePanel({ evaluationId, clientId }: Props) {
       <div className="flex items-center gap-2">
         <FileText className="h-4 w-4 text-slate-400" />
         <h3 className="text-sm font-semibold text-slate-700">
-          Evaluation Documents
+          {t('planning.files.evaluationDocs')}
         </h3>
         <Badge variant="secondary" className="text-xs">
           {files.length}
@@ -154,7 +156,7 @@ export function EvaluationDetailFilePanel({ evaluationId, clientId }: Props) {
                   colSpan={columns.length}
                   className="text-center text-xs text-slate-400 py-8"
                 >
-                  No files uploaded yet.
+                  {t('planning.files.noFiles')}
                 </TableCell>
               </TableRow>
             ) : (
@@ -180,19 +182,19 @@ export function EvaluationDetailFilePanel({ evaluationId, clientId }: Props) {
         className="border border-dashed border-slate-300 rounded-lg p-4"
       >
         <p className="text-xs font-medium text-slate-500 mb-3">
-          Upload new file
+          {t('planning.files.uploadNew')}
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
           <div className="space-y-1">
-            <Label className="text-xs">Description</Label>
+            <Label className="text-xs">{t('planning.files.description')}</Label>
             <Input
               ref={descRef}
-              placeholder="File description…"
+              placeholder={t('planning.files.filePlaceholder')}
               className="h-8 text-xs"
             />
           </div>
           <div className="space-y-1">
-            <Label className="text-xs">Version</Label>
+            <Label className="text-xs">{t('planning.files.version')}</Label>
             <Input
               ref={verRef}
               defaultValue="1.0"
@@ -201,21 +203,21 @@ export function EvaluationDetailFilePanel({ evaluationId, clientId }: Props) {
             />
           </div>
           <div className="space-y-1">
-            <Label className="text-xs">File</Label>
+            <Label className="text-xs">{t('planning.files.file')}</Label>
             <Input ref={fileInputRef} type="file" className="h-8 text-xs" />
           </div>
           <Button
             type="submit"
             size="sm"
             disabled={isUploading}
-            className="gap-1.5 h-8 bg-violet-600 hover:bg-violet-700 cursor-pointer"
+            className="gap-1.5 h-8 bg-violet-600 hover:bg-violet-700 cursor-pointer text-white"
           >
             {isUploading ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
             ) : (
               <Upload className="w-3.5 h-3.5" />
             )}
-            Upload
+            {t('planning.files.upload')}
           </Button>
         </div>
       </form>

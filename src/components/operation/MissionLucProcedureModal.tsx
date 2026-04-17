@@ -5,6 +5,7 @@ import { Mission } from '@/config/types/operation';
 import axios from 'axios';
 import { CheckCircle2, ClipboardList, Loader2, MessageSquare, Users, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 interface Props {
@@ -27,14 +28,7 @@ interface ProcedureData {
 }
 
 type Progress = Record<string, Record<string, string>>;
-
 type Section = 'checklist' | 'communication' | 'assignment';
-
-const SECTIONS: { key: Section; label: string; icon: React.ElementType; color: string }[] = [
-  { key: 'checklist',     label: 'Pre / Post Flight Checklist', icon: ClipboardList,   color: 'text-violet-500' },
-  { key: 'communication', label: 'Briefing & Communication',    icon: MessageSquare,   color: 'text-blue-500'   },
-  { key: 'assignment',    label: 'Assignment',                  icon: Users,           color: 'text-emerald-500' },
-];
 
 function TaskRow({
   code,
@@ -82,11 +76,18 @@ function TaskRow({
 }
 
 export function MissionLucProcedureModal({ mission, isDark, onClose }: Props) {
+  const { t } = useTranslation();
   const [procedure, setProcedure] = useState<ProcedureData | null>(null);
   const [progress, setProgress]   = useState<Progress>({ checklist: {}, communication: {}, assignment: {} });
   const [allDone, setAllDone]     = useState(false);
   const [loading, setLoading]     = useState(true);
-  const [saving, setSaving]       = useState<string | null>(null); // "type:code"
+  const [saving, setSaving]       = useState<string | null>(null);  
+
+  const SECTIONS: { key: Section; label: string; icon: React.ElementType; color: string }[] = [
+    { key: 'checklist',     label: t('planning.tasks.checklist'), icon: ClipboardList,   color: 'text-violet-500' },
+    { key: 'communication', label: t('planning.tasks.communication'), icon: MessageSquare,   color: 'text-blue-500'   },
+    { key: 'assignment',    label: t('planning.tasks.assignment'), icon: Users,           color: 'text-emerald-500' },
+  ];
 
   useEffect(() => {
     let cancelled = false;
@@ -98,10 +99,10 @@ export function MissionLucProcedureModal({ mission, isDark, onClose }: Props) {
         setProgress(data.luc_procedure_progress ?? { checklist: {}, communication: {}, assignment: {} });
         setAllDone(!!data.luc_completed_at);
       })
-      .catch(() => toast.error('Failed to load LUC procedure'))
+      .catch(() => toast.error(t('planning.evaluation.loadError')))
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [mission.mission_id]);
+  }, [mission.mission_id, t]);
 
   async function toggle(taskType: Section, code: string, currentDone: boolean) {
     const key = `${taskType}:${code}`;
@@ -115,14 +116,13 @@ export function MissionLucProcedureModal({ mission, isDark, onClose }: Props) {
       setProgress(data.progress);
       setAllDone(data.all_completed);
     } catch {
-      toast.error('Failed to update task');
+      toast.error(t('planning.evaluation.updateFailed'));
     } finally {
       setSaving(null);
     }
   }
 
   const tasks = procedure?.procedure_steps?.tasks;
-
   const totalCount     = SECTIONS.reduce((acc, s) => acc + (tasks?.[s.key]?.length ?? 0), 0);
   const completedCount = SECTIONS.reduce((acc, s) => {
     const group = progress[s.key] ?? {};
@@ -142,13 +142,13 @@ export function MissionLucProcedureModal({ mission, isDark, onClose }: Props) {
         <div className={`flex items-start justify-between px-6 py-4 border-b ${divider}`}>
           <div className="flex-1 min-w-0">
             <p className={`text-[10px] font-semibold uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-              LUC Procedure
+              {t('planning.form.lucProcedure')}
             </p>
             <h2 className={`text-sm font-semibold mt-0.5 truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
               {procedure?.procedure_name ?? '—'}
             </h2>
             <p className={`text-[11px] font-mono mt-0.5 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-              {procedure?.procedure_code} · Mission #{mission.mission_id}
+              {procedure?.procedure_code} · {t('operations.table.detail.missionId')} #{mission.mission_id}
             </p>
           </div>
           <div className="flex items-center gap-3 ml-4 shrink-0">
@@ -174,7 +174,7 @@ export function MissionLucProcedureModal({ mission, isDark, onClose }: Props) {
           }`}>
             <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
             <p className={`text-xs font-medium ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>
-              All LUC tasks completed — mission is cleared for execution.
+              {t('planning.tasks.allCompleted')} — {t('operations.board.status.scheduled')}
             </p>
           </div>
         )}
@@ -188,7 +188,7 @@ export function MissionLucProcedureModal({ mission, isDark, onClose }: Props) {
           ) : !procedure ? (
             <div className={`flex flex-col items-center justify-center py-16 gap-2 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
               <ClipboardList className="h-8 w-8 opacity-30" />
-              <p className="text-sm">No LUC procedure linked to this mission.</p>
+              <p className="text-sm">{t('planning.evaluation.noChecklistDef')}</p>
             </div>
           ) : (
             SECTIONS.map(({ key, label, icon: Icon, color }) => {
@@ -234,7 +234,7 @@ export function MissionLucProcedureModal({ mission, isDark, onClose }: Props) {
         <div className={`px-6 py-3 border-t ${divider} flex justify-end`}>
           <Button size="sm" variant="outline" onClick={onClose}
             className={`h-8 text-xs ${isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : ''}`}>
-            Close
+            {t('planning.form.no')}
           </Button>
         </div>
       </div>

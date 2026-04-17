@@ -2,6 +2,7 @@
 
 import { Mission } from "@/config/types/operation";
 import { cn } from "@/lib/utils";
+import { t } from "i18next";
 import { MissionCard } from "./MissionCard";
 
 interface KanbanColumnProps {
@@ -46,9 +47,9 @@ export function KanbanColumn({
           ? "border-white/[0.06] bg-slate-950/50"
           : "border-slate-200 bg-white shadow-sm",
         isDragOver &&
-          (isDark
-            ? "border-white/20 bg-slate-800/40 shadow-xl shadow-black/30"
-            : "border-slate-400/50 bg-slate-100 shadow-lg shadow-slate-200/60")
+        (isDark
+          ? "border-white/20 bg-slate-800/40 shadow-xl shadow-black/30"
+          : "border-slate-400/50 bg-slate-100 shadow-lg shadow-slate-200/60")
       )}
       onDragOver={onDragOver}
       onDrop={(e) => onDrop(e, columnId)}
@@ -64,8 +65,8 @@ export function KanbanColumn({
       </div>
 
       {isDragOver && (
-        <div className={`mx-3 my-2 flex h-14 items-center justify-center rounded-lg border-2 border-dashed ${isDark ? "border-white/20" : "border-slate-300"}`}>
-          <span className={`text-[11px] ${isDark ? "text-slate-500" : "text-slate-400"}`}>Drop here</span>
+        <div className="mx-3 my-2 flex h-14 items-center justify-center rounded-lg border-2 border-dashed">
+          <span className="text-[11px] opacity-50">{t("planning.actions.updating")}</span>
         </div>
       )}
 
@@ -77,8 +78,7 @@ export function KanbanColumn({
       )}>
         {missions.length === 0 && !isDragOver && (
           <div className="flex flex-col items-center justify-center py-12 text-center">
-            <div className={`mb-2 h-8 w-8 rounded-full ${isDark ? "bg-white/[0.04]" : "bg-slate-100"}`} />
-            <p className={`text-[11px] ${isDark ? "text-slate-600" : "text-slate-400"}`}>No missions</p>
+            <p className="text-[11px] opacity-40">{t("operations.table.empty")}</p>
           </div>
         )}
         {missions.map((mission) => (

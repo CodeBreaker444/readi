@@ -45,6 +45,7 @@ interface FormState {
   user_ids: number[];
   training_name: string;
   training_type: string;
+  certificate_type: string;
   session_code: string;
   completion_date: string;
   expiry_date: string;
@@ -54,10 +55,16 @@ const EMPTY_FORM: FormState = {
   user_ids: [],
   training_name: '',
   training_type: '',
+  certificate_type: '',
   session_code: '',
   completion_date: '',
   expiry_date: '',
 };
+
+const CERTIFICATE_TYPES = [
+  { value: 'PARTICIPATION', label: 'Certificate of Participation' },
+  { value: 'QUALIFICATION', label: 'Qualification (Exam Passing)' },
+] as const;
 
 const TRAINING_TYPES = ['INITIAL', 'RECURRENT', 'EMERGENCY', 'SIMULATOR', 'OTHER'] as const;
 
@@ -151,6 +158,7 @@ export default function TrainingCoursesPage() {
       user_ids: [record.fk_user_id],
       training_name: record.training_name,
       training_type: record.training_type ?? '',
+      certificate_type: record.certificate_type ?? '',
       session_code: record.session_code ?? '',
       completion_date: record.completion_date ?? '',
       expiry_date: record.expiry_date ?? '',
@@ -169,6 +177,7 @@ export default function TrainingCoursesPage() {
           fk_training_id: form.fk_training_id,
           training_name: form.training_name.trim(),
           training_type: form.training_type || null,
+          certificate_type: form.certificate_type || null,
           session_code: form.session_code.trim() || null,
           completion_date: form.completion_date || null,
           expiry_date: form.expiry_date || null,
@@ -179,6 +188,7 @@ export default function TrainingCoursesPage() {
           user_ids: form.user_ids,
           training_name: form.training_name.trim(),
           training_type: form.training_type || null,
+          certificate_type: form.certificate_type || null,
           session_code: form.session_code.trim() || null,
           completion_date: form.completion_date || null,
           expiry_date: form.expiry_date || null,
@@ -515,6 +525,21 @@ export default function TrainingCoursesPage() {
                     className={`h-9 text-xs font-mono ${inputCls}`}
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>Certificate Type</label>
+                <Select value={form.certificate_type || 'none'} onValueChange={(v) => setForm((f) => ({ ...f, certificate_type: v === 'none' ? '' : v }))}>
+                  <SelectTrigger className={`h-9 text-xs ${isDark ? 'bg-white/4 border-white/8 text-white' : 'bg-gray-50 border-gray-200'}`}>
+                    <SelectValue placeholder="— None —" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">— None —</SelectItem>
+                    {CERTIFICATE_TYPES.map((ct) => (
+                      <SelectItem key={ct.value} value={ct.value}>{ct.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="grid grid-cols-2 gap-3">

@@ -2,6 +2,7 @@
 
 import axios from 'axios';
 import { AlertCircle, FileCheck } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { ChecklistRenderer } from '@/components/checklist/ChecklistRenderer';
@@ -22,6 +23,7 @@ interface Props {
 }
 
 export function ChecklistTaskModal({ open, task, evaluationId, onClose, onComplete }: Props) {
+  const { t } = useTranslation();
 
   async function handleSurveyComplete(survey: any) {
     try {
@@ -32,16 +34,15 @@ export function ChecklistTaskModal({ open, task, evaluationId, onClose, onComple
         task_id: task.task_id,
       });
       onComplete(survey.data);
-      toast.success('Checklist saved');
+      toast.success(t('planning.evaluation.savedSuccess'));
     } catch {
-      toast.error('Failed to save checklist result');
+      toast.error(t('planning.evaluation.saveFailed'));
     }
   }
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0">
-
         <DialogHeader className="px-6 pt-5 pb-3 border-b border-slate-100">
           <div className="flex items-start gap-3">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-50 border border-emerald-100">
@@ -60,9 +61,9 @@ export function ChecklistTaskModal({ open, task, evaluationId, onClose, onComple
             <div className="flex flex-col items-center justify-center gap-3 py-16 text-slate-400">
               <AlertCircle className="h-8 w-8" />
               <div className="text-center">
-                <p className="text-sm font-medium text-slate-600">Checklist not found</p>
+                <p className="text-sm font-medium text-slate-600">{t('planning.evaluation.checklistNotFound')}</p>
                 <p className="text-xs mt-1">
-                  No checklist definition exists for code{' '}
+                  {t('planning.evaluation.noChecklistDef')}{' '}
                   <span className="font-mono">{task.task_code}</span>.
                 </p>
               </div>
@@ -74,7 +75,6 @@ export function ChecklistTaskModal({ open, task, evaluationId, onClose, onComple
             />
           )}
         </div>
-
       </DialogContent>
     </Dialog>
   );

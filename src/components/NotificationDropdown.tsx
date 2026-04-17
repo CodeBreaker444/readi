@@ -4,6 +4,7 @@ import type { Notification } from '@/config/types/notification';
 import { Bell, BellOff, Check, CheckCheck, Loader2, X } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface NotificationDropdownProps {
   isDark: boolean;
@@ -23,6 +24,7 @@ function timeAgo(dateStr: string): string {
 const POLL_INTERVAL = 30_000;
 
 const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isDark }) => {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -159,7 +161,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isDark }) =
         className={`relative p-2 rounded-lg transition-colors ${
           isDark ? 'hover:bg-slate-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'
         } ${isOpen ? (isDark ? 'bg-slate-700' : 'bg-gray-100') : ''}`}
-        aria-label="Notifications"
+        aria-label={t('notifications.title')}
       >
         <Bell size={20} />
         {unreadCount > 0 && (
@@ -177,7 +179,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isDark }) =
           <div className={`flex items-center justify-between px-4 py-3 border-b ${divider} flex-shrink-0`}>
             <div className="flex items-center gap-2">
               <Bell size={16} className={subtext} />
-              <span className={`font-semibold text-sm ${text}`}>Notifications</span>
+              <span className={`font-semibold text-sm ${text}`}>{t('notifications.title')}</span>
               {unreadCount > 0 && (
                 <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
                   {unreadCount}
@@ -191,14 +193,14 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isDark }) =
                 className={`flex items-center gap-1 text-xs font-medium transition-colors ${
                   isDark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'
                 } disabled:opacity-50`}
-                title="Mark all as read"
+                title={t('notifications.markAllRead')}
               >
                 {markingAll ? (
                   <Loader2 size={12} className="animate-spin" />
                 ) : (
                   <CheckCheck size={12} />
                 )}
-                Mark all read
+                {t('notifications.markAllRead')}
               </button>
             )}
           </div>
@@ -211,7 +213,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isDark }) =
             ) : notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-10 gap-2">
                 <BellOff size={28} className={subtext} />
-                <p className={`text-sm ${subtext}`}>No notifications</p>
+                <p className={`text-sm ${subtext}`}>{t('notifications.empty')}</p>
               </div>
             ) : (
               <ul>
@@ -242,7 +244,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isDark }) =
                       <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 ">
                         {isUnread && (
                           <button
-                            title="Mark as read"
+                            title={t('notifications.markAsRead')}
                             onClick={(e) => handleMarkRead(notif, e)}
                             className={`p-1 rounded-md transition-colors ${
                               isDark ? 'hover:bg-slate-600 text-gray-400' : 'hover:bg-gray-200 text-gray-500'
@@ -252,7 +254,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isDark }) =
                           </button>
                         )}
                         <button
-                          title="Dismiss"
+                          title={t('notifications.dismiss')}
                           onClick={(e) => handleDismiss(notif, e)}
                           className={`p-1 rounded-md transition-colors ${
                             isDark ? 'hover:bg-slate-600 text-gray-400' : 'hover:bg-gray-200 text-gray-500'
@@ -282,7 +284,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isDark }) =
                   : 'text-blue-600 hover:text-blue-700 hover:bg-gray-50'
               }`}
             >
-              View all notifications
+              {t('notifications.viewAll')}
             </Link>
           </div>
         </div>

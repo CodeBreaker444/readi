@@ -5,6 +5,7 @@ import axios from 'axios';
 import { Loader2, Save } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -81,6 +82,7 @@ export function EvaluationEditSheet({
     onOpenChange,
     onUpdated,
 }: EvaluationEditSheetProps) {
+    const { t } = useTranslation();
     const [isUpdating, setIsUpdating] = useState(false);
 
 const form = useForm<UpdateEvaluationFormValues>({
@@ -130,16 +132,16 @@ const form = useForm<UpdateEvaluationFormValues>({
                 values
             );
 
-            toast.success('Evaluation updated successfully');
-            
+            toast.success(t('planning.evaluation.updated'));
+
             const updatedEvaluation: Evaluation = response.data?.data ?? (values as unknown as Evaluation);
             if (onUpdated) onUpdated(updatedEvaluation);
-            
+
             onOpenChange(false);
         } catch (err) {
-            const message = axios.isAxiosError(err) 
-                ? err.response?.data?.message 
-                : 'Update failed';
+            const message = axios.isAxiosError(err)
+                ? err.response?.data?.message
+                : t('planning.evaluation.updateFailed');
             toast.error(message);
         } finally {
             setIsUpdating(false);
@@ -168,7 +170,7 @@ const form = useForm<UpdateEvaluationFormValues>({
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
                         <div className="space-y-1.5">
-                            <label className="text-sm font-medium text-slate-700">Client</label>
+                            <label className="text-sm font-medium text-slate-700">{t('planning.form.client')}</label>
                             <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
                                 {evaluation.client_name}
                             </div>
@@ -180,7 +182,7 @@ const form = useForm<UpdateEvaluationFormValues>({
                                 name="evaluation_request_date"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Request Date</FormLabel>
+                                        <FormLabel>{t('planning.form.requestDate')}</FormLabel>
                                         <FormControl>
                                             <Input type="date" {...field} />
                                         </FormControl>
@@ -193,7 +195,7 @@ const form = useForm<UpdateEvaluationFormValues>({
                                 name="evaluation_year"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Year</FormLabel>
+                                        <FormLabel>{t('planning.form.year')}</FormLabel>
                                         <FormControl>
                                             <Input
                                                 type="number"
@@ -212,9 +214,9 @@ const form = useForm<UpdateEvaluationFormValues>({
                             name="evaluation_desc"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Description</FormLabel>
+                                    <FormLabel>{t('planning.form.description')}</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="Description…" {...field} />
+                                        <Input placeholder={t('planning.form.descriptionPlaceholder')} {...field} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -227,9 +229,9 @@ const form = useForm<UpdateEvaluationFormValues>({
                                 name="evaluation_offer"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Offer Ref</FormLabel>
+                                        <FormLabel>{t('planning.form.offerRef')}</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="Offer ref…" {...field} />
+                                            <Input placeholder={t('planning.form.offerRefPlaceholder')} {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -240,9 +242,9 @@ const form = useForm<UpdateEvaluationFormValues>({
                                 name="evaluation_sale_manager"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Sales Manager</FormLabel>
+                                        <FormLabel>{t('planning.form.salesManager')}</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="Name…" {...field} />
+                                            <Input placeholder={t('planning.form.namePlaceholder')} {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -258,7 +260,7 @@ const form = useForm<UpdateEvaluationFormValues>({
                                 name="evaluation_status"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Status</FormLabel>
+                                        <FormLabel>{t('planning.form.status')}</FormLabel>
                                         <Select onValueChange={field.onChange} value={field.value}>
                                             <FormControl>
                                                 <SelectTrigger>
@@ -266,11 +268,11 @@ const form = useForm<UpdateEvaluationFormValues>({
                                                 </SelectTrigger>
                                             </FormControl>
                                             <SelectContent>
-                                                <SelectItem value="NEW">New Task</SelectItem>
-                                                <SelectItem value="PROGRESS">In Progress</SelectItem>
-                                                <SelectItem value="REVIEW">Feedback Request</SelectItem>
-                                                <SelectItem value="SUSPENDED">Suspended</SelectItem>
-                                                <SelectItem value="DONE">Done</SelectItem>
+                                                <SelectItem value="NEW">{t('planning.status.newTask')}</SelectItem>
+                                                <SelectItem value="PROGRESS">{t('planning.status.inProgress')}</SelectItem>
+                                                <SelectItem value="REVIEW">{t('planning.status.feedbackRequest')}</SelectItem>
+                                                <SelectItem value="SUSPENDED">{t('planning.status.suspended')}</SelectItem>
+                                                <SelectItem value="DONE">{t('planning.status.done')}</SelectItem>
                                             </SelectContent>
                                         </Select>
                                         <FormMessage />
@@ -283,7 +285,7 @@ const form = useForm<UpdateEvaluationFormValues>({
                                 name="evaluation_result"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Result</FormLabel>
+                                        <FormLabel>{t('planning.form.result')}</FormLabel>
                                         <Select onValueChange={field.onChange} value={field.value}>
                                             <FormControl>
                                                 <SelectTrigger>
@@ -291,9 +293,9 @@ const form = useForm<UpdateEvaluationFormValues>({
                                                 </SelectTrigger>
                                             </FormControl>
                                             <SelectContent>
-                                                <SelectItem value="PROCESSING">Processing</SelectItem>
-                                                <SelectItem value="RESULT_POSITIVE">Completed Positive</SelectItem>
-                                                <SelectItem value="RESULT_NEGATIVE">Completed Refused</SelectItem>
+                                                <SelectItem value="PROCESSING">{t('planning.status.processing')}</SelectItem>
+                                                <SelectItem value="RESULT_POSITIVE">{t('planning.status.completedPositive')}</SelectItem>
+                                                <SelectItem value="RESULT_NEGATIVE">{t('planning.status.completedRefused')}</SelectItem>
                                             </SelectContent>
                                         </Select>
                                         <FormMessage />
@@ -305,7 +307,7 @@ const form = useForm<UpdateEvaluationFormValues>({
                         <div className="flex items-center justify-between pt-4">
                             <div className="flex flex-col gap-1">
                                 <span className="text-[10px] uppercase font-semibold text-slate-400">
-                                    Last update: {evaluation.last_update ?? '—'}
+                                    {t('planning.form.lastUpdate')} {evaluation.last_update ?? '—'}
                                 </span>
                                 <ResultBadge result={form.watch('evaluation_result')} />
                             </div>
@@ -315,7 +317,7 @@ const form = useForm<UpdateEvaluationFormValues>({
                                 ) : (
                                     <Save className="w-4 h-4" />
                                 )}
-                                Save Changes
+                                {t('planning.actions.saveChanges')}
                             </Button>
                         </div>
                     </form>

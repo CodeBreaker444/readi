@@ -15,6 +15,7 @@ import { getFileDownloadUrl } from "@/lib/get-download-url";
 import axios from "axios";
 import { Download, FolderOpen, Loader2, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -48,6 +49,7 @@ function FileTable({
   onFileDeleted?: () => void;
   isDark: boolean;
 }) {
+  const { t } = useTranslation();
   const [downloading, setDownloading] = useState<number | null>(null);
   const [deleting, setDeleting] = useState<number | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -58,7 +60,7 @@ function FileTable({
       setDownloading(file.file_id);
       const key = file.repository_folder || "";
       if (!key) {
-        toast.error("No file key available.");
+        toast.error(t("planning.files.noFileKey"));
         return;
       }
       const url = await getFileDownloadUrl(key);
@@ -69,8 +71,7 @@ function FileTable({
       link.click();
       document.body.removeChild(link);
     } catch (err) {
-      console.error("Download failed:", err);
-      toast.error("Failed to download file.");
+      toast.error(t("planning.files.downloadFailed"));
     } finally {
       setDownloading(null);
     }
@@ -91,11 +92,10 @@ function FileTable({
         file_type: fileType,
         s3_key: fileToDelete.repository_folder || "",
       });
-      toast.success("File deleted successfully.");
+      toast.success(t("planning.files.missionDeleteSuccess"));
       onFileDeleted?.();
     } catch (err) {
-      console.error("Delete failed:", err);
-      toast.error("Failed to delete file.");
+      toast.error(t("planning.files.missionDeleteFailed"));
     } finally {
       setDeleting(null);
       setFileToDelete(null);
@@ -108,12 +108,12 @@ function FileTable({
         <Table>
           <TableHeader className={isDark ? "bg-slate-900/50" : "bg-slate-50/50"}>
             <TableRow className={isDark ? "border-slate-800 hover:bg-transparent" : ""}>
-              <TableHead className={isDark ? "text-slate-400" : ""}>Type</TableHead>
-              <TableHead className={isDark ? "text-slate-400" : ""}>Description</TableHead>
-              <TableHead className={isDark ? "text-slate-400" : ""}>Filename</TableHead>
-              <TableHead className={`text-center ${isDark ? "text-slate-400" : ""}`}>File Size</TableHead>
-              <TableHead className={isDark ? "text-slate-400" : ""}>Last Action</TableHead>
-              <TableHead className={`text-center ${isDark ? "text-slate-400" : ""}`}>Actions</TableHead>
+              <TableHead className={isDark ? "text-slate-400" : ""}>{t("planning.files.type")}</TableHead>
+              <TableHead className={isDark ? "text-slate-400" : ""}>{t("planning.form.description")}</TableHead>
+              <TableHead className={isDark ? "text-slate-400" : ""}>{t("planning.files.filename")}</TableHead>
+              <TableHead className={`text-center ${isDark ? "text-slate-400" : ""}`}>{t("planning.files.fileSize")}</TableHead>
+              <TableHead className={isDark ? "text-slate-400" : ""}>{t("planning.files.lastAction")}</TableHead>
+              <TableHead className={`text-center ${isDark ? "text-slate-400" : ""}`}>{t("planning.table.actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -123,7 +123,7 @@ function FileTable({
                   colSpan={6}
                   className={`h-16 text-center ${isDark ? "text-slate-500" : "text-muted-foreground"}`}
                 >
-                  No files found.
+                  {t("planning.files.noFiles")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -150,13 +150,13 @@ function FileTable({
                         className={isDark ? "border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200" : ""}
                         disabled={downloading === file.file_id}
                         onClick={() => handleDownload(file)}
+                        title={t("planning.files.download")}
                       >
                         {downloading === file.file_id ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
                           <Download className="h-4 w-4" />
                         )}
-                        <span className="sr-only">Download</span>
                       </Button>
                       <Button
                         variant="destructive"
@@ -164,6 +164,7 @@ function FileTable({
                         className={isDark ? "bg-red-950/50 text-red-400 border border-red-900/50 hover:bg-red-900/50" : ""}
                         disabled={deleting === file.file_id}
                         onClick={() => confirmDelete(file)}
+                        title={t("planning.actions.delete")}
                       >
                         {deleting === file.file_id ? (
                           <Loader2 className="h-3 w-3 animate-spin" />
@@ -183,22 +184,22 @@ function FileTable({
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent className={isDark ? "bg-slate-900 border-slate-800" : ""}>
           <AlertDialogHeader>
-            <AlertDialogTitle className={isDark ? "text-slate-100" : ""}>Delete this file?</AlertDialogTitle>
+            <AlertDialogTitle className={isDark ? "text-slate-100" : ""}>{t("planning.files.deleteFileTitle")}</AlertDialogTitle>
             <AlertDialogDescription className={isDark ? "text-slate-400" : ""}>
-              This will permanently delete{" "}
-              <strong className={isDark ? "text-slate-200" : ""}>{fileToDelete?.repository_filename}</strong> from storage.
-              This action cannot be undone.
+              {t("planning.files.deleteFileDescPrefix")}{" "}
+              <strong className={isDark ? "text-slate-200" : ""}>{fileToDelete?.repository_filename}</strong>{" "}
+              {t("planning.files.deleteFileDescSuffix")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className={isDark ? "bg-slate-800 border-slate-700 text-slate-300" : ""}>
-              Cancel
+              {t("planning.form.no")}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-red-600 text-white hover:bg-red-700"
             >
-              Delete
+              {t("planning.actions.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -213,6 +214,8 @@ export default function RepositoryFilesCard({
   onFileDeleted,
   isDark,
 }: RepositoryFilesCardProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="p-4">
       <Tabs defaultValue="logbook" className="w-full">
@@ -222,7 +225,7 @@ export default function RepositoryFilesCard({
             className={`gap-1.5 ${isDark ? "data-[state=active]:bg-slate-800 data-[state=active]:text-slate-100 text-slate-400" : ""}`}
           >
             <FolderOpen className="h-3.5 w-3.5" />
-            Mission Planning Files
+            {t("planning.files.missionFiles")}
             <Badge 
               variant={isDark ? "outline" : "secondary"} 
               className={`ml-1 text-[10px] px-1 ${isDark ? "border-slate-700 text-slate-400" : ""}`}
@@ -235,7 +238,7 @@ export default function RepositoryFilesCard({
             className={`gap-1.5 ${isDark ? "data-[state=active]:bg-slate-800 data-[state=active]:text-slate-100 text-slate-400" : ""}`}
           >
             <FolderOpen className="h-3.5 w-3.5" />
-            Mission Planning Test Files
+            {t("planning.files.missionTestFiles")}
             <Badge 
               variant={isDark ? "outline" : "secondary"} 
               className={`ml-1 text-[10px] px-1 ${isDark ? "border-slate-700 text-slate-400" : ""}`}
@@ -247,7 +250,7 @@ export default function RepositoryFilesCard({
         <TabsContent value="logbook" className="mt-4">
           <FileTable
             files={logbookFiles}
-            label="Mission Planning Files"
+            label={t("planning.files.missionFiles")}
             fileType="mission_planning_logbook"
             onFileDeleted={onFileDeleted}
             isDark={isDark}
@@ -256,7 +259,7 @@ export default function RepositoryFilesCard({
         <TabsContent value="test" className="mt-4">
           <FileTable
             files={testFiles}
-            label="Mission Planning Test Files"
+            label={t("planning.files.missionTestFiles")}
             fileType="mission_planning_test_logbook"
             onFileDeleted={onFileDeleted}
             isDark={isDark}

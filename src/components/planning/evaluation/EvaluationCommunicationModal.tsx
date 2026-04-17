@@ -3,24 +3,25 @@
 import axios from 'axios';
 import { Loader2, MessageSquarePlus, Send } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import {
-    Dialog,
-    DialogContent,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { EvaluationTask } from '@/config/types/evaluation';
@@ -47,6 +48,7 @@ export function EvaluationCommunicationModal({
   onClose,
   onSent,
 }: Props) {
+  const { t } = useTranslation();  
   const [users, setUsers] = useState<User[]>([]);
   const [toUserId, setToUserId] = useState('');
   const [subject, setSubject] = useState('');
@@ -61,10 +63,10 @@ export function EvaluationCommunicationModal({
     setSubject(
       task
         ? `[${task.task_name}] Evaluation #${evaluationId}`
-        : `Evaluation #${evaluationId} — Communication`,
+        : `Evaluation #${evaluationId} — ${t('planning.communication.newCommunication')}`,
     );
     loadUsers();
-  }, [open, task?.task_id ?? 'none']);
+  }, [open, task?.task_id ?? 'none', t, evaluationId]);
 
   async function loadUsers() {
     setLoadingUsers(true);
@@ -72,16 +74,15 @@ export function EvaluationCommunicationModal({
       const res = await axios.post('/api/evaluation/mission/users');
       setUsers(res.data.data ?? []);
     } catch {
-      toast.error('Failed to load users');
+      toast.error(t('planning.communication.loadError'));
     } finally {
       setLoadingUsers(false);
     }
   }
 
   async function handleSend() {
-    if (!toUserId) { toast.error('Please select a recipient'); return; }
-    if (!message.trim()) { toast.error('Message cannot be empty'); return; }
-
+    if (!toUserId) { toast.error(t('planning.communication.recipientSingle')); return; }
+    if (!message.trim()) { toast.error(t('planning.communication.messageSingle')); return; }
 
     try {
       setIsSending(true);
@@ -90,11 +91,11 @@ export function EvaluationCommunicationModal({
         subject:    subject.trim(),
         message:    message.trim(),
       });
-      toast.success('Communication sent');
+      toast.success(t('planning.communication.sentSuccess'));
       onSent();
       onClose();
     } catch (err: any) {
-      toast.error(err?.response?.data?.message ?? 'Failed to send');
+      toast.error(err?.response?.data?.message ?? t('planning.communication.sendError'));
     } finally {
       setIsSending(false);
     }
@@ -110,7 +111,7 @@ export function EvaluationCommunicationModal({
             </div>
             <div>
               <DialogTitle className="text-sm font-semibold text-slate-800">
-                {task ? 'Send Communication' : 'New Communication'}
+                {task ? t('planning.communication.title') : t('planning.communication.newCommunication')}
               </DialogTitle>
               <p className="text-xs text-slate-400 mt-0.5">
                 Evaluation #{evaluationId}
@@ -123,7 +124,7 @@ export function EvaluationCommunicationModal({
           {task && (
             <div className="rounded-lg bg-amber-50 border border-amber-100 px-3.5 py-2.5">
               <p className="text-xs font-semibold text-amber-600 uppercase tracking-wide mb-0.5">
-                Linked Task
+                {t('planning.communication.linkedTask')}
               </p>
               <p className="text-sm font-medium text-slate-800">{task.task_name}</p>
               <p className="font-mono text-xs text-slate-400 mt-0.5">{task.task_code}</p>
@@ -131,7 +132,7 @@ export function EvaluationCommunicationModal({
           )}
 
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-slate-600">To</Label>
+            <Label className="text-xs font-medium text-slate-600">{t('planning.communication.to')}</Label>
             {loadingUsers ? (
               <div className="flex items-center gap-2 h-8 text-xs text-slate-400">
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -154,7 +155,7 @@ export function EvaluationCommunicationModal({
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-slate-600">Subject</Label>
+            <Label className="text-xs font-medium text-slate-600">{t('planning.communication.subject')}</Label>
             <Input
               className="h-8 text-xs"
               value={subject}
@@ -163,11 +164,11 @@ export function EvaluationCommunicationModal({
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-slate-600">Message</Label>
+            <Label className="text-xs font-medium text-slate-600">{t('planning.communication.message')}</Label>
             <Textarea
               rows={5}
               className="text-xs resize-none"
-              placeholder="Write your message…"
+              placeholder={t('planning.communication.writeMessage')}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
             />
@@ -189,7 +190,7 @@ export function EvaluationCommunicationModal({
             ) : (
               <Send className="h-3.5 w-3.5" />
             )}
-            {isSending ? 'Sending…' : 'Send'}
+            {isSending ? 'Sending…' : t('planning.communication.send')}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { GrSystem } from "react-icons/gr";
 import {
   HiChevronDown,
@@ -39,163 +40,6 @@ interface NavItem {
   subItems?: SubNavItem[];
 }
 
-const navigationItems: NavItem[] = [
-  {
-    name: 'Dashboard',
-    href: '/dashboard',
-    icon: HiOutlineHome,
-    subItems: [
-      { name: 'Analytics', href: '/dashboard' },
-      { name: 'SHI Index & KPIs', href: '/dashboard/safety-health' }
-    ]
-  },
-  {
-    name: 'CO-00 – Planning',
-    href: '/planning/new-evaluation',
-    icon: HiOutlineChartBar,
-    subItems: [
-      { name: 'P00 – New Evaluation Request', href: '/planning/new-evaluation' },
-      { name: 'P01 – Evaluation', href: '/planning/evaluation' },
-      { name: 'P02 – Planning Dashboard', href: '/planning/planning-dashboard' },
-          // { name: 'P03 – Test Mission', href: '/planning/test-mission' },
-      { name: 'P04 – Mission Templates', href: '/planning/mission-template' },
-      { name: 'Flight Requests', href: '/planning/flight-requests' }
-    ]
-  },
-  {
-    name: 'Operations',
-    href: '/operations/table',
-    icon: HiOutlineCog,
-    subItems: [
-      { name: 'Operations Table', href: '/operations/table' },
-      { name: 'Daily Board', href: '/operations/daily-board' },
-      { name: 'Calendar', href: '/operations/calendar' }
-    ]
-  },
-  {
-    name: 'Logbooks',
-    href: '/logbooks/mission-planning-logbook',
-    icon: HiOutlineBookOpen,
-    subItems: [
-         // { name: 'Operation Request Logbook', href: '/logbooks/operation-requests' },
-      { name: 'Planned Mission Logbook', href: '/logbooks/mission-planning-logbook' },
-      { name: 'Flight Logbook', href: '/logbooks/operation-logbook' },
-      // { name: 'Battery Logbook', href: '/logbooks/battery' },
-      // { name: 'Maintenance Logbook', href: '/logbooks/maintenance' }
-    ]
-  },
-  {
-    name: 'Safety Management',
-    href: '/safety/spi-kpi-definitions',
-    icon: HiOutlineBell,
-    subItems: [
-      { name: 'SPI & KPI Definitions', href: '/safety/spi-kpi-definitions' },
-         // { name: 'Document Repository', href: '/safety/documents' }
-    ]
-  },
-    // {
-  //   name: 'Emergency Contact List',
-  //   href: '/emergency',
-  //   icon: Users
-  // }
-  {
-    name: 'Compliance',
-    href: '/compliance/general-audit-plan',
-    icon: HiOutlineShieldCheck,
-    subItems: [
-      { name: 'General Audit Plan', href: '/compliance/general-audit-plan' },
-      { name: 'Safety Target Review', href: '/compliance/safety-target-review' },
-      { name: 'Requirements & Evidence', href: '/compliance/requirements-evidences' },
-      { name: 'Calendar', href: '/compliance/calendar' },
-    ]
-  },
-  {
-    name: 'FlytBase',
-    href: '/flytbase',
-    icon: HiOutlinePaperAirplane,
-    subItems: [
-      { name: 'Settings', href: '/flytbase' },
-      { name: 'Recent Flights', href: '/flytbase/flights' },
-    ],
-  },
-  {
-    name: 'Training',
-    href: '/training/courses',
-    icon: HiOutlineAcademicCap,
-    subItems: [
-      { name: 'Courses', href: '/training/courses' },
-      { name: 'Calendar', href: '/training/calendar' },
-    ],
-  },
-  { name: 'Notifications', href: '/notifications', icon: HiOutlineBell },
-  { name: 'Document Repository', href: '/document-repository', icon: HiOutlineDocumentText },
-  { name: 'Audit Logs', href: '/audit-logs', icon: HiOutlineClipboardList },
-];
-
-const configurationItems: SubNavItem[] = [
-  {
-    name: 'Organization',
-    href: '/organization/chart',
-    icon: HiOutlineOfficeBuilding,
-    subItems: [
-      { name: 'Chart', href: '/organization/chart' },
-       // { name: 'Board', href: '/organization/board' },
-      { name: 'Procedures', href: '/organization/luc-procedures' },
-      // { name: 'LUC Documents', href: '/organization/luc-docs' }
-      { name: 'Checklist', href: '/organization/checklist' },
-      { name: 'Assignments', href: '/organization/assignments' },
-      { name: 'Communication', href: '/organization/communication' },
-    ],
-  },
-  {
-    name: 'Mission',
-    href: '/mission/type',
-    icon: HiOutlineTemplate,
-    subItems: [
-      { name: 'Mission Type', href: '/mission/type' },
-      { name: 'Mission Category', href: '/mission/category' },
-      { name: 'Mission Status', href: '/mission/status' },
-      { name: 'Mission Result', href: '/mission/result' },
-    ],
-  },
-  {
-    name: 'Systems',
-    href: '/systems/manage',
-    icon: GrSystem,
-    subItems: [
-      { name: 'Manage Systems', href: '/systems/manage' },
-      { name: 'Map', href: '/systems/map' },
-      { name: 'Maintenance Dashboard', href: '/systems/maintenance-dashboard' },
-      { name: 'Maintenance Tickets', href: '/systems/maintenance-tickets' },
-    ],
-  },
-  {
-    name: 'Team',
-    href: '/team/personnel',
-    icon: HiOutlineUsers,
-    subItems: [
-      { name: 'Personnel', href: '/team/personnel' },
-      { name: 'Crew Shift', href: '/team/crew-shift' },
-      { name: 'Client', href: '/team/client' },
-    ],
-  },
-  {
-    name: 'Company',
-    href: '/company',
-    icon: HiOutlineBriefcase,
-    subItems: [{ name: 'Company Directory', href: '/company' }],
-  },
-  {
-    name: 'Settings',
-    href: '/settings/security',
-    icon: HiOutlineShieldCheck,
-    subItems: [
-      { name: 'Security & API Keys', href: '/settings/security' },
-      { name: 'Integrations', href: '/settings/integrations' },
-    ],
-  },
-];
-
 interface SidebarProps {
   isDark: boolean;
   role: Role | null;
@@ -204,12 +48,158 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCollapse }) => {
+  const { t } = useTranslation();
   const router = useRouter();
   const pathname = usePathname();
   const [activeItem, setActiveItem] = useState('/dashboard');
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [tooltipItem, setTooltipItem] = useState<string | null>(null);
+
+  const navigationItems: NavItem[] = [
+    {
+      name: t('sidebar.dashboard'),
+      href: '/dashboard',
+      icon: HiOutlineHome,
+      subItems: [
+        { name: t('sidebar.analytics'), href: '/dashboard' },
+        { name: t('sidebar.shiKpis'), href: '/dashboard/safety-health' }
+      ]
+    },
+    {
+      name: t('sidebar.planning'),
+      href: '/planning/new-evaluation',
+      icon: HiOutlineChartBar,
+      subItems: [
+        { name: t('sidebar.newEvaluationRequest'), href: '/planning/new-evaluation' },
+        { name: t('sidebar.evaluation'), href: '/planning/evaluation' },
+        { name: t('sidebar.planningDashboard'), href: '/planning/planning-dashboard' },
+        { name: t('sidebar.missionTemplates'), href: '/planning/mission-template' },
+      ]
+    },
+    {
+      name: t('sidebar.operations'),
+      href: '/operations/table',
+      icon: HiOutlineCog,
+      subItems: [
+        { name: t('sidebar.operationsTable'), href: '/operations/table' },
+        { name: t('sidebar.dailyBoard'), href: '/operations/daily-board' },
+        { name: t('sidebar.flightRequests'), href: '/operations/flight-requests' },
+        { name: t('sidebar.calendar'), href: '/operations/calendar' }
+      ]
+    },
+    {
+      name: t('sidebar.logbooks'),
+      href: '/logbooks/mission-planning-logbook',
+      icon: HiOutlineBookOpen,
+      subItems: [
+        { name: t('sidebar.plannedMissionLogbook'), href: '/logbooks/mission-planning-logbook' },
+        { name: t('sidebar.flightLogbook'), href: '/logbooks/operation-logbook' },
+      ]
+    },
+    {
+      name: t('sidebar.safetyManagement'),
+      href: '/safety/spi-kpi-definitions',
+      icon: HiOutlineBell,
+      subItems: [
+        { name: t('sidebar.spiKpiDefinitions'), href: '/safety/spi-kpi-definitions' },
+      ]
+    },
+    {
+      name: t('sidebar.compliance'),
+      href: '/compliance/general-audit-plan',
+      icon: HiOutlineShieldCheck,
+      subItems: [
+        { name: t('sidebar.generalAuditPlan'), href: '/compliance/general-audit-plan' },
+        { name: t('sidebar.safetyTargetReview'), href: '/compliance/safety-target-review' },
+        { name: t('sidebar.requirementsEvidence'), href: '/compliance/requirements-evidences' },
+        { name: t('sidebar.calendar'), href: '/compliance/calendar' },
+      ]
+    },
+    {
+      name: t('sidebar.flytbase'),
+      href: '/flytbase',
+      icon: HiOutlinePaperAirplane,
+      subItems: [
+        { name: t('sidebar.settings'), href: '/flytbase' },
+        { name: t('sidebar.recentFlights'), href: '/flytbase/flights' },
+      ],
+    },
+    {
+      name: t('sidebar.training'),
+      href: '/training/courses',
+      icon: HiOutlineAcademicCap,
+      subItems: [
+        { name: t('sidebar.courses'), href: '/training/courses' },
+        { name: t('sidebar.calendar'), href: '/training/calendar' },
+      ],
+    },
+    { name: t('sidebar.notifications'), href: '/notifications', icon: HiOutlineBell },
+    { name: t('sidebar.documentRepository'), href: '/document-repository', icon: HiOutlineDocumentText },
+    { name: t('sidebar.auditLogs'), href: '/audit-logs', icon: HiOutlineClipboardList },
+  ];
+
+  const configurationItems: SubNavItem[] = [
+    {
+      name: t('sidebar.organization'),
+      href: '/organization/chart',
+      icon: HiOutlineOfficeBuilding,
+      subItems: [
+        { name: t('sidebar.chart'), href: '/organization/chart' },
+        { name: t('sidebar.procedures'), href: '/organization/luc-procedures' },
+        { name: t('sidebar.checklist'), href: '/organization/checklist' },
+        { name: t('sidebar.assignments'), href: '/organization/assignments' },
+        { name: t('sidebar.communication'), href: '/organization/communication' },
+      ],
+    },
+    {
+      name: t('sidebar.mission'),
+      href: '/mission/type',
+      icon: HiOutlineTemplate,
+      subItems: [
+        { name: t('sidebar.missionType'), href: '/mission/type' },
+        { name: t('sidebar.missionCategory'), href: '/mission/category' },
+        { name: t('sidebar.missionStatus'), href: '/mission/status' },
+        { name: t('sidebar.missionResult'), href: '/mission/result' },
+      ],
+    },
+    {
+      name: t('sidebar.systems'),
+      href: '/systems/manage',
+      icon: GrSystem,
+      subItems: [
+        { name: t('sidebar.manageSystems'), href: '/systems/manage' },
+        { name: t('sidebar.map'), href: '/systems/map' },
+        { name: t('sidebar.maintenanceDashboard'), href: '/systems/maintenance-dashboard' },
+        { name: t('sidebar.maintenanceTickets'), href: '/systems/maintenance-tickets' },
+      ],
+    },
+    {
+      name: t('sidebar.team'),
+      href: '/team/personnel',
+      icon: HiOutlineUsers,
+      subItems: [
+        { name: t('sidebar.personnel'), href: '/team/personnel' },
+        { name: t('sidebar.crewShift'), href: '/team/crew-shift' },
+        { name: t('sidebar.client'), href: '/team/client' },
+      ],
+    },
+    {
+      name: t('sidebar.company'),
+      href: '/company',
+      icon: HiOutlineBriefcase,
+      subItems: [{ name: t('sidebar.companyDirectory'), href: '/company' }],
+    },
+    {
+      name: t('sidebar.settings'),
+      href: '/settings/security',
+      icon: HiOutlineShieldCheck,
+      subItems: [
+        { name: t('sidebar.securityApiKeys'), href: '/settings/security' },
+        { name: t('sidebar.integrations'), href: '/settings/integrations' },
+      ],
+    },
+  ];
 
   useEffect(() => {
     setActiveItem(pathname);
@@ -260,7 +250,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
 
   const filteredConfigurationItems = configurationItems
     .map((configItem) => {
-      if (configItem.name === 'Company' && role !== 'SUPERADMIN') {
+      // Hide Company section for non-superadmins (use stable href, not translated name)
+      if (configItem.href === '/company' && role !== 'SUPERADMIN') {
         return null;
       }
 
@@ -393,7 +384,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
                         color: isActive
                           ? isDark ? '#a78bfa' : '#ffffff'
                           : isHovered ? '#8b5cf6'
-                          : isDark ? '#475569' : '#cbd5e1',
+                            : isDark ? '#475569' : '#cbd5e1',
                       }}
                     >
                       ●
@@ -481,9 +472,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
       `}
     >
       <div
-        className={`shrink-0 ${isDark ? 'border-b border-slate-800' : 'border-b border-slate-100'} ${
-          isCollapsed ? 'px-2 py-5' : 'px-5 py-5'
-        }`}
+        className={`shrink-0 ${isDark ? 'border-b border-slate-800' : 'border-b border-slate-100'} ${isCollapsed ? 'px-2 py-5' : 'px-5 py-5'
+          }`}
       >
         <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
           <div className={`flex items-center ${isCollapsed ? '' : 'gap-2.5'}`}>
@@ -503,9 +493,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
             {!isCollapsed && (
               <div>
                 <p
-                  className={`font-bold leading-none tracking-tight ${
-                    isDark ? 'text-white' : 'text-slate-900'
-                  }`}
+                  className={`font-bold leading-none tracking-tight ${isDark ? 'text-white' : 'text-slate-900'
+                    }`}
                   style={{ fontSize: '0.9rem', fontFamily: "'DM Sans', system-ui, sans-serif" }}
                 >
                   ReADI
@@ -514,7 +503,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
                   className={`leading-none mt-0.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}
                   style={{ fontSize: '0.6rem', letterSpacing: '0.12em', textTransform: 'uppercase' }}
                 >
-                  Drone Control
+                  {t('sidebar.appSubtitle')}
                 </p>
               </div>
             )}
@@ -522,12 +511,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
           {!isCollapsed && (
             <button
               onClick={onToggleCollapse}
-              className={`cursor-pointer p-1 rounded-md transition-all duration-150 ${
-                isDark
+              className={`cursor-pointer p-1 rounded-md transition-all duration-150 ${isDark
                   ? 'hover:bg-slate-800 text-slate-500 hover:text-slate-300'
                   : 'hover:bg-slate-100 text-slate-400 hover:text-slate-600'
-              }`}
-              title="Collapse sidebar"
+                }`}
+              title={t('sidebar.collapse')}
             >
               <TbLayoutSidebarFilled size={20} />
             </button>
@@ -539,12 +527,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
         <div className="flex justify-center pt-2 pb-1">
           <button
             onClick={onToggleCollapse}
-            className={`cursor-pointer p-1 rounded-md transition-all duration-150 ${
-              isDark
+            className={`cursor-pointer p-1 rounded-md transition-all duration-150 ${isDark
                 ? 'hover:bg-slate-800 text-slate-500 hover:text-slate-300'
                 : 'hover:bg-slate-100 text-slate-400 hover:text-slate-600'
-            }`}
-            title="Expand sidebar"
+              }`}
+            title={t('sidebar.expand')}
           >
             <TbLayoutSidebarFilled size={20} />
           </button>
@@ -552,9 +539,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
       )}
 
       <nav
-        className={`flex-1 overflow-y-auto py-3 sidebar-scroll ${
-          isCollapsed ? 'px-1.5 space-y-1' : 'px-3 space-y-0.5'
-        }`}
+        className={`flex-1 overflow-y-auto py-3 sidebar-scroll ${isCollapsed ? 'px-1.5 space-y-1' : 'px-3 space-y-0.5'
+          }`}
       >
         {isCollapsed ? (
           <>
@@ -565,9 +551,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
             {filteredConfigurationItems.length > 0 && (
               <>
                 <div
-                  className={`my-2 mx-2 border-t ${
-                    isDark ? 'border-slate-800' : 'border-slate-200'
-                  }`}
+                  className={`my-2 mx-2 border-t ${isDark ? 'border-slate-800' : 'border-slate-200'
+                    }`}
                 />
                 {filteredConfigurationItems.map((configItem) =>
                   renderCollapsedIcon(
@@ -638,7 +623,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
                   className={`px-3 pb-1.5 uppercase ${isDark ? 'text-slate-600' : 'text-slate-400'}`}
                   style={{ fontSize: '0.6rem', letterSpacing: '0.12em', fontWeight: 600 }}
                 >
-                  Configuration
+                  {t('sidebar.configuration')}
                 </p>
                 <div className="space-y-0.5">
                   {filteredConfigurationItems.map((configItem) => {

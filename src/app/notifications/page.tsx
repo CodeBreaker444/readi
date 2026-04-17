@@ -48,6 +48,7 @@ import {
     RefreshCcw
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 import ExportButtons from "@/components/system/ExportButtons";
@@ -59,6 +60,7 @@ import axios from "axios";
 
 
 export default function NotificationsPage() {
+  const { t } = useTranslation();
   const { isDark } = useTheme()
   const [data, setData] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
@@ -88,11 +90,11 @@ export default function NotificationsPage() {
           "/api/notification/list",
           filters
         );
-        if (!items.data) throw new Error("No data received");
+        if (!items.data) throw new Error(t('notifications.errors.noData'));
 
         setData(items.data.data);
       } catch (err: any) {
-        toast.error(err.message ?? "Failed to load notifications.");
+        toast.error(err.message ?? t('notifications.errors.load'));
       } finally {
         setLoading(false);
       }
@@ -121,9 +123,9 @@ export default function NotificationsPage() {
             : n
         )
       );
-      toast.success("Marked as read.");
+      toast.success(t('notifications.success.markedRead'));
     } catch (err: any) {
-      toast.error(err.message ?? "Failed to mark as read.");
+      toast.error(err.message ?? t('notifications.errors.markRead'));
     }
   };
 
@@ -137,9 +139,9 @@ export default function NotificationsPage() {
           read_at: n.read_at ?? new Date().toISOString(),
         }))
       );
-      toast.success("All notifications marked as read.");
+      toast.success(t('notifications.success.markedAllRead'));
     } catch (err: any) {
-      toast.error(err.message ?? "Failed to mark all as read.");
+      toast.error(err.message ?? t('notifications.errors.markAllRead'));
     }
   }
 
@@ -151,10 +153,10 @@ export default function NotificationsPage() {
         notification_id: deleteTarget.notification_id,
       });
       setData((prev) => prev.filter((n) => n.notification_id !== deleteTarget.notification_id));
-      toast.success("Notification deleted.");
+      toast.success(t('notifications.success.deleted'));
       setDeleteTarget(null);
     } catch (err: any) {
-      toast.error(err.message ?? "Failed to delete.");
+      toast.error(err.message ?? t('notifications.errors.delete'));
     } finally {
       setDeleting(false);
     }
@@ -194,7 +196,7 @@ export default function NotificationsPage() {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className={`font-semibold text-base tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>
-                  Notifications
+                  {t('notifications.title')}
                 </h1>
                 {unreadCount > 0 && (
                   <Badge className="bg-violet-600 hover:bg-violet-500 text-white text-[10px] rounded-full px-1.5 h-4 min-w-[16px] flex items-center justify-center border-none">
@@ -203,7 +205,7 @@ export default function NotificationsPage() {
                 )}
               </div>
               <p className={`text-xs ${isDark ? "text-slate-500" : "text-slate-400"}`}>
-                {data.length} total &bull; {unreadCount} unread messages
+                {t('notifications.summary', { total: data.length, unread: unreadCount })}
               </p>
             </div>
           </div>
@@ -220,7 +222,7 @@ export default function NotificationsPage() {
                 }`}
             >
               <CheckCheck className="w-3.5 h-3.5" />
-              Mark all read
+              {t('notifications.markAllRead')}
             </Button>
 
             <Button
@@ -236,7 +238,7 @@ export default function NotificationsPage() {
               <RefreshCcw
                 className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`}
               />
-              Reload
+              {t('notifications.reload')}
             </Button>
           </div>
         </div>
@@ -246,7 +248,7 @@ export default function NotificationsPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium text-muted-foreground">
-                Status
+                {t('notifications.filters.status')}
               </label>
               <Select
                 value={serverFilters.status || "all"}
@@ -258,23 +260,23 @@ export default function NotificationsPage() {
                 }
               >
                 <SelectTrigger className="h-9">
-                  <SelectValue placeholder="All" />
+                  <SelectValue placeholder={t('notifications.filters.all')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="UNREAD">Unread</SelectItem>
-                  <SelectItem value="READ">Read</SelectItem>
+                  <SelectItem value="all">{t('notifications.filters.all')}</SelectItem>
+                  <SelectItem value="UNREAD">{t('notifications.filters.unread')}</SelectItem>
+                  <SelectItem value="READ">{t('notifications.filters.read')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium text-muted-foreground">
-                Procedure
+                {t('notifications.filters.procedure')}
               </label>
               <Input
                 className="h-9"
-                placeholder="e.g. planning"
+                placeholder={t('notifications.filters.procedurePlaceholder')}
                 value={serverFilters.procedure_name}
                 onChange={(e) =>
                   setServerFilters((p) => ({
@@ -287,7 +289,7 @@ export default function NotificationsPage() {
 
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium text-muted-foreground">
-                From
+                {t('notifications.filters.from')}
               </label>
               <Input
                 type="date"
@@ -304,7 +306,7 @@ export default function NotificationsPage() {
 
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium text-muted-foreground">
-                To
+                {t('notifications.filters.to')}
               </label>
               <Input
                 type="date"
@@ -318,11 +320,11 @@ export default function NotificationsPage() {
 
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium text-muted-foreground">
-                Search message
+                {t('notifications.filters.searchMessage')}
               </label>
               <Input
                 className="h-9"
-                placeholder="Search…"
+                placeholder={t('common.search')}
                 value={serverFilters.search}
                 onChange={(e) =>
                   setServerFilters((p) => ({ ...p, search: e.target.value }))
@@ -350,10 +352,10 @@ export default function NotificationsPage() {
                 loadData(reset);
               }}
             >
-              Reset
+              {t('notifications.filters.reset')}
             </Button>
             <Button size="sm" onClick={handleSearch} disabled={loading} className="bg-violet-600 hover:bg-violet-500 cursor-pointer">
-              Search
+              {t('common.search')}
             </Button>
           </div>
         </CardContent>
@@ -363,11 +365,11 @@ export default function NotificationsPage() {
         <CardHeader className="">
           <div className="flex items-center justify-between">
             <CardTitle className="text-base font-semibold">
-              Notification List
+              {t('notifications.listTitle')}
             </CardTitle>
             <Input
               className="h-8 w-48 text-xs"
-              placeholder="Filter results…"
+              placeholder={t('notifications.filters.filterResults')}
               value={
                 (table.getColumn("message")?.getFilterValue() as string) ?? ""
               }
@@ -470,7 +472,7 @@ export default function NotificationsPage() {
                           colSpan={columns.length}
                           className="text-center text-muted-foreground py-12"
                         >
-                          No notifications found.
+                          {t('notifications.empty')}
                         </TableCell>
                       </TableRow>
                     ) : (
@@ -500,7 +502,7 @@ export default function NotificationsPage() {
 
               <div className="flex items-center justify-between px-2">
                 <ExportButtons
-                  filename="Notifications"
+                  filename={t('notifications.title')}
                   headers={['ID', 'Message', 'Procedure', 'Read', 'Sender', 'Role', 'Created At', 'Read At']}
                   rows={table.getFilteredRowModel().rows.map(r => { const n = r.original as Notification; return [n.notification_id, n.message, n.procedure_name, n.is_read, n.sender_fullname ?? '', n.sender_profile_code ?? '', n.created_at, n.read_at ?? '']; })}
                 />
@@ -517,21 +519,21 @@ export default function NotificationsPage() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete notification?</AlertDialogTitle>
+            <AlertDialogTitle>{t('notifications.deleteTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently remove notification{" "}
+              {t('notifications.deleteDescriptionPrefix')}{" "}
               <strong>#{deleteTarget?.notification_id}</strong>. This cannot be
-              undone.
+              {t('notifications.deleteDescriptionSuffix')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleting}>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               disabled={deleting}
               className="bg-destructive hover:bg-destructive/90"
             >
-              {deleting ? "Deleting…" : "Delete"}
+              {deleting ? t('knowledge.deleting') : t('common.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

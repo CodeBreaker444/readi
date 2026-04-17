@@ -20,6 +20,7 @@ import {
   type SortingState,
 } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import ExportButtons from "../system/ExportButtons";
 import { TablePagination } from "../tables/Pagination";
 import { getLogbookColumns } from "../tables/PlanningLogbookColumns";
@@ -43,12 +44,13 @@ export default function MissionPlanningLogbookTable({
   onManage,
   onTestLogbook,
 }: MissionPlanningLogbookTableProps) {
+  const { t } = useTranslation();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
 
   const columns = useMemo(
-    () => getLogbookColumns({ openedRowId, onOpen, onDelete, onManage, onTestLogbook }),
-    [openedRowId, onOpen, onDelete, onManage, onTestLogbook]
+    () => getLogbookColumns({ openedRowId, onOpen, onDelete, onManage, onTestLogbook, t }),
+    [openedRowId, onOpen, onDelete, onManage, onTestLogbook, t]
   );
 
   const table = useReactTable({
@@ -62,11 +64,11 @@ export default function MissionPlanningLogbookTable({
     getFilteredRowModel: getFilteredRowModel(),
   });
 
- return (
+  return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <Input
-          placeholder="Search logbook..."
+          placeholder={t("planning.missionPlanning.searchLogbook")}
           value={globalFilter}
           onChange={(e) => setGlobalFilter(e.target.value)}
           className={`max-w-sm ${
@@ -79,8 +81,7 @@ export default function MissionPlanningLogbookTable({
           variant="secondary" 
           className={isDark ? "bg-slate-800 text-slate-300 hover:bg-slate-700" : ""}
         >
-          {table.getFilteredRowModel().rows.length} record
-          {table.getFilteredRowModel().rows.length !== 1 ? "s" : ""}
+          {table.getFilteredRowModel().rows.length} {t("planning.missionPlanning.record")}{table.getFilteredRowModel().rows.length !== 1 ? "s" : ""}
         </Badge>
       </div>
 
@@ -109,7 +110,7 @@ export default function MissionPlanningLogbookTable({
                   colSpan={columns.length}
                   className={`h-24 text-center ${isDark ? "text-slate-500" : "text-muted-foreground"}`}
                 >
-                  No mission planning logbook entries found.
+                  {t("planning.missionPlanning.noEntries")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -140,7 +141,7 @@ export default function MissionPlanningLogbookTable({
       
       <div className="flex items-center justify-between">
         <ExportButtons
-          filename="Mission Planning Logbook"
+          filename={t("planning.missionPlanning.logbook")}
           headers={['Plan ID', 'Code', 'Description', 'Version', 'Active', 'Planning', 'Tool', 'Tests']}
           rows={data.map(d => [d.mission_planning_id, d.mission_planning_code, d.mission_planning_desc, d.mission_planning_ver, d.mission_planning_active, d.planning_desc, d.tool_code, d.tot_test])}
         />

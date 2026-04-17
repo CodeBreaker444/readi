@@ -4,6 +4,7 @@ import AiUsageWidget from '@/components/ai/AiUsageWidget';
 import { cn } from '@/lib/utils';
 import { Clock, Navigation, Plane, TrendingUp, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Bar, BarChart, CartesianGrid, Cell, Legend,
   Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis
@@ -28,55 +29,55 @@ interface MissionData {
 const PIE_COLORS = ['#ef4444', '#10b981', '#f59e0b'];
 const BAR_COLORS = ['#6366f1', '#10b981', '#f59e0b'];
 
-const STATS = (data: any) => [
+const STATS = (data: any, t: any) => [
   {
-    label: 'Total Missions',
+    label: t('dashboard.stats.totalMissions'),
     value: data?.readi_mission_total?.total_mission?.toString() || '0',
     icon: Plane,
     accent: '#6366f1',
     iconBg: 'bg-indigo-500/10',
     iconColor: 'text-indigo-500',
-    footer: `${new Date().getFullYear()} year`,
+    footer: t('dashboard.stats.yearFooter', { year: new Date().getFullYear() }),
     footerColor: 'text-slate-400',
   },
   {
-    label: 'Logged Drones',
+    label: t('dashboard.stats.loggedDrones'),
     value: data?.readi_mission_total?.total_drones_used?.toString() || '0',
     icon: Navigation,
     accent: '#06b6d4',
     iconBg: 'bg-cyan-500/10',
     iconColor: 'text-cyan-500',
-    footer: `${new Date().getFullYear()} year`,
+    footer: t('dashboard.stats.yearFooter', { year: new Date().getFullYear() }),
     footerColor: 'text-slate-400',
   },
   {
-    label: 'Hours Flown',
+    label: t('dashboard.stats.hoursFlown'),
     value: data?.pilot_total?.total_hours?.toString() || data?.readi_mission_total?.total_hours?.toString() || '0',
     icon: Clock,
     accent: '#ec4899',
     iconBg: 'bg-pink-500/10',
     iconColor: 'text-pink-500',
-    footer: `${new Date().getFullYear()} year`,
+    footer: t('dashboard.stats.yearFooter', { year: new Date().getFullYear() }),
     footerColor: 'text-slate-400',
   },
   {
-    label: 'Km Flown',
+    label: t('dashboard.stats.kmFlown'),
     value: Math.round((data?.pilot_total?.total_distance || data?.readi_mission_total?.total_meter || 0) / 1000).toString(),
     icon: TrendingUp,
     accent: '#f59e0b',
     iconBg: 'bg-amber-500/10',
     iconColor: 'text-amber-500',
-    footer: `${new Date().getFullYear()} year`,
+    footer: t('dashboard.stats.yearFooter', { year: new Date().getFullYear() }),
     footerColor: 'text-slate-400',
   },
   {
-    label: 'Customers Served',
+    label: t('dashboard.stats.customersServed'),
     value: data?.readi_mission_total?.total_clients_served?.toString() || '0',
     icon: Users,
     accent: '#f97316',
     iconBg: 'bg-orange-500/10',
     iconColor: 'text-orange-500',
-    footer: `${new Date().getFullYear()} year`,
+    footer: t('dashboard.stats.yearFooter', { year: new Date().getFullYear() }),
     footerColor: 'text-slate-400',
   },
 ];
@@ -89,6 +90,7 @@ const STATUS_STYLE: Record<string, string> = {
 
 export default function DashboardClient({ ownerId, userProfileCode, userId, initialData }: DashboardClientProps) {
   const { isDark } = useTheme();
+  const { t } = useTranslation();
   const [data, setData] = useState<any>(initialData || null);
   const [loading, setLoading] = useState(!initialData);
 
@@ -121,14 +123,14 @@ export default function DashboardClient({ ownerId, userProfileCode, userId, init
 
   const missions: MissionData[] = (data?.readi_mission_scheduler_executed || []).map((m: any) => ({
     id: `#${m.mission_id}`,
-    name: m.pilot_name?.trim() || 'Not Assigned',
+    name: m.pilot_name?.trim() || t('dashboard.pilot.notAssigned'),
     date: m.date,
     status: m.mission_result_desc === 'Completed' ? 'Completed' : 'Waiting',
   }));
 
   const nextMissions: MissionData[] = (data?.readi_mission_scheduler_planned || []).map((m: any) => ({
     id: `#${m.mission_id}`,
-    name: m.pilot_name?.trim() || 'Not Assigned',
+    name: m.pilot_name?.trim() || t('dashboard.pilot.notAssigned'),
     date: m.date,
     status: 'Waiting',
   }));
@@ -170,21 +172,37 @@ export default function DashboardClient({ ownerId, userProfileCode, userId, init
     isDark ? 'text-slate-400 border-slate-700 hover:bg-slate-700 hover:text-slate-200' : 'text-gray-500 border-gray-200 hover:bg-gray-50 hover:text-gray-700'
   );
 
-  const stats = STATS(data);
+  const statusToLabel = (status: MissionData['status']) => {
+    switch (status) {
+      case 'Completed':
+        return t('dashboard.missionStatus.completed');
+      case 'Waiting':
+        return t('dashboard.missionStatus.waiting');
+      case 'Left':
+        return t('dashboard.missionStatus.left');
+      default:
+        return status;
+    }
+  };
+
+  const stats = STATS(data, t);
+  const defaultLegendLabels = [
+    t('dashboard.missionResults.legend.completed'),
+    t('dashboard.missionResults.legend.inProgress'),
+    t('dashboard.missionResults.legend.failed'),
+  ];
 
   return (
     <div className={`p-4 sm:p-6 lg:p-8 min-h-screen ${isDark ? 'text-white' : 'text-gray-900'}`}>
-
-      {/* Page header */}
       <div className="flex items-end justify-between mb-8">
         <div className="flex items-center gap-3">
           <div className="w-1 h-6 rounded-full bg-violet-600" />
           <div>
             <p className={cn('text-xs font-semibold uppercase tracking-widest mb-0.5', isDark ? 'text-slate-500' : 'text-gray-400')}>
-              Overview
+              {t('dashboard.overview')}
             </p>
             <h1 className={cn('text-xl font-bold tracking-tight', isDark ? 'text-white' : 'text-gray-900')}>
-              Dashboard{' '}
+              {t('dashboard.title')}{' '}
               <span className={isDark ? 'text-slate-500' : 'text-gray-400'}>{new Date().getFullYear()}</span>
             </h1>
           </div>
@@ -232,13 +250,13 @@ export default function DashboardClient({ ownerId, userProfileCode, userId, init
         <div className={cn(card, 'lg:col-span-2 flex flex-col')}>
           <div className={cardHeader}>
             <div>
-              <p className={eyebrow}>Analytics</p>
-              <h2 className={cardTitle}>Mission Overview</h2>
+              <p className={eyebrow}>{t('dashboard.analytics')}</p>
+              <h2 className={cardTitle}>{t('dashboard.missionOverview')}</h2>
             </div>
             <select className={selectCls}>
-              <option>This Year</option>
-              <option>This Month</option>
-              <option>This Week</option>
+              <option>{t('dashboard.filters.thisYear')}</option>
+              <option>{t('dashboard.filters.thisMonth')}</option>
+              <option>{t('dashboard.filters.thisWeek')}</option>
             </select>
           </div>
           <div className="p-5 h-72">
@@ -264,10 +282,10 @@ export default function DashboardClient({ ownerId, userProfileCode, userId, init
         <div className={cn(card, 'flex flex-col')}>
           <div className={cardHeader}>
             <div>
-              <p className={eyebrow}>Breakdown</p>
-              <h2 className={cardTitle}>Mission Results</h2>
+            <p className={eyebrow}>{t('dashboard.breakdown')}</p>
+            <h2 className={cardTitle}>{t('dashboard.missionResults.title')}</h2>
             </div>
-            <select className={selectCls}><option>All</option></select>
+          <select className={selectCls}><option>{t('dashboard.all')}</option></select>
           </div>
           <div className="p-5 flex flex-col gap-4">
             <div className="h-44">
@@ -286,8 +304,16 @@ export default function DashboardClient({ ownerId, userProfileCode, userId, init
 
             {/* Legend rows */}
             <div className={cn('border-t pt-4 space-y-2', isDark ? 'border-slate-700/60' : 'border-gray-100')}>
-              {(data?.readi_mission_result_chart?.labels ?? ['Completed', 'In Progress', 'Failed'])
+            {(data?.readi_mission_result_chart?.labels ?? defaultLegendLabels)
                 .map((label: string, i: number) => {
+                  const displayLabel =
+                    label === 'Completed'
+                      ? t('dashboard.missionResults.legend.completed')
+                      : label === 'In Progress'
+                        ? t('dashboard.missionResults.legend.inProgress')
+                        : label === 'Failed'
+                          ? t('dashboard.missionResults.legend.failed')
+                          : label;
                   const val = data?.readi_mission_result_chart
                     ? data.readi_mission_result_chart.series[i]
                     : ['65%', '25%', '10%'][i];
@@ -301,7 +327,7 @@ export default function DashboardClient({ ownerId, userProfileCode, userId, init
                       <div className="flex items-center justify-between mb-1">
                         <div className="flex items-center gap-2">
                           <span className="h-2 w-2 rounded-sm shrink-0" style={{ backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }} />
-                          <span className={cn('text-xs', isDark ? 'text-slate-400' : 'text-gray-500')}>{label}</span>
+                          <span className={cn('text-xs', isDark ? 'text-slate-400' : 'text-gray-500')}>{displayLabel}</span>
                         </div>
                         <span className={cn('text-xs font-semibold tabular-nums', isDark ? 'text-slate-200' : 'text-gray-700')}>{val}</span>
                       </div>
@@ -324,8 +350,8 @@ export default function DashboardClient({ ownerId, userProfileCode, userId, init
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {[
-          { title: 'Past 10 Missions',   eyebrowLabel: 'History',   rows: missions,     empty: 'No past missions' },
-          { title: 'Next 10 Missions',   eyebrowLabel: 'Upcoming',  rows: nextMissions, empty: 'No upcoming missions' },
+          { title: t('dashboard.missions.past.title'),   eyebrowLabel: t('dashboard.missions.past.eyebrow'),   rows: missions,     empty: t('dashboard.missions.past.empty') },
+          { title: t('dashboard.missions.next.title'),   eyebrowLabel: t('dashboard.missions.next.eyebrow'),   rows: nextMissions, empty: t('dashboard.missions.next.empty') },
         ].map(({ title, eyebrowLabel, rows, empty }) => (
           <div key={title} className={cn(card, 'flex flex-col')}>
             <div className={cardHeader}>
@@ -334,18 +360,18 @@ export default function DashboardClient({ ownerId, userProfileCode, userId, init
                 <h2 className={cardTitle}>{title}</h2>
               </div>
               <div className="flex gap-1.5">
-                <button className={btnCls}>Search</button>
-                <button className={btnCls}>Filter</button>
+                <button className={btnCls}>{t('dashboard.missions.actions.search')}</button>
+                <button className={btnCls}>{t('dashboard.missions.actions.filter')}</button>
               </div>
             </div>
             <div className="p-5 overflow-x-auto">
               <table className="min-w-full">
                 <thead>
                   <tr className={cn('border-b', isDark ? 'border-slate-700/60' : 'border-gray-100')}>
-                    <th className={cn(thCls, 'w-16')}>ID</th>
-                    <th className={thCls}>Pilot</th>
-                    <th className={cn(thCls, 'hidden sm:table-cell')}>Date</th>
-                    <th className={thCls}>Status</th>
+                    <th className={cn(thCls, 'w-16')}>{t('dashboard.table.headers.id')}</th>
+                    <th className={thCls}>{t('dashboard.table.headers.pilot')}</th>
+                    <th className={cn(thCls, 'hidden sm:table-cell')}>{t('dashboard.table.headers.date')}</th>
+                    <th className={thCls}>{t('dashboard.table.headers.status')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -363,7 +389,7 @@ export default function DashboardClient({ ownerId, userProfileCode, userId, init
                       <td className={cn(tdCls, 'hidden sm:table-cell', isDark ? 'text-slate-400' : 'text-gray-400')}>{m.date}</td>
                       <td className="py-3 px-3">
                         <span className={cn('inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium', STATUS_STYLE[m.status] ?? 'bg-gray-100 text-gray-500')}>
-                          {m.status}
+                          {statusToLabel(m.status)}
                         </span>
                       </td>
                     </tr>

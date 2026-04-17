@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import axios from "axios";
 import { CheckCircle2, ChevronLeft, ChevronRight, ClipboardCheck, Clock, Download, FileText, Loader2, Paperclip, RefreshCw, Settings, Trash2, Upload, User } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Button } from "../ui/button";
 import { Checkbox } from "../ui/checkbox";
@@ -91,13 +92,6 @@ interface OperationFormProps {
     onSuccess?: () => void;
 }
 
-const STEPS = [
-    { id: 0, label: 'Details', icon: ClipboardCheck },
-    { id: 1, label: 'Schedule', icon: Clock },
-    { id: 2, label: 'Assets', icon: Settings },
-    { id: 3, label: 'Pilot', icon: User },
-    { id: 4, label: 'Review', icon: CheckCircle2 },
-];
 
 const EMPTY_FORM: OperationForm = {
     mission_name: '',
@@ -124,8 +118,17 @@ const EMPTY_FORM: OperationForm = {
 
 export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: OperationFormProps) {
     const isEdit = !!initial;
+    const { t } = useTranslation();
     const [isPending, startTransition] = useTransition();
     const [step, setStep] = useState<Step>(0);
+
+    const STEPS = [
+        { id: 0, label: t('operations.dialog.steps.details'), icon: ClipboardCheck },
+        { id: 1, label: t('operations.dialog.steps.schedule'), icon: Clock },
+        { id: 2, label: t('operations.dialog.steps.assets'), icon: Settings },
+        { id: 3, label: t('operations.dialog.steps.pilot'), icon: User },
+        { id: 4, label: t('operations.dialog.steps.review'), icon: CheckCircle2 },
+    ];
 
     const [pilots, setPilots] = useState<PilotOption[]>([]);
     const [tools, setTools] = useState<ToolOption[]>([]);
@@ -148,7 +151,7 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
                 setPlannings(res.data.plannings ?? []);
                 setLucProcedures(res.data.lucProcedures ?? []);
             })
-            .catch(() => toast.error('Failed to load form options'))
+            .catch(() => toast.error(t('operations.dialog.toast.loadOptionsError')))
             .finally(() => setLoadingOptions(false));
     }, [open]);
 
@@ -192,12 +195,12 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
             try {
                 if (!isEdit && form.is_recurring) {
                     if (!form.fk_luc_procedure_id) {
-                        toast.error('LUC procedure is required');
+                        toast.error(t('operations.dialog.validation.lucRequired'));
                         return;
                     }
                     const startDate = form.scheduled_start.slice(0, 10);
                     if (startDate > form.recur_until) {
-                        toast.error('Recurrence end date must be on or after the start date');
+                        toast.error(t('operations.dialog.validation.recurrenceEndDate'));
                         return;
                     }
                     const daysSet = new Set(form.days_of_week);
@@ -208,7 +211,7 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
                         if (daysSet.has(cursor.getUTCDay())) { hasMatch = true; break; }
                     }
                     if (!hasMatch) {
-                        toast.error(`None of the selected days fall between ${startDate} and ${form.recur_until}. Widen the range or change the selected days.`);
+                        toast.error(t('operations.dialog.validation.noMatchingDaysRange', { start: startDate, end: form.recur_until }));
                         return;
                     }
 
@@ -231,14 +234,14 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
                         mission_group_label: form.mission_group_label || undefined,
                     });
                     if (!res.data.success) throw new Error(res.data.error ?? 'Failed to create recurring operations');
-                    toast.success(`${res.data.count} recurring operations created successfully`);
+                    toast.success(t('operations.dialog.toast.recurringSuccess', { count: res.data.count }));
                     onSuccess?.();
                     onClose();
                     return;
                 }
 
                 if (!isEdit && !form.fk_luc_procedure_id) {
-                    toast.error('LUC procedure is required');
+                    toast.error(t('operations.dialog.validation.lucRequired'));
                     return;
                 }
 
@@ -268,7 +271,7 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
                     saved = await axios.post('/api/operation', payload);
                 }
                 onSaved(saved.data);
-                toast.success(`Operation ${isEdit ? 'updated' : 'created'} successfully`);
+                toast.success(isEdit ? t('operations.dialog.toast.operationUpdated') : t('operations.dialog.toast.operationCreated'));
                 onClose();
             } catch (err: any) {
                 const msg = err?.response?.data?.error ?? (err instanceof Error ? err.message : 'Something went wrong');
@@ -311,10 +314,10 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
             <DialogContent className="max-w-2xl gap-0 p-0 overflow-hidden">
                 <DialogHeader className="px-6 pt-6 pb-4 border-b">
                     <DialogTitle className="text-base font-semibold">
-                        {isEdit ? 'Edit Operation' : 'New Operation'}
+                        {isEdit ? t('operations.dialog.editTitle') : t('operations.dialog.newTitle')}
                     </DialogTitle>
                     <DialogDescription className="text-xs text-muted-foreground">
-                        {isEdit ? 'Update the operation details below.' : 'Fill in each step to create a new flight operation.'}
+                        {isEdit ? t('operations.dialog.editSubtitle') : t('operations.dialog.newSubtitle')}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -366,36 +369,36 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
 
                     {step === 0 && (
                         <div className="space-y-3">
-                            <SectionTitle>Mission Details</SectionTitle>
+                            <SectionTitle>{t('operations.dialog.sections.missionDetails')}</SectionTitle>
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="grid gap-1.5">
-                                    <Label htmlFor="mission_name">Mission Name <span className="text-red-500">*</span></Label>
-                                    <Input id="mission_name" placeholder="e.g. Survey Flight Alpha"
+                                    <Label htmlFor="mission_name">{t('operations.dialog.fields.missionName')} <span className="text-red-500">*</span></Label>
+                                    <Input id="mission_name" placeholder={t('operations.dialog.placeholders.missionName')}
                                         value={form.mission_name}
                                         onChange={(e) => setForm((f) => ({ ...f, mission_name: e.target.value }))} />
                                 </div>
                                 <div className="grid gap-1.5">
-                                    <Label htmlFor="mission_code">Mission Code <span className="text-red-500">*</span></Label>
-                                    <Input id="mission_code" placeholder="e.g. SURVEY-001"
+                                    <Label htmlFor="mission_code">{t('operations.dialog.fields.missionCode')} <span className="text-red-500">*</span></Label>
+                                    <Input id="mission_code" placeholder={t('operations.dialog.placeholders.missionCode')}
                                         value={form.mission_code}
                                         onChange={(e) => setForm((f) => ({ ...f, mission_code: e.target.value }))} />
                                 </div>
                             </div>
                             <div className="grid gap-1.5">
-                                <Label htmlFor="desc">Description</Label>
-                                <Textarea id="desc" rows={2} placeholder="Describe the mission…"
+                                <Label htmlFor="desc">{t('operations.dialog.fields.description')}</Label>
+                                <Textarea id="desc" rows={2} placeholder={t('operations.dialog.placeholders.description')}
                                     value={form.mission_description}
                                     onChange={(e) => setForm((f) => ({ ...f, mission_description: e.target.value }))} />
                             </div>
                             <div className="grid gap-1.5">
-                                <Label htmlFor="location">Location</Label>
-                                <Input id="location" placeholder="e.g. Grid A-7"
+                                <Label htmlFor="location">{t('operations.dialog.fields.location')}</Label>
+                                <Input id="location" placeholder={t('operations.dialog.placeholders.location')}
                                     value={form.location}
                                     onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))} />
                             </div>
                             <div className="grid gap-1.5">
-                                <Label htmlFor="notes">Notes</Label>
-                                <Textarea id="notes" rows={2} placeholder="Additional notes…"
+                                <Label htmlFor="notes">{t('operations.dialog.fields.notes')}</Label>
+                                <Textarea id="notes" rows={2} placeholder={t('operations.dialog.placeholders.notes')}
                                     value={form.notes}
                                     onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
                             </div>
@@ -404,10 +407,10 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
 
                     {step === 1 && (
                         <div className="space-y-3">
-                            <SectionTitle>Schedule & Status</SectionTitle>
+                            <SectionTitle>{t('operations.dialog.sections.scheduleStatus')}</SectionTitle>
                             <div className="grid gap-1.5">
                                 <Label htmlFor="scheduled_start">
-                                    Scheduled Start {form.is_recurring && <span className="text-red-500">*</span>}
+                                    {t('operations.dialog.fields.scheduledStart')} {form.is_recurring && <span className="text-red-500">*</span>}
                                 </Label>
                                 <Input id="scheduled_start" type="datetime-local"
                                     value={form.scheduled_start}
@@ -415,21 +418,21 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
                             </div>
                             {!form.is_recurring && (
                                 <div className="grid gap-1.5">
-                                    <Label htmlFor="scheduled_end">Scheduled End</Label>
+                                    <Label htmlFor="scheduled_end">{t('operations.dialog.fields.scheduledEnd')}</Label>
                                     <Input id="scheduled_end" type="datetime-local"
                                         value={form.scheduled_end}
                                         onChange={(e) => setForm((f) => ({ ...f, scheduled_end: e.target.value }))} />
                                 </div>
                             )}
                             <div className="grid gap-1.5">
-                                <Label>Status</Label>
+                                <Label>{t('operations.dialog.fields.status')}</Label>
                                 <Select value={form.status_name}
                                     onValueChange={(v) => setForm((f) => ({ ...f, status_name: v as StatusName }))}>
                                     <SelectTrigger><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="PLANNED">Planned</SelectItem>
-                                        <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                                        <SelectItem value="COMPLETED">Completed</SelectItem>
+                                        <SelectItem value="PLANNED">{t('operations.dialog.status.planned')}</SelectItem>
+                                        <SelectItem value="IN_PROGRESS">{t('operations.dialog.status.inProgress')}</SelectItem>
+                                        <SelectItem value="COMPLETED">{t('operations.dialog.status.completed')}</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -437,14 +440,14 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
                             {isEdit && (
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="grid gap-1.5">
-                                        <Label htmlFor="flight_duration">Flight Duration (min)</Label>
-                                        <Input id="flight_duration" type="number" min="0" placeholder="e.g. 45"
+                                        <Label htmlFor="flight_duration">{t('operations.dialog.fields.flightDuration')}</Label>
+                                        <Input id="flight_duration" type="number" min="0" placeholder={t('operations.dialog.placeholders.flightDuration')}
                                             value={form.flight_duration}
                                             onChange={(e) => setForm((f) => ({ ...f, flight_duration: e.target.value }))} />
                                     </div>
                                     <div className="grid gap-1.5">
-                                        <Label htmlFor="distance_flown">Distance Flown (m)</Label>
-                                        <Input id="distance_flown" type="number" min="0" placeholder="e.g. 5000"
+                                        <Label htmlFor="distance_flown">{t('operations.dialog.fields.distanceFlown')}</Label>
+                                        <Input id="distance_flown" type="number" min="0" placeholder={t('operations.dialog.placeholders.distanceFlown')}
                                             value={form.distance_flown}
                                             onChange={(e) => setForm((f) => ({ ...f, distance_flown: e.target.value }))} />
                                     </div>
@@ -467,14 +470,14 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
                                         />
                                         <label htmlFor="is_recurring" className="flex items-center gap-1.5 text-sm font-medium cursor-pointer">
                                             <RefreshCw className="w-3.5 h-3.5 text-sky-600" />
-                                            Recurrent (Weekly)
+                                            {t('operations.dialog.fields.recurrent')}
                                         </label>
                                     </div>
 
                                     {form.is_recurring && (
                                         <div className="space-y-3 pl-1">
                                             <div className="grid gap-1.5">
-                                                <Label className="text-xs font-medium">Days of Week <span className="text-red-500">*</span></Label>
+                                                <Label className="text-xs font-medium">{t('operations.dialog.fields.daysOfWeek')} <span className="text-red-500">*</span></Label>
                                                 <div className="flex flex-wrap gap-1.5">
                                                     {DAYS_OF_WEEK.map((day) => {
                                                         const checked = form.days_of_week.includes(day.value)
@@ -501,7 +504,7 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
                                                     })}
                                                 </div>
                                                 {form.days_of_week.length === 0 && (
-                                                    <p className="text-xs text-destructive">Select at least one day</p>
+                                                    <p className="text-xs text-destructive">{t('operations.dialog.validation.selectAtLeastOneDay')}</p>
                                                 )}
                                                 {form.days_of_week.length > 0 && form.scheduled_start && form.recur_until && (() => {
                                                     const startDate = form.scheduled_start.slice(0, 10);
@@ -515,21 +518,21 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
                                                     }
                                                     return !found ? (
                                                         <p className="text-xs text-destructive">
-                                                            None of the selected days fall between {startDate} and {form.recur_until}. Widen the range or change the days.
+                                                            {t('operations.dialog.validation.noMatchingDays', { start: startDate, end: form.recur_until })}
                                                         </p>
                                                     ) : null;
                                                 })()}
                                             </div>
                                             <div className="grid grid-cols-2 gap-3">
                                                 <div className="grid gap-1.5">
-                                                    <Label htmlFor="recur_until" className="text-xs font-medium">Repeat Until <span className="text-red-500">*</span></Label>
+                                                    <Label htmlFor="recur_until" className="text-xs font-medium">{t('operations.dialog.fields.repeatUntil')} <span className="text-red-500">*</span></Label>
                                                     <Input id="recur_until" type="date"
                                                         value={form.recur_until}
                                                         onChange={(e) => setForm((f) => ({ ...f, recur_until: e.target.value }))} />
                                                 </div>
                                                 <div className="grid gap-1.5">
-                                                    <Label htmlFor="group_label" className="text-xs font-medium">Group Label</Label>
-                                                    <Input id="group_label" placeholder="e.g. Weekly Survey"
+                                                    <Label htmlFor="group_label" className="text-xs font-medium">{t('operations.dialog.fields.groupLabel')}</Label>
+                                                    <Input id="group_label" placeholder={t('operations.dialog.placeholders.groupLabel')}
                                                         value={form.mission_group_label}
                                                         onChange={(e) => setForm((f) => ({ ...f, mission_group_label: e.target.value }))} />
                                                 </div>
@@ -543,34 +546,34 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
 
                     {step === 2 && (
                         <div className="space-y-3">
-                            <SectionTitle>Assets</SectionTitle>
+                            <SectionTitle>{t('operations.dialog.sections.assets')}</SectionTitle>
                             <div className="grid gap-1.5">
-                                <Label>System (Drone System)</Label>
+                                <Label>{t('operations.dialog.fields.droneSystem')}</Label>
                                 <Select key={`tool-${tools.length}`} value={form.fk_tool_id}
                                     onValueChange={(v) => setForm((f) => ({ ...f, fk_tool_id: v }))}
                                     disabled={loadingOptions}>
                                     <SelectTrigger>
-                                        <SelectValue placeholder={loadingOptions ? 'Loading…' : 'Select tool'} />
+                                        <SelectValue placeholder={loadingOptions ? t('operations.dialog.placeholders.loading') : t('operations.dialog.placeholders.selectTool')} />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {tools.map((t) => (
+                                        {tools.map((tool) => (
                                             <SelectItem
-                                                key={t.tool_id}
-                                                value={t.tool_id.toString()}
-                                                disabled={t.in_maintenance || t.has_drone_component === false}
+                                                key={tool.tool_id}
+                                                value={tool.tool_id.toString()}
+                                                disabled={tool.in_maintenance || tool.has_drone_component === false}
                                             >
                                                 <span className="flex items-center gap-2">
-                                                    <span className={t.has_drone_component === false ? 'opacity-40' : ''}>
-                                                        {t.tool_name} ({t.tool_code})
+                                                    <span className={tool.has_drone_component === false ? 'opacity-40' : ''}>
+                                                        {tool.tool_name} ({tool.tool_code})
                                                     </span>
-                                                    {t.in_maintenance && (
+                                                    {tool.in_maintenance && (
                                                         <span className="text-[10px] font-semibold text-blue-600 bg-blue-50 border border-blue-200 rounded px-1.5 py-0.5 leading-none">
-                                                            IN MAINTENANCE
+                                                            {t('operations.dialog.badges.inMaintenance')}
                                                         </span>
                                                     )}
-                                                    {t.has_drone_component === false && (
+                                                    {tool.has_drone_component === false && (
                                                         <span className="text-[10px] font-semibold text-gray-500 bg-gray-100 border border-gray-300 rounded px-1.5 py-0.5 leading-none">
-                                                            Drone not Attached
+                                                            {t('operations.dialog.badges.droneNotAttached')}
                                                         </span>
                                                     )}
                                                 </span>
@@ -580,12 +583,12 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
                                 </Select>
                             </div>
                             <div className="grid gap-1.5">
-                                <Label>Mission Category</Label>
+                                <Label>{t('operations.dialog.fields.missionCategory')}</Label>
                                 <Select key={`cat-${missionCategories.length}`} value={form.fk_mission_category_id}
                                     onValueChange={(v) => setForm((f) => ({ ...f, fk_mission_category_id: v }))}
                                     disabled={loadingOptions}>
                                     <SelectTrigger>
-                                        <SelectValue placeholder={loadingOptions ? 'Loading…' : 'Select category'} />
+                                        <SelectValue placeholder={loadingOptions ? t('operations.dialog.placeholders.loading') : t('operations.dialog.placeholders.selectCategory')} />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {missionCategories.map((c) => (
@@ -597,29 +600,29 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
                                 </Select>
                             </div>
                             <div className="grid gap-1.5">
-                                <Label>Mission Type</Label>
+                                <Label>{t('operations.dialog.fields.missionType')}</Label>
                                 <Select key={`type-${missionTypes.length}`} value={form.fk_mission_type_id}
                                     onValueChange={(v) => setForm((f) => ({ ...f, fk_mission_type_id: v }))}
                                     disabled={loadingOptions}>
                                     <SelectTrigger>
-                                        <SelectValue placeholder={loadingOptions ? 'Loading…' : 'Select type'} />
+                                        <SelectValue placeholder={loadingOptions ? t('operations.dialog.placeholders.loading') : t('operations.dialog.placeholders.selectType')} />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {missionTypes.map((t) => (
-                                            <SelectItem key={t.mission_type_id} value={t.mission_type_id.toString()}>
-                                                {t.type_name}
+                                        {missionTypes.map((mType) => (
+                                            <SelectItem key={mType.mission_type_id} value={mType.mission_type_id.toString()}>
+                                                {mType.type_name}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
                             </div>
                             <div className="grid gap-1.5">
-                                <Label>Client / Planning</Label>
+                                <Label>{t('operations.dialog.fields.clientPlanning')}</Label>
                                 <Select key={`planning-${plannings.length}`} value={form.fk_planning_id}
                                     onValueChange={(v) => setForm((f) => ({ ...f, fk_planning_id: v }))}
                                     disabled={loadingOptions}>
                                     <SelectTrigger>
-                                        <SelectValue placeholder={loadingOptions ? 'Loading…' : 'Select client / planning'} />
+                                        <SelectValue placeholder={loadingOptions ? t('operations.dialog.placeholders.loading') : t('operations.dialog.placeholders.selectClientPlanning')} />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {plannings.map((p) => (
@@ -632,7 +635,7 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
                             </div>
                             <div className="grid gap-1.5">
                                 <Label>
-                                    LUC procedure (Mission)
+                                    {t('operations.dialog.fields.lucProcedure')}
                                     {!isEdit && <span className="text-red-500"> *</span>}
                                 </Label>
                                 <Select
@@ -642,7 +645,7 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
                                     disabled={loadingOptions}
                                 >
                                     <SelectTrigger>
-                                        <SelectValue placeholder={loadingOptions ? 'Loading…' : lucProcedures.length === 0 ? 'No MISSION procedures' : 'Select LUC procedure'} />
+                                        <SelectValue placeholder={loadingOptions ? t('operations.dialog.placeholders.loading') : lucProcedures.length === 0 ? t('operations.dialog.placeholders.noMissionProcedures') : t('operations.dialog.placeholders.selectLuc')} />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {lucProcedures.map((p) => (
@@ -654,7 +657,7 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
                                 </Select>
                                 {!loadingOptions && lucProcedures.length === 0 && (
                                     <p className="text-xs text-destructive">
-                                        Create an active LUC procedure with status &quot;MISSION&quot; under Organization first.
+                                        {t('operations.dialog.validation.createLucHint')}
                                     </p>
                                 )}
                             </div>
@@ -663,14 +666,14 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
 
                     {step === 3 && (
                         <div className="space-y-3">
-                            <SectionTitle>Pilot In Command</SectionTitle>
+                            <SectionTitle>{t('operations.dialog.sections.pilotInCommand')}</SectionTitle>
                             <div className="grid gap-1.5">
-                                <Label>Pilot in Command <span className="text-red-500">*</span></Label>
+                                <Label>{t('operations.dialog.fields.pilotInCommand')} <span className="text-red-500">*</span></Label>
                                 <Select key={`pilot-${pilots.length}`} value={form.fk_pilot_user_id}
                                     onValueChange={(v) => setForm((f) => ({ ...f, fk_pilot_user_id: v }))}
                                     disabled={loadingOptions}>
                                     <SelectTrigger>
-                                        <SelectValue placeholder={loadingOptions ? 'Loading…' : 'Select pilot'} />
+                                        <SelectValue placeholder={loadingOptions ? t('operations.dialog.placeholders.loading') : t('operations.dialog.placeholders.selectPilot')} />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {pilots.map((p) => (
@@ -683,7 +686,7 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
                             </div>
                             {selectedPilot && (
                                 <div className="rounded-md border bg-muted/30 px-4 py-3">
-                                    <p className="text-xs text-muted-foreground mb-0.5">Selected Pilot</p>
+                                    <p className="text-xs text-muted-foreground mb-0.5">{t('operations.dialog.fields.selectedPilot')}</p>
                                     <p className="font-medium">{selectedPilot.first_name} {selectedPilot.last_name}</p>
                                 </div>
                             )}
@@ -692,31 +695,31 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
 
                     {step === 4 && (
                         <div className="space-y-3">
-                            <SectionTitle>Mission Summary</SectionTitle>
+                            <SectionTitle>{t('operations.dialog.sections.missionSummary')}</SectionTitle>
                             <div className="rounded-lg border bg-muted/20 p-4 space-y-3 text-sm">
                                 <div className="grid grid-cols-2 gap-x-4 gap-y-2.5">
-                                    <ReviewRow label="Mission Name" value={form.mission_name} />
-                                    <ReviewRow label="Mission Code" value={form.mission_code} />
-                                    <ReviewRow label="Location" value={form.location} />
-                                    <ReviewRow label="Status" value={form.status_name} />
-                                    <ReviewRow label="Scheduled" value={form.scheduled_start ? new Date(form.scheduled_start).toLocaleString() : undefined} />
-                                    <ReviewRow label="Pilot" value={selectedPilot ? `${selectedPilot.first_name} ${selectedPilot.last_name}` : undefined} />
-                                    <ReviewRow label="Tool" value={selectedTool ? `${selectedTool.tool_name} (${selectedTool.tool_code})` : undefined} />
-                                    <ReviewRow label="Type" value={selectedType?.type_name} />
-                                    <ReviewRow label="Category" value={selectedCategory?.category_name} />
+                                    <ReviewRow label={t('operations.dialog.review.missionName')} value={form.mission_name} />
+                                    <ReviewRow label={t('operations.dialog.review.missionCode')} value={form.mission_code} />
+                                    <ReviewRow label={t('operations.dialog.review.location')} value={form.location} />
+                                    <ReviewRow label={t('operations.dialog.review.status')} value={form.status_name} />
+                                    <ReviewRow label={t('operations.dialog.review.scheduled')} value={form.scheduled_start ? new Date(form.scheduled_start).toLocaleString() : undefined} />
+                                    <ReviewRow label={t('operations.dialog.review.pilot')} value={selectedPilot ? `${selectedPilot.first_name} ${selectedPilot.last_name}` : undefined} />
+                                    <ReviewRow label={t('operations.dialog.review.tool')} value={selectedTool ? `${selectedTool.tool_name} (${selectedTool.tool_code})` : undefined} />
+                                    <ReviewRow label={t('operations.dialog.review.type')} value={selectedType?.type_name} />
+                                    <ReviewRow label={t('operations.dialog.review.category')} value={selectedCategory?.category_name} />
                                     <ReviewRow
-                                        label="LUC procedure"
+                                        label={t('operations.dialog.review.lucProcedure')}
                                         value={selectedLuc ? `${selectedLuc.procedure_code} — ${selectedLuc.procedure_name}` : undefined}
                                     />
                                     {form.is_recurring && (
                                         <>
-                                            <ReviewRow label="Recurrence" value="Weekly" />
-                                            <ReviewRow label="Repeat Until" value={form.recur_until} />
+                                            <ReviewRow label={t('operations.dialog.review.recurrence')} value={t('operations.dialog.review.weekly')} />
+                                            <ReviewRow label={t('operations.dialog.review.repeatUntil')} value={form.recur_until} />
                                             <ReviewRow
-                                                label="Days"
+                                                label={t('operations.dialog.review.days')}
                                                 value={DAYS_OF_WEEK.filter(d => form.days_of_week.includes(d.value)).map(d => d.label).join(', ')}
                                             />
-                                            {form.mission_group_label && <ReviewRow label="Group Label" value={form.mission_group_label} />}
+                                            {form.mission_group_label && <ReviewRow label={t('operations.dialog.review.groupLabel')} value={form.mission_group_label} />}
                                         </>
                                     )}
                                 </div>
@@ -724,13 +727,13 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
                                     <div className="border-t pt-2.5 space-y-2">
                                         {form.mission_description && (
                                             <div>
-                                                <p className="text-xs text-muted-foreground">Description</p>
+                                                <p className="text-xs text-muted-foreground">{t('operations.dialog.review.description')}</p>
                                                 <p className="text-sm mt-0.5">{form.mission_description}</p>
                                             </div>
                                         )}
                                         {form.notes && (
                                             <div>
-                                                <p className="text-xs text-muted-foreground">Notes</p>
+                                                <p className="text-xs text-muted-foreground">{t('operations.dialog.review.notes')}</p>
                                                 <p className="text-sm mt-0.5">{form.notes}</p>
                                             </div>
                                         )}
@@ -738,10 +741,10 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
                                 )}
                             </div>
                             {!form.mission_name.trim() && (
-                                <p className="text-xs text-destructive">⚠ Mission name is required.</p>
+                                <p className="text-xs text-destructive">{t('operations.dialog.validation.missionNameRequired')}</p>
                             )}
                             {!form.fk_pilot_user_id && (
-                                <p className="text-xs text-destructive">⚠ Pilot in Command is required.</p>
+                                <p className="text-xs text-destructive">{t('operations.dialog.validation.pilotRequired')}</p>
                             )}
                         </div>
                     )}
@@ -753,8 +756,8 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
                         disabled={isPending}
                         className="gap-1">
                         {step === 0
-                            ? 'Cancel'
-                            : <><ChevronLeft className="h-4 w-4" /> Previous</>}
+                            ? t('operations.dialog.buttons.cancel')
+                            : <><ChevronLeft className="h-4 w-4" /> {t('operations.dialog.buttons.previous')}</>}
                     </Button>
 
                     {step < 4 ? (
@@ -762,7 +765,7 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
                             onClick={() => setStep((s) => (s + 1) as Step)}
                             disabled={!canGoNext()}
                             className="gap-1 bg-violet-600 hover:bg-violet-700 text-white">
-                            Next <ChevronRight className="h-4 w-4" />
+                            {t('operations.dialog.buttons.next')} <ChevronRight className="h-4 w-4" />
                         </Button>
                     ) : (
                         <Button size="sm"
@@ -770,7 +773,7 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
                             disabled={isPending || !form.mission_name.trim() || !form.fk_pilot_user_id || (!isEdit && !form.fk_luc_procedure_id)}
                             className="gap-2 bg-violet-600 hover:bg-violet-700 text-white min-w-[140px]">
                             {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-                            {isEdit ? 'Save Changes' : form.is_recurring ? 'Create Recurring' : 'Create Operation'}
+                            {isEdit ? t('operations.dialog.buttons.saveChanges') : form.is_recurring ? t('operations.dialog.buttons.createRecurring') : t('operations.dialog.buttons.createOperation')}
                         </Button>
                     )}
                 </div>
@@ -821,6 +824,7 @@ export function AttachmentsDialog({ open, onClose, operationId, operationName }:
     operationId: number;
     operationName: string;
 }) {
+    const { t } = useTranslation();
     const [attachments, setAttachments] = useState<Attachment[]>([]);
     const [loading, setLoading] = useState(false);
     const [uploading, setUploading] = useState(false);
@@ -897,7 +901,7 @@ export function AttachmentsDialog({ open, onClose, operationId, operationName }:
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <Paperclip className="h-4 w-4" />
-                        Attachments
+                        {t('operations.dialog.attachments.title')}
                     </DialogTitle>
                     <DialogDescription className="truncate">{operationName}</DialogDescription>
                 </DialogHeader>
@@ -916,13 +920,13 @@ export function AttachmentsDialog({ open, onClose, operationId, operationName }:
                     {uploading ? (
                         <div className="flex flex-col items-center gap-2 text-muted-foreground">
                             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                            <p className="text-sm">Uploading…</p>
+                            <p className="text-sm">{t('operations.dialog.attachments.uploading')}</p>
                         </div>
                     ) : (
                         <div className="flex flex-col items-center gap-2 text-muted-foreground">
                             <Upload className="h-8 w-8" />
-                            <p className="text-sm font-medium">Drop files here or click to browse</p>
-                            <p className="text-xs">Max 20 MB · PDF, images, CSV, DOCX, XLSX</p>
+                            <p className="text-sm font-medium">{t('operations.dialog.attachments.dropFiles')}</p>
+                            <p className="text-xs">{t('operations.dialog.attachments.fileLimit')}</p>
                         </div>
                     )}
                 </div>
@@ -941,7 +945,7 @@ export function AttachmentsDialog({ open, onClose, operationId, operationName }:
                         ))
                     )}
                     {!loading && attachments.length === 0 && (
-                        <p className="py-4 text-center text-sm text-muted-foreground">No attachments yet.</p>
+                        <p className="py-4 text-center text-sm text-muted-foreground">{t('operations.dialog.attachments.noAttachments')}</p>
                     )}
                     {attachments.map((a) => (
                         <div key={a.attachment_id} className="flex items-center gap-3 rounded-md border bg-muted/30 px-3 py-2">
@@ -966,7 +970,7 @@ export function AttachmentsDialog({ open, onClose, operationId, operationName }:
                 </div>
 
                 <DialogFooter>
-                    <Button variant="outline" onClick={onClose}>Close</Button>
+                    <Button variant="outline" onClick={onClose}>{t('operations.dialog.attachments.close')}</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -979,6 +983,7 @@ export function DeleteDialog({ open, onClose, operation, onDeleted }: {
     operation: Operation | null;
     onDeleted: (id: number) => void;
 }) {
+    const { t } = useTranslation();
     const [isPending, startTransition] = useTransition();
 
     function handleDelete() {
@@ -987,10 +992,10 @@ export function DeleteDialog({ open, onClose, operation, onDeleted }: {
             try {
                 await axios.delete(`/api/operation/${operation.pilot_mission_id}`);
                 onDeleted(operation.pilot_mission_id);
-                toast.success('Operation deleted successfully');
+                toast.success(t('operations.dialog.delete.success'));
                 onClose();
             } catch (err) {
-                toast.error(err instanceof Error ? err.message : 'Delete failed');
+                toast.error(err instanceof Error ? err.message : t('operations.dialog.delete.error'));
             }
         });
     }
@@ -999,17 +1004,17 @@ export function DeleteDialog({ open, onClose, operation, onDeleted }: {
         <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
             <DialogContent className="sm:max-w-105">
                 <DialogHeader>
-                    <DialogTitle>Delete Operation</DialogTitle>
+                    <DialogTitle>{t('operations.dialog.delete.title')}</DialogTitle>
                     <DialogDescription>
-                        This will permanently delete{' '}
-                        <span className="font-medium text-foreground">{operation?.mission_name}</span>. This action cannot be undone.
+                        {t('operations.dialog.delete.description')}{' '}
+                        <span className="font-medium text-foreground">{operation?.mission_name}</span>. {t('operations.dialog.delete.undone')}
                     </DialogDescription>
                 </DialogHeader>
                 <DialogFooter>
-                    <Button variant="outline" onClick={onClose} disabled={isPending}>Cancel</Button>
+                    <Button variant="outline" onClick={onClose} disabled={isPending}>{t('operations.dialog.delete.cancel')}</Button>
                     <Button variant="destructive" onClick={handleDelete} disabled={isPending}>
                         {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Delete
+                        {t('operations.dialog.delete.delete')}
                     </Button>
                 </DialogFooter>
             </DialogContent>

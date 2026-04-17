@@ -171,18 +171,6 @@ export default function UserManagement({ session }: UserManagementProps) {
     }
   };
 
-  const saveQualifications = async (userId: number, qualifications: any[]) => {
-    const toAdd = qualifications.filter((q) => !q.qualification_id && !q._toDelete);
-    const toDelete = qualifications.filter((q) => q.qualification_id && q._toDelete);
-    await Promise.all([
-      toAdd.length > 0 &&
-      axios.post('/api/team/user/qualifications', { user_id: userId, qualifications: toAdd }),
-      ...toDelete.map((q) =>
-        axios.delete(`/api/team/user/qualifications/${q.qualification_id}`)
-      ),
-    ]);
-  };
-
   const handleAddUser = async (formData: any) => {
     try {
       const res = await axios.post('/api/team/user/add', {
@@ -201,9 +189,6 @@ export default function UserManagement({ session }: UserManagementProps) {
       });
       const data = res.data;
       if (data.code === 1) {
-        if (formData.qualifications?.length > 0) {
-          await saveQualifications(data.newId, formData.qualifications).catch(() => { });
-        }
         toast.success('User created successfully');
         setShowAddModal(false);
         fetchUsers();
@@ -238,9 +223,6 @@ export default function UserManagement({ session }: UserManagementProps) {
       });
       const data = res.data;
       if (data.code === 1) {
-        if (formData.qualifications?.length > 0) {
-          await saveQualifications(formData.user_id, formData.qualifications).catch(() => { });
-        }
         toast.success('User updated successfully');
         setShowEditModal(false);
         setSelectedUser(null);

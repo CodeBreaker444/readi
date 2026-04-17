@@ -1,6 +1,7 @@
 'use client';
 import axios from 'axios';
 import React, { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { useTheme } from '../useTheme';
 import AreaTable from './AreaTable';
@@ -37,6 +38,7 @@ interface EvaluationFormData {
 
 const EvaluationRequest: React.FC = () => {
   const { isDark } = useTheme();
+  const { t } = useTranslation();
   const [drawnAreas, setDrawnAreas] = useState<DrawnArea[]>([]);
   const [evaluationId, setEvaluationId] = useState<number | null>(null);
   const [clientId, setClientId] = useState<number | null>(null);
@@ -49,7 +51,7 @@ const EvaluationRequest: React.FC = () => {
   const handleFormSubmit = async (formData: EvaluationFormData) => {
     try {
       if (drawnAreas.length === 0) {
-        toast.error('Please draw at least one operational area on the map');
+        toast.error(t('planning.evaluationRequest.drawAreaError'));
         return;
       }
 
@@ -66,14 +68,14 @@ const EvaluationRequest: React.FC = () => {
       });
 
       if (!response.data) {
-        toast.error(response.data?.message || 'Failed to create evaluation');
+        toast.error(response.data?.message || t('planning.evaluationRequest.createFailed'));
         return;
       }
 
       const result = response.data;
       setEvaluationId(result.evaluation_id);
       setClientId(formData.client_id);
-      toast.success('Evaluation request created — you can now upload files');
+      toast.success(t('planning.evaluationRequest.createSuccess'));
 
       setTimeout(() => {
         fileUploadRef.current?.scrollIntoView({
@@ -83,7 +85,7 @@ const EvaluationRequest: React.FC = () => {
       }, 150);
     } catch (error) {
       console.error('Error creating evaluation:', error);
-      toast.error(error instanceof Error ? error.message : 'Error creating evaluation request');
+      toast.error(error instanceof Error ? error.message : t('planning.evaluationRequest.createError'));
     }
   };
 
@@ -112,10 +114,10 @@ const EvaluationRequest: React.FC = () => {
             <div className="w-1 h-6 rounded-full bg-violet-600" />
             <div>
               <h1 className={`font-semibold text-base ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                Planning · New Evaluation Request
+                {t('planning.evaluationRequest.pageTitle')}
               </h1>
               <p className={`text-[11px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                Create a new operational scenario evaluation request
+                {t('planning.evaluationRequest.pageSubtitle')}
               </p>
             </div>
           </div>
@@ -131,8 +133,8 @@ const EvaluationRequest: React.FC = () => {
               </svg>
             </span>
             <div>
-              <h2 className={`text-base font-semibold ${headingColor}`}>Operational Scenario</h2>
-              <p className={`text-xs ${subColor}`}>Draw your Operation Area on the map</p>
+              <h2 className={`text-base font-semibold ${headingColor}`}>{t('planning.evaluationRequest.operationalScenario')}</h2>
+              <p className={`text-xs ${subColor}`}>{t('planning.evaluationRequest.drawArea')}</p>
             </div>
           </div>
           <div className="p-4">
@@ -149,8 +151,8 @@ const EvaluationRequest: React.FC = () => {
               </svg>
             </span>
             <div>
-              <h2 className={`text-base font-semibold ${headingColor}`}>New Evaluation Request</h2>
-              <p className={`text-xs ${subColor}`}>Fill the form to add a new evaluation request</p>
+              <h2 className={`text-base font-semibold ${headingColor}`}>{t('planning.evaluationRequest.formTitle')}</h2>
+              <p className={`text-xs ${subColor}`}>{t('planning.evaluationRequest.formSubtitle')}</p>
             </div>
           </div>
           <div className="p-5">
@@ -167,8 +169,8 @@ const EvaluationRequest: React.FC = () => {
             </svg>
           </span>
           <div>
-            <h2 className={`text-base font-semibold ${headingColor}`}>Evaluation Files</h2>
-            <p className={`text-xs ${subColor}`}>Upload supporting documents for this evaluation</p>
+            <h2 className={`text-base font-semibold ${headingColor}`}>{t('planning.evaluationRequest.filesTitle')}</h2>
+            <p className={`text-xs ${subColor}`}>{t('planning.evaluationRequest.filesSubtitle')}</p>
           </div>
         </div>
         <div className="p-5">

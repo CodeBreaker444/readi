@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { EvaluationTask } from '@/config/types/evaluation';
 import { ColumnDef } from '@tanstack/react-table';
+import { TFunction } from 'i18next';
 import {
   CheckCircle2,
   Circle,
@@ -20,60 +21,8 @@ const taskTypeIcons: Record<string, React.ReactNode> = {
   communication: <MessageSquare className="h-3.5 w-3.5 text-amber-500" />,
 };
 
-const taskTypeLabels: Record<string, string> = {
-  assignment: 'Assignment',
-  checklist: 'Checklist',
-  communication: 'Communication',
-};
-
-const statusConfig: Record<
-  string,
-  { label: string; icon: React.ReactNode; className: string }
-> = {
-  pending: {
-    label: 'Pending',
-    icon: <Circle className="h-3 w-3" />,
-    className: 'border border-slate-300 text-slate-500 bg-white',
-  },
-  in_progress: {
-    label: 'In Progress',
-    icon: <Clock className="h-3 w-3 text-amber-500" />,
-    className: 'border border-amber-200 text-amber-700 bg-amber-50',
-  },
-  completed: {
-    label: 'Completed',
-    icon: <CheckCircle2 className="h-3 w-3 text-emerald-500" />,
-    className: 'border border-emerald-200 text-emerald-700 bg-emerald-50',
-  },
-  skipped: {
-    label: 'Skipped',
-    icon: <SkipForward className="h-3 w-3 text-slate-400" />,
-    className: 'border border-slate-200 text-slate-400 bg-slate-50',
-  },
-};
-
-const openButtonConfig: Record<
-  string,
-  { label: string; className: string }
-> = {
-  checklist: {
-    label: 'Fill',
-    className:
-      'h-6 text-xs gap-1 border border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100',
-  },
-  assignment: {
-    label: 'Assign',
-    className:
-      'h-6 text-xs gap-1 border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100',
-  },
-  communication: {
-    label: 'Send',
-    className:
-      'h-6 text-xs gap-1 border border-amber-200 text-amber-700 bg-amber-50 hover:bg-amber-100',
-  },
-};
-
 export const getEvaluationTaskColumns = (
+  t: TFunction,
   onOpenAction?: (task: EvaluationTask) => void,
 ): ColumnDef<EvaluationTask>[] => [
   {
@@ -86,23 +35,23 @@ export const getEvaluationTaskColumns = (
   },
   {
     accessorKey: 'task_name',
-    header: () => <span className="text-xs font-semibold text-slate-500">Task</span>,
+    header: () => <span className="text-xs font-semibold text-slate-500">{t("planning.form.description")}</span>,
     cell: ({ row }) => (
       <p className="text-sm font-medium text-slate-800 leading-snug">
         {row.original.task_name}
       </p>
     ),
   },
-   {
+  {
     accessorKey: 'task_type',
-    header: () => <span className="text-xs font-semibold text-slate-500">Type</span>,
+    header: () => <span className="text-xs font-semibold text-slate-500">{t("planning.form.type")}</span>,
     cell: ({ getValue }) => {
       const type = getValue() as string;
       return (
         <div className="flex items-center gap-1.5">
           {taskTypeIcons[type] ?? null}
           <span className="text-xs font-medium text-slate-600">
-            {taskTypeLabels[type] ?? type}
+            {t(`planning.tasks.${type}`)}
           </span>
         </div>
       );
@@ -111,7 +60,7 @@ export const getEvaluationTaskColumns = (
   },
   {
     id: 'code',
-    header: () => <span className="text-xs font-semibold text-slate-500">Code</span>,
+    header: () => <span className="text-xs font-semibold text-slate-500">{t("planning.form.missionCode")}</span>,
     cell: ({ row }) => (
       <span className="font-mono text-xs text-slate-400">
         {row.original.task_code ?? '—'}
@@ -121,14 +70,20 @@ export const getEvaluationTaskColumns = (
   },
   {
     accessorKey: 'task_status',
-    header: () => <span className="text-xs font-semibold text-slate-500">Status</span>,
+    header: () => <span className="text-xs font-semibold text-slate-500">{t("planning.form.status")}</span>,
     cell: ({ row }) => {
       const status = row.original.task_status;
+      
+      const statusConfig: Record<string, { label: string; icon: React.ReactNode; className: string }> = {
+        pending: { label: t("planning.status.onHold"), icon: <Circle className="h-3 w-3" />, className: 'border border-slate-300 text-slate-500 bg-white' },
+        in_progress: { label: t("planning.status.inProgress"), icon: <Clock className="h-3 w-3 text-amber-500" />, className: 'border border-amber-200 text-amber-700 bg-amber-50' },
+        completed: { label: t("planning.status.done"), icon: <CheckCircle2 className="h-3 w-3 text-emerald-500" />, className: 'border border-emerald-200 text-emerald-700 bg-emerald-50' },
+        skipped: { label: t("planning.status.suspended"), icon: <SkipForward className="h-3 w-3 text-slate-400" />, className: 'border border-slate-200 text-slate-400 bg-slate-50' },
+      };
+
       const cfg = statusConfig[status] ?? statusConfig.pending;
       return (
-        <span
-          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${cfg.className}`}
-        >
+        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${cfg.className}`}>
           {cfg.icon}
           {cfg.label}
         </span>
@@ -145,24 +100,27 @@ export const getEvaluationTaskColumns = (
         return (
           <span className="inline-flex items-center gap-1 text-xs text-slate-300">
             <CheckCircle2 className="h-3.5 w-3.5" />
-            Done
+            {t("planning.status.done")}
           </span>
         );
       }
       if (!onOpenAction) return null;
-      const cfg = openButtonConfig[task.task_type] ?? {
-        label: 'Open',
-        className: 'h-6 text-xs border border-slate-200 text-slate-600 hover:bg-slate-50',
+
+      const actionLabels: Record<string, string> = {
+        checklist: t("planning.actions.edit"),
+        assignment: t("planning.assignment.assign"),
+        communication: t("planning.actions.send"),
       };
+
       return (
         <Button
           variant="ghost"
           size="sm"
-          className={cfg.className}
+          className="h-6 text-xs gap-1 border border-slate-200 text-slate-600 hover:bg-slate-50"
           onClick={() => onOpenAction(task)}
         >
           <ExternalLink className="h-3 w-3" />
-          {cfg.label}
+          {actionLabels[task.task_type] ?? t("planning.actions.edit")}
         </Button>
       );
     },

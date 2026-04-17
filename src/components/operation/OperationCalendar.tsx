@@ -10,11 +10,13 @@ import timeGridPlugin from '@fullcalendar/timegrid'
 import axios from 'axios'
 import { CalendarDays, Plus } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useTheme } from '../useTheme'
 import { AddOperationModal } from './AddOperationModal'
 import { DeleteOperationDialog } from './DeleteOperationDialog'
 
 export function OperationCalendar() {
+  const { t } = useTranslation()
   const { isDark } = useTheme()
   const calendarRef = useRef<FullCalendar>(null)
   const [events, setEvents] = useState<OperationCalendarEvent[]>([])
@@ -72,10 +74,10 @@ export function OperationCalendar() {
             <div className="w-1 h-6 rounded-full bg-violet-600" />
             <div>
               <h1 className={`font-semibold text-base tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                Operation Calendar
+                {t('operations.calendar.title')}
               </h1>
               <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                Manage mission scheduling and assignments
+                {t('operations.calendar.subtitle')}
               </p>
             </div>
           </div>
@@ -91,7 +93,7 @@ export function OperationCalendar() {
                 className={`h-8 gap-1.5 text-xs font-semibold shadow-sm bg-violet-600 hover:bg-violet-700 text-white`}
               >
                 <Plus size={14} />
-                <span>Add Operation</span>
+                <span>{t('operations.calendar.addOperation')}</span>
               </Button>
             </div>
           </div>
@@ -104,11 +106,11 @@ export function OperationCalendar() {
           <div className={`flex items-center gap-2 px-5 py-3.5 border-b ${isDark ? 'bg-slate-700/50 border-slate-700' : 'bg-gradient-to-r from-sky-50 to-cyan-50 border-gray-100'}`}>
             <CalendarDays size={15} className={isDark ? 'text-slate-400' : 'text-sky-400'} />
             <span className={`text-xs font-semibold uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-gray-400'}`}>
-              Mission Overview
+              {t('operations.calendar.missionOverview')}
             </span>
             {loading && (
               <span className={`ml-auto text-[11px] animate-pulse font-medium ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-                Loading…
+                {t('operations.calendar.loading')}
               </span>
             )}
           </div>
@@ -253,12 +255,17 @@ export function OperationCalendar() {
                 .fc-dark .fc-theme-standard th { border-color: #1e293b; }
               `}</style>
 
-              <FullCalendar
+            <FullCalendar
                 ref={calendarRef}
                 plugins={[timeGridPlugin, dayGridPlugin, listPlugin, interactionPlugin]}
                 initialView="timeGridWeek"
                 headerToolbar={{ left: 'prev,next today', center: 'title', right: 'timeGridWeek,dayGridMonth,listWeek' }}
-                buttonText={{ today: 'Today', week: 'Week', month: 'Month', list: 'List' }}
+                buttonText={{ 
+                    today: t('operations.calendar.calendarButtons.today'), 
+                    week: t('operations.calendar.calendarButtons.week'), 
+                    month: t('operations.calendar.calendarButtons.month'), 
+                    list: t('operations.calendar.calendarButtons.list') 
+                }}
                 events={fcEvents}
                 eventClick={handleEventClick}
                 editable={false}
@@ -291,21 +298,23 @@ export function OperationCalendar() {
 }
 
 
-const STATUS_COLORS: Record<string, string> = {
-  Scheduled: '#0284c7',
-  'In Progress': '#d97706',
-  Completed: '#16a34a',
-  Cancelled: '#dc2626',
-}
-
 export function OperationLegend({ isDark }: { isDark: boolean }) {
+  const { t } = useTranslation();
+
+  const LEGEND_ITEMS = [
+    { labelKey: 'operations.calendar.legend.scheduled', color: '#0284c7' },
+    { labelKey: 'operations.calendar.legend.inProgress', color: '#d97706' },
+    { labelKey: 'operations.calendar.legend.completed', color: '#16a34a' },
+    { labelKey: 'operations.calendar.legend.cancelled', color: '#dc2626' },
+  ]
+
   return (
     <div className="flex items-center gap-3 flex-wrap">
-      {Object.entries(STATUS_COLORS).map(([label, color]) => (
-        <div key={label} className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+      {LEGEND_ITEMS.map((item) => (
+        <div key={item.labelKey} className="flex items-center gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
           <span className={`text-[11px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-            {label}
+            {t(item.labelKey)}
           </span>
         </div>
       ))}

@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select";
 import { PlanningData } from "@/config/types/evaluation-planning";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 interface EditPlanningRequestCardProps {
   isDark: boolean;
@@ -46,6 +47,7 @@ export default function EditPlanningRequestCard({
   planningId,
   onUpdate,
 }: EditPlanningRequestCardProps) {
+  const { t } = useTranslation();
   const [form, setForm] = useState<PlanningForm>({
     planning_status: "NEW",
     planning_result: "PROGRESS",
@@ -102,6 +104,7 @@ export default function EditPlanningRequestCard({
       setSubmitting(false);
     }
   };
+
   const labelColor = isDark ? "text-slate-400" : "text-slate-700";
   const inputBg = isDark ? "bg-slate-950 border-slate-800 text-slate-200" : "bg-white";
 
@@ -110,36 +113,36 @@ export default function EditPlanningRequestCard({
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="planning_status" className={labelColor}>Status</Label>
+            <Label htmlFor="planning_status" className={labelColor}>{t("planning.form.status")}</Label>
             <Select
               value={form.planning_status}
               onValueChange={(val) => handleSelectChange("planning_status", val)}
             >
               <SelectTrigger id="planning_status" className={inputBg}>
-                <SelectValue placeholder="Select status" />
+                <SelectValue placeholder={t("planning.editPlanning.selectStatus")} />
               </SelectTrigger>
               <SelectContent className={isDark ? "bg-slate-900 border-slate-800 text-slate-200" : ""}>
-                <SelectItem value="NEW">New Task</SelectItem>
-                <SelectItem value="PROGRESS">In Progress</SelectItem>
-                <SelectItem value="REVIEW">Feedback Request</SelectItem>
-                <SelectItem value="SUSPENDED">Suspended</SelectItem>
-                <SelectItem value="DONE">Done</SelectItem>
+                <SelectItem value="NEW">{t("planning.status.newTask")}</SelectItem>
+                <SelectItem value="PROGRESS">{t("planning.status.inProgress")}</SelectItem>
+                <SelectItem value="REVIEW">{t("planning.status.feedbackRequest")}</SelectItem>
+                <SelectItem value="SUSPENDED">{t("planning.status.suspended")}</SelectItem>
+                <SelectItem value="DONE">{t("planning.status.done")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="planning_result" className={labelColor}>Result</Label>
+            <Label htmlFor="planning_result" className={labelColor}>{t("planning.form.result")}</Label>
             <Select
               value={form.planning_result}
               onValueChange={(val) => handleSelectChange("planning_result", val)}
             >
               <SelectTrigger id="planning_result" className={inputBg}>
-                <SelectValue placeholder="Select result" />
+                <SelectValue placeholder={t("planning.editPlanning.selectResult")} />
               </SelectTrigger>
               <SelectContent className={isDark ? "bg-slate-900 border-slate-800 text-slate-200" : ""}>
-                <SelectItem value="PROGRESS">In Progress</SelectItem>
-                <SelectItem value="RESULT_POSITIVE">Completed Positive</SelectItem>
-                <SelectItem value="RESULT_NEGATIVE">Completed Refused</SelectItem>
+                <SelectItem value="PROGRESS">{t("planning.status.inProgress")}</SelectItem>
+                <SelectItem value="RESULT_POSITIVE">{t("planning.status.completedPositive")}</SelectItem>
+                <SelectItem value="RESULT_NEGATIVE">{t("planning.status.completedRefused")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -147,7 +150,7 @@ export default function EditPlanningRequestCard({
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="space-y-2">
-            <Label className={labelColor}>Client</Label>
+            <Label className={labelColor}>{t("planning.form.client")}</Label>
             <Input
               value={form.client_name}
               readOnly
@@ -155,7 +158,7 @@ export default function EditPlanningRequestCard({
             />
           </div>
           <div className="space-y-2">
-            <Label className={labelColor}>Request Date</Label>
+            <Label className={labelColor}>{t("planning.form.requestDate")}</Label>
             <Input
               type="date"
               name="planning_request_date"
@@ -165,7 +168,7 @@ export default function EditPlanningRequestCard({
             />
           </div>
           <div className="space-y-2">
-            <Label className={labelColor}>Year Reference</Label>
+            <Label className={labelColor}>{t("planning.form.yearReference")}</Label>
             <Input
               name="planning_year"
               value={form.planning_year}
@@ -174,24 +177,26 @@ export default function EditPlanningRequestCard({
             />
           </div>
           <div className="space-y-2">
-            <Label className={labelColor}>Description</Label>
+            <Label className={labelColor}>{t("planning.form.description")}</Label>
             <Input
               name="planning_desc"
               value={form.planning_desc}
               onChange={handleChange}
               className={inputBg}
+              placeholder={t("planning.form.descriptionPlaceholder")}
             />
           </div>
         </div>
 
         <div className="flex justify-between items-end gap-4">
           <div className="space-y-2 flex-1">
-            <Label className={labelColor}>Type</Label>
+            <Label className={labelColor}>{t("planning.form.type")}</Label>
             <Input
               name="planning_type"
               value={form.planning_type}
               onChange={handleChange}
               className={inputBg}
+              placeholder={t("planning.form.typePlaceholder")}
             />
           </div>
           <div className="w-full md:w-1/4">
@@ -200,7 +205,7 @@ export default function EditPlanningRequestCard({
               disabled={submitting}
               className="w-full bg-violet-600 hover:bg-violet-700 text-white transition-colors"
             >
-              {submitting ? "Updating..." : "Update"}
+              {submitting ? t("planning.actions.updating") : t("planning.actions.update")}
             </Button>
           </div>
         </div>

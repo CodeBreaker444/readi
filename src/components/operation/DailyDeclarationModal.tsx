@@ -2,6 +2,7 @@
 
 import axios from "axios";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { InsertPilotDeclarationPayload } from "../../config/types/operation";
 
@@ -14,17 +15,18 @@ interface Props {
 
 const DECLARATION_TYPE = "PIC_Suitable_declaration";
 
-const CHECKLIST_ITEMS = [
-  { key: "rested", label: "I am adequately rested and not fatigued" },
-  { key: "fit", label: "I am physically and mentally fit to fly" },
-  { key: "medication", label: "I am not under the influence of medication that may impair my performance" },
-  { key: "briefed", label: "I have reviewed the mission plan and area of operation" },
-  { key: "equipment", label: "Equipment and drone systems have been inspected and are airworthy" },
-];
-
 export function DailyDeclarationModal({ open, onClose, onSuccess, isDark }: Props) {
+  const { t } = useTranslation();
   const [answers, setAnswers] = useState<Record<string, boolean>>({});
   const [submitting, setSubmitting] = useState(false);
+
+  const CHECKLIST_ITEMS = [
+    { key: "rested", label: t("operations.declaration.rested", "I am adequately rested and not fatigued") },
+    { key: "fit", label: t("operations.declaration.fit", "I am physically and mentally fit to fly") },
+    { key: "medication", label: t("operations.declaration.medication", "I am not under the influence of medication that may impair my performance") },
+    { key: "briefed", label: t("operations.declaration.briefed", "I have reviewed the mission plan and area of operation") },
+    { key: "equipment", label: t("operations.declaration.equipment", "Equipment and drone systems have been inspected and are airworthy") },
+  ];
 
   if (!open) return null;
 
@@ -35,7 +37,7 @@ export function DailyDeclarationModal({ open, onClose, onSuccess, isDark }: Prop
 
   const handleSubmit = async () => {
     if (!allChecked) {
-      toast.warning("Please confirm all checklist items before submitting.");
+      toast.warning(t("operations.declaration.warning", "Please confirm all checklist items before submitting."));
       return;
     }
 
@@ -48,7 +50,7 @@ export function DailyDeclarationModal({ open, onClose, onSuccess, isDark }: Prop
       await axios.post("/api/operation/pilot/declaration", payload);
       onSuccess();
     } catch (error: any) {
-      toast.error("Failed to save declaration", {
+      toast.error(t("operations.declaration.error", "Failed to save declaration"), {
         description: error?.response?.data?.message ?? "Unknown error",
       });
     } finally {
@@ -71,9 +73,9 @@ export function DailyDeclarationModal({ open, onClose, onSuccess, isDark }: Prop
   return (
     <div className={`fixed inset-0 z-50 flex items-center justify-center ${overlay}`}>
       <div className={`w-full max-w-md rounded-2xl p-6 shadow-2xl ${panel}`}>
-        <h2 className="mb-1 text-lg font-semibold">Daily Pilot Declaration</h2>
+        <h2 className="mb-1 text-lg font-semibold">{t("operations.declaration.title", "Daily Pilot Declaration")}</h2>
         <p className={`mb-5 text-sm ${isDark ? "text-white/50" : "text-slate-500"}`}>
-          Confirm all items to proceed with starting a mission today.
+          {t("operations.declaration.subtitle", "Confirm all items to proceed with starting a mission today.")}
         </p>
 
         <div className="space-y-2">
@@ -105,14 +107,14 @@ export function DailyDeclarationModal({ open, onClose, onSuccess, isDark }: Prop
             disabled={submitting || !allChecked}
             className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${btnPrimary}`}
           >
-            {submitting ? "Saving…" : "Submit Declaration"}
+            {submitting ? t("operations.declaration.saving", "Saving…") : t("operations.declaration.submit", "Submit Declaration")}
           </button>
           <button
             onClick={onClose}
             disabled={submitting}
             className={`rounded-lg cursor-pointer px-4 py-2.5 text-sm font-medium transition-colors ${btnSecondary}`}
           >
-            Cancel
+            {t("planning.form.no", "Cancel")}
           </button>
         </div>
       </div>

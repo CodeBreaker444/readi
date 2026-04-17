@@ -4,6 +4,7 @@ import { useTheme } from '@/components/useTheme';
 import { AlertCircle, ArrowLeft, CheckCircle2, ExternalLink, FileText, HardDrive, Loader2, RefreshCw, Search, Trash2, Upload } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 const MAX_PDF_SIZE_MB = 10;
@@ -18,6 +19,7 @@ interface DocumentRecord {
 
 export default function KnowledgeConfigPage() {
     const { isDark } = useTheme();
+    const { t } = useTranslation();
     const router = useRouter();
 
     const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
@@ -49,7 +51,7 @@ export default function KnowledgeConfigPage() {
                 setTotalFiles(data.totalFiles ?? 0);
             }
         } catch {
-            toast.error('Failed to load documents');
+            toast.error(t('knowledge.errors.loadDocuments'));
         } finally {
             setIsLoadingDocs(false);
         }
@@ -68,7 +70,7 @@ export default function KnowledgeConfigPage() {
 
         if (isPdf && file.size > MAX_PDF_SIZE_MB * 1024 * 1024) {
             setUploadStatus('error');
-            setErrorMsg(`File too large: ${(file.size / 1024 / 1024).toFixed(1)} MB. Max allowed is ${MAX_PDF_SIZE_MB} MB.`);
+            setErrorMsg(t('knowledge.errors.fileTooLarge', { size: (file.size / 1024 / 1024).toFixed(1), max: MAX_PDF_SIZE_MB }));
             return;
         }
 
@@ -83,17 +85,17 @@ export default function KnowledgeConfigPage() {
             const res = await fetch('/api/agent/ingest', { method: 'POST', body: formData });
             if (res.ok) {
                 setUploadStatus('success');
-                toast.success('Document ingested successfully');
+                toast.success(t('knowledge.success.ingested'));
                 fetchDocuments();
                 setTimeout(() => setUploadStatus('idle'), 3000);
             } else {
                 const data = await res.json();
                 setUploadStatus('error');
-                setErrorMsg(data.error || 'Upload failed');
+                setErrorMsg(data.error || t('knowledge.errors.uploadFailed'));
             }
         } catch {
             setUploadStatus('error');
-            setErrorMsg('Network error during upload');
+            setErrorMsg(t('knowledge.errors.networkUpload'));
         } finally {
             setIsUploading(false);
         }
@@ -105,14 +107,14 @@ export default function KnowledgeConfigPage() {
         try {
             const res = await fetch(`/api/agent/ingest?source=${encodeURIComponent(deleteTarget)}`, { method: 'DELETE' });
             if (res.ok) {
-                toast.success(`"${deleteTarget}" removed from knowledge base`);
+                toast.success(t('knowledge.success.deleted', { name: deleteTarget }));
                 fetchDocuments();
                 setDeleteTarget(null);
             } else {
-                toast.error('Delete failed — please try again');
+                toast.error(t('knowledge.errors.deleteFailed'));
             }
         } catch {
-            toast.error('Network error during delete');
+            toast.error(t('knowledge.errors.networkDelete'));
         } finally {
             setIsDeleting(false);
         }
@@ -146,16 +148,16 @@ export default function KnowledgeConfigPage() {
                     <AlertCircle className="w-10 h-10 text-red-400" />
                 </div>
                 <div className="text-center">
-                    <h1 className="text-xl font-bold mb-1">Access Denied</h1>
+                    <h1 className="text-xl font-bold mb-1">{t('knowledge.accessDenied.title')}</h1>
                     <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-                        Knowledge base configuration is restricted to administrators.
+                        {t('knowledge.accessDenied.description')}
                     </p>
                 </div>
                 <button
                     onClick={() => router.back()}
                     className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors ${isDark ? 'bg-slate-800 hover:bg-slate-700 text-white' : 'bg-white hover:bg-gray-100 text-gray-800 border border-gray-200'}`}
                 >
-                    Go back
+                    {t('knowledge.goBack')}
                 </button>
             </div>
         );
@@ -163,10 +165,8 @@ export default function KnowledgeConfigPage() {
 
     return (
         <div className={`min-h-screen ${isDark ? 'bg-slate-950' : 'bg-gray-50'}`}>
-
-            {/* Header */}
             <div className={`border-b px-6 py-4 ${isDark ? 'bg-slate-900/80 border-slate-700/60 backdrop-blur' : 'bg-white/80 border-gray-200 backdrop-blur'}`}>
-                <div className="max-w-6xl mx-auto flex items-center gap-4">
+                <div className="flex items-center gap-4">
                     <button
                         onClick={() => router.back()}
                         className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-slate-700 text-slate-400 hover:text-white' : 'hover:bg-gray-100 text-gray-500 hover:text-gray-900'}`}
@@ -179,28 +179,27 @@ export default function KnowledgeConfigPage() {
                     </div>
 
                     <div className="flex-1 min-w-0">
-                        <h1 className={`font-bold text-base ${isDark ? 'text-white' : 'text-gray-900'}`}>Knowledge Base Config</h1>
-                        <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Manage procedural documents for the AI agent · Admin only</p>
+                        <h1 className={`font-bold text-base ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('knowledge.title')}</h1>
+                        <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{t('knowledge.subtitle')}</p>
                     </div>
 
-                    {/* Storage quota pill */}
                     <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-semibold ${limitReached
                         ? (isDark ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-red-50 border-red-200 text-red-600')
                         : (isDark ? 'bg-slate-800 border-slate-700 text-slate-400' : 'bg-white border-gray-200 text-gray-500')}`}>
                         <HardDrive size={13} />
-                        <span>{totalFiles} / {MAX_PDF_FILES} files</span>
+                        <span>{t('knowledge.filesCount', { total: totalFiles, max: MAX_PDF_FILES })}</span>
                     </div>
                 </div>
             </div>
 
-            <main className="max-w-6xl mx-auto px-6 py-8">
+            <main className="px-6 py-8">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
                     {/* Left: upload panel */}
                     <div className="space-y-4">
                         <div className={`rounded-2xl border p-5 ${isDark ? 'bg-slate-900 border-slate-700/60' : 'bg-white border-gray-200'}`}>
                             <h2 className={`text-xs font-bold uppercase tracking-wider mb-4 flex items-center gap-2 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-                                <Upload size={13} /> Ingest New Document
+                                <Upload size={13} /> {t('knowledge.ingestNewDocument')}
                             </h2>
 
                             <label className={`relative block border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${limitReached
@@ -212,28 +211,28 @@ export default function KnowledgeConfigPage() {
                                 <input type="file" className="hidden" accept=".pdf,.txt" onChange={handleFileUpload} disabled={limitReached} />
                                 <Upload size={22} className={`mx-auto mb-3 ${isDark ? 'text-slate-500' : 'text-gray-400'}`} />
                                 <p className={`text-sm font-semibold ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>
-                                    {limitReached ? 'Storage Full' : 'Drop PDF or TXT'}
+                                    {limitReached ? t('knowledge.storageFull') : t('knowledge.dropPdfOrTxt')}
                                 </p>
                                 <p className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-                                    {limitReached ? `Delete a file to upload more` : `Max ${MAX_PDF_SIZE_MB} MB per file`}
+                                    {limitReached ? t('knowledge.deleteToUploadMore') : t('knowledge.maxPerFile', { max: MAX_PDF_SIZE_MB })}
                                 </p>
 
                                 {uploadStatus !== 'idle' && (
                                     <div className={`mt-4 p-3 rounded-lg ${isDark ? 'bg-black/30' : 'bg-gray-50'}`}>
                                         {uploadStatus === 'processing' && (
                                             <div className="flex items-center justify-center gap-2 text-violet-400 text-xs font-semibold">
-                                                <Loader2 size={13} className="animate-spin" /> Processing…
+                                                <Loader2 size={13} className="animate-spin" /> {t('knowledge.processing')}
                                             </div>
                                         )}
                                         {uploadStatus === 'success' && (
                                             <div className="flex items-center justify-center gap-2 text-emerald-400 text-xs font-semibold">
-                                                <CheckCircle2 size={13} /> Ingested successfully
+                                                <CheckCircle2 size={13} /> {t('knowledge.ingestedSuccessfully')}
                                             </div>
                                         )}
                                         {uploadStatus === 'error' && (
                                             <div className="flex flex-col items-center gap-1 text-red-400">
                                                 <div className="flex items-center gap-2 text-xs font-semibold">
-                                                    <AlertCircle size={13} /> Error
+                                                    <AlertCircle size={13} /> {t('common.error')}
                                                 </div>
                                                 <p className="text-[10px] opacity-70 italic">{errorMsg}</p>
                                             </div>
@@ -244,17 +243,17 @@ export default function KnowledgeConfigPage() {
 
                             {/* Limits info box */}
                             <div className={`mt-4 p-3 rounded-xl border text-xs space-y-1 ${isDark ? 'bg-red-500/5 border-red-500/15 text-slate-400' : 'bg-red-50/50 border-red-100 text-gray-500'}`}>
-                                <p className={`font-bold uppercase tracking-wider text-[9px] mb-1.5 ${isDark ? 'text-red-400/70' : 'text-red-400'}`}>Hard Limits</p>
-                                <p>• Max <span className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{MAX_PDF_SIZE_MB} MB</span> per PDF</p>
-                                <p>• Max <span className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{MAX_PDF_FILES} files</span> total in knowledge base</p>
-                                <p>• Admin access only</p>
+                                <p className={`font-bold uppercase tracking-wider text-[9px] mb-1.5 ${isDark ? 'text-red-400/70' : 'text-red-400'}`}>{t('knowledge.hardLimits')}</p>
+                                <p>{t('knowledge.limitPdf', { max: MAX_PDF_SIZE_MB })}</p>
+                                <p>{t('knowledge.limitFiles', { max: MAX_PDF_FILES })}</p>
+                                <p>{t('knowledge.adminOnly')}</p>
                             </div>
 
                             <div className={`mt-3 p-3 rounded-xl border text-xs space-y-1 ${isDark ? 'bg-slate-800/50 border-slate-700/50 text-slate-400' : 'bg-gray-50 border-gray-100 text-gray-500'}`}>
-                                <p className={`font-bold uppercase tracking-wider text-[9px] mb-1.5 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>How it works</p>
-                                <p>• PDFs are chunked and embedded via Gemini</p>
-                                <p>• Instantly searchable by the agent</p>
-                                <p>• Re-upload a file to refresh its content</p>
+                                <p className={`font-bold uppercase tracking-wider text-[9px] mb-1.5 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{t('knowledge.howItWorks')}</p>
+                                <p>{t('knowledge.how.chunked')}</p>
+                                <p>{t('knowledge.how.searchable')}</p>
+                                <p>{t('knowledge.how.reupload')}</p>
                             </div>
                         </div>
                     </div>
@@ -264,13 +263,13 @@ export default function KnowledgeConfigPage() {
                         <div className={`rounded-2xl border overflow-hidden ${isDark ? 'bg-slate-900 border-slate-700/60' : 'bg-white border-gray-200'}`}>
                             <div className={`flex items-center justify-between px-5 py-4 border-b ${isDark ? 'border-slate-700/60' : 'border-gray-100'}`}>
                                 <h2 className={`text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-                                    <FileText size={13} /> Active Knowledge Store
+                                    <FileText size={13} /> {t('knowledge.activeStore')}
                                 </h2>
                                 <div className="relative">
                                     <Search size={12} className={`absolute left-3 top-1/2 -translate-y-1/2 ${isDark ? 'text-slate-500' : 'text-gray-400'}`} />
                                     <input
                                         type="text"
-                                        placeholder="Search…"
+                                        placeholder={t('common.search')}
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
                                         className={`pl-8 pr-3 py-1.5 rounded-lg border text-xs outline-none transition-colors w-48 ${isDark
@@ -284,13 +283,13 @@ export default function KnowledgeConfigPage() {
                                 {isLoadingDocs ? (
                                     <div className="flex flex-col items-center justify-center py-16 gap-3">
                                         <Loader2 className="w-6 h-6 animate-spin text-violet-500" />
-                                        <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Loading knowledge base…</p>
+                                        <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{t('knowledge.loading')}</p>
                                     </div>
                                 ) : filteredSources.length === 0 ? (
                                     <div className="flex flex-col items-center justify-center py-16 gap-3">
                                         <FileText size={36} className={isDark ? 'text-slate-700' : 'text-gray-300'} />
                                         <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-                                            {searchQuery ? 'No documents match your search.' : 'No documents ingested yet.'}
+                                            {searchQuery ? t('knowledge.emptySearch') : t('knowledge.empty')}
                                         </p>
                                     </div>
                                 ) : (
@@ -308,7 +307,7 @@ export default function KnowledgeConfigPage() {
                                                             </p>
                                                             <div className="flex items-center gap-2 mt-1">
                                                                 <span className={`text-[10px] px-1.5 py-0.5 rounded-md border ${isDark ? 'bg-slate-800 border-slate-600 text-slate-400' : 'bg-gray-100 border-gray-200 text-gray-500'}`}>
-                                                                    {groupedDocs[source].length} sections
+                                                                    {t('knowledge.sectionsCount', { count: groupedDocs[source].length })}
                                                                 </span>
                                                                 <span className={`text-[10px] ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
                                                                     {new Date(groupedDocs[source][0].created_at).toLocaleDateString()}
@@ -319,7 +318,7 @@ export default function KnowledgeConfigPage() {
                                                     <button
                                                         onClick={() => setDeleteTarget(source)}
                                                         className={`opacity-0 group-hover:opacity-100 p-2 rounded-lg transition-all ${isDark ? 'hover:bg-red-500/10 text-slate-500 hover:text-red-400' : 'hover:bg-red-50 text-gray-400 hover:text-red-500'}`}
-                                                        title="Delete from knowledge base"
+                                                        title={t('knowledge.deleteFromBase')}
                                                     >
                                                         <Trash2 size={15} />
                                                     </button>
@@ -336,13 +335,13 @@ export default function KnowledgeConfigPage() {
                                                                 ? 'bg-slate-800/50 border-slate-700/50 text-slate-400 hover:border-slate-500 hover:text-white'
                                                                 : 'bg-gray-50 border-gray-100 text-gray-500 hover:border-gray-200 hover:text-gray-800'}`}
                                                         >
-                                                            <span className="truncate pr-2">{doc.section_title || 'Untitled Section'}</span>
+                                                            <span className="truncate pr-2">{doc.section_title || t('knowledge.untitledSection')}</span>
                                                             <ExternalLink size={10} className="shrink-0 opacity-0 group-hover/item:opacity-100 transition-opacity" />
                                                         </a>
                                                     ))}
                                                     {groupedDocs[source].length > 4 && (
                                                         <p className={`px-3 py-2 text-[10px] italic ${isDark ? 'text-slate-600' : 'text-gray-400'}`}>
-                                                            + {groupedDocs[source].length - 4} more sections…
+                                                            {t('knowledge.moreSections', { count: groupedDocs[source].length - 4 })}
                                                         </p>
                                                     )}
                                                 </div>
@@ -367,17 +366,17 @@ export default function KnowledgeConfigPage() {
                         <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-5 ${isDark ? 'bg-red-500/10 ring-1 ring-red-500/30' : 'bg-red-50 ring-1 ring-red-200'}`}>
                             <Trash2 size={24} className="text-red-400" />
                         </div>
-                        <h2 className={`text-lg font-bold text-center mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>Remove from Knowledge Base?</h2>
+                        <h2 className={`text-lg font-bold text-center mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('knowledge.removeTitle')}</h2>
                         <p className={`text-sm text-center mb-6 leading-relaxed ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
                             <span className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>"{deleteTarget}"</span> and its{' '}
-                            {groupedDocs[deleteTarget]?.length ?? 0} sections will be permanently deleted from the agent's knowledge base.
+                            {t('knowledge.removeDescription', { count: groupedDocs[deleteTarget]?.length ?? 0 })}
                         </p>
                         <div className="flex gap-3">
                             <button
                                 onClick={() => setDeleteTarget(null)}
                                 className={`flex-1 py-2.5 rounded-xl border text-sm font-semibold transition-colors ${isDark ? 'border-slate-600 bg-slate-800 hover:bg-slate-700 text-slate-300' : 'border-gray-200 bg-gray-50 hover:bg-gray-100 text-gray-700'}`}
                             >
-                                Cancel
+                                {t('common.cancel')}
                             </button>
                             <button
                                 onClick={confirmDelete}
@@ -385,7 +384,7 @@ export default function KnowledgeConfigPage() {
                                 className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
                             >
                                 {isDeleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-                                {isDeleting ? 'Deleting…' : 'Delete'}
+                                {isDeleting ? t('knowledge.deleting') : t('common.delete')}
                             </button>
                         </div>
                     </div>

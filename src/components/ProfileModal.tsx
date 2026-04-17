@@ -1,8 +1,9 @@
 'use client';
 import { SessionUser } from '@/lib/auth/server-session';
 import axios from 'axios';
-import { Award, Camera, Loader2, User } from 'lucide-react';
+import { Camera, CheckCircle2, Clock, GraduationCap, Loader2, User } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { Badge } from '@/components/ui/badge';
@@ -34,15 +35,21 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
-interface Qualification {
-  qualification_id: number;
-  qualification_name: string;
-  qualification_type: string;
-  description: string | null;
-  start_date: string | null;
+interface TrainingCurriculumRecord {
+  attendance_id: number;
+  training_name: string;
+  training_type: string | null;
+  certificate_type: string | null;
+  session_code: string | null;
+  completion_date: string | null;
   expiry_date: string | null;
-  status: string;
+  status: 'VALID' | 'EXPIRED' | null;
 }
+
+const CERT_TYPE_LABELS: Record<string, string> = {
+  PARTICIPATION: 'Certificate of Participation',
+  QUALIFICATION: 'Qualification',
+};
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -51,12 +58,87 @@ interface ProfileModalProps {
   userData: SessionUser | null;
 }
 
+function CurriculumTable({
+  rows,
+  formatDate,
+  t,
+  muted = false,
+}: {
+  rows: TrainingCurriculumRecord[];
+  formatDate: (d: string) => string;
+  t: (key: string) => string;
+  muted?: boolean;
+}) {
+  const rowCls = muted ? 'opacity-60' : '';
+  return (
+    <div className={`rounded-md border overflow-hidden ${rowCls}`}>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>{t('profile.curriculum.headers.course')}</TableHead>
+            <TableHead>{t('profile.curriculum.headers.certificate')}</TableHead>
+            <TableHead>{t('profile.curriculum.headers.completionDate')}</TableHead>
+            <TableHead>{t('profile.curriculum.headers.expiryDate')}</TableHead>
+            <TableHead className="text-right">{t('profile.curriculum.headers.status')}</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {rows.map((r) => (
+            <TableRow key={r.attendance_id}>
+              <TableCell>
+                <p className="font-medium text-sm">{r.training_name}</p>
+                {r.training_type && (
+                  <p className="text-xs text-muted-foreground mt-0.5">{r.training_type}</p>
+                )}
+              </TableCell>
+              <TableCell>
+                {r.certificate_type ? (
+                  <Badge
+                    variant="outline"
+                    className={
+                      r.certificate_type === 'QUALIFICATION'
+                        ? 'border-amber-300 text-amber-700 dark:border-amber-700 dark:text-amber-300'
+                        : 'border-teal-300 text-teal-700 dark:border-teal-700 dark:text-teal-300'
+                    }
+                  >
+                    {CERT_TYPE_LABELS[r.certificate_type] ?? r.certificate_type}
+                  </Badge>
+                ) : (
+                  <span className="text-xs text-muted-foreground">—</span>
+                )}
+              </TableCell>
+              <TableCell className="text-sm text-muted-foreground">
+                {r.completion_date ? formatDate(r.completion_date) : '—'}
+              </TableCell>
+              <TableCell className={`text-sm ${r.status === 'EXPIRED' ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
+                {r.expiry_date ? formatDate(r.expiry_date) : '—'}
+              </TableCell>
+              <TableCell className="text-right">
+                {r.status === 'VALID' ? (
+                  <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/40 dark:text-emerald-300">
+                    {t('profile.curriculum.valid')}
+                  </Badge>
+                ) : r.status === 'EXPIRED' ? (
+                  <Badge variant="destructive">{t('profile.curriculum.expired')}</Badge>
+                ) : (
+                  <Badge variant="secondary">{t('profile.curriculum.noExpiry')}</Badge>
+                )}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
 const ProfileModal: React.FC<ProfileModalProps> = ({
   isOpen,
   onClose,
   isDark,
   userData,
 }) => {
+  const { t } = useTranslation();
   const canEditEmail =
     userData?.role === 'ADMIN' || userData?.role === 'SUPERADMIN';
 
@@ -71,7 +153,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     type: '',
     signature: '',
   });
-  const [qualifications, setQualifications] = useState<Qualification[]>([]);
+  const [curriculum, setCurriculum] = useState<TrainingCurriculumRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [avatar, setAvatar] = useState<File | null>(null);
@@ -93,15 +175,9 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   const fetchUserProfile = async () => {
     try {
       setLoading(true);
-      const [profileRes, qualsRes] = await Promise.all([
+      const [profileRes, curriculumRes] = await Promise.all([
         axios.get('/api/profile'),
-        userData?.userId
-          ? axios
-              .get(
-                `/api/team/user/qualifications?user_id=${userData.userId}`
-              )
-              .catch(() => null)
-          : Promise.resolve(null),
+        axios.get('/api/training/curriculum').catch(() => null),
       ]);
 
       const data = profileRes.data;
@@ -122,12 +198,12 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
         }
       }
 
-      if (qualsRes?.data?.data) {
-        setQualifications(qualsRes.data.data);
+      if (curriculumRes?.data?.data) {
+        setCurriculum(curriculumRes.data.data);
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
-      toast.error('Failed to load profile data');
+      toast.error(t('profile.errors.load'));
     } finally {
       setLoading(false);
     }
@@ -154,7 +230,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
       const file = e.target.files[0];
 
       if (file.size > 10 * 1024 * 1024) {
-        toast.error('Avatar must be under 10MB');
+        toast.error(t('profile.errors.avatarSize'));
         return;
       }
       if (
@@ -162,7 +238,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           file.type
         )
       ) {
-        toast.error('Avatar must be JPEG, PNG, WebP, or GIF');
+        toast.error(t('profile.errors.avatarFormat'));
         return;
       }
 
@@ -194,7 +270,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
       const result = response.data;
 
       if (result.updateResult) {
-        toast.success('Profile updated successfully');
+        toast.success(t('profile.success.updated'));
         if (result.avatarUrl) {
           setCurrentAvatarUrl(result.avatarUrl);
           setAvatarPreview(null);
@@ -203,11 +279,11 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
         onClose();
         window.location.reload();
       } else {
-        toast.error(result.message || 'Failed to update profile');
+        toast.error(result.message || t('profile.errors.update'));
       }
     } catch (error) {
       console.error('Error updating profile:', error);
-      toast.error('Error updating profile');
+      toast.error(t('profile.errors.update'));
     } finally {
       setSaving(false);
     }
@@ -227,8 +303,8 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
       <DialogContent className="w-[95vw] max-w-6xl lg:max-w-5xl max-h-[90vh] overflow-y-auto p-0 gap-0">
         <DialogHeader className="px-4 sm:px-6 py-4 sm:py-5 border-b">
           <DialogTitle className="text-base sm:text-lg font-semibold truncate">
-            User Profile:{' '}
-            {userData?.fullname || userData?.username || 'Unknown User'}
+            {t('profile.title')}:{' '}
+            {userData?.fullname || userData?.username || t('profile.unknownUser')}
           </DialogTitle>
         </DialogHeader>
 
@@ -242,7 +318,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                       {displayAvatar ? (
                         <img
                           src={displayAvatar}
-                          alt="Profile"
+                          alt={t('profile.avatarAlt')}
                           className="w-full h-full object-cover"
                           onError={(e) => {
                             (e.target as HTMLImageElement).style.display =
@@ -276,7 +352,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                   </div>
                   <div className="text-left md:text-center min-w-0">
                     <p className="text-sm font-medium truncate">
-                      {formData.fullName || 'User'}
+                      {formData.fullName || t('profile.userFallback')}
                     </p>
                     <p className="text-xs text-muted-foreground truncate">
                       {formData.email}
@@ -294,25 +370,25 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
                 <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-5 gap-y-4">
                   <div className="space-y-1.5">
-                    <Label htmlFor="fullName">Full Name</Label>
+                    <Label htmlFor="fullName">{t('profile.fields.fullName')}</Label>
                     <Input
                       id="fullName"
                       name="fullName"
                       value={formData.fullName}
                       onChange={handleInputChange}
-                      placeholder="Enter full name"
+                      placeholder={t('profile.placeholders.fullName')}
                     />
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="email">{t('profile.fields.email')}</Label>
                     <Input
                       id="email"
                       name="email"
                       type="email"
                       value={formData.email}
                       onChange={handleInputChange}
-                      placeholder="Enter email address"
+                      placeholder={t('profile.placeholders.email')}
                       disabled={!canEditEmail}
                       readOnly={!canEditEmail}
                       className={!canEditEmail ? 'opacity-60 cursor-not-allowed' : ''}
@@ -320,25 +396,25 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label htmlFor="phone">Phone</Label>
+                    <Label htmlFor="phone">{t('profile.fields.phone')}</Label>
                     <Input
                       id="phone"
                       name="phone"
                       type="tel"
                       value={formData.phone}
                       onChange={handleInputChange}
-                      placeholder="Enter phone number"
+                      placeholder={t('profile.placeholders.phone')}
                     />
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label htmlFor="timezone">Timezone</Label>
+                    <Label htmlFor="timezone">{t('profile.fields.timezone')}</Label>
                     <Select
                       value={formData.timezone}
                       onValueChange={(val) => handleSelectChange('timezone', val)}
                     >
                       <SelectTrigger id="timezone">
-                        <SelectValue placeholder="Select timezone" />
+                        <SelectValue placeholder={t('profile.placeholders.timezone')} />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="UTC">UTC</SelectItem>
@@ -352,41 +428,41 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label htmlFor="department">Department</Label>
+                    <Label htmlFor="department">{t('profile.fields.department')}</Label>
                     <Input
                       id="department"
                       name="department"
                       value={formData.department}
                       onChange={handleInputChange}
-                      placeholder="Enter department"
+                      placeholder={t('profile.placeholders.department')}
                     />
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label htmlFor="type">Type</Label>
+                    <Label htmlFor="type">{t('profile.fields.type')}</Label>
                     <Select
                       value={formData.type}
                       onValueChange={(val) => handleSelectChange('type', val)}
                     >
                       <SelectTrigger id="type">
-                        <SelectValue placeholder="Select type" />
+                        <SelectValue placeholder={t('profile.placeholders.type')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="admin">Admin</SelectItem>
-                        <SelectItem value="user">User</SelectItem>
-                        <SelectItem value="operator">Operator</SelectItem>
+                        <SelectItem value="admin">{t('profile.types.admin')}</SelectItem>
+                        <SelectItem value="user">{t('profile.types.user')}</SelectItem>
+                        <SelectItem value="operator">{t('profile.types.operator')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
                   <div className="space-y-1.5 sm:col-span-2 lg:col-span-3">
-                    <Label htmlFor="signature">Signature</Label>
+                    <Label htmlFor="signature">{t('profile.fields.signature')}</Label>
                     <Input
                       id="signature"
                       name="signature"
                       value={formData.signature}
                       onChange={handleInputChange}
-                      placeholder="Enter signature"
+                      placeholder={t('profile.placeholders.signature')}
                     />
                   </div>
 
@@ -397,7 +473,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                       className="w-full bg-violet-600 hover:bg-violet-700 cursor-pointer"
                     >
                       {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-                      {saving ? 'Updating...' : 'Update Profile'}
+                      {saving ? t('profile.actions.updating') : t('profile.actions.update')}
                     </Button>
                   </div>
                 </div>
@@ -409,13 +485,13 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Award className="h-4 w-4 text-primary" />
-                  <CardTitle className="text-base">Qualifications</CardTitle>
+                  <GraduationCap className="h-4 w-4 text-primary" />
+                  <CardTitle className="text-base">{t('profile.curriculum.title')}</CardTitle>
                 </div>
-                <Badge variant="secondary">{qualifications.length}</Badge>
+                <Badge variant="secondary">{curriculum.length}</Badge>
               </div>
             </CardHeader>
-            <CardContent className="pt-0">
+            <CardContent className="pt-0 space-y-5">
               {loading ? (
                 <div className="space-y-3">
                   {[1, 2, 3].map((n) => (
@@ -424,162 +500,50 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                       <Skeleton className="h-4 w-20 sm:w-24" />
                       <Skeleton className="h-4 w-16 sm:w-20" />
                       <Skeleton className="h-5 w-16 rounded-full" />
-                      <Skeleton className="h-5 w-14 rounded-full" />
                     </div>
                   ))}
                 </div>
-              ) : qualifications.length === 0 ? (
+              ) : curriculum.length === 0 ? (
                 <div className="text-center py-10 text-muted-foreground">
-                  <Award className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                  <p className="text-sm">No qualifications on record.</p>
+                  <GraduationCap className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                  <p className="text-sm">{t('profile.curriculum.empty')}</p>
                 </div>
               ) : (
                 <>
-                  <div className="space-y-3 md:hidden">
-                    {qualifications.map((q) => {
-                      const today = new Date();
-                      const expired = q.expiry_date
-                        ? new Date(q.expiry_date) < today
-                        : false;
-                      const isActive = q.status === 'Active' && !expired;
+                  {/* Valid / Active */}
+                  {curriculum.filter((r) => r.status === 'VALID' || r.status === null).length > 0 && (
+                    <div>
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                        <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+                          {t('profile.curriculum.active')}
+                        </p>
+                      </div>
+                      <CurriculumTable
+                        rows={curriculum.filter((r) => r.status === 'VALID' || r.status === null)}
+                        formatDate={formatDate}
+                        t={t}
+                      />
+                    </div>
+                  )}
 
-                      return (
-                        <div
-                          key={q.qualification_id}
-                          className="rounded-lg border p-3.5 space-y-2.5"
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="min-w-0">
-                              <p className="font-medium text-sm truncate">
-                                {q.qualification_name}
-                              </p>
-                              {q.description && (
-                                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                                  {q.description}
-                                </p>
-                              )}
-                            </div>
-                            <Badge
-                              variant={isActive ? 'default' : 'destructive'}
-                              className={
-                                isActive
-                                  ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/40 dark:text-emerald-300 shrink-0'
-                                  : 'shrink-0'
-                              }
-                            >
-                              {expired ? 'Expired' : q.status}
-                            </Badge>
-                          </div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <Badge
-                              variant="outline"
-                              className={
-                                q.qualification_type === 'Certification'
-                                  ? 'border-blue-300 text-blue-700 dark:border-blue-700 dark:text-blue-300'
-                                  : 'border-amber-300 text-amber-700 dark:border-amber-700 dark:text-amber-300'
-                              }
-                            >
-                              {q.qualification_type}
-                            </Badge>
-                            {q.start_date && (
-                              <span className="text-xs text-muted-foreground">
-                                From: {formatDate(q.start_date)}
-                              </span>
-                            )}
-                            {q.expiry_date && (
-                              <span
-                                className={`text-xs ${
-                                  expired
-                                    ? 'text-destructive font-medium'
-                                    : 'text-muted-foreground'
-                                }`}
-                              >
-                                Expires: {formatDate(q.expiry_date)}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  <div className="hidden md:block rounded-md border overflow-hidden">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Qualification</TableHead>
-                          <TableHead>Type</TableHead>
-                          <TableHead>Start Date</TableHead>
-                          <TableHead>Expiry Date</TableHead>
-                          <TableHead className="text-right">Status</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {qualifications.map((q) => {
-                          const today = new Date();
-                          const expired = q.expiry_date
-                            ? new Date(q.expiry_date) < today
-                            : false;
-                          const isActive = q.status === 'Active' && !expired;
-
-                          return (
-                            <TableRow key={q.qualification_id}>
-                              <TableCell>
-                                <div>
-                                  <p className="font-medium text-sm">
-                                    {q.qualification_name}
-                                  </p>
-                                  {q.description && (
-                                    <p className="text-xs text-muted-foreground mt-0.5">
-                                      {q.description}
-                                    </p>
-                                  )}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <Badge
-                                  variant="outline"
-                                  className={
-                                    q.qualification_type === 'Certification'
-                                      ? 'border-blue-300 text-blue-700 dark:border-blue-700 dark:text-blue-300'
-                                      : 'border-amber-300 text-amber-700 dark:border-amber-700 dark:text-amber-300'
-                                  }
-                                >
-                                  {q.qualification_type}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-sm text-muted-foreground">
-                                {q.start_date ? formatDate(q.start_date) : '—'}
-                              </TableCell>
-                              <TableCell
-                                className={`text-sm ${
-                                  expired
-                                    ? 'text-destructive font-medium'
-                                    : 'text-muted-foreground'
-                                }`}
-                              >
-                                {q.expiry_date
-                                  ? formatDate(q.expiry_date)
-                                  : '—'}
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <Badge
-                                  variant={isActive ? 'default' : 'destructive'}
-                                  className={
-                                    isActive
-                                      ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/40 dark:text-emerald-300'
-                                      : ''
-                                  }
-                                >
-                                  {expired ? 'Expired' : q.status}
-                                </Badge>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </div>
+                  {/* Expired / History */}
+                  {curriculum.filter((r) => r.status === 'EXPIRED').length > 0 && (
+                    <div>
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                          {t('profile.curriculum.history')}
+                        </p>
+                      </div>
+                      <CurriculumTable
+                        rows={curriculum.filter((r) => r.status === 'EXPIRED')}
+                        formatDate={formatDate}
+                        t={t}
+                        muted
+                      />
+                    </div>
+                  )}
                 </>
               )}
             </CardContent>
@@ -588,7 +552,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
         <div className="flex justify-end gap-3 px-4 sm:px-6 py-4 border-t">
           <Button variant="outline" onClick={onClose}>
-            Close
+            {t('common.close')}
           </Button>
         </div>
       </DialogContent>

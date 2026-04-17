@@ -38,6 +38,13 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     await deleteDocType(typeId, session!.user.ownerId);
     return NextResponse.json({ code: 1 });
   } catch (err) {
+    const message = err instanceof Error ? err.message : '';
+    if (message.includes('cannot be deleted')) {
+      return apiError(E.BL004, 409);
+    }
+    if (message.includes('Not found')) {
+      return apiError(E.NF021, 404);
+    }
     return internalError(E.SV001, err);
   }
 }

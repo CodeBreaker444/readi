@@ -2,6 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { PlanningLogbookRow } from "@/config/types/evaluation-planning";
 import { ColumnDef } from "@tanstack/react-table";
+import { TFunction } from "i18next";
 import { ArrowUpDown, ClipboardList, Trash2 } from "lucide-react";
 
 interface LogbookColumnsOptions {
@@ -10,14 +11,13 @@ interface LogbookColumnsOptions {
   onDelete: (id: number) => void;
   onManage: (row: PlanningLogbookRow) => void;
   onTestLogbook?: (row: PlanningLogbookRow) => void;
+  t: TFunction;  
 }
 
 export function getLogbookColumns({
-  openedRowId,
-  onOpen,
   onDelete,
-  onManage,
   onTestLogbook,
+  t,  
 }: LogbookColumnsOptions): ColumnDef<PlanningLogbookRow>[] {
   return [
     {
@@ -28,7 +28,7 @@ export function getLogbookColumns({
           size="sm"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
-          Code
+          {t("planning.missionPlanning.code")}
           <ArrowUpDown className="ml-1 h-3 w-3" />
         </Button>
       ),
@@ -40,7 +40,7 @@ export function getLogbookColumns({
     },
     {
       accessorKey: "mission_planning_desc",
-      header: "Description",
+      header: t("planning.form.description"),
       cell: ({ row }) => (
         <span className="text-sm truncate max-w-[200px] block">
           {row.original.mission_planning_desc || "—"}
@@ -49,7 +49,7 @@ export function getLogbookColumns({
     },
     {
       accessorKey: "mission_planning_active",
-      header: "Status",
+      header: t("planning.form.status"),
       cell: ({ row }) => {
         const active = row.original.mission_planning_active;
         return (
@@ -61,34 +61,33 @@ export function getLogbookColumns({
                 : "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200"
             }
           >
-            {active === "Y" ? "Active" : "Hold"}
+            {active === "Y" ? t("planning.status.active") : t("planning.status.onHold")}
           </Badge>
         );
       },
     },
     {
       accessorKey: "mission_planning_ver",
-      header: "Version",
+      header: t("planning.form.version"),
       cell: ({ row }) => (
         <span className="text-sm">{row.original.mission_planning_ver ?? "—"}</span>
       ),
     },
     {
       id: "actions",
-      header: "Actions",
+      header: t("planning.table.actions"),
       cell: ({ row }) => {
         return (
           <div className="flex items-center gap-1">
-
             {onTestLogbook && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => onTestLogbook(row.original)}
-                title="Mission Test Logbook"
+                title={t("planning.testLogbook.title")}
               >
                 <ClipboardList className="h-4 w-4 mr-1" />
-                Tests
+                {t("planning.missionPlanning.tests")}
               </Button>
             )}
             <Button
@@ -96,7 +95,7 @@ export function getLogbookColumns({
               size="icon"
               className="h-8 w-8 text-destructive hover:text-destructive"
               onClick={() => onDelete(row.original.mission_planning_id)}
-              title="Delete"
+              title={t("planning.actions.delete")}
             >
               <Trash2 className="h-4 w-4" />
             </Button>

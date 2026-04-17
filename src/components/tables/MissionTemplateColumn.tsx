@@ -1,4 +1,7 @@
+'use client';
+
 import { type ColumnDef } from '@tanstack/react-table';
+import { TFunction } from 'i18next';
 import { Download } from 'lucide-react';
 
 export interface MissionTemplateRow {
@@ -24,6 +27,7 @@ export interface MissionTemplateRow {
 
 interface ColumnOptions {
   isDark: boolean;
+  t: TFunction; // Added TFunction to options
 }
 
 function formatFileSize(bytes: number | null): string {
@@ -48,11 +52,12 @@ function formatDate(dateStr: string | null): string {
 
 export function getMissionTemplateColumns({
   isDark,
+  t, // Destructured t
 }: ColumnOptions): ColumnDef<MissionTemplateRow, any>[] {
   return [
     {
       accessorKey: 'mission_planning_code',
-      header: 'Template Code',
+      header: t('planning.missionTemplate.templateCode'),
       size: 130,
       cell: ({ getValue }) => (
         <span className="font-mono text-[11px] tabular-nums font-semibold text-violet-500">
@@ -63,7 +68,7 @@ export function getMissionTemplateColumns({
 
     {
       accessorKey: 'evaluation_code',
-      header: 'Evaluation',
+      header: t('planning.missionTemplate.evaluationCol'),
       size: 120,
       cell: ({ getValue }) => {
         const val = getValue();
@@ -78,7 +83,7 @@ export function getMissionTemplateColumns({
 
     {
       accessorKey: 'planning_name',
-      header: 'Planning',
+      header: t('planning.missionTemplate.planningCol'),
       size: 110,
       cell: ({ getValue }) => {
         const val = getValue();
@@ -93,7 +98,7 @@ export function getMissionTemplateColumns({
 
     {
       accessorKey: 'client_name',
-      header: 'Customer',
+      header: t('planning.form.client'),
       size: 150,
       cell: ({ getValue }) => (
         <span className="truncate max-w-[140px] inline-block">
@@ -104,7 +109,7 @@ export function getMissionTemplateColumns({
 
     {
       accessorKey: 'pilot_fullname',
-      header: 'PiC',
+      header: t('planning.missionTemplate.pic'),
       size: 140,
       cell: ({ getValue }) => {
         const val = getValue();
@@ -115,7 +120,7 @@ export function getMissionTemplateColumns({
 
     {
       accessorKey: 'tool_code',
-      header: 'System',
+      header: t('planning.form.drone'),
       size: 100,
       cell: ({ getValue }) => {
         const val = getValue();
@@ -128,7 +133,7 @@ export function getMissionTemplateColumns({
 
     {
       accessorKey: 'mission_planning_desc',
-      header: 'Description',
+      header: t('planning.form.description'),
       size: 200,
       cell: ({ getValue }) => (
         <span
@@ -142,7 +147,7 @@ export function getMissionTemplateColumns({
 
     {
       accessorKey: 'mission_planning_ver',
-      header: 'Ver',
+      header: t('planning.form.version'),
       size: 50,
       cell: ({ getValue }) => (
         <span className="font-mono text-[11px] tabular-nums text-center block">
@@ -153,7 +158,7 @@ export function getMissionTemplateColumns({
 
     {
       accessorKey: 'planning_status',
-      header: 'Status',
+      header: t('planning.form.status'),
       size: 100,
       cell: ({ getValue }) => {
         const status = String(getValue() ?? '');
@@ -169,9 +174,12 @@ export function getMissionTemplateColumns({
 
         const classes = colorMap[status.toUpperCase()] ?? 'bg-slate-500/10 text-slate-500';
 
+        const statusKey = status.toLowerCase().replace(/_([a-z])/g, (g) => g[1].toUpperCase());
+        const label = t(`planning.status.${statusKey}`, { defaultValue: status });
+
         return (
           <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-medium ${classes}`}>
-            {status}
+            {label}
           </span>
         );
       },
@@ -179,7 +187,7 @@ export function getMissionTemplateColumns({
 
     {
       accessorKey: 'updated_at',
-      header: 'Last Update',
+      header: t('planning.missionTemplate.lastUpdate'),
       size: 110,
       cell: ({ getValue }) => (
         <span className="tabular-nums text-[11px]">
@@ -190,14 +198,14 @@ export function getMissionTemplateColumns({
 
     {
       id: 'download',
-      header: 'File',
+      header: t('planning.files.file'),
       size: 130,
       cell: ({ row }) => {
         const { mission_planning_filename, mission_planning_filesize, download_url } =
           row.original;
 
         if (!download_url || !mission_planning_filename) {
-          return <span className="opacity-30 text-[11px]">No file</span>;
+          return <span className="opacity-30 text-[11px]">{t('planning.files.noFiles')}</span>;
         }
 
         return (

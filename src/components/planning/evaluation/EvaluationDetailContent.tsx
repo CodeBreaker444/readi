@@ -1,5 +1,4 @@
 'use client';
- 
 
 import Breadcrumbs from '@/components/Breadcrumbs';
 import { Button } from '@/components/ui/button';
@@ -10,13 +9,13 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
 import {
     Collapsible,
     CollapsibleContent,
     CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useTheme } from '@/components/useTheme';
 import { Evaluation, EvaluationTask } from '@/config/types/evaluation';
 import { cn } from '@/lib/utils';
@@ -33,6 +32,7 @@ import {
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FC, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { EditEvaluationForm } from './EditEvaluationForm';
 import { EvaluationCommunicationModal } from './EvaluationCommunicationModal';
@@ -49,6 +49,7 @@ export const EvaluationDetailContent: FC<Props> = ({ ownerId }) => {
     const { isDark } = useTheme();
     const searchParams = useSearchParams();
     const router = useRouter();
+    const { t } = useTranslation();  
 
     const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -70,8 +71,8 @@ export const EvaluationDetailContent: FC<Props> = ({ ownerId }) => {
     const clientId = Number(params.c_id);
 
     const breadcrumbItems = [
-        { label: 'Evaluation', href: '/planning/evaluation' },
-        { label: 'Evaluation Detail', href: '#' },
+        { label: t('planning.evaluation.evaluation'), href: '/planning/evaluation' },
+        { label: t('planning.evaluation.detailTitle'), href: '#' },
     ];
 
     useEffect(() => {
@@ -79,7 +80,7 @@ export const EvaluationDetailContent: FC<Props> = ({ ownerId }) => {
         const cId = Number(params.c_id);
 
         if (!params.e_id || !params.c_id || isNaN(eId) || isNaN(cId)) {
-            toast.error('Invalid parameters – redirecting to dashboard');
+            toast.error(t('planning.evaluation.invalidParams'));
             router.replace('/planning/evaluation');
             return;
         }
@@ -90,7 +91,7 @@ export const EvaluationDetailContent: FC<Props> = ({ ownerId }) => {
                 const res = await axios.get(`/api/evaluation/${eId}`);
                 setEvaluation(res.data.data);
             } catch {
-                toast.error('Failed to load evaluation data');
+                toast.error(t('planning.evaluation.loadError'));
             } finally {
                 setIsLoading(false);
             }
@@ -104,14 +105,14 @@ export const EvaluationDetailContent: FC<Props> = ({ ownerId }) => {
                 const res = await axios.get(`/api/evaluation/${eId}/flight-requests`);
                 setFlightRequests(res.data.items ?? []);
             } catch {
-                toast.error('Failed to load associated flight requests');
+                toast.error(t('planning.evaluation.flightRequestsLoadError'));
             } finally {
                 setFrLoading(false);
             }
         }
 
         fetchFlightRequests();
-    }, [searchParams]);
+    }, [searchParams, router, t]);
 
     function handleNewCommunication() {
         setCommModalTask(null);
@@ -133,10 +134,10 @@ export const EvaluationDetailContent: FC<Props> = ({ ownerId }) => {
                             <div className="w-1 h-6 rounded-full bg-violet-600" />
                             <div>
                                 <h1 className="text-base font-semibold text-slate-900">
-                                    Evaluation Detail
+                                    {t('planning.evaluation.detailTitle')}
                                 </h1>
                                 <p className="text-xs text-slate-500 leading-none mt-0.5">
-                                    View and manage specific performance metrics for this record.
+                                    {t('planning.evaluation.detailSubtitle')}
                                 </p>
                             </div>
                         </div>
@@ -148,7 +149,7 @@ export const EvaluationDetailContent: FC<Props> = ({ ownerId }) => {
                                 onClick={handleNewCommunication}
                             >
                                 <MessageSquarePlus className="h-3.5 w-3.5" />
-                                New Communication
+                                {t('planning.evaluation.newCommunication')}
                             </Button>
                         </div>
                     </div>
@@ -168,7 +169,7 @@ export const EvaluationDetailContent: FC<Props> = ({ ownerId }) => {
                                             <div className="flex items-center gap-2">
                                                 <Pencil className="w-4 h-4 text-violet-500" />
                                                 <CardTitle className="text-sm font-semibold">
-                                                    Edit Evaluation Request
+                                                    {t('planning.evaluation.editTitle')}
                                                 </CardTitle>
                                             </div>
                                             <ChevronDown
@@ -179,7 +180,7 @@ export const EvaluationDetailContent: FC<Props> = ({ ownerId }) => {
                                             />
                                         </div>
                                         <CardDescription className="text-xs mt-0.5">
-                                            Update evaluation details, status, and result
+                                            {t('planning.evaluation.editSubtitle')}
                                         </CardDescription>
                                     </CardHeader>
                                 </CollapsibleTrigger>
@@ -200,11 +201,11 @@ export const EvaluationDetailContent: FC<Props> = ({ ownerId }) => {
                                 <div className="flex items-center gap-2">
                                     <Map className="w-4 h-4 text-emerald-500" />
                                     <CardTitle className="text-sm font-semibold">
-                                        Operational Scenario — Operation Area
+                                        {t('planning.evaluation.operationArea')}
                                     </CardTitle>
                                 </div>
                                 <CardDescription className="text-xs">
-                                    Geographic area for this evaluation request
+                                    {t('planning.evaluation.operationAreaDesc')}
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
@@ -221,12 +222,11 @@ export const EvaluationDetailContent: FC<Props> = ({ ownerId }) => {
                             <div className="flex items-center gap-2">
                                 <ClipboardList className="w-4 h-4 text-blue-500" />
                                 <CardTitle className="text-sm font-semibold">
-                                    Task Completion
+                                    {t('planning.evaluation.taskCompletion')}
                                 </CardTitle>
                             </div>
                             <CardDescription className="text-xs">
-                                Assignments, checklists and communications required for
-                                this evaluation
+                                {t('planning.evaluation.taskCompletionDesc')}
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -244,7 +244,7 @@ export const EvaluationDetailContent: FC<Props> = ({ ownerId }) => {
                         <CardHeader className="pb-3">
                             <div className="flex items-center gap-2">
                                 <FileText className="w-4 h-4 text-amber-500" />
-                                <CardTitle className="text-sm font-semibold">Files</CardTitle>
+                                <CardTitle className="text-sm font-semibold">{t('planning.evaluation.files')}</CardTitle>
                             </div>
                         </CardHeader>
                         <CardContent>
@@ -259,10 +259,10 @@ export const EvaluationDetailContent: FC<Props> = ({ ownerId }) => {
                         <CardHeader className="pb-3">
                             <div className="flex items-center gap-2">
                                 <Send className="w-4 h-4 text-violet-500" />
-                                <CardTitle className="text-sm font-semibold">Linked Flight Requests</CardTitle>
+                                <CardTitle className="text-sm font-semibold">{t('planning.evaluation.linkedFlightRequests')}</CardTitle>
                             </div>
                             <CardDescription className="text-xs">
-                                External mission requests assigned to this evaluation
+                                {t('planning.evaluation.linkedFlightRequestsDesc')}
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -271,7 +271,7 @@ export const EvaluationDetailContent: FC<Props> = ({ ownerId }) => {
                                     {[1, 2, 3].map((i) => <Skeleton key={i} className="h-10 w-full rounded-lg" />)}
                                 </div>
                             ) : flightRequests.length === 0 ? (
-                                <p className="text-xs text-slate-400 py-4 text-center">No flight requests linked to this evaluation.</p>
+                                <p className="text-xs text-slate-400 py-4 text-center">{t('planning.evaluation.noFlightRequests')}</p>
                             ) : (
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-xs">

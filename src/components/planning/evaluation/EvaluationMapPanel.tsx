@@ -2,6 +2,7 @@
 
 import { MapPin } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   evaluationId: number;
@@ -41,11 +42,6 @@ function normaliseToFeatureCollection(raw: any): { type: string; features: any[]
   return null;
 }
 
-/**
- * Ensures Leaflet CSS is loaded exactly once.
- * Without this, the map tiles and controls have no positioning
- * and overflow their container.
- */
 function ensureLeafletCSS() {
   const LEAFLET_CSS_ID = 'leaflet-css';
   if (document.getElementById(LEAFLET_CSS_ID)) return;
@@ -63,6 +59,7 @@ export function EvaluationMapPanel({ evaluationId, polygonData }: Props) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const [noPolygon, setNoPolygon] = useState(false);
+  const { t } = useTranslation(); // <-- Added
 
   useEffect(() => {
     const normalised = normaliseToFeatureCollection(polygonData);
@@ -114,7 +111,7 @@ export function EvaluationMapPanel({ evaluationId, polygonData }: Props) {
 
         L.control
           .layers(
-            { 'Street Map': osm, Satellite: esriSat },
+            { [t('planning.map.streetMap')]: osm, [t('planning.map.satellite')]: esriSat },
             {},
             { collapsed: true, position: 'topright' },
           )
@@ -165,7 +162,7 @@ export function EvaluationMapPanel({ evaluationId, polygonData }: Props) {
         mapInstanceRef.current = null;
       }
     };
-  }, [polygonData]);
+  }, [polygonData, t]);
 
   useEffect(() => {
     if (!mapContainerRef.current || !mapInstanceRef.current) return;
@@ -186,9 +183,9 @@ export function EvaluationMapPanel({ evaluationId, polygonData }: Props) {
             <MapPin className="h-5 w-5 text-slate-300" />
           </div>
           <div>
-            <p className="text-sm font-medium text-slate-500">No operation area defined</p>
+            <p className="text-sm font-medium text-slate-500">{t('planning.map.noArea')}</p>
             <p className="text-xs text-slate-400 mt-0.5">
-              Draw a polygon on the map to define the evaluation area.
+              {t('planning.map.drawPolygon')}
             </p>
           </div>
         </div>

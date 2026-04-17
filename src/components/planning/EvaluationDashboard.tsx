@@ -12,6 +12,7 @@ import {
     BookOpen
 } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { EvaluationEditSheet } from './EvaluationEditSheet';
 import { EvaluationTable } from './EvaluationTable';
 
@@ -20,6 +21,7 @@ interface EvaluationProps {
 }
 
 const EvaluationDashboard: React.FC<EvaluationProps> = ({ isDark }) => {
+    const { t } = useTranslation();
     const [editOpen, setEditOpen] = useState<boolean>(false);
     const [selectedEvaluation, setSelectedEvaluation] = useState<Evaluation | null>(null);
 
@@ -37,9 +39,9 @@ const EvaluationDashboard: React.FC<EvaluationProps> = ({ isDark }) => {
                              <div className="w-1 h-6 rounded-full bg-violet-600" />
                             <div>
                                 <h1 className="text-base font-semibold text-slate-900">
-                                    Evaluation Dashboard
+                                    {t("planning.evaluation.dashboardTitle")}
                                 </h1>
-                                <p className="text-xs text-slate-500">Planning · Operational Scenario Requests</p>
+                                <p className="text-xs text-slate-500">{t("planning.evaluation.dashboardSubtitle")}</p>
                             </div>
                         </div>
                     </div>
@@ -53,11 +55,11 @@ const EvaluationDashboard: React.FC<EvaluationProps> = ({ isDark }) => {
                             <div className="flex items-center gap-2">
                                 <BookOpen className="w-4 h-4 text-slate-500" />
                                 <CardTitle className="text-sm font-semibold">
-                                    Evaluation — Operational Scenario Request Logbook
+                                    {t("planning.evaluation.logbookTitle")}
                                 </CardTitle>
                             </div>
                             <CardDescription className="text-xs">
-                                Log of Operational Scenario Requests
+                                {t("planning.evaluation.logbookDescription")}
                             </CardDescription>
                         </CardHeader>
                         <CardContent>

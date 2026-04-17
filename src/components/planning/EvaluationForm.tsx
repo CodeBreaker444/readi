@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/select";
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { Button } from "@/components/ui/button";
@@ -43,6 +44,7 @@ interface EvaluationFormProps {
 }
 
 const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, isDark }) => {
+  const { t } = useTranslation();
   const currentYear = new Date().getFullYear();
 
   const [formData, setFormData] = useState<EvaluationFormData>({
@@ -74,7 +76,7 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, isDark }) => 
   const loadClients = async () => {
     try {
       const response = await axios.get('/api/client/list');
-      if (!response.data) { toast.error('Failed to load clients'); return; }
+      if (!response.data) { toast.error(t('planning.validation.loadClientsError')); return; }
       const clientList = (response.data.data || []).map((c: any) => ({
         id: c.client_id,
         name: c.client_name,
@@ -82,18 +84,18 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, isDark }) => 
       setClients(clientList);
     } catch (error) {
       console.error('Error loading clients:', error);
-      toast.error('Failed to load clients');
+      toast.error(t('planning.validation.loadClientsError'));
     }
   };
 
   const loadLUCProcedures = async () => {
     try {
       const response = await axios.get('/api/luc-procedures/list?sector=EVALUATION');
-      if (!response.data) { toast.error('Failed to load LUC procedures'); return; }
+      if (!response.data) { toast.error(t('planning.validation.loadProceduresError')); return; }
       setLUCProcedures(response.data.procedures || []);
     } catch (error) {
       console.error('Error loading LUC procedures:', error);
-      toast.error('Failed to load LUC procedures');
+      toast.error(t('planning.validation.loadProceduresError'));
     }
   };
 
@@ -101,15 +103,15 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, isDark }) => 
     e.preventDefault();
 
     if (formData.client_id === 0) {
-      toast.error('Please select a client');
+      toast.error(t('planning.validation.selectClient'));
       return;
     }
     if (formData.fk_luc_procedure_id === 0) {
-      toast.error('Please select a LUC procedure');
+      toast.error(t('planning.validation.selectLucProcedure'));
       return;
     }
     if (!formData.evaluation_description.trim()) {
-      toast.error('Please enter a description');
+      toast.error(t('planning.validation.enterDescription'));
       return;
     }
 
@@ -129,7 +131,7 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, isDark }) => 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <Label className={labelClass}>
-            Client <span className="text-red-500">*</span>
+            {t('planning.form.client')} <span className="text-red-500">*</span>
           </Label>
           <Select
             value={formData.client_id ? String(formData.client_id) : undefined}
@@ -138,9 +140,9 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, isDark }) => 
           >
             <SelectTrigger className={`cursor-pointer ${inputClass} ${isDark ? 'bg-gray-800 border-gray-700 text-gray-100' : ''}`}>
               {isDataLoading ? (
-                <span className="text-gray-400 animate-pulse">Loading clients...</span>
+                <span className="text-gray-400 animate-pulse">{t('planning.form.loadingClients')}</span>
               ) : (
-                <SelectValue placeholder="Select Client" />
+                <SelectValue placeholder={t('planning.form.selectClient')} />
               )}
             </SelectTrigger>
             <SelectContent className={isDark ? 'bg-gray-800 border-gray-700 text-gray-100' : ''}>
@@ -155,7 +157,7 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, isDark }) => 
 
         <div className="space-y-1.5">
           <Label className={labelClass}>
-            LUC Procedure <span className="text-red-500">*</span>
+            {t('planning.form.lucProcedure')} <span className="text-red-500">*</span>
           </Label>
           <Select
             value={formData.fk_luc_procedure_id ? String(formData.fk_luc_procedure_id) : undefined}
@@ -164,9 +166,9 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, isDark }) => 
           >
             <SelectTrigger className={`cursor-pointer ${inputClass}`}>
               {isDataLoading ? (
-                <span className="text-gray-400 animate-pulse">Loading procedures...</span>
+                <span className="text-gray-400 animate-pulse">{t('planning.form.loadingProcedures')}</span>
               ) : (
-                <SelectValue placeholder="Select LUC Procedure" />
+                <SelectValue placeholder={t('planning.form.selectLucProcedure')} />
               )}
             </SelectTrigger>
             <SelectContent className={isDark ? 'bg-gray-800 border-gray-700 text-gray-100' : ''}>
@@ -182,25 +184,25 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, isDark }) => 
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="space-y-1.5">
-          <Label className={labelClass}>Status</Label>
+          <Label className={labelClass}>{t('planning.form.status')}</Label>
           <Select
             value={formData.evaluation_status}
             onValueChange={(value) => setFormData(prev => ({ ...prev, evaluation_status: value }))}
           >
             <SelectTrigger className={`cursor-pointer ${inputClass}`}>
-              <SelectValue placeholder="Select Status" />
+              <SelectValue placeholder={t('planning.form.selectStatus')} />
             </SelectTrigger>
             <SelectContent className={isDark ? 'bg-gray-800 border-gray-700 text-gray-100' : ''}>
-              <SelectItem value="NEW" className="cursor-pointer">New Task</SelectItem>
-              <SelectItem value="IN_PROGRESS" className="cursor-pointer">In Progress</SelectItem>
-              <SelectItem value="COMPLETED" className="cursor-pointer">Completed</SelectItem>
+              <SelectItem value="NEW" className="cursor-pointer">{t('planning.status.newTask')}</SelectItem>
+              <SelectItem value="IN_PROGRESS" className="cursor-pointer">{t('planning.status.inProgress')}</SelectItem>
+              <SelectItem value="COMPLETED" className="cursor-pointer">{t('planning.status.done')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         <div className="space-y-1.5">
           <Label className={labelClass}>
-            Request Date <span className="text-red-500">*</span>
+            {t('planning.form.requestDate')} <span className="text-red-500">*</span>
           </Label>
           <Input
             type="date"
@@ -212,13 +214,13 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, isDark }) => 
         </div>
 
         <div className="space-y-1.5">
-          <Label className={labelClass}>Year Reference</Label>
+          <Label className={labelClass}>{t('planning.form.yearReference')}</Label>
           <Select
             value={String(formData.evaluation_year)}
             onValueChange={(value) => setFormData(prev => ({ ...prev, evaluation_year: Number(value) }))}
           >
             <SelectTrigger className={`cursor-pointer ${inputClass}`}>
-              <SelectValue placeholder="Select Year" />
+              <SelectValue placeholder={t('planning.form.selectYear')} />
             </SelectTrigger>
             <SelectContent className={isDark ? 'bg-gray-800 border-gray-700 text-gray-100' : ''}>
               {[currentYear - 1, currentYear, currentYear + 1, currentYear + 2].map(y => (
@@ -231,11 +233,11 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, isDark }) => 
 
       <div className="space-y-1.5">
         <Label className={labelClass}>
-          Description <span className="text-red-500">*</span>
+          {t('planning.form.description')} <span className="text-red-500">*</span>
         </Label>
         <Textarea
           rows={4}
-          placeholder="Enter evaluation description..."
+          placeholder={t('planning.form.descriptionPlaceholder')}
           className={`cursor-text resize-none ${inputClass}`}
           value={formData.evaluation_description}
           onChange={(e) => setFormData(prev => ({ ...prev, evaluation_description: e.target.value }))}
@@ -245,10 +247,10 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, isDark }) => 
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <Label className={labelClass}>Offer Reference</Label>
+          <Label className={labelClass}>{t('planning.form.offerReference')}</Label>
           <Input
             type="text"
-            placeholder="Enter offer reference"
+            placeholder={t('planning.form.offerRefPlaceholder')}
             className={`cursor-text ${inputClass}`}
             value={formData.evaluation_offer}
             onChange={(e) => setFormData(prev => ({ ...prev, evaluation_offer: e.target.value }))}
@@ -256,10 +258,10 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, isDark }) => 
         </div>
 
         <div className="space-y-1.5">
-          <Label className={labelClass}>Sales Manager</Label>
+          <Label className={labelClass}>{t('planning.form.salesManager')}</Label>
           <Input
             type="text"
-            placeholder="Enter sales manager name"
+            placeholder={t('planning.form.namePlaceholder')}
             className={`cursor-text ${inputClass}`}
             value={formData.evaluation_sale_manager}
             onChange={(e) => setFormData(prev => ({ ...prev, evaluation_sale_manager: e.target.value }))}
@@ -279,9 +281,9 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, isDark }) => 
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
               </svg>
-              Adding...
+              {t('planning.actions.adding')}
             </span>
-          ) : 'Add New Evaluation'}
+          ) : t('planning.actions.addNewEvaluation')}
         </Button>
       </div>
     </form>

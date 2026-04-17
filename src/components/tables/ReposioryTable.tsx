@@ -13,10 +13,12 @@ import {
 } from '@tanstack/react-table';
 import axios from 'axios';
 import { FilterX, Plus, RotateCcw, Search } from 'lucide-react';
-import { toast } from 'sonner';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import DocumentFormModal from '../document-repository/DocumentModal';
 import HistoryModal from '../document-repository/HistoryModal';
+import ExportButtons from '../system/ExportButtons';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -34,6 +36,7 @@ const AREA_OPTIONS = [
 
 
 export default function RepositoryTable() {
+    const { t } = useTranslation();
     const { isDark } = useTheme()
     const [documents, setDocuments] = useState<RepositoryDocument[]>([]);
     const [docTypes, setDocTypes] = useState<DocType[]>([]);
@@ -102,14 +105,14 @@ export default function RepositoryTable() {
             });
 
             setDocuments((prev) => prev.filter((d) => d.document_id !== deleteTarget.document_id));
-            toast.success('Document deleted successfully.');
+            toast.success(t('repository.toast.deleteSuccess'));
         } catch (e) {
             console.error(e);
-            toast.error('Error during deletion.');
+            toast.error(t('repository.toast.deleteError'));
         } finally {
             setDeleteTarget(null);
         }
-    }, [deleteTarget]);
+    }, [deleteTarget, t]);
 
     const handleHistory = useCallback((doc: RepositoryDocument) => {
         setHistDoc(doc);
@@ -124,22 +127,22 @@ export default function RepositoryTable() {
         if (!doc.rev_id) return;
         try {
             const { data } = await axios.post('/api/document/presign-download', { rev_id: doc.rev_id });
-            if (!data?.url) throw new Error('No URL returned');
-            // S3 URL has Content-Disposition: attachment — navigate directly to trigger download
+            if (!data?.url) throw new Error(t('repository.toast.noDownloadUrl'));
             window.location.href = data.url;
         } catch (e: any) {
-            toast.error(e?.response?.data?.error ?? 'Failed to download file.');
+            toast.error(e?.response?.data?.error ?? t('repository.toast.downloadFailed'));
         }
-    }, []);
+    }, [t]);
 
     const columns = useMemo(
         () => getRepositoryColumns({
+            t,
             onEdit: handleEdit,
             onDelete: handleDeleteTrigger,
             onHistory: handleHistory,
             onDownload: handleDownload,
         }),
-        [handleEdit, handleDeleteTrigger, handleHistory, handleDownload]
+        [t, handleEdit, handleDeleteTrigger, handleHistory, handleDownload]
     );
     const table = useReactTable({
         data: documents,
@@ -173,10 +176,10 @@ export default function RepositoryTable() {
                         <div className="w-1 h-6 rounded-full bg-violet-600" />
                         <div>
                             <h1 className={`font-semibold text-base tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                                LUC Document Repository
+                                {t('repository.title')}
                             </h1>
                             <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-                                Manage and track organizational compliance documents
+                                {t('repository.subtitle')}
                             </p>
                         </div>
                     </div>
@@ -186,7 +189,7 @@ export default function RepositoryTable() {
                             className="h-8 gap-1.5 text-xs bg-violet-600 hover:bg-violet-500 text-white border-none shadow-sm shadow-violet-500/20"
                         >
                             <Plus className="h-3.5 w-3.5" />
-                            New Document
+                            {t('repository.newDocument')}
                         </Button>
                     </div>
                 </div>
@@ -203,7 +206,7 @@ export default function RepositoryTable() {
                             <Input
                                 value={searchText}
                                 onChange={(e) => setSearchText(e.target.value)}
-                                placeholder="Search title, code, description..."
+                                placeholder={t('repository.searchPlaceholder')}
                                 className={`pl-9 text-sm
               ${isDark
                                         ? 'bg-slate-700 border-slate-600 text-slate-200 placeholder:text-slate-500 focus:border-violet-500/60'
@@ -218,10 +221,10 @@ export default function RepositoryTable() {
                                     ? 'bg-slate-700 border-slate-600 text-slate-200'
                                     : 'bg-gray-50 border-gray-200 text-gray-700'
                                 }`}>
-                                <SelectValue placeholder="All Areas" />
+                                <SelectValue placeholder={t('repository.allAreas')} />
                             </SelectTrigger>
                             <SelectContent className={isDark ? 'bg-slate-800 border-slate-700 text-slate-200' : ''}>
-                                <SelectItem value="all">All Areas</SelectItem>
+                                <SelectItem value="all">{t('repository.allAreas')}</SelectItem>
                                 {AREA_OPTIONS.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
                             </SelectContent>
                         </Select>
@@ -232,10 +235,10 @@ export default function RepositoryTable() {
                                     ? 'bg-slate-700 border-slate-600 text-slate-200'
                                     : 'bg-gray-50 border-gray-200 text-gray-700'
                                 }`}>
-                                <SelectValue placeholder="All Statuses" />
+                                <SelectValue placeholder={t('repository.allStatuses')} />
                             </SelectTrigger>
                             <SelectContent className={isDark ? 'bg-slate-800 border-slate-700 text-slate-200' : ''}>
-                                <SelectItem value="all">All Statuses</SelectItem>
+                                <SelectItem value="all">{t('repository.allStatuses')}</SelectItem>
                                 {statusOptions.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                             </SelectContent>
                         </Select>
@@ -249,7 +252,7 @@ export default function RepositoryTable() {
                                     : 'border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-gray-700'
                                 }`}
                         >
-                            <RotateCcw className="h-4 w-4" /> Reset
+                            <RotateCcw className="h-4 w-4" /> {t('repository.reset')}
                         </Button>
                     </div>
                 </div>
@@ -295,7 +298,7 @@ export default function RepositoryTable() {
                                         <div className={`flex flex-col items-center justify-center gap-2
                   ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
                                             <FilterX className="h-10 w-10 opacity-20" />
-                                            <p className="text-sm">No documents match your search criteria.</p>
+                                            <p className="text-sm">{t('repository.noDocuments')}</p>
                                         </div>
                                     </TableCell>
                                 </TableRow>
@@ -322,34 +325,61 @@ export default function RepositoryTable() {
                     </Table>
                 </div>
 
-                <TablePagination table={table} />
+                <div className="flex items-center justify-between gap-3">
+                    <ExportButtons
+                        filename="Document_Repository"
+                        headers={[
+                            t('repository.columns.code'),
+                            t('repository.columns.title'),
+                            t('repository.columns.type'),
+                            t('repository.columns.area'),
+                            t('repository.columns.status'),
+                            t('repository.columns.version'),
+                            t('repository.columns.effectiveDate'),
+                            t('repository.columns.expiryDate'),
+                            t('repository.columns.fileName'),
+                        ]}
+                        rows={documents.map((doc) => [
+                            doc.doc_code ?? '',
+                            doc.title ?? '',
+                            doc.type_name ?? '',
+                            doc.doc_area ?? '',
+                            doc.status ?? '',
+                            doc.version_label ?? '',
+                            doc.effective_date ?? '',
+                            doc.expiry_date ?? '',
+                            doc.file_name ?? '',
+                        ])}
+                    />
+                    <TablePagination table={table} />
+                </div>
             </div>
 
             <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
                 <AlertDialogContent className={`${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-gray-200'}`}>
                     <AlertDialogHeader>
                         <AlertDialogTitle className={isDark ? 'text-white' : 'text-gray-900'}>
-                            Are you absolutely sure?
+                            {t('repository.deleteTitle')}
                         </AlertDialogTitle>
                         <AlertDialogDescription className={isDark ? 'text-slate-400' : 'text-gray-500'}>
-                            This will permanently delete{' '}
+                            {t('repository.deleteDescriptionPrefix')}{' '}
                             <span className={`font-semibold ${isDark ? 'text-slate-200' : 'text-gray-900'}`}>
                                 "{deleteTarget?.title}"
                             </span>{' '}
-                            and remove its data from our servers. This action cannot be undone.
+                            {t('repository.deleteDescriptionSuffix')}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel className={isDark
                             ? 'bg-slate-700 border-slate-600 text-slate-200 hover:bg-slate-600'
                             : 'border-gray-200 text-gray-700 hover:bg-gray-50'}>
-                            Cancel
+                            {t('common.cancel')}
                         </AlertDialogCancel>
                         <AlertDialogAction
                             onClick={confirmDelete}
                             className="bg-red-600 text-white hover:bg-red-700"
                         >
-                            Delete Document
+                            {t('repository.deleteDocument')}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

@@ -1,6 +1,7 @@
 'use client';
 import { cn } from '@/lib/utils';
 import React, { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface SafetyHealthGaugeProps {
   value: number;
@@ -8,10 +9,11 @@ interface SafetyHealthGaugeProps {
 }
 
 const SafetyHealthGauge: React.FC<SafetyHealthGaugeProps> = ({ value, isDark = false }) => {
+  const { t } = useTranslation();
   const gaugeRef = useRef<HTMLDivElement>(null);
 
   const color    = value >= 85 ? '#10b981' : value >= 70 ? '#f59e0b' : '#ef4444';
-  const label    = value >= 85 ? 'Excellent' : value >= 70 ? 'Marginal' : 'Unsatisfactory';
+  const label    = value >= 85 ? t('shi.gauge.status.excellent') : value >= 70 ? t('shi.gauge.status.marginal') : t('shi.gauge.status.unsatisfactory');
   const ringCls  = value >= 85 ? 'text-emerald-500' : value >= 70 ? 'text-yellow-500' : 'text-red-500';
   const badgeCls = value >= 85
     ? isDark ? 'bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/25' : 'bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200'
@@ -60,8 +62,8 @@ const SafetyHealthGauge: React.FC<SafetyHealthGaugeProps> = ({ value, isDark = f
       {/* Header */}
       <div className={cn('px-5 py-4 border-b flex items-start justify-between', isDark ? 'border-slate-700/60' : 'border-gray-100')}>
         <div>
-          <p className={cn('text-xs font-semibold uppercase tracking-widest mb-0.5', isDark ? 'text-slate-500' : 'text-gray-400')}>Overall Score</p>
-          <h2 className={cn('text-sm font-semibold', isDark ? 'text-white' : 'text-gray-800')}>Safety Health Index</h2>
+          <p className={cn('text-xs font-semibold uppercase tracking-widest mb-0.5', isDark ? 'text-slate-500' : 'text-gray-400')}>{t('shi.gauge.overallScore')}</p>
+          <h2 className={cn('text-sm font-semibold', isDark ? 'text-white' : 'text-gray-800')}>{t('shi.gauge.title')}</h2>
         </div>
         <span className={cn('inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold', badgeCls)}>
           {label}
@@ -71,13 +73,13 @@ const SafetyHealthGauge: React.FC<SafetyHealthGaugeProps> = ({ value, isDark = f
       {/* Score display */}
       <div className={cn('grid grid-cols-2 divide-x border-b', isDark ? 'divide-slate-700/60 border-slate-700/60' : 'divide-gray-100 border-gray-100')}>
         <div className="px-5 py-4 flex flex-col gap-0.5">
-          <span className={cn('text-[10px] font-semibold uppercase tracking-widest', isDark ? 'text-slate-500' : 'text-gray-400')}>Score</span>
+          <span className={cn('text-[10px] font-semibold uppercase tracking-widest', isDark ? 'text-slate-500' : 'text-gray-400')}>{t('shi.gauge.scoreLabel')}</span>
           <span className={cn('text-3xl font-bold tabular-nums tracking-tight', ringCls)}>
             {value.toFixed(1)}<span className="text-lg font-medium ml-0.5">%</span>
           </span>
         </div>
         <div className="px-5 py-4 flex flex-col gap-0.5">
-          <span className={cn('text-[10px] font-semibold uppercase tracking-widest', isDark ? 'text-slate-500' : 'text-gray-400')}>Status</span>
+          <span className={cn('text-[10px] font-semibold uppercase tracking-widest', isDark ? 'text-slate-500' : 'text-gray-400')}>{t('shi.gauge.statusLabel')}</span>
           <span className={cn('text-sm font-semibold mt-1', ringCls)}>{label}</span>
         </div>
       </div>
@@ -90,9 +92,9 @@ const SafetyHealthGauge: React.FC<SafetyHealthGaugeProps> = ({ value, isDark = f
       {/* Legend */}
       <div className={cn('px-5 py-4 border-t space-y-2', isDark ? 'border-slate-700/60' : 'border-gray-100')}>
         {[
-          { color: 'bg-emerald-500', label: 'Excellent',      range: '≥ 85%' },
-          { color: 'bg-yellow-500',  label: 'Marginal',       range: '70 – 84%' },
-          { color: 'bg-red-500',     label: 'Unsatisfactory', range: '< 70%' },
+          { color: 'bg-emerald-500', label: t('shi.gauge.legend.excellentLabel'),      range: t('shi.gauge.legend.excellentRange') },
+          { color: 'bg-yellow-500',  label: t('shi.gauge.legend.marginalLabel'),       range: t('shi.gauge.legend.marginalRange') },
+          { color: 'bg-red-500',     label: t('shi.gauge.legend.unsatisfactoryLabel'), range: t('shi.gauge.legend.unsatisfactoryRange') },
         ].map(t => (
           <div key={t.label} className="flex items-center justify-between">
             <div className="flex items-center gap-2">

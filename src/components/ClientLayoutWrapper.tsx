@@ -1,8 +1,9 @@
 'use client';
 
 import { Session, SessionUser } from '@/lib/auth/server-session';
-import { usePathname } from 'next/navigation';
-import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+import { usePathname, useRouter } from 'next/navigation';
+import React, { useEffect, useRef, useState } from 'react';
 import { Role } from '../lib/auth/roles';
 import MobileSidebar from './MobileSidebar';
 import { RoleIndicator } from './RoleIndicator';
@@ -21,18 +22,52 @@ const ClientLayoutWrapper: React.FC<ClientLayoutWrapperProps> = ({
   sessionPromise,
 }) => {
   const pathname = usePathname();
+  const router = useRouter();
   const isAuthPage = pathname?.startsWith('/auth');
   const { isDark, toggleTheme } = useTheme();
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
+  const interceptorRef = useRef<number | null>(null);
 
+  const handleExpiredSession = async () => {
+    try {
+      await axios.post('/api/auth/logout');
+    } catch {
+      // ignore — cookie will be cleared anyway
+    }
+    router.replace('/auth/login');
+  };
+
+  // Redirect to login if session is missing (expired token) on initial load
   useEffect(() => {
     sessionPromise.then((sess) => {
       setSession(sess);
       setLoading(false);
+      if (!sess && !isAuthPage) {
+        router.replace('/auth/login');
+      }
     });
   }, [sessionPromise]);
+
+  // Global axios interceptor: auto-logout on any 401 response
+  useEffect(() => {
+    interceptorRef.current = axios.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error?.response?.status === 401 && !isAuthPage) {
+          handleExpiredSession();
+        }
+        return Promise.reject(error);
+      }
+    );
+
+    return () => {
+      if (interceptorRef.current !== null) {
+        axios.interceptors.response.eject(interceptorRef.current);
+      }
+    };
+  }, [isAuthPage]);
 
   const role: Role | null = session?.user?.role ?? null;
   const userData: SessionUser | null = session?.user ?? null;

@@ -22,6 +22,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import axios from 'axios';
 import { CalendarDays, ClipboardPlus, FileText, FolderOpen, Loader2, User } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 interface LucProcedure {
@@ -52,6 +53,7 @@ export function AddPlanningModal({
     onClose,
     onCreated,
 }: AddPlanningModalProps) {
+    const { t } = useTranslation();
     const currentYear = new Date().getFullYear();
 
     const [lucProcedureId, setLucProcedureId] = useState('');
@@ -110,11 +112,11 @@ export function AddPlanningModal({
 
     function validate(): string | null {
         if (!lucProcedureId || lucProcedureId === '0')
-            return 'Please select a LUC Procedure.';
+            return t('planning.validation.selectLucProcedure');
         if (!pilotId || pilotId === '0')
-            return 'Please assign a Pilot in Command.';
-        if (!planningDesc.trim()) return 'Description is required.';
-        if (!requestDate) return 'Request date is required.';
+            return t('planning.validation.selectPic');
+        if (!planningDesc.trim()) return t('planning.validation.descriptionRequired');
+        if (!requestDate) return t('planning.validation.requestDateRequired');
         return null;
     }
 
@@ -226,17 +228,17 @@ export function AddPlanningModal({
                             <div className="space-y-1.5">
                                 <Label htmlFor="luc_procedure" className="text-xs font-medium flex items-center gap-1">
                                     <FileText className="w-3 h-3 text-slate-400" />
-                                    LUC Procedure
+                                    {t('planning.form.lucProcedure')}
                                     <span className="text-red-500 ml-0.5">*</span>
                                 </Label>
                                 <Select value={lucProcedureId} onValueChange={setLucProcedureId}>
                                     <SelectTrigger id="luc_procedure" className="h-9 text-sm">
-                                        <SelectValue placeholder="Select LUC Procedure" />
+                                        <SelectValue placeholder={t('planning.form.selectLucProcedure')} />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {procedures.length === 0 ? (
                                             <SelectItem value="__empty" disabled>
-                                                No procedures available
+                                                {t('planning.form.noProc')}
                                             </SelectItem>
                                         ) : (
                                             procedures.map((p) => (
@@ -256,17 +258,17 @@ export function AddPlanningModal({
                             <div className="space-y-1.5">
                                 <Label htmlFor="pilot" className="text-xs font-medium flex items-center gap-1">
                                     <User className="w-3 h-3 text-slate-400" />
-                                    Assign PIC (Pilot in Command)
+                                    {t('planning.form.pic')}
                                     <span className="text-red-500 ml-0.5">*</span>
                                 </Label>
                                 <Select value={pilotId} onValueChange={setPilotId}>
                                     <SelectTrigger id="pilot" className="h-9 text-sm">
-                                        <SelectValue placeholder="Select PIC" />
+                                        <SelectValue placeholder={t('planning.form.selectPic')} />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {pilots.length === 0 ? (
                                             <SelectItem value="__empty" disabled>
-                                                No pilots available
+                                                {t('planning.form.noPilots')}
                                             </SelectItem>
                                         ) : (
                                             pilots.map((p) => (
@@ -290,22 +292,22 @@ export function AddPlanningModal({
                             <div className="space-y-1.5">
                                 <Label htmlFor="folder" className="text-xs font-medium flex items-center gap-1">
                                     <FolderOpen className="w-3 h-3 text-slate-400" />
-                                    Folder Docs
+                                    {t('planning.form.folderDocs')}
                                 </Label>
                                 <Input
                                     id="folder"
                                     className="h-9 text-sm"
-                                    placeholder="e.g. /docs/2025"
+                                    placeholder={t('planning.form.folderDocsPlaceholder')}
                                     value={planningFolder}
                                     onChange={(e) => setPlanningFolder(e.target.value)}
                                 />
                             </div>
 
                             <div className="space-y-1.5">
-                                <Label className="text-xs font-medium">Status</Label>
+                                <Label className="text-xs font-medium">{t('planning.form.status')}</Label>
                                 <Input
                                     className="h-9 text-sm bg-slate-50"
-                                    value="New Planning"
+                                    value={t('planning.status.newTask')}
                                     readOnly
                                     disabled
                                 />
@@ -314,7 +316,7 @@ export function AddPlanningModal({
                             <div className="space-y-1.5">
                                 <Label htmlFor="req_date" className="text-xs font-medium flex items-center gap-1">
                                     <CalendarDays className="w-3 h-3 text-slate-400" />
-                                    Request Date
+                                    {t('planning.form.requestDate')}
                                     <span className="text-red-500 ml-0.5">*</span>
                                 </Label>
                                 <Input
@@ -328,7 +330,7 @@ export function AddPlanningModal({
 
                             <div className="space-y-1.5">
                                 <Label htmlFor="year" className="text-xs font-medium">
-                                    Year Reference
+                                    {t('planning.form.yearReference')}
                                 </Label>
                                 <Select value={planningYear} onValueChange={setPlanningYear}>
                                     <SelectTrigger id="year" className="h-9 text-sm">
@@ -348,13 +350,13 @@ export function AddPlanningModal({
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-1.5 col-span-1">
                                 <Label htmlFor="desc" className="text-xs font-medium">
-                                    Description
+                                    {t('planning.form.description')}
                                     <span className="text-red-500 ml-0.5">*</span>
                                 </Label>
                                 <Input
                                     id="desc"
                                     className="h-9 text-sm"
-                                    placeholder="Planning description…"
+                                    placeholder={t('planning.form.planningDescription')}
                                     value={planningDesc}
                                     onChange={(e) => setPlanningDesc(e.target.value)}
                                     maxLength={500}
@@ -363,12 +365,12 @@ export function AddPlanningModal({
 
                             <div className="space-y-1.5">
                                 <Label htmlFor="type" className="text-xs font-medium">
-                                    Type
+                                    {t('planning.form.type')}
                                 </Label>
                                 <Input
                                     id="type"
                                     className="h-9 text-sm"
-                                    placeholder="e.g. VLOS, BVLOS"
+                                    placeholder={t('planning.form.typePlaceholder')}
                                     value={planningType}
                                     onChange={(e) => setPlanningType(e.target.value)}
                                     maxLength={100}
@@ -378,17 +380,17 @@ export function AddPlanningModal({
 
                         <div className="rounded-lg bg-slate-50 border border-slate-200 px-3 py-2.5 flex items-center gap-3">
                             <div className="text-xs text-slate-500">
-                                <span className="font-medium text-slate-700">Evaluation:</span>{' '}
+                                <span className="font-medium text-slate-700">{t('planning.evaluation.detailTitle')}:</span>{' '}
                                 <span className="font-mono text-violet-600">EVAL_{evaluationId}</span>
                             </div>
                             <div className="h-3 w-px bg-slate-300" />
                             <div className="text-xs text-slate-500">
-                                <span className="font-medium text-slate-700">Client ID:</span>{' '}
+                                <span className="font-medium text-slate-700">{t('planning.form.clientId')}:</span>{' '}
                                 <span className="font-mono">{clientId}</span>
                             </div>
                             <div className="h-3 w-px bg-slate-300" />
                             <div className="text-xs text-slate-500">
-                                <span className="font-medium text-slate-700">Result:</span>{' '}
+                                <span className="font-medium text-slate-700">{t('planning.form.result')}:</span>{' '}
                                 <span className="font-mono text-emerald-600">PROGRESS</span>
                             </div>
                         </div>
@@ -402,7 +404,7 @@ export function AddPlanningModal({
                         onClick={handleClose}
                         disabled={submitting}
                     >
-                        Cancel
+                        {t('common.cancel')}
                     </Button>
                     <Button
                         size="sm"
@@ -413,12 +415,12 @@ export function AddPlanningModal({
                         {submitting ? (
                             <>
                                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                Creating…
+                                {t('planning.actions.creating')}
                             </>
                         ) : (
                             <>
                                 <ClipboardPlus className="h-3.5 w-3.5" />
-                                Add New Planning
+                                {t('planning.actions.addNewPlanning')}
                             </>
                         )}
                     </Button>

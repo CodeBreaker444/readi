@@ -4,6 +4,7 @@ import { Planning } from "@/config/types/evaluation-planning";
 import { cn } from "@/lib/utils";
 import axios from "axios";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { getPlanningColumns } from "../tables/PlanningColumns";
 import PageHeader from "./PageHeader";
@@ -26,7 +27,8 @@ type PlanningProps = {
 };
 
 export default function PlanningDashboard({ isDark }: PlanningProps) {
-  const router = useRouter()
+  const router = useRouter();
+  const { t } = useTranslation();
   const [planningData, setPlanningData] = useState<Planning[]>([]);
   const [loading, setLoading] = useState(true);
   const [globalFilter, setGlobalFilter] = useState("");
@@ -42,11 +44,11 @@ export default function PlanningDashboard({ isDark }: PlanningProps) {
       setPlanningData(response.data.data || []);
     } catch (err) {
       console.error("fetchPlanning error:", err);
-      toast.error("Failed to fetch planning data");
+      toast.error(t("planning.dashboard.fetchError"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchPlanning();
@@ -74,14 +76,14 @@ export default function PlanningDashboard({ isDark }: PlanningProps) {
       });
 
       if (response.data.code === 1) {
-        toast.success("Record deleted");
+        toast.success(t("planning.dashboard.deleteSuccess"));
       } else {
         setPlanningData(previousData);
-        toast.error(response.data.message || "Error deleting");
+        toast.error(response.data.message || t("planning.dashboard.deleteError"));
       }
     } catch (err: any) {
       setPlanningData(previousData);
-      toast.error(err.response?.data?.message || "Network error during deletion");
+      toast.error(err.response?.data?.message || t("planning.dashboard.networkError"));
     } finally {
       setRowToDelete(null);
     }
@@ -115,8 +117,8 @@ export default function PlanningDashboard({ isDark }: PlanningProps) {
     <div className={cn("min-h-screen transition-colors duration-200", bg, text)}>
 
       <PageHeader
-        title="Planning Dashboard"
-        subtitle="Operational Scenario Request Logbook"
+        title={t("planning.dashboard.title")}
+        subtitle={t("planning.dashboard.logbook")}
         isDark={isDark}
         selectedLabel={
           selectedRow
@@ -124,8 +126,8 @@ export default function PlanningDashboard({ isDark }: PlanningProps) {
             : null
         }
         dropdownItems={[
-          { label: "Communications", onClick: () => console.log("Communications") },
-          { label: "Checklist", onClick: () => console.log("Checklist") },
+          { label: t("planning.dashboard.communications"), onClick: () => console.log("Communications") },
+          { label: t("planning.dashboard.checklist"), onClick: () => console.log("Checklist") },
         ]}
       />
 
@@ -144,21 +146,21 @@ export default function PlanningDashboard({ isDark }: PlanningProps) {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogTitle>{t("planning.dashboard.deleteConfirmTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the planning request{" "}
+              {t("planning.dashboard.deleteConfirmDesc")}{" "}
               <span className="font-bold text-destructive">
                 {rowToDelete ? `PLAN_${rowToDelete.planning_year}_${rowToDelete.planning_id}` : ""}
               </span>.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Confirm Delete
+              {t("planning.dashboard.confirmDelete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

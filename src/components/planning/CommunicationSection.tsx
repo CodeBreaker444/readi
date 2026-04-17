@@ -22,6 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 import axios from "axios";
 import { Send, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 interface User {
@@ -41,6 +42,7 @@ export default function CommunicationSection({
   planningId,
   evaluationId,
 }: CommunicationSectionProps) {
+  const { t } = useTranslation();
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
   const [sending, setSending] = useState(false);
 
@@ -49,7 +51,6 @@ export default function CommunicationSection({
   const [userSearch, setUserSearch] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [sendForm, setSendForm] = useState({
@@ -62,37 +63,13 @@ export default function CommunicationSection({
       const res = await axios.post("/api/evaluation/mission/users");
       setAvailableUsers(res.data.data ?? []);
     } catch (err) {
-      console.error("Failed to load users:", err);
-      toast.error("Failed to load users.");
+      toast.error(t("planning.communication.loadUsersError"));
     }
-  }, [clientId]);
+  }, [t]);
 
   useEffect(() => {
-    if (sendDialogOpen) {
-      loadUsers();
-    }
+    if (sendDialogOpen) loadUsers();
   }, [sendDialogOpen, loadUsers]);
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setDropdownOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const filteredUsers = availableUsers.filter((u) => {
-    const alreadySelected = selectedUsers.some((s) => s.user_id === u.user_id);
-    if (alreadySelected) return false;
-    if (!userSearch.trim()) return true;
-    const q = userSearch.toLowerCase();
-    return (
-      u.first_name.toLowerCase().includes(q) ||
-      u.email.toLowerCase().includes(q)
-    );
-  });
 
   const addUser = (user: User) => {
     setSelectedUsers((prev) => [...prev, user]);
@@ -104,20 +81,13 @@ export default function CommunicationSection({
     setSelectedUsers((prev) => prev.filter((u) => u.user_id !== userId));
   };
 
-  const resetForm = () => {
-    setSendForm({ message: "", communication_level: "info" });
-    setSelectedUsers([]);
-    setUserSearch("");
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
-
   const handleSend = async () => {
     if (selectedUsers.length === 0) {
-      toast.error("Please select at least one recipient.");
+      toast.error(t("planning.communication.recipientRequired"));
       return;
     }
     if (!sendForm.message.trim()) {
-      toast.error("Message is required.");
+      toast.error(t("planning.communication.messageRequired"));
       return;
     }
 
@@ -129,26 +99,19 @@ export default function CommunicationSection({
       formData.append("fk_client_id", String(clientId));
       formData.append("fk_planning_id", String(planningId));
       formData.append("fk_evaluation_id", String(evaluationId));
+      selectedUsers.forEach((u) => formData.append("communication_to[]", String(u.user_id)));
 
-      selectedUsers.forEach((user) => {
-        formData.append("communication_to[]", String(user.user_id));
-      });
-
-      const fileInput = fileInputRef.current;
-      if (fileInput?.files?.[0]) {
-        formData.append("communication_file", fileInput.files[0]);
+      if (fileInputRef.current?.files?.[0]) {
+        formData.append("communication_file", fileInputRef.current.files[0]);
       }
 
-      await axios.post("/api/evaluation/mission/communication/add", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-
-      toast.success("Communication sent successfully.");
+      await axios.post("/api/evaluation/mission/communication/add", formData);
+      toast.success(t("planning.communication.sendSuccess"));
       setSendDialogOpen(false);
-      resetForm();
+      setSendForm({ message: "", communication_level: "info" });
+      setSelectedUsers([]);
     } catch (err) {
-      console.error("Send failed:", err);
-      toast.error("Failed to send communication.");
+      toast.error(t("planning.communication.sendFailed"));
     } finally {
       setSending(false);
     }
@@ -158,134 +121,86 @@ export default function CommunicationSection({
     <>
       <Button
         size="sm"
-        onClick={() => {
-          resetForm();
-          setSendDialogOpen(true);
-        }}
+        onClick={() => setSendDialogOpen(true)}
         className="bg-violet-600 hover:bg-violet-700 text-white gap-1.5 h-8"
       >
         <Send className="h-4 w-4" />
-        Add Communication
+        {t("planning.communication.newCommunication")}
       </Button>
 
       <Dialog open={sendDialogOpen} onOpenChange={setSendDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Send Communication</DialogTitle>
+            <DialogTitle>{t("planning.communication.title")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>
-                To{" "}
+                {t("planning.communication.to")}{" "}
                 <Badge variant="secondary" className="ml-1">
-                  {selectedUsers.length} selected
+                  {selectedUsers.length} {t("planning.communication.selected")}
                 </Badge>
               </Label>
 
-              {selectedUsers.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mb-2">
-                  {selectedUsers.map((user) => (
-                    <Badge
-                      key={user.user_id}
-                      variant="secondary"
-                      className="flex items-center gap-1 pl-2 pr-1 py-1"
-                    >
-                      <span className="text-xs">{user.first_name}</span>
-                      <button
-                        type="button"
-                        onClick={() => removeUser(user.user_id)}
-                        className="ml-0.5 rounded-full p-0.5 hover:bg-muted-foreground/20 transition-colors"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-              )}
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {selectedUsers.map((user) => (
+                  <Badge key={user.user_id} variant="secondary" className="flex items-center gap-1">
+                    <span className="text-xs">{user.first_name}</span>
+                    <X className="h-3 w-3 cursor-pointer" onClick={() => removeUser(user.user_id)} />
+                  </Badge>
+                ))}
+              </div>
 
               <div className="relative" ref={dropdownRef}>
                 <Input
-                  placeholder="Search users by name or email..."
+                  placeholder={t("planning.communication.searchUsers")}
                   value={userSearch}
-                  onChange={(e) => {
-                    setUserSearch(e.target.value);
-                    setDropdownOpen(true);
-                  }}
-                  onFocus={() => setDropdownOpen(true)}
+                  onChange={(e) => { setUserSearch(e.target.value); setDropdownOpen(true); }}
                 />
-                {dropdownOpen && filteredUsers.length > 0 && (
-                  <div className="absolute z-50 mt-1 w-full max-h-48 overflow-y-auto rounded-md border bg-popover shadow-md">
-                    {filteredUsers.map((user) => (
-                      <button
-                        key={user.user_id}
-                        type="button"
-                        className="w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors flex items-center justify-between"
-                        onClick={() => addUser(user)}
-                      >
-                        <span className="font-medium">{user.first_name}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {user.email}
-                        </span>
+                {dropdownOpen && userSearch && (
+                  <div className="absolute z-50 mt-1 w-full border bg-popover rounded-md shadow-md">
+                    {availableUsers.filter(u => u.first_name.toLowerCase().includes(userSearch.toLowerCase())).map(user => (
+                      <button key={user.user_id} className="w-full text-left px-3 py-2 text-sm hover:bg-accent" onClick={() => addUser(user)}>
+                        {user.first_name} ({user.email})
                       </button>
                     ))}
-                  </div>
-                )}
-                {dropdownOpen && userSearch && filteredUsers.length === 0 && (
-                  <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover shadow-md px-3 py-2 text-sm text-muted-foreground">
-                    No users found.
                   </div>
                 )}
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label>Message</Label>
+              <Label>{t("planning.communication.message")}</Label>
               <Textarea
-                rows={6}
+                rows={4}
                 value={sendForm.message}
-                onChange={(e) =>
-                  setSendForm((p) => ({ ...p, message: e.target.value }))
-                }
-                placeholder="Type your message..."
+                onChange={(e) => setSendForm(p => ({ ...p, message: e.target.value }))}
+                placeholder={t("planning.communication.typeMessage")}
               />
             </div>
 
-            {/* Level */}
             <div className="space-y-2">
-              <Label>Level</Label>
-              <Select
-                value={sendForm.communication_level}
-                onValueChange={(val) =>
-                  setSendForm((p) => ({ ...p, communication_level: val }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
+              <Label>{t("planning.communication.level")}</Label>
+              <Select value={sendForm.communication_level} onValueChange={(val) => setSendForm(p => ({ ...p, communication_level: val }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="info">Info</SelectItem>
-                  <SelectItem value="warning">Warning</SelectItem>
-                  <SelectItem value="danger">Issue</SelectItem>
+                  <SelectItem value="info">{t("planning.communication.info")}</SelectItem>
+                  <SelectItem value="warning">{t("planning.communication.warning")}</SelectItem>
+                  <SelectItem value="danger">{t("planning.communication.issue")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label>Upload File</Label>
+              <Label>{t("planning.communication.uploadFile")}</Label>
               <Input type="file" ref={fileInputRef} />
             </div>
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setSendDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSend}
-              disabled={sending}
-              className="bg-violet-500 hover:bg-violet-600"
-            >
-              {sending ? "Sending..." : "Send"}
+            <Button variant="outline" onClick={() => setSendDialogOpen(false)}>{t("planning.form.no")}</Button>
+            <Button onClick={handleSend} disabled={sending} className="bg-violet-500 hover:bg-violet-600">
+              {sending ? t("planning.communication.sending") : t("planning.communication.send")}
             </Button>
           </DialogFooter>
         </DialogContent>

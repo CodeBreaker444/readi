@@ -11,6 +11,7 @@ import axios from 'axios'
 import { Loader2, Plus, RefreshCw } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
+import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { z } from 'zod'
 
@@ -40,15 +41,13 @@ interface FormData {
     mission_group_label: string
 }
 
-const DAYS_OF_WEEK = [
-    { value: 1, label: 'Mon' },
-    { value: 2, label: 'Tue' },
-    { value: 3, label: 'Wed' },
-    { value: 4, label: 'Thu' },
-    { value: 5, label: 'Fri' },
-    { value: 6, label: 'Sat' },
-    { value: 0, label: 'Sun' },
-]
+type OptionItem = { 
+    id: number; 
+    label: string; 
+    in_maintenance?: boolean; 
+    has_drone_component?: boolean; 
+    steps?: any 
+}
 
 const createOperationCalendarSchema = z.object({
     mission_name: z.string().min(1, 'Mission name is required'),
@@ -75,14 +74,13 @@ const createOperationCalendarSchema = z.object({
     { message: 'Recurrence end date is required', path: ['recur_until'] }
 )
 
-type OptionItem = { id: number; label: string; in_maintenance?: boolean; has_drone_component?: boolean; steps?: any }
-
 const now = new Date()
 const pad = (n: number) => String(n).padStart(2, '0')
 const defaultStart = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:00`
 const defaultEnd = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours() + 1)}:00`
 
 export function AddOperationModal({ open, onClose, onSuccess, isDark }: AddOperationModalProps) {
+    const { t } = useTranslation()
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [pilots, setPilots] = useState<OptionItem[]>([])
     const [tools, setTools] = useState<OptionItem[]>([])
@@ -90,6 +88,16 @@ export function AddOperationModal({ open, onClose, onSuccess, isDark }: AddOpera
     const [missionCategories, setMissionCategories] = useState<OptionItem[]>([])
     const [lucProcedures, setLucProcedures] = useState<OptionItem[]>([])
     const [addedIds, setAddedIds] = useState<number[]>([])
+
+    const DAYS_OF_WEEK = [
+        { value: 1, label: 'Mon' },
+        { value: 2, label: 'Tue' },
+        { value: 3, label: 'Wed' },
+        { value: 4, label: 'Thu' },
+        { value: 5, label: 'Fri' },
+        { value: 6, label: 'Sat' },
+        { value: 0, label: 'Sun' },
+    ]
 
     const {
         register,
@@ -126,46 +134,35 @@ export function AddOperationModal({ open, onClose, onSuccess, isDark }: AddOpera
             try {
                 const res = await axios.get('/api/operation/options')
                 const d = res.data
-
-                setPilots(
-                    (d.pilots ?? []).map((p: any) => ({
-                        id: p.user_id,
-                        label: `${p.first_name ?? ''} ${p.last_name ?? ''}`.trim(),
-                    }))
-                )
-                setTools(
-                    (d.tools ?? []).map((t: any) => ({
-                        id: t.tool_id,
-                        label: `${t.tool_code} — ${t.tool_name}`,
-                        in_maintenance: t.in_maintenance ?? false,
-                        has_drone_component: t.has_drone_component,
-                    }))
-                )
-                setMissionTypes(
-                    (d.types ?? []).map((t: any) => ({
-                        id: t.mission_type_id,
-                        label: t.type_name,
-                    }))
-                )
-                setMissionCategories(
-                    (d.categories ?? []).map((c: any) => ({
-                        id: c.category_id,
-                        label: c.category_name,
-                    }))
-                )
-                setLucProcedures(
-                    (d.lucProcedures ?? []).map((p: any) => ({
-                        id: p.procedure_id,
-                        label: `${p.procedure_code} — ${p.procedure_name}`,
-                        steps: p.procedure_steps,
-                    }))
-                )
+                setPilots((d.pilots ?? []).map((p: any) => ({
+                    id: p.user_id,
+                    label: `${p.first_name ?? ''} ${p.last_name ?? ''}`.trim(),
+                })))
+                setTools((d.tools ?? []).map((t: any) => ({
+                    id: t.tool_id,
+                    label: `${t.tool_code} — ${t.tool_name}`,
+                    in_maintenance: t.in_maintenance ?? false,
+                    has_drone_component: t.has_drone_component,
+                })))
+                setMissionTypes((d.types ?? []).map((t: any) => ({
+                    id: t.mission_type_id,
+                    label: t.type_name,
+                })))
+                setMissionCategories((d.categories ?? []).map((c: any) => ({
+                    id: c.category_id,
+                    label: c.category_name,
+                })))
+                setLucProcedures((d.lucProcedures ?? []).map((p: any) => ({
+                    id: p.procedure_id,
+                    label: `${p.procedure_code} — ${p.procedure_name}`,
+                    steps: p.procedure_steps,
+                })))
             } catch {
-                toast.error('Failed to load options')
+                toast.error(t('operations.board.toast.loadError'))
             }
         }
         fetchOptions()
-    }, [open])
+    }, [open, t])
 
     const onSubmit = async (data: FormData) => {
         setIsSubmitting(true)
@@ -178,17 +175,20 @@ export function AddOperationModal({ open, onClose, onSuccess, isDark }: AddOpera
             const res = await axios.post('/api/operation/calendar/create', payload)
             const result = res.data
             if (!result.success) {
-                toast.error(result.error ?? 'Something went wrong')
+                toast.error(result.error ?? t('operations.board.toast.statusUpdateFailed'))
                 return
             }
-            if (data.is_recurring) {
-                toast.success('Recurring operations created successfully')
-            }
+            
+            toast.success(data.is_recurring 
+                ? t('operations.table.toast.statusSuccess', { count: '...', status: t('operations.table.status.planned') })
+                : t('operations.table.toast.statusSuccess', { count: 1, status: t('operations.table.status.planned') })
+            )
+
             setAddedIds([result.operationId])
             onSuccess()
             setTimeout(() => handleClose(), 1500)
         } catch (err: any) {
-            toast.error(err.response?.data?.error || 'Network error. Please try again.')
+            toast.error(err.response?.data?.error || t('operations.board.toast.statusUpdateFailed'))
         } finally {
             setIsSubmitting(false)
         }
@@ -204,19 +204,7 @@ export function AddOperationModal({ open, onClose, onSuccess, isDark }: AddOpera
     const labelClass = `text-sm font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}`
     const errorClass = 'text-red-400 text-xs mt-1'
 
-    type NumberFieldName = 'fk_pilot_user_id' | 'fk_tool_id' | 'fk_mission_type_id' | 'fk_mission_category_id' | 'fk_planning_id' | 'fk_luc_procedure_id'
-
-    const SelectField = ({
-        name,
-        label,
-        options,
-        placeholder,
-    }: {
-        name: NumberFieldName
-        label: string
-        options: OptionItem[]
-        placeholder: string
-    }) => (
+    const SelectField = ({ name, label, options, placeholder }: { name: any, label: string, options: OptionItem[], placeholder: string }) => (
         <div>
             <Label className={labelClass}>{label}</Label>
             <Controller
@@ -227,7 +215,7 @@ export function AddOperationModal({ open, onClose, onSuccess, isDark }: AddOpera
                         onValueChange={(v) => {
                             const selected = options.find(o => o.id === Number(v))
                             if (selected?.in_maintenance) {
-                                toast.error('This system is currently in maintenance. Close the maintenance ticket before assigning it to an operation.')
+                                toast.error(t('operations.table.detail.logFlightsHours', { code: selected.label }))
                                 return
                             }
                             field.onChange(Number(v))
@@ -246,17 +234,10 @@ export function AddOperationModal({ open, onClose, onSuccess, isDark }: AddOpera
                                     className={isDark ? 'text-white focus:bg-slate-600' : ''}
                                 >
                                     <span className="flex items-center gap-2">
-                                        <span className={o.has_drone_component === false ? 'opacity-40' : ''}>
-                                            {o.label}
-                                        </span>
+                                        <span className={o.has_drone_component === false ? 'opacity-40' : ''}>{o.label}</span>
                                         {o.in_maintenance && (
                                             <span className="text-[10px] font-semibold text-blue-600 bg-blue-50 border border-blue-200 rounded px-1.5 py-0.5 leading-none">
-                                                IN MAINTENANCE
-                                            </span>
-                                        )}
-                                        {o.has_drone_component === false && (
-                                            <span className="text-[10px] font-semibold text-gray-500 bg-gray-100 border border-gray-300 rounded px-1.5 py-0.5 leading-none">
-                                                Drone not Attached
+                                                {t('operations.table.detail.maintenance').toUpperCase()}
                                             </span>
                                         )}
                                     </span>
@@ -266,8 +247,8 @@ export function AddOperationModal({ open, onClose, onSuccess, isDark }: AddOpera
                     </Select>
                 )}
             />
-            {errors[name] && (
-                <p className={errorClass}>{String((errors[name] as any)?.message ?? '')}</p>
+            {errors[name as keyof FormData] && (
+                <p className={errorClass}>{String(errors[name as keyof FormData]?.message ?? '')}</p>
             )}
         </div>
     )
@@ -279,16 +260,16 @@ export function AddOperationModal({ open, onClose, onSuccess, isDark }: AddOpera
             >
                 <DialogHeader>
                     <DialogTitle className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                        New Operation
+                        {t('operations.table.newOperation')}
                     </DialogTitle>
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 mt-2">
                     <div>
-                        <Label className={labelClass}>Mission Name</Label>
+                        <Label className={labelClass}>{t('operations.table.detail.missionId')}</Label>
                         <Input
                             {...register('mission_name')}
-                            placeholder="Enter mission name..."
+                            placeholder={t('operations.table.filters.searchPlaceholder')}
                             className={`mt-1 ${inputClass}`}
                         />
                         {errors.mission_name && <p className={errorClass}>{errors.mission_name.message}</p>}
@@ -296,48 +277,44 @@ export function AddOperationModal({ open, onClose, onSuccess, isDark }: AddOpera
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <Label className={labelClass}>Scheduled Start</Label>
+                            <Label className={labelClass}>{t('operations.table.detail.scheduled')}</Label>
                             <Input type="datetime-local" {...register('scheduled_start')} className={`mt-1 ${inputClass}`} />
-                            {errors.scheduled_start && <p className={errorClass}>{errors.scheduled_start.message}</p>}
                         </div>
                         <div>
-                            <Label className={labelClass}>Scheduled End</Label>
+                            <Label className={labelClass}>{t('operations.table.detail.endTime')}</Label>
                             <Input type="datetime-local" {...register('scheduled_end')} className={`mt-1 ${inputClass}`} />
-                            {errors.scheduled_end && <p className={errorClass}>{errors.scheduled_end.message}</p>}
                         </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
-                        <SelectField name="fk_pilot_user_id" label="Pilot (PIC)" options={pilots} placeholder="Select pilot" />
-                        <SelectField name="fk_tool_id" label="Vehicle / System" options={tools} placeholder="Select vehicle" />
+                        <SelectField name="fk_pilot_user_id" label={t('operations.table.detail.pilotInCommand')} options={pilots} placeholder={t('operations.table.filters.allPilots')} />
+                        <SelectField name="fk_tool_id" label={t('operations.table.detail.droneSystem')} options={tools} placeholder={t('operations.table.detail.droneSystem')} />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
-                        <SelectField name="fk_mission_type_id" label="Mission Type" options={missionTypes} placeholder="Select type" />
-                        <SelectField name="fk_mission_category_id" label="Mission Category" options={missionCategories} placeholder="Select category" />
+                        <SelectField name="fk_mission_type_id" label={t('operations.board.detail.missionType')} options={missionTypes} placeholder={t('operations.board.detail.missionType')} />
+                        <SelectField name="fk_mission_category_id" label={t('operations.board.detail.category')} options={missionCategories} placeholder={t('operations.board.detail.category')} />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <Label className={labelClass}>Location</Label>
-                            <Input {...register('location')} placeholder="e.g. Field A, Zone 3..." className={`mt-1 ${inputClass}`} />
+                            <Label className={labelClass}>{t('operations.table.detail.location')}</Label>
+                            <Input {...register('location')} className={`mt-1 ${inputClass}`} />
                         </div>
                         <div>
-                            <Label className={labelClass}>Status</Label>
+                            <Label className={labelClass}>{t('operations.table.batch.changeStatus')}</Label>
                             <Controller
                                 name="status_name"
                                 control={control}
                                 render={({ field }) => (
                                     <Select onValueChange={field.onChange} value={field.value}>
                                         <SelectTrigger className={`mt-1 ${inputClass}`}>
-                                            <SelectValue placeholder="Select status" />
+                                            <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent className={isDark ? 'bg-slate-700 border-slate-600' : ''}>
-                                            {(['Scheduled', 'In Progress', 'Completed'] as const).map((s) => (
-                                                <SelectItem key={s} value={s} className={isDark ? 'text-white focus:bg-slate-600' : ''}>
-                                                    {s}
-                                                </SelectItem>
-                                            ))}
+                                            <SelectItem value="Scheduled">{t('operations.table.status.planned')}</SelectItem>
+                                            <SelectItem value="In Progress">{t('operations.table.status.inProgress')}</SelectItem>
+                                            <SelectItem value="Completed">{t('operations.table.status.completed')}</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 )}
@@ -346,8 +323,8 @@ export function AddOperationModal({ open, onClose, onSuccess, isDark }: AddOpera
                     </div>
 
                     <div>
-                        <Label className={labelClass}>Notes</Label>
-                        <Input {...register('notes')} placeholder="Optional notes..." className={`mt-1 ${inputClass}`} />
+                        <Label className={labelClass}>{t('operations.board.detail.notes')}</Label>
+                        <Input {...register('notes')} className={`mt-1 ${inputClass}`} />
                     </div>
 
                     <SelectField
@@ -356,11 +333,6 @@ export function AddOperationModal({ open, onClose, onSuccess, isDark }: AddOpera
                         options={lucProcedures}
                         placeholder="Select LUC procedure"
                     />
-                    {!lucProcedures.length && (
-                        <p className={`text-xs ${isDark ? 'text-amber-400' : 'text-amber-700'}`}>
-                            No active LUC procedures with status MISSION. Add one under Organization → LUC procedures.
-                        </p>
-                    )}
 
                     <div className={`rounded-lg border p-4 space-y-4 ${isDark ? 'border-slate-600 bg-slate-700/40' : 'border-slate-200 bg-slate-50'}`}>
                         <div className="flex items-center gap-2">
@@ -378,15 +350,14 @@ export function AddOperationModal({ open, onClose, onSuccess, isDark }: AddOpera
                             />
                             <label htmlFor="is_recurring" className={`flex items-center gap-1.5 text-sm font-medium cursor-pointer ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
                                 <RefreshCw className="w-3.5 h-3.5" />
-                                Recurrent (Weekly)
+                                {t('operations.calendar.calendarButtons.week')} (Weekly)
                             </label>
                         </div>
 
                         {isRecurring && (
                             <div className="space-y-4 pl-1">
-                                {/* Days of week */}
                                 <div>
-                                    <Label className={labelClass}>Days of Week</Label>
+                                    <Label className={labelClass}>{t('operations.calendar.calendarButtons.week')}</Label>
                                     <div className="flex flex-wrap gap-2 mt-2">
                                         {DAYS_OF_WEEK.map((day) => {
                                             const checked = daysOfWeek.includes(day.value)
@@ -404,8 +375,8 @@ export function AddOperationModal({ open, onClose, onSuccess, isDark }: AddOpera
                                                         checked
                                                             ? 'bg-sky-600 border-sky-600 text-white'
                                                             : isDark
-                                                            ? 'bg-slate-600 border-slate-500 text-slate-300 hover:bg-slate-500'
-                                                            : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-100'
+                                                            ? 'bg-slate-600 border-slate-500 text-slate-300'
+                                                            : 'bg-white border-slate-300 text-slate-600'
                                                     }`}
                                                 >
                                                     {day.label}
@@ -413,63 +384,32 @@ export function AddOperationModal({ open, onClose, onSuccess, isDark }: AddOpera
                                             )
                                         })}
                                     </div>
-                                    {(errors as any).days_of_week && (
-                                        <p className={errorClass}>{(errors as any).days_of_week.message}</p>
-                                    )}
+                                    {errors.days_of_week && <p className={errorClass}>{errors.days_of_week.message}</p>}
                                 </div>
-
-                                {/* Until date + group label */}
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <Label className={labelClass}>Repeat Until</Label>
-                                        <Input
-                                            type="date"
-                                            {...register('recur_until')}
-                                            className={`mt-1 ${inputClass}`}
-                                        />
-                                        {(errors as any).recur_until && (
-                                            <p className={errorClass}>{(errors as any).recur_until.message}</p>
-                                        )}
+                                        <Input type="date" {...register('recur_until')} className={`mt-1 ${inputClass}`} />
+                                        {errors.recur_until && <p className={errorClass}>{errors.recur_until.message}</p>}
                                     </div>
                                     <div>
-                                        <Label className={labelClass}>Group Label</Label>
-                                        <Input
-                                            {...register('mission_group_label')}
-                                            placeholder="e.g. Weekly Survey Run"
-                                            className={`mt-1 ${inputClass}`}
-                                        />
+                                        <Label className={labelClass}>{t('operations.board.detail.missionGroup')}</Label>
+                                        <Input {...register('mission_group_label')} className={`mt-1 ${inputClass}`} />
                                     </div>
                                 </div>
                             </div>
                         )}
                     </div>
 
-                    {addedIds.length > 0 && (
-                        <div className="rounded-md bg-green-500/10 border border-green-500/30 px-4 py-3 text-green-400 text-sm space-y-1">
-                            {addedIds.map((id) => (
-                                <p key={id}>✓ Operation #{id} added successfully</p>
-                            ))}
-                        </div>
-                    )}
-
                     <div className="flex justify-end gap-3 pt-2">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={handleClose}
-                            className={isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : ''}
-                        >
-                            Close
+                        <Button type="button" variant="outline" onClick={handleClose} className={isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : ''}>
+                            {t('operations.table.filters.reset')}
                         </Button>
-                        <Button
-                            type="submit"
-                            disabled={isSubmitting}
-                            className="bg-violet-600 hover:bg-violet-500 cursor-pointer text-white"
-                        >
+                        <Button type="submit" disabled={isSubmitting} className="bg-violet-600 hover:bg-violet-500 text-white">
                             {isSubmitting ? (
-                                <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Adding...</>
+                                <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t('operations.table.batch.updating')}</>
                             ) : (
-                                <><Plus className="w-4 h-4 mr-2" />Add Operation</>
+                                <><Plus className="w-4 h-4 mr-2" />{t('operations.table.newOperation')}</>
                             )}
                         </Button>
                     </div>

@@ -3,6 +3,7 @@
 import { RepositoryDocument } from '@/config/types/repository';
 import { ColumnDef } from '@tanstack/react-table';
 import { format } from 'date-fns';
+import type { TFunction } from 'i18next';
 import { ArrowUpDown, Calendar, Download, History, Pencil, Trash2 } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
@@ -50,6 +51,7 @@ function fmtDate(d?: string | null) {
  
 
 export interface ColumnActions {
+  t: TFunction;
   onEdit:     (doc: RepositoryDocument) => void;
   onDelete:   (doc: RepositoryDocument) => void;
   onHistory:  (doc: RepositoryDocument) => void;
@@ -57,11 +59,13 @@ export interface ColumnActions {
 }
 
 export function getRepositoryColumns(actions: ColumnActions): ColumnDef<RepositoryDocument>[] {
+  const { t } = actions;
+
   return [
     {
       id: 'doc_code',
       accessorKey: 'doc_code',
-      header: "# Code",
+      header: t('repository.columns.code'),
       cell: ({ row }) => (
         <span className="font-mono text-xs font-semibold text-slate-400 dark:text-slate-500">
           {row.original.doc_code ?? '—'}
@@ -79,7 +83,7 @@ export function getRepositoryColumns(actions: ColumnActions): ColumnDef<Reposito
           className="-ml-3 h-8 text-slate-400 hover:text-slate-800 dark:hover:text-white"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
-          Title <ArrowUpDown className="ml-1.5 h-3 w-3" />
+          {t('repository.columns.title')} <ArrowUpDown className="ml-1.5 h-3 w-3" />
         </Button>
       ),
       cell: ({ row }) => (
@@ -98,7 +102,7 @@ export function getRepositoryColumns(actions: ColumnActions): ColumnDef<Reposito
     {
       id: 'type_name',
       accessorKey: 'type_name',
-      header: "Type & Area",
+      header: t('repository.columns.typeArea'),
       cell: ({ row }) => (
         <div className="flex flex-col gap-1.5">
           <span className="text-xs text-slate-700 dark:text-slate-200">
@@ -117,7 +121,7 @@ export function getRepositoryColumns(actions: ColumnActions): ColumnDef<Reposito
     {
       id: 'status',
       accessorKey: 'status',
-      header: "Status",
+      header: t('repository.columns.status'),
       cell: ({ row }) => {
         const val = row.original.status || "";
         const isActive = val.toLowerCase() === 'active' || val.toLowerCase() === 'published';
@@ -139,7 +143,7 @@ export function getRepositoryColumns(actions: ColumnActions): ColumnDef<Reposito
     {
       id: 'version_label',
       accessorKey: 'version_label',
-      header: "Version",
+      header: t('repository.columns.version'),
       cell: ({ row }) => (
         <div className="flex flex-col gap-1">
           <span className="w-fit rounded bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 text-[10px] font-mono font-bold text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
@@ -159,7 +163,7 @@ export function getRepositoryColumns(actions: ColumnActions): ColumnDef<Reposito
       header: () => (
         <div className="flex items-center gap-1">
           <Calendar className="h-3 w-3" />
-          <span>Validity</span>
+          <span>{t('repository.columns.validity')}</span>
         </div>
       ),
       cell: ({ row }) => (
@@ -180,7 +184,7 @@ export function getRepositoryColumns(actions: ColumnActions): ColumnDef<Reposito
     },
     {
       id: 'actions',
-      header: () => <span className="text-xs font-semibold text-slate-400">Actions</span>,
+      header: () => <span className="text-xs font-semibold text-slate-400">{t('repository.columns.actions')}</span>,
       cell: ({ row }) => {
         const doc = row.original;
         return (
@@ -189,7 +193,7 @@ export function getRepositoryColumns(actions: ColumnActions): ColumnDef<Reposito
               <Button
                 variant="ghost"
                 size="icon"
-                title="Download"
+                title={t('repository.actions.download')}
                 onClick={() => actions.onDownload(doc)}
                 className="h-7 w-7 text-slate-500 hover:text-violet-600 hover:bg-violet-50"
               >
@@ -199,7 +203,7 @@ export function getRepositoryColumns(actions: ColumnActions): ColumnDef<Reposito
             <Button
               variant="ghost"
               size="icon"
-              title="Revision history"
+              title={t('repository.actions.revisionHistory')}
               onClick={() => actions.onHistory(doc)}
               className="h-7 w-7 text-slate-500 hover:bg-slate-100"
             >
@@ -208,7 +212,7 @@ export function getRepositoryColumns(actions: ColumnActions): ColumnDef<Reposito
             <Button
               variant="ghost"
               size="icon"
-              title="Edit"
+              title={t('common.edit')}
               onClick={() => actions.onEdit(doc)}
               className="h-7 w-7 text-slate-500 hover:text-blue-600 hover:bg-blue-50"
             >
@@ -217,7 +221,7 @@ export function getRepositoryColumns(actions: ColumnActions): ColumnDef<Reposito
             <Button
               variant="ghost"
               size="icon"
-              title="Delete"
+              title={t('common.delete')}
               onClick={() => actions.onDelete(doc)}
               className="h-7 w-7 text-slate-500 hover:text-red-600 hover:bg-red-50"
             >

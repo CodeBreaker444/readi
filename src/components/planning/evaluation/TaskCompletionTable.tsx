@@ -1,18 +1,19 @@
 'use client';
 
 import {
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
+    flexRender,
+    getCoreRowModel,
+    useReactTable,
 } from '@tanstack/react-table';
 import axios from 'axios';
 import {
-  CheckCircle2,
-  ListChecks,
-  MapPin,
-  MessageSquarePlus,
+    CheckCircle2,
+    ListChecks,
+    MapPin,
+    MessageSquarePlus,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { getEvaluationTaskColumns } from '@/components/tables/EvaluationTaskColumn';
@@ -20,12 +21,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from '@/components/ui/table';
 import { EvaluationTask } from '@/config/types/evaluation';
 import { AddPlanningModal } from './AddPlanningModal';
@@ -57,6 +58,7 @@ export function TaskCompletionTable({
     const [allCompleted, setAllCompleted] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [modal, setModal] = useState<ModalState>({ type: 'none' });
+    const { t } = useTranslation();  
 
     async function fetchTasks() {
         if (evaluationId <= 0) return;
@@ -68,7 +70,7 @@ export function TaskCompletionTable({
             setAllCompleted(completed);
             onAllCompleted?.(completed);
         } catch {
-            toast.error('Failed to load tasks');
+            toast.error(t('planning.tasks.loadError'));
         } finally {
             setIsLoading(false);
         }
@@ -94,10 +96,10 @@ export function TaskCompletionTable({
                 task_id: task.task_id,
                 task_status: 'completed',
             });
-            toast.success('Checklist completed');
+            toast.success(t('planning.tasks.checklistCompleted'));
             fetchTasks();
         } catch {
-            toast.error('Failed to update task status');
+            toast.error(t('planning.tasks.updateFailed'));
         }
         closeModal();
     }
@@ -131,8 +133,8 @@ export function TaskCompletionTable({
     }
 
     const columns = useMemo(
-        () => getEvaluationTaskColumns(handleOpenAction),
-        [evaluationId],
+        () => getEvaluationTaskColumns(t, handleOpenAction),
+        [evaluationId, t],
     );
 
     const table = useReactTable({
@@ -150,7 +152,7 @@ export function TaskCompletionTable({
                     <div className="flex items-center gap-2">
                         <ListChecks className="h-4 w-4 text-slate-500" />
                         <h3 className="text-sm font-semibold text-slate-700">
-                            Task Completion
+                            {t('planning.evaluation.taskCompletion')}
                         </h3>
                         <Badge variant="secondary" className="text-xs">
                             {completedCount}/{tasks.length}
@@ -163,7 +165,7 @@ export function TaskCompletionTable({
                                 <div className="flex items-center gap-1.5 text-emerald-600">
                                     <CheckCircle2 className="h-4 w-4" />
                                     <span className="text-xs font-medium">
-                                        All tasks completed
+                                        {t('planning.tasks.allCompleted')}
                                     </span>
                                 </div>
 
@@ -173,7 +175,7 @@ export function TaskCompletionTable({
                                     onClick={() => setModal({ type: 'add_planning' })}
                                 >
                                     <MapPin className="h-3.5 w-3.5" />
-                                    Move to Planning Dashboard
+                                    {t('planning.tasks.moveToDashboard')}
                                 </Button>
                             </>
                         )}
@@ -185,7 +187,7 @@ export function TaskCompletionTable({
                             onClick={() => setModal({ type: 'communication' })}
                         >
                             <MessageSquarePlus className="h-3.5 w-3.5" />
-                            Add Communication
+                            {t('planning.tasks.addCommunication')}
                         </Button>
                     </div>
                 </div>
@@ -223,7 +225,7 @@ export function TaskCompletionTable({
                                         colSpan={columns.length}
                                         className="text-center text-xs text-slate-400 py-8"
                                     >
-                                        No tasks defined for this evaluation.
+                                        {t('planning.tasks.noTasks')}
                                     </TableCell>
                                 </TableRow>
                             ) : (
@@ -250,7 +252,6 @@ export function TaskCompletionTable({
                     </Table>
                 </div>
             </div>
-
 
             {modal.type === 'checklist' && (
                 <ChecklistTaskModal

@@ -42,6 +42,7 @@ import { toast } from "sonner";
 
 import { getEvaluationTaskColumns } from "@/components/tables/EvaluationTaskColumn";
 import { EvaluationTask } from "@/config/types/evaluation";
+import { useTranslation } from "react-i18next";
 import { TablePagination } from "../tables/Pagination";
 import CommunicationSection from "./CommunicationSection";
 import { AssignmentActionModal } from "./evaluation/AssignmentActionModal";
@@ -63,7 +64,8 @@ export function PlanningTaskTableSection(props: {
   evaluationId: number;
   ownerId: number;
 }) {
-  const { isDark, planningId, clientId, evaluationId, ownerId,   } = props;
+  const { isDark, planningId, clientId, evaluationId, ownerId, } = props;
+  const { t } = useTranslation();
 
   const [tasks, setTasks] = useState<EvaluationTask[]>([]);
   const [allCompleted, setAllCompleted] = useState(false);
@@ -74,8 +76,6 @@ export function PlanningTaskTableSection(props: {
   const [globalFilter, setGlobalFilter] = useState("");
   const [sorting, setSorting] = useState<SortingState>([]);
 
- 
-
   const fetchTasks = useCallback(async () => {
     if (planningId <= 0) return;
     try {
@@ -84,11 +84,11 @@ export function PlanningTaskTableSection(props: {
       setTasks(res.data.tasks ?? []);
       setAllCompleted(res.data.allCompleted ?? false);
     } catch {
-      toast.error("Failed to load tasks");
+      toast.error(t("planning.tasks.loadError"));
     } finally {
       setIsLoading(false);
     }
-  }, [planningId]);
+  }, [planningId, t]);
 
   useEffect(() => {
     fetchTasks();
@@ -127,10 +127,10 @@ export function PlanningTaskTableSection(props: {
         task_id: task.task_id,
         task_status: "completed",
       });
-      toast.success("Checklist completed");
+      toast.success(t("planning.tasks.checklistCompleted"));
       fetchTasks();
     } catch {
-      toast.error("Failed to update task status");
+      toast.error(t("planning.tasks.updateFailed"));
     }
     closeModal();
   }
@@ -156,18 +156,19 @@ export function PlanningTaskTableSection(props: {
           task_status: "completed",
         });
       } catch {
-        // Non-fatal
+        console.log('Failed to sent Communication');
+        
       }
     }
     fetchTasks();
     closeModal();
   }
 
- 
+
 
   const columns = useMemo(
-    () => getEvaluationTaskColumns(handleOpenAction),
-    [evaluationId],
+    () => getEvaluationTaskColumns(t, handleOpenAction),
+    [evaluationId, t],
   );
 
   const table = useReactTable({
@@ -197,22 +198,20 @@ export function PlanningTaskTableSection(props: {
       <Button
         size="sm"
         variant={active ? "default" : "outline"}
-        className={`gap-1.5 text-xs h-8 ${
-          active
-            ? "bg-violet-600 hover:bg-violet-700 text-white"
-            : isDark
-              ? "border-slate-800 text-slate-400 hover:bg-slate-800"
-              : ""
-        }`}
+        className={`gap-1.5 text-xs h-8 ${active
+          ? "bg-violet-600 hover:bg-violet-700 text-white"
+          : isDark
+            ? "border-slate-800 text-slate-400 hover:bg-slate-800"
+            : ""
+          }`}
         onClick={() => setFilterMode(mode)}
       >
         {icon}
         {label}
         <Badge
           variant={active ? "secondary" : "outline"}
-          className={`ml-0.5 text-[10px] px-1.5 py-0 h-4 min-w-[18px] flex items-center justify-center ${
-            !active && isDark ? "border-slate-700 text-slate-500" : ""
-          }`}
+          className={`ml-0.5 text-[10px] px-1.5 py-0 h-4 min-w-[18px] flex items-center justify-center ${!active && isDark ? "border-slate-700 text-slate-500" : ""
+            }`}
         >
           {count}
         </Badge>
@@ -229,14 +228,14 @@ export function PlanningTaskTableSection(props: {
               <div className="flex items-center gap-2">
                 <ListChecks className={`h-4 w-4 ${isDark ? "text-slate-400" : "text-slate-500"}`} />
                 <CardTitle className={`text-base ${isDark ? "text-slate-100" : "text-slate-900"}`}>
-                  Task Table
+                  {t("planning.tasks.title")}
                 </CardTitle>
                 <Badge variant="secondary" className="text-xs">
                   {completedCount}/{tasks.length}
                 </Badge>
               </div>
               <p className={`text-xs mt-0.5 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-                Tasks for this planning
+                {t("planning.tasks.subtitle")}
               </p>
             </div>
 
@@ -244,7 +243,7 @@ export function PlanningTaskTableSection(props: {
               {allCompleted && tasks.length > 0 && (
                 <div className="flex items-center gap-1.5 text-emerald-600">
                   <CheckCircle2 className="h-4 w-4" />
-                  <span className="text-xs font-medium">All tasks completed</span>
+                  <span className="text-xs font-medium">{t("planning.tasks.allCompleted")}</span>
                 </div>
               )}
 
@@ -262,25 +261,25 @@ export function PlanningTaskTableSection(props: {
               <FilterBtn
                 mode="all"
                 icon={<FaTasks className="h-3.5 w-3.5" />}
-                label="All"
+                label={t("planning.tasks.all")}
                 count={countByType.all}
               />
               <FilterBtn
                 mode="checklist"
                 icon={<ClipboardList className="h-3.5 w-3.5" />}
-                label="Checklist"
+                label={t("planning.tasks.checklist")}
                 count={countByType.checklist}
               />
               <FilterBtn
                 mode="assignment"
                 icon={<Send className="h-3.5 w-3.5" />}
-                label="Assignment"
+                label={t("planning.tasks.assignment")}
                 count={countByType.assignment}
               />
               <FilterBtn
                 mode="communication"
                 icon={<MessageSquare className="h-3.5 w-3.5" />}
-                label="Communication"
+                label={t("planning.tasks.communication")}
                 count={countByType.communication}
               />
             </div>
@@ -288,10 +287,9 @@ export function PlanningTaskTableSection(props: {
             <div className="relative w-56">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
-                className={`pl-8 h-8 text-xs ${
-                  isDark ? "bg-slate-950 border-slate-800 text-slate-200" : ""
-                }`}
-                placeholder="Search tasks..."
+                className={`pl-8 h-8 text-xs ${isDark ? "bg-slate-950 border-slate-800 text-slate-200" : ""
+                  }`}
+                placeholder={t("planning.tasks.searchTasks")}
                 value={globalFilter ?? ""}
                 onChange={(e) => setGlobalFilter(e.target.value)}
               />
@@ -340,28 +338,23 @@ export function PlanningTaskTableSection(props: {
                   <TableRow>
                     <TableCell
                       colSpan={columns.length}
-                      className={`text-center text-xs py-8 ${
-                        isDark ? "text-slate-400" : "text-slate-400"
-                      }`}
+                      className="text-center text-xs py-8 text-slate-400"
                     >
                       {globalFilter
-                        ? "No tasks match your search."
+                        ? t("planning.tasks.noTasksSearch")
                         : filterMode !== "all"
-                          ? "No tasks for this filter."
-                          : "No tasks defined for this evaluation."}
+                          ? t("planning.tasks.noTasksFilter")
+                          : t("planning.tasks.noTasks")}
                     </TableCell>
                   </TableRow>
                 ) : (
                   table.getRowModel().rows.map((row) => (
                     <TableRow
                       key={row.id}
-                      className={isDark ? "border-slate-800 hover:bg-slate-800/50" : "hover:bg-slate-50/50"}
+                      className={isDark ? "border-slate-800 hover:bg-slate-800/50" : ""}
                     >
                       {row.getVisibleCells().map((cell) => (
-                        <TableCell
-                          key={cell.id}
-                          className={`px-3 py-2 ${isDark ? "text-slate-300" : ""}`}
-                        >
+                        <TableCell key={cell.id} className="px-3 py-2 text-xs">
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </TableCell>
                       ))}
@@ -371,8 +364,9 @@ export function PlanningTaskTableSection(props: {
               </TableBody>
             </Table>
           </div>
-
-          <TablePagination table={table} />
+          <div className="pt-4">
+            <TablePagination table={table} />
+          </div>
         </CardContent>
       </Card>
 
