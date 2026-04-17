@@ -1271,5 +1271,21 @@
         "autoSyncSuccess_other": "Nutzung für {{count}} Komponenten aus GUTMA ausgefüllt"
       }
     }
+  },
+  "dccToast": {
+    "title": "DCC-Fehlerdetails",
+    "labelAction": "Aktion",
+    "labelEndpoint": "Endpunkt",
+    "labelOutcome": "Ergebnis",
+    "labelMessage": "Meldung",
+    "labelHttpStatus": "HTTP-Status",
+    "labelResponseBody": "Antwortkörper",
+    "clickForDetails": "Für Details klicken",
+    "dismiss": "Schließen",
+    "reportedToAdmin": "An das Admin-Team gemeldet.",
+    "reportHint": "Diesen Fehler an das Admin-Team melden.",
+    "reported": "Gemeldet ✓",
+    "reporting": "Meldung…",
+    "reportBug": "Fehler melden"
   }
 }
