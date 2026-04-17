@@ -31,6 +31,7 @@ import {
   X,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 export type ProcedureName =
@@ -61,12 +62,6 @@ interface GeneralCommunicationDialogProps {
   fkClientId?: number;
 }
 
-const LEVEL_OPTIONS = [
-  { value: 'info',    label: 'Info',    icon: Info,          color: 'text-blue-600'  },
-  { value: 'warning', label: 'Warning', icon: AlertTriangle, color: 'text-amber-600' },
-  { value: 'danger',  label: 'Issue',   icon: AlertCircle,   color: 'text-rose-600'  },
-];
-
 export default function GeneralCommunicationDialog({
   open,
   onClose,
@@ -77,6 +72,7 @@ export default function GeneralCommunicationDialog({
   fkVehicleId = 0,
   fkClientId = 0,
 }: GeneralCommunicationDialogProps) {
+  const { t } = useTranslation();
   const [recipients, setRecipients] = useState<RecipientOption[]>([]);
   const [selectedRecipients, setSelectedRecipients] = useState<RecipientOption[]>([]);
   const [message, setMessage] = useState('');
@@ -87,17 +83,23 @@ export default function GeneralCommunicationDialog({
   const [newId, setNewId] = useState<number | null>(null);
   const [loadingRecipients, setLoadingRecipients] = useState(false);
 
+  const LEVEL_OPTIONS = [
+    { value: 'info', label: t('planning.communication.info'), icon: Info, color: 'text-blue-600' },
+    { value: 'warning', label: t('planning.communication.warning'), icon: AlertTriangle, color: 'text-amber-600' },
+    { value: 'danger', label: t('planning.communication.issue'), icon: AlertCircle, color: 'text-rose-600' },
+  ];
+
   useEffect(() => {
     if (!open) return;
     reset();
-    
+
     setLoadingRecipients(true);
     axios
       .get(`/api/operation/communication/recipients?procedure=${procedureName}`)
       .then((r) => setRecipients(r.data.recipients ?? []))
-      .catch(() => toast.error('Failed to load recipients'))
+      .catch(() => toast.error(t('planning.communication.loadError')))
       .finally(() => setLoadingRecipients(false));
-  }, [open, procedureName]);
+  }, [open, procedureName, t]);
 
   function reset() {
     setSelectedRecipients([]);
@@ -118,11 +120,11 @@ export default function GeneralCommunicationDialog({
 
   async function handleSend() {
     if (!message.trim()) {
-      toast.error('Please enter a message');
+      toast.error(t('planning.communication.messageRequired'));
       return;
     }
     if (selectedRecipients.length === 0) {
-      toast.error('Please select at least one recipient');
+      toast.error(t('planning.communication.recipientRequired'));
       return;
     }
 
@@ -146,12 +148,12 @@ export default function GeneralCommunicationDialog({
       if (data.code === 1) {
         setSuccess(true);
         setNewId(data.newId ?? null);
-        toast.success(`Communication #${data.newId} sent`);
+        toast.success(t('planning.communication.sendSuccess'));
       } else {
-        toast.error(data.message ?? 'Failed to send');
+        toast.error(data.message ?? t('planning.communication.sendError'));
       }
     } catch (e: any) {
-      toast.error(e?.response?.data?.message ?? 'Failed to send communication');
+      toast.error(e?.response?.data?.message ?? t('planning.communication.sendError'));
     } finally {
       setSubmitting(false);
     }
@@ -166,7 +168,7 @@ export default function GeneralCommunicationDialog({
         <DialogHeader className="px-6 pt-6 pb-4 border-b">
           <DialogTitle className="flex items-center gap-2 text-base font-semibold">
             <MessageSquare className="h-5 w-5 text-violet-600" />
-            General Communication
+            {t('planning.communication.newCommunication')}
             <Badge variant="outline" className="ml-auto font-normal text-xs mr-5 capitalize">
               {procedureName.replace('_', ' ')}
             </Badge>
@@ -178,7 +180,7 @@ export default function GeneralCommunicationDialog({
             <div>
               <Label className="mb-2 flex items-center gap-1.5">
                 <Users className="h-3.5 w-3.5 text-muted-foreground" />
-                Recipients
+                {t('planning.communication.to')}
                 {selectedRecipients.length > 0 && (
                   <Badge variant="secondary" className="ml-1 text-[10px] h-4 px-1.5">
                     {selectedRecipients.length}
@@ -209,7 +211,7 @@ export default function GeneralCommunicationDialog({
                 {loadingRecipients ? (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground py-1">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Loading recipients...
+                    {t('operations.calendar.loading')}
                   </div>
                 ) : (
                   <Select
@@ -219,7 +221,7 @@ export default function GeneralCommunicationDialog({
                     }}
                   >
                     <SelectTrigger className="h-8 text-xs bg-background">
-                      <SelectValue placeholder="Add recipient…" />
+                      <SelectValue placeholder={t('planning.communication.searchUsers')} />
                     </SelectTrigger>
                     <SelectContent>
                       {recipients
@@ -238,18 +240,18 @@ export default function GeneralCommunicationDialog({
             </div>
 
             <div>
-              <Label className="mb-1.5 block">Message</Label>
+              <Label className="mb-1.5 block">{t('planning.communication.message')}</Label>
               <Textarea
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder="Type your message here…"
+                placeholder={t('planning.communication.writeMessage')}
                 rows={5}
                 className="resize-none"
               />
             </div>
 
             <div>
-              <Label className="mb-2 block">Level</Label>
+              <Label className="mb-2 block">{t('planning.communication.level')}</Label>
               <div className="flex gap-2">
                 {LEVEL_OPTIONS.map((opt) => {
                   const Icon = opt.icon;
@@ -273,7 +275,7 @@ export default function GeneralCommunicationDialog({
             </div>
 
             <div>
-              <Label className="mb-1.5 block">Attachment (optional)</Label>
+              <Label className="mb-1.5 block">{t('planning.communication.uploadFile')}</Label>
               <div
                 className={cn(
                   'relative border-2 border-dashed rounded-lg p-3 flex items-center gap-3 cursor-pointer transition-colors',
@@ -308,7 +310,7 @@ export default function GeneralCommunicationDialog({
                     </button>
                   </div>
                 ) : (
-                  <span className="text-sm text-muted-foreground">Click to attach a file</span>
+                  <span className="text-sm text-muted-foreground">{t('planning.files.provideDescFile')}</span>
                 )}
               </div>
             </div>
@@ -318,11 +320,10 @@ export default function GeneralCommunicationDialog({
             <div className="mx-auto h-16 w-16 rounded-full bg-emerald-100 dark:bg-emerald-950/40 flex items-center justify-center">
               <Send className="h-7 w-7 text-emerald-600" />
             </div>
-            <p className="font-semibold text-base">Communication Sent</p>
+            <p className="font-semibold text-base">{t('planning.communication.sentSuccess')}</p>
             {newId && (
               <p className="text-sm text-muted-foreground">
-                Communication #{newId} delivered to {selectedRecipients.length} recipient
-                {selectedRecipients.length !== 1 ? 's' : ''}.
+                {t('planning.communication.message')} #{newId} delivered.
               </p>
             )}
           </div>
@@ -330,7 +331,7 @@ export default function GeneralCommunicationDialog({
 
         <div className="flex items-center justify-between px-6 pb-6 pt-2 border-t bg-muted/20">
           <Button variant="outline" size="sm" onClick={onClose} disabled={submitting}>
-            {success ? 'Close' : 'Cancel'}
+            {success ? t('planning.actions.update') : t('planning.form.no')}
           </Button>
 
           {!success && (
@@ -348,11 +349,11 @@ export default function GeneralCommunicationDialog({
               )}
             >
               {submitting ? (
-                <><Loader2 className="h-4 w-4 animate-spin" /> Sending…</>
+                <><Loader2 className="h-4 w-4 animate-spin" /> {t('planning.communication.sending')}</>
               ) : (
                 <>
                   <ActiveIcon className="h-4 w-4" />
-                  Send {activeLevelMeta.label}
+                  {t('planning.communication.send')} {activeLevelMeta.label}
                 </>
               )}
             </Button>

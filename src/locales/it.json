@@ -1272,6 +1272,223 @@
         "autoSyncSuccess_one": "Utilizzo per {{count}} componente compilato automaticamente da GUTMA",
         "autoSyncSuccess_other": "Utilizzo per {{count}} componenti compilato automaticamente da GUTMA"
       }
+    },
+    "dialog": {
+      "editTitle": "Modifica Operazione",
+      "newTitle": "Nuova Operazione",
+      "editSubtitle": "Aggiorna i dettagli dell'operazione qui sotto.",
+      "newSubtitle": "Compila ogni passaggio per creare una nuova operazione di volo.",
+      "steps": {
+        "details": "Dettagli",
+        "schedule": "Pianificazione",
+        "assets": "Risorse",
+        "pilot": "Pilota",
+        "review": "Riepilogo"
+      },
+      "sections": {
+        "missionDetails": "Dettagli Missione",
+        "scheduleStatus": "Pianificazione e Stato",
+        "assets": "Risorse",
+        "pilotInCommand": "Pilota in Comando",
+        "missionSummary": "Riepilogo Missione"
+      },
+      "fields": {
+        "missionName": "Nome Missione",
+        "missionCode": "Codice Missione",
+        "description": "Descrizione",
+        "location": "Posizione",
+        "notes": "Note",
+        "scheduledStart": "Inizio Programmato",
+        "scheduledEnd": "Fine Programmata",
+        "status": "Stato",
+        "flightDuration": "Durata Volo (min)",
+        "distanceFlown": "Distanza Percorsa (m)",
+        "recurrent": "Ricorrente (Settimanale)",
+        "daysOfWeek": "Giorni della Settimana",
+        "repeatUntil": "Ripeti Fino a",
+        "groupLabel": "Etichetta Gruppo",
+        "droneSystem": "Sistema (Sistema Drone)",
+        "missionCategory": "Categoria Missione",
+        "missionType": "Tipo Missione",
+        "clientPlanning": "Cliente / Pianificazione",
+        "lucProcedure": "Procedura LUC (Missione)",
+        "pilotInCommand": "Pilota in Comando",
+        "selectedPilot": "Pilota Selezionato"
+      },
+      "placeholders": {
+        "missionName": "es. Volo di Rilevamento Alpha",
+        "missionCode": "es. RILEVAMENTO-001",
+        "description": "Descrivi la missione…",
+        "location": "es. Griglia A-7",
+        "notes": "Note aggiuntive…",
+        "flightDuration": "es. 45",
+        "distanceFlown": "es. 5000",
+        "groupLabel": "es. Rilevamento Settimanale",
+        "loading": "Caricamento…",
+        "selectTool": "Seleziona strumento",
+        "selectCategory": "Seleziona categoria",
+        "selectType": "Seleziona tipo",
+        "selectClientPlanning": "Seleziona cliente / pianificazione",
+        "selectLuc": "Seleziona procedura LUC",
+        "noMissionProcedures": "Nessuna procedura MISSIONE",
+        "selectPilot": "Seleziona pilota"
+      },
+      "status": {
+        "planned": "Pianificato",
+        "inProgress": "In Corso",
+        "completed": "Completato"
+      },
+      "badges": {
+        "inMaintenance": "IN MANUTENZIONE",
+        "droneNotAttached": "Drone non Collegato"
+      },
+      "validation": {
+        "selectAtLeastOneDay": "Seleziona almeno un giorno",
+        "noMatchingDays": "Nessuno dei giorni selezionati cade tra {{start}} e {{end}}. Amplia l'intervallo o cambia i giorni.",
+        "lucRequired": "La procedura LUC è obbligatoria",
+        "recurrenceEndDate": "La data di fine ricorrenza deve essere uguale o successiva alla data di inizio",
+        "noMatchingDaysRange": "Nessuno dei giorni selezionati cade tra {{start}} e {{end}}. Amplia l'intervallo o cambia i giorni selezionati.",
+        "missionNameRequired": "⚠ Il nome della missione è obbligatorio.",
+        "pilotRequired": "⚠ Il Pilota in Comando è obbligatorio.",
+        "createLucHint": "Crea prima una procedura LUC attiva con stato \"MISSIONE\" nella sezione Organizzazione."
+      },
+      "review": {
+        "missionName": "Nome Missione",
+        "missionCode": "Codice Missione",
+        "location": "Posizione",
+        "status": "Stato",
+        "scheduled": "Pianificato",
+        "pilot": "Pilota",
+        "tool": "Strumento",
+        "type": "Tipo",
+        "category": "Categoria",
+        "lucProcedure": "Procedura LUC",
+        "recurrence": "Ricorrenza",
+        "weekly": "Settimanale",
+        "repeatUntil": "Ripeti Fino a",
+        "days": "Giorni",
+        "groupLabel": "Etichetta Gruppo",
+        "description": "Descrizione",
+        "notes": "Note"
+      },
+      "buttons": {
+        "cancel": "Annulla",
+        "previous": "Precedente",
+        "next": "Avanti",
+        "saveChanges": "Salva Modifiche",
+        "createRecurring": "Crea Ricorrente",
+        "createOperation": "Crea Operazione"
+      },
+      "toast": {
+        "loadOptionsError": "Impossibile caricare le opzioni del modulo",
+        "recurringSuccess": "{{count}} operazioni ricorrenti create con successo",
+        "operationCreated": "Operazione creata con successo",
+        "operationUpdated": "Operazione aggiornata con successo"
+      },
+      "attachments": {
+        "title": "Allegati",
+        "dropFiles": "Trascina i file qui o clicca per sfogliare",
+        "fileLimit": "Max 20 MB · PDF, immagini, CSV, DOCX, XLSX",
+        "uploading": "Caricamento…",
+        "noAttachments": "Nessun allegato ancora.",
+        "close": "Chiudi"
+      },
+      "delete": {
+        "title": "Elimina Operazione",
+        "description": "Questa operazione eliminerà definitivamente",
+        "undone": "Questa azione non può essere annullata.",
+        "cancel": "Annulla",
+        "delete": "Elimina",
+        "success": "Operazione eliminata con successo",
+        "error": "Eliminazione fallita"
+      }
+    },
+    "importOperation": {
+      "dialogTitle": "Importa Missione da ccPlatform",
+      "steps": {
+        "client": "Cliente",
+        "logFile": "File Log",
+        "missionData": "Dati Missione",
+        "pilot": "Pilota",
+        "confirm": "Conferma"
+      },
+      "sections": {
+        "clientDetails": "Dettagli Cliente",
+        "logFile": "File Log",
+        "missionDetails": "Dettagli Missione",
+        "pilotInCommand": "Pilota Responsabile",
+        "confirmation": "Conferma Importazione Missione"
+      },
+      "fields": {
+        "chooseClient": "Scegli un Cliente",
+        "ccPlatform": "Piattaforma CC",
+        "uploadLogFile": "Carica File Log (.gutma o .zip)",
+        "droneSystem": "Sistema Drone",
+        "missionCategory": "Categoria Missione",
+        "missionType": "Tipo Missione",
+        "missionStatus": "Stato Missione",
+        "missionPlan": "Piano Missione",
+        "location": "Posizione",
+        "groupLabel": "Etichetta Gruppo",
+        "notes": "Note",
+        "pilotInCommand": "Pilota Responsabile",
+        "selected": "Selezionato",
+        "optional": "(opzionale)"
+      },
+      "placeholders": {
+        "selectClient": "Seleziona cliente…",
+        "selectPilot": "Seleziona pilota…",
+        "location": "es. Griglia A-7, Sito Nord",
+        "groupLabel": "es. Rilevamento Primavera 2025",
+        "notes": "Note aggiuntive…",
+        "selectDot": "Seleziona…"
+      },
+      "info": {
+        "gutmaAutoExtract": "Codice missione, altitudine, distanza e timestamp vengono estratti automaticamente dal file di log GUTMA.",
+        "clickToUpload": "Clicca per caricare",
+        "noPlansForDrone": "Nessun piano per questo drone",
+        "selectDroneFirst": "Seleziona prima il drone",
+        "youAreAllSet": "Sei pronto",
+        "reviewAndImport": "Rivedi le tue selezioni e clicca su {{importButton}} per procedere.",
+        "none": "Nessuno"
+      },
+      "review": {
+        "client": "Cliente",
+        "platform": "Piattaforma",
+        "file": "File",
+        "drone": "Drone",
+        "category": "Categoria",
+        "type": "Tipo",
+        "status": "Stato",
+        "location": "Posizione",
+        "plan": "Piano",
+        "pilot": "Pilota",
+        "group": "Gruppo"
+      },
+      "buttons": {
+        "previous": "Precedente",
+        "next": "Avanti",
+        "importing": "Importazione…",
+        "importMission": "Importa Missione",
+        "done": "Fine"
+      },
+      "toast": {
+        "loadClientsError": "Impossibile caricare i clienti",
+        "loadDronesError": "Impossibile caricare i droni",
+        "loadMissionOptionsError": "Impossibile caricare le opzioni missione",
+        "loadPilotsError": "Impossibile caricare i piloti",
+        "importSuccess": "{{count}} missione/i importata/e",
+        "importSuccessWithSkipped": "{{count}} missione/i importata/e, {{skipped}} duplicato/i ignorato/i",
+        "allDuplicates": "Tutte le {{count}} missioni erano già state importate (duplicati ignorati)",
+        "importFailed": "Importazione fallita"
+      },
+      "result": {
+        "missionsImported_one": "{{count}} Missione Importata",
+        "missionsImported_other": "{{count}} Missioni Importate",
+        "addedMission": "✓ Missione #{{id}} aggiunta",
+        "duplicatesSkipped_one": "{{count}} duplicato ignorato",
+        "duplicatesSkipped_other": "{{count}} duplicati ignorati"
+      }
     }
   },
   "dccToast": {

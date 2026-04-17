@@ -1,6 +1,9 @@
+'use client';
+
 import { Table } from '@tanstack/react-table';
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import { FC } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MdKeyboardDoubleArrowLeft, MdKeyboardDoubleArrowRight } from 'react-icons/md';
 import { Button } from '../ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -12,9 +15,10 @@ interface Props {
 
 export const TablePagination: FC<Props> = ({ table }) => {
   const { isDark } = useTheme();
+  const { t } = useTranslation();
 
-  const textMuted   = isDark ? 'text-slate-500' : 'text-gray-400';
-  const textLabel   = isDark ? 'text-slate-400' : 'text-gray-500';
+  const textMuted = isDark ? 'text-slate-500' : 'text-gray-400';
+  const textLabel = isDark ? 'text-slate-400' : 'text-gray-500';
 
   const btnCls = isDark
     ? 'border-slate-700 bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200 disabled:opacity-30'
@@ -28,19 +32,22 @@ export const TablePagination: FC<Props> = ({ table }) => {
     ? 'bg-slate-800 border-slate-700 text-slate-200'
     : 'bg-white border-gray-200 text-gray-700';
 
+  const currentPage = table.getState().pagination.pageIndex + 1;
+  const pageCount = table.getPageCount();
+
   return (
     <div className="my-5 flex flex-col-reverse items-start justify-between gap-2 px-2 md:flex-row md:items-center">
-
       <div className={`flex w-full flex-row justify-between gap-2 text-sm md:w-fit ${textMuted}`}>
         <div className={`flex items-center justify-center text-sm font-medium md:hidden ${textMuted}`}>
-          Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+          {t('planning.missionPlanning.page', { defaultValue: 'Page' })} {currentPage} {t('planning.missionTemplate.to', { defaultValue: 'of' })} {pageCount}
         </div>
       </div>
 
       <div className="flex w-full items-center justify-between space-x-6 md:w-fit lg:space-x-8">
-
         <div className="flex items-center space-x-2">
-          <p className={`text-sm font-medium ${textLabel}`}>Rows per page</p>
+          <p className={`text-sm font-medium ${textLabel}`}>
+            {t('planning.missionTemplate.filterLogbook', { defaultValue: 'Rows per page' })}
+          </p>
           <Select
             value={`${table.getState().pagination.pageSize}`}
             onValueChange={(value) => table.setPageSize(Number(value))}
@@ -59,7 +66,7 @@ export const TablePagination: FC<Props> = ({ table }) => {
         </div>
 
         <div className={`hidden w-24 items-center justify-center text-sm font-medium md:flex ${textMuted}`}>
-          Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+          {t('planning.missionPlanning.page', { defaultValue: 'Page' })} {currentPage} {t('planning.missionTemplate.to', { defaultValue: 'of' })} {pageCount}
         </div>
 
         <div className="flex items-center space-x-2">
@@ -100,7 +107,6 @@ export const TablePagination: FC<Props> = ({ table }) => {
             <MdKeyboardDoubleArrowRight className="h-4 w-4" />
           </Button>
         </div>
-
       </div>
     </div>
   );

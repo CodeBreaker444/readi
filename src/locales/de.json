@@ -1270,6 +1270,223 @@
         "autoSyncSuccess_one": "Nutzung für {{count}} Komponente aus GUTMA ausgefüllt",
         "autoSyncSuccess_other": "Nutzung für {{count}} Komponenten aus GUTMA ausgefüllt"
       }
+    },
+    "dialog": {
+      "editTitle": "Vorgang bearbeiten",
+      "newTitle": "Neuer Vorgang",
+      "editSubtitle": "Aktualisieren Sie die Vorgangsdetails unten.",
+      "newSubtitle": "Füllen Sie jeden Schritt aus, um einen neuen Flugvorgang zu erstellen.",
+      "steps": {
+        "details": "Details",
+        "schedule": "Zeitplan",
+        "assets": "Ressourcen",
+        "pilot": "Pilot",
+        "review": "Überprüfung"
+      },
+      "sections": {
+        "missionDetails": "Missionsdetails",
+        "scheduleStatus": "Zeitplan & Status",
+        "assets": "Ressourcen",
+        "pilotInCommand": "Verantwortlicher Pilot",
+        "missionSummary": "Missionszusammenfassung"
+      },
+      "fields": {
+        "missionName": "Missionsname",
+        "missionCode": "Missionscode",
+        "description": "Beschreibung",
+        "location": "Standort",
+        "notes": "Notizen",
+        "scheduledStart": "Geplanter Start",
+        "scheduledEnd": "Geplantes Ende",
+        "status": "Status",
+        "flightDuration": "Flugdauer (min)",
+        "distanceFlown": "Zurückgelegte Distanz (m)",
+        "recurrent": "Wiederkehrend (Wöchentlich)",
+        "daysOfWeek": "Wochentage",
+        "repeatUntil": "Wiederholen bis",
+        "groupLabel": "Gruppenbezeichnung",
+        "droneSystem": "System (Drohnensystem)",
+        "missionCategory": "Missionskategorie",
+        "missionType": "Missionstyp",
+        "clientPlanning": "Kunde / Planung",
+        "lucProcedure": "LUC-Verfahren (Mission)",
+        "pilotInCommand": "Verantwortlicher Pilot",
+        "selectedPilot": "Ausgewählter Pilot"
+      },
+      "placeholders": {
+        "missionName": "z.B. Vermessungsflug Alpha",
+        "missionCode": "z.B. VERMESSUNG-001",
+        "description": "Mission beschreiben…",
+        "location": "z.B. Raster A-7",
+        "notes": "Zusätzliche Notizen…",
+        "flightDuration": "z.B. 45",
+        "distanceFlown": "z.B. 5000",
+        "groupLabel": "z.B. Wöchentliche Vermessung",
+        "loading": "Laden…",
+        "selectTool": "System auswählen",
+        "selectCategory": "Kategorie auswählen",
+        "selectType": "Typ auswählen",
+        "selectClientPlanning": "Kunde / Planung auswählen",
+        "selectLuc": "LUC-Verfahren auswählen",
+        "noMissionProcedures": "Keine MISSIONS-Verfahren",
+        "selectPilot": "Pilot auswählen"
+      },
+      "status": {
+        "planned": "Geplant",
+        "inProgress": "In Bearbeitung",
+        "completed": "Abgeschlossen"
+      },
+      "badges": {
+        "inMaintenance": "IN WARTUNG",
+        "droneNotAttached": "Drohne nicht angeschlossen"
+      },
+      "validation": {
+        "selectAtLeastOneDay": "Mindestens einen Tag auswählen",
+        "noMatchingDays": "Keiner der ausgewählten Tage liegt zwischen {{start}} und {{end}}. Bereich erweitern oder Tage ändern.",
+        "lucRequired": "LUC-Verfahren ist erforderlich",
+        "recurrenceEndDate": "Das Enddatum der Wiederholung muss am oder nach dem Startdatum liegen",
+        "noMatchingDaysRange": "Keiner der ausgewählten Tage liegt zwischen {{start}} und {{end}}. Bereich erweitern oder ausgewählte Tage ändern.",
+        "missionNameRequired": "⚠ Missionsname ist erforderlich.",
+        "pilotRequired": "⚠ Verantwortlicher Pilot ist erforderlich.",
+        "createLucHint": "Erstellen Sie zuerst ein aktives LUC-Verfahren mit Status \"MISSION\" unter Organisation."
+      },
+      "review": {
+        "missionName": "Missionsname",
+        "missionCode": "Missionscode",
+        "location": "Standort",
+        "status": "Status",
+        "scheduled": "Geplant",
+        "pilot": "Pilot",
+        "tool": "System",
+        "type": "Typ",
+        "category": "Kategorie",
+        "lucProcedure": "LUC-Verfahren",
+        "recurrence": "Wiederholung",
+        "weekly": "Wöchentlich",
+        "repeatUntil": "Wiederholen bis",
+        "days": "Tage",
+        "groupLabel": "Gruppenbezeichnung",
+        "description": "Beschreibung",
+        "notes": "Notizen"
+      },
+      "buttons": {
+        "cancel": "Abbrechen",
+        "previous": "Zurück",
+        "next": "Weiter",
+        "saveChanges": "Änderungen speichern",
+        "createRecurring": "Wiederkehrend erstellen",
+        "createOperation": "Vorgang erstellen"
+      },
+      "toast": {
+        "loadOptionsError": "Formularoptionen konnten nicht geladen werden",
+        "recurringSuccess": "{{count}} wiederkehrende Vorgänge erfolgreich erstellt",
+        "operationCreated": "Vorgang erfolgreich erstellt",
+        "operationUpdated": "Vorgang erfolgreich aktualisiert"
+      },
+      "attachments": {
+        "title": "Anhänge",
+        "dropFiles": "Dateien hier ablegen oder zum Durchsuchen klicken",
+        "fileLimit": "Max. 20 MB · PDF, Bilder, CSV, DOCX, XLSX",
+        "uploading": "Hochladen…",
+        "noAttachments": "Noch keine Anhänge.",
+        "close": "Schließen"
+      },
+      "delete": {
+        "title": "Vorgang löschen",
+        "description": "Dieser Vorgang löscht dauerhaft",
+        "undone": "Diese Aktion kann nicht rückgängig gemacht werden.",
+        "cancel": "Abbrechen",
+        "delete": "Löschen",
+        "success": "Vorgang erfolgreich gelöscht",
+        "error": "Löschen fehlgeschlagen"
+      }
+    },
+    "importOperation": {
+      "dialogTitle": "Mission von ccPlatform importieren",
+      "steps": {
+        "client": "Kunde",
+        "logFile": "Protokolldatei",
+        "missionData": "Missionsdaten",
+        "pilot": "Pilot",
+        "confirm": "Bestätigen"
+      },
+      "sections": {
+        "clientDetails": "Kundendetails",
+        "logFile": "Protokolldatei",
+        "missionDetails": "Missionsdetails",
+        "pilotInCommand": "Verantwortlicher Pilot",
+        "confirmation": "Missionsimport bestätigen"
+      },
+      "fields": {
+        "chooseClient": "Kunden auswählen",
+        "ccPlatform": "CC-Plattform",
+        "uploadLogFile": "Protokolldatei hochladen (.gutma oder .zip)",
+        "droneSystem": "Drohnensystem",
+        "missionCategory": "Missionskategorie",
+        "missionType": "Missionstyp",
+        "missionStatus": "Missionsstatus",
+        "missionPlan": "Missionsplan",
+        "location": "Standort",
+        "groupLabel": "Gruppenbezeichnung",
+        "notes": "Notizen",
+        "pilotInCommand": "Verantwortlicher Pilot",
+        "selected": "Ausgewählt",
+        "optional": "(optional)"
+      },
+      "placeholders": {
+        "selectClient": "Kunden auswählen…",
+        "selectPilot": "Pilot auswählen…",
+        "location": "z.B. Raster A-7, Standort Nord",
+        "groupLabel": "z.B. Frühjahrsumfrage 2025",
+        "notes": "Zusätzliche Notizen…",
+        "selectDot": "Auswählen…"
+      },
+      "info": {
+        "gutmaAutoExtract": "Missionscode, Höhe, Distanz und Zeitstempel werden automatisch aus der GUTMA-Protokolldatei extrahiert.",
+        "clickToUpload": "Zum Hochladen klicken",
+        "noPlansForDrone": "Keine Pläne für diese Drohne",
+        "selectDroneFirst": "Zuerst Drohne auswählen",
+        "youAreAllSet": "Alles bereit",
+        "reviewAndImport": "Überprüfen Sie Ihre Auswahl und klicken Sie auf {{importButton}}, um fortzufahren.",
+        "none": "Keine"
+      },
+      "review": {
+        "client": "Kunde",
+        "platform": "Plattform",
+        "file": "Datei",
+        "drone": "Drohne",
+        "category": "Kategorie",
+        "type": "Typ",
+        "status": "Status",
+        "location": "Standort",
+        "plan": "Plan",
+        "pilot": "Pilot",
+        "group": "Gruppe"
+      },
+      "buttons": {
+        "previous": "Zurück",
+        "next": "Weiter",
+        "importing": "Importieren…",
+        "importMission": "Mission importieren",
+        "done": "Fertig"
+      },
+      "toast": {
+        "loadClientsError": "Kunden konnten nicht geladen werden",
+        "loadDronesError": "Drohnen konnten nicht geladen werden",
+        "loadMissionOptionsError": "Missionsoptionen konnten nicht geladen werden",
+        "loadPilotsError": "Piloten konnten nicht geladen werden",
+        "importSuccess": "{{count}} Mission(en) importiert",
+        "importSuccessWithSkipped": "{{count}} Mission(en) importiert, {{skipped}} Duplikat(e) übersprungen",
+        "allDuplicates": "Alle {{count}} Mission(en) wurden bereits importiert (Duplikate übersprungen)",
+        "importFailed": "Import fehlgeschlagen"
+      },
+      "result": {
+        "missionsImported_one": "{{count}} Mission importiert",
+        "missionsImported_other": "{{count}} Missionen importiert",
+        "addedMission": "✓ Mission #{{id}} hinzugefügt",
+        "duplicatesSkipped_one": "{{count}} Duplikat übersprungen",
+        "duplicatesSkipped_other": "{{count}} Duplikate übersprungen"
+      }
     }
   },
   "dccToast": {

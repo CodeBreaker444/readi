@@ -1270,6 +1270,223 @@
         "autoSyncSuccess_one": "Auto-filled usage for {{count}} component from GUTMA",
         "autoSyncSuccess_other": "Auto-filled usage for {{count}} components from GUTMA"
       }
+    },
+    "dialog": {
+      "editTitle": "Edit Operation",
+      "newTitle": "New Operation",
+      "editSubtitle": "Update the operation details below.",
+      "newSubtitle": "Fill in each step to create a new flight operation.",
+      "steps": {
+        "details": "Details",
+        "schedule": "Schedule",
+        "assets": "Assets",
+        "pilot": "Pilot",
+        "review": "Review"
+      },
+      "sections": {
+        "missionDetails": "Mission Details",
+        "scheduleStatus": "Schedule & Status",
+        "assets": "Assets",
+        "pilotInCommand": "Pilot In Command",
+        "missionSummary": "Mission Summary"
+      },
+      "fields": {
+        "missionName": "Mission Name",
+        "missionCode": "Mission Code",
+        "description": "Description",
+        "location": "Location",
+        "notes": "Notes",
+        "scheduledStart": "Scheduled Start",
+        "scheduledEnd": "Scheduled End",
+        "status": "Status",
+        "flightDuration": "Flight Duration (min)",
+        "distanceFlown": "Distance Flown (m)",
+        "recurrent": "Recurrent (Weekly)",
+        "daysOfWeek": "Days of Week",
+        "repeatUntil": "Repeat Until",
+        "groupLabel": "Group Label",
+        "droneSystem": "System (Drone System)",
+        "missionCategory": "Mission Category",
+        "missionType": "Mission Type",
+        "clientPlanning": "Client / Planning",
+        "lucProcedure": "LUC procedure (Mission)",
+        "pilotInCommand": "Pilot in Command",
+        "selectedPilot": "Selected Pilot"
+      },
+      "placeholders": {
+        "missionName": "e.g. Survey Flight Alpha",
+        "missionCode": "e.g. SURVEY-001",
+        "description": "Describe the mission…",
+        "location": "e.g. Grid A-7",
+        "notes": "Additional notes…",
+        "flightDuration": "e.g. 45",
+        "distanceFlown": "e.g. 5000",
+        "groupLabel": "e.g. Weekly Survey",
+        "loading": "Loading…",
+        "selectTool": "Select tool",
+        "selectCategory": "Select category",
+        "selectType": "Select type",
+        "selectClientPlanning": "Select client / planning",
+        "selectLuc": "Select LUC procedure",
+        "noMissionProcedures": "No MISSION procedures",
+        "selectPilot": "Select pilot"
+      },
+      "status": {
+        "planned": "Planned",
+        "inProgress": "In Progress",
+        "completed": "Completed"
+      },
+      "badges": {
+        "inMaintenance": "IN MAINTENANCE",
+        "droneNotAttached": "Drone not Attached"
+      },
+      "validation": {
+        "selectAtLeastOneDay": "Select at least one day",
+        "noMatchingDays": "None of the selected days fall between {{start}} and {{end}}. Widen the range or change the days.",
+        "lucRequired": "LUC procedure is required",
+        "recurrenceEndDate": "Recurrence end date must be on or after the start date",
+        "noMatchingDaysRange": "None of the selected days fall between {{start}} and {{end}}. Widen the range or change the selected days.",
+        "missionNameRequired": "⚠ Mission name is required.",
+        "pilotRequired": "⚠ Pilot in Command is required.",
+        "createLucHint": "Create an active LUC procedure with status \"MISSION\" under Organization first."
+      },
+      "review": {
+        "missionName": "Mission Name",
+        "missionCode": "Mission Code",
+        "location": "Location",
+        "status": "Status",
+        "scheduled": "Scheduled",
+        "pilot": "Pilot",
+        "tool": "Tool",
+        "type": "Type",
+        "category": "Category",
+        "lucProcedure": "LUC procedure",
+        "recurrence": "Recurrence",
+        "weekly": "Weekly",
+        "repeatUntil": "Repeat Until",
+        "days": "Days",
+        "groupLabel": "Group Label",
+        "description": "Description",
+        "notes": "Notes"
+      },
+      "buttons": {
+        "cancel": "Cancel",
+        "previous": "Previous",
+        "next": "Next",
+        "saveChanges": "Save Changes",
+        "createRecurring": "Create Recurring",
+        "createOperation": "Create Operation"
+      },
+      "toast": {
+        "loadOptionsError": "Failed to load form options",
+        "recurringSuccess": "{{count}} recurring operations created successfully",
+        "operationCreated": "Operation created successfully",
+        "operationUpdated": "Operation updated successfully"
+      },
+      "attachments": {
+        "title": "Attachments",
+        "dropFiles": "Drop files here or click to browse",
+        "fileLimit": "Max 20 MB · PDF, images, CSV, DOCX, XLSX",
+        "uploading": "Uploading…",
+        "noAttachments": "No attachments yet.",
+        "close": "Close"
+      },
+      "delete": {
+        "title": "Delete Operation",
+        "description": "This will permanently delete",
+        "undone": "This action cannot be undone.",
+        "cancel": "Cancel",
+        "delete": "Delete",
+        "success": "Operation deleted successfully",
+        "error": "Delete failed"
+      }
+    },
+    "importOperation": {
+      "dialogTitle": "Import Mission from ccPlatform",
+      "steps": {
+        "client": "Client",
+        "logFile": "Log File",
+        "missionData": "Mission Data",
+        "pilot": "Pilot",
+        "confirm": "Confirm"
+      },
+      "sections": {
+        "clientDetails": "Client Details",
+        "logFile": "Log File",
+        "missionDetails": "Mission Details",
+        "pilotInCommand": "Pilot In Command",
+        "confirmation": "Import Mission Confirmation"
+      },
+      "fields": {
+        "chooseClient": "Choose a Client",
+        "ccPlatform": "CC Platform",
+        "uploadLogFile": "Upload Log File (.gutma or .zip)",
+        "droneSystem": "Drone System",
+        "missionCategory": "Mission Category",
+        "missionType": "Mission Type",
+        "missionStatus": "Mission Status",
+        "missionPlan": "Mission Plan",
+        "location": "Location",
+        "groupLabel": "Group Label",
+        "notes": "Notes",
+        "pilotInCommand": "Pilot in Command",
+        "selected": "Selected",
+        "optional": "(optional)"
+      },
+      "placeholders": {
+        "selectClient": "Select client…",
+        "selectPilot": "Select pilot…",
+        "location": "e.g. Grid A-7, Site North",
+        "groupLabel": "e.g. Spring Survey 2025",
+        "notes": "Additional notes…",
+        "selectDot": "Select…"
+      },
+      "info": {
+        "gutmaAutoExtract": "Mission code, altitude, distance and timestamps are extracted automatically from the GUTMA log file.",
+        "clickToUpload": "Click to upload",
+        "noPlansForDrone": "No plans for this drone",
+        "selectDroneFirst": "Select drone first",
+        "youAreAllSet": "You are all set",
+        "reviewAndImport": "Review your selections and click {{importButton}} to proceed.",
+        "none": "None"
+      },
+      "review": {
+        "client": "Client",
+        "platform": "Platform",
+        "file": "File",
+        "drone": "Drone",
+        "category": "Category",
+        "type": "Type",
+        "status": "Status",
+        "location": "Location",
+        "plan": "Plan",
+        "pilot": "Pilot",
+        "group": "Group"
+      },
+      "buttons": {
+        "previous": "Previous",
+        "next": "Next",
+        "importing": "Importing…",
+        "importMission": "Import Mission",
+        "done": "Done"
+      },
+      "toast": {
+        "loadClientsError": "Failed to load clients",
+        "loadDronesError": "Failed to load drones",
+        "loadMissionOptionsError": "Failed to load mission options",
+        "loadPilotsError": "Failed to load pilots",
+        "importSuccess": "Imported {{count}} mission(s)",
+        "importSuccessWithSkipped": "Imported {{count}} mission(s), {{skipped}} duplicate(s) skipped",
+        "allDuplicates": "All {{count}} mission(s) were already imported (duplicates skipped)",
+        "importFailed": "Import failed"
+      },
+      "result": {
+        "missionsImported_one": "{{count}} Mission Imported",
+        "missionsImported_other": "{{count}} Missions Imported",
+        "addedMission": "✓ Added Mission #{{id}}",
+        "duplicatesSkipped_one": "{{count}} duplicate skipped",
+        "duplicatesSkipped_other": "{{count}} duplicates skipped"
+      }
     }
   },
   "dccToast": {

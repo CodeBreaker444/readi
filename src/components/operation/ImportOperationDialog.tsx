@@ -33,6 +33,7 @@ import {
     User,
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 interface Client        { client_id: number; client_name: string; client_code: string }
@@ -47,17 +48,20 @@ interface ImportOperationDialogProps {
     onSaved?: (op: Operation) => void;
 }
 
-const STEPS = [
-    { id: 1, label: 'Client',       icon: User },
-    { id: 2, label: 'Log File',     icon: FileUp },
-    { id: 3, label: 'Mission Data', icon: Settings },
-    { id: 4, label: 'Pilot',        icon: User },
-    { id: 5, label: 'Confirm',      icon: ClipboardCheck },
+const STEP_KEYS = [
+    { id: 1, labelKey: 'client',      icon: User },
+    { id: 2, labelKey: 'logFile',     icon: FileUp },
+    { id: 3, labelKey: 'missionData', icon: Settings },
+    { id: 4, labelKey: 'pilot',       icon: User },
+    { id: 5, labelKey: 'confirm',     icon: ClipboardCheck },
 ];
 
 const PLATFORMS = [{ value: 'FLYTBASE', label: 'Flytbase' }];
 
 export default function ImportOperationDialog({ open, onClose, onSaved }: ImportOperationDialogProps) {
+    const { t } = useTranslation();
+    const ns = 'operations.importOperation';
+
     const [step, setStep]             = useState(1);
     const [submitting, setSubmitting] = useState(false);
     const [importedIds, setImportedIds] = useState<number[]>([]);
@@ -89,7 +93,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
         resetForm();
         axios.get('/api/operation/import/options?type=clients')
             .then((r) => setClients(r.data.clients ?? []))
-            .catch(() => toast.error('Failed to load clients'));
+            .catch(() => toast.error(t(`${ns}.toast.loadClientsError`)));
     }, [open]);
 
     useEffect(() => {
@@ -97,7 +101,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
         setDrones([]); setVehicleId(''); setPlans([]); setPlanId('N');
         axios.get(`/api/operation/import/options?type=drones&client_id=${clientId}`)
             .then((r) => setDrones(r.data.drones ?? []))
-            .catch(() => toast.error('Failed to load drones'));
+            .catch(() => toast.error(t(`${ns}.toast.loadDronesError`)));
     }, [clientId]);
 
     useEffect(() => {
@@ -110,7 +114,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
             setCategories(cat.data.categories ?? []);
             setTypes(typ.data.types ?? []);
             setStatuses(sta.data.statuses ?? []);
-        }).catch(() => toast.error('Failed to load mission options'));
+        }).catch(() => toast.error(t(`${ns}.toast.loadMissionOptionsError`)));
     }, [step]);
 
     useEffect(() => {
@@ -124,7 +128,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
         if (step !== 4) return;
         axios.get('/api/operation/import/options?type=pilots')
             .then((r) => setPilots(r.data.pilots ?? []))
-            .catch(() => toast.error('Failed to load pilots'));
+            .catch(() => toast.error(t(`${ns}.toast.loadPilotsError`)));
     }, [step]);
 
     function resetForm() {
@@ -167,16 +171,20 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                 setSkippedList(data.skipped ?? []);
                 const imported = data.newMissionIds?.length ?? 0;
                 const skipped  = data.skipped?.length ?? 0;
-                if (imported > 0) toast.success(`Imported ${imported} mission(s)${skipped > 0 ? `, ${skipped} duplicate(s) skipped` : ''}`);
-                else toast.warning(`All ${skipped} mission(s) were already imported (duplicates skipped)`);
+                if (imported > 0) {
+                    if (skipped > 0) toast.success(t(`${ns}.toast.importSuccessWithSkipped`, { count: imported, skipped }));
+                    else toast.success(t(`${ns}.toast.importSuccess`, { count: imported }));
+                } else {
+                    toast.warning(t(`${ns}.toast.allDuplicates`, { count: skipped }));
+                }
                 if (onSaved && data.operations) {
                     data.operations.forEach((op: Operation) => onSaved(op));
                 }
             } else {
-                toast.error(data.message ?? 'Import failed');
+                toast.error(data.message ?? t(`${ns}.toast.importFailed`));
             }
         } catch (e: any) {
-            toast.error(e?.response?.data?.message ?? 'Import failed');
+            toast.error(e?.response?.data?.message ?? t(`${ns}.toast.importFailed`));
         } finally {
             setSubmitting(false);
         }
@@ -192,13 +200,13 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                 <DialogHeader className="px-6 pt-6 pb-4 border-b">
                     <DialogTitle className="flex items-center gap-2 text-base font-semibold">
                         <FileUp className="h-5 w-5 text-violet-600" />
-                        Import Mission from ccPlatform
+                        {t(`${ns}.dialogTitle`)}
                     </DialogTitle>
                 </DialogHeader>
 
                 <div className="px-6 pt-4 pb-2">
                     <div className="flex items-center gap-0">
-                        {STEPS.map((s, i) => {
+                        {STEP_KEYS.map((s, i) => {
                             const Icon   = s.icon;
                             const done   = step > s.id;
                             const active = step === s.id;
@@ -217,10 +225,10 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                             'text-[10px] font-medium whitespace-nowrap',
                                             active ? 'text-violet-600' : done ? 'text-emerald-600' : 'text-muted-foreground'
                                         )}>
-                                            {s.label}
+                                            {t(`${ns}.steps.${s.labelKey}`)}
                                         </span>
                                     </div>
-                                    {i < STEPS.length - 1 && (
+                                    {i < STEP_KEYS.length - 1 && (
                                         <div className={cn(
                                             'h-0.5 flex-1 mt-[-14px] mx-1 transition-all',
                                             done ? 'bg-emerald-400' : 'bg-muted'
@@ -236,11 +244,11 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
 
                     {step === 1 && (
                         <div className="space-y-4">
-                            <SectionTitle>Client Details</SectionTitle>
+                            <SectionTitle>{t(`${ns}.sections.clientDetails`)}</SectionTitle>
                             <div className="max-w-xs">
-                                <Label className="mb-1.5 block">Choose a Client</Label>
+                                <Label className="mb-1.5 block">{t(`${ns}.fields.chooseClient`)}</Label>
                                 <Select value={clientId} onValueChange={setClientId}>
-                                    <SelectTrigger><SelectValue placeholder="Select client…" /></SelectTrigger>
+                                    <SelectTrigger><SelectValue placeholder={t(`${ns}.placeholders.selectClient`)} /></SelectTrigger>
                                     <SelectContent>
                                         {clients.map((c) => (
                                             <SelectItem key={c.client_id} value={String(c.client_id)}>
@@ -255,10 +263,10 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
 
                     {step === 2 && (
                         <div className="space-y-4">
-                            <SectionTitle>Log File</SectionTitle>
+                            <SectionTitle>{t(`${ns}.sections.logFile`)}</SectionTitle>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <Label className="mb-1.5 block">CC Platform</Label>
+                                    <Label className="mb-1.5 block">{t(`${ns}.fields.ccPlatform`)}</Label>
                                     <Select value={platform} onValueChange={setPlatform}>
                                         <SelectTrigger><SelectValue /></SelectTrigger>
                                         <SelectContent>
@@ -269,7 +277,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                     </Select>
                                 </div>
                                 <div>
-                                    <Label className="mb-1.5 block">Upload Log File (.gutma or .zip)</Label>
+                                    <Label className="mb-1.5 block">{t(`${ns}.fields.uploadLogFile`)}</Label>
                                     <div
                                         className={cn(
                                             'relative border-2 border-dashed rounded-lg p-4 text-center transition-colors cursor-pointer',
@@ -289,7 +297,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                         ) : (
                                             <div className="text-muted-foreground">
                                                 <Upload className="h-6 w-6 mx-auto mb-1 opacity-50" />
-                                                <p className="text-xs">Click to upload</p>
+                                                <p className="text-xs">{t(`${ns}.info.clickToUpload`)}</p>
                                             </div>
                                         )}
                                     </div>
@@ -300,13 +308,13 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
 
                     {step === 3 && (
                         <div className="space-y-3">
-                            <SectionTitle>Mission Details</SectionTitle>
+                            <SectionTitle>{t(`${ns}.sections.missionDetails`)}</SectionTitle>
 
                             <div className="grid grid-cols-3 gap-3">
                                 <div>
-                                    <Label className="mb-1.5 block">Drone System <span className="text-red-500">*</span></Label>
+                                    <Label className="mb-1.5 block">{t(`${ns}.fields.droneSystem`)} <span className="text-red-500">*</span></Label>
                                     <Select value={vehicleId} onValueChange={setVehicleId}>
-                                        <SelectTrigger><SelectValue placeholder="Select…" /></SelectTrigger>
+                                        <SelectTrigger><SelectValue placeholder={t(`${ns}.placeholders.selectDot`)} /></SelectTrigger>
                                         <SelectContent>
                                             {drones.map((d) => (
                                                 <SelectItem key={d.tool_id} value={String(d.tool_id)}>{d.tool_code}</SelectItem>
@@ -315,9 +323,9 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                     </Select>
                                 </div>
                                 <div>
-                                    <Label className="mb-1.5 block">Mission Category <span className="text-red-500">*</span></Label>
+                                    <Label className="mb-1.5 block">{t(`${ns}.fields.missionCategory`)} <span className="text-red-500">*</span></Label>
                                     <Select value={categoryId} onValueChange={setCategoryId}>
-                                        <SelectTrigger><SelectValue placeholder="Select…" /></SelectTrigger>
+                                        <SelectTrigger><SelectValue placeholder={t(`${ns}.placeholders.selectDot`)} /></SelectTrigger>
                                         <SelectContent>
                                             {categories.map((c) => (
                                                 <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
@@ -326,12 +334,12 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                     </Select>
                                 </div>
                                 <div>
-                                    <Label className="mb-1.5 block">Mission Type <span className="text-red-500">*</span></Label>
+                                    <Label className="mb-1.5 block">{t(`${ns}.fields.missionType`)} <span className="text-red-500">*</span></Label>
                                     <Select value={typeId} onValueChange={setTypeId}>
-                                        <SelectTrigger><SelectValue placeholder="Select…" /></SelectTrigger>
+                                        <SelectTrigger><SelectValue placeholder={t(`${ns}.placeholders.selectDot`)} /></SelectTrigger>
                                         <SelectContent>
-                                            {types.map((t) => (
-                                                <SelectItem key={t.id} value={String(t.id)}>{t.name}</SelectItem>
+                                            {types.map((ty) => (
+                                                <SelectItem key={ty.id} value={String(ty.id)}>{ty.name}</SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
@@ -340,9 +348,9 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
 
                             <div className="grid grid-cols-3 gap-3">
                                 <div>
-                                    <Label className="mb-1.5 block">Mission Status <span className="text-red-500">*</span></Label>
+                                    <Label className="mb-1.5 block">{t(`${ns}.fields.missionStatus`)} <span className="text-red-500">*</span></Label>
                                     <Select value={statusId} onValueChange={setStatusId}>
-                                        <SelectTrigger><SelectValue placeholder="Select…" /></SelectTrigger>
+                                        <SelectTrigger><SelectValue placeholder={t(`${ns}.placeholders.selectDot`)} /></SelectTrigger>
                                         <SelectContent>
                                             {statuses.map((s) => (
                                                 <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
@@ -352,16 +360,16 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                 </div>
                                 <div>
                                     <Label className="mb-1.5 block">
-                                        Mission Plan
-                                        <span className="ml-1 text-[10px] text-muted-foreground font-normal">(optional)</span>
+                                        {t(`${ns}.fields.missionPlan`)}
+                                        <span className="ml-1 text-[10px] text-muted-foreground font-normal">{t(`${ns}.fields.optional`)}</span>
                                     </Label>
                                     <Select value={planId} onValueChange={setPlanId}>
-                                        <SelectTrigger><SelectValue placeholder="Select…" /></SelectTrigger>
+                                        <SelectTrigger><SelectValue placeholder={t(`${ns}.placeholders.selectDot`)} /></SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="N">— None —</SelectItem>
+                                            <SelectItem value="N">— {t(`${ns}.info.none`)} —</SelectItem>
                                             {plans.length === 0 ? (
                                                 <div className="px-3 py-2 text-xs text-muted-foreground italic">
-                                                    {vehicleId ? 'No plans for this drone' : 'Select drone first'}
+                                                    {vehicleId ? t(`${ns}.info.noPlansForDrone`) : t(`${ns}.info.selectDroneFirst`)}
                                                 </div>
                                             ) : plans.map((p) => (
                                                 <SelectItem key={p.mission_planning_id} value={String(p.mission_planning_id)}>
@@ -373,45 +381,45 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                 </div>
                                 <div>
                                     <Label className="mb-1.5 block">
-                                        Location
-                                        <span className="ml-1 text-[10px] text-muted-foreground font-normal">(optional)</span>
+                                        {t(`${ns}.fields.location`)}
+                                        <span className="ml-1 text-[10px] text-muted-foreground font-normal">{t(`${ns}.fields.optional`)}</span>
                                     </Label>
                                     <Input value={location} onChange={(e) => setLocation(e.target.value)}
-                                        placeholder="e.g. Grid A-7, Site North" />
+                                        placeholder={t(`${ns}.placeholders.location`)} />
                                 </div>
                             </div>
 
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <Label className="mb-1.5 block">Group Label
-                                        <span className="ml-1 text-[10px] text-muted-foreground font-normal">(optional)</span>
+                                    <Label className="mb-1.5 block">{t(`${ns}.fields.groupLabel`)}
+                                        <span className="ml-1 text-[10px] text-muted-foreground font-normal">{t(`${ns}.fields.optional`)}</span>
                                     </Label>
                                     <Input value={groupLabel} onChange={(e) => setGroupLabel(e.target.value)}
-                                        placeholder="e.g. Spring Survey 2025" />
+                                        placeholder={t(`${ns}.placeholders.groupLabel`)} />
                                 </div>
                                 <div>
-                                    <Label className="mb-1.5 block">Notes
-                                        <span className="ml-1 text-[10px] text-muted-foreground font-normal">(optional)</span>
+                                    <Label className="mb-1.5 block">{t(`${ns}.fields.notes`)}
+                                        <span className="ml-1 text-[10px] text-muted-foreground font-normal">{t(`${ns}.fields.optional`)}</span>
                                     </Label>
                                     <Input value={notes} onChange={(e) => setNotes(e.target.value)}
-                                        placeholder="Additional notes…" />
+                                        placeholder={t(`${ns}.placeholders.notes`)} />
                                 </div>
                             </div>
 
                             <div className="rounded-md border border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800 px-3 py-2 text-xs text-blue-700 dark:text-blue-400">
-                                ℹ️ Mission code, altitude, distance and timestamps are extracted automatically from the GUTMA log file.
+                                ℹ️ {t(`${ns}.info.gutmaAutoExtract`)}
                             </div>
                         </div>
                     )}
 
                     {step === 4 && (
                         <div className="space-y-4">
-                            <SectionTitle>Pilot In Command</SectionTitle>
+                            <SectionTitle>{t(`${ns}.sections.pilotInCommand`)}</SectionTitle>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <Label className="mb-1.5 block">Pilot in Command <span className="text-red-500">*</span></Label>
+                                    <Label className="mb-1.5 block">{t(`${ns}.fields.pilotInCommand`)} <span className="text-red-500">*</span></Label>
                                     <Select value={pilotId} onValueChange={setPilotId}>
-                                        <SelectTrigger><SelectValue placeholder="Select pilot…" /></SelectTrigger>
+                                        <SelectTrigger><SelectValue placeholder={t(`${ns}.placeholders.selectPilot`)} /></SelectTrigger>
                                         <SelectContent>
                                             {pilots.map((p) => (
                                                 <SelectItem key={p.user_id} value={String(p.user_id)}>
@@ -423,7 +431,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                 </div>
                                 {pilotLabel && (
                                     <div>
-                                        <Label className="mb-1.5 block">Selected</Label>
+                                        <Label className="mb-1.5 block">{t(`${ns}.fields.selected`)}</Label>
                                         <Input value={pilotLabel} disabled className="bg-muted" />
                                     </div>
                                 )}
@@ -433,29 +441,29 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
 
                     {step === 5 && (
                         <div className="space-y-4">
-                            <SectionTitle>Import Mission Confirmation</SectionTitle>
+                            <SectionTitle>{t(`${ns}.sections.confirmation`)}</SectionTitle>
 
                             {importedIds.length === 0 && skippedList.length === 0 && (
                                 <div className="text-center py-4 space-y-3">
                                     <div className="mx-auto h-14 w-14 rounded-full bg-violet-100 dark:bg-violet-950/40 flex items-center justify-center">
                                         <ClipboardCheck className="h-7 w-7 text-violet-600" />
                                     </div>
-                                    <p className="font-semibold text-base">You are all set</p>
+                                    <p className="font-semibold text-base">{t(`${ns}.info.youAreAllSet`)}</p>
                                     <p className="text-sm text-muted-foreground">
-                                        Review your selections and click <strong>Import Mission</strong> to proceed.
+                                        {t(`${ns}.info.reviewAndImport`, { importButton: t(`${ns}.buttons.importMission`) })}
                                     </p>
                                     <div className="mt-2 rounded-lg border bg-muted/30 p-4 text-left space-y-1.5">
-                                        <Row label="Client"   value={clients.find((c) => String(c.client_id) === clientId)?.client_name} />
-                                        <Row label="Platform" value={platform} />
-                                        <Row label="File"     value={logFile?.name} />
-                                        <Row label="Drone"    value={drones.find((d) => String(d.tool_id) === vehicleId)?.tool_code} />
-                                        <Row label="Category" value={categories.find((c) => String(c.id) === categoryId)?.name} />
-                                        <Row label="Type"     value={types.find((t) => String(t.id) === typeId)?.name} />
-                                        <Row label="Status"   value={statusLabel} />
-                                        <Row label="Location" value={location} />
-                                        <Row label="Plan"     value={planId === 'N' ? 'None' : plans.find((p) => String(p.mission_planning_id) === planId)?.mission_planning_code} />
-                                        <Row label="Pilot"    value={pilotLabel} />
-                                        {groupLabel && <Row label="Group" value={groupLabel} />}
+                                        <Row label={t(`${ns}.review.client`)}   value={clients.find((c) => String(c.client_id) === clientId)?.client_name} />
+                                        <Row label={t(`${ns}.review.platform`)} value={platform} />
+                                        <Row label={t(`${ns}.review.file`)}     value={logFile?.name} />
+                                        <Row label={t(`${ns}.review.drone`)}    value={drones.find((d) => String(d.tool_id) === vehicleId)?.tool_code} />
+                                        <Row label={t(`${ns}.review.category`)} value={categories.find((c) => String(c.id) === categoryId)?.name} />
+                                        <Row label={t(`${ns}.review.type`)}     value={types.find((tp) => String(tp.id) === typeId)?.name} />
+                                        <Row label={t(`${ns}.review.status`)}   value={statusLabel} />
+                                        <Row label={t(`${ns}.review.location`)} value={location} />
+                                        <Row label={t(`${ns}.review.plan`)}     value={planId === 'N' ? t(`${ns}.info.none`) : plans.find((p) => String(p.mission_planning_id) === planId)?.mission_planning_code} />
+                                        <Row label={t(`${ns}.review.pilot`)}    value={pilotLabel} />
+                                        {groupLabel && <Row label={t(`${ns}.review.group`)} value={groupLabel} />}
                                     </div>
                                 </div>
                             )}
@@ -466,11 +474,11 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                         <div className="text-center py-2 space-y-2">
                                             <CheckCircle2 className="h-12 w-12 mx-auto text-emerald-500" />
                                             <p className="font-semibold text-emerald-700 dark:text-emerald-400">
-                                                {importedIds.length} Mission{importedIds.length > 1 ? 's' : ''} Imported
+                                                {t(`${ns}.result.missionsImported`, { count: importedIds.length })}
                                             </p>
                                             <div className="space-y-1">
                                                 {importedIds.map((id) => (
-                                                    <p key={id} className="text-sm text-muted-foreground">✓ Added Mission #{id}</p>
+                                                    <p key={id} className="text-sm text-muted-foreground">{t(`${ns}.result.addedMission`, { id })}</p>
                                                 ))}
                                             </div>
                                         </div>
@@ -480,7 +488,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                             <div className="flex items-center gap-2 mb-2">
                                                 <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
                                                 <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">
-                                                    {skippedList.length} duplicate{skippedList.length > 1 ? 's' : ''} skipped
+                                                    {t(`${ns}.result.duplicatesSkipped`, { count: skippedList.length })}
                                                 </p>
                                             </div>
                                             <div className="space-y-0.5">
@@ -500,23 +508,23 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                     <Button variant="outline" size="sm" onClick={() => setStep((s) => s - 1)}
                         disabled={step === 1 || submitting || importedIds.length > 0 || skippedList.length > 0}
                         className="gap-1">
-                        <ChevronLeft className="h-4 w-4" /> Previous
+                        <ChevronLeft className="h-4 w-4" /> {t(`${ns}.buttons.previous`)}
                     </Button>
 
                     {step < 5 ? (
                         <Button size="sm" onClick={() => setStep((s) => s + 1)} disabled={!canNext()}
                             className="gap-1 bg-violet-600 hover:bg-violet-700 text-white">
-                            Next <ChevronRight className="h-4 w-4" />
+                            {t(`${ns}.buttons.next`)} <ChevronRight className="h-4 w-4" />
                         </Button>
                     ) : (importedIds.length === 0 && skippedList.length === 0) ? (
                         <Button size="sm" onClick={handleSubmit} disabled={submitting}
                             className="gap-2 bg-rose-600 hover:bg-rose-700 text-white min-w-[140px]">
                             {submitting
-                                ? <><Loader2 className="h-4 w-4 animate-spin" /> Importing…</>
-                                : <><FileUp className="h-4 w-4" /> Import Mission</>}
+                                ? <><Loader2 className="h-4 w-4 animate-spin" /> {t(`${ns}.buttons.importing`)}</>
+                                : <><FileUp className="h-4 w-4" /> {t(`${ns}.buttons.importMission`)}</>}
                         </Button>
                     ) : (
-                        <Button size="sm" onClick={onClose} className="bg-emerald-600 hover:bg-emerald-700 text-white">Done</Button>
+                        <Button size="sm" onClick={onClose} className="bg-emerald-600 hover:bg-emerald-700 text-white">{t(`${ns}.buttons.done`)}</Button>
                     )}
                 </div>
             </DialogContent>
