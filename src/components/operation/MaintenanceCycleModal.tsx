@@ -39,6 +39,7 @@ interface ComponentInfo {
   last_maintenance_date: string | null;
   status: "OK" | "ALERT" | "DUE";
   trigger: string[];
+  battery_cycle_ratio: number;
 }
 
 interface SystemData {
@@ -380,7 +381,9 @@ export function MaintenanceCycleModal({
                 const inp = inputs[comp.component_id];
 
                 const previewHours = addHhmmHours(comp.current_hours, inp?.add_hours || 0);
-                const previewFlights = comp.current_flights + (inp?.add_flights || 0);
+                const ratio = comp.battery_cycle_ratio ?? 1;
+                const effectiveCycles = Math.round((inp?.add_flights || 0) * ratio * 100) / 100;
+                const previewFlights = Math.round((comp.current_flights + effectiveCycles) * 100) / 100;
 
                 return (
                   <div
@@ -436,7 +439,7 @@ export function MaintenanceCycleModal({
                       <CycleProgressBar
                         current={previewFlights}
                         limit={comp.limit_flight}
-                        label={t("operations.table.stats.total") + " Flights"}
+                        label={ratio !== 1 ? "Cycles" : t("operations.table.stats.total") + " Flights"}
                         icon={Plane}
                         status={comp.status}
                         isDark={isDark}
@@ -466,25 +469,37 @@ export function MaintenanceCycleModal({
                       </p>
                       <div className="flex flex-wrap gap-3">
                         {comp.limit_flight > 0 && (
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => setInputs((prev) => ({
-                                ...prev,
-                                [comp.component_id]: {
-                                  ...prev[comp.component_id],
-                                  add_flights: prev[comp.component_id]?.add_flights === 1 ? 0 : 1,
-                                },
-                              }))}
-                              className={cn(
-                                "h-7 px-3 rounded-md text-xs font-semibold border transition-colors",
-                                inp?.add_flights === 1
-                                  ? (isDark ? "border-violet-500 bg-violet-500/20 text-violet-300" : "border-violet-500 bg-violet-50 text-violet-700")
-                                  : (isDark ? "border-slate-600 bg-slate-700 text-slate-200" : "border-slate-200 bg-white text-slate-700")
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setInputs((prev) => ({
+                                  ...prev,
+                                  [comp.component_id]: {
+                                    ...prev[comp.component_id],
+                                    add_flights: prev[comp.component_id]?.add_flights === 1 ? 0 : 1,
+                                  },
+                                }))}
+                                className={cn(
+                                  "h-7 px-3 rounded-md text-xs font-semibold border transition-colors",
+                                  inp?.add_flights === 1
+                                    ? (isDark ? "border-violet-500 bg-violet-500/20 text-violet-300" : "border-violet-500 bg-violet-50 text-violet-700")
+                                    : (isDark ? "border-slate-600 bg-slate-700 text-slate-200" : "border-slate-200 bg-white text-slate-700")
+                                )}
+                              >
+                                +1 flight
+                              </button>
+                              {ratio !== 1 && inp?.add_flights === 1 && (
+                                <span className={cn("text-[10px] tabular-nums", isDark ? "text-violet-400" : "text-violet-600")}>
+                                  = +{ratio} cycles
+                                </span>
                               )}
-                            >
-                              +1
-                            </button>
+                            </div>
+                            {ratio !== 1 && (
+                              <span className={cn("text-[10px]", isDark ? "text-slate-500" : "text-slate-400")}>
+                                1 flight = {ratio} cycle
+                              </span>
+                            )}
                           </div>
                         )}
                         {comp.limit_hour > 0 && (

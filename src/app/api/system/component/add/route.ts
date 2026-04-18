@@ -26,6 +26,7 @@ const ComponentSchema = z.object({
   maintenance_cycle_hour: z.number().optional().nullable(),
   maintenance_cycle_day: z.number().optional().nullable(),
   maintenance_cycle_flight: z.number().optional().nullable(),
+  battery_cycle_ratio: z.number().min(0).max(1).optional().nullable(),
 });
 
 export async function POST(req: NextRequest) {

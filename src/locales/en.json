@@ -1273,6 +1273,7 @@
       "detail": {
         "timeline": "Timeline",
         "scheduled": "Scheduled",
+        "startedAt": "Started",
         "completed": "Completed",
         "personnelEquipment": "Personnel & Equipment",
         "pilotInCommand": "Pilot in Command",

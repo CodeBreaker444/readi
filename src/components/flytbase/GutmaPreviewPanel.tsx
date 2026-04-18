@@ -3,7 +3,7 @@
 import type { FlightWaypoint } from '@/components/flytbase/FlightPathMap';
 import { Skeleton } from '@/components/ui/skeleton';
 import dynamic from 'next/dynamic';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   HiChip,
   HiClock,
@@ -110,6 +110,8 @@ export function GutmaPreviewPanel({
   canArchive, archiving, archived, archiveError, onArchive,
 }: Props) {
   const [tab, setTab] = useState<'map' | 'gutma' | 'info'>('map');
+  const [waypointPage, setWaypointPage] = useState(1);
+  const [waypointPageSize, setWaypointPageSize] = useState(10);
 
   const card = isDark ? 'bg-[#0c0f1a] border-slate-800' : 'bg-white border-slate-200 shadow-sm';
   const textPrimary = isDark ? 'text-white' : 'text-slate-900';
@@ -122,6 +124,20 @@ export function GutmaPreviewPanel({
     preview?.waypoints &&
     preview.waypoints.some((wp) => wp.latitude != null && wp.longitude != null)
   );
+
+  const totalWaypointRows = preview?.waypoints.length ?? 0;
+  const totalWaypointPages = Math.max(1, Math.ceil(totalWaypointRows / waypointPageSize));
+  const safeWaypointPage = Math.min(waypointPage, totalWaypointPages);
+  const waypointStart = (safeWaypointPage - 1) * waypointPageSize;
+  const waypointEnd = waypointStart + waypointPageSize;
+  const pagedWaypoints = useMemo(
+    () => (preview?.waypoints ?? []).slice(waypointStart, waypointEnd),
+    [preview?.waypoints, waypointStart, waypointEnd],
+  );
+
+  useEffect(() => {
+    setWaypointPage(1);
+  }, [preview?.flight_id, waypointPageSize]);
 
   function TabButton({ id, icon, label }: { id: 'map' | 'gutma' | 'info'; icon: React.ReactNode; label: string }) {
     const active = tab === id;
@@ -480,9 +496,9 @@ export function GutmaPreviewPanel({
                       </tr>
                     </thead>
                     <tbody className={`divide-y ${isDark ? 'divide-slate-800' : 'divide-slate-100'}`}>
-                      {preview.waypoints.map((wp, i) => (
+                      {pagedWaypoints.map((wp, i) => (
                         <tr key={i} className={`${isDark ? 'hover:bg-slate-800/40' : 'hover:bg-slate-50'} transition-colors`}>
-                          <td className={`px-3 py-1.5 font-mono ${textSecondary}`}>{i + 1}</td>
+                          <td className={`px-3 py-1.5 font-mono ${textSecondary}`}>{waypointStart + i + 1}</td>
                           <td className={`px-3 py-1.5 font-mono ${textSecondary}`}>
                             {wp.timestamp != null ? new Date(wp.timestamp).toISOString().slice(11, 23) : '—'}
                           </td>
@@ -520,6 +536,45 @@ export function GutmaPreviewPanel({
                     </tbody>
                   </table>
                 </div>
+                {preview.waypoints.length > 0 && (
+                  <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <p className={`text-[11px] ${textSecondary}`}>
+                      Showing {waypointStart + 1}-{Math.min(waypointEnd, totalWaypointRows)} of {totalWaypointRows} loaded waypoints · Page {safeWaypointPage} of {totalWaypointPages}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <label className={`text-[11px] ${textSecondary}`}>Rows</label>
+                      <select
+                        value={waypointPageSize}
+                        onChange={(e) => setWaypointPageSize(Number(e.target.value))}
+                        className={`h-7 rounded border px-2 text-[11px] ${isDark ? 'border-slate-700 bg-slate-900 text-slate-200' : 'border-slate-300 bg-white text-slate-700'}`}
+                      >
+                        {[10, 25, 50, 100, 200].map((size) => (
+                          <option key={size} value={size}>{size}</option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => setWaypointPage((p) => Math.max(1, p - 1))}
+                        disabled={safeWaypointPage <= 1}
+                        className={`h-7 rounded border px-2.5 text-[11px] ${
+                          isDark ? 'border-slate-700 bg-slate-900 text-slate-200 disabled:text-slate-600' : 'border-slate-300 bg-white text-slate-700 disabled:text-slate-400'
+                        }`}
+                      >
+                        Prev
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setWaypointPage((p) => Math.min(totalWaypointPages, p + 1))}
+                        disabled={safeWaypointPage >= totalWaypointPages}
+                        className={`h-7 rounded border px-2.5 text-[11px] ${
+                          isDark ? 'border-slate-700 bg-slate-900 text-slate-200 disabled:text-slate-600' : 'border-slate-300 bg-white text-slate-700 disabled:text-slate-400'
+                        }`}
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                )}
                 {preview.total_waypoints > preview.waypoints.length && (
                   <p className={`text-[11px] mt-2 ${textSecondary}`}>
                     Showing first {preview.waypoints.length} of {preview.total_waypoints} waypoints.

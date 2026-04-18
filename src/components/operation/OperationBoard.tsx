@@ -342,6 +342,7 @@ function MissionDetailSheet({ mission, isDark, onClose }: { mission: Mission | n
         "05": { label: t("operations.board.status.inProgress"), cls: "bg-amber-50 text-amber-700 border-amber-200", darkCls: "bg-amber-500/10 text-amber-400 border-amber-500/30" },
         "10": { label: t("operations.board.status.completed"), cls: "bg-emerald-50 text-emerald-700 border-emerald-200", darkCls: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" },
         "99": { label: t("operations.board.status.cancelled"), cls: "bg-red-50 text-red-700 border-red-200", darkCls: "bg-red-500/10 text-red-400 border-red-500/30" },
+        "101": { label: t("operations.board.card.status.pending"), cls: "bg-slate-50 text-slate-600 border-slate-200", darkCls: "bg-slate-500/10 text-slate-400 border-slate-500/30" },
     };
 
     const statusCfg = mission ? (STATUS_LABEL[mission.mission_status_code] ?? STATUS_LABEL["00"]) : null;
@@ -379,8 +380,8 @@ function MissionDetailSheet({ mission, isDark, onClose }: { mission: Mission | n
                                 <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t("operations.board.detail.timeline")}</h3>
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className={cn("rounded-lg border p-3 space-y-1", isDark ? "bg-slate-800 border-slate-700" : "bg-muted/30")}>
-                                        <p className="text-xs text-muted-foreground flex items-center gap-1"><Calendar className="h-3 w-3" /> {t("operations.board.detail.scheduled")}</p>
-                                        <p className="text-sm font-medium">{mission.date_start || "—"}</p>
+                                        <p className="text-xs text-muted-foreground flex items-center gap-1"><Calendar className="h-3 w-3" /> {mission.fk_status_id === 2 ? t("operations.board.detail.startedAt") : t("operations.board.detail.scheduled")}</p>
+                                        <p className="text-sm font-medium">{(mission.date_start || mission.time_start) ? `${mission.date_start} ${mission.time_start}`.trim() : "—"}</p>
                                     </div>
                                     {mission.date_end && (
                                         <div className={cn("rounded-lg border p-3 space-y-1", isDark ? "bg-slate-800 border-slate-700" : "bg-muted/30")}>

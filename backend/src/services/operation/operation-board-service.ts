@@ -1,7 +1,14 @@
 import { supabase } from "@/backend/database/database";
-import { Mission, MissionBoardData, UpdateMissionStatusPayload } from "@/config/types/operation";
+import { Mission, MissionBoardData, MissionStatusCode, UpdateMissionStatusPayload } from "@/config/types/operation";
 import { getToolMaintenanceStatus } from "./maintenance-cycle-service";
 
+
+/** Board queries filter by these IDs; UI codes must stay aligned when status join is stale or non-canonical. */
+const BOARD_STATUS_ID_TO_CODE: Record<number, MissionStatusCode> = {
+  1: "00",
+  2: "05",
+  3: "10",
+};
 
 const MISSION_SELECT = `
       pilot_mission_id,
@@ -161,21 +168,28 @@ function transformMissionRow(row: Record<string, unknown>): Mission | null {
     const actualStart = row.actual_start as string | null;
     const actualEnd = row.actual_end as string | null;
 
-    const startDt = scheduledStart ? new Date(scheduledStart) : null;
+    const startSource = scheduledStart ?? actualStart;
+    const startDt = startSource ? new Date(startSource) : null;
     const endDt = actualEnd ? new Date(actualEnd) : null;
+
+    const fkMissionStatusId = row.fk_mission_status_id as number;
+    const codeFromBoardColumn = BOARD_STATUS_ID_TO_CODE[fkMissionStatusId];
+    const codeFromJoin = status?.status_code as MissionStatusCode | undefined;
+    const mission_status_code: MissionStatusCode =
+      codeFromBoardColumn ?? codeFromJoin ?? "00";
 
     return {
       mission_id: row.pilot_mission_id as number,
       fk_owner_id: (planning?.fk_owner_id as number) ?? 0,
       fk_vehicle_id: (tool?.tool_id as number) ?? 0,
       fk_pic_id: row.fk_pilot_user_id as number,
-      fk_status_id: row.fk_mission_status_id as number,
+      fk_status_id: fkMissionStatusId,
       fk_mission_type_id: row.fk_mission_type_id as number,
       fk_mission_category_id: row.fk_mission_category_id as number,
       fk_result_id: 0,
       fk_client_id: (client?.client_id as number) ?? 0,
       fk_mission_planning_id: (logbook?.mission_planning_id as number) ?? 0,
-      mission_status_code: (status?.status_code as "00") ?? "00",
+      mission_status_code,
       mission_status_desc: status?.status_name ?? "",
       mission_type_desc: missionType?.type_name ?? "",
       mission_category_desc: category?.category_name ?? "",
