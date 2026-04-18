@@ -1,9 +1,11 @@
 import { addReport, uploadAttachment } from '@/backend/services/system/maintenance-ticket';
 import { requirePermission } from '@/lib/auth/api-auth';
-import { apiError, internalError, zodError } from '@/lib/api-error';
+import { apiError, forbidden, internalError, zodError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
+
+const CLOSE_TICKET_ROLES = ['RM', 'ADMIN', 'SUPERADMIN'];
 
 const addReportSchema = z.object({
   ticket_id: z.coerce.number(),
@@ -34,6 +36,10 @@ export async function POST(req: NextRequest) {
 
     if (!validation.success) {
       return zodError(E.VL001, validation.error);
+    }
+
+    if (validation.data.close_report === 'Y' && !CLOSE_TICKET_ROLES.includes(session!.user.role ?? '')) {
+      return forbidden(E.PX001);
     }
 
     await addReport({

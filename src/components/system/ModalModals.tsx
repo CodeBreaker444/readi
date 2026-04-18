@@ -343,7 +343,7 @@ export function AssignTicketModal({
 
 
 export function ReportModal({
-  open, onClose, form, onFormChange, onSubmit, isDark, loading,
+  open, onClose, form, onFormChange, onSubmit, isDark, loading, canClose,
 }: {
   open: boolean;
   onClose: () => void;
@@ -352,6 +352,7 @@ export function ReportModal({
   onSubmit: (file?: File) => void;
   isDark?: boolean;
   loading?: boolean;
+  canClose?: boolean;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -387,15 +388,17 @@ export function ReportModal({
       <Field label="Attachment (optional)">
         <input ref={fileRef} type="file" className={inputCls} />
       </Field>
-      <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300 cursor-pointer mb-2">
-        <input
-          type="checkbox"
-          className="w-4 h-4 rounded text-indigo-600"
-          checked={form.close}
-          onChange={(e) => onFormChange({ close: e.target.checked })}
-        />
-        Close ticket on save
-      </label>
+      {canClose && (
+        <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300 cursor-pointer mb-2">
+          <input
+            type="checkbox"
+            className="w-4 h-4 rounded text-indigo-600"
+            checked={form.close}
+            onChange={(e) => onFormChange({ close: e.target.checked })}
+          />
+          Close ticket on save
+        </label>
+      )}
       <ModalFooter
         onCancel={onClose}
         onConfirm={() => onSubmit(fileRef.current?.files?.[0])}

@@ -92,6 +92,7 @@ interface Props {
   onUpload: (id: number) => void;
   onClose: (id: number) => void;
   onDownload?: (id: number) => void;
+  canClose?: boolean;
   isDark: boolean;
 }
 
@@ -104,6 +105,7 @@ export function TicketTable({
   onUpload,
   onClose,
   onDownload,
+  canClose = false,
   isDark,
 }: Props) {
   const [pagination, setPagination] = useState({
@@ -355,7 +357,7 @@ export function TicketTable({
                 </ActionIcon>
               )}
 
-              {isOpen && (
+              {isOpen && canClose && (
                 <ActionIcon
                   label="Close Ticket"
                   onClick={() => onClose(t.ticket_id)}
@@ -369,7 +371,7 @@ export function TicketTable({
         },
       },
     ],
-    [isDark, onEvents, onAssign, onReport, onUpload, onClose, onDownload]
+    [isDark, onEvents, onAssign, onReport, onUpload, onClose, onDownload, canClose]
   );
 
   const table = useReactTable({
