@@ -17,6 +17,7 @@ import {
 } from "@tanstack/react-table";
 import { SlidersHorizontal } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useTheme } from "../useTheme";
 import { TablePagination } from "../tables/Pagination";
 import ExportButtons from "./ExportButtons";
 import StatusBadge from "./StatusBadge";
@@ -115,16 +116,16 @@ function UsageLimitCell({
   );
 }
 
-function CycleBadge({ model }: { model: MaintenanceComponent["model"] }) {
+function CycleBadge({ model, isDark }: { model: MaintenanceComponent["model"]; isDark?: boolean }) {
   const parts: string[] = [];
   if (model.maintenance_cycle_hour > 0) parts.push(`${model.maintenance_cycle_hour}h`);
   if (model.maintenance_cycle_flight > 0) parts.push(`${model.maintenance_cycle_flight}fl`);
   if (model.maintenance_cycle_day > 0) parts.push(`${model.maintenance_cycle_day}d`);
 
-  if (parts.length === 0) return <span className="text-xs text-slate-300">—</span>;
+  if (parts.length === 0) return <span className={`text-xs ${isDark ? "text-slate-600" : "text-slate-300"}`}>—</span>;
 
   return (
-    <span className="inline-flex items-center gap-1 text-[11px] text-slate-500 bg-slate-100 rounded px-1.5 py-0.5 font-medium">
+    <span className={`inline-flex items-center gap-1 text-[11px] rounded px-1.5 py-0.5 font-medium ${isDark ? "text-slate-300 bg-slate-700" : "text-slate-500 bg-slate-100"}`}>
       {parts.join(" · ")}
     </span>
   );
@@ -140,6 +141,7 @@ function effectiveStatus(drone: MaintenanceDrone): MaintenanceStatus {
 }
 
 export function SummaryBar({ data, threshold }: { data: MaintenanceDrone[]; threshold: number }) {
+  const { isDark } = useTheme();
   const counts = useMemo(() => {
     let ok = 0, alert = 0, due = 0, inMaintenance = 0;
     for (const d of data) {
@@ -153,12 +155,15 @@ export function SummaryBar({ data, threshold }: { data: MaintenanceDrone[]; thre
   }, [data]);
 
   const thresholdLabel = threshold < 70 ? "Sensitive" : threshold < 85 ? "Normal" : "Lenient";
-  const thresholdColor = threshold < 70 ? "text-emerald-600" : threshold < 85 ? "text-amber-600" : "text-rose-600";
+  const thresholdColor = threshold < 70 ? "text-emerald-500" : threshold < 85 ? "text-amber-500" : "text-rose-500";
+
+  const card = isDark ? "bg-slate-800 border-slate-700" : "bg-white border-slate-200";
+  const label = isDark ? "text-slate-400" : "text-slate-500";
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-6 gap-3 mb-4">
-      <div className="bg-white rounded-xl border-2 border-violet-200 px-4 py-3 flex flex-col gap-1">
-        <p className="text-xs text-slate-500">Alert Threshold</p>
+      <div className={`rounded-xl border-2 px-4 py-3 flex flex-col gap-1 ${isDark ? "bg-slate-800 border-violet-700" : "bg-white border-violet-200"}`}>
+        <p className={`text-xs ${label}`}>Alert Threshold</p>
         <div className="flex items-baseline gap-1.5">
           <p className={`text-2xl font-bold tabular-nums ${thresholdColor}`}>{threshold}%</p>
           <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full border ${
@@ -169,30 +174,30 @@ export function SummaryBar({ data, threshold }: { data: MaintenanceDrone[]; thre
               : "text-rose-600 bg-rose-50 border-rose-200"
           }`}>{thresholdLabel}</span>
         </div>
-        <div className="relative h-1 w-full rounded-full bg-slate-100 mt-1">
+        <div className={`relative h-1 w-full rounded-full mt-1 ${isDark ? "bg-slate-700" : "bg-slate-100"}`}>
           <div className="h-full rounded-full bg-violet-400" style={{ width: `${threshold}%` }} />
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 px-4 py-3">
-        <p className="text-xs text-slate-500 mb-0.5">Total Systems</p>
-        <p className="text-2xl font-bold tabular-nums text-slate-700">{counts.total}</p>
+      <div className={`rounded-xl border px-4 py-3 ${card}`}>
+        <p className={`text-xs mb-0.5 ${label}`}>Total Systems</p>
+        <p className={`text-2xl font-bold tabular-nums ${isDark ? "text-slate-200" : "text-slate-700"}`}>{counts.total}</p>
       </div>
-      <div className="bg-white rounded-xl border border-slate-200 px-4 py-3">
-        <p className="text-xs text-slate-500 mb-0.5">OK</p>
-        <p className="text-2xl font-bold tabular-nums text-emerald-600">{counts.ok}</p>
+      <div className={`rounded-xl border px-4 py-3 ${card}`}>
+        <p className={`text-xs mb-0.5 ${label}`}>OK</p>
+        <p className="text-2xl font-bold tabular-nums text-emerald-500">{counts.ok}</p>
       </div>
-      <div className="bg-white rounded-xl border border-slate-200 px-4 py-3">
-        <p className="text-xs text-slate-500 mb-0.5">Alert</p>
-        <p className="text-2xl font-bold tabular-nums text-amber-600">{counts.alert}</p>
+      <div className={`rounded-xl border px-4 py-3 ${card}`}>
+        <p className={`text-xs mb-0.5 ${label}`}>Alert</p>
+        <p className="text-2xl font-bold tabular-nums text-amber-500">{counts.alert}</p>
       </div>
-      <div className="bg-white rounded-xl border border-slate-200 px-4 py-3">
-        <p className="text-xs text-slate-500 mb-0.5">Due</p>
-        <p className="text-2xl font-bold tabular-nums text-rose-600">{counts.due}</p>
+      <div className={`rounded-xl border px-4 py-3 ${card}`}>
+        <p className={`text-xs mb-0.5 ${label}`}>Due</p>
+        <p className="text-2xl font-bold tabular-nums text-rose-500">{counts.due}</p>
       </div>
-      <div className="bg-white rounded-xl border border-slate-200 px-4 py-3">
-        <p className="text-xs text-slate-500 mb-0.5">In Maintenance</p>
-        <p className="text-2xl font-bold tabular-nums text-blue-600">{counts.inMaintenance}</p>
+      <div className={`rounded-xl border px-4 py-3 ${card}`}>
+        <p className={`text-xs mb-0.5 ${label}`}>In Maintenance</p>
+        <p className="text-2xl font-bold tabular-nums text-blue-500">{counts.inMaintenance}</p>
       </div>
     </div>
   );
@@ -216,6 +221,7 @@ function FilterBar({
   threshold: number;
   onApplyThreshold: (v: number) => void;
 }) {
+  const { isDark } = useTheme();
   const [localInput, setLocalInput] = useState(String(threshold));
 
   const options: { value: FilterStatus; label: string }[] = [
@@ -246,15 +252,15 @@ function FilterBar({
 
   return (
     <div className="flex flex-wrap items-center gap-2 mb-4">
-      <div className="flex items-center rounded-lg border border-slate-200 overflow-hidden bg-white">
+      <div className={`flex items-center rounded-lg border overflow-hidden ${isDark ? "border-slate-700 bg-slate-800" : "border-slate-200 bg-white"}`}>
         {options.map((opt) => (
           <button
             key={opt.value}
             onClick={() => onChange(opt.value)}
             className={`px-3 py-1.5 text-sm font-medium transition-colors ${
               value === opt.value
-                ? "bg-slate-900 text-white"
-                : "text-slate-600 hover:bg-slate-50"
+                ? isDark ? "bg-slate-600 text-white" : "bg-slate-900 text-white"
+                : isDark ? "text-slate-300 hover:bg-slate-700" : "text-slate-600 hover:bg-slate-50"
             }`}
           >
             {opt.label}
@@ -275,13 +281,15 @@ function FilterBar({
           placeholder="Search by code or serial…"
           value={search}
           onChange={(e) => onSearch(e.target.value)}
-          className="w-full pl-9 pr-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+          className={`w-full pl-9 pr-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none ${
+            isDark ? "border-slate-700 bg-slate-800 text-slate-200 placeholder-slate-500" : "border-slate-200 bg-white text-slate-800"
+          }`}
         />
       </div>
-      <div className="flex items-center gap-3 px-4 py-2 rounded-xl border border-slate-200 bg-slate-50">
+      <div className={`flex items-center gap-3 px-4 py-2 rounded-xl border ${isDark ? "border-slate-700 bg-slate-800" : "border-slate-200 bg-slate-50"}`}>
         <div className="flex items-center gap-1.5">
-          <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500" />
-          <span className="text-xs font-medium text-slate-500">Alert threshold</span>
+          <SlidersHorizontal className={`w-3.5 h-3.5 ${isDark ? "text-slate-400" : "text-slate-500"}`} />
+          <span className={`text-xs font-medium ${isDark ? "text-slate-400" : "text-slate-500"}`}>Alert threshold</span>
         </div>
 
         <input
@@ -307,9 +315,11 @@ function FilterBar({
             onChange={(e) => setLocalInput(e.target.value)}
             onBlur={(e) => commit(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") commit(localInput); }}
-            className="w-12 text-center text-xs font-semibold rounded-md border border-slate-300 bg-white px-1 py-1 focus:outline-none focus:ring-2 focus:ring-violet-400"
+            className={`w-12 text-center text-xs font-semibold rounded-md border px-1 py-1 focus:outline-none focus:ring-2 focus:ring-violet-400 ${
+              isDark ? "border-slate-600 bg-slate-700 text-slate-200" : "border-slate-300 bg-white text-slate-800"
+            }`}
           />
-          <span className="text-xs font-medium text-slate-500">%</span>
+          <span className={`text-xs font-medium ${isDark ? "text-slate-400" : "text-slate-500"}`}>%</span>
         </div>
 
         <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${thresholdColor}`}>
@@ -321,17 +331,17 @@ function FilterBar({
 }
 
 
-function ComponentSubRow({ comp, threshold }: { comp: MaintenanceComponent; threshold: number }) {
+function ComponentSubRow({ comp, threshold, isDark }: { comp: MaintenanceComponent; threshold: number; isDark: boolean }) {
   const triggers = cleanTrigger(comp.trigger);
   const model = comp.model;
 
   return (
-    <tr className="border-t border-slate-100 bg-slate-50/60 text-sm">
+    <tr className={`border-t text-sm ${isDark ? "border-slate-700 bg-slate-800/60" : "border-slate-100 bg-slate-50/60"}`}>
       <td className="pl-10 pr-3 py-2.5">
         <div className="flex items-center gap-2">
-          <span className="w-1 h-4 rounded-full bg-slate-300 shrink-0" />
+          <span className={`w-1 h-4 rounded-full shrink-0 ${isDark ? "bg-slate-600" : "bg-slate-300"}`} />
           <div>
-            <span className="text-slate-600 font-medium">{comp.component_name ?? "—"}</span>
+            <span className={`font-medium ${isDark ? "text-slate-300" : "text-slate-600"}`}>{comp.component_name ?? "—"}</span>
             {comp.component_type && (
               <p className="text-[11px] text-slate-400">{comp.component_type}</p>
             )}
@@ -339,15 +349,15 @@ function ComponentSubRow({ comp, threshold }: { comp: MaintenanceComponent; thre
         </div>
       </td>
 
-      <td className="px-3 py-2.5 text-slate-500 text-xs font-mono">
+      <td className={`px-3 py-2.5 text-xs font-mono ${isDark ? "text-slate-400" : "text-slate-500"}`}>
         {comp.serial_number ?? "—"}
       </td>
 
       <td className="px-3 py-2.5">
-        <CycleBadge model={model} />
+        <CycleBadge model={model} isDark={isDark} />
       </td>
 
-      <td className="px-3 py-2.5 text-slate-500 text-xs">
+      <td className={`px-3 py-2.5 text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>
         {comp.last_maintenance
           ? new Date(comp.last_maintenance).toLocaleDateString("en-GB")
           : "—"}
@@ -394,7 +404,7 @@ function ComponentSubRow({ comp, threshold }: { comp: MaintenanceComponent; thre
 }
 
 
-function buildColumns(threshold: number): ColumnDef<MaintenanceDrone>[] {
+function buildColumns(threshold: number, isDark: boolean): ColumnDef<MaintenanceDrone>[] {
   return [
     {
       id: "drone",
@@ -419,7 +429,10 @@ function buildColumns(threshold: number): ColumnDef<MaintenanceDrone>[] {
               <span className="w-3.5 h-3.5 inline-block" />
             )}
             <div>
-              <p className="font-semibold text-slate-800 text-sm">{drone.code}</p>
+              <p className={`font-semibold text-sm ${isDark ? "text-slate-100" : "text-slate-800"}`}>{drone.code}</p>
+              {drone.description && (
+                <p className={`text-[11px] ${isDark ? "text-slate-400" : "text-slate-500"}`}>{drone.description}</p>
+              )}
               {hasComponents && (
                 <p className="text-[11px] text-slate-400">
                   {drone.components.length} component{drone.components.length !== 1 ? "s" : ""}
@@ -434,7 +447,7 @@ function buildColumns(threshold: number): ColumnDef<MaintenanceDrone>[] {
       id: "serial",
       header: "Serial",
       cell: ({ row }) => (
-        <span className="text-xs font-mono text-slate-500">
+        <span className={`text-xs font-mono ${isDark ? "text-slate-400" : "text-slate-500"}`}>
           {row.original.serial_number || "—"}
         </span>
       ),
@@ -442,7 +455,7 @@ function buildColumns(threshold: number): ColumnDef<MaintenanceDrone>[] {
     {
       id: "cycle",
       header: "Maint. Cycle",
-      cell: ({ row }) => <CycleBadge model={row.original.model} />,
+      cell: ({ row }) => <CycleBadge model={row.original.model} isDark={isDark} />,
     },
     {
       id: "last_maintenance",
@@ -451,8 +464,8 @@ function buildColumns(threshold: number): ColumnDef<MaintenanceDrone>[] {
       cell: ({ getValue }) => {
         const val = getValue() as string | null;
         return (
-          <span className="text-xs text-slate-500">
-            {val ? new Date(val).toLocaleDateString("en-GB") : <span className="text-slate-300">—</span>}
+          <span className={`text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+            {val ? new Date(val).toLocaleDateString("en-GB") : <span className={isDark ? "text-slate-600" : "text-slate-300"}>—</span>}
           </span>
         );
       },
@@ -565,11 +578,12 @@ export default function MaintenanceTable({
   threshold?: number;
   onApplyThreshold?: (v: number) => void;
 }) {
+  const { isDark } = useTheme();
   const [filter, setFilter] = useState<FilterStatus>("ALL");
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState<ExpandedState>({});
 
-  const columns = useMemo(() => buildColumns(threshold), [threshold]);
+  const columns = useMemo(() => buildColumns(threshold, isDark), [threshold, isDark]);
 
   const filtered = useMemo(() => {
     return data.filter((d) => {
@@ -609,15 +623,15 @@ export default function MaintenanceTable({
         onApplyThreshold={onApplyThreshold ?? (() => {})}
       />
 
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+      <div className={`rounded-xl border overflow-hidden ${isDark ? "bg-slate-800 border-slate-700" : "bg-white border-slate-200"}`}>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-200">
+              <tr className={`border-b ${isDark ? "bg-slate-900 border-slate-700" : "bg-slate-50 border-slate-200"}`}>
                 {table.getFlatHeaders().map((header) => (
                   <th
                     key={header.id}
-                    className="px-3 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap"
+                    className={`px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap ${isDark ? "text-slate-400" : "text-slate-500"}`}
                   >
                     {flexRender(header.column.columnDef.header, header.getContext())}
                   </th>
@@ -636,11 +650,11 @@ export default function MaintenanceTable({
                   <>
                     <tr
                       key={row.id}
-                      className={`border-t border-slate-200 transition-colors ${
+                      className={`border-t transition-colors ${isDark ? "border-slate-700" : "border-slate-200"} ${
                         row.getCanExpand()
-                          ? "cursor-pointer hover:bg-blue-50/40"
-                          : "hover:bg-slate-50/80"
-                      } ${row.getIsExpanded() ? "bg-blue-50/30" : ""}`}
+                          ? isDark ? "cursor-pointer hover:bg-slate-700/50" : "cursor-pointer hover:bg-blue-50/40"
+                          : isDark ? "hover:bg-slate-700/30" : "hover:bg-slate-50/80"
+                      } ${row.getIsExpanded() ? isDark ? "bg-slate-700/40" : "bg-blue-50/30" : ""}`}
                       onClick={() => row.getCanExpand() && row.toggleExpanded()}
                     >
                       {row.getVisibleCells().map((cell) => (
@@ -656,6 +670,7 @@ export default function MaintenanceTable({
                           key={comp.tool_component_id}
                           comp={comp}
                           threshold={threshold}
+                          isDark={isDark}
                         />
                       ))}
                   </>
@@ -665,7 +680,7 @@ export default function MaintenanceTable({
           </table>
         </div>
 
-        <div className="border-t border-slate-200 px-2 flex items-center justify-between">
+        <div className={`border-t px-2 flex items-center justify-between ${isDark ? "border-slate-700" : "border-slate-200"}`}>
           <ExportButtons
             filename="Maintenance Dashboard"
             headers={['Code', 'Serial', 'Status', 'Total Hours', 'Total Flights', 'Last Maintenance']}

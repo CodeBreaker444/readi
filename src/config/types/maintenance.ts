@@ -26,6 +26,7 @@ export interface MaintenanceDrone {
   tool_id: number;
   code: string;
   serial_number: string;
+  description: string | null;
   last_maintenance: string | null;
   total_hours: number;
   total_flights: number;
