@@ -31,6 +31,13 @@ function daysSince(dateStr: string | null): number | null {
   return Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24));
 }
 
+function computeExpiry(lastMaintenance: string | null, cycleDays: number | null): string | null {
+  if (!lastMaintenance || !cycleDays || cycleDays <= 0) return null;
+  const d = new Date(lastMaintenance);
+  d.setDate(d.getDate() + cycleDays);
+  return d.toLocaleDateString("en-GB");
+}
+
 function cleanTrigger(arr: (string | null)[] | null): string[] {
   if (!Array.isArray(arr)) return [];
   return arr.filter((v): v is string => !!v && v !== "null");
@@ -50,6 +57,7 @@ function UsageLimitCell({
   status,
   isTriggered,
   threshold,
+  expiresOn,
 }: {
   current: number | null;
   limit: number | null;
@@ -57,6 +65,7 @@ function UsageLimitCell({
   status: MaintenanceStatus;
   isTriggered: boolean;
   threshold: number;
+  expiresOn?: string | null;
 }) {
   const cur = current ?? 0;
   const max = limit && limit > 0 ? limit : null;
@@ -112,6 +121,9 @@ function UsageLimitCell({
         />
       </div>
       <span className="text-[9px] text-slate-400 tabular-nums">{pct.toFixed(0)}%</span>
+      {expiresOn && (
+        <span className="text-[9px] text-slate-400 tabular-nums">Exp. {expiresOn}</span>
+      )}
     </div>
   );
 }
@@ -345,6 +357,9 @@ function ComponentSubRow({ comp, threshold, isDark }: { comp: MaintenanceCompone
             {comp.component_type && (
               <p className="text-[11px] text-slate-400">{comp.component_type}</p>
             )}
+            {comp.description && (
+              <p className="text-[11px] text-slate-400 italic">{comp.description}</p>
+            )}
           </div>
         </div>
       </td>
@@ -393,6 +408,7 @@ function ComponentSubRow({ comp, threshold, isDark }: { comp: MaintenanceCompone
           status={comp.status}
           isTriggered={triggers.includes("DAY")}
           threshold={threshold}
+          expiresOn={computeExpiry(comp.last_maintenance, model.maintenance_cycle_day)}
         />
       </td>
 
@@ -520,6 +536,7 @@ function buildColumns(threshold: number, isDark: boolean): ColumnDef<Maintenance
             status={d.status}
             isTriggered={triggers.includes("DAY")}
             threshold={threshold}
+            expiresOn={computeExpiry(d.last_maintenance, d.model.maintenance_cycle_day)}
           />
         );
       },

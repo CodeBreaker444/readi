@@ -12,6 +12,7 @@ export interface MaintenanceComponent {
   tool_component_id: number;
   component_name: string;
   component_type: string | null;
+  description?: string | null;
   serial_number: string | null;
   last_maintenance: string | null;
   total_hours: number;
