@@ -43,6 +43,7 @@ const EMPTY_FORM = {
   maintenance_cycle_hour: '',
   maintenance_cycle_day: '',
   maintenance_cycle_flight: '',
+  battery_cycle_ratio: '',
 };
 interface ComponentType {
   type_id: number;
@@ -116,6 +117,7 @@ export default function EditComponentModal({
       maintenance_cycle_hour: comp.maintenance_cycle_hour != null && comp.maintenance_cycle_hour !== '' ? String(comp.maintenance_cycle_hour) : '',
       maintenance_cycle_day: comp.maintenance_cycle_day != null && comp.maintenance_cycle_day !== '' ? String(comp.maintenance_cycle_day) : '',
       maintenance_cycle_flight: comp.maintenance_cycle_flight != null && comp.maintenance_cycle_flight !== '' ? String(comp.maintenance_cycle_flight) : '',
+      battery_cycle_ratio: comp.battery_cycle_ratio != null ? String(comp.battery_cycle_ratio) : '',
     });
   };
 
@@ -245,6 +247,7 @@ export default function EditComponentModal({
         maintenance_cycle_hour: formData.maintenance_cycle_hour ? Number(formData.maintenance_cycle_hour) : null,
         maintenance_cycle_day: formData.maintenance_cycle_day ? Number(formData.maintenance_cycle_day) : null,
         maintenance_cycle_flight: formData.maintenance_cycle_flight ? Number(formData.maintenance_cycle_flight) : null,
+        battery_cycle_ratio: formData.battery_cycle_ratio ? Number(formData.battery_cycle_ratio) : null,
       };
 
       const res = await fetch(`/api/system/component/${selectedComponentId}/update`, {
@@ -387,20 +390,22 @@ export default function EditComponentModal({
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-                  <div className="col-span-1 sm:col-span-3 min-w-0">
+                  <div className="col-span-1 sm:col-span-5 min-w-0">
                     <Label className={labelCls}>Brand / Model</Label>
                     <Select value={formData.fk_tool_model_id} onValueChange={handleModelSelect}>
-                      <SelectTrigger className={`w-full truncate ${selectTriggerCls}`}><SelectValue placeholder="Select Model" /></SelectTrigger>
+                      <SelectTrigger className={`h-14 min-h-10 py-2 items-start ${selectTriggerCls}`}>
+                        <SelectValue placeholder="Select Model" />
+                      </SelectTrigger>
                       <SelectContent className={selectContentCls}>
                         {models.map((m: any) => (
                           <SelectItem key={m.tool_model_id} value={m.tool_model_id.toString()}>
-                            {m.factory_model} - {m.factory_type}
+                            {m.factory_model} — {m.factory_type}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="col-span-1 sm:col-span-9">
+                  <div className="col-span-1 sm:col-span-7">
                     <Label className={labelCls}>Description</Label>
                     <Input className={inputCls} value={formData.component_desc} onChange={e => handleChange('component_desc', e.target.value)} placeholder="Component description" />
                   </div>
@@ -494,10 +499,25 @@ export default function EditComponentModal({
                       </div>
                     )}
                     {showFlights && (
-                      <div className="col-span-1 sm:col-span-2">
-                        <Label className={labelCls}>Flights Limit</Label>
-                        <Input type="number" min={0} className={inputCls} value={formData.maintenance_cycle_flight}
-                          onChange={e => handleCycleInput('maintenance_cycle_flight', e.target.value)}  />
+                      <div className="col-span-1 sm:col-span-4 flex items-end gap-2">
+                        <div className="flex-1 min-w-0">
+                          <Label className={labelCls}>Flights Limit</Label>
+                          <Input type="number" min={0} className={inputCls} value={formData.maintenance_cycle_flight}
+                            onChange={e => handleCycleInput('maintenance_cycle_flight', e.target.value)} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <Label className={labelCls}>Cycle Ratio</Label>
+                          <Input
+                            type="number"
+                            min={0.01}
+                            max={1}
+                            step={0.01}
+                            placeholder="e.g. 0.87"
+                            className={inputCls}
+                            value={formData.battery_cycle_ratio}
+                            onChange={e => handleChange('battery_cycle_ratio', e.target.value)}
+                          />
+                        </div>
                       </div>
                     )}
                   </div>
@@ -518,7 +538,7 @@ export default function EditComponentModal({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 mt-2">
                   <div className="col-span-1 sm:col-span-3">
                     <Label className={labelCls}>Activation Date</Label>
                     <Input type="date" className={inputCls} value={formData.component_activation_date} onChange={e => handleChange('component_activation_date', e.target.value)} />

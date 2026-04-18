@@ -24,6 +24,7 @@ interface ComponentMaintenanceInfo {
   last_maintenance_date: string | null;
   status: "OK" | "ALERT" | "DUE";
   trigger: string[];
+  battery_cycle_ratio: number;
 }
 
 interface SystemData {
@@ -131,8 +132,18 @@ export async function getComponentsForMaintenanceCycle(
 
     const currentHours = Number(comp.current_maintenance_hours ?? 0);
     const currentFlights = Number(comp.current_maintenance_flights ?? 0);
-    // Use DB value directly — already refreshed above
     const currentDays = Number(comp.current_maintenance_days ?? 0);
+
+    const rawMeta = comp.component_metadata;
+    let meta: Record<string, unknown> = {};
+    if (rawMeta) {
+      if (typeof rawMeta === "string") {
+        try { meta = JSON.parse(rawMeta); } catch { meta = {}; }
+      } else if (typeof rawMeta === "object" && !Array.isArray(rawMeta)) {
+        meta = rawMeta as Record<string, unknown>;
+      }
+    }
+    const batteryCycleRatio = typeof meta.battery_cycle_ratio === "number" ? meta.battery_cycle_ratio : 1;
 
     const hasLimits = limitHour > 0 || limitFlight > 0 || limitDay > 0;
     const { status, trigger } = hasLimits
@@ -161,6 +172,7 @@ export async function getComponentsForMaintenanceCycle(
       last_maintenance_date: comp.last_maintenance_date || null,
       status,
       trigger,
+      battery_cycle_ratio: batteryCycleRatio,
     });
   }
 
@@ -223,8 +235,12 @@ export async function updateComponentMaintenanceCycle(
       const currentDays = Number(comp.current_maintenance_days ?? 0);
       const prevLifetimeHours = Number(comp.current_usage_hours ?? 0);
 
+      // Applying battery_cycle_ratio: 1 flight may equal <1 battery cycle (0.87)
+      const batteryCycleRatio = typeof meta.battery_cycle_ratio === "number" ? meta.battery_cycle_ratio : 1;
+      const effectiveFlightCycles = Math.round((upd.add_flights || 0) * batteryCycleRatio * 100) / 100;
+
       const newHours = addHhmmHours(prevHours, upd.add_hours || 0);
-      const newFlights = prevFlights + (upd.add_flights || 0);
+      const newFlights = Math.round((prevFlights + effectiveFlightCycles) * 100) / 100;
       const newLifetimeHours = addHhmmHours(prevLifetimeHours, upd.add_hours || 0);
 
       const now = new Date().toISOString();
@@ -282,6 +298,7 @@ export async function updateComponentMaintenanceCycle(
         last_maintenance_date: comp.last_maintenance_date || null,
         status,
         trigger,
+        battery_cycle_ratio: batteryCycleRatio,
       };
     }),
   );

@@ -589,6 +589,7 @@ export async function getComponentList(ownerId: number, toolId?: number) {
       maintenance_cycle_hour: item.maintenance_cycle_hour ?? '',
       maintenance_cycle_day: item.maintenance_cycle_day ?? '',
       maintenance_cycle_flight: item.maintenance_cycle_flight ?? '',
+      battery_cycle_ratio: item.component_metadata?.battery_cycle_ratio ?? null,
       current_usage_hours: Number(item.current_usage_hours) || 0,
       current_maintenance_hours: Number(item.current_maintenance_hours) || 0,
       current_maintenance_days: Number(item.current_maintenance_days) || 0,
@@ -659,6 +660,7 @@ export async function addComponent(componentData: any) {
         component_purchase_date: componentData.component_purchase_date || null,
         component_guarantee_day: componentData.component_guarantee_day || null,
         component_vendor: componentData.component_vendor || null,
+        battery_cycle_ratio: componentData.battery_cycle_ratio != null ? Number(componentData.battery_cycle_ratio) : null,
       },
     })
     .select()
@@ -697,6 +699,7 @@ export async function updateComponent(componentId: number, componentData: any) {
         component_purchase_date: componentData.component_purchase_date || null,
         component_guarantee_day: componentData.component_guarantee_day || null,
         component_vendor: componentData.component_vendor || null,
+        battery_cycle_ratio: componentData.battery_cycle_ratio != null ? Number(componentData.battery_cycle_ratio) : null,
       },
     })
     .eq('component_id', componentId)

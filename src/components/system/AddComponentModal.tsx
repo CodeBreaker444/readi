@@ -39,6 +39,7 @@ const INITIAL_FORM = {
   maintenance_cycle_hour: '',
   maintenance_cycle_day: '',
   maintenance_cycle_flight: '',
+  battery_cycle_ratio: '',
 };
 export interface ComponentType {
   type_id: number;
@@ -46,10 +47,37 @@ export interface ComponentType {
   type_label: string;
 }
 
+function ModelOptionLabel({ model }: { model: any }) {
+  const manufacturer = model.factory_type ?? '—';
+  const modelName = model.factory_model ?? '—';
+  const modelCode = model.factory_serie ?? '—';
+
+  return (
+    <div className="flex flex-col gap-0.5 leading-tight">
+      <div className="flex gap-2">
+        <span className="w-24 shrink-0 text-[10px] font-semibold uppercase text-muted-foreground">Manufacturer</span>
+        <span className="truncate text-[11px] font-medium">{manufacturer}</span>
+      </div>
+      <div className="flex gap-2">
+        <span className="w-24 shrink-0 text-[10px] font-semibold uppercase text-muted-foreground">Model name</span>
+        <span className="truncate text-[11px]">{modelName}</span>
+      </div>
+      <div className="flex gap-2">
+        <span className="w-24 shrink-0 text-[10px] font-semibold uppercase text-muted-foreground">Model code</span>
+        <span className="truncate font-mono text-[11px]">{modelCode}</span>
+      </div>
+    </div>
+  );
+}
+
 export default function AddComponentModal({ open, onClose, onSuccess, tools, models }: AddComponentModalProps) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [showManageTypes, setShowManageTypes] = useState(false);
+  const selectedModel = models.find((m) => String(m.tool_model_id) === formData.fk_tool_model_id);
+  const selectedModelLabel = selectedModel
+    ? `${selectedModel.factory_type ?? '—'} / ${selectedModel.factory_model ?? '—'} / ${selectedModel.factory_serie ?? '—'}`
+    : '';
 
   useEffect(() => {
     if (open) setFormData(INITIAL_FORM);
@@ -147,6 +175,7 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
         maintenance_cycle_hour: formData.maintenance_cycle_hour ? Number(formData.maintenance_cycle_hour) : null,
         maintenance_cycle_day: formData.maintenance_cycle_day ? Number(formData.maintenance_cycle_day) : null,
         maintenance_cycle_flight: formData.maintenance_cycle_flight ? Number(formData.maintenance_cycle_flight) : null,
+        battery_cycle_ratio: formData.battery_cycle_ratio ? Number(formData.battery_cycle_ratio) : null,
       };
 
       const response = await axios.post('/api/system/component/add', payload);
@@ -222,18 +251,24 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 overflow-visible">
-              <div className="col-span-1 sm:col-span-3 min-w-0">
+              <div className="col-span-1 sm:col-span-5 min-w-0">
                 <Label className="pb-2">Brand / Model</Label>
                 <Select value={formData.fk_tool_model_id} onValueChange={handleModelSelect}>
-                  <SelectTrigger className="w-full truncate"><SelectValue placeholder="Select Model" /></SelectTrigger>
+                  <SelectTrigger className="w-full min-w-0">
+                    <SelectValue placeholder="Select Model">
+                      {selectedModelLabel ? <span className="block w-full truncate text-left">{selectedModelLabel}</span> : null}
+                    </SelectValue>
+                  </SelectTrigger>
                   <SelectContent>
                     {models.map((m: any) => (
-                      <SelectItem key={m.tool_model_id} value={m.tool_model_id.toString()}>{m.factory_model} - {m.factory_type}</SelectItem>
+                      <SelectItem key={m.tool_model_id} value={m.tool_model_id.toString()}>
+                        <ModelOptionLabel model={m} />
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-              <div className="col-span-1 sm:col-span-9">
+              <div className="col-span-1 sm:col-span-7">
                 <Label className="pb-2">Description</Label>
                 <Input value={formData.component_desc} onChange={(e) => handleChange('component_desc', e.target.value)} placeholder="Component description" />
               </div>
@@ -316,15 +351,29 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
                   </div>
                 )}
                 {showFlights && (
-                  <div className="col-span-1 sm:col-span-2">
-                    <Label className="pb-2">Flights Limit</Label>
-                    <Input type="number" min={0} value={formData.maintenance_cycle_flight} onChange={(e) => handleCycleInput('maintenance_cycle_flight', e.target.value)} />
+                  <div className="col-span-1 sm:col-span-4 flex items-end gap-2">
+                    <div className="flex-1 min-w-0">
+                      <Label className="pb-2">Flights Limit</Label>
+                      <Input type="number" min={0} value={formData.maintenance_cycle_flight} onChange={(e) => handleCycleInput('maintenance_cycle_flight', e.target.value)} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <Label className="pb-2">Cycle Ratio</Label>
+                      <Input
+                        type="number"
+                        min={0.01}
+                        max={1}
+                        step={0.01}
+                        placeholder="e.g. 0.87"
+                        value={formData.battery_cycle_ratio}
+                        onChange={(e) => handleChange('battery_cycle_ratio', e.target.value)}
+                      />
+                    </div>
                   </div>
                 )}
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 overflow-visible">
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 overflow-visible mt-2">
               <div className="col-span-1 sm:col-span-3">
                 <Label className="pb-2">Activation Date</Label>
                 <Input type="date" value={formData.component_activation_date} onChange={(e) => handleChange('component_activation_date', e.target.value)} />

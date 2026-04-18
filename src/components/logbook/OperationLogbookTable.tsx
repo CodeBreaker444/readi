@@ -13,16 +13,15 @@ import {
   SortingState,
   useReactTable,
 } from "@tanstack/react-table";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import { cn } from "@/lib/utils";
 import {
   Search,
 } from "lucide-react";
 import { MdOutlineFlight } from "react-icons/md";
-import { useTranslation } from "react-i18next";
 import ExportButtons from "../system/ExportButtons";
-import { getOperationLogbookColumns } from "../tables/OperationLogbookColumn";
+import { operationLogbookColumns } from "../tables/OperationLogbookColumn";
 import { TablePagination } from "../tables/Pagination";
 
 const SKELETON_COL_WIDTHS = [60, 110, 110, 150, 140, 120, 120, 140, 110, 100, 150, 80, 90, 180];

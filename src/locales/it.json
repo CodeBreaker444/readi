@@ -1275,6 +1275,7 @@
       "detail": {
         "timeline": "Cronologia",
         "scheduled": "Pianificato",
+        "startedAt": "Avviato",
         "completed": "Completato",
         "personnelEquipment": "Personale & Attrezzatura",
         "pilotInCommand": "Pilota in Comando",
