@@ -14,7 +14,6 @@ import type {
   TicketEvent,
   UserOption,
 } from '@/config/types/maintenance';
-import { sendTicketClosedEmail } from '../../../../lib/resend/mail';
 import {
   REGION,
   buildS3Key,
@@ -23,6 +22,7 @@ import {
   getPresignedDownloadUrl,
   uploadFileToS3,
 } from '@/lib/s3Client';
+import { sendTicketClosedEmail } from '../../../../lib/resend/mail';
 
 
 export async function hasOpenTicketForTool(toolId: number): Promise<boolean> {
@@ -100,12 +100,6 @@ export async function getTicketList(owner_id: number, tool_id?: number): Promise
           manufacturer
         )
       ),
-      component:fk_component_id (
-        component_type,
-        component_code,
-        component_name,
-        serial_number
-      ),
       assignee:assigned_to_user_id (
         user_id,
         first_name,
@@ -121,11 +115,47 @@ export async function getTicketList(owner_id: number, tool_id?: number): Promise
   const { data, error } = await query;
   if (error) throw new Error(`getTicketList: ${error.message}`);
 
-  return (data ?? []).map((row: any) => {
-    const comp = row.component;
+  const rows = data ?? [];
+
+  // fetch specific component data for tickets that have a fk_component_id
+  const componentIds = [...new Set(rows.map((r: any) => r.fk_component_id).filter(Boolean))] as number[];
+  const componentMap: Record<number, any> = {};
+  if (componentIds.length > 0) {
+    const { data: comps } = await supabase
+      .from('tool_component')
+      .select('component_id, component_type, component_name, serial_number')
+      .in('component_id', componentIds);
+    for (const c of comps ?? []) {
+      componentMap[c.component_id] = c;
+    }
+  }
+
+  // fetch all active components for tool IDs where fk_component_id is null (system-level tickets)
+  const toolIdsWithoutComponent = [...new Set(
+    rows.filter((r: any) => !r.fk_component_id).map((r: any) => r.fk_tool_id).filter(Boolean)
+  )] as number[];
+  const systemComponentsMap: Record<number, Array<{ component_type: string; component_sn: string }>> = {};
+  if (toolIdsWithoutComponent.length > 0) {
+    const { data: sysComps } = await supabase
+      .from('tool_component')
+      .select('fk_tool_id, component_type, component_name, serial_number')
+      .in('fk_tool_id', toolIdsWithoutComponent)
+      .eq('component_active', 'Y');
+    for (const c of sysComps ?? []) {
+      if (!systemComponentsMap[c.fk_tool_id]) systemComponentsMap[c.fk_tool_id] = [];
+      systemComponentsMap[c.fk_tool_id].push({
+        component_type: c.component_type ?? c.component_name ?? '',
+        component_sn: c.serial_number ?? '',
+      });
+    }
+  }
+
+  return rows.map((row: any) => {
+    const comp = row.fk_component_id ? (componentMap[row.fk_component_id] ?? null) : null;
     const entityName = comp
-      ? `${comp.component_type ?? ''} ${comp.component_code ?? comp.component_name ?? ''}`.trim()
+      ? (comp.component_type ?? comp.component_name ?? undefined)
       : undefined;
+    const systemComponents = !comp ? (systemComponentsMap[row.fk_tool_id] ?? []) : [];
 
     return {
       ticket_id:           row.ticket_id,
@@ -150,6 +180,7 @@ export async function getTicketList(owner_id: number, tool_id?: number): Promise
         : (row.tool?.tool_description ?? '—'),
       entity_name:         entityName,
       component_sn:        comp?.serial_number ?? null,
+      system_components:   systemComponents,
       assigner_name:  row.assignee
         ? `${row.assignee.first_name ?? ''} ${row.assignee.last_name ?? ''}`.trim()
         : 'Unassigned',

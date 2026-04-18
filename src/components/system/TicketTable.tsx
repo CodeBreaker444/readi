@@ -179,24 +179,45 @@ export function TicketTable({
         header: "Component",
         cell: ({ row }) => {
           const t = row.original;
-          if (!t.entity_name && !t.component_sn) {
+
+          if (t.entity_name || t.component_sn) {
             return (
-              <span className={`text-xs ${isDark ? "text-slate-600" : "text-slate-300"}`}>—</span>
+              <div>
+                {t.entity_name && (
+                  <p className={`text-xs font-medium ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+                    {t.entity_name}
+                  </p>
+                )}
+                {t.component_sn && (
+                  <p className={`text-[11px] font-mono ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+                    {t.component_sn}
+                  </p>
+                )}
+              </div>
             );
           }
+
+          if (t.system_components && t.system_components.length > 0) {
+            return (
+              <div className="space-y-0.5">
+                {t.system_components.map((c, i) => (
+                  <div key={i}>
+                    <p className={`text-xs font-medium ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+                      {c.component_type}
+                    </p>
+                    {c.component_sn && (
+                      <p className={`text-[11px] font-mono ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+                        {c.component_sn}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            );
+          }
+
           return (
-            <div>
-              {t.entity_name && (
-                <p className={`text-xs font-medium ${isDark ? "text-slate-300" : "text-slate-700"}`}>
-                  {t.entity_name}
-                </p>
-              )}
-              {t.component_sn && (
-                <p className={`text-[11px] font-mono ${isDark ? "text-slate-500" : "text-slate-400"}`}>
-                  {t.component_sn}
-                </p>
-              )}
-            </div>
+            <span className={`text-xs ${isDark ? "text-slate-600" : "text-slate-300"}`}>—</span>
           );
         },
       },

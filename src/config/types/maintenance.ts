@@ -78,6 +78,7 @@ export interface MaintenanceTicket {
   entity_name?: string;
   assigner_name?: string;
   assigner_email?: string;
+  system_components?: Array<{ component_type: string; component_sn: string }>;
 }
 
 export interface TicketEvent {
