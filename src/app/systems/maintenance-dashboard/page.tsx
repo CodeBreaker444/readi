@@ -241,7 +241,7 @@ export default function MaintenancePage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className={`min-h-screen ${isDark ? "bg-slate-900" : "bg-slate-50"}`}>
       <div
         className={`top-0 z-10 backdrop-blur-md transition-colors ${
           isDark
@@ -284,7 +284,7 @@ export default function MaintenancePage() {
           <>
             <div className="grid grid-cols-2 sm:grid-cols-6 gap-3 mb-4">
               {[...Array(6)].map((_, i) => (
-                <div key={i} className="bg-white rounded-xl border border-slate-200 px-4 py-3 h-16 animate-pulse" />
+                <div key={i} className={`rounded-xl border px-4 py-3 h-16 animate-pulse ${isDark ? "bg-slate-800 border-slate-700" : "bg-white border-slate-200"}`} />
               ))}
             </div>
             <MaintenanceTableSkeleton />

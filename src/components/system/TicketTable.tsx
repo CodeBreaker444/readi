@@ -92,6 +92,7 @@ interface Props {
   onUpload: (id: number) => void;
   onClose: (id: number) => void;
   onDownload?: (id: number) => void;
+  canClose?: boolean;
   isDark: boolean;
 }
 
@@ -104,6 +105,7 @@ export function TicketTable({
   onUpload,
   onClose,
   onDownload,
+  canClose = false,
   isDark,
 }: Props) {
   const [pagination, setPagination] = useState({
@@ -169,6 +171,67 @@ export function TicketTable({
                 {t.drone_model ?? "—"}
               </p>
             </div>
+          );
+        },
+      },
+      {
+        id: "component",
+        header: "Component",
+        cell: ({ row }) => {
+          const t = row.original;
+
+          if (t.entity_name || t.component_sn) {
+            return (
+              <div>
+                {t.entity_name && (
+                  <p className={`text-xs font-medium ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+                    {t.entity_name}
+                  </p>
+                )}
+                {t.component_sn && (
+                  <p className={`text-[11px] font-mono ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+                    {t.component_sn}
+                  </p>
+                )}
+              </div>
+            );
+          }
+
+          if (t.system_components && t.system_components.length > 0) {
+            return (
+              <div className="space-y-0.5">
+                {t.system_components.map((c, i) => (
+                  <div key={i}>
+                    <p className={`text-xs font-medium ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+                      {c.component_type}
+                    </p>
+                    {c.component_sn && (
+                      <p className={`text-[11px] font-mono ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+                        {c.component_sn}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            );
+          }
+
+          return (
+            <span className={`text-xs ${isDark ? "text-slate-600" : "text-slate-300"}`}>—</span>
+          );
+        },
+      },
+      {
+        id: "description",
+        header: "Description",
+        cell: ({ row }) => {
+          const note = row.original.note;
+          return note ? (
+            <span className={`text-xs line-clamp-2 max-w-[200px] ${isDark ? "text-slate-300" : "text-slate-600"}`}>
+              {note}
+            </span>
+          ) : (
+            <span className={`text-xs ${isDark ? "text-slate-600" : "text-slate-300"}`}>—</span>
           );
         },
       },
@@ -315,7 +378,7 @@ export function TicketTable({
                 </ActionIcon>
               )}
 
-              {isOpen && (
+              {isOpen && canClose && (
                 <ActionIcon
                   label="Close Ticket"
                   onClick={() => onClose(t.ticket_id)}
@@ -329,7 +392,7 @@ export function TicketTable({
         },
       },
     ],
-    [isDark, onEvents, onAssign, onReport, onUpload, onClose, onDownload]
+    [isDark, onEvents, onAssign, onReport, onUpload, onClose, onDownload, canClose]
   );
 
   const table = useReactTable({
@@ -404,8 +467,8 @@ export function TicketTable({
       <div className={`border-t px-2 flex items-center justify-between ${isDark ? "border-slate-700" : "border-slate-200"}`}>
         <ExportButtons
           filename="Maintenance Tickets"
-          headers={['Ticket ID', 'Type', 'System', 'Serial', 'Assigned To', 'Email', 'Status', 'Priority', 'Opened', 'Closed']}
-          rows={tickets.map(t => [t.ticket_id, t.ticket_type, t.drone_code ?? '', t.drone_serial ?? '', t.assigner_name ?? '', t.assigner_email ?? '', t.ticket_status, t.ticket_priority, t.opened_at, t.closed_at ?? ''])}
+          headers={['Ticket ID', 'Type', 'System', 'Serial', 'Component', 'Component SN', 'Description', 'Assigned To', 'Email', 'Status', 'Priority', 'Opened', 'Closed']}
+          rows={tickets.map(t => [t.ticket_id, t.ticket_type, t.drone_code ?? '', t.drone_serial ?? '', t.entity_name ?? '', t.component_sn ?? '', t.note ?? '', t.assigner_name ?? '', t.assigner_email ?? '', t.ticket_status, t.ticket_priority, t.opened_at, t.closed_at ?? ''])}
         />
         <TablePagination table={table} />
       </div>

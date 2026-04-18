@@ -71,6 +71,7 @@ let toolQuery = supabase
   .select(`
     tool_id,
     tool_code,
+    tool_description,
     fk_owner_id,
     fk_model_id,
     tool_model (
@@ -266,6 +267,7 @@ let toolQuery = supabase
       tool_id: toolId,
       code: String(tool.tool_code ?? `#${toolId}`),
       serial_number: String(tool.tool_name ?? ""),
+      description: (tool.tool_description as string | null) ?? null,
       last_maintenance: lastMaint,
       total_hours: Math.round(stats.totalHours * 100) / 100,
       total_flights: stats.totalFlights,

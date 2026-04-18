@@ -1,8 +1,8 @@
 'use server';
 
 import { supabase } from '@/backend/database/database';
-import { refreshMaintenanceDaysForTool } from '@/backend/utils/refresh-maintenance-days';
 import { sendNotificationToRoles, sendNotificationToUser } from '@/backend/services/notification/notification-service';
+import { refreshMaintenanceDaysForTool } from '@/backend/utils/refresh-maintenance-days';
 import type {
   AddReportPayload,
   AssignTicketPayload,
@@ -22,6 +22,7 @@ import {
   getPresignedDownloadUrl,
   uploadFileToS3,
 } from '@/lib/s3Client';
+import { sendTicketClosedEmail } from '../../../../lib/resend/mail';
 
 
 export async function hasOpenTicketForTool(toolId: number): Promise<boolean> {
@@ -79,6 +80,7 @@ export async function getTicketList(owner_id: number, tool_id?: number): Promise
       ticket_id,
       fk_owner_id,
       fk_tool_id,
+      fk_component_id,
       ticket_type,
       ticket_status,
       ticket_priority,
@@ -91,6 +93,8 @@ export async function getTicketList(owner_id: number, tool_id?: number): Promise
       tool:fk_tool_id (
         tool_code,
         tool_name,
+        tool_description,
+        tool_metadata,
         tool_model:fk_model_id (
           model_name,
           manufacturer
@@ -111,32 +115,79 @@ export async function getTicketList(owner_id: number, tool_id?: number): Promise
   const { data, error } = await query;
   if (error) throw new Error(`getTicketList: ${error.message}`);
 
-  return (data ?? []).map((row: any) => ({
-    ticket_id:           row.ticket_id,
-    fk_owner_id:         row.fk_owner_id,
-    fk_tool_id:          row.fk_tool_id,
-    ticket_type:         row.ticket_type ?? 'STANDARD',
-    entity_type:         'AIRCRAFT' as const,
-    ticket_status:       row.ticket_status ?? 'OPEN',
-    ticket_priority:     row.ticket_priority ?? 'MEDIUM',
-    assigned_to_user_id: row.assigned_to_user_id ?? null,
-    opened_by:           'system',
-    opened_at:           row.reported_at ?? row.created_at,
-    closed_at:           row.closed_at ?? null,
-    note:                row.resolution_notes ?? null,
-    created_at:          row.created_at,
-    updated_at:          row.updated_at,
-    drone_code:          row.tool?.tool_code ?? '—',
-    drone_serial:        row.tool?.tool_name ?? '—',
-    drone_model:         row.tool?.tool_model
-      ? `${row.tool.tool_model.manufacturer ?? ''} ${row.tool.tool_model.model_name ?? ''}`.trim()
-      : '—',
-    assigner_name:  row.assignee
-      ? `${row.assignee.first_name ?? ''} ${row.assignee.last_name ?? ''}`.trim()
-      : 'Unassigned',
-    assigner_email: row.assignee?.email ?? '',
-    trigger_params: null,
-  }));
+  const rows = data ?? [];
+
+  // fetch specific component data for tickets that have a fk_component_id
+  const componentIds = [...new Set(rows.map((r: any) => r.fk_component_id).filter(Boolean))] as number[];
+  const componentMap: Record<number, any> = {};
+  if (componentIds.length > 0) {
+    const { data: comps } = await supabase
+      .from('tool_component')
+      .select('component_id, component_type, component_name, serial_number')
+      .in('component_id', componentIds);
+    for (const c of comps ?? []) {
+      componentMap[c.component_id] = c;
+    }
+  }
+
+  // fetch all active components for tool IDs where fk_component_id is null (system-level tickets)
+  const toolIdsWithoutComponent = [...new Set(
+    rows.filter((r: any) => !r.fk_component_id).map((r: any) => r.fk_tool_id).filter(Boolean)
+  )] as number[];
+  const systemComponentsMap: Record<number, Array<{ component_type: string; component_sn: string }>> = {};
+  if (toolIdsWithoutComponent.length > 0) {
+    const { data: sysComps } = await supabase
+      .from('tool_component')
+      .select('fk_tool_id, component_type, component_name, serial_number')
+      .in('fk_tool_id', toolIdsWithoutComponent)
+      .eq('component_active', 'Y');
+    for (const c of sysComps ?? []) {
+      if (!systemComponentsMap[c.fk_tool_id]) systemComponentsMap[c.fk_tool_id] = [];
+      systemComponentsMap[c.fk_tool_id].push({
+        component_type: c.component_type ?? c.component_name ?? '',
+        component_sn: c.serial_number ?? '',
+      });
+    }
+  }
+
+  return rows.map((row: any) => {
+    const comp = row.fk_component_id ? (componentMap[row.fk_component_id] ?? null) : null;
+    const entityName = comp
+      ? (comp.component_type ?? comp.component_name ?? undefined)
+      : undefined;
+    const systemComponents = !comp ? (systemComponentsMap[row.fk_tool_id] ?? []) : [];
+
+    return {
+      ticket_id:           row.ticket_id,
+      fk_owner_id:         row.fk_owner_id,
+      fk_tool_id:          row.fk_tool_id,
+      fk_component_id:     row.fk_component_id ?? null,
+      ticket_type:         row.ticket_type ?? 'STANDARD',
+      entity_type:         comp ? 'COMPONENT' as const : 'AIRCRAFT' as const,
+      ticket_status:       row.ticket_status ?? 'OPEN',
+      ticket_priority:     row.ticket_priority ?? 'MEDIUM',
+      assigned_to_user_id: row.assigned_to_user_id ?? null,
+      opened_by:           'system',
+      opened_at:           row.reported_at ?? row.created_at,
+      closed_at:           row.closed_at ?? null,
+      note:                row.resolution_notes ?? null,
+      created_at:          row.created_at,
+      updated_at:          row.updated_at,
+      drone_code:          row.tool?.tool_code ?? '—',
+      drone_serial:        row.tool?.tool_name ?? '—',
+      drone_model:         row.tool?.tool_model
+        ? `${row.tool.tool_model.manufacturer ?? ''} ${row.tool.tool_model.model_name ?? ''}`.trim()
+        : (row.tool?.tool_description ?? '—'),
+      entity_name:         entityName,
+      component_sn:        comp?.serial_number ?? null,
+      system_components:   systemComponents,
+      assigner_name:  row.assignee
+        ? `${row.assignee.first_name ?? ''} ${row.assignee.last_name ?? ''}`.trim()
+        : 'Unassigned',
+      assigner_email: row.assignee?.email ?? '',
+      trigger_params: null,
+    };
+  });
 }
 
 
@@ -218,10 +269,8 @@ export async function closeTicket(payload: CloseTicketPayload): Promise<void> {
 
   await resetComponentCounters(ticket.fk_tool_id, now.toISOString(), ticket.fk_component_id ?? null);
 
-  // Restore system to OPERATIONAL
   await setSystemOperationalStatus(ticket.fk_tool_id, 'OPERATIONAL');
 
-  // Restore all NOT_OPERATIONAL components of this tool to OPERATIONAL
   await setAllComponentsOperational(ticket.fk_tool_id);
 
   await addTicketEvent(
@@ -236,13 +285,26 @@ export async function closeTicket(payload: CloseTicketPayload): Promise<void> {
   const notifMsg = `Maintenance ticket closed. ${systemCode} is now operational.${payload.note ? ` Note: ${payload.note}` : ''}`;
   const actionUrl = '/systems/maintenance-tickets';
 
-  // Notify the pilot who reported the issue
   if (ticket.reported_by_user_id) {
     sendNotificationToUser(ticket.reported_by_user_id, notifTitle, notifMsg, actionUrl).catch(() => {});
   }
-  // Notify OPM users
   if (ticket.fk_owner_id) {
     sendNotificationToRoles(ticket.fk_owner_id, ['OPM'], notifTitle, notifMsg, actionUrl).catch(() => {});
+
+    void (async () => {
+      try {
+        const { data: opmUsers } = await supabase
+          .from('users')
+          .select('email')
+          .eq('fk_owner_id', ticket.fk_owner_id)
+          .eq('user_role', 'OPM')
+          .eq('user_active', 'Y');
+        if (opmUsers?.length) {
+          const emails = (opmUsers as { email: string }[]).map(u => u.email).filter(Boolean);
+          await sendTicketClosedEmail(emails, systemCode, ticket.ticket_title, payload.note);
+        }
+      } catch {}
+    })();
   }
 }
 
@@ -390,7 +452,7 @@ export async function deleteAttachment(attachmentId: number): Promise<void> {
 export async function getDroneList(ownerId: number): Promise<DroneOption[]> {
   const { data, error } = await supabase
     .from('tool')
-    .select('tool_id, tool_code, tool_name, fk_status_id')
+    .select('tool_id, tool_code, tool_name, tool_description, tool_metadata')
     .eq('fk_owner_id', ownerId)
     .eq('tool_active', 'Y')
     .order('tool_code');
@@ -400,8 +462,8 @@ export async function getDroneList(ownerId: number): Promise<DroneOption[]> {
   return (data ?? []).map((row: any) => ({
     tool_id:     row.tool_id,
     tool_code:   row.tool_code ?? '',
-    tool_desc:   row.tool_name ?? '',
-    tool_status: String(row.fk_status_id ?? 'UNKNOWN'),
+    tool_desc:   row.tool_description ?? row.tool_name ?? '',
+    tool_status: row.tool_metadata?.status ?? 'OPERATIONAL',
   }));
 }
 

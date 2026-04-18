@@ -1,4 +1,5 @@
 import { env } from '@/backend/config/env';
+import { TicketClosedEmail } from '@/components/email-template/TicketClosedEmail';
 import { UserActivationEmail } from '@/components/email-template/UserActivationEmail';
 import { render } from '@react-email/components';
 import { Resend } from 'resend';
@@ -59,8 +60,32 @@ export const sendUserActivationEmail = async (
     };
   }
 };
+export const sendTicketClosedEmail = async (
+  emails: string[],
+  systemCode: string,
+  ticketTitle: string,
+  note?: string | null
+) => {
+  if (!emails.length) return;
+  try {
+    const emailHtml = await render(
+      TicketClosedEmail({ systemCode, ticketTitle, note })
+    );
+
+    const { error } = await resend.emails.send({
+      from: 'deepinspect <no-reply@app.d3d.ai>',
+      to: emails,
+      subject: `Maintenance Complete — ${systemCode}`,
+      html: emailHtml,
+    });
+    if (error) console.error('sendTicketClosedEmail error:', error);
+  } catch (err) {
+    console.error('sendTicketClosedEmail exception:', err);
+  }
+};
+
 /**
- * Send verification email  
+ * Send verification email
  */
 // export const sendVerifyMail = async (email: string, id: string, fullName: string) => {
 //   try {

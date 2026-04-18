@@ -9,6 +9,7 @@ import { ClientOption, EvaluationOption, FilterParams, MissionPlanningLogbookIte
 import axios from "axios";
 import { Loader2, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 interface FiltersState {
@@ -20,6 +21,7 @@ interface FiltersState {
 
 export default function MissionPlanningLogbookPage() {
   const { isDark } = useTheme();
+  const { t } = useTranslation();
   const [data, setData] = useState<MissionPlanningLogbookItem[]>([]);
   const [filters, setFilters] = useState<FiltersState>({
     clients: [],
@@ -44,7 +46,7 @@ export default function MissionPlanningLogbookPage() {
         });
       }
     } catch (e: any) {
-      toast.error(e?.message ?? "Failed to load filters");
+      toast.error(e?.message ?? t('missionPlanning.filterError'));
     } finally {
       setFiltersLoading(false);
     }
@@ -58,11 +60,11 @@ export default function MissionPlanningLogbookPage() {
       if (json.code === 200) {
         setData(json.data ?? []);
       } else {
-        toast.error(json.message ?? "Failed to load data");
+        toast.error(json.message ?? t('missionPlanning.loadError'));
         setData([]);
       }
     } catch (e: any) {
-      toast.error(e?.message ?? "Network error");
+      toast.error(e?.message ?? t('missionPlanning.networkError'));
       setData([]);
     } finally {
       setLoading(false);
@@ -90,10 +92,10 @@ export default function MissionPlanningLogbookPage() {
             <div className="w-1 h-6 rounded-full bg-violet-600" />
             <div>
               <h1 className={`font-semibold text-base tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                Mission Planning Logbook
+                {t('missionPlanning.logbook')}
               </h1>
               <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                Browse and filter mission plan templates across evaluations and plannings
+                {t('missionPlanning.logbookSubtitle')}
               </p>
             </div>
           </div>
@@ -114,7 +116,7 @@ export default function MissionPlanningLogbookPage() {
               ) : (
                 <RefreshCw className="h-3.5 w-3.5" />
               )}
-              Refresh
+              {t('missionPlanning.refresh')}
             </Button>
           </div>
         </div>

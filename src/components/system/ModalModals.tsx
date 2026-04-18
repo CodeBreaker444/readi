@@ -8,7 +8,12 @@ import type {
   TicketType,
   UserOption,
 } from '@/config/types/maintenance';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Textarea } from '@/components/ui/textarea';
+import { cn } from '@/lib/utils';
+import { CheckCircle2, Loader2 } from 'lucide-react';
 import { useRef } from 'react';
 import { toast } from 'sonner';
 import type { NewTicketForm, ReportForm } from './useMaintenance';
@@ -273,25 +278,91 @@ export function CloseTicketModal({
   loading?: boolean;
 }) {
   return (
-    <Modal title="Close Ticket" open={open} onClose={onClose} isDark={isDark}>
-      <Field label="Closing Note">
-        <textarea
-          className={inputCls}
-          rows={4}
-          value={note}
-          onChange={(e) => onNoteChange(e.target.value)}
-          placeholder="Describe the intervention performed…"
-        />
-      </Field>
-      <ModalFooter
-        onCancel={onClose}
-        onConfirm={onSubmit}
-        confirmLabel="Close Ticket"
-        confirmClass="bg-emerald-600 hover:bg-emerald-700"
-        isDark={isDark}
-        loading={loading}
-      />
-    </Modal>
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent
+        className={cn(
+          'max-w-125! w-[95vw] max-h-[85vh] overflow-hidden flex flex-col p-0',
+          isDark ? 'bg-[#0f1419] border-white/8' : 'bg-white border-slate-200'
+        )}
+      >
+        <DialogHeader
+          className={cn(
+            'px-6 pb-4 pt-6 shrink-0',
+            isDark ? 'bg-slate-900/60' : 'bg-slate-50 border-b border-slate-200'
+          )}
+        >
+          <div className="flex items-center gap-3">
+            <div className={cn(
+              'flex h-9 w-9 items-center justify-center rounded-lg',
+              isDark ? 'bg-emerald-500/10 text-emerald-400' : 'bg-emerald-50 text-emerald-600'
+            )}>
+              <CheckCircle2 className="h-4.5 w-4.5" />
+            </div>
+            <div>
+              <DialogTitle className={cn('text-base font-bold', isDark ? 'text-white' : 'text-slate-900')}>
+                Close Ticket
+              </DialogTitle>
+              <p className={cn('mt-0.5 text-[12px]', isDark ? 'text-slate-500' : 'text-slate-400')}>
+                Describe the intervention performed before closing
+              </p>
+            </div>
+          </div>
+        </DialogHeader>
+
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+          <div>
+            <label className={cn('text-xs font-medium block mb-1.5', isDark ? 'text-slate-400' : 'text-slate-600')}>
+              Closing Note <span className="text-red-500">*</span>
+            </label>
+            <Textarea
+              value={note}
+              onChange={(e) => onNoteChange(e.target.value)}
+              placeholder="Describe the work performed and how the issue was resolved…"
+              rows={4}
+              className={cn(
+                'text-sm resize-none',
+                isDark ? 'bg-slate-800 border-slate-600 text-slate-200 placeholder:text-slate-500' : ''
+              )}
+            />
+          </div>
+
+          <div className={cn(
+            'flex items-start gap-2 rounded-lg px-3 py-2.5 text-[11px]',
+            isDark
+              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+              : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+          )}>
+            <CheckCircle2 className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+            <span>Closing this ticket will mark the system as operational and log a maintenance record.</span>
+          </div>
+        </div>
+
+        <div className={cn(
+          'flex items-center justify-end gap-2 px-6 py-4 border-t shrink-0',
+          isDark ? 'border-white/6 bg-slate-900/30' : 'border-slate-200 bg-slate-50'
+        )}>
+          <Button
+            variant="outline"
+            onClick={onClose}
+            disabled={loading}
+            className={cn('h-9 px-4 text-sm', isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : '')}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={onSubmit}
+            disabled={loading || !note.trim()}
+            className="h-9 px-4 text-sm bg-emerald-600 hover:bg-emerald-500 text-white"
+          >
+            {loading ? (
+              <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />Closing…</>
+            ) : (
+              'Close Ticket'
+            )}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -343,7 +414,7 @@ export function AssignTicketModal({
 
 
 export function ReportModal({
-  open, onClose, form, onFormChange, onSubmit, isDark, loading,
+  open, onClose, form, onFormChange, onSubmit, isDark, loading, canClose,
 }: {
   open: boolean;
   onClose: () => void;
@@ -352,6 +423,7 @@ export function ReportModal({
   onSubmit: (file?: File) => void;
   isDark?: boolean;
   loading?: boolean;
+  canClose?: boolean;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -387,15 +459,17 @@ export function ReportModal({
       <Field label="Attachment (optional)">
         <input ref={fileRef} type="file" className={inputCls} />
       </Field>
-      <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300 cursor-pointer mb-2">
-        <input
-          type="checkbox"
-          className="w-4 h-4 rounded text-indigo-600"
-          checked={form.close}
-          onChange={(e) => onFormChange({ close: e.target.checked })}
-        />
-        Close ticket on save
-      </label>
+      {canClose && (
+        <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300 cursor-pointer mb-2">
+          <input
+            type="checkbox"
+            className="w-4 h-4 rounded text-indigo-600"
+            checked={form.close}
+            onChange={(e) => onFormChange({ close: e.target.checked })}
+          />
+          Close ticket on save
+        </label>
+      )}
       <ModalFooter
         onCancel={onClose}
         onConfirm={() => onSubmit(fileRef.current?.files?.[0])}

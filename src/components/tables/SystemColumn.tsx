@@ -6,6 +6,7 @@ import { FileDown, Paperclip } from 'lucide-react';
 export interface DroneToolData {
     tool_id: number;
     tool_code: string;
+    tool_desc?: string | null;
     client_name: string;
     tool_status: string;
     tot_mission: number;
@@ -42,6 +43,16 @@ export const systemCreateColumns = ({
             cell: ({ getValue }) => (
                 <span className={textClass}>{getValue() as string}</span>
             ),
+        },
+        {
+            header: () => <span className={isDark ? 'text-gray-100' : ''}>Description</span>,
+            accessorKey: 'tool_desc',
+            cell: ({ getValue }) => {
+                const val = getValue() as string | null;
+                return val
+                    ? <span className={textClass}>{val}</span>
+                    : <span className={isDark ? 'text-slate-600' : 'text-slate-300'}>—</span>;
+            },
         },
         {
             header: () => <span className={isDark ? 'text-gray-100' : ''}>Client</span>,
@@ -275,6 +286,16 @@ export const getComponentColumns = ({ isDark, toolCodeMap, onView, onEdit, onDel
                     {getValue() as string}
                 </span>
             ),
+        },
+        {
+            header: () => <span className={hd}>Description</span>,
+            accessorKey: 'component_desc',
+            cell: ({ getValue }) => {
+                const val = getValue() as string | null;
+                return val
+                    ? <span className={text}>{val}</span>
+                    : <span className={isDark ? 'text-slate-600' : 'text-slate-300'}>—</span>;
+            },
         },
         {
             header: () => <span className={hd}>Code</span>,

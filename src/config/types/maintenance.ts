@@ -12,6 +12,7 @@ export interface MaintenanceComponent {
   tool_component_id: number;
   component_name: string;
   component_type: string | null;
+  description?: string | null;
   serial_number: string | null;
   last_maintenance: string | null;
   total_hours: number;
@@ -26,6 +27,7 @@ export interface MaintenanceDrone {
   tool_id: number;
   code: string;
   serial_number: string;
+  description: string | null;
   last_maintenance: string | null;
   total_hours: number;
   total_flights: number;
@@ -78,6 +80,7 @@ export interface MaintenanceTicket {
   entity_name?: string;
   assigner_name?: string;
   assigner_email?: string;
+  system_components?: Array<{ component_type: string; component_sn: string }>;
 }
 
 export interface TicketEvent {
