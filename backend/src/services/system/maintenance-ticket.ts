@@ -1,8 +1,8 @@
 'use server';
 
 import { supabase } from '@/backend/database/database';
-import { refreshMaintenanceDaysForTool } from '@/backend/utils/refresh-maintenance-days';
 import { sendNotificationToRoles, sendNotificationToUser } from '@/backend/services/notification/notification-service';
+import { refreshMaintenanceDaysForTool } from '@/backend/utils/refresh-maintenance-days';
 import type {
   AddReportPayload,
   AssignTicketPayload,
@@ -14,6 +14,7 @@ import type {
   TicketEvent,
   UserOption,
 } from '@/config/types/maintenance';
+import { sendTicketClosedEmail } from '../../../../lib/resend/mail';
 import {
   REGION,
   buildS3Key,
@@ -124,7 +125,7 @@ export async function getTicketList(owner_id: number, tool_id?: number): Promise
     const comp = row.component;
     const entityName = comp
       ? `${comp.component_type ?? ''} ${comp.component_code ?? comp.component_name ?? ''}`.trim()
-      : null;
+      : undefined;
 
     return {
       ticket_id:           row.ticket_id,
@@ -237,10 +238,8 @@ export async function closeTicket(payload: CloseTicketPayload): Promise<void> {
 
   await resetComponentCounters(ticket.fk_tool_id, now.toISOString(), ticket.fk_component_id ?? null);
 
-  // Restore system to OPERATIONAL
   await setSystemOperationalStatus(ticket.fk_tool_id, 'OPERATIONAL');
 
-  // Restore all NOT_OPERATIONAL components of this tool to OPERATIONAL
   await setAllComponentsOperational(ticket.fk_tool_id);
 
   await addTicketEvent(
@@ -255,13 +254,26 @@ export async function closeTicket(payload: CloseTicketPayload): Promise<void> {
   const notifMsg = `Maintenance ticket closed. ${systemCode} is now operational.${payload.note ? ` Note: ${payload.note}` : ''}`;
   const actionUrl = '/systems/maintenance-tickets';
 
-  // Notify the pilot who reported the issue
   if (ticket.reported_by_user_id) {
     sendNotificationToUser(ticket.reported_by_user_id, notifTitle, notifMsg, actionUrl).catch(() => {});
   }
-  // Notify OPM users
   if (ticket.fk_owner_id) {
     sendNotificationToRoles(ticket.fk_owner_id, ['OPM'], notifTitle, notifMsg, actionUrl).catch(() => {});
+
+    void (async () => {
+      try {
+        const { data: opmUsers } = await supabase
+          .from('users')
+          .select('email')
+          .eq('fk_owner_id', ticket.fk_owner_id)
+          .eq('user_role', 'OPM')
+          .eq('user_active', 'Y');
+        if (opmUsers?.length) {
+          const emails = (opmUsers as { email: string }[]).map(u => u.email).filter(Boolean);
+          await sendTicketClosedEmail(emails, systemCode, ticket.ticket_title, payload.note);
+        }
+      } catch {}
+    })();
   }
 }
 
