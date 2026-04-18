@@ -357,6 +357,7 @@ const table = useReactTable({
         isDark={isDark}
         operation={detailTarget}
         onClose={() => setDetailTarget(null)}
+        onEdit={(op) => { setDetailTarget(null); setEditTarget(op); }}
       />
 
       <OperationDialog

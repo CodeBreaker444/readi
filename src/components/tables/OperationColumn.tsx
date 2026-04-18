@@ -17,6 +17,7 @@ import {
   Clock,
   Eye,
   Loader2,
+  Pencil,
   Trash2,
   XCircle
 } from 'lucide-react';
@@ -143,6 +144,14 @@ export const getOperationColumns = (t: TFunction): ColumnDef<any>[] => [
             <TooltipTrigger asChild>
               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => meta.onViewDetails(row.original)}>
                 <Eye className="h-3.5 w-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{t('operations.actions.view')}</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => meta.onEdit(row.original)}>
+                <Pencil className="h-3.5 w-3.5" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>{t('operations.actions.edit')}</TooltipContent>

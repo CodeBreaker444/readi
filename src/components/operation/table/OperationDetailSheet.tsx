@@ -21,6 +21,7 @@ import {
   FileText,
   MapPin,
   Navigation,
+  Pencil,
   User,
   Wrench,
 } from 'lucide-react';
@@ -76,12 +77,14 @@ interface OperationDetailSheetProps {
   isDark: boolean;
   operation: Operation | null;
   onClose: () => void;
+  onEdit?: (op: Operation) => void;
 }
 
 export function OperationDetailSheet({
   isDark,
   operation,
   onClose,
+  onEdit,
 }: OperationDetailSheetProps) {
   const { t } = useTranslation();
   const [maintenanceOpen, setMaintenanceOpen] = useState(false);
@@ -109,17 +112,30 @@ export function OperationDetailSheet({
           {operation && (
             <>
               <SheetHeader className="mb-6 pb-4 border-b">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-mono text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
-                    {operation.mission_code}
-                  </span>
-                  {operation.status_name && STATUS_BADGE[operation.status_name] && (
-                    <Badge
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-mono text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
+                      {operation.mission_code}
+                    </span>
+                    {operation.status_name && STATUS_BADGE[operation.status_name] && (
+                      <Badge
+                        variant="outline"
+                        className={cn('text-xs', STATUS_BADGE[operation.status_name].className)}
+                      >
+                        {statusLabel}
+                      </Badge>
+                    )}
+                  </div>
+                  {onEdit && (
+                    <Button
                       variant="outline"
-                      className={cn('text-xs', STATUS_BADGE[operation.status_name].className)}
+                      size="sm"
+                      className="gap-1.5 h-7 text-xs"
+                      onClick={() => { onEdit(operation); onClose(); }}
                     >
-                      {statusLabel}
-                    </Badge>
+                      <Pencil className="h-3 w-3" />
+                      {t('operations.actions.edit')}
+                    </Button>
                   )}
                 </div>
                 <SheetTitle className="text-left text-base mt-1">
