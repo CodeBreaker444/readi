@@ -79,6 +79,7 @@ export async function getTicketList(owner_id: number, tool_id?: number): Promise
       ticket_id,
       fk_owner_id,
       fk_tool_id,
+      fk_component_id,
       ticket_type,
       ticket_status,
       ticket_priority,
@@ -91,10 +92,18 @@ export async function getTicketList(owner_id: number, tool_id?: number): Promise
       tool:fk_tool_id (
         tool_code,
         tool_name,
+        tool_description,
+        tool_metadata,
         tool_model:fk_model_id (
           model_name,
           manufacturer
         )
+      ),
+      component:fk_component_id (
+        component_type,
+        component_code,
+        component_name,
+        serial_number
       ),
       assignee:assigned_to_user_id (
         user_id,
@@ -111,32 +120,42 @@ export async function getTicketList(owner_id: number, tool_id?: number): Promise
   const { data, error } = await query;
   if (error) throw new Error(`getTicketList: ${error.message}`);
 
-  return (data ?? []).map((row: any) => ({
-    ticket_id:           row.ticket_id,
-    fk_owner_id:         row.fk_owner_id,
-    fk_tool_id:          row.fk_tool_id,
-    ticket_type:         row.ticket_type ?? 'STANDARD',
-    entity_type:         'AIRCRAFT' as const,
-    ticket_status:       row.ticket_status ?? 'OPEN',
-    ticket_priority:     row.ticket_priority ?? 'MEDIUM',
-    assigned_to_user_id: row.assigned_to_user_id ?? null,
-    opened_by:           'system',
-    opened_at:           row.reported_at ?? row.created_at,
-    closed_at:           row.closed_at ?? null,
-    note:                row.resolution_notes ?? null,
-    created_at:          row.created_at,
-    updated_at:          row.updated_at,
-    drone_code:          row.tool?.tool_code ?? '—',
-    drone_serial:        row.tool?.tool_name ?? '—',
-    drone_model:         row.tool?.tool_model
-      ? `${row.tool.tool_model.manufacturer ?? ''} ${row.tool.tool_model.model_name ?? ''}`.trim()
-      : '—',
-    assigner_name:  row.assignee
-      ? `${row.assignee.first_name ?? ''} ${row.assignee.last_name ?? ''}`.trim()
-      : 'Unassigned',
-    assigner_email: row.assignee?.email ?? '',
-    trigger_params: null,
-  }));
+  return (data ?? []).map((row: any) => {
+    const comp = row.component;
+    const entityName = comp
+      ? `${comp.component_type ?? ''} ${comp.component_code ?? comp.component_name ?? ''}`.trim()
+      : null;
+
+    return {
+      ticket_id:           row.ticket_id,
+      fk_owner_id:         row.fk_owner_id,
+      fk_tool_id:          row.fk_tool_id,
+      fk_component_id:     row.fk_component_id ?? null,
+      ticket_type:         row.ticket_type ?? 'STANDARD',
+      entity_type:         comp ? 'COMPONENT' as const : 'AIRCRAFT' as const,
+      ticket_status:       row.ticket_status ?? 'OPEN',
+      ticket_priority:     row.ticket_priority ?? 'MEDIUM',
+      assigned_to_user_id: row.assigned_to_user_id ?? null,
+      opened_by:           'system',
+      opened_at:           row.reported_at ?? row.created_at,
+      closed_at:           row.closed_at ?? null,
+      note:                row.resolution_notes ?? null,
+      created_at:          row.created_at,
+      updated_at:          row.updated_at,
+      drone_code:          row.tool?.tool_code ?? '—',
+      drone_serial:        row.tool?.tool_name ?? '—',
+      drone_model:         row.tool?.tool_model
+        ? `${row.tool.tool_model.manufacturer ?? ''} ${row.tool.tool_model.model_name ?? ''}`.trim()
+        : (row.tool?.tool_description ?? '—'),
+      entity_name:         entityName,
+      component_sn:        comp?.serial_number ?? null,
+      assigner_name:  row.assignee
+        ? `${row.assignee.first_name ?? ''} ${row.assignee.last_name ?? ''}`.trim()
+        : 'Unassigned',
+      assigner_email: row.assignee?.email ?? '',
+      trigger_params: null,
+    };
+  });
 }
 
 
@@ -390,7 +409,7 @@ export async function deleteAttachment(attachmentId: number): Promise<void> {
 export async function getDroneList(ownerId: number): Promise<DroneOption[]> {
   const { data, error } = await supabase
     .from('tool')
-    .select('tool_id, tool_code, tool_name, fk_status_id')
+    .select('tool_id, tool_code, tool_name, tool_description, tool_metadata')
     .eq('fk_owner_id', ownerId)
     .eq('tool_active', 'Y')
     .order('tool_code');
@@ -400,8 +419,8 @@ export async function getDroneList(ownerId: number): Promise<DroneOption[]> {
   return (data ?? []).map((row: any) => ({
     tool_id:     row.tool_id,
     tool_code:   row.tool_code ?? '',
-    tool_desc:   row.tool_name ?? '',
-    tool_status: String(row.fk_status_id ?? 'UNKNOWN'),
+    tool_desc:   row.tool_description ?? row.tool_name ?? '',
+    tool_status: row.tool_metadata?.status ?? 'OPERATIONAL',
   }));
 }
 

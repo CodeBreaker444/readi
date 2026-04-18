@@ -66,7 +66,7 @@ export const TablePagination: FC<Props> = ({ table }) => {
         </div>
 
         <div className={`hidden w-24 items-center justify-center text-sm font-medium md:flex ${textMuted}`}>
-          {t('planning.missionPlanning.page', { defaultValue: 'Page' })} {currentPage} {t('planning.missionTemplate.to', { defaultValue: 'of' })} {pageCount}
+          {t('planning.missionPlanning.page', { defaultValue: 'Page' })} {currentPage} {"of"} {pageCount}
         </div>
 
         <div className="flex items-center space-x-2">

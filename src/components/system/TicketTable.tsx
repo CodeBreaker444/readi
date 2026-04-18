@@ -173,6 +173,46 @@ export function TicketTable({
         },
       },
       {
+        id: "component",
+        header: "Component",
+        cell: ({ row }) => {
+          const t = row.original;
+          if (!t.entity_name && !t.component_sn) {
+            return (
+              <span className={`text-xs ${isDark ? "text-slate-600" : "text-slate-300"}`}>—</span>
+            );
+          }
+          return (
+            <div>
+              {t.entity_name && (
+                <p className={`text-xs font-medium ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+                  {t.entity_name}
+                </p>
+              )}
+              {t.component_sn && (
+                <p className={`text-[11px] font-mono ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+                  {t.component_sn}
+                </p>
+              )}
+            </div>
+          );
+        },
+      },
+      {
+        id: "description",
+        header: "Description",
+        cell: ({ row }) => {
+          const note = row.original.note;
+          return note ? (
+            <span className={`text-xs line-clamp-2 max-w-[200px] ${isDark ? "text-slate-300" : "text-slate-600"}`}>
+              {note}
+            </span>
+          ) : (
+            <span className={`text-xs ${isDark ? "text-slate-600" : "text-slate-300"}`}>—</span>
+          );
+        },
+      },
+      {
         id: "serial",
         header: "Serial",
         cell: ({ row }) => (
@@ -404,8 +444,8 @@ export function TicketTable({
       <div className={`border-t px-2 flex items-center justify-between ${isDark ? "border-slate-700" : "border-slate-200"}`}>
         <ExportButtons
           filename="Maintenance Tickets"
-          headers={['Ticket ID', 'Type', 'System', 'Serial', 'Assigned To', 'Email', 'Status', 'Priority', 'Opened', 'Closed']}
-          rows={tickets.map(t => [t.ticket_id, t.ticket_type, t.drone_code ?? '', t.drone_serial ?? '', t.assigner_name ?? '', t.assigner_email ?? '', t.ticket_status, t.ticket_priority, t.opened_at, t.closed_at ?? ''])}
+          headers={['Ticket ID', 'Type', 'System', 'Serial', 'Component', 'Component SN', 'Description', 'Assigned To', 'Email', 'Status', 'Priority', 'Opened', 'Closed']}
+          rows={tickets.map(t => [t.ticket_id, t.ticket_type, t.drone_code ?? '', t.drone_serial ?? '', t.entity_name ?? '', t.component_sn ?? '', t.note ?? '', t.assigner_name ?? '', t.assigner_email ?? '', t.ticket_status, t.ticket_priority, t.opened_at, t.closed_at ?? ''])}
         />
         <TablePagination table={table} />
       </div>

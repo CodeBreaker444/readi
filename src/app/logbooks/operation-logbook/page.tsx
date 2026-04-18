@@ -20,6 +20,7 @@ import {
 import axios from "axios";
 import { Loader2, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 interface FiltersState {
@@ -35,6 +36,7 @@ interface FiltersState {
 
 export default function OperationLogbookPage() {
   const { isDark } = useTheme();
+  const { t } = useTranslation();
   const [data, setData] = useState<OperationLogbookItem[]>([]);
   const [filters, setFilters] = useState<FiltersState>({
     pilots: [],
@@ -70,7 +72,7 @@ export default function OperationLogbookPage() {
         });
       }
     } catch (e: any) {
-      toast.error(e?.message ?? "Failed to load filters");
+      toast.error(e?.message ?? t('operationLogbook.filterError'));
     } finally {
       setFiltersLoading(false);
     }
@@ -85,11 +87,11 @@ export default function OperationLogbookPage() {
       if (json.code === 200) {
         setData(json.data ?? []);
       } else {
-        toast.error(json.message ?? "Failed to load data");
+        toast.error(json.message ?? t('operationLogbook.loadError'));
         setData([]);
       }
     } catch (e: any) {
-      toast.error(e?.message ?? "Network error");
+      toast.error(e?.message ?? t('operationLogbook.networkError'));
       setData([]);
     } finally {
       setLoading(false);
@@ -124,10 +126,10 @@ export default function OperationLogbookPage() {
                   isDark ? "text-white" : "text-slate-900"
                 }`}
               >
-                Operation Flight Logbook
+                {t('operationLogbook.title')}
               </h1>
               <p className={`text-xs ${isDark ? "text-slate-500" : "text-slate-400"}`}>
-                Browse, filter and analyse flight mission records
+                {t('operationLogbook.subtitle')}
               </p>
             </div>
           </div>
@@ -151,7 +153,7 @@ export default function OperationLogbookPage() {
               ) : (
                 <RefreshCw className="h-3.5 w-3.5" />
               )}
-              Refresh
+              {t('operationLogbook.refresh')}
             </Button>
           </div>
         </div>

@@ -3,7 +3,7 @@ import { MissionPlanningLogbookItem } from "@/config/types/logbook";
 import { ColumnDef } from "@tanstack/react-table";
 import { FlaskConical } from "lucide-react";
 
-export const getColumns = (isDark: boolean): ColumnDef<MissionPlanningLogbookItem>[] => [
+export const getColumns = (isDark: boolean, t: (key: string) => string): ColumnDef<MissionPlanningLogbookItem>[] => [
     {
         accessorKey: "mission_planning_id",
         header: "#",
@@ -16,7 +16,7 @@ export const getColumns = (isDark: boolean): ColumnDef<MissionPlanningLogbookIte
     },
     {
         accessorKey: "client_name",
-        header: "Client",
+        header: t('missionPlanning.columns.client'),
         cell: ({ getValue }) => (
             <span className={`font-medium ${isDark ? "text-slate-200" : "text-slate-800"}`}>
                 {String(getValue())}
@@ -25,7 +25,7 @@ export const getColumns = (isDark: boolean): ColumnDef<MissionPlanningLogbookIte
     },
     {
         accessorKey: "evaluation_desc",
-        header: "Evaluation",
+        header: t('missionPlanning.columns.evaluation'),
         cell: ({ getValue }) => (
             <span className={`text-sm ${isDark ? "text-slate-200" : "text-slate-800"}`}>
                 {String(getValue() || "—")}
@@ -34,7 +34,7 @@ export const getColumns = (isDark: boolean): ColumnDef<MissionPlanningLogbookIte
     },
     {
         accessorKey: "planning_desc",
-        header: "Planning",
+        header: t('missionPlanning.columns.planning'),
         cell: ({ getValue }) => (
             <span className={`text-sm ${isDark ? "text-slate-200" : "text-slate-800"}`}>
                 {String(getValue() || "—")}
@@ -43,7 +43,7 @@ export const getColumns = (isDark: boolean): ColumnDef<MissionPlanningLogbookIte
     },
     {
         accessorKey: "mission_planning_desc",
-        header: "Mission Desc",
+        header: t('missionPlanning.columns.missionDesc'),
         cell: ({ getValue }) => (
             <span className={`text-sm ${isDark ? "text-slate-200" : "text-slate-800"}`}>
                 {String(getValue() || "—")}
@@ -52,7 +52,7 @@ export const getColumns = (isDark: boolean): ColumnDef<MissionPlanningLogbookIte
     },
     {
         accessorKey: "mission_planning_code",
-        header: "Code",
+        header: t('missionPlanning.code'),
         cell: ({ getValue }) => (
             <code className={`rounded px-1.5 py-0.5 text-xs font-semibold ${
                 isDark ? "bg-slate-800 text-slate-300" : "bg-slate-100 text-slate-700"
@@ -64,7 +64,7 @@ export const getColumns = (isDark: boolean): ColumnDef<MissionPlanningLogbookIte
     },
     {
         accessorKey: "mission_planning_ver",
-        header: "Version",
+        header: t('missionPlanning.columns.version'),
         cell: ({ getValue }) => (
             <Badge variant={isDark ? "outline" : "secondary"} className={`text-xs ${isDark ? "text-slate-200" : "text-slate-800"}`}>
                 v{String(getValue())}
@@ -74,7 +74,7 @@ export const getColumns = (isDark: boolean): ColumnDef<MissionPlanningLogbookIte
     },
     {
         accessorKey: "tot_test",
-        header: "Tests",
+        header: t('missionPlanning.tests'),
         cell: ({ getValue }) => {
             const count = Number(getValue()) || 0;
             return (

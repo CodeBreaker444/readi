@@ -23,6 +23,7 @@ import {
 } from "@/config/types/logbook";
 import { Search, SlidersHorizontal, X } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 interface OperationFilterPanelProps {
   pilots: PilotOption[];
@@ -53,6 +54,7 @@ export function OperationFilterPanel({
   isDark,
   onSearch,
 }: OperationFilterPanelProps) {
+  const { t } = useTranslation();
   const [picId, setPicId] = useState(NONE);
   const [clientId, setClientId] = useState(NONE);
   const [droneId, setDroneId] = useState(NONE);
@@ -111,7 +113,7 @@ export function OperationFilterPanel({
             isDark ? "text-slate-300" : "text-slate-600"
           }`}
         >
-          Filters
+          {t('operationLogbook.filter.title')}
         </h2>
       </div>
 
@@ -123,7 +125,7 @@ export function OperationFilterPanel({
               isDark ? "text-slate-500" : "text-slate-400"
             }`}
           >
-            Date Start
+            {t('operationLogbook.filter.dateStart')}
           </Label>
           <Input
             type="date"
@@ -144,7 +146,7 @@ export function OperationFilterPanel({
               isDark ? "text-slate-500" : "text-slate-400"
             }`}
           >
-            Date End
+            {t('operationLogbook.filter.dateEnd')}
           </Label>
           <Input
             type="date"
@@ -158,28 +160,28 @@ export function OperationFilterPanel({
           />
         </div>
 
-        <FilterSelect label="PiC" value={picId} onChange={setPicId} isDark={isDark}
+        <FilterSelect label={t('operationLogbook.filter.pic')} allLabel={t('operationLogbook.filter.all')} value={picId} onChange={setPicId} isDark={isDark}
           options={pilots.map((p) => ({ value: String(p.user_id), label: `${p.fullname} [${p.pilot_status_desc}]` }))}
         />
-        <FilterSelect label="Client" value={clientId} onChange={setClientId} isDark={isDark}
+        <FilterSelect label={t('operationLogbook.filter.client')} allLabel={t('operationLogbook.filter.all')} value={clientId} onChange={setClientId} isDark={isDark}
           options={clients.map((c) => ({ value: String(c.client_id), label: c.client_name }))}
         />
-        <FilterSelect label="Drone System" value={droneId} onChange={setDroneId} isDark={isDark}
+        <FilterSelect label={t('operationLogbook.filter.droneSystem')} allLabel={t('operationLogbook.filter.all')} value={droneId} onChange={setDroneId} isDark={isDark}
           options={drones.map((d) => ({ value: String(d.tool_id), label: `${d.tool_code} — ${d.tool_desc}` }))}
         />
-        <FilterSelect label="Mission Type" value={typeId} onChange={setTypeId} isDark={isDark}
-          options={missionTypes.map((t) => ({ value: String(t.mission_type_id), label: t.mission_type_desc }))}
+        <FilterSelect label={t('operationLogbook.filter.missionType')} allLabel={t('operationLogbook.filter.all')} value={typeId} onChange={setTypeId} isDark={isDark}
+          options={missionTypes.map((mt) => ({ value: String(mt.mission_type_id), label: mt.mission_type_desc }))}
         />
-        <FilterSelect label="Category" value={categoryId} onChange={setCategoryId} isDark={isDark}
+        <FilterSelect label={t('operationLogbook.filter.category')} allLabel={t('operationLogbook.filter.all')} value={categoryId} onChange={setCategoryId} isDark={isDark}
           options={missionCategories.map((c) => ({ value: String(c.mission_category_id), label: c.mission_category_desc }))}
         />
-        <FilterSelect label="Status" value={statusId} onChange={setStatusId} isDark={isDark}
+        <FilterSelect label={t('operationLogbook.filter.status')} allLabel={t('operationLogbook.filter.all')} value={statusId} onChange={setStatusId} isDark={isDark}
           options={missionStatuses.map((s) => ({ value: String(s.mission_status_id), label: s.mission_status_desc }))}
         />
-        <FilterSelect label="Result" value={resultId} onChange={setResultId} isDark={isDark}
+        <FilterSelect label={t('operationLogbook.filter.result')} allLabel={t('operationLogbook.filter.all')} value={resultId} onChange={setResultId} isDark={isDark}
           options={missionResults.map((r) => ({ value: String(r.mission_result_id), label: r.mission_result_desc }))}
         />
-        <FilterSelect label="Mission Plan" value={planId} onChange={setPlanId} isDark={isDark}
+        <FilterSelect label={t('operationLogbook.filter.missionPlan')} allLabel={t('operationLogbook.filter.all')} value={planId} onChange={setPlanId} isDark={isDark}
           options={missionPlans.map((p) => ({ value: String(p.mission_planning_id), label: `${p.mission_planning_code} — ${p.mission_planning_desc}` }))}
         />
       </div>
@@ -201,7 +203,7 @@ export function OperationFilterPanel({
           }`}
         >
           <Search className="h-3.5 w-3.5" />
-          Search
+          {t('operationLogbook.filter.search')}
         </Button>
         <Button
           onClick={handleReset}
@@ -215,7 +217,7 @@ export function OperationFilterPanel({
           }`}
         >
           <X className="h-3.5 w-3.5" />
-          Reset
+          {t('operationLogbook.filter.reset')}
         </Button>
       </div>
     </div>
@@ -226,12 +228,14 @@ export function OperationFilterPanel({
 
 function FilterSelect({
   label,
+  allLabel,
   value,
   onChange,
   options,
   isDark,
 }: {
   label: string;
+  allLabel: string;
   value: string;
   onChange: (v: string) => void;
   options: { value: string; label: string }[];
@@ -254,7 +258,7 @@ function FilterSelect({
               : "bg-white border-slate-200 text-slate-700 focus:ring-violet-400/20 focus:border-violet-400"
           }`}
         >
-          <SelectValue placeholder="All" />
+          <SelectValue placeholder={allLabel} />
         </SelectTrigger>
         <SelectContent
           className={`${
@@ -267,7 +271,7 @@ function FilterSelect({
             value="0"
             className={`text-xs ${isDark ? "text-slate-400" : "text-slate-400"}`}
           >
-            All
+            {allLabel}
           </SelectItem>
           {options.map((o) => (
             <SelectItem key={o.value} value={o.value} className="text-xs">
