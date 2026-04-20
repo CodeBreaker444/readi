@@ -154,35 +154,28 @@ export function OperationDetailSheet({
                   <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                     {t('operations.table.detail.timeline')}
                   </h3>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div
-                      className={`rounded-lg border p-3 space-y-1 ${
-                        isDark ? 'bg-slate-800 border-slate-700' : 'bg-muted/30'
-                      }`}
-                    >
+                  <div className="grid grid-cols-1 gap-2">
+                    <div className={`rounded-lg border p-3 space-y-1 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-muted/30'}`}>
                       <p className="text-xs text-muted-foreground flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        {t('operations.table.detail.scheduled')}
+                        {t('operations.table.detail.plannedDate')}
                       </p>
-                      <p className="text-sm font-medium">
-                        {formatDateTime(operation.scheduled_start)}
-                      </p>
+                      <p className="text-sm font-medium">{formatDateTime(operation.scheduled_start)}</p>
                     </div>
-                    {operation.actual_end && (
-                      <div
-                        className={`rounded-lg border p-3 space-y-1 ${
-                          isDark ? 'bg-slate-800 border-slate-700' : 'bg-muted/30'
-                        }`}
-                      >
-                        <p className="text-xs text-muted-foreground flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {t('operations.table.detail.endTime')}
-                        </p>
-                        <p className="text-sm font-medium">
-                          {formatDateTime(operation.actual_end)}
-                        </p>
-                      </div>
-                    )}
+                    <div className={`rounded-lg border p-3 space-y-1 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-muted/30'}`}>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Clock className="h-3 w-3 text-amber-500" />
+                        {t('operations.table.detail.officialStart')}
+                      </p>
+                      <p className="text-sm font-medium">{formatDateTime(operation.actual_start)}</p>
+                    </div>
+                    <div className={`rounded-lg border p-3 space-y-1 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-muted/30'}`}>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Clock className="h-3 w-3 text-emerald-500" />
+                        {t('operations.table.detail.officialEnd')}
+                      </p>
+                      <p className="text-sm font-medium">{formatDateTime(operation.actual_end)}</p>
+                    </div>
                   </div>
                 </section>
 

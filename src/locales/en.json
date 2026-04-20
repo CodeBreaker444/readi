@@ -1222,6 +1222,9 @@
       "empty": "No operations found",
       "detail": {
         "timeline": "Timeline",
+        "plannedDate": "Planned Date",
+        "officialStart": "Official Start",
+        "officialEnd": "Official End",
         "scheduled": "Scheduled",
         "endTime": "End Time",
         "personnelEquipment": "Personnel & Equipment",
@@ -1272,6 +1275,9 @@
       },
       "detail": {
         "timeline": "Timeline",
+        "plannedDate": "Planned Date",
+        "officialStart": "Official Start",
+        "officialEnd": "Official End",
         "scheduled": "Scheduled",
         "startedAt": "Started",
         "completed": "Completed",

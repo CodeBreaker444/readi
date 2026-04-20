@@ -180,6 +180,10 @@ function transformMissionRow(row: Record<string, unknown>): Mission | null {
 
     return {
       mission_id: row.pilot_mission_id as number,
+      mission_name: (row.mission_name as string | null) ?? null,
+      planned_at: scheduledStart,
+      official_start: actualStart,
+      official_end: actualEnd,
       fk_owner_id: (planning?.fk_owner_id as number) ?? 0,
       fk_vehicle_id: (tool?.tool_id as number) ?? 0,
       fk_pic_id: row.fk_pilot_user_id as number,

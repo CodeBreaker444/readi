@@ -171,6 +171,10 @@ export interface Mission {
   client_name: string;
   vehicle_code: string;
   vehicle_desc: string;
+  mission_name: string | null;
+  planned_at: string | null;
+  official_start: string | null;
+  official_end: string | null;
   date_start: string;
   time_start: string;
   date_end: string | null;
