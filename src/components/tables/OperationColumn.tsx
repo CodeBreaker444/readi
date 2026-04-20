@@ -111,6 +111,11 @@ export const getOperationColumns = (t: TFunction, isDark = false): ColumnDef<any
       );
     },
   },
+  {
+    accessorKey: 'tool_code',
+    header: t('operations.table.detail.systemName', 'System'),
+    cell: ({ getValue }) => <span className="text-xs">{getValue<string>() || '—'}</span>,
+  },
   // {
   //   accessorKey: 'mission_name',
   //   header: t('operations.table.title'),

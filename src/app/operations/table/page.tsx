@@ -62,6 +62,8 @@ interface FilterState {
   search: string;
   statusFilter: string;
   pilotFilter: string;
+  droneFilter: string;
+  clientFilter: string;
   dateStart: string;
   dateEnd: string;
 }
@@ -70,6 +72,8 @@ const DEFAULT_FILTERS: FilterState = {
   search: '',
   statusFilter: 'ALL',
   pilotFilter: 'ALL',
+  droneFilter: 'ALL',
+  clientFilter: 'ALL',
   dateStart: '',
   dateEnd: '',
 };
@@ -98,6 +102,8 @@ export default function OperationsPage() {
   const [pilots, setPilots] = useState<
     { user_id: number; first_name: string; last_name: string }[]
   >([]);
+  const [tools, setTools] = useState<{ tool_id: number; tool_name: string; tool_code: string }[]>([]);
+  const [clients, setClients] = useState<{ client_id: number; client_name: string }[]>([]);
   const [optionsLoaded, setOptionsLoaded] = useState(false);
 
   useEffect(() => {
@@ -108,6 +114,8 @@ export default function OperationsPage() {
         if (filters.search) params.set('search', filters.search);
         if (filters.statusFilter !== 'ALL') params.set('status', filters.statusFilter);
         if (filters.pilotFilter !== 'ALL') params.set('pilot_id', filters.pilotFilter);
+        if (filters.droneFilter !== 'ALL') params.set('tool_id', filters.droneFilter);
+        if (filters.clientFilter !== 'ALL') params.set('client_id', filters.clientFilter);
         if (filters.dateStart) params.set('date_start', filters.dateStart);
         if (filters.dateEnd) params.set('date_end', filters.dateEnd);
 
@@ -120,6 +128,8 @@ export default function OperationsPage() {
 
         if (optRes) {
           setPilots(optRes.data.pilots ?? []);
+          setTools(optRes.data.tools ?? []);
+          setClients(optRes.data.clients ?? []);
           setOptionsLoaded(true);
         }
       } catch (e) {
@@ -328,6 +338,8 @@ const table = useReactTable({
           loading={loading}
           filters={filters}
           pilots={pilots}
+          tools={tools}
+          clients={clients}
           operationsCount={operations.length}
           onFilterChange={setFilters}
           onReset={() => setFilters(DEFAULT_FILTERS)}

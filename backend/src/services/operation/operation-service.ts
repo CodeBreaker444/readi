@@ -14,7 +14,7 @@ export async function listOperations(
   params: ListOperationsQuerySchema,
   ownerId: number
 ): Promise<OperationsListResponse> {
-  const { page, pageSize, status, search, pilot_id, date_start, date_end } = params;
+  const { page, pageSize, status, search, pilot_id, tool_id, client_id, date_start, date_end } = params;
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
@@ -57,6 +57,17 @@ export async function listOperations(
   if (date_end) query = query.lte('scheduled_start', date_end + 'T23:59:59');
   if (status) query = query.eq('status_name', status);
   if (pilot_id) query = query.eq('fk_pilot_user_id', pilot_id);
+  if (tool_id) query = query.eq('fk_tool_id', tool_id);
+  if (client_id) {
+    const { data: plannings } = await supabase
+      .from('planning')
+      .select('planning_id')
+      .eq('fk_owner_id', ownerId)
+      .eq('fk_client_id', client_id);
+    const ids = (plannings ?? []).map((p: any) => p.planning_id);
+    if (ids.length === 0) return { data: [], total: 0, page, pageSize };
+    query = query.in('fk_planning_id', ids);
+  }
   if (search) {
     query = query.or(
       `mission_code.ilike.%${search}%,mission_name.ilike.%${search}%,location.ilike.%${search}%`

@@ -17,6 +17,8 @@ interface FilterState {
   search: string;
   statusFilter: string;
   pilotFilter: string;
+  droneFilter: string;
+  clientFilter: string;
   dateStart: string;
   dateEnd: string;
 }
@@ -27,11 +29,24 @@ interface Pilot {
   last_name: string;
 }
 
+interface Tool {
+  tool_id: number;
+  tool_name: string;
+  tool_code: string;
+}
+
+interface Client {
+  client_id: number;
+  client_name: string;
+}
+
 interface OperationsFiltersProps {
   isDark: boolean;
   loading: boolean;
   filters: FilterState;
   pilots: Pilot[];
+  tools: Tool[];
+  clients: Client[];
   operationsCount: number;
   onFilterChange: (filters: FilterState) => void;
   onReset: () => void;
@@ -42,6 +57,8 @@ export function OperationsFilters({
   loading,
   filters,
   pilots,
+  tools,
+  clients,
   operationsCount,
   onFilterChange,
   onReset,
@@ -95,6 +112,40 @@ export function OperationsFilters({
               {pilots.map((p) => (
                 <SelectItem key={p.user_id} value={p.user_id.toString()}>
                   {p.first_name} {p.last_name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={filters.droneFilter}
+            onValueChange={(v) => onFilterChange({ ...filters, droneFilter: v })}
+          >
+            <SelectTrigger className="w-44 cursor-pointer">
+              <SelectValue placeholder={t('operations.table.filters.allDrones', 'All Drones')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">{t('operations.table.filters.allDrones', 'All Drones')}</SelectItem>
+              {tools.map((tool) => (
+                <SelectItem key={tool.tool_id} value={tool.tool_id.toString()}>
+                  {tool.tool_name} {tool.tool_code ? `(${tool.tool_code})` : ''}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={filters.clientFilter}
+            onValueChange={(v) => onFilterChange({ ...filters, clientFilter: v })}
+          >
+            <SelectTrigger className="w-44 cursor-pointer">
+              <SelectValue placeholder={t('operations.table.filters.allClients', 'All Clients')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">{t('operations.table.filters.allClients', 'All Clients')}</SelectItem>
+              {clients.map((c) => (
+                <SelectItem key={c.client_id} value={c.client_id.toString()}>
+                  {c.client_name}
                 </SelectItem>
               ))}
             </SelectContent>

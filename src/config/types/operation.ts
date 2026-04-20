@@ -36,6 +36,8 @@ export interface ListOperationsQuerySchema {
   status?: string;
   search?: string;
   pilot_id?: number;
+  tool_id?: number;
+  client_id?: number;
   date_start?: string;
   date_end?: string;
 }
