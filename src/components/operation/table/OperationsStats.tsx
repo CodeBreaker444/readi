@@ -24,10 +24,10 @@ export function OperationsStats({
   const { t } = useTranslation();
 
   const stats = [
-    { labelKey: 'operations.table.stats.total', value: total, color: 'text-foreground' },
-    { labelKey: 'operations.table.stats.planned', value: planned, color: 'text-blue-600' },
-    { labelKey: 'operations.table.stats.inProgress', value: inProgress, color: 'text-violet-600' },
-    { labelKey: 'operations.table.stats.completed', value: completed, color: 'text-emerald-600' },
+    { labelKey: 'operations.table.stats.total', value: total, color: isDark ? 'text-slate-100' : 'text-slate-900' },
+    { labelKey: 'operations.table.stats.planned', value: planned, color: isDark ? 'text-blue-400' : 'text-blue-600' },
+    { labelKey: 'operations.table.stats.inProgress', value: inProgress, color: isDark ? 'text-violet-400' : 'text-violet-600' },
+    { labelKey: 'operations.table.stats.completed', value: completed, color: isDark ? 'text-emerald-400' : 'text-emerald-600' },
   ];
 
   return (

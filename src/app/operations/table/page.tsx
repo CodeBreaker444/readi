@@ -131,7 +131,7 @@ export default function OperationsPage() {
     fetchOperations();
   }, [filters, refreshKey]);
 
-const columns = useMemo(() => getOperationColumns(t), [t]);
+const columns = useMemo(() => getOperationColumns(t, isDark), [t, isDark]);
 
 const tableMeta = useMemo<OperationTableMeta>(
   () => ({

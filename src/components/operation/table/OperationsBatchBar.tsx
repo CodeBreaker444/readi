@@ -1,5 +1,16 @@
 'use client';
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -9,7 +20,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { Trash2, Wand2, X } from 'lucide-react';
+import { Check, Trash2, Wand2, X } from 'lucide-react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 interface Pilot {
@@ -48,6 +60,20 @@ export function OperationsBatchBar({
   onBatchAutofill,
 }: OperationsBatchBarProps) {
   const { t } = useTranslation();
+  const [pendingStatus, setPendingStatus] = useState<string>('');
+  const [pendingPilot, setPendingPilot] = useState<string>('');
+
+  function applyStatus() {
+    if (!pendingStatus) return;
+    onBatchStatus(pendingStatus);
+    setPendingStatus('');
+  }
+
+  function applyPilot() {
+    if (!pendingPilot) return;
+    onBatchSetPilot(pendingPilot);
+    setPendingPilot('');
+  }
 
   return (
     <div
@@ -60,10 +86,15 @@ export function OperationsBatchBar({
         {t('operations.table.batch.selected', { count: selectedCount })}
       </span>
 
-      <div className="ml-auto flex items-center gap-2">
-        <Select onValueChange={onBatchSetPilot} disabled={batchSettingPilot}>
+      <div className="ml-auto flex items-center gap-2 flex-wrap">
+        {/* Set Pilot + Apply */}
+        <Select
+          value={pendingPilot}
+          onValueChange={setPendingPilot}
+          disabled={batchSettingPilot}
+        >
           <SelectTrigger
-            className={cn('h-8 w-44 text-xs', isDark ? 'border-slate-600 bg-slate-700' : '')}
+            className={cn('h-8 w-44 text-xs cursor-pointer', isDark ? 'border-slate-600 bg-slate-700' : '')}
           >
             <SelectValue
               placeholder={
@@ -81,14 +112,30 @@ export function OperationsBatchBar({
             ))}
           </SelectContent>
         </Select>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={!pendingPilot || batchSettingPilot}
+          onClick={applyPilot}
+          className={cn(
+            'h-8 gap-1 text-xs cursor-pointer',
+            isDark
+              ? 'border-slate-600 bg-slate-700 text-slate-300 hover:bg-slate-600'
+              : 'border-violet-300 text-violet-700 hover:bg-violet-100'
+          )}
+        >
+          <Check className="h-3.5 w-3.5" />
+          {t('common.apply', 'Apply')}
+        </Button>
 
+        {/* Autofill */}
         <Button
           size="sm"
           variant="outline"
           disabled={batchAutofilling}
           onClick={onBatchAutofill}
           className={cn(
-            'h-8 gap-1.5 text-xs',
+            'h-8 gap-1.5 text-xs cursor-pointer',
             isDark
               ? 'border-slate-600 bg-slate-700 text-slate-300 hover:bg-slate-600'
               : 'border-emerald-200 text-emerald-700 hover:bg-emerald-50'
@@ -100,9 +147,14 @@ export function OperationsBatchBar({
             : t('operations.table.batch.autofillTasks')}
         </Button>
 
-        <Select onValueChange={onBatchStatus} disabled={batchUpdating}>
+        {/* Change Status + Apply */}
+        <Select
+          value={pendingStatus}
+          onValueChange={setPendingStatus}
+          disabled={batchUpdating}
+        >
           <SelectTrigger
-            className={cn('h-8 w-44 text-xs', isDark ? 'border-slate-600 bg-slate-700' : '')}
+            className={cn('h-8 w-44 text-xs cursor-pointer', isDark ? 'border-slate-600 bg-slate-700' : '')}
           >
             <SelectValue
               placeholder={
@@ -113,26 +165,68 @@ export function OperationsBatchBar({
             />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="PLANNED">{t('operations.table.batch.setPlanned')}</SelectItem>
+            <SelectItem value="PLANNED">{t('operations.table.batch.setScheduled', 'Scheduled')}</SelectItem>
             <SelectItem value="IN_PROGRESS">{t('operations.table.batch.setInProgress')}</SelectItem>
             <SelectItem value="COMPLETED">{t('operations.table.batch.setCompleted')}</SelectItem>
             <SelectItem value="CANCELLED">{t('operations.table.batch.setCancelled')}</SelectItem>
             <SelectItem value="ABORTED">{t('operations.table.batch.setAborted')}</SelectItem>
           </SelectContent>
         </Select>
-
         <Button
           size="sm"
           variant="outline"
-          disabled={batchDeleting}
-          onClick={onBatchDelete}
-          className="h-8 gap-1.5 text-xs text-destructive border-destructive/40 hover:bg-destructive/10"
+          disabled={!pendingStatus || batchUpdating}
+          onClick={applyStatus}
+          className={cn(
+            'h-8 gap-1 text-xs cursor-pointer',
+            isDark
+              ? 'border-slate-600 bg-slate-700 text-slate-300 hover:bg-slate-600'
+              : 'border-violet-300 text-violet-700 hover:bg-violet-100'
+          )}
         >
-          <Trash2 className="h-3.5 w-3.5" />
-          {batchDeleting
-            ? t('operations.table.batch.deleting')
-            : t('operations.table.batch.deleteSelected')}
+          <Check className="h-3.5 w-3.5" />
+          {t('common.apply', 'Apply')}
         </Button>
+
+        {/* Delete with AlertDialog */}
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={batchDeleting}
+              className="h-8 cursor-pointer gap-1.5 text-xs text-destructive border-destructive/40 hover:bg-destructive/10"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              {batchDeleting
+                ? t('operations.table.batch.deleting')
+                : t('operations.table.batch.deleteSelected')}
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                {t('operations.table.batch.deleteConfirmTitle', 'Delete selected operations?')}
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {t('operations.table.batch.deleteConfirmDesc', {
+                  count: selectedCount,
+                  defaultValue:
+                    'You are about to permanently delete {{count}} operation(s). This action cannot be undone.',
+                })}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel className='cursor-pointer'>{t('common.cancel', 'Cancel')}</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={onBatchDelete}
+                className="bg-destructive cursor-pointer text-destructive-foreground hover:bg-destructive/90"
+              >
+                {t('common.delete', 'Delete')}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         <Button
           size="sm"

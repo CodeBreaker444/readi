@@ -29,33 +29,38 @@ export interface OperationTableMeta {
   onViewDetails: (op: Operation) => void;
 }
 
-function StatusBadge({ status, t }: { status?: string | null; t: TFunction }) {
+function StatusBadge({ status, t, isDark }: { status?: string | null; t: TFunction; isDark: boolean }) {
   if (!status) return <span className="text-muted-foreground text-xs">—</span>;
 
-  const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
+  const STATUS_CONFIG: Record<string, { label: string; light: string; dark: string; icon: React.ReactNode }> = {
     PLANNED: {
       label: t('operations.table.status.planned'),
-      color: 'bg-blue-50 text-blue-700 border-blue-200',
+      light: 'bg-blue-100 text-blue-700 border-blue-300',
+      dark:  'bg-blue-900/50 text-blue-300 border-blue-600',
       icon: <Clock className="h-3 w-3" />,
     },
     IN_PROGRESS: {
       label: t('operations.table.status.inProgress'),
-      color: 'bg-violet-50 text-violet-700 border-violet-200',
-      icon: <Loader2 className="h-3 w-3" />,
+      light: 'bg-violet-100 text-violet-700 border-violet-300',
+      dark:  'bg-violet-900/50 text-violet-300 border-violet-600',
+      icon: <Loader2 className="h-3 w-3 animate-spin" />,
     },
     COMPLETED: {
       label: t('operations.table.status.completed'),
-      color: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      light: 'bg-emerald-100 text-emerald-700 border-emerald-300',
+      dark:  'bg-emerald-900/50 text-emerald-300 border-emerald-600',
       icon: <CheckCircle2 className="h-3 w-3" />,
     },
     CANCELLED: {
       label: t('operations.table.status.cancelled'),
-      color: 'bg-slate-100 text-slate-500 border-slate-200',
+      light: 'bg-slate-100 text-slate-600 border-slate-300',
+      dark:  'bg-slate-700/60 text-slate-300 border-slate-500',
       icon: <XCircle className="h-3 w-3" />,
     },
     ABORTED: {
       label: t('operations.table.status.aborted'),
-      color: 'bg-red-50 text-red-700 border-red-200',
+      light: 'bg-red-100 text-red-700 border-red-300',
+      dark:  'bg-red-900/50 text-red-300 border-red-600',
       icon: <XCircle className="h-3 w-3" />,
     },
   };
@@ -64,14 +69,14 @@ function StatusBadge({ status, t }: { status?: string | null; t: TFunction }) {
   if (!cfg) return <Badge variant="outline">{status}</Badge>;
 
   return (
-    <span className={cn('inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium', cfg.color)}>
+    <span className={cn('inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium', isDark ? cfg.dark : cfg.light)}>
       {cfg.icon}
       {cfg.label}
     </span>
   );
 }
 
-export const getOperationColumns = (t: TFunction): ColumnDef<any>[] => [
+export const getOperationColumns = (t: TFunction, isDark = false): ColumnDef<any>[] => [
   {
     id: 'select',
     size: 40,
@@ -126,7 +131,7 @@ export const getOperationColumns = (t: TFunction): ColumnDef<any>[] => [
   {
     accessorKey: 'status_name',
     header: t('planning.form.status'),
-    cell: ({ getValue }) => <StatusBadge status={getValue<string>()} t={t} />,
+    cell: ({ getValue }) => <StatusBadge status={getValue<string>()} t={t} isDark={isDark} />,
   },
   {
     accessorKey: 'scheduled_start',

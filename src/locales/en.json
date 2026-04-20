@@ -1190,7 +1190,7 @@
       "newOperation": "New Operation",
       "stats": {
         "total": "Total",
-        "planned": "Planned",
+        "planned": "Scheduled",
         "inProgress": "In Progress",
         "completed": "Completed"
       },
@@ -1201,7 +1201,7 @@
         "reset": "Reset"
       },
       "status": {
-        "planned": "Planned",
+        "planned": "Scheduled",
         "inProgress": "In Progress",
         "completed": "Completed",
         "cancelled": "Cancelled",
@@ -1216,7 +1216,7 @@
         "autofilling": "Autofilling…",
         "changeStatus": "Change status…",
         "updating": "Updating…",
-        "setPlanned": "Set Planned",
+        "setPlanned": "Set Scheduled",
         "setInProgress": "Set In Progress",
         "setCompleted": "Set Completed",
         "setCancelled": "Set Cancelled",
@@ -1253,9 +1253,9 @@
         "deleteError": "Failed to delete some operations",
         "statusSuccess": "{{count}} operation(s) updated to {{status}}",
         "statusError": "Failed to update some operations",
-        "pilotWarning": "No Planned operations selected. Pilot can only be set on Planned missions.",
+        "pilotWarning": "No Scheduled operations selected. Pilot can only be set on Scheduled missions.",
         "pilotSuccess": "Pilot set for {{count}} operation(s)",
-        "pilotSkipped": "{{count}} skipped (not Planned).",
+        "pilotSkipped": "{{count}} skipped (not Scheduled).",
         "pilotError": "Failed to set pilot",
         "autofillWarning": "No eligible operations. Autofill requires Completed missions with a pilot assigned.",
         "autofillSuccess": "Autofilled {{count}} operation(s)",
@@ -1466,7 +1466,7 @@
         "selectPilot": "Select pilot"
       },
       "status": {
-        "planned": "Planned",
+        "planned": "Scheduled",
         "inProgress": "In Progress",
         "completed": "Completed"
       },

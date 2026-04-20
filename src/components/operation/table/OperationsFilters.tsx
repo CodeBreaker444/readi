@@ -70,7 +70,7 @@ export function OperationsFilters({
             value={filters.statusFilter}
             onValueChange={(v) => onFilterChange({ ...filters, statusFilter: v })}
           >
-            <SelectTrigger className="w-36">
+            <SelectTrigger className="w-36 cursor-pointer">
               <SelectValue placeholder={t('operations.table.filters.allStatuses')} />
             </SelectTrigger>
             <SelectContent>
@@ -87,7 +87,7 @@ export function OperationsFilters({
             value={filters.pilotFilter}
             onValueChange={(v) => onFilterChange({ ...filters, pilotFilter: v })}
           >
-            <SelectTrigger className="w-44">
+            <SelectTrigger className="w-44 cursor-pointer">
               <SelectValue placeholder={t('operations.table.filters.allPilots')} />
             </SelectTrigger>
             <SelectContent>
@@ -104,16 +104,16 @@ export function OperationsFilters({
             type="date"
             value={filters.dateStart}
             onChange={(e) => onFilterChange({ ...filters, dateStart: e.target.value })}
-            className="w-36 text-sm"
+            className="w-36 text-sm cursor-pointer"
           />
           <Input
             type="date"
             value={filters.dateEnd}
             onChange={(e) => onFilterChange({ ...filters, dateEnd: e.target.value })}
-            className="w-36 text-sm"
+            className="w-36 text-sm cursor-pointer"
           />
 
-          <Button variant="outline" size="sm" onClick={onReset} className="gap-1.5">
+          <Button variant="outline" size="sm" onClick={onReset} className="cursor-pointer gap-1.5">
             <RotateCcw className="h-3.5 w-3.5" />
             {t('operations.table.filters.reset')}
           </Button>
