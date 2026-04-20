@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
       }
 
       case 'drones': {
-        const data = await importDrones(ownerId)
+        const data = await importDrones(ownerId, clientId || undefined)
         return NextResponse.json({ drones: data });
       }
 

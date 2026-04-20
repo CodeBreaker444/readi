@@ -2,6 +2,7 @@
 
 import GeneralCommunicationDialog from '@/components/operation/GeneralCommunicationDialog';
 import ImportOperationDialog from '@/components/operation/ImportOperationDialog';
+import { NewOperationModal } from '@/components/operation/NewOperationModal';
 import {
   AttachmentsDialog,
   DeleteDialog,
@@ -360,11 +361,11 @@ const table = useReactTable({
         onEdit={(op) => { setDetailTarget(null); setEditTarget(op); }}
       />
 
-      <OperationDialog
+      <NewOperationModal
         open={createOpen}
         onClose={() => setCreateOpen(false)}
-        onSaved={handleSaved}
-        onSuccess={() => setRefreshKey((k) => k + 1)}
+        onSuccess={() => { setRefreshKey((k) => k + 1); setCreateOpen(false); }}
+        isDark={isDark}
       />
       <OperationDialog
         open={!!editTarget}
