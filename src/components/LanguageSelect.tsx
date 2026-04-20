@@ -1,12 +1,26 @@
 'use client';
 
 import { changeLanguage, LANGUAGES, LanguageCode } from '@/lib/i18n/config';
-import { Check, ChevronDown, Globe } from 'lucide-react';
+import { Check, ChevronDown } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 interface Props {
   isDark: boolean;
+}
+
+function FlagImage({ countryCode, className }: { countryCode: string; className?: string }) {
+  return (
+    <img
+      src={`https://flagcdn.com/20x15/${countryCode}.png`}
+      srcSet={`https://flagcdn.com/40x30/${countryCode}.png 2x`}
+      width={20}
+      height={15}
+      alt={countryCode.toUpperCase()}
+      className={`rounded-[2px] object-cover ${className ?? ''}`}
+      style={{ display: 'inline-block' }}
+    />
+  );
 }
 
 export function LanguageSelect({ isDark }: Props) {
@@ -37,16 +51,18 @@ export function LanguageSelect({ isDark }: Props) {
         type="button"
         onClick={() => setOpen((o) => !o)}
         title={t('topbar.language')}
-        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[12px] font-medium transition-colors ${
+        className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-[12px] font-medium transition-colors ${
           isDark
             ? 'bg-slate-800/80 border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-white'
             : 'bg-gray-50/80 border-gray-200 text-gray-600 hover:bg-gray-100 hover:text-gray-900'
         }`}
       >
-        <Globe size={13} className={isDark ? 'text-slate-400' : 'text-gray-400'} />
-        <span>{current.flag}</span>
-        <span className="hidden sm:inline">{current.code.toUpperCase()}</span>
-        <ChevronDown size={11} className={`transition-transform ${open ? 'rotate-180' : ''} ${isDark ? 'text-slate-500' : 'text-gray-400'}`} />
+        <FlagImage countryCode={current.countryCode} />
+        <span className="hidden sm:inline">{current.label}</span>
+        <ChevronDown
+          size={11}
+          className={`transition-transform ${open ? 'rotate-180' : ''} ${isDark ? 'text-slate-500' : 'text-gray-400'}`}
+        />
       </button>
 
       {open && (
@@ -55,7 +71,11 @@ export function LanguageSelect({ isDark }: Props) {
             isDark ? 'bg-slate-900 border-slate-700/80' : 'bg-white border-gray-200'
           }`}
         >
-          <div className={`px-3 py-2 border-b text-[9px] font-bold uppercase tracking-widest ${isDark ? 'border-slate-700/60 text-slate-500' : 'border-gray-100 text-gray-400'}`}>
+          <div
+            className={`px-3 py-2 border-b text-[9px] font-bold uppercase tracking-widest ${
+              isDark ? 'border-slate-700/60 text-slate-500' : 'border-gray-100 text-gray-400'
+            }`}
+          >
             {t('topbar.language')}
           </div>
           <div className="p-1">
@@ -76,7 +96,7 @@ export function LanguageSelect({ isDark }: Props) {
                         : 'hover:bg-gray-50 border border-transparent text-gray-700'
                   }`}
                 >
-                  <span className="text-base leading-none">{lang.flag}</span>
+                  <FlagImage countryCode={lang.countryCode} />
                   <span className="flex-1 font-medium">{lang.label}</span>
                   {isActive && (
                     <Check size={12} className={isDark ? 'text-violet-400' : 'text-violet-600'} />

@@ -66,7 +66,6 @@ export function FlytbaseFlights({ token }: Props) {
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [preview, setPreview] = useState<any | null>(null);
-  /** true once the GUTMA is already in S3 (loaded from cache or just archived) */
   const [canArchive, setCanArchive] = useState(false);
   const [archiving, setArchiving] = useState(false);
   const [archived, setArchived] = useState(false);
@@ -189,8 +188,8 @@ export function FlytbaseFlights({ token }: Props) {
   const rowSelected = isDark ? 'bg-violet-950/40 border-l-2 border-violet-500' : 'bg-violet-50 border-l-2 border-violet-500';
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${bg}`}>
-      <div className="animate-in fade-in duration-700">
+    <div className={`h-screen flex flex-col overflow-hidden transition-colors duration-300 ${bg}`}>
+      <div className="flex-1 flex flex-col overflow-hidden animate-in fade-in duration-700">
         <div className={`backdrop-blur-md w-full ${isDark ? 'bg-slate-900/80 border-b border-slate-800' : 'bg-white/80 border-b border-slate-200 shadow-[0_1px_3px_rgba(0,0,0,0.06)]'} px-6 py-4 mb-6`}>
           <div className="mx-auto max-w-[1800px] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
@@ -211,7 +210,7 @@ export function FlytbaseFlights({ token }: Props) {
                   <button
                     key={w.value}
                     onClick={() => { setFilterMode('window'); setWindow(w.value); }}
-                    className={`px-2.5 py-1 rounded text-[11px] font-medium ${
+                    className={`px-2.5 py-1 cursor-pointer rounded text-[11px] font-medium ${
                       filterMode === 'window' && window === w.value
                         ? 'bg-violet-600 text-white'
                         : isDark
@@ -224,7 +223,7 @@ export function FlytbaseFlights({ token }: Props) {
                 ))}
                 <button
                   onClick={() => setFilterMode('latest')}
-                  className={`px-2.5 py-1 rounded text-[11px] font-medium ${
+                  className={`px-2.5 py-1 cursor-pointer rounded text-[11px] font-medium ${
                     filterMode === 'latest'
                       ? 'bg-violet-600 text-white'
                       : isDark
@@ -240,7 +239,7 @@ export function FlytbaseFlights({ token }: Props) {
                 variant="outline"
                 size="sm"
                 onClick={() => fetchFlights(window, filterMode)}
-                className={`h-8 gap-1.5 text-xs ${isDark ? 'border-slate-700 bg-slate-800 text-slate-300' : 'border-slate-200 text-slate-600'}`}
+                className={`h-8 gap-1.5 cursor-pointer text-xs ${isDark ? 'border-slate-700 bg-slate-800 text-slate-300' : 'border-slate-200 text-slate-600'}`}
               >
                 <HiRefresh className="h-3.5 w-3.5" />
                 Refresh
@@ -249,7 +248,7 @@ export function FlytbaseFlights({ token }: Props) {
               <Button
                 variant="outline"
                 size="sm"
-                className={`h-8 text-xs ${isDark ? 'border-slate-700 bg-slate-800 text-slate-300' : 'border-slate-200 text-slate-600'}`}
+                className={`h-8 cursor-pointer text-xs ${isDark ? 'border-slate-700 bg-slate-800 text-slate-300' : 'border-slate-200 text-slate-600'}`}
               >
                 Settings
               </Button>
@@ -257,8 +256,8 @@ export function FlytbaseFlights({ token }: Props) {
           </div>
         </div>
 
-        <div className="px-6 max-w-[1800px] mx-auto">
-          <div>
+        <div className="flex-1 flex flex-col overflow-hidden px-6 max-w-[1800px] mx-auto w-full">
+          <div className="flex-1 flex flex-col overflow-hidden">
             {error === 'no_token' && (
               <div className={`flex items-center justify-between gap-4 rounded-xl border p-4 mb-6 ${isDark ? 'bg-violet-950/20 border-violet-800/30' : 'bg-violet-50 border-violet-200'}`}>
                 <div className="flex items-center gap-3">
@@ -282,8 +281,8 @@ export function FlytbaseFlights({ token }: Props) {
               </div>
             )}
 
-            <div className="flex gap-4">
-              <div className={`rounded-xl border flex-shrink-0 w-full max-w-sm ${card}`}>
+            <div className="flex gap-4 flex-1 min-h-0">
+              <div className={`rounded-xl border flex-shrink-0 w-full max-w-sm flex flex-col ${card}`}>
                 <div className="flex items-center justify-between px-4 py-3 border-b ${isDark ? 'border-slate-800' : 'border-slate-200'}">
                   <span className={`text-xs font-semibold uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                     Flights
@@ -295,7 +294,7 @@ export function FlytbaseFlights({ token }: Props) {
                   )}
                 </div>
 
-                <div className="divide-y divide-slate-800/50 overflow-y-auto max-h-150 scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent">
+                <div className="divide-y divide-slate-800/50 overflow-y-auto flex-1 min-h-0 scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent">
                   {loading && Array.from({ length: 5 }).map((_, i) => (
                     <div key={i} className="px-4 py-3 space-y-1.5">
                       <Skeleton className={`h-3 w-2/3 ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`} />
@@ -368,7 +367,7 @@ export function FlytbaseFlights({ token }: Props) {
                 </div>
               </div>
 
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 overflow-y-auto">
                 {!selectedFlight && !loading && (
                   <div className={`rounded-xl border h-64 flex flex-col items-center justify-center gap-3 ${card}`}>
                     <HiOutlineDocumentText className={`w-8 h-8 ${textSecondary}`} />
