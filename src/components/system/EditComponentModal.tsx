@@ -13,6 +13,50 @@ import { toast } from 'sonner';
 import { Skeleton } from '../ui/skeleton';
 import { ManageComponentTypesModal } from './ManageComponentTypesModal';
 
+function SystemOptionLabel({ tool }: { tool: any }) {
+  const statusColors: Record<string, string> = {
+    OPERATIONAL: 'bg-green-100 text-green-700',
+    MAINTENANCE: 'bg-yellow-100 text-yellow-700',
+    NOT_OPERATIONAL: 'bg-red-100 text-red-700',
+  };
+  const statusClass = statusColors[tool.tool_status] || 'bg-gray-100 text-gray-600';
+  return (
+    <div className="flex flex-col gap-0.5 leading-tight">
+      <div className="flex gap-2">
+        <span className="w-20 shrink-0 text-[10px] font-semibold uppercase text-muted-foreground">Code</span>
+        <span className="truncate text-[11px] font-medium">{tool.tool_code}</span>
+      </div>
+      <div className="flex gap-2">
+        <span className="w-20 shrink-0 text-[10px] font-semibold uppercase text-muted-foreground">Description</span>
+        <span className="truncate text-[11px]">{tool.tool_desc || '—'}</span>
+      </div>
+      <div className="flex gap-2 items-center">
+        <span className="w-20 shrink-0 text-[10px] font-semibold uppercase text-muted-foreground">Status</span>
+        <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${statusClass}`}>{tool.tool_status || '—'}</span>
+      </div>
+    </div>
+  );
+}
+
+function ComponentOptionLabel({ comp }: { comp: any }) {
+  return (
+    <div className="flex flex-col gap-0.5 leading-tight">
+      <div className="flex gap-2">
+        <span className="w-20 shrink-0 text-[10px] font-semibold uppercase text-muted-foreground">Code</span>
+        <span className="truncate text-[11px] font-medium">{comp.component_code || '—'}</span>
+      </div>
+      <div className="flex gap-2">
+        <span className="w-20 shrink-0 text-[10px] font-semibold uppercase text-muted-foreground">S/N</span>
+        <span className="truncate font-mono text-[11px]">{comp.component_sn || '—'}</span>
+      </div>
+      <div className="flex gap-2">
+        <span className="w-20 shrink-0 text-[10px] font-semibold uppercase text-muted-foreground">Description</span>
+        <span className="truncate text-[11px]">{comp.component_desc || '—'}</span>
+      </div>
+    </div>
+  );
+}
+
 interface EditComponentModalProps {
   open: boolean;
   toolId: number | null;
@@ -332,7 +376,7 @@ export default function EditComponentModal({
                 <SelectContent className={selectContentCls}>
                   {components.map(c => (
                     <SelectItem key={c.tool_component_id} value={String(c.tool_component_id)}>
-                      {c.component_type} — {c.component_code || c.component_sn || `#${c.tool_component_id}`}
+                      <ComponentOptionLabel comp={c} />
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -345,11 +389,17 @@ export default function EditComponentModal({
                   <div className="col-span-1 sm:col-span-3 min-w-0">
                     <Label className={labelCls}>System</Label>
                     <Select value={formData.fk_tool_id} onValueChange={v => handleChange('fk_tool_id', v)}>
-                      <SelectTrigger className={`w-full truncate ${selectTriggerCls}`}><SelectValue placeholder="Select System" /></SelectTrigger>
+                      <SelectTrigger className={`w-full truncate ${selectTriggerCls}`}>
+                        <SelectValue placeholder="Select System">
+                          {formData.fk_tool_id
+                            ? (() => { const t = tools.find((x: any) => String(x.tool_id) === formData.fk_tool_id); return t ? <span className="block w-full truncate text-left">{t.tool_code}</span> : null; })()
+                            : null}
+                        </SelectValue>
+                      </SelectTrigger>
                       <SelectContent className={`z-50 max-h-60 overflow-y-auto ${selectContentCls}`}>
                         {tools.map((tool: any) => (
                           <SelectItem key={tool.tool_id} value={tool.tool_id.toString()}>
-                            {tool.tool_code}
+                            <SystemOptionLabel tool={tool} />
                           </SelectItem>
                         ))}
                       </SelectContent>
