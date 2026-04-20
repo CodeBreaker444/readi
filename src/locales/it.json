@@ -1166,6 +1166,11 @@
     }
   },
   "operations": {
+    "actions": {
+      "view": "Visualizza dettagli",
+      "edit": "Modifica operazione",
+      "delete": "Elimina operazione"
+    },
     "declaration": {
     "title": "Dichiarazione Giornaliera Pilota",
     "subtitle": "Conferma tutti i punti per procedere con l'inizio della missione oggi.",
@@ -1824,5 +1829,113 @@
         "notes": "Note"
       }
     }
+  },
+  "safety": {
+  "spiKpi": {
+    "pageTitle": "Definizioni SPI / KPI",
+    "pageSubtitle": "Gestione della Sicurezza · Monitoraggio degli indicatori di prestazione della sicurezza",
+    "newIndicator": "Nuovo Indicatore",
+    "stats": {
+      "totalIndicators": "Totale Indicatori",
+      "activeMonitors": "Monitor Attivi",
+      "operationsArea": "Area Operazioni"
+    },
+    "infoBanner": "Gli indicatori appaiono nel Dashboard della Sicurezza solo dopo che i valori di misurazione sono stati registrati. Usa il pulsante",
+    "infoBannerLogValue": "Registra Valore",
+    "infoBannerSuffix": "su ogni riga per inserire i dati.",
+    "filters": {
+      "searchDefinitions": "Cerca Definizioni",
+      "searchPlaceholder": "Codice, nome o descrizione...",
+      "area": "Area",
+      "allAreas": "Tutte le Aree",
+      "status": "Stato",
+      "allStatus": "Tutti gli Stati",
+      "activeOnly": "Solo Attivi",
+      "inactiveOnly": "Solo Inattivi",
+      "apply": "Applica"
+    },
+    "areas": {
+      "COMPLIANCE": "Conformità",
+      "TRAINING": "Formazione",
+      "OPERATIONS": "Operazioni",
+      "MAINTENANCE": "Manutenzione"
+    },
+    "table": {
+      "indicatorCode": "Codice Indicatore",
+      "area": "Area",
+      "name": "Nome",
+      "target": "Obiettivo",
+      "status": "Stato",
+      "active": "Attivo",
+      "disabled": "Disabilitato",
+      "logMeasurement": "Registra valore di misurazione",
+      "noResults": "Nessun indicatore corrisponde alla selezione corrente."
+    },
+    "form": {
+      "editTitle": "Modifica Indicatore",
+      "newTitle": "Nuovo Indicatore",
+      "code": "Codice",
+      "codePlaceholder": "es. OPS_SAFETY_01",
+      "codeHint": "Immutabile dopo il salvataggio",
+      "unit": "Unità",
+      "unitPlaceholder": "% / conteggio / ore",
+      "type": "Tipo",
+      "kpiOption": "KPI - Prestazione Chiave",
+      "spiOption": "SPI - Prestazione di Sicurezza",
+      "area": "Area",
+      "indicatorName": "Nome Indicatore",
+      "namePlaceholder": "Inserisci nome descrittivo...",
+      "targetValue": "Valore Obiettivo",
+      "frequency": "Frequenza di Reportistica",
+      "description": "Descrizione",
+      "descPlaceholder": "Spiega cosa misura questo indicatore...",
+      "statusLabel": "Stato",
+      "activeMonitoring": "Attivo / Monitoraggio",
+      "disabledDraft": "Disabilitato / Bozza",
+      "cancel": "Annulla",
+      "processing": "Elaborazione...",
+      "updateIndicator": "Aggiorna Indicatore",
+      "createIndicator": "Crea Indicatore"
+    },
+    "frequency": {
+      "MONTHLY": "Mensile",
+      "WEEKLY": "Settimanale",
+      "QUARTERLY": "Trimestrale",
+      "YEARLY": "Annuale"
+    },
+    "validation": {
+      "codeMinChars": "Minimo 3 caratteri",
+      "codeFormat": "Solo maiuscole, numeri e trattini bassi",
+      "nameRequired": "Il nome è obbligatorio",
+      "unitRequired": "L'unità è obbligatoria",
+      "targetPositive": "Deve essere un numero positivo",
+      "dateRequired": "La data è obbligatoria",
+      "valueNumber": "Deve essere un numero valido"
+    },
+    "log": {
+      "title": "Registra Misurazione",
+      "measurementDate": "Data Misurazione",
+      "actualValue": "Valore Effettivo",
+      "actualPlaceholder": "es. 87.5",
+      "targetValue": "Valore Obiettivo",
+      "status": "Stato",
+      "statusGreen": "In Linea / Sopra Obiettivo",
+      "statusYellow": "A Rischio / Sul Bersaglio",
+      "statusRed": "Superato / Sotto Obiettivo",
+      "cancel": "Annulla",
+      "saving": "Salvataggio...",
+      "saveMeasurement": "Salva Misurazione"
+    },
+    "toast": {
+      "loadError": "Impossibile caricare gli indicatori",
+      "recordSynced": "Record sincronizzato",
+      "saveFailed": "Salvataggio fallito",
+      "activated": "Indicatore attivato",
+      "deactivated": "Indicatore disattivato",
+      "toggleFailed": "Commutazione fallita",
+      "measurementLogged": "Misurazione registrata con successo",
+      "logFailed": "Registrazione fallita"
+    }
   }
+}
 }

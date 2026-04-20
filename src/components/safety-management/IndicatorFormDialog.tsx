@@ -20,6 +20,7 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { SpiKpiDefinition } from '@/config/types/safetyMng'
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 interface FormState {
     indicator_code: string
@@ -52,20 +53,20 @@ const DEFAULT_STATE: FormState = {
     is_active: '1',
 }
 
-function validate(values: FormState, isEdit: boolean): FormErrors {
+function validate(values: FormState, isEdit: boolean, t: any): FormErrors {
     const errors: FormErrors = {}
     if (!isEdit) {
         if (!values.indicator_code || values.indicator_code.length < 3)
-            errors.indicator_code = 'Minimum 3 characters'
+            errors.indicator_code = t('safety.spiKpi.validation.codeMinChars')
         else if (!/^[A-Z0-9_]+$/.test(values.indicator_code))
-            errors.indicator_code = 'Uppercase, numbers, underscores only'
+            errors.indicator_code = t('safety.spiKpi.validation.codeFormat')
     }
     if (!values.indicator_name || values.indicator_name.length < 2)
-        errors.indicator_name = 'Name is required'
+        errors.indicator_name = t('safety.spiKpi.validation.nameRequired')
     if (!values.unit)
-        errors.unit = 'Unit is required'
+        errors.unit = t('safety.spiKpi.validation.unitRequired')
     if (isNaN(Number(values.target_value)) || Number(values.target_value) < 0)
-        errors.target_value = 'Must be a positive number'
+        errors.target_value = t('safety.spiKpi.validation.targetPositive')
     return errors
 }
 
@@ -81,6 +82,7 @@ interface Props {
 }
 
 export function IndicatorFormDialog({ open, onClose, onSubmit, initial, loading, isDark }: Props) {
+    const { t } = useTranslation();
     const isEdit = !!initial
     const [form, setForm] = useState<FormState>(DEFAULT_STATE)
     const [errors, setErrors] = useState<FormErrors>({})
@@ -111,7 +113,7 @@ export function IndicatorFormDialog({ open, onClose, onSubmit, initial, loading,
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        const errs = validate(form, isEdit)
+        const errs = validate(form, isEdit, t)
         if (Object.keys(errs).length > 0) { setErrors(errs); return }
         await onSubmit({
             id: initial?.id,
@@ -135,8 +137,8 @@ export function IndicatorFormDialog({ open, onClose, onSubmit, initial, loading,
         <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
             <DialogContent className={`max-w-2xl transition-colors duration-300 ${bgClass}`}>
                 <DialogHeader>
-                    <DialogTitle className="text-xl font-bold tracking-tight">
-                        {isEdit ? 'Edit Indicator' : 'New Indicator'}
+                    <DialogTitle className="text-lg font-semibold">
+                        {isEdit ? t('safety.spiKpi.form.editTitle') : t('safety.spiKpi.form.newTitle')}
                     </DialogTitle>
                 </DialogHeader>
 
@@ -144,69 +146,71 @@ export function IndicatorFormDialog({ open, onClose, onSubmit, initial, loading,
                     <div className="grid grid-cols-2 gap-x-6 gap-y-4">
 
                         <div className="space-y-1.5">
-                            <Label className={`text-[10px] uppercase tracking-widest font-bold ${labelClass}`}>Code</Label>
+                            <Label className={`text-[10px] uppercase tracking-widest font-bold ${labelClass}`}>{t('safety.spiKpi.form.code')}</Label>
                             <Input
                                 value={form.indicator_code}
                                 onChange={(e) => set('indicator_code', e.target.value)}
                                 disabled={isEdit}
-                                placeholder="e.g. OPS_SAFETY_01"
+                                placeholder={t('safety.spiKpi.form.codePlaceholder')}
                                 className={`font-mono text-sm h-10 ${inputClass} disabled:opacity-40`}
                             />
-                            {!isEdit && <p className="text-slate-500 text-[10px] italic">Immutable after saving</p>}
+                            {!isEdit && <p className="text-slate-500 text-[10px] italic">{t('safety.spiKpi.form.codeHint')}</p>}
                             {errors.indicator_code && <p className="text-red-500 text-xs font-medium">{errors.indicator_code}</p>}
                         </div>
 
                         <div className="space-y-1.5">
-                            <Label className={`text-[10px] uppercase tracking-widest font-bold ${labelClass}`}>Unit</Label>
+                            <Label className={`text-[10px] uppercase tracking-widest font-bold ${labelClass}`}>{t('safety.spiKpi.form.unit')}</Label>
                             <Input
                                 value={form.unit}
                                 onChange={(e) => set('unit', e.target.value)}
-                                placeholder="% / count / hours"
+                                placeholder={t('safety.spiKpi.form.unitPlaceholder')}
                                 className={`h-10 ${inputClass}`}
                             />
                             {errors.unit && <p className="text-red-500 text-xs font-medium">{errors.unit}</p>}
                         </div>
 
                         <div className="space-y-1.5">
-                            <Label className={`text-[10px] uppercase tracking-widest font-bold ${labelClass}`}>Type</Label>
+                            <Label className={`text-[10px] uppercase tracking-widest font-bold ${labelClass}`}>{t('safety.spiKpi.form.type')}</Label>
                             <Select value={form.indicator_type} onValueChange={(v) => set('indicator_type', v as FormState['indicator_type'])} disabled={isEdit}>
                                 <SelectTrigger className={`h-10 ${inputClass}`}>
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent className={isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white'}>
-                                    <SelectItem value="KPI">KPI - Key Performance</SelectItem>
-                                    <SelectItem value="SPI">SPI - Safety Performance</SelectItem>
+                                    <SelectItem value="KPI">{t('safety.spiKpi.form.kpiOption')}</SelectItem>
+                                    <SelectItem value="SPI">{t('safety.spiKpi.form.spiOption')}</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
 
                         <div className="space-y-1.5">
-                            <Label className={`text-[10px] uppercase tracking-widest font-bold ${labelClass}`}>Area</Label>
+                            <Label className={`text-[10px] uppercase tracking-widest font-bold ${labelClass}`}>{t('safety.spiKpi.form.area')}</Label>
                             <Select value={form.indicator_area} onValueChange={(v) => set('indicator_area', v as FormState['indicator_area'])} disabled={isEdit}>
                                 <SelectTrigger className={`h-10 ${inputClass}`}>
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent className={isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white'}>
                                     {(['COMPLIANCE', 'TRAINING', 'OPERATIONS', 'MAINTENANCE'] as const).map((a) => (
-                                        <SelectItem key={a} value={a}>{a}</SelectItem>
+                                        <SelectItem key={a} value={a}>
+                                            {t(`safety.spiKpi.areas.${a}`)}
+                                        </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
                         </div>
 
                         <div className="col-span-2 space-y-1.5">
-                            <Label className={`text-[10px] uppercase tracking-widest font-bold ${labelClass}`}>Indicator Name</Label>
+                            <Label className={`text-[10px] uppercase tracking-widest font-bold ${labelClass}`}>{t('safety.spiKpi.form.indicatorName')}</Label>
                             <Input
                                 value={form.indicator_name}
                                 onChange={(e) => set('indicator_name', e.target.value)}
-                                placeholder="Enter descriptive name..."
+                                placeholder={t('safety.spiKpi.form.namePlaceholder')}
                                 className={`h-10 ${inputClass}`}
                             />
                             {errors.indicator_name && <p className="text-red-500 text-xs font-medium">{errors.indicator_name}</p>}
                         </div>
 
                         <div className="space-y-1.5">
-                            <Label className={`text-[10px] uppercase tracking-widest font-bold ${labelClass}`}>Target Value</Label>
+                            <Label className={`text-[10px] uppercase tracking-widest font-bold ${labelClass}`}>{t('safety.spiKpi.form.targetValue')}</Label>
                             <Input
                                 value={form.target_value}
                                 onChange={(e) => set('target_value', e.target.value)}
@@ -218,39 +222,41 @@ export function IndicatorFormDialog({ open, onClose, onSubmit, initial, loading,
                         </div>
 
                         <div className="space-y-1.5">
-                            <Label className={`text-[10px] uppercase tracking-widest font-bold ${labelClass}`}>Reporting Frequency</Label>
+                            <Label className={`text-[10px] uppercase tracking-widest font-bold ${labelClass}`}>{t('safety.spiKpi.form.frequency')}</Label>
                             <Select value={form.frequency} onValueChange={(v) => set('frequency', v as FormState['frequency'])}>
                                 <SelectTrigger className={`h-10 ${inputClass}`}>
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent className={isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white'}>
                                     {(['MONTHLY', 'WEEKLY', 'QUARTERLY', 'YEARLY'] as const).map((f) => (
-                                        <SelectItem key={f} value={f}>{f}</SelectItem>
+                                        <SelectItem key={f} value={f}>
+                                            {t(`safety.spiKpi.frequency.${f}`)}
+                                        </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
                         </div>
 
                         <div className="col-span-2 space-y-1.5">
-                            <Label className={`text-[10px] uppercase tracking-widest font-bold ${labelClass}`}>Description</Label>
+                            <Label className={`text-[10px] uppercase tracking-widest font-bold ${labelClass}`}>{t('safety.spiKpi.form.description')}</Label>
                             <Textarea
                                 value={form.indicator_desc}
                                 onChange={(e) => set('indicator_desc', e.target.value)}
                                 rows={3}
-                                placeholder="Explain what this indicator measures..."
+                                placeholder={t('safety.spiKpi.form.descPlaceholder')}
                                 className={`${inputClass} resize-none`}
                             />
                         </div>
 
                         <div className="space-y-1.5">
-                            <Label className={`text-[10px] uppercase tracking-widest font-bold ${labelClass}`}>Status</Label>
+                            <Label className={`text-[10px] uppercase tracking-widest font-bold ${labelClass}`}>{t('safety.spiKpi.form.statusLabel')}</Label>
                             <Select value={form.is_active} onValueChange={(v) => set('is_active', v as '1' | '0')}>
                                 <SelectTrigger className={`h-10 ${inputClass}`}>
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent className={isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white'}>
-                                    <SelectItem value="1">Active / Monitoring</SelectItem>
-                                    <SelectItem value="0">Disabled / Draft</SelectItem>
+                                    <SelectItem value="1">{t('safety.spiKpi.form.activeMonitoring')}</SelectItem>
+                                    <SelectItem value="0">{t('safety.spiKpi.form.disabledDraft')}</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -258,20 +264,20 @@ export function IndicatorFormDialog({ open, onClose, onSubmit, initial, loading,
                     </div>
 
                     <DialogFooter className="pt-4 border-t border-slate-700/50 mt-4">
-                        <Button 
-                            type="button" 
-                            variant="ghost" 
-                            onClick={onClose} 
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={onClose}
                             className={`${isDark ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:bg-slate-100'}`}
                         >
-                            Cancel
+                            {t('safety.spiKpi.form.cancel')}
                         </Button>
-                        <Button 
-                            type="submit" 
-                            disabled={loading} 
+                        <Button
+                            type="submit"
+                            disabled={loading}
                             className="bg-blue-600 hover:bg-blue-500 text-white px-8 shadow-lg shadow-blue-500/20"
                         >
-                            {loading ? 'Processing...' : (isEdit ? 'Update Indicator' : 'Create Indicator')}
+                            {loading ? t('safety.spiKpi.form.processing') : (isEdit ? t('safety.spiKpi.form.updateIndicator') : t('safety.spiKpi.form.createIndicator'))}
                         </Button>
                     </DialogFooter>
                 </form>

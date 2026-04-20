@@ -1164,6 +1164,11 @@
     }
   },
   "operations": {
+    "actions": {
+      "view": "View Details",
+      "edit": "Edit Operation",
+      "delete": "Delete Operation"
+    },
     "declaration": {
     "title": "Daily Pilot Declaration",
     "subtitle": "Confirm all items to proceed with starting a mission today.",
@@ -1826,5 +1831,113 @@
         "notes": "Notes"
       }
     }
+  },
+  "safety": {
+  "spiKpi": {
+    "pageTitle": "SPI / KPI Definitions",
+    "pageSubtitle": "Safety Management · Monitoring safety performance indicators",
+    "newIndicator": "New Indicator",
+    "stats": {
+      "totalIndicators": "Total Indicators",
+      "activeMonitors": "Active Monitors",
+      "operationsArea": "Operations Area"
+    },
+    "infoBanner": "Indicators only appear on the Safety Dashboard once measurement values have been logged. Use the",
+    "infoBannerLogValue": "Log Value",
+    "infoBannerSuffix": "button on each row to enter data.",
+    "filters": {
+      "searchDefinitions": "Search Definitions",
+      "searchPlaceholder": "Code, name or description...",
+      "area": "Area",
+      "allAreas": "All Areas",
+      "status": "Status",
+      "allStatus": "All Status",
+      "activeOnly": "Active Only",
+      "inactiveOnly": "Inactive Only",
+      "apply": "Apply"
+    },
+    "areas": {
+      "COMPLIANCE": "Compliance",
+      "TRAINING": "Training",
+      "OPERATIONS": "Operations",
+      "MAINTENANCE": "Maintenance"
+    },
+    "table": {
+      "indicatorCode": "Indicator Code",
+      "area": "Area",
+      "name": "Name",
+      "target": "Target",
+      "status": "Status",
+      "active": "Active",
+      "disabled": "Disabled",
+      "logMeasurement": "Log measurement value",
+      "noResults": "No indicators match your current selection."
+    },
+    "form": {
+      "editTitle": "Edit Indicator",
+      "newTitle": "New Indicator",
+      "code": "Code",
+      "codePlaceholder": "e.g. OPS_SAFETY_01",
+      "codeHint": "Immutable after saving",
+      "unit": "Unit",
+      "unitPlaceholder": "% / count / hours",
+      "type": "Type",
+      "kpiOption": "KPI - Key Performance",
+      "spiOption": "SPI - Safety Performance",
+      "area": "Area",
+      "indicatorName": "Indicator Name",
+      "namePlaceholder": "Enter descriptive name...",
+      "targetValue": "Target Value",
+      "frequency": "Reporting Frequency",
+      "description": "Description",
+      "descPlaceholder": "Explain what this indicator measures...",
+      "statusLabel": "Status",
+      "activeMonitoring": "Active / Monitoring",
+      "disabledDraft": "Disabled / Draft",
+      "cancel": "Cancel",
+      "processing": "Processing...",
+      "updateIndicator": "Update Indicator",
+      "createIndicator": "Create Indicator"
+    },
+    "frequency": {
+      "MONTHLY": "Monthly",
+      "WEEKLY": "Weekly",
+      "QUARTERLY": "Quarterly",
+      "YEARLY": "Yearly"
+    },
+    "validation": {
+      "codeMinChars": "Minimum 3 characters",
+      "codeFormat": "Uppercase, numbers, underscores only",
+      "nameRequired": "Name is required",
+      "unitRequired": "Unit is required",
+      "targetPositive": "Must be a positive number",
+      "dateRequired": "Date is required",
+      "valueNumber": "Must be a valid number"
+    },
+    "log": {
+      "title": "Log Measurement",
+      "measurementDate": "Measurement Date",
+      "actualValue": "Actual Value",
+      "actualPlaceholder": "e.g. 87.5",
+      "targetValue": "Target Value",
+      "status": "Status",
+      "statusGreen": "On Track / Above Target",
+      "statusYellow": "At Risk / On Target",
+      "statusRed": "Breached / Below Target",
+      "cancel": "Cancel",
+      "saving": "Saving...",
+      "saveMeasurement": "Save Measurement"
+    },
+    "toast": {
+      "loadError": "Failed to load indicators",
+      "recordSynced": "Record synchronized",
+      "saveFailed": "Save failed",
+      "activated": "Indicator activated",
+      "deactivated": "Indicator deactivated",
+      "toggleFailed": "Toggle failed",
+      "measurementLogged": "Measurement logged successfully",
+      "logFailed": "Log failed"
+    }
   }
+}
 }

@@ -1164,6 +1164,11 @@
     }
   },
   "operations": {
+    "actions": {
+      "view": "Details anzeigen",
+      "edit": "Operation bearbeiten",
+      "delete": "Operation löschen"
+    },
     "declaration": {
     "title": "Tägliche Pilotenerklärung",
     "subtitle": "Bestätigen Sie alle Punkte, um heute mit der Mission zu beginnen.",
@@ -1820,5 +1825,113 @@
         "notes": "Notizen"
       }
     }
+  },
+  "safety": {
+  "spiKpi": {
+    "pageTitle": "SPI / KPI Definitionen",
+    "pageSubtitle": "Sicherheitsmanagement · Überwachung von Sicherheitsleistungsindikatoren",
+    "newIndicator": "Neuer Indikator",
+    "stats": {
+      "totalIndicators": "Gesamtindikatoren",
+      "activeMonitors": "Aktive Überwachungen",
+      "operationsArea": "Betriebsbereich"
+    },
+    "infoBanner": "Indikatoren erscheinen erst im Sicherheits-Dashboard, wenn Messwerte protokolliert wurden. Verwenden Sie die",
+    "infoBannerLogValue": "Wert protokollieren",
+    "infoBannerSuffix": "Schaltfläche in jeder Zeile zur Dateneingabe.",
+    "filters": {
+      "searchDefinitions": "Definitionen suchen",
+      "searchPlaceholder": "Code, Name oder Beschreibung...",
+      "area": "Bereich",
+      "allAreas": "Alle Bereiche",
+      "status": "Status",
+      "allStatus": "Alle Status",
+      "activeOnly": "Nur Aktive",
+      "inactiveOnly": "Nur Inaktive",
+      "apply": "Anwenden"
+    },
+    "areas": {
+      "COMPLIANCE": "Compliance",
+      "TRAINING": "Schulung",
+      "OPERATIONS": "Betrieb",
+      "MAINTENANCE": "Wartung"
+    },
+    "table": {
+      "indicatorCode": "Indikatorcode",
+      "area": "Bereich",
+      "name": "Name",
+      "target": "Zielwert",
+      "status": "Status",
+      "active": "Aktiv",
+      "disabled": "Deaktiviert",
+      "logMeasurement": "Messwert protokollieren",
+      "noResults": "Keine Indikatoren entsprechen Ihrer aktuellen Auswahl."
+    },
+    "form": {
+      "editTitle": "Indikator bearbeiten",
+      "newTitle": "Neuer Indikator",
+      "code": "Code",
+      "codePlaceholder": "z.B. OPS_SAFETY_01",
+      "codeHint": "Unveränderlich nach dem Speichern",
+      "unit": "Einheit",
+      "unitPlaceholder": "% / Anzahl / Stunden",
+      "type": "Typ",
+      "kpiOption": "KPI - Schlüsselleistung",
+      "spiOption": "SPI - Sicherheitsleistung",
+      "area": "Bereich",
+      "indicatorName": "Indikatorname",
+      "namePlaceholder": "Beschreibenden Namen eingeben...",
+      "targetValue": "Zielwert",
+      "frequency": "Berichtsfrequenz",
+      "description": "Beschreibung",
+      "descPlaceholder": "Erklären Sie, was dieser Indikator misst...",
+      "statusLabel": "Status",
+      "activeMonitoring": "Aktiv / Überwachung",
+      "disabledDraft": "Deaktiviert / Entwurf",
+      "cancel": "Abbrechen",
+      "processing": "Verarbeitung...",
+      "updateIndicator": "Indikator aktualisieren",
+      "createIndicator": "Indikator erstellen"
+    },
+    "frequency": {
+      "MONTHLY": "Monatlich",
+      "WEEKLY": "Wöchentlich",
+      "QUARTERLY": "Vierteljährlich",
+      "YEARLY": "Jährlich"
+    },
+    "validation": {
+      "codeMinChars": "Mindestens 3 Zeichen",
+      "codeFormat": "Nur Großbuchstaben, Zahlen und Unterstriche",
+      "nameRequired": "Name ist erforderlich",
+      "unitRequired": "Einheit ist erforderlich",
+      "targetPositive": "Muss eine positive Zahl sein",
+      "dateRequired": "Datum ist erforderlich",
+      "valueNumber": "Muss eine gültige Zahl sein"
+    },
+    "log": {
+      "title": "Messung protokollieren",
+      "measurementDate": "Messdatum",
+      "actualValue": "Ist-Wert",
+      "actualPlaceholder": "z.B. 87,5",
+      "targetValue": "Zielwert",
+      "status": "Status",
+      "statusGreen": "Im Soll / Über Ziel",
+      "statusYellow": "Gefährdet / Im Ziel",
+      "statusRed": "Überschritten / Unter Ziel",
+      "cancel": "Abbrechen",
+      "saving": "Speichern...",
+      "saveMeasurement": "Messung speichern"
+    },
+    "toast": {
+      "loadError": "Indikatoren konnten nicht geladen werden",
+      "recordSynced": "Datensatz synchronisiert",
+      "saveFailed": "Speichern fehlgeschlagen",
+      "activated": "Indikator aktiviert",
+      "deactivated": "Indikator deaktiviert",
+      "toggleFailed": "Umschalten fehlgeschlagen",
+      "measurementLogged": "Messung erfolgreich protokolliert",
+      "logFailed": "Protokollierung fehlgeschlagen"
+    }
   }
+}
 }
