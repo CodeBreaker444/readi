@@ -206,7 +206,7 @@ export async function createTicket(payload: CreateTicketPayload): Promise<number
     ticket_priority:     payload.priority,
     ticket_status:       'OPEN',
     reported_by_user_id: payload.fk_user_id,
-    assigned_to_user_id: payload.assigned_to ?? null,
+    assigned_to_user_id: payload.assigned_to || null,
     resolution_notes:    payload.note ?? null,
     reported_at:         new Date().toISOString(),
   }));

@@ -195,8 +195,12 @@ export function useMaintenanceLogbook() {
         loadTickets();
       }
     } catch (e: any) {
-      toast.error(e.response?.data?.message ?? e.message);
-    } finally {
+      if(e.response?.status === 409) {
+        toast.error('An open ticket already exists for this system');
+      } else {
+        toast.error(e.response?.data?.message ?? e.message);
+      }
+    }finally {
       setModalLoading(false);
     }
   }, [newTicket, closeModal, loadTickets]);

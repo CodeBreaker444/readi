@@ -1,8 +1,8 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
-import { createTicket } from '@/backend/services/system/maintenance-ticket';
+import { assertNoOpenTicketForTool, createTicket } from '@/backend/services/system/maintenance-ticket';
 import { CreateTicketPayload } from '@/config/types/maintenance';
 import { requirePermission } from '@/lib/auth/api-auth';
-import { internalError, zodError } from '@/lib/api-error';
+import { apiError, internalError, zodError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
@@ -23,6 +23,13 @@ export async function POST(req: NextRequest) {
     if (!validation.success) {
       return zodError(E.VL001, validation.error);
     }
+
+    try {
+      await assertNoOpenTicketForTool(body.fk_tool_id);
+    } catch {
+      return apiError(E.BL005, 409);
+    }
+
     const userId= session!.user.userId
     const ownerId = session!.user.ownerId
     const ticket_id = await createTicket({
