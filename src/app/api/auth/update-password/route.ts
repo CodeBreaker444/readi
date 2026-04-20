@@ -1,5 +1,5 @@
 import { supabase } from '@/backend/database/database'
-import { verifyToken } from '@/lib/auth/jwt-utils'
+import { createToken, verifyToken } from '@/lib/auth/jwt-utils'
 import { dbError, internalError, unauthorized, zodError } from '@/lib/api-error'
 import { E } from '@/lib/error-codes'
 import bcrypt from 'bcrypt'
@@ -91,6 +91,20 @@ export async function POST(request: NextRequest) {
     if (settingsError) console.error('Settings sync error:', settingsError)
 
     cookieStore.delete('force_pw_change')
+
+    const freshToken = createToken({
+      sub: payload.sub,
+      email: payload.email,
+      username: payload.username,
+      role: payload.role,
+    })
+    cookieStore.set('readi_auth_token', freshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 3,
+      path: '/',
+    })
 
     return NextResponse.json({
       success: true,

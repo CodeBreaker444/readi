@@ -196,7 +196,7 @@ export function GutmaPreviewPanel({
             <button
               onClick={onArchive}
               disabled={archiving}
-              className="h-7 px-3 rounded text-[11px] font-medium bg-violet-600 hover:bg-violet-500 disabled:opacity-60 text-white flex items-center gap-1.5"
+              className="h-7 px-3 cursor-pointer rounded text-[11px] font-medium bg-violet-600 hover:bg-violet-500 disabled:opacity-60 text-white flex items-center gap-1.5"
             >
               {archiving && (
                 <svg className="w-3 h-3 animate-spin" viewBox="0 0 24 24" fill="none">

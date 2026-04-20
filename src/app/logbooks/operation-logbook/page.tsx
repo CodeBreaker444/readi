@@ -1,5 +1,6 @@
 "use client";
 
+import '@/lib/i18n/config';
 import { OperationFilterPanel } from "@/components/logbook/OperationFilterPanel";
 import { OperationLogbookTable } from "@/components/logbook/OperationLogbookTable";
 import { Button } from "@/components/ui/button";
@@ -72,7 +73,7 @@ export default function OperationLogbookPage() {
         });
       }
     } catch (e: any) {
-      toast.error(e?.message ?? t('operationLogbook.filterError'));
+      toast.error(e?.message ?? t('logbooks.operationLogbook.filterError'));
     } finally {
       setFiltersLoading(false);
     }
@@ -87,11 +88,11 @@ export default function OperationLogbookPage() {
       if (json.code === 200) {
         setData(json.data ?? []);
       } else {
-        toast.error(json.message ?? t('operationLogbook.loadError'));
+        toast.error(json.message ?? t('logbooks.operationLogbook.loadError'));
         setData([]);
       }
     } catch (e: any) {
-      toast.error(e?.message ?? t('operationLogbook.networkError'));
+      toast.error(e?.message ?? t('logbooks.operationLogbook.networkError'));
       setData([]);
     } finally {
       setLoading(false);
@@ -126,10 +127,10 @@ export default function OperationLogbookPage() {
                   isDark ? "text-white" : "text-slate-900"
                 }`}
               >
-                {t('operationLogbook.title')}
+                {t('logbooks.operationLogbook.title')}
               </h1>
               <p className={`text-xs ${isDark ? "text-slate-500" : "text-slate-400"}`}>
-                {t('operationLogbook.subtitle')}
+                {t('logbooks.operationLogbook.subtitle')}
               </p>
             </div>
           </div>
@@ -153,7 +154,7 @@ export default function OperationLogbookPage() {
               ) : (
                 <RefreshCw className="h-3.5 w-3.5" />
               )}
-              {t('operationLogbook.refresh')}
+              {t('logbooks.operationLogbook.refresh')}
             </Button>
           </div>
         </div>

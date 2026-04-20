@@ -17,7 +17,7 @@ export function createToken(payload: Omit<JWTPayload, "iat" | "exp">): string {
   }
 
   return jwt.sign(payload, env.JWT_SECRET, {
-    expiresIn: "7d",
+    expiresIn: "3d",
     issuer: "readi-app",
   });
 }

@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: needsPasswordChange ? 60 * 30 : 60 * 60 * 24 * 7,
+      maxAge: 60 * 60 * 24 * 3,
       path: '/',
     });
 

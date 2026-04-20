@@ -58,7 +58,7 @@ export function ActiveBadge({ active }: { active: string }) {
             ) : (
                 <XCircle className="mr-1 h-3 w-3" />
             )}
-            {isActive ? t('missionPlanning.table.active') : t('missionPlanning.table.inactive')}
+            {isActive ? t('logbooks.missionPlanning.table.active') : t('logbooks.missionPlanning.table.inactive')}
         </Badge>
     );
 }
@@ -99,7 +99,7 @@ export function MissionLogbookTable({ data, loading, isDark }: LogbookTableProps
         <div className="space-y-3">
             <div className="flex items-end justify-end p-3 gap-3">
                 <Input
-                    placeholder={t('missionPlanning.table.searchPlaceholder')}
+                    placeholder={t('logbooks.missionPlanning.table.searchPlaceholder')}
                     value={globalFilter}
                     onChange={(e) => setGlobalFilter(e.target.value)}
                     className={`h-8 max-w-xs text-sm transition-colors ${isDark
@@ -169,8 +169,8 @@ export function MissionLogbookTable({ data, loading, isDark }: LogbookTableProps
                                 <TableCell colSpan={columns.length} className="py-20 text-center">
                                     <div className="flex flex-col items-center gap-2">
                                         <FilterX className={`h-10 w-10 opacity-20 ${isDark ? "text-slate-400" : "text-slate-700"}`} />
-                                        <p className={`text-sm font-medium ${isDark ? "text-slate-400" : "text-slate-500"}`}>{t('missionPlanning.table.noResults')}</p>
-                                        <p className={`text-xs ${isDark ? "text-slate-500" : "text-slate-400"}`}>{t('missionPlanning.table.noResultsHint')}</p>
+                                        <p className={`text-sm font-medium ${isDark ? "text-slate-400" : "text-slate-500"}`}>{t('logbooks.missionPlanning.table.noResults')}</p>
+                                        <p className={`text-xs ${isDark ? "text-slate-500" : "text-slate-400"}`}>{t('logbooks.missionPlanning.table.noResultsHint')}</p>
                                     </div>
                                 </TableCell>
                             </TableRow>
@@ -197,16 +197,16 @@ export function MissionLogbookTable({ data, loading, isDark }: LogbookTableProps
 
             <div className="flex items-center justify-between">
               <ExportButtons
-                filename={t('missionPlanning.logbook')}
+                filename={t('logbooks.missionPlanning.logbook')}
                 headers={[
-                  t('missionPlanning.planId'),
-                  t('missionPlanning.columns.client'),
-                  t('missionPlanning.columns.evaluation'),
-                  t('missionPlanning.columns.planning'),
-                  t('missionPlanning.columns.missionPlan'),
-                  t('missionPlanning.code'),
-                  t('missionPlanning.columns.version'),
-                  t('missionPlanning.columns.active'),
+                  t('logbooks.missionPlanning.planId'),
+                  t('logbooks.missionPlanning.columns.client'),
+                  t('logbooks.missionPlanning.columns.evaluation'),
+                  t('logbooks.missionPlanning.columns.planning'),
+                  t('logbooks.missionPlanning.columns.missionPlan'),
+                  t('logbooks.missionPlanning.code'),
+                  t('logbooks.missionPlanning.columns.version'),
+                  t('logbooks.missionPlanning.columns.active'),
                 ]}
                 rows={data.map(d => [d.mission_planning_id, d.client_name, d.evaluation_desc, d.planning_desc, d.mission_planning_desc, d.mission_planning_code, d.mission_planning_ver, d.mission_planning_active])}
               />
