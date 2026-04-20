@@ -6,7 +6,6 @@ import { NewOperationModal } from '@/components/operation/NewOperationModal';
 import {
   AttachmentsDialog,
   DeleteDialog,
-  OperationDialog,
 } from '@/components/operation/OperationDialogs';
 import { OperationDetailSheet } from '@/components/operation/table/OperationDetailSheet';
 import { OperationsBatchBar } from '@/components/operation/table/OperationsBatchBar';
@@ -362,15 +361,11 @@ const table = useReactTable({
       />
 
       <NewOperationModal
-        open={createOpen}
-        onClose={() => setCreateOpen(false)}
-        onSuccess={() => { setRefreshKey((k) => k + 1); setCreateOpen(false); }}
+        open={createOpen || !!editTarget}
+        onClose={() => { setCreateOpen(false); setEditTarget(null); }}
+        onSuccess={() => { setRefreshKey((k) => k + 1); setCreateOpen(false); setEditTarget(null); }}
         isDark={isDark}
-      />
-      <OperationDialog
-        open={!!editTarget}
-        initial={editTarget}
-        onClose={() => setEditTarget(null)}
+        editOperation={editTarget}
         onSaved={handleSaved}
       />
       <DeleteDialog

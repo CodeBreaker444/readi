@@ -106,18 +106,18 @@ export const getOperationColumns = (t: TFunction): ColumnDef<any>[] => [
       );
     },
   },
-  {
-    accessorKey: 'mission_name',
-    header: t('operations.table.title'),
-    cell: ({ row }) => (
-      <div>
-        <p className="font-medium text-sm">{row.original.mission_name}</p>
-        <p className="text-[10px] text-muted-foreground truncate max-w-[150px]">
-            {row.original.mission_description}
-        </p>
-      </div>
-    ),
-  },
+  // {
+  //   accessorKey: 'mission_name',
+  //   header: t('operations.table.title'),
+  //   cell: ({ row }) => (
+  //     <div>
+  //       <p className="font-medium text-sm">{row.original.mission_name}</p>
+  //       <p className="text-[10px] text-muted-foreground truncate max-w-[150px]">
+  //           {row.original.mission_description}
+  //       </p>
+  //     </div>
+  //   ),
+  // },
   {
     accessorKey: 'pilot_name',
     header: t('operations.table.detail.pilotInCommand'),

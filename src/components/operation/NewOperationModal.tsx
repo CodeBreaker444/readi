@@ -1,5 +1,6 @@
 'use client'
 
+import { Operation } from '@/app/operations/table/page'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -39,6 +40,8 @@ export interface NewOperationModalProps {
     onClose: () => void
     onSuccess: () => void
     isDark: boolean
+    editOperation?: Operation | null
+    onSaved?: (op: Operation) => void
 }
 
 const DAYS_OF_WEEK = [
@@ -55,7 +58,8 @@ const STEPS = [
 ]
 
 
-export function NewOperationModal({ open, onClose, onSuccess, isDark }: NewOperationModalProps) {
+export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperation, onSaved }: NewOperationModalProps) {
+    const isEdit = !!editOperation
     const [step, setStep] = useState(1)
     const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -94,6 +98,38 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark }: NewOpera
     const [pilots, setPilots] = useState<PilotOption[]>([])
     const [pilotId, setPilotId] = useState('')
     const [loadingOptions, setLoadingOptions] = useState(false)
+    const [existingMissionCodes, setExistingMissionCodes] = useState<Set<string>>(new Set())
+    const [generatingId, setGeneratingId] = useState(false)
+
+    function generateMissionId(exclude: Set<string>): string {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+        let id: string
+        let attempts = 0
+        do {
+            id = Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
+            attempts++
+        } while (exclude.has(id) && attempts < 100)
+        return id
+    }
+
+    async function refreshMissionId() {
+        setGeneratingId(true)
+        try {
+            const res = await axios.get('/api/operation/calendar')
+            const codes = new Set<string>(
+                (res.data.data ?? [])
+                    .map((ev: any) => ev.operation?.mission_code)
+                    .filter(Boolean)
+                    .map((c: string) => c.toUpperCase())
+            )
+            setExistingMissionCodes(codes)
+            setMissionCode(generateMissionId(codes))
+        } catch {
+            setMissionCode(generateMissionId(existingMissionCodes))
+        } finally {
+            setGeneratingId(false)
+        }
+    }
 
     useEffect(() => {
         if (!open) { resetForm(); return }
@@ -120,19 +156,55 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark }: NewOpera
                     last_name: p.last_name ?? '',
                 })))
                 setPlannings(res.data.plannings ?? [])
+                if (editOperation) {
+                    setDrones((res.data.tools ?? []).map((t: any) => ({
+                        tool_id: t.tool_id,
+                        tool_code: t.tool_code,
+                        tool_name: t.tool_name,
+                        in_maintenance: t.in_maintenance,
+                    })))
+                }
             })
             .catch(() => toast.error('Failed to load options'))
             .finally(() => setLoadingOptions(false))
     }, [open])
 
     useEffect(() => {
-        if (!clientId) { setDrones([]); setDroneId(''); setPlanId(''); return }
+        if (!open || !editOperation) return
+        setDroneId(editOperation.fk_tool_id?.toString() ?? '')
+        setTypeId(editOperation.fk_mission_type_id?.toString() ?? '')
+        setCategoryId(editOperation.fk_mission_category_id?.toString() ?? '')
+        setLucId(editOperation.fk_luc_procedure_id?.toString() ?? '')
+        setMissionCode(editOperation.mission_code ?? '')
+        setMissionName(editOperation.mission_name ?? '')
+        setScheduledStart(editOperation.scheduled_start?.slice(0, 16) ?? '')
+        setScheduledEnd(editOperation.actual_end?.slice(0, 16) ?? '')
+        setLocation(editOperation.location ?? '')
+        setNotes(editOperation.notes ?? '')
+        setPilotId(editOperation.fk_pilot_user_id?.toString() ?? '')
+        setPlanId(editOperation.fk_planning_id?.toString() ?? '')
+        setOpType(editOperation.fk_planning_id ? 'PDRA' : 'OPEN')
+        setIsRecurring(false)
+        setStep(2)
+    }, [editOperation, open])
+
+    useEffect(() => {
+        if (!clientId) {
+            if (!isEdit) { setDrones([]); setDroneId(''); setPlanId('') }
+            return
+        }
         setLoadingDrones(true)
         axios.get(`/api/operation/import/options?type=drones&client_id=${clientId}`)
             .then(r => setDrones(r.data.drones ?? []))
             .catch(() => toast.error('Failed to load drones'))
             .finally(() => setLoadingDrones(false))
     }, [clientId])
+
+    useEffect(() => {
+        if (step === 3 && !missionCode) {
+            refreshMissionId()
+        }
+    }, [step])
 
     useEffect(() => {
         if (step !== 3 || !droneId || !scheduledStart) {
@@ -151,6 +223,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark }: NewOpera
                 const e = scheduledEnd ? new Date(scheduledEnd).getTime() : s + 3_600_000
                 const found = events.filter(ev => {
                     if (String(ev.operation?.fk_tool_id) !== droneId) return false
+                    if (isEdit && ev.operation?.pilot_mission_id === editOperation?.pilot_mission_id) return false
                     const evS = new Date(ev.start).getTime()
                     const evE = ev.end ? new Date(ev.end).getTime() : evS + 3_600_000
                     return s < evE && e > evS
@@ -173,20 +246,21 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark }: NewOpera
         setConflicts([]); setConflictChecked(false)
         setDrones([]); setClients([]); setPlannings([])
         setTypes([]); setCategories([]); setLucProcedures([]); setPilots([])
+        setExistingMissionCodes(new Set()); setGeneratingId(false)
     }
 
     const clientPlannings = plannings.filter(p => String(p.fk_client_id) === clientId)
 
     const canNext = () => {
-        if (step === 1) return !!clientId
+        if (step === 1) return isEdit || !!clientId
         if (step === 2) {
             if (!droneId) return false
             if (opType === 'PDRA' && !planId) return false
             return true
         }
         if (step === 3) {
-            if (!missionCode.trim() || !missionName.trim() || !scheduledStart || !lucId) return false
-            if (isRecurring && (daysOfWeek.length === 0 || !recurUntil || !scheduledEnd)) return false
+            if (!missionCode.trim() || !scheduledStart || !lucId) return false
+            if (isRecurring && (daysOfWeek.length === 0 || !recurUntil)) return false
             return true
         }
         if (step === 4) return !!pilotId
@@ -197,6 +271,28 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark }: NewOpera
         if (!canNext() || !pilotId) return
         setIsSubmitting(true)
         try {
+            if (isEdit && editOperation) {
+                const payload = {
+                    mission_code: missionCode.trim(),
+                    mission_name: missionName.trim(),
+                    scheduled_start: scheduledStart || undefined,
+                    actual_end: scheduledEnd || undefined,
+                    fk_pilot_user_id: parseInt(pilotId),
+                    fk_tool_id: droneId ? parseInt(droneId) : null,
+                    fk_mission_type_id: typeId ? parseInt(typeId) : null,
+                    fk_mission_category_id: categoryId ? parseInt(categoryId) : null,
+                    fk_planning_id: planId ? parseInt(planId) : null,
+                    location: location || undefined,
+                    notes: notes || undefined,
+                }
+                const res = await axios.put(`/api/operation/${editOperation.pilot_mission_id}`, payload)
+                toast.success('Operation updated successfully')
+                onSaved?.(res.data)
+                onSuccess()
+                onClose()
+                return
+            }
+
             const selectedLuc = lucProcedures.find(p => String(p.id) === lucId)
             const payload = {
                 mission_code: missionCode.trim(),
@@ -226,7 +322,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark }: NewOpera
             onSuccess()
             onClose()
         } catch (err: any) {
-            toast.error(err.response?.data?.error || err.message || 'Failed to create operation')
+            toast.error(err.response?.data?.error || err.message || (isEdit ? 'Failed to update operation' : 'Failed to create operation'))
         } finally {
             setIsSubmitting(false)
         }
@@ -248,7 +344,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark }: NewOpera
             <DialogContent className={cn('max-w-2xl gap-0 p-0 overflow-hidden', isDark && 'bg-slate-800 border-slate-700 text-white')}>
                 <DialogHeader className={cn('px-6 pt-6 pb-4 border-b', isDark ? 'border-slate-700' : 'border-gray-100')}>
                     <DialogTitle className={cn('text-base font-semibold', isDark && 'text-white')}>
-                        New Operation
+                        {isEdit ? 'Edit Operation' : 'New Operation'}
                     </DialogTitle>
                 </DialogHeader>
 
@@ -448,30 +544,40 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark }: NewOpera
                         <div className="space-y-3">
                             <SectionTitle isDark={isDark}>Scheduler</SectionTitle>
 
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <Label className={labelCls}>Mission ID <span className="text-red-500">*</span></Label>
-                                    <Input value={missionCode} onChange={e => setMissionCode(e.target.value)} placeholder="e.g. MSN-001" className={inputCls} />
-                                </div>
-                                <div>
-                                    <Label className={labelCls}>Mission Name <span className="text-red-500">*</span></Label>
-                                    <Input value={missionName} onChange={e => setMissionName(e.target.value)} placeholder="e.g. Survey North Zone" className={inputCls} />
+                            <div className="max-w-xs">
+                                <Label className={labelCls}>Mission ID <span className="text-red-500">*</span></Label>
+                                <div className="flex gap-2 items-center">
+                                    <Input
+                                        value={missionCode}
+                                        onChange={e => setMissionCode(e.target.value.toUpperCase())}
+                                        placeholder="Auto-generated"
+                                        className={cn(inputCls, 'font-mono tracking-widest uppercase')}
+                                        maxLength={6}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={refreshMissionId}
+                                        disabled={generatingId || isEdit}
+                                        title={isEdit ? 'Mission ID cannot be changed' : 'Regenerate ID'}
+                                        className={cn(
+                                            'shrink-0 p-2 rounded-md border transition-colors',
+                                            isDark
+                                                ? 'bg-slate-700 border-slate-600 text-slate-300 hover:bg-slate-600'
+                                                : 'bg-white border-slate-300 text-slate-500 hover:bg-slate-50'
+                                        )}
+                                    >
+                                        <RefreshCw className={cn('h-4 w-4', generatingId && 'animate-spin')} />
+                                    </button>
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <Label className={labelCls}>Start Date/Time <span className="text-red-500">*</span></Label>
-                                    <Input type="datetime-local" value={scheduledStart} onChange={e => setScheduledStart(e.target.value)} className={inputCls} />
-                                </div>
-                                <div>
-                                    <Label className={labelCls}>End Date/Time {isRecurring && <span className="text-red-500">*</span>}</Label>
-                                    <Input type="datetime-local" value={scheduledEnd} onChange={e => setScheduledEnd(e.target.value)} className={inputCls} />
-                                </div>
+                            <div className="max-w-xs">
+                                <Label className={labelCls}>Start Date/Time <span className="text-red-500">*</span></Label>
+                                <Input type="datetime-local" value={scheduledStart} onChange={e => setScheduledStart(e.target.value)} className={inputCls} />
                             </div>
 
                             {/* Recurring toggle */}
-                            <div className={cn('rounded-lg border p-3 space-y-3', isDark ? 'border-slate-600 bg-slate-700/30' : 'border-slate-200 bg-slate-50/60')}>
+                            {!isEdit && <div className={cn('rounded-lg border p-3 space-y-3', isDark ? 'border-slate-600 bg-slate-700/30' : 'border-slate-200 bg-slate-50/60')}>
                                 <div className="flex items-center gap-2">
                                     <Checkbox
                                         id="is_recurring"
@@ -517,7 +623,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark }: NewOpera
                                         </div>
                                     </div>
                                 )}
-                            </div>
+                            </div>}
 
                             {/* Conflict feedback */}
                             {loadingConflicts && (
@@ -586,6 +692,10 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark }: NewOpera
                                     </Select>
                                 </div>
                                 <div className="col-span-2">
+                                    <Label className={labelCls}>Mission Name <span className="text-[10px] text-muted-foreground font-normal">(optional)</span></Label>
+                                    <Input value={missionName} onChange={e => setMissionName(e.target.value)} placeholder="e.g. Survey North Zone" className={inputCls} />
+                                </div>
+                                <div className="col-span-2">
                                     <Label className={labelCls}>Location <span className="text-[10px] text-muted-foreground font-normal">(optional)</span></Label>
                                     <Input value={location} onChange={e => setLocation(e.target.value)} placeholder="Zone A" className={inputCls} />
                                 </div>
@@ -629,7 +739,6 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark }: NewOpera
                                 {missionCode && <ReviewRow label="Mission ID" value={missionCode} isDark={isDark} />}
                                 <ReviewRow label="Mission Name" value={missionName} isDark={isDark} />
                                 <ReviewRow label="Start" value={scheduledStart ? new Date(scheduledStart).toLocaleString() : undefined} isDark={isDark} />
-                                {scheduledEnd && <ReviewRow label="End" value={new Date(scheduledEnd).toLocaleString()} isDark={isDark} />}
                                 {typeId && <ReviewRow label="Type" value={types.find(t => String(t.id) === typeId)?.label} isDark={isDark} />}
                                 {categoryId && <ReviewRow label="Category" value={categories.find(c => String(c.id) === categoryId)?.label} isDark={isDark} />}
                                 <ReviewRow label="LUC Procedure" value={selectedLuc?.label} isDark={isDark} />
@@ -665,12 +774,12 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark }: NewOpera
                         <Button
                             size="sm"
                             onClick={handleSubmit}
-                            disabled={isSubmitting || !pilotId || !missionCode.trim() || !missionName.trim() || !lucId || !scheduledStart}
-                            className="gap-2 bg-violet-600 hover:bg-violet-700 text-white min-w-[160px]"
+                            disabled={isSubmitting || !pilotId || !missionCode.trim() || !lucId || !scheduledStart}
+                            className="gap-2 cursor-pointer bg-violet-600 hover:bg-violet-700 text-white min-w-[160px]"
                         >
                             {isSubmitting
-                                ? <><Loader2 className="h-4 w-4 animate-spin" /> Creating…</>
-                                : 'Create Operation'
+                                ? <><Loader2 className="h-4 w-4 animate-spin" /> {isEdit ? 'Saving…' : 'Creating…'}</>
+                                : isEdit ? 'Save Changes' : 'Create Operation'
                             }
                         </Button>
                     )}

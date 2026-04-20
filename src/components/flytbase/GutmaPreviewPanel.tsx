@@ -204,13 +204,12 @@ export function GutmaPreviewPanel({
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                 </svg>
               )}
-              {archiving ? 'Archiving…' : 'Archive to Readi'}
+              {archiving ? 'Archiving…' : 'Archive to ReADI'}
             </button>
           )}
         </div>
       </div>
 
-      {/* Serial-number validation error — shown inline below the header */}
       {archiveError && (
         <div className={`flex items-start gap-3 px-5 py-3 border-b text-xs ${isDark ? 'bg-red-950/20 border-red-800/30' : 'bg-red-50 border-red-200'}`}>
           <svg className={`w-4 h-4 mt-0.5 shrink-0 ${isDark ? 'text-red-400' : 'text-red-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
