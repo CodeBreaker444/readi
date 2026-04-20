@@ -58,8 +58,6 @@ export async function getMissionBoard(
 
   const today = new Date();
   const todayStr = today.toISOString().split("T")[0];
-  const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-  const weekAgoStr = weekAgo.toISOString().split("T")[0];
 
   let scheduledQuery = supabase
     .from("pilot_mission")
@@ -87,13 +85,14 @@ export async function getMissionBoard(
     inProgressQuery = inProgressQuery.eq("fk_pilot_user_id", pilotFilter);
   }
 
-  // Done missions from the past 7 days
+  // Done missions completed today only
   let doneQuery = supabase
     .from("pilot_mission")
     .select(MISSION_SELECT)
     .eq('fk_owner_id', ownerId)
     .eq("fk_mission_status_id", 3)
-    .gte("actual_end", `${weekAgoStr}T00:00:00`)
+    .gte("actual_end", `${todayStr}T00:00:00`)
+    .lte("actual_end", `${todayStr}T23:59:59`)
     .not("fk_pilot_user_id", "is", null)
     .order("actual_end", { ascending: false })
     .limit(100);
