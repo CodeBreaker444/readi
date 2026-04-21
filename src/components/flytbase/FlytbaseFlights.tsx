@@ -1,7 +1,6 @@
 'use client';
 
 import { GutmaPreviewPanel } from '@/components/flytbase/GutmaPreviewPanel';
-import { LanguageSelect } from '@/components/LanguageSelect';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -208,7 +207,6 @@ export function FlytbaseFlights({ token }: Props) {
             </div>
 
             <div className="flex items-center gap-2">
-              <LanguageSelect isDark={isDark} />
               <div className="flex items-center gap-1">
                 {WINDOWS.map((w) => (
                   <button
