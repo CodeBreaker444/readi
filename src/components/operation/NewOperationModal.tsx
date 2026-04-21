@@ -97,6 +97,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
 
     const [pilots, setPilots] = useState<PilotOption[]>([])
     const [pilotId, setPilotId] = useState('')
+    const [distanceFlown, setDistanceFlown] = useState('')
     const [loadingOptions, setLoadingOptions] = useState(false)
     const [existingMissionCodes, setExistingMissionCodes] = useState<Set<string>>(new Set())
     const [generatingId, setGeneratingId] = useState(false)
@@ -157,6 +158,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                 })))
                 setPlannings(res.data.plannings ?? [])
                 if (editOperation) {
+                    console.log('drones:',res.data.tools);
                     setDrones((res.data.tools ?? []).map((t: any) => ({
                         tool_id: t.tool_id,
                         tool_code: t.tool_code,
@@ -184,6 +186,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
         setPilotId(editOperation.fk_pilot_user_id?.toString() ?? '')
         setPlanId(editOperation.fk_planning_id?.toString() ?? '')
         setOpType(editOperation.fk_planning_id ? 'PDRA' : 'OPEN')
+        setDistanceFlown(editOperation.distance_flown != null ? String(editOperation.distance_flown) : '')
         setIsRecurring(false)
         setStep(2)
     }, [editOperation, open])
@@ -241,7 +244,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
         setClientId(''); setOpType('OPEN'); setDroneId(''); setPlanId('')
         setFlightMode('RC'); setTypeId(''); setCategoryId(''); setLucId('')
         setMissionCode(''); setMissionName(''); setScheduledStart(''); setScheduledEnd('')
-        setLocation(''); setNotes(''); setPilotId('')
+        setLocation(''); setNotes(''); setPilotId(''); setDistanceFlown('')
         setIsRecurring(false); setDaysOfWeek([]); setRecurUntil(''); setMissionGroupLabel('')
         setConflicts([]); setConflictChecked(false)
         setDrones([]); setClients([]); setPlannings([])
@@ -284,6 +287,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                     fk_planning_id: planId ? parseInt(planId) : null,
                     location: location || undefined,
                     notes: notes || undefined,
+                    distance_flown: distanceFlown !== '' ? parseFloat(distanceFlown) : null,
                 }
                 const res = await axios.put(`/api/operation/${editOperation.pilot_mission_id}`, payload)
                 toast.success('Operation updated successfully')
@@ -308,6 +312,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                 luc_procedure_steps: selectedLuc?.steps ?? null,
                 location: location || undefined,
                 notes: notes || undefined,
+                distance_flown: distanceFlown !== '' ? parseFloat(distanceFlown) : null,
                 status_name: 'Scheduled',
                 ...(isRecurring && {
                     is_recurring: true,
@@ -451,32 +456,44 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                             </div>
 
                             {/* Drone */}
-                            <div>
-                                <Label className={labelCls}>Drone System <span className="text-red-500">*</span></Label>
-                                <Select value={droneId} onValueChange={v => { setDroneId(v); setPlanId('') }} disabled={loadingDrones}>
-                                    <SelectTrigger className={inputCls}>
-                                        <SelectValue placeholder={
-                                            loadingDrones ? 'Loading…'
-                                                : drones.length === 0 ? 'No drones assigned to this client'
-                                                    : 'Select drone…'
-                                        } />
-                                    </SelectTrigger>
-                                    <SelectContent className={scCls}>
-                                        {drones.map(d => (
-                                            <SelectItem key={d.tool_id} value={String(d.tool_id)} disabled={d.in_maintenance} className={siCls}>
-                                                <span className="flex items-center gap-2">
-                                                    <span>{d.tool_code} — {d.tool_name}</span>
-                                                    {d.in_maintenance && (
-                                                        <span className="text-[10px] font-semibold text-blue-600 bg-blue-50 border border-blue-200 rounded px-1.5 py-0.5 leading-none">
-                                                            MAINTENANCE
+                            {(() => {
+                                const allInMaintenance = drones.length > 0 && drones.every(d => d.in_maintenance)
+                                return (
+                                    <div>
+                                        <Label className={labelCls}>Drone System <span className="text-red-500">*</span></Label>
+                                        <Select value={droneId} onValueChange={v => { setDroneId(v); setPlanId('') }} disabled={loadingDrones}>
+                                            <SelectTrigger className={inputCls}>
+                                                <SelectValue placeholder={
+                                                    loadingDrones ? 'Loading…'
+                                                        : drones.length === 0 ? 'No drones assigned to this client'
+                                                            : allInMaintenance ? 'All drones are in maintenance'
+                                                                : 'Select drone…'
+                                                } />
+                                            </SelectTrigger>
+                                            <SelectContent className={scCls}>
+                                                {drones.map(d => (
+                                                    <SelectItem key={d.tool_id} value={String(d.tool_id)} disabled={d.in_maintenance} className={siCls}>
+                                                        <span className="flex items-center gap-2">
+                                                            <span>{d.tool_code} — {d.tool_name}</span>
+                                                            {d.in_maintenance && (
+                                                                <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 leading-none">
+                                                                    MAINTENANCE
+                                                                </span>
+                                                            )}
                                                         </span>
-                                                    )}
-                                                </span>
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        {allInMaintenance && (
+                                            <p className="mt-1.5 text-xs text-amber-600 flex items-center gap-1">
+                                                <AlertTriangle className="h-3 w-3 shrink-0" />
+                                                All drones assigned to this client are currently under maintenance.
+                                            </p>
+                                        )}
+                                    </div>
+                                )
+                            })()}
 
                             {/* PDRA-only fields */}
                             {opType === 'PDRA' && (
@@ -543,6 +560,19 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                     {step === 3 && (
                         <div className="space-y-3">
                             <SectionTitle isDark={isDark}>Scheduler</SectionTitle>
+
+                            <div className="max-w-xs">
+                                <Label className={labelCls}>Distance Flown (m) <span className="text-[10px] text-muted-foreground font-normal">(optional)</span></Label>
+                                <Input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={distanceFlown}
+                                    onChange={e => setDistanceFlown(e.target.value)}
+                                    placeholder="e.g. 1500"
+                                    className={inputCls}
+                                />
+                            </div>
 
                             <div className="max-w-xs">
                                 <Label className={labelCls}>Mission ID <span className="text-red-500">*</span></Label>

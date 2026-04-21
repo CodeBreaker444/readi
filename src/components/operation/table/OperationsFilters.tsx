@@ -122,10 +122,10 @@ export function OperationsFilters({
             onValueChange={(v) => onFilterChange({ ...filters, droneFilter: v })}
           >
             <SelectTrigger className="w-44 cursor-pointer">
-              <SelectValue placeholder={t('operations.table.filters.allDrones', 'All Drones')} />
+              <SelectValue placeholder={t('operations.table.filters.allDrones')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="ALL">{t('operations.table.filters.allDrones', 'All Drones')}</SelectItem>
+              <SelectItem value="ALL">{t('operations.table.filters.allDrones')}</SelectItem>
               {tools.map((tool) => (
                 <SelectItem key={tool.tool_id} value={tool.tool_id.toString()}>
                   {tool.tool_name} {tool.tool_code ? `(${tool.tool_code})` : ''}
@@ -139,10 +139,10 @@ export function OperationsFilters({
             onValueChange={(v) => onFilterChange({ ...filters, clientFilter: v })}
           >
             <SelectTrigger className="w-44 cursor-pointer">
-              <SelectValue placeholder={t('operations.table.filters.allClients', 'All Clients')} />
+              <SelectValue placeholder={t('operations.table.filters.allClients')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="ALL">{t('operations.table.filters.allClients', 'All Clients')}</SelectItem>
+              <SelectItem value="ALL">{t('operations.table.filters.allClients')}</SelectItem>
               {clients.map((c) => (
                 <SelectItem key={c.client_id} value={c.client_id.toString()}>
                   {c.client_name}

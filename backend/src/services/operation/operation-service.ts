@@ -40,12 +40,17 @@ export async function listOperations(
       fk_mission_type_id,
       fk_mission_category_id,
       fk_luc_procedure_id,
+      luc_procedure_progress,
+      luc_completed_at,
       fk_owner_id,
       status_name,
       created_at,
       updated_at,
       pilot:users!fk_pilot_user_id ( first_name, last_name ),
-      tool:tool!fk_tool_id ( tool_code, tool_name )
+      tool:tool!fk_tool_id ( tool_code, tool_name ),
+      category:pilot_mission_category!fk_mission_category_id ( category_name ),
+      type_data:pilot_mission_type!fk_mission_type_id ( type_name ),
+      planning:planning!fk_planning_id ( planning_name, client:client!fk_client_id ( client_name ) )
     `,
       { count: 'exact' }
     )
@@ -83,6 +88,10 @@ export async function listOperations(
       ? `${row.pilot.first_name ?? ''} ${row.pilot.last_name ?? ''}`.trim()
       : null,
     tool_code: row.tool?.tool_code ?? null,
+    category_name: row.category?.category_name ?? null,
+    type_name: row.type_data?.type_name ?? null,
+    planning_name: row.planning?.planning_name ?? null,
+    client_name: row.planning?.client?.client_name ?? null,
   })) as Operation[];
 
   return { data: operations, total: count ?? 0, page, pageSize };

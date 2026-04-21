@@ -1198,6 +1198,8 @@
         "searchPlaceholder": "Search operations…",
         "allStatuses": "All Statuses",
         "allPilots": "All Pilots",
+        "allDrones": "All Drones",
+        "allClients": "All Clients",
         "reset": "Reset"
       },
       "status": {
@@ -1246,7 +1248,19 @@
         "updateMaintenanceCycles": "Update maintenance cycles",
         "logFlightsHours": "Log flights & hours for {{code}} after this mission.",
         "updateMaintenance": "Update Maintenance",
-        "reportIssue": "Report Issue"
+        "reportIssue": "Report Issue",
+        "procedure": "Procedure",
+        "procedureCompleted": "Procedure completed",
+        "stepsPending": "Steps pending",
+        "stepsCompleteNotFinalized": "Steps complete, not finalized",
+        "assignment": "Assignment",
+        "checklist": "Checklist",
+        "manageProcedure": "Manage Procedure",
+        "missionDetails": "Mission Details",
+        "client": "Client",
+        "missionPlan": "Mission Plan",
+        "category": "Category",
+        "type": "Type"
       },
       "toast": {
         "deleteSuccess": "{{count}} operation(s) deleted",

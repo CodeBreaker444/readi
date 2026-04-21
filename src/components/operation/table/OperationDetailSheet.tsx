@@ -17,13 +17,19 @@ import {
   AlertTriangle,
   Ban,
   Briefcase,
+  CheckCircle2,
+  ClipboardList,
   Clock,
   FileText,
+  Layers,
   MapPin,
   Navigation,
   Pencil,
+  Tag,
   User,
+  Users,
   Wrench,
+  XCircle,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -73,6 +79,27 @@ function DetailRow({
   );
 }
 
+function getProcedureStatus(op: Operation) {
+  const hasLuc = !!op.fk_luc_procedure_id;
+  if (!hasLuc || !op.luc_procedure_progress) {
+    return { hasLuc, assignmentDone: false, checklistDone: false, assignmentTotal: 0, assignmentComplete: 0, checklistTotal: 0, checklistComplete: 0 };
+  }
+  const progress = op.luc_procedure_progress;
+  const assignmentEntries = Object.values(progress.assignment ?? {});
+  const checklistEntries = Object.values(progress.checklist ?? {});
+  const assignmentComplete = assignmentEntries.filter(v => v === 'Y').length;
+  const checklistComplete = checklistEntries.filter(v => v === 'Y').length;
+  return {
+    hasLuc,
+    assignmentDone: assignmentEntries.length === 0 || assignmentComplete === assignmentEntries.length,
+    checklistDone: checklistEntries.length === 0 || checklistComplete === checklistEntries.length,
+    assignmentTotal: assignmentEntries.length,
+    assignmentComplete,
+    checklistTotal: checklistEntries.length,
+    checklistComplete,
+  };
+}
+
 interface OperationDetailSheetProps {
   isDark: boolean;
   operation: Operation | null;
@@ -96,9 +123,13 @@ export function OperationDetailSheet({
     ? t(`operations.table.status.${
         operation.status_name === 'IN_PROGRESS'
           ? 'inProgress'
-          : operation.status_name.charAt(0) + operation.status_name.slice(1).toLowerCase()
+          : operation.status_name.toLowerCase()
       }`)
     : '';
+
+  const proc = operation ? getProcedureStatus(operation) : null;
+  const procAllDone = proc ? proc.assignmentDone && proc.checklistDone : false;
+  const lucCompleted = !!operation?.luc_completed_at;
 
   return (
     <>
@@ -149,6 +180,71 @@ export function OperationDetailSheet({
               </SheetHeader>
 
               <div className="space-y-6">
+                {/* Procedure Status */}
+                {proc?.hasLuc && (
+                  <section className="space-y-3">
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                      <ClipboardList className="h-3.5 w-3.5" />
+                      {t('operations.table.detail.procedure')}
+                    </h3>
+                    <div className={cn('rounded-lg border p-3 space-y-2',
+                      lucCompleted
+                        ? isDark ? 'bg-emerald-950/20 border-emerald-700' : 'bg-emerald-50 border-emerald-200'
+                        : !procAllDone
+                          ? isDark ? 'bg-amber-950/20 border-amber-700' : 'bg-amber-50 border-amber-200'
+                          : isDark ? 'bg-slate-800 border-slate-700' : 'bg-muted/30'
+                    )}>
+                      <div className="flex items-center gap-2">
+                        {lucCompleted
+                          ? <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+                          : !procAllDone
+                            ? <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
+                            : <CheckCircle2 className="h-4 w-4 text-slate-400 shrink-0" />
+                        }
+                        <p className={cn('text-sm font-medium',
+                          lucCompleted ? 'text-emerald-700 dark:text-emerald-300'
+                            : !procAllDone ? 'text-amber-800 dark:text-amber-300'
+                            : 'text-foreground')}>
+                          {lucCompleted
+                            ? t('operations.table.detail.procedureCompleted')
+                            : !procAllDone
+                              ? t('operations.table.detail.stepsPending')
+                              : t('operations.table.detail.stepsCompleteNotFinalized')}
+                        </p>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 pt-1">
+                        <div className="flex items-center gap-1.5 text-xs">
+                          {proc.assignmentDone
+                            ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                            : <XCircle className="h-3.5 w-3.5 text-amber-500" />}
+                          <span className="text-muted-foreground">
+                            {t('operations.table.detail.assignment')}{proc.assignmentTotal > 0 ? ` (${proc.assignmentComplete}/${proc.assignmentTotal})` : ''}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-xs">
+                          {proc.checklistDone
+                            ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                            : <XCircle className="h-3.5 w-3.5 text-amber-500" />}
+                          <span className="text-muted-foreground">
+                            {t('operations.table.detail.checklist')}{proc.checklistTotal > 0 ? ` (${proc.checklistComplete}/${proc.checklistTotal})` : ''}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full gap-2 text-xs"
+                      onClick={() => { onEdit?.(operation); onClose(); }}
+                    >
+                      <ClipboardList className="h-3.5 w-3.5" />
+                      {t('operations.table.detail.manageProcedure')}
+                    </Button>
+                  </section>
+                )}
+
+                {proc?.hasLuc && <div className="h-px bg-border" />}
+
                 {/* Timeline */}
                 <section className="space-y-3">
                   <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -197,11 +293,6 @@ export function OperationDetailSheet({
                       label={t('operations.table.detail.droneSystem')}
                       value={operation.tool_code}
                     />
-                    <DetailRow
-                      icon={<Briefcase className="h-3.5 w-3.5" />}
-                      label={t('operations.table.detail.missionId')}
-                      value={`#${operation.pilot_mission_id}`}
-                    />
                     {operation.location && (
                       <DetailRow
                         icon={<MapPin className="h-3.5 w-3.5" />}
@@ -212,52 +303,87 @@ export function OperationDetailSheet({
                   </div>
                 </section>
 
+                <div className="h-px bg-border" />
+
+                {/* Mission Details */}
+                <section className="space-y-3">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    {t('operations.table.detail.missionDetails')}
+                  </h3>
+                  <div className="space-y-2">
+                    {operation.client_name && (
+                      <DetailRow
+                        icon={<Users className="h-3.5 w-3.5" />}
+                        label={t('operations.table.detail.client')}
+                        value={operation.client_name}
+                      />
+                    )}
+                    {operation.planning_name && (
+                      <DetailRow
+                        icon={<Briefcase className="h-3.5 w-3.5" />}
+                        label={t('operations.table.detail.missionPlan')}
+                        value={operation.planning_name}
+                      />
+                    )}
+                    {operation.category_name && (
+                      <DetailRow
+                        icon={<Layers className="h-3.5 w-3.5" />}
+                        label={t('operations.table.detail.category')}
+                        value={operation.category_name}
+                      />
+                    )}
+                    {operation.type_name && (
+                      <DetailRow
+                        icon={<Tag className="h-3.5 w-3.5" />}
+                        label={t('operations.table.detail.type')}
+                        value={operation.type_name}
+                      />
+                    )}
+                    <DetailRow
+                      icon={<Briefcase className="h-3.5 w-3.5" />}
+                      label={t('operations.table.detail.missionId')}
+                      value={`#${operation.pilot_mission_id}`}
+                    />
+                  </div>
+                </section>
+
                 {/* Flight Results */}
-                {isCompleted && (
-                  <>
-                    <div className="h-px bg-border" />
-                    <section className="space-y-3">
-                      <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                        {t('operations.table.detail.flightResults')}
-                      </h3>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="rounded-lg border bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800 p-3 space-y-1">
-                          <p className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            {t('operations.table.detail.duration')}
-                          </p>
-                          <p className="text-lg font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">
-                            {operation.flight_duration != null
-                              ? `${operation.flight_duration} min`
-                              : '—'}
-                          </p>
-                        </div>
-                        <div className="rounded-lg border bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800 p-3 space-y-1">
-                          <p className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Navigation className="h-3 w-3" />
-                            {t('operations.table.detail.distance')}
-                          </p>
-                          <p className="text-lg font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">
-                            {operation.distance_flown != null
-                              ? `${operation.distance_flown.toLocaleString()} m`
-                              : '—'}
-                          </p>
-                        </div>
-                        {operation.max_altitude != null && (
-                          <div className="rounded-lg border bg-muted/30 p-3 space-y-1">
-                            <p className="text-xs text-muted-foreground flex items-center gap-1">
-                              <Activity className="h-3 w-3" />
-                              {t('operations.table.detail.maxAltitude')}
-                            </p>
-                            <p className="text-sm font-bold tabular-nums">
-                              {operation.max_altitude} m
-                            </p>
-                          </div>
-                        )}
+                <>
+                  <div className="h-px bg-border" />
+                  <section className="space-y-3">
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      {t('operations.table.detail.flightResults')}
+                    </h3>
+                    <div className="grid grid-cols-1 gap-3">
+                      <div className={cn('rounded-lg border p-3 space-y-1',
+                        isCompleted
+                          ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800'
+                          : isDark ? 'bg-slate-800 border-slate-700' : 'bg-muted/30')}>
+                        <p className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Navigation className="h-3 w-3" />
+                          {t('operations.table.detail.distance')}
+                        </p>
+                        <p className={cn('text-lg font-bold tabular-nums',
+                          isCompleted ? 'text-emerald-700 dark:text-emerald-400' : 'text-foreground')}>
+                          {operation.distance_flown != null
+                            ? `${operation.distance_flown.toLocaleString()} m`
+                            : '—'}
+                        </p>
                       </div>
-                    </section>
-                  </>
-                )}
+                      {operation.max_altitude != null && (
+                        <div className="rounded-lg border bg-muted/30 p-3 space-y-1">
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Activity className="h-3 w-3" />
+                            {t('operations.table.detail.maxAltitude')}
+                          </p>
+                          <p className="text-sm font-bold tabular-nums">
+                            {operation.max_altitude} m
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </section>
+                </>
 
                 {/* Pilot Notes */}
                 {operation.notes && (

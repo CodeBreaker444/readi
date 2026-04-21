@@ -54,6 +54,10 @@ export interface Operation {
   pilot_name?: string | null;
   tool_code?: string | null;
   status_name?: string | null;
+  client_name?: string | null;
+  category_name?: string | null;
+  type_name?: string | null;
+  planning_name?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -361,7 +365,6 @@ const table = useReactTable({
             onClearSelection={() => setRowSelection({})}
           />
         )}
-
         <OperationsTable isDark={isDark} loading={loading} table={table} />
       </div>
 

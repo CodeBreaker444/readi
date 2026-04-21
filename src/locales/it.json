@@ -1200,6 +1200,8 @@
         "searchPlaceholder": "Cerca operazioni…",
         "allStatuses": "Tutti gli stati",
         "allPilots": "Tutti i piloti",
+        "allDrones": "Tutti i droni",
+        "allClients": "Tutti i clienti",
         "reset": "Reimposta"
       },
       "status": {
@@ -1245,7 +1247,22 @@
         "updateMaintenanceCycles": "Aggiorna cicli di manutenzione",
         "logFlightsHours": "Registra voli & ore per {{code}} dopo questa missione.",
         "updateMaintenance": "Aggiorna manutenzione",
-        "reportIssue": "Segnala problema"
+        "reportIssue": "Segnala problema",
+        "plannedDate": "Data pianificata",
+        "officialStart": "Inizio ufficiale",
+        "officialEnd": "Fine ufficiale",
+        "procedure": "Procedura",
+        "procedureCompleted": "Procedura completata",
+        "stepsPending": "Passaggi in sospeso",
+        "stepsCompleteNotFinalized": "Passaggi completati, non finalizzati",
+        "assignment": "Assegnazione",
+        "checklist": "Lista di controllo",
+        "manageProcedure": "Gestisci procedura",
+        "missionDetails": "Dettagli missione",
+        "client": "Cliente",
+        "missionPlan": "Piano missione",
+        "category": "Categoria",
+        "type": "Tipo"
       },
       "toast": {
         "deleteSuccess": "{{count}} operazione/i eliminata/e",

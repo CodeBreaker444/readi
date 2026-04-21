@@ -22,9 +22,13 @@ export interface Operation {
   fk_luc_procedure_id?: number | null;
   luc_procedure_progress?: Record<string, Record<string, string>> | null;
   luc_completed_at?: string | null;
-  pilot_name?: string;
-  tool_code?: string;
-  status_name?: string;
+  pilot_name?: string | null;
+  tool_code?: string | null;
+  status_name?: string | null;
+  client_name?: string | null;
+  category_name?: string | null;
+  type_name?: string | null;
+  planning_name?: string | null;
   attachment_count?: number;
   created_at: string;
   updated_at: string;

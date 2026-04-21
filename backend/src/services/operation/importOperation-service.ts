@@ -291,7 +291,7 @@ export async function importDrones(ownerId: number, clientId?: number) {
 
     let filtered = data || [];
     if (clientId && clientId > 0) {
-        filtered = filtered.filter((t: any) => t.tool_metadata?.clientId === clientId);
+        filtered = filtered.filter((t: any) => Number(t.tool_metadata?.clientId) === clientId);
     }
 
     return filtered.map((t: any) => ({
