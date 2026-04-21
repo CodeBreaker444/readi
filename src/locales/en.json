@@ -1375,6 +1375,7 @@
         "addUsage": "Add Usage",
         "flights": "Flights",
         "hours": "Hours",
+        "days": "Days",
         "hmin": "h.min",
         "daysTracked": "Days are tracked automatically from the last maintenance date.",
         "overdue": "Maintenance is overdue — schedule maintenance soon",

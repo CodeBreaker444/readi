@@ -1372,6 +1372,7 @@
         "addUsage": "Nutzung hinzufügen",
         "flights": "Flüge",
         "hours": "Stunden",
+        "days": "Tage",
         "hmin": "h.min",
         "daysTracked": "Tage werden automatisch ab dem letzten Wartungsdatum erfasst.",
         "overdue": "Wartung ist überfällig — Wartung bald einplanen",
