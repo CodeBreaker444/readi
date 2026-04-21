@@ -364,7 +364,7 @@ export function MissionCard({ mission, draggable, onDragStart, onViewDetails, on
                   <button
                     onClick={onUpdateMaintenance}
                     className={cn(
-                      "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium transition-colors",
+                      "inline-flex cursor-pointer items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium transition-colors",
                       isDark
                         ? "border-violet-500/30 bg-violet-500/10 text-violet-400 hover:bg-violet-500/20"
                         : "border-violet-200 bg-violet-50 text-violet-600 hover:bg-violet-100"
@@ -387,7 +387,7 @@ export function MissionCard({ mission, draggable, onDragStart, onViewDetails, on
               <Button
                 size="sm"
                 variant="ghost"
-                className={`h-7 px-2.5 text-[11px] ${isDark
+                className={`h-7 cursor-pointer px-2.5 text-[11px] ${isDark
                   ? "text-slate-400 hover:bg-white/[0.06] hover:text-slate-100"
                   : "text-slate-500 hover:bg-slate-100 hover:text-slate-800"
                 }`}

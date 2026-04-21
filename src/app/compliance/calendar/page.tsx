@@ -10,6 +10,7 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import axios from 'axios';
 import { CalendarDays, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 
@@ -34,15 +35,10 @@ interface EventDetailProps {
 }
 
 
-const STATUS_LEGEND = [
-  { label: 'Compliant', color: '#10b981' },
-  { label: 'Partial', color: '#f59e0b' },
-  { label: 'Non-Compliant', color: '#ef4444' },
-  { label: 'Not Applicable', color: '#6b7280' },
-];
-
 
 function EventDetail({ event, isDark, onClose }: EventDetailProps) {
+
+  const { t } = useTranslation();
   const bg = isDark ? 'bg-[#0f1320] border-white/10' : 'bg-white border-gray-200';
   const textPrimary = isDark ? 'text-white' : 'text-gray-900';
   const textMuted = isDark ? 'text-gray-500' : 'text-gray-400';
@@ -80,28 +76,28 @@ function EventDetail({ event, isDark, onClose }: EventDetailProps) {
 
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <span className={`text-[11px] ${textMuted}`}>Status</span>
+              <span className={`text-[11px] ${textMuted}`}>{t('compliance.calendar.eventModal.fields.status')}</span>
               <span
                 className="text-[11px] font-semibold px-2 py-0.5 rounded-full"
                 style={{ backgroundColor: `${event.color}20`, color: event.color }}
               >
-                {STATUS_LABEL[event.extendedProps.requirement_status] ?? event.extendedProps.requirement_status}
+                {t(`compliance.shared.status.${event.extendedProps.requirement_status}`) || event.extendedProps.requirement_status}
               </span>
             </div>
             {event.extendedProps.requirement_type && (
               <div className="flex items-center justify-between">
-                <span className={`text-[11px] ${textMuted}`}>Area</span>
+                <span className={`text-[11px] ${textMuted}`}>{t('compliance.calendar.eventModal.fields.area')}</span>
                 <span className={`text-[11px] font-medium ${textPrimary}`}>{event.extendedProps.requirement_type}</span>
               </div>
             )}
             {event.extendedProps.regulatory_body && (
               <div className="flex items-center justify-between">
-                <span className={`text-[11px] ${textMuted}`}>Source</span>
+                <span className={`text-[11px] ${textMuted}`}>{t('compliance.calendar.eventModal.fields.source')}</span>
                 <span className={`text-[11px] ${textMuted}`}>{event.extendedProps.regulatory_body}</span>
               </div>
             )}
             <div className="flex items-center justify-between">
-              <span className={`text-[11px] ${textMuted}`}>Due date</span>
+              <span className={`text-[11px] ${textMuted}`}>{t('compliance.calendar.eventModal.fields.dueDate')}</span>
               <span className={`text-[11px] font-medium tabular-nums ${textPrimary}`}>{event.start}</span>
             </div>
           </div>
@@ -113,6 +109,7 @@ function EventDetail({ event, isDark, onClose }: EventDetailProps) {
 
 
 export default function ComplianceCalendarPage() {
+  const { t } = useTranslation();
   const { isDark } = useTheme();
   const calendarRef = useRef<FullCalendar>(null);
   const [events, setEvents] = useState<ComplianceCalendarEvent[]>([]);
@@ -124,9 +121,9 @@ export default function ComplianceCalendarPage() {
     try {
       const res = await axios.get('/api/compliance/calendar');
       if (res.data.code === 1) setEvents(res.data.data ?? []);
-      else toast.error(res.data.error || 'Failed to load calendar events');
+      else toast.error(res.data.error || t('compliance.calendar.messages.loadFailed'));
     } catch {
-      toast.error('Failed to load calendar events');
+      toast.error(t('compliance.calendar.messages.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -150,26 +147,30 @@ export default function ComplianceCalendarPage() {
     if (ev) setSelectedEvent(ev);
   }
 
+  const STATUS_LEGEND = [
+    { label: t('compliance.calendar.legend.compliant'), color: '#10b981' },
+    { label: t('compliance.calendar.legend.partial'), color: '#f59e0b' },
+    { label: t('compliance.calendar.legend.nonCompliant'), color: '#ef4444' },
+    { label: t('compliance.calendar.legend.notApplicable'), color: '#6b7280' },
+  ];
+
   return (
     <div className={`min-h-screen ${isDark ? 'bg-slate-900' : 'bg-gray-50'}`}>
-
-      {/* Header */}
       <div className={`top-0 z-10 backdrop-blur-md transition-colors ${isDark ? 'bg-slate-900/80 border-b border-slate-800' : 'bg-white/80 border-b border-slate-200 shadow-[0_1px_3px_rgba(0,0,0,0.06)]'} px-6 py-4`}>
         <div className="mx-auto max-w-[1800px] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-1 h-6 rounded-full bg-violet-600" />
             <div>
               <h1 className={`font-semibold text-base tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                Compliance Calendar
+                {t('compliance.calendar.title')}
               </h1>
               <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                Compliance requirement due dates and review schedule
+                 {t('compliance.calendar.subtitle')}
               </p>
             </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-3 sm:gap-6">
-            {/* Legend */}
             <div className="flex items-center gap-3 flex-wrap">
               {STATUS_LEGEND.map(({ label, color }) => (
                 <div key={label} className="flex items-center gap-1.5">
@@ -187,7 +188,7 @@ export default function ComplianceCalendarPage() {
                 className={`h-8 gap-1.5 text-xs font-semibold shadow-sm ${isDark ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' : 'bg-white hover:bg-gray-50 text-slate-700 border border-slate-200'}`}
               >
                 <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
-                Refresh
+                {t('compliance.requirementsEvidences.actions.refresh')}
               </Button>
             </div>
           </div>
@@ -200,16 +201,16 @@ export default function ComplianceCalendarPage() {
           <div className={`flex items-center gap-2 px-5 py-3.5 border-b ${isDark ? 'bg-slate-700/50 border-slate-700' : 'bg-gradient-to-r from-violet-50 to-purple-50 border-gray-100'}`}>
             <CalendarDays size={15} className={isDark ? 'text-slate-400' : 'text-violet-400'} />
             <span className={`text-xs font-semibold uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-gray-400'}`}>
-              Review Schedule
+              {t('compliance.generalAuditPlan.auditSchedule.sectionTitle')}
             </span>
             {loading && (
               <span className={`ml-auto text-[11px] animate-pulse font-medium ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-                Loading…
+                {t('compliance.calendar.loading')}
               </span>
             )}
             {!loading && (
               <span className={`ml-auto text-[11px] font-medium ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-                {events.length} event{events.length !== 1 ? 's' : ''}
+                {t('compliance.calendar.eventCount', { count: events.length })}
               </span>
             )}
           </div>
@@ -320,7 +321,11 @@ export default function ComplianceCalendarPage() {
                   center: 'title',
                   right: 'dayGridMonth,listMonth',
                 }}
-                buttonText={{ today: 'Today', month: 'Month', list: 'List' }}
+                buttonText={{
+                  today: t('compliance.calendar.buttonText.today'),
+                  month: t('compliance.calendar.buttonText.month'),
+                  list: t('compliance.calendar.buttonText.list'),
+                }}
                 events={fcEvents}
                 eventClick={handleEventClick}
                 editable={false}
@@ -328,6 +333,7 @@ export default function ComplianceCalendarPage() {
                 height="auto"
                 dayMaxEvents={4}
                 nowIndicator={true}
+                noEventsContent={t('compliance.calendar.empty')}
               />
             </div>
           )}

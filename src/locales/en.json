@@ -1175,18 +1175,18 @@
       "delete": "Delete Operation"
     },
     "declaration": {
-    "title": "Daily Pilot Declaration",
-    "subtitle": "Confirm all items to proceed with starting a mission today.",
-    "rested": "I am adequately rested and not fatigued",
-    "fit": "I am physically and mentally fit to fly",
-    "medication": "I am not under the influence of medication that may impair my performance",
-    "briefed": "I have reviewed the mission plan and area of operation",
-    "equipment": "Equipment and drone systems have been inspected and are airworthy",
-    "submit": "Submit Declaration",
-    "saving": "Saving...",
-    "warning": "Please confirm all checklist items before submitting.",
-    "error": "Failed to save declaration"
-  },
+      "title": "Daily Pilot Declaration",
+      "subtitle": "Confirm all items to proceed with starting a mission today.",
+      "rested": "I am adequately rested and not fatigued",
+      "fit": "I am physically and mentally fit to fly",
+      "medication": "I am not under the influence of medication that may impair my performance",
+      "briefed": "I have reviewed the mission plan and area of operation",
+      "equipment": "Equipment and drone systems have been inspected and are airworthy",
+      "submit": "Submit Declaration",
+      "saving": "Saving...",
+      "warning": "Please confirm all checklist items before submitting.",
+      "error": "Failed to save declaration"
+    },
     "table": {
       "title": "Operations",
       "subtitle": "Pilot missions & flight operations",
@@ -1643,7 +1643,7 @@
       }
     }
   },
- "repository": {
+  "repository": {
     "title": "Document Repository",
     "subtitle": "Manage and track organizational compliance documents",
     "newDocument": "New Document",
@@ -1853,111 +1853,456 @@
     }
   },
   "safety": {
-  "spiKpi": {
-    "pageTitle": "SPI / KPI Definitions",
-    "pageSubtitle": "Safety Management · Monitoring safety performance indicators",
-    "newIndicator": "New Indicator",
-    "stats": {
-      "totalIndicators": "Total Indicators",
-      "activeMonitors": "Active Monitors",
-      "operationsArea": "Operations Area"
+    "spiKpi": {
+      "pageTitle": "SPI / KPI Definitions",
+      "pageSubtitle": "Safety Management · Monitoring safety performance indicators",
+      "newIndicator": "New Indicator",
+      "stats": {
+        "totalIndicators": "Total Indicators",
+        "activeMonitors": "Active Monitors",
+        "operationsArea": "Operations Area"
+      },
+      "infoBanner": "Indicators only appear on the Safety Dashboard once measurement values have been logged. Use the",
+      "infoBannerLogValue": "Log Value",
+      "infoBannerSuffix": "button on each row to enter data.",
+      "filters": {
+        "searchDefinitions": "Search Definitions",
+        "searchPlaceholder": "Code, name or description...",
+        "area": "Area",
+        "allAreas": "All Areas",
+        "status": "Status",
+        "allStatus": "All Status",
+        "activeOnly": "Active Only",
+        "inactiveOnly": "Inactive Only",
+        "apply": "Apply"
+      },
+      "areas": {
+        "COMPLIANCE": "Compliance",
+        "TRAINING": "Training",
+        "OPERATIONS": "Operations",
+        "MAINTENANCE": "Maintenance"
+      },
+      "table": {
+        "indicatorCode": "Indicator Code",
+        "area": "Area",
+        "name": "Name",
+        "target": "Target",
+        "status": "Status",
+        "active": "Active",
+        "disabled": "Disabled",
+        "logMeasurement": "Log measurement value",
+        "noResults": "No indicators match your current selection."
+      },
+      "form": {
+        "editTitle": "Edit Indicator",
+        "newTitle": "New Indicator",
+        "code": "Code",
+        "codePlaceholder": "e.g. OPS_SAFETY_01",
+        "codeHint": "Immutable after saving",
+        "unit": "Unit",
+        "unitPlaceholder": "% / count / hours",
+        "type": "Type",
+        "kpiOption": "KPI - Key Performance",
+        "spiOption": "SPI - Safety Performance",
+        "area": "Area",
+        "indicatorName": "Indicator Name",
+        "namePlaceholder": "Enter descriptive name...",
+        "targetValue": "Target Value",
+        "frequency": "Reporting Frequency",
+        "description": "Description",
+        "descPlaceholder": "Explain what this indicator measures...",
+        "statusLabel": "Status",
+        "activeMonitoring": "Active / Monitoring",
+        "disabledDraft": "Disabled / Draft",
+        "cancel": "Cancel",
+        "processing": "Processing...",
+        "updateIndicator": "Update Indicator",
+        "createIndicator": "Create Indicator"
+      },
+      "frequency": {
+        "MONTHLY": "Monthly",
+        "WEEKLY": "Weekly",
+        "QUARTERLY": "Quarterly",
+        "YEARLY": "Yearly"
+      },
+      "validation": {
+        "codeMinChars": "Minimum 3 characters",
+        "codeFormat": "Uppercase, numbers, underscores only",
+        "nameRequired": "Name is required",
+        "unitRequired": "Unit is required",
+        "targetPositive": "Must be a positive number",
+        "dateRequired": "Date is required",
+        "valueNumber": "Must be a valid number"
+      },
+      "log": {
+        "title": "Log Measurement",
+        "measurementDate": "Measurement Date",
+        "actualValue": "Actual Value",
+        "actualPlaceholder": "e.g. 87.5",
+        "targetValue": "Target Value",
+        "status": "Status",
+        "statusGreen": "On Track / Above Target",
+        "statusYellow": "At Risk / On Target",
+        "statusRed": "Breached / Below Target",
+        "cancel": "Cancel",
+        "saving": "Saving...",
+        "saveMeasurement": "Save Measurement"
+      },
+      "toast": {
+        "loadError": "Failed to load indicators",
+        "recordSynced": "Record synchronized",
+        "saveFailed": "Save failed",
+        "activated": "Indicator activated",
+        "deactivated": "Indicator deactivated",
+        "toggleFailed": "Toggle failed",
+        "measurementLogged": "Measurement logged successfully",
+        "logFailed": "Log failed"
+      }
+    }
+  },
+  "compliance": {
+    "generalAuditPlan": {
+      "title": "General Audit Plan",
+      "subtitle": "SMS Version 3.2 · Revision 01",
+      "stats": {
+        "totalRequirements": "Total Requirements",
+        "compliant": "Compliant",
+        "partialNonCompliant": "Partial / Non-Compliant",
+        "notApplicable": "Not Applicable"
+      },
+      "filters": {
+        "searchPlaceholder": "Search by code, title, area or source…",
+        "statusAll": "All Statuses",
+        "areaAll": "All Areas",
+        "clear": "Clear"
+      },
+      "auditSchedule": {
+        "sectionTitle": "Annual Audit Schedule",
+        "subtitle": "Four quarterly audits covering all compliance domains",
+        "footer": "Output & archiving: quarterly reports signed by CMM and validated by AM; PDF archiving for 3 years; corrective action register with deadlines and responsibilities.",
+        "columns": {
+          "period": "Period",
+          "type": "Type",
+          "area": "Area / Subject",
+          "responsible": "Responsible",
+          "mode": "Mode",
+          "output": "Expected Output"
+        }
+      },
+      "table": {
+        "sectionTitle": "Compliance Requirements",
+        "addButton": "New Requirement",
+        "columns": {
+          "ref": "Ref",
+          "title": "Title",
+          "type": "Type",
+          "regulatoryBody": "Regulatory Body",
+          "status": "Status",
+          "criticality": "Criticality",
+          "nextDue": "Next Due",
+          "actions": "Actions"
+        },
+        "empty": "No compliance requirements found.",
+        "emptyHint": "Add your first requirement using the button above.",
+        "requirementCount_one": "{{count}} requirement",
+        "requirementCount_other": "{{count}} requirements"
+      },
+      "modal": {
+        "createTitle": "New Compliance Requirement",
+        "editTitle": "Edit Requirement",
+        "fields": {
+          "code": "Ref Code",
+          "codePlaceholder": "e.g. EU-2019/947-A1",
+          "title": "Title",
+          "titlePlaceholder": "Short description of the requirement",
+          "type": "Type",
+          "typePlaceholder": "e.g. Regulatory",
+          "regulatoryBody": "Regulatory Body",
+          "regulatoryBodyPlaceholder": "e.g. Reg. (EU) 2019/947",
+          "status": "Status",
+          "criticality": "Criticality (1–5)",
+          "nextReviewDate": "Next Due Date",
+          "notes": "Notes",
+          "notesPlaceholder": "Additional context, evidence, corrective actions…"
+        },
+        "cancel": "Cancel",
+        "save": "Save",
+        "saving": "Saving…",
+        "update": "Update",
+        "create": "Create"
+      },
+      "deleteModal": {
+        "title": "Delete Requirement",
+        "message": "Are you sure you want to delete this compliance requirement? This action cannot be undone.",
+        "confirm": "Delete",
+        "deleting": "Deleting…",
+        "cancel": "Cancel"
+      },
+      "messages": {
+        "loadFailed": "Failed to load compliance data",
+        "saveSuccess": "Changes saved",
+        "createSuccess": "Requirement added",
+        "saveFailed": "Failed to save requirement",
+        "deleteSuccess": "Requirement deleted",
+        "deleteFailed": "Failed to delete requirement"
+      }
     },
-    "infoBanner": "Indicators only appear on the Safety Dashboard once measurement values have been logged. Use the",
-    "infoBannerLogValue": "Log Value",
-    "infoBannerSuffix": "button on each row to enter data.",
-    "filters": {
-      "searchDefinitions": "Search Definitions",
-      "searchPlaceholder": "Code, name or description...",
-      "area": "Area",
-      "allAreas": "All Areas",
-      "status": "Status",
-      "allStatus": "All Status",
-      "activeOnly": "Active Only",
-      "inactiveOnly": "Inactive Only",
-      "apply": "Apply"
+    "calendar": {
+      "title": "Compliance Calendar",
+      "subtitle": "Compliance requirement due dates and review schedule",
+      "buttonText": {
+        "today": "Today",
+        "month": "Month",
+        "list": "List"
+      },
+      "legend": {
+        "compliant": "Compliant",
+        "partial": "Partial",
+        "nonCompliant": "Non-Compliant",
+        "notApplicable": "Not Applicable"
+      },
+      "eventModal": {
+        "title": "Requirement Detail",
+        "fields": {
+          "code": "Code",
+          "title": "Title",
+          "status": "Status",
+          "area": "Area",
+          "source": "Source",
+          "dueDate": "Due Date"
+        },
+        "close": "Close"
+      },
+      "loading": "Loading calendar…",
+      "empty": "No compliance events found for this period.",
+      "eventCount_one": "{{count}} event",
+      "eventCount_other": "{{count}} events",
+      "messages": {
+        "loadFailed": "Failed to load calendar events"
+      }
     },
-    "areas": {
-      "COMPLIANCE": "Compliance",
-      "TRAINING": "Training",
-      "OPERATIONS": "Operations",
-      "MAINTENANCE": "Maintenance"
+    "requirementsEvidences": {
+      "title": "Requirements & Evidences",
+      "subtitle": "Compliance requirements management with evidence tracking",
+      "actions": {
+        "updateKpi": "Update KPI",
+        "filter": "Filter",
+        "refresh": "Refresh",
+        "newRequirement": "New Requirement"
+      },
+      "stats": {
+        "total": "Total",
+        "compliant": "Compliant",
+        "nonCompliant": "Non-Compliant",
+        "partial": "Partial"
+      },
+      "filters": {
+        "searchPlaceholder": "Search requirements…",
+        "areaAll": "All Areas",
+        "statusAll": "All Statuses",
+        "clear": "Clear"
+      },
+      "table": {
+        "columns": {
+          "code": "Code",
+          "title": "Title",
+          "area": "Area",
+          "source": "Source",
+          "status": "Status",
+          "criticality": "Criticality",
+          "nextDue": "Next Due",
+          "actions": "Actions"
+        },
+        "tooltips": {
+          "changeStatus": "Change Status",
+          "manageEvidence": "Manage Evidence",
+          "edit": "Edit",
+          "delete": "Delete"
+        },
+        "empty": "No requirements found.",
+        "requirementCount_one": "{{count}} requirement",
+        "requirementCount_other": "{{count}} requirements"
+      },
+      "requirementModal": {
+        "createTitle": "New Requirement",
+        "editTitle": "Edit Requirement",
+        "fields": {
+          "code": "Code",
+          "codePlaceholder": "e.g. REQ-001",
+          "title": "Title",
+          "titlePlaceholder": "Requirement title",
+          "area": "Area",
+          "source": "Source",
+          "sourcePlaceholder": "e.g. ICAO Annex 19",
+          "status": "Status",
+          "criticality": "Criticality",
+          "nextDue": "Next Due",
+          "notes": "Notes",
+          "notesPlaceholder": "Additional notes…"
+        },
+        "cancel": "Cancel",
+        "save": "Save",
+        "saving": "Saving…",
+        "update": "Update",
+        "create": "Create"
+      },
+      "deleteModal": {
+        "title": "Delete Requirement",
+        "message": "Are you sure you want to delete this requirement? This action cannot be undone.",
+        "confirm": "Delete",
+        "deleting": "Deleting…",
+        "cancel": "Cancel"
+      },
+      "statusModal": {
+        "title": "Change Status",
+        "fields": {
+          "requirement": "Requirement",
+          "newStatus": "New Status",
+          "comment": "Comment",
+          "commentPlaceholder": "Reason for status change…"
+        },
+        "cancel": "Cancel",
+        "apply": "Apply",
+        "applying": "Applying…"
+      },
+      "evidencePanel": {
+        "title": "Evidence",
+        "subtitle": "Attached evidence for this requirement",
+        "addTitle": "Add Evidence",
+        "fields": {
+          "type": "Type",
+          "description": "Description",
+          "descriptionPlaceholder": "Describe the evidence…",
+          "fileUrl": "File URL",
+          "fileUrlPlaceholder": "https://…",
+          "notes": "Notes",
+          "notesPlaceholder": "Optional notes…"
+        },
+        "types": {
+          "DOC": "Document",
+          "RECORD": "Record",
+          "AUDIT": "Audit",
+          "LINK": "Link"
+        },
+        "add": "Add Evidence",
+        "adding": "Adding…",
+        "delete": "Delete",
+        "viewFile": "View File",
+        "close": "Close",
+        "submittedAt": "Submitted",
+        "empty": "No evidence attached yet."
+      },
+      "messages": {
+        "loadFailed": "Failed to load requirements",
+        "evidenceLoadFailed": "Failed to load evidences",
+        "updateSuccess": "Requirement updated",
+        "createSuccess": "Requirement created",
+        "saveFailed": "Failed to save requirement",
+        "deleteSuccess": "Requirement deleted",
+        "deleteFailed": "Failed to delete",
+        "statusUpdateSuccess": "Status updated",
+        "statusUpdateFailed": "Failed to update status",
+        "evidenceAddSuccess": "Evidence added",
+        "evidenceAddFailed": "Failed to add evidence",
+        "evidenceDeleteSuccess": "Evidence deleted",
+        "evidenceDeleteFailed": "Failed to delete evidence",
+        "kpiUpdateSuccess": "KPI Updated: {{compliant}}/{{total}} Compliant ({{non_compliant}} Non-Compliant, {{partial}} Partial)",
+        "kpiUpdateFailed": "KPI update failed",
+        "kpiRunFailed": "Failed to run monthly KPI"
+      }
     },
-    "table": {
-      "indicatorCode": "Indicator Code",
-      "area": "Area",
-      "name": "Name",
-      "target": "Target",
-      "status": "Status",
-      "active": "Active",
-      "disabled": "Disabled",
-      "logMeasurement": "Log measurement value",
-      "noResults": "No indicators match your current selection."
+    "safetyTargetReview": {
+      "title": "Safety Targets Review",
+      "subtitle": "SPI / KPI",
+      "monthsSelector": {
+        "label": "Analyse last",
+        "3": "3 Months",
+        "6": "6 Months",
+        "12": "12 Months"
+      },
+      "generate": "Generate",
+      "generating": "Generating…",
+      "tableSubtitle": "Review suggested SPI/KPI targets based on the last {{months}} months of data. Approve to apply the new target.",
+      "stats": {
+        "totalIndicators": "Total Indicators",
+        "pendingReview": "Pending Review",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      },
+      "table": {
+        "sectionTitle": "Target Proposals",
+        "columns": {
+          "area": "Area",
+          "indicator": "Indicator",
+          "type": "Type",
+          "current": "Current",
+          "suggested": "Suggested",
+          "diff": "Δ Diff",
+          "created": "Created",
+          "status": "Status",
+          "actions": "Actions"
+        },
+        "tooltips": {
+          "approve": "Approve",
+          "reject": "Reject"
+        },
+        "empty": "No proposals generated yet. Select a period and click Generate.",
+        "emptyHint": "Click Generate to analyse the last {{months}} months."
+      },
+      "actionModal": {
+        "approveTitle": "Approve Proposal",
+        "rejectTitle": "Reject Proposal",
+        "fields": {
+          "indicator": "Indicator",
+          "area": "Area",
+          "currentTarget": "Current Target",
+          "suggestedTarget": "Suggested Target",
+          "delta": "Δ Difference",
+          "notes": "Notes",
+          "notesPlaceholder": "Add a note for this decision…"
+        },
+        "alerts": {
+          "approve": "You are about to approve this suggested target. This will update the active KPI threshold.",
+          "reject": "You are about to reject this proposal. The current target will remain unchanged."
+        },
+        "cancel": "Cancel",
+        "approve": "Approve",
+        "reject": "Reject",
+        "processing": "Processing…"
+      },
+      "generatedSummary": "Generated proposals: {{pending}} pending (last {{months}} months)",
+      "messages": {
+        "loadFailed": "Failed to load proposals",
+        "generateFailed": "Failed to generate proposals",
+        "actionFailed": "Action failed"
+      }
     },
-    "form": {
-      "editTitle": "Edit Indicator",
-      "newTitle": "New Indicator",
-      "code": "Code",
-      "codePlaceholder": "e.g. OPS_SAFETY_01",
-      "codeHint": "Immutable after saving",
-      "unit": "Unit",
-      "unitPlaceholder": "% / count / hours",
-      "type": "Type",
-      "kpiOption": "KPI - Key Performance",
-      "spiOption": "SPI - Safety Performance",
-      "area": "Area",
-      "indicatorName": "Indicator Name",
-      "namePlaceholder": "Enter descriptive name...",
-      "targetValue": "Target Value",
-      "frequency": "Reporting Frequency",
-      "description": "Description",
-      "descPlaceholder": "Explain what this indicator measures...",
-      "statusLabel": "Status",
-      "activeMonitoring": "Active / Monitoring",
-      "disabledDraft": "Disabled / Draft",
-      "cancel": "Cancel",
-      "processing": "Processing...",
-      "updateIndicator": "Update Indicator",
-      "createIndicator": "Create Indicator"
-    },
-    "frequency": {
-      "MONTHLY": "Monthly",
-      "WEEKLY": "Weekly",
-      "QUARTERLY": "Quarterly",
-      "YEARLY": "Yearly"
-    },
-    "validation": {
-      "codeMinChars": "Minimum 3 characters",
-      "codeFormat": "Uppercase, numbers, underscores only",
-      "nameRequired": "Name is required",
-      "unitRequired": "Unit is required",
-      "targetPositive": "Must be a positive number",
-      "dateRequired": "Date is required",
-      "valueNumber": "Must be a valid number"
-    },
-    "log": {
-      "title": "Log Measurement",
-      "measurementDate": "Measurement Date",
-      "actualValue": "Actual Value",
-      "actualPlaceholder": "e.g. 87.5",
-      "targetValue": "Target Value",
-      "status": "Status",
-      "statusGreen": "On Track / Above Target",
-      "statusYellow": "At Risk / On Target",
-      "statusRed": "Breached / Below Target",
-      "cancel": "Cancel",
-      "saving": "Saving...",
-      "saveMeasurement": "Save Measurement"
-    },
-    "toast": {
-      "loadError": "Failed to load indicators",
-      "recordSynced": "Record synchronized",
-      "saveFailed": "Save failed",
-      "activated": "Indicator activated",
-      "deactivated": "Indicator deactivated",
-      "toggleFailed": "Toggle failed",
-      "measurementLogged": "Measurement logged successfully",
-      "logFailed": "Log failed"
+    "shared": {
+      "status": {
+        "COMPLIANT": "Compliant",
+        "PARTIAL": "Partial",
+        "NON_COMPLIANT": "Non-Compliant",
+        "NOT_APPLICABLE": "Not Applicable",
+        "PENDING": "Pending",
+        "APPROVED": "Approved",
+        "REJECTED": "Rejected"
+      },
+      "area": {
+        "OPERATIONS": "Operations",
+        "MAINTENANCE": "Maintenance",
+        "TRAINING": "Training",
+        "SMS": "SMS",
+        "COMPLIANCE": "Compliance",
+        "ICT": "ICT"
+      },
+      "pagination": {
+        "rowsPerPage": "Rows per page",
+        "pageInfo": "Page {{current}} of {{total}}",
+        "first": "First page",
+        "previous": "Previous page",
+        "next": "Next page",
+        "last": "Last page"
+      }
     }
   }
-}
 }

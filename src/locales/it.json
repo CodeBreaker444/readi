@@ -1177,18 +1177,18 @@
       "delete": "Elimina operazione"
     },
     "declaration": {
-    "title": "Dichiarazione Giornaliera Pilota",
-    "subtitle": "Conferma tutti i punti per procedere con l'inizio della missione oggi.",
-    "rested": "Sono adeguatamente riposato e non affaticato",
-    "fit": "Sono fisicamente e mentalmente idoneo al volo",
-    "medication": "Non sono sotto l'influenza di farmaci che potrebbero compromettere le mie prestazioni",
-    "briefed": "Ho esaminato il piano di missione e l'area operativa",
-    "equipment": "L'attrezzatura e i sistemi drone sono stati ispezionati e sono atti al volo",
-    "submit": "Invia Dichiarazione",
-    "saving": "Salvataggio...",
-    "warning": "Confermare tutti i punti della checklist prima di inviare.",
-    "error": "Impossibile salvare la dichiarazione"
-  },
+      "title": "Dichiarazione Giornaliera Pilota",
+      "subtitle": "Conferma tutti i punti per procedere con l'inizio della missione oggi.",
+      "rested": "Sono adeguatamente riposato e non affaticato",
+      "fit": "Sono fisicamente e mentalmente idoneo al volo",
+      "medication": "Non sono sotto l'influenza di farmaci che potrebbero compromettere le mie prestazioni",
+      "briefed": "Ho esaminato il piano di missione e l'area operativa",
+      "equipment": "L'attrezzatura e i sistemi drone sono stati ispezionati e sono atti al volo",
+      "submit": "Invia Dichiarazione",
+      "saving": "Salvataggio...",
+      "warning": "Confermare tutti i punti della checklist prima di inviare.",
+      "error": "Impossibile salvare la dichiarazione"
+    },
     "table": {
       "title": "Operazioni",
       "subtitle": "Missioni pilota & operazioni di volo",
@@ -1642,7 +1642,7 @@
       }
     }
   },
- "repository": {
+  "repository": {
     "title": "Archivio Documenti",
     "subtitle": "Gestisci e monitora i documenti di conformità aziendale",
     "newDocument": "Nuovo Documento",
@@ -1854,111 +1854,456 @@
     }
   },
   "safety": {
-  "spiKpi": {
-    "pageTitle": "Definizioni SPI / KPI",
-    "pageSubtitle": "Gestione della Sicurezza · Monitoraggio degli indicatori di prestazione della sicurezza",
-    "newIndicator": "Nuovo Indicatore",
-    "stats": {
-      "totalIndicators": "Totale Indicatori",
-      "activeMonitors": "Monitor Attivi",
-      "operationsArea": "Area Operazioni"
+    "spiKpi": {
+      "pageTitle": "Definizioni SPI / KPI",
+      "pageSubtitle": "Gestione della Sicurezza · Monitoraggio degli indicatori di prestazione della sicurezza",
+      "newIndicator": "Nuovo Indicatore",
+      "stats": {
+        "totalIndicators": "Totale Indicatori",
+        "activeMonitors": "Monitor Attivi",
+        "operationsArea": "Area Operazioni"
+      },
+      "infoBanner": "Gli indicatori appaiono nel Dashboard della Sicurezza solo dopo che i valori di misurazione sono stati registrati. Usa il pulsante",
+      "infoBannerLogValue": "Registra Valore",
+      "infoBannerSuffix": "su ogni riga per inserire i dati.",
+      "filters": {
+        "searchDefinitions": "Cerca Definizioni",
+        "searchPlaceholder": "Codice, nome o descrizione...",
+        "area": "Area",
+        "allAreas": "Tutte le Aree",
+        "status": "Stato",
+        "allStatus": "Tutti gli Stati",
+        "activeOnly": "Solo Attivi",
+        "inactiveOnly": "Solo Inattivi",
+        "apply": "Applica"
+      },
+      "areas": {
+        "COMPLIANCE": "Conformità",
+        "TRAINING": "Formazione",
+        "OPERATIONS": "Operazioni",
+        "MAINTENANCE": "Manutenzione"
+      },
+      "table": {
+        "indicatorCode": "Codice Indicatore",
+        "area": "Area",
+        "name": "Nome",
+        "target": "Obiettivo",
+        "status": "Stato",
+        "active": "Attivo",
+        "disabled": "Disabilitato",
+        "logMeasurement": "Registra valore di misurazione",
+        "noResults": "Nessun indicatore corrisponde alla selezione corrente."
+      },
+      "form": {
+        "editTitle": "Modifica Indicatore",
+        "newTitle": "Nuovo Indicatore",
+        "code": "Codice",
+        "codePlaceholder": "es. OPS_SAFETY_01",
+        "codeHint": "Immutabile dopo il salvataggio",
+        "unit": "Unità",
+        "unitPlaceholder": "% / conteggio / ore",
+        "type": "Tipo",
+        "kpiOption": "KPI - Prestazione Chiave",
+        "spiOption": "SPI - Prestazione di Sicurezza",
+        "area": "Area",
+        "indicatorName": "Nome Indicatore",
+        "namePlaceholder": "Inserisci nome descrittivo...",
+        "targetValue": "Valore Obiettivo",
+        "frequency": "Frequenza di Reportistica",
+        "description": "Descrizione",
+        "descPlaceholder": "Spiega cosa misura questo indicatore...",
+        "statusLabel": "Stato",
+        "activeMonitoring": "Attivo / Monitoraggio",
+        "disabledDraft": "Disabilitato / Bozza",
+        "cancel": "Annulla",
+        "processing": "Elaborazione...",
+        "updateIndicator": "Aggiorna Indicatore",
+        "createIndicator": "Crea Indicatore"
+      },
+      "frequency": {
+        "MONTHLY": "Mensile",
+        "WEEKLY": "Settimanale",
+        "QUARTERLY": "Trimestrale",
+        "YEARLY": "Annuale"
+      },
+      "validation": {
+        "codeMinChars": "Minimo 3 caratteri",
+        "codeFormat": "Solo maiuscole, numeri e trattini bassi",
+        "nameRequired": "Il nome è obbligatorio",
+        "unitRequired": "L'unità è obbligatoria",
+        "targetPositive": "Deve essere un numero positivo",
+        "dateRequired": "La data è obbligatoria",
+        "valueNumber": "Deve essere un numero valido"
+      },
+      "log": {
+        "title": "Registra Misurazione",
+        "measurementDate": "Data Misurazione",
+        "actualValue": "Valore Effettivo",
+        "actualPlaceholder": "es. 87.5",
+        "targetValue": "Valore Obiettivo",
+        "status": "Stato",
+        "statusGreen": "In Linea / Sopra Obiettivo",
+        "statusYellow": "A Rischio / Sul Bersaglio",
+        "statusRed": "Superato / Sotto Obiettivo",
+        "cancel": "Annulla",
+        "saving": "Salvataggio...",
+        "saveMeasurement": "Salva Misurazione"
+      },
+      "toast": {
+        "loadError": "Impossibile caricare gli indicatori",
+        "recordSynced": "Record sincronizzato",
+        "saveFailed": "Salvataggio fallito",
+        "activated": "Indicatore attivato",
+        "deactivated": "Indicatore disattivato",
+        "toggleFailed": "Commutazione fallita",
+        "measurementLogged": "Misurazione registrata con successo",
+        "logFailed": "Registrazione fallita"
+      }
+    }
+  },
+  "compliance": {
+    "generalAuditPlan": {
+      "title": "Piano di Audit Generale",
+      "subtitle": "SMS Versione 3.2 · Revisione 01",
+      "stats": {
+        "totalRequirements": "Requisiti Totali",
+        "compliant": "Conforme",
+        "partialNonCompliant": "Parziale / Non Conforme",
+        "notApplicable": "Non Applicabile"
+      },
+      "filters": {
+        "searchPlaceholder": "Cerca per codice, titolo, area o fonte…",
+        "statusAll": "Tutti gli Stati",
+        "areaAll": "Tutte le Aree",
+        "clear": "Cancella"
+      },
+      "auditSchedule": {
+        "sectionTitle": "Programma di Audit Annuale",
+        "subtitle": "Quattro audit trimestrali per tutti i domini di conformità",
+        "footer": "Output & archiviazione: rapporti trimestrali firmati dal CMM e validati dall'AM; archiviazione PDF per 3 anni; registro azioni correttive con scadenze e responsabilità.",
+        "columns": {
+          "period": "Periodo",
+          "type": "Tipo",
+          "area": "Area / Oggetto",
+          "responsible": "Responsabile",
+          "mode": "Modalità",
+          "output": "Output Atteso"
+        }
+      },
+      "table": {
+        "sectionTitle": "Requisiti di Conformità",
+        "addButton": "Nuovo Requisito",
+        "columns": {
+          "ref": "Rif.",
+          "title": "Titolo",
+          "type": "Tipo",
+          "regulatoryBody": "Ente Regolatore",
+          "status": "Stato",
+          "criticality": "Criticità",
+          "nextDue": "Prossima Scadenza",
+          "actions": "Azioni"
+        },
+        "empty": "Nessun requisito di conformità trovato.",
+        "emptyHint": "Aggiungi il primo requisito usando il pulsante in alto.",
+        "requirementCount_one": "{{count}} requisito",
+        "requirementCount_other": "{{count}} requisiti"
+      },
+      "modal": {
+        "createTitle": "Nuovo Requisito di Conformità",
+        "editTitle": "Modifica Requisito",
+        "fields": {
+          "code": "Codice Rif.",
+          "codePlaceholder": "es. EU-2019/947-A1",
+          "title": "Titolo",
+          "titlePlaceholder": "Breve descrizione del requisito",
+          "type": "Tipo",
+          "typePlaceholder": "es. Normativo",
+          "regulatoryBody": "Ente Regolatore",
+          "regulatoryBodyPlaceholder": "es. Reg. (UE) 2019/947",
+          "status": "Stato",
+          "criticality": "Criticità (1–5)",
+          "nextReviewDate": "Prossima Data di Scadenza",
+          "notes": "Note",
+          "notesPlaceholder": "Contesto aggiuntivo, evidenze, azioni correttive…"
+        },
+        "cancel": "Annulla",
+        "save": "Salva",
+        "saving": "Salvataggio…",
+        "update": "Aggiorna",
+        "create": "Crea"
+      },
+      "deleteModal": {
+        "title": "Elimina Requisito",
+        "message": "Sei sicuro di voler eliminare questo requisito di conformità? Questa azione non può essere annullata.",
+        "confirm": "Elimina",
+        "deleting": "Eliminazione…",
+        "cancel": "Annulla"
+      },
+      "messages": {
+        "loadFailed": "Impossibile caricare i dati di conformità",
+        "saveSuccess": "Modifiche salvate",
+        "createSuccess": "Requisito aggiunto",
+        "saveFailed": "Impossibile salvare il requisito",
+        "deleteSuccess": "Requisito eliminato",
+        "deleteFailed": "Impossibile eliminare il requisito"
+      }
     },
-    "infoBanner": "Gli indicatori appaiono nel Dashboard della Sicurezza solo dopo che i valori di misurazione sono stati registrati. Usa il pulsante",
-    "infoBannerLogValue": "Registra Valore",
-    "infoBannerSuffix": "su ogni riga per inserire i dati.",
-    "filters": {
-      "searchDefinitions": "Cerca Definizioni",
-      "searchPlaceholder": "Codice, nome o descrizione...",
-      "area": "Area",
-      "allAreas": "Tutte le Aree",
-      "status": "Stato",
-      "allStatus": "Tutti gli Stati",
-      "activeOnly": "Solo Attivi",
-      "inactiveOnly": "Solo Inattivi",
-      "apply": "Applica"
+    "calendar": {
+      "title": "Calendario di Conformità",
+      "subtitle": "Scadenze dei requisiti di conformità e programma di revisione",
+      "buttonText": {
+        "today": "Oggi",
+        "month": "Mese",
+        "list": "Lista"
+      },
+      "legend": {
+        "compliant": "Conforme",
+        "partial": "Parziale",
+        "nonCompliant": "Non Conforme",
+        "notApplicable": "Non Applicabile"
+      },
+      "eventModal": {
+        "title": "Dettaglio Requisito",
+        "fields": {
+          "code": "Codice",
+          "title": "Titolo",
+          "status": "Stato",
+          "area": "Area",
+          "source": "Fonte",
+          "dueDate": "Data di Scadenza"
+        },
+        "close": "Chiudi"
+      },
+      "loading": "Caricamento calendario…",
+      "empty": "Nessun evento di conformità trovato per questo periodo.",
+      "eventCount_one": "{{count}} evento",
+      "eventCount_other": "{{count}} eventi",
+      "messages": {
+        "loadFailed": "Impossibile caricare gli eventi del calendario"
+      }
     },
-    "areas": {
-      "COMPLIANCE": "Conformità",
-      "TRAINING": "Formazione",
-      "OPERATIONS": "Operazioni",
-      "MAINTENANCE": "Manutenzione"
+    "requirementsEvidences": {
+      "title": "Requisiti & Evidenze",
+      "subtitle": "Gestione dei requisiti di conformità con tracciamento delle evidenze",
+      "actions": {
+        "updateKpi": "Aggiorna KPI",
+        "filter": "Filtra",
+        "refresh": "Aggiorna",
+        "newRequirement": "Nuovo Requisito"
+      },
+      "stats": {
+        "total": "Totale",
+        "compliant": "Conforme",
+        "nonCompliant": "Non Conforme",
+        "partial": "Parziale"
+      },
+      "filters": {
+        "searchPlaceholder": "Cerca requisiti…",
+        "areaAll": "Tutte le Aree",
+        "statusAll": "Tutti gli Stati",
+        "clear": "Cancella"
+      },
+      "table": {
+        "columns": {
+          "code": "Codice",
+          "title": "Titolo",
+          "area": "Area",
+          "source": "Fonte",
+          "status": "Stato",
+          "criticality": "Criticità",
+          "nextDue": "Prossima Scadenza",
+          "actions": "Azioni"
+        },
+        "tooltips": {
+          "changeStatus": "Cambia Stato",
+          "manageEvidence": "Gestisci Evidenze",
+          "edit": "Modifica",
+          "delete": "Elimina"
+        },
+        "empty": "Nessun requisito trovato.",
+        "requirementCount_one": "{{count}} requisito",
+        "requirementCount_other": "{{count}} requisiti"
+      },
+      "requirementModal": {
+        "createTitle": "Nuovo Requisito",
+        "editTitle": "Modifica Requisito",
+        "fields": {
+          "code": "Codice",
+          "codePlaceholder": "es. REQ-001",
+          "title": "Titolo",
+          "titlePlaceholder": "Titolo del requisito",
+          "area": "Area",
+          "source": "Fonte",
+          "sourcePlaceholder": "es. ICAO Allegato 19",
+          "status": "Stato",
+          "criticality": "Criticità",
+          "nextDue": "Prossima Scadenza",
+          "notes": "Note",
+          "notesPlaceholder": "Note aggiuntive…"
+        },
+        "cancel": "Annulla",
+        "save": "Salva",
+        "saving": "Salvataggio…",
+        "update": "Aggiorna",
+        "create": "Crea"
+      },
+      "deleteModal": {
+        "title": "Elimina Requisito",
+        "message": "Sei sicuro di voler eliminare questo requisito? Questa azione non può essere annullata.",
+        "confirm": "Elimina",
+        "deleting": "Eliminazione…",
+        "cancel": "Annulla"
+      },
+      "statusModal": {
+        "title": "Cambia Stato",
+        "fields": {
+          "requirement": "Requisito",
+          "newStatus": "Nuovo Stato",
+          "comment": "Commento",
+          "commentPlaceholder": "Motivo del cambio di stato…"
+        },
+        "cancel": "Annulla",
+        "apply": "Applica",
+        "applying": "Applicazione…"
+      },
+      "evidencePanel": {
+        "title": "Evidenze",
+        "subtitle": "Evidenze allegate a questo requisito",
+        "addTitle": "Aggiungi Evidenza",
+        "fields": {
+          "type": "Tipo",
+          "description": "Descrizione",
+          "descriptionPlaceholder": "Descrivi l'evidenza…",
+          "fileUrl": "URL File",
+          "fileUrlPlaceholder": "https://…",
+          "notes": "Note",
+          "notesPlaceholder": "Note opzionali…"
+        },
+        "types": {
+          "DOC": "Documento",
+          "RECORD": "Registro",
+          "AUDIT": "Audit",
+          "LINK": "Link"
+        },
+        "add": "Aggiungi Evidenza",
+        "adding": "Aggiunta…",
+        "delete": "Elimina",
+        "viewFile": "Visualizza File",
+        "close": "Chiudi",
+        "submittedAt": "Inviato il",
+        "empty": "Nessuna evidenza allegata."
+      },
+      "messages": {
+        "loadFailed": "Impossibile caricare i requisiti",
+        "evidenceLoadFailed": "Impossibile caricare le evidenze",
+        "updateSuccess": "Requisito aggiornato",
+        "createSuccess": "Requisito creato",
+        "saveFailed": "Impossibile salvare il requisito",
+        "deleteSuccess": "Requisito eliminato",
+        "deleteFailed": "Eliminazione fallita",
+        "statusUpdateSuccess": "Stato aggiornato",
+        "statusUpdateFailed": "Aggiornamento stato fallito",
+        "evidenceAddSuccess": "Evidenza aggiunta",
+        "evidenceAddFailed": "Impossibile aggiungere l'evidenza",
+        "evidenceDeleteSuccess": "Evidenza eliminata",
+        "evidenceDeleteFailed": "Impossibile eliminare l'evidenza",
+        "kpiUpdateSuccess": "KPI aggiornato: {{compliant}}/{{total}} Conformi ({{non_compliant}} Non conformi, {{partial}} Parziali)",
+        "kpiUpdateFailed": "Aggiornamento KPI fallito",
+        "kpiRunFailed": "Esecuzione KPI mensile fallita"
+      }
     },
-    "table": {
-      "indicatorCode": "Codice Indicatore",
-      "area": "Area",
-      "name": "Nome",
-      "target": "Obiettivo",
-      "status": "Stato",
-      "active": "Attivo",
-      "disabled": "Disabilitato",
-      "logMeasurement": "Registra valore di misurazione",
-      "noResults": "Nessun indicatore corrisponde alla selezione corrente."
+    "safetyTargetReview": {
+      "title": "Revisione Obiettivi di Sicurezza",
+      "subtitle": "SPI / KPI",
+      "monthsSelector": {
+        "label": "Analizza gli ultimi",
+        "3": "3 Mesi",
+        "6": "6 Mesi",
+        "12": "12 Mesi"
+      },
+      "generate": "Genera",
+      "generating": "Generazione…",
+      "tableSubtitle": "Analizza i target SPI/KPI suggeriti degli ultimi {{months}} mesi. Approva per applicare il nuovo obiettivo.",
+      "stats": {
+        "totalIndicators": "Indicatori Totali",
+        "pendingReview": "In Attesa di Revisione",
+        "approved": "Approvato",
+        "rejected": "Rifiutato"
+      },
+      "table": {
+        "sectionTitle": "Proposte di Obiettivo",
+        "columns": {
+          "area": "Area",
+          "indicator": "Indicatore",
+          "type": "Tipo",
+          "current": "Attuale",
+          "suggested": "Proposto",
+          "diff": "Δ Diff",
+          "created": "Creato",
+          "status": "Stato",
+          "actions": "Azioni"
+        },
+        "tooltips": {
+          "approve": "Approva",
+          "reject": "Rifiuta"
+        },
+        "empty": "Nessuna proposta generata. Seleziona un periodo e clicca su Genera.",
+        "emptyHint": "Clicca su Genera per analizzare gli ultimi {{months}} mesi."
+      },
+      "actionModal": {
+        "approveTitle": "Approva Proposta",
+        "rejectTitle": "Rifiuta Proposta",
+        "fields": {
+          "indicator": "Indicatore",
+          "area": "Area",
+          "currentTarget": "Obiettivo Attuale",
+          "suggestedTarget": "Obiettivo Proposto",
+          "delta": "Δ Differenza",
+          "notes": "Note",
+          "notesPlaceholder": "Aggiungi una nota per questa decisione…"
+        },
+        "alerts": {
+          "approve": "Stai per approvare questo obiettivo proposto. Verrà aggiornata la soglia KPI attiva.",
+          "reject": "Stai per rifiutare questa proposta. L'obiettivo attuale rimarrà invariato."
+        },
+        "cancel": "Annulla",
+        "approve": "Approva",
+        "reject": "Rifiuta",
+        "processing": "Elaborazione…"
+      },
+      "generatedSummary": "Proposte generate: {{pending}} in attesa (ultimi {{months}} mesi)",
+      "messages": {
+        "loadFailed": "Impossibile caricare le proposte",
+        "generateFailed": "Impossibile generare le proposte",
+        "actionFailed": "Azione fallita"
+      }
     },
-    "form": {
-      "editTitle": "Modifica Indicatore",
-      "newTitle": "Nuovo Indicatore",
-      "code": "Codice",
-      "codePlaceholder": "es. OPS_SAFETY_01",
-      "codeHint": "Immutabile dopo il salvataggio",
-      "unit": "Unità",
-      "unitPlaceholder": "% / conteggio / ore",
-      "type": "Tipo",
-      "kpiOption": "KPI - Prestazione Chiave",
-      "spiOption": "SPI - Prestazione di Sicurezza",
-      "area": "Area",
-      "indicatorName": "Nome Indicatore",
-      "namePlaceholder": "Inserisci nome descrittivo...",
-      "targetValue": "Valore Obiettivo",
-      "frequency": "Frequenza di Reportistica",
-      "description": "Descrizione",
-      "descPlaceholder": "Spiega cosa misura questo indicatore...",
-      "statusLabel": "Stato",
-      "activeMonitoring": "Attivo / Monitoraggio",
-      "disabledDraft": "Disabilitato / Bozza",
-      "cancel": "Annulla",
-      "processing": "Elaborazione...",
-      "updateIndicator": "Aggiorna Indicatore",
-      "createIndicator": "Crea Indicatore"
-    },
-    "frequency": {
-      "MONTHLY": "Mensile",
-      "WEEKLY": "Settimanale",
-      "QUARTERLY": "Trimestrale",
-      "YEARLY": "Annuale"
-    },
-    "validation": {
-      "codeMinChars": "Minimo 3 caratteri",
-      "codeFormat": "Solo maiuscole, numeri e trattini bassi",
-      "nameRequired": "Il nome è obbligatorio",
-      "unitRequired": "L'unità è obbligatoria",
-      "targetPositive": "Deve essere un numero positivo",
-      "dateRequired": "La data è obbligatoria",
-      "valueNumber": "Deve essere un numero valido"
-    },
-    "log": {
-      "title": "Registra Misurazione",
-      "measurementDate": "Data Misurazione",
-      "actualValue": "Valore Effettivo",
-      "actualPlaceholder": "es. 87.5",
-      "targetValue": "Valore Obiettivo",
-      "status": "Stato",
-      "statusGreen": "In Linea / Sopra Obiettivo",
-      "statusYellow": "A Rischio / Sul Bersaglio",
-      "statusRed": "Superato / Sotto Obiettivo",
-      "cancel": "Annulla",
-      "saving": "Salvataggio...",
-      "saveMeasurement": "Salva Misurazione"
-    },
-    "toast": {
-      "loadError": "Impossibile caricare gli indicatori",
-      "recordSynced": "Record sincronizzato",
-      "saveFailed": "Salvataggio fallito",
-      "activated": "Indicatore attivato",
-      "deactivated": "Indicatore disattivato",
-      "toggleFailed": "Commutazione fallita",
-      "measurementLogged": "Misurazione registrata con successo",
-      "logFailed": "Registrazione fallita"
+    "shared": {
+      "status": {
+        "COMPLIANT": "Conforme",
+        "PARTIAL": "Parziale",
+        "NON_COMPLIANT": "Non Conforme",
+        "NOT_APPLICABLE": "Non Applicabile",
+        "PENDING": "In Attesa",
+        "APPROVED": "Approvato",
+        "REJECTED": "Rifiutato"
+      },
+      "area": {
+        "OPERATIONS": "Operazioni",
+        "MAINTENANCE": "Manutenzione",
+        "TRAINING": "Formazione",
+        "SMS": "SMS",
+        "COMPLIANCE": "Conformità",
+        "ICT": "ICT"
+      },
+      "pagination": {
+        "rowsPerPage": "Righe per pagina",
+        "pageInfo": "Pagina {{current}} di {{total}}",
+        "first": "Prima pagina",
+        "previous": "Pagina precedente",
+        "next": "Pagina successiva",
+        "last": "Ultima pagina"
+      }
     }
   }
-}
 }

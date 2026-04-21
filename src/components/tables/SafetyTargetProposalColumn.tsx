@@ -1,6 +1,8 @@
 import { ColumnDef } from '@tanstack/react-table';
 import { format, parseISO } from 'date-fns';
+import type { TFunction } from 'i18next';
 import { CheckCircle2, XCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export interface SafetyTargetProposal {
   proposal_id: number;
@@ -19,18 +21,20 @@ export interface SafetyTargetProposal {
   created_at: string;
 }
 
-const STATUS_CONFIG = {
-  PENDING: { label: 'Pending', bg: 'bg-amber-500/10', text: 'text-amber-400', dot: 'bg-amber-400' },
-  APPROVED: { label: 'Approved', bg: 'bg-emerald-500/10', text: 'text-emerald-400', dot: 'bg-emerald-400' },
-  REJECTED: { label: 'Rejected', bg: 'bg-red-500/10', text: 'text-red-400', dot: 'bg-red-400' },
+const STATUS_STYLE = {
+  PENDING: { bg: 'bg-amber-500/10', text: 'text-amber-400', dot: 'bg-amber-400' },
+  APPROVED: { bg: 'bg-emerald-500/10', text: 'text-emerald-400', dot: 'bg-emerald-400' },
+  REJECTED: { bg: 'bg-red-500/10', text: 'text-red-400', dot: 'bg-red-400' },
 };
 
 function StatusBadge({ status }: { status: string }) {
-  const cfg = STATUS_CONFIG[status as keyof typeof STATUS_CONFIG] ?? STATUS_CONFIG.PENDING;
+  const { t } = useTranslation();
+  const cfg = STATUS_STYLE[status as keyof typeof STATUS_STYLE] ?? STATUS_STYLE.PENDING;
+  const label = t(`compliance.shared.status.${status}`, { defaultValue: status });
   return (
     <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wide ${cfg.bg} ${cfg.text}`}>
       <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
-      {cfg.label}
+      {label}
     </span>
   );
 }
@@ -48,7 +52,8 @@ function DiffCell({ diff }: { diff: number }) {
 export function getSafetyTargetProposalColumns(
   isDark: boolean,
   onApprove: (row: SafetyTargetProposal) => void,
-  onReject: (row: SafetyTargetProposal) => void
+  onReject: (row: SafetyTargetProposal) => void,
+  t: TFunction
 ): ColumnDef<SafetyTargetProposal>[] {
   const muted = isDark ? 'text-slate-500' : 'text-slate-400';
   const primary = isDark ? 'text-slate-200' : 'text-slate-800';
@@ -57,7 +62,7 @@ export function getSafetyTargetProposalColumns(
     {
       id: 'indicator_area',
       accessorKey: 'indicator_area',
-      header: 'Area',
+      header: t('compliance.safetyTargetReview.table.columns.area'),
       size: 120,
       cell: ({ getValue }) => (
         <span className={`text-xs font-medium ${primary}`}>{getValue<string>() ?? '—'}</span>
@@ -66,7 +71,7 @@ export function getSafetyTargetProposalColumns(
     {
       id: 'indicator_name',
       accessorKey: 'indicator_name',
-      header: 'Indicator',
+      header: t('compliance.safetyTargetReview.table.columns.indicator'),
       size: 220,
       cell: ({ getValue }) => (
         <p className={`text-xs font-medium leading-snug ${primary}`}>{getValue<string>()}</p>
@@ -75,7 +80,7 @@ export function getSafetyTargetProposalColumns(
     {
       id: 'indicator_type',
       accessorKey: 'indicator_type',
-      header: 'Type',
+      header: t('compliance.safetyTargetReview.table.columns.type'),
       size: 70,
       cell: ({ getValue }) => (
         <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold tracking-wide ${isDark ? 'bg-violet-500/10 text-violet-300' : 'bg-violet-50 text-violet-700'}`}>
@@ -86,7 +91,7 @@ export function getSafetyTargetProposalColumns(
     {
       id: 'target_current',
       accessorKey: 'target_current',
-      header: 'Current',
+      header: t('compliance.safetyTargetReview.table.columns.current'),
       size: 90,
       cell: ({ getValue }) => (
         <span className={`text-xs tabular-nums ${muted}`}>{getValue<number>()}</span>
@@ -95,7 +100,7 @@ export function getSafetyTargetProposalColumns(
     {
       id: 'target_suggested',
       accessorKey: 'target_suggested',
-      header: 'Suggested',
+      header: t('compliance.safetyTargetReview.table.columns.suggested'),
       size: 90,
       cell: ({ getValue }) => (
         <span className={`text-xs tabular-nums font-semibold ${primary}`}>{getValue<number>()}</span>
@@ -104,14 +109,14 @@ export function getSafetyTargetProposalColumns(
     {
       id: 'diff',
       accessorKey: 'diff',
-      header: 'Δ Diff',
+      header: t('compliance.safetyTargetReview.table.columns.diff'),
       size: 80,
       cell: ({ getValue }) => <DiffCell diff={getValue<number>()} />,
     },
     {
       id: 'created_at',
       accessorKey: 'created_at',
-      header: 'Created',
+      header: t('compliance.safetyTargetReview.table.columns.created'),
       size: 110,
       cell: ({ getValue }) => {
         const v = getValue<string>();
@@ -125,7 +130,7 @@ export function getSafetyTargetProposalColumns(
     {
       id: 'status',
       accessorKey: 'status',
-      header: 'Status',
+      header: t('compliance.safetyTargetReview.table.columns.status'),
       size: 100,
       cell: ({ getValue }) => <StatusBadge status={getValue<string>()} />,
     },
@@ -140,14 +145,14 @@ export function getSafetyTargetProposalColumns(
             <button
               onClick={() => onApprove(row.original)}
               className={`p-1.5 rounded-md transition-colors ${isDark ? 'text-slate-500 hover:text-emerald-400 hover:bg-emerald-500/8' : 'text-slate-400 hover:text-emerald-600 hover:bg-emerald-50'}`}
-              title="Approve"
+              title={t('compliance.safetyTargetReview.table.tooltips.approve')}
             >
               <CheckCircle2 size={14} strokeWidth={2} />
             </button>
             <button
               onClick={() => onReject(row.original)}
               className={`p-1.5 rounded-md transition-colors ${isDark ? 'text-slate-500 hover:text-red-400 hover:bg-red-500/8' : 'text-slate-400 hover:text-red-500 hover:bg-red-50'}`}
-              title="Reject"
+              title={t('compliance.safetyTargetReview.table.tooltips.reject')}
             >
               <XCircle size={14} strokeWidth={2} />
             </button>

@@ -1175,18 +1175,18 @@
       "delete": "Operation löschen"
     },
     "declaration": {
-    "title": "Tägliche Pilotenerklärung",
-    "subtitle": "Bestätigen Sie alle Punkte, um heute mit der Mission zu beginnen.",
-    "rested": "Ich bin ausreichend ausgeruht und nicht übermüdet",
-    "fit": "Ich bin körperlich und geistig flugtauglich",
-    "medication": "Ich stehe nicht unter dem Einfluss von Medikamenten, die meine Leistung beeinträchtigen könnten",
-    "briefed": "Ich habe den Missionsplan und das Einsatzgebiet überprüft",
-    "equipment": "Die Ausrüstung und die Drohnensysteme wurden inspiziert und sind lufttüchtig",
-    "submit": "Erklärung absenden",
-    "saving": "Speichern...",
-    "warning": "Bitte bestätigen Sie alle Checklistenpunkte vor dem Absenden.",
-    "error": "Fehler beim Speichern der Erklärung"
-  },
+      "title": "Tägliche Pilotenerklärung",
+      "subtitle": "Bestätigen Sie alle Punkte, um heute mit der Mission zu beginnen.",
+      "rested": "Ich bin ausreichend ausgeruht und nicht übermüdet",
+      "fit": "Ich bin körperlich und geistig flugtauglich",
+      "medication": "Ich stehe nicht unter dem Einfluss von Medikamenten, die meine Leistung beeinträchtigen könnten",
+      "briefed": "Ich habe den Missionsplan und das Einsatzgebiet überprüft",
+      "equipment": "Die Ausrüstung und die Drohnensysteme wurden inspiziert und sind lufttüchtig",
+      "submit": "Erklärung absenden",
+      "saving": "Speichern...",
+      "warning": "Bitte bestätigen Sie alle Checklistenpunkte vor dem Absenden.",
+      "error": "Fehler beim Speichern der Erklärung"
+    },
     "table": {
       "title": "Betrieb",
       "subtitle": "Pilotenmissionen & Flugoperationen",
@@ -1850,111 +1850,456 @@
     }
   },
   "safety": {
-  "spiKpi": {
-    "pageTitle": "SPI / KPI Definitionen",
-    "pageSubtitle": "Sicherheitsmanagement · Überwachung von Sicherheitsleistungsindikatoren",
-    "newIndicator": "Neuer Indikator",
-    "stats": {
-      "totalIndicators": "Gesamtindikatoren",
-      "activeMonitors": "Aktive Überwachungen",
-      "operationsArea": "Betriebsbereich"
+    "spiKpi": {
+      "pageTitle": "SPI / KPI Definitionen",
+      "pageSubtitle": "Sicherheitsmanagement · Überwachung von Sicherheitsleistungsindikatoren",
+      "newIndicator": "Neuer Indikator",
+      "stats": {
+        "totalIndicators": "Gesamtindikatoren",
+        "activeMonitors": "Aktive Überwachungen",
+        "operationsArea": "Betriebsbereich"
+      },
+      "infoBanner": "Indikatoren erscheinen erst im Sicherheits-Dashboard, wenn Messwerte protokolliert wurden. Verwenden Sie die",
+      "infoBannerLogValue": "Wert protokollieren",
+      "infoBannerSuffix": "Schaltfläche in jeder Zeile zur Dateneingabe.",
+      "filters": {
+        "searchDefinitions": "Definitionen suchen",
+        "searchPlaceholder": "Code, Name oder Beschreibung...",
+        "area": "Bereich",
+        "allAreas": "Alle Bereiche",
+        "status": "Status",
+        "allStatus": "Alle Status",
+        "activeOnly": "Nur Aktive",
+        "inactiveOnly": "Nur Inaktive",
+        "apply": "Anwenden"
+      },
+      "areas": {
+        "COMPLIANCE": "Compliance",
+        "TRAINING": "Schulung",
+        "OPERATIONS": "Betrieb",
+        "MAINTENANCE": "Wartung"
+      },
+      "table": {
+        "indicatorCode": "Indikatorcode",
+        "area": "Bereich",
+        "name": "Name",
+        "target": "Zielwert",
+        "status": "Status",
+        "active": "Aktiv",
+        "disabled": "Deaktiviert",
+        "logMeasurement": "Messwert protokollieren",
+        "noResults": "Keine Indikatoren entsprechen Ihrer aktuellen Auswahl."
+      },
+      "form": {
+        "editTitle": "Indikator bearbeiten",
+        "newTitle": "Neuer Indikator",
+        "code": "Code",
+        "codePlaceholder": "z.B. OPS_SAFETY_01",
+        "codeHint": "Unveränderlich nach dem Speichern",
+        "unit": "Einheit",
+        "unitPlaceholder": "% / Anzahl / Stunden",
+        "type": "Typ",
+        "kpiOption": "KPI - Schlüsselleistung",
+        "spiOption": "SPI - Sicherheitsleistung",
+        "area": "Bereich",
+        "indicatorName": "Indikatorname",
+        "namePlaceholder": "Beschreibenden Namen eingeben...",
+        "targetValue": "Zielwert",
+        "frequency": "Berichtsfrequenz",
+        "description": "Beschreibung",
+        "descPlaceholder": "Erklären Sie, was dieser Indikator misst...",
+        "statusLabel": "Status",
+        "activeMonitoring": "Aktiv / Überwachung",
+        "disabledDraft": "Deaktiviert / Entwurf",
+        "cancel": "Abbrechen",
+        "processing": "Verarbeitung...",
+        "updateIndicator": "Indikator aktualisieren",
+        "createIndicator": "Indikator erstellen"
+      },
+      "frequency": {
+        "MONTHLY": "Monatlich",
+        "WEEKLY": "Wöchentlich",
+        "QUARTERLY": "Vierteljährlich",
+        "YEARLY": "Jährlich"
+      },
+      "validation": {
+        "codeMinChars": "Mindestens 3 Zeichen",
+        "codeFormat": "Nur Großbuchstaben, Zahlen und Unterstriche",
+        "nameRequired": "Name ist erforderlich",
+        "unitRequired": "Einheit ist erforderlich",
+        "targetPositive": "Muss eine positive Zahl sein",
+        "dateRequired": "Datum ist erforderlich",
+        "valueNumber": "Muss eine gültige Zahl sein"
+      },
+      "log": {
+        "title": "Messung protokollieren",
+        "measurementDate": "Messdatum",
+        "actualValue": "Ist-Wert",
+        "actualPlaceholder": "z.B. 87,5",
+        "targetValue": "Zielwert",
+        "status": "Status",
+        "statusGreen": "Im Soll / Über Ziel",
+        "statusYellow": "Gefährdet / Im Ziel",
+        "statusRed": "Überschritten / Unter Ziel",
+        "cancel": "Abbrechen",
+        "saving": "Speichern...",
+        "saveMeasurement": "Messung speichern"
+      },
+      "toast": {
+        "loadError": "Indikatoren konnten nicht geladen werden",
+        "recordSynced": "Datensatz synchronisiert",
+        "saveFailed": "Speichern fehlgeschlagen",
+        "activated": "Indikator aktiviert",
+        "deactivated": "Indikator deaktiviert",
+        "toggleFailed": "Umschalten fehlgeschlagen",
+        "measurementLogged": "Messung erfolgreich protokolliert",
+        "logFailed": "Protokollierung fehlgeschlagen"
+      }
+    }
+  },
+  "compliance": {
+    "generalAuditPlan": {
+      "title": "Allgemeiner Auditplan",
+      "subtitle": "SMS Version 3.2 · Revision 01",
+      "stats": {
+        "totalRequirements": "Gesamtanforderungen",
+        "compliant": "Konform",
+        "partialNonCompliant": "Teilweise / Nicht Konform",
+        "notApplicable": "Nicht Zutreffend"
+      },
+      "filters": {
+        "searchPlaceholder": "Nach Code, Titel, Bereich oder Quelle suchen…",
+        "statusAll": "Alle Status",
+        "areaAll": "Alle Bereiche",
+        "clear": "Zurücksetzen"
+      },
+      "auditSchedule": {
+        "sectionTitle": "Jährlicher Auditplan",
+        "subtitle": "Vier Quartalsaudits für alle Compliance-Bereiche",
+        "footer": "Ausgabe & Archivierung: Quartalsberichte unterzeichnet von CMM und validiert von AM; PDF-Archivierung für 3 Jahre; Maßnahmenregister mit Fristen und Verantwortlichkeiten.",
+        "columns": {
+          "period": "Zeitraum",
+          "type": "Typ",
+          "area": "Bereich / Thema",
+          "responsible": "Verantwortlicher",
+          "mode": "Modus",
+          "output": "Erwartetes Ergebnis"
+        }
+      },
+      "table": {
+        "sectionTitle": "Compliance-Anforderungen",
+        "addButton": "Neue Anforderung",
+        "columns": {
+          "ref": "Ref.",
+          "title": "Titel",
+          "type": "Typ",
+          "regulatoryBody": "Regulierungsbehörde",
+          "status": "Status",
+          "criticality": "Kritikalität",
+          "nextDue": "Nächste Fälligkeit",
+          "actions": "Aktionen"
+        },
+        "empty": "Keine Compliance-Anforderungen gefunden.",
+        "emptyHint": "Fügen Sie Ihre erste Anforderung über die Schaltfläche oben hinzu.",
+        "requirementCount_one": "{{count}} Anforderung",
+        "requirementCount_other": "{{count}} Anforderungen"
+      },
+      "modal": {
+        "createTitle": "Neue Compliance-Anforderung",
+        "editTitle": "Anforderung bearbeiten",
+        "fields": {
+          "code": "Ref-Code",
+          "codePlaceholder": "z.B. EU-2019/947-A1",
+          "title": "Titel",
+          "titlePlaceholder": "Kurzbeschreibung der Anforderung",
+          "type": "Typ",
+          "typePlaceholder": "z.B. Regulatorisch",
+          "regulatoryBody": "Regulierungsbehörde",
+          "regulatoryBodyPlaceholder": "z.B. Reg. (EU) 2019/947",
+          "status": "Status",
+          "criticality": "Kritikalität (1–5)",
+          "nextReviewDate": "Nächstes Fälligkeitsdatum",
+          "notes": "Hinweise",
+          "notesPlaceholder": "Zusätzlicher Kontext, Nachweise, Korrekturmaßnahmen…"
+        },
+        "cancel": "Abbrechen",
+        "save": "Speichern",
+        "saving": "Wird gespeichert…",
+        "update": "Aktualisieren",
+        "create": "Erstellen"
+      },
+      "deleteModal": {
+        "title": "Anforderung löschen",
+        "message": "Möchten Sie diese Compliance-Anforderung wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
+        "confirm": "Löschen",
+        "deleting": "Wird gelöscht…",
+        "cancel": "Abbrechen"
+      },
+      "messages": {
+        "loadFailed": "Compliance-Daten konnten nicht geladen werden",
+        "saveSuccess": "Änderungen gespeichert",
+        "createSuccess": "Anforderung hinzugefügt",
+        "saveFailed": "Anforderung konnte nicht gespeichert werden",
+        "deleteSuccess": "Anforderung gelöscht",
+        "deleteFailed": "Anforderung konnte nicht gelöscht werden"
+      }
     },
-    "infoBanner": "Indikatoren erscheinen erst im Sicherheits-Dashboard, wenn Messwerte protokolliert wurden. Verwenden Sie die",
-    "infoBannerLogValue": "Wert protokollieren",
-    "infoBannerSuffix": "Schaltfläche in jeder Zeile zur Dateneingabe.",
-    "filters": {
-      "searchDefinitions": "Definitionen suchen",
-      "searchPlaceholder": "Code, Name oder Beschreibung...",
-      "area": "Bereich",
-      "allAreas": "Alle Bereiche",
-      "status": "Status",
-      "allStatus": "Alle Status",
-      "activeOnly": "Nur Aktive",
-      "inactiveOnly": "Nur Inaktive",
-      "apply": "Anwenden"
+    "calendar": {
+      "title": "Compliance-Kalender",
+      "subtitle": "Fälligkeitsdaten und Überprüfungsplan für Compliance-Anforderungen",
+      "buttonText": {
+        "today": "Heute",
+        "month": "Monat",
+        "list": "Liste"
+      },
+      "legend": {
+        "compliant": "Konform",
+        "partial": "Teilweise",
+        "nonCompliant": "Nicht Konform",
+        "notApplicable": "Nicht Zutreffend"
+      },
+      "eventModal": {
+        "title": "Anforderungsdetail",
+        "fields": {
+          "code": "Code",
+          "title": "Titel",
+          "status": "Status",
+          "area": "Bereich",
+          "source": "Quelle",
+          "dueDate": "Fälligkeitsdatum"
+        },
+        "close": "Schließen"
+      },
+      "loading": "Kalender wird geladen…",
+      "empty": "Keine Compliance-Ereignisse für diesen Zeitraum gefunden.",
+      "eventCount_one": "{{count}} Ereignis",
+      "eventCount_other": "{{count}} Ereignisse",
+      "messages": {
+        "loadFailed": "Kalendereinträge konnten nicht geladen werden"
+      }
     },
-    "areas": {
-      "COMPLIANCE": "Compliance",
-      "TRAINING": "Schulung",
-      "OPERATIONS": "Betrieb",
-      "MAINTENANCE": "Wartung"
+    "requirementsEvidences": {
+      "title": "Anforderungen & Nachweise",
+      "subtitle": "Verwaltung von Compliance-Anforderungen mit Nachweiserfassung",
+      "actions": {
+        "updateKpi": "KPI aktualisieren",
+        "filter": "Filtern",
+        "refresh": "Aktualisieren",
+        "newRequirement": "Neue Anforderung"
+      },
+      "stats": {
+        "total": "Gesamt",
+        "compliant": "Konform",
+        "nonCompliant": "Nicht Konform",
+        "partial": "Teilweise"
+      },
+      "filters": {
+        "searchPlaceholder": "Anforderungen suchen…",
+        "areaAll": "Alle Bereiche",
+        "statusAll": "Alle Status",
+        "clear": "Zurücksetzen"
+      },
+      "table": {
+        "columns": {
+          "code": "Code",
+          "title": "Titel",
+          "area": "Bereich",
+          "source": "Quelle",
+          "status": "Status",
+          "criticality": "Kritikalität",
+          "nextDue": "Nächste Fälligkeit",
+          "actions": "Aktionen"
+        },
+        "tooltips": {
+          "changeStatus": "Status ändern",
+          "manageEvidence": "Nachweise verwalten",
+          "edit": "Bearbeiten",
+          "delete": "Löschen"
+        },
+        "empty": "Keine Anforderungen gefunden.",
+        "requirementCount_one": "{{count}} Anforderung",
+        "requirementCount_other": "{{count}} Anforderungen"
+      },
+      "requirementModal": {
+        "createTitle": "Neue Anforderung",
+        "editTitle": "Anforderung bearbeiten",
+        "fields": {
+          "code": "Code",
+          "codePlaceholder": "z.B. REQ-001",
+          "title": "Titel",
+          "titlePlaceholder": "Titel der Anforderung",
+          "area": "Bereich",
+          "source": "Quelle",
+          "sourcePlaceholder": "z.B. ICAO Anhang 19",
+          "status": "Status",
+          "criticality": "Kritikalität",
+          "nextDue": "Nächste Fälligkeit",
+          "notes": "Hinweise",
+          "notesPlaceholder": "Zusätzliche Hinweise…"
+        },
+        "cancel": "Abbrechen",
+        "save": "Speichern",
+        "saving": "Wird gespeichert…",
+        "update": "Aktualisieren",
+        "create": "Erstellen"
+      },
+      "deleteModal": {
+        "title": "Anforderung löschen",
+        "message": "Möchten Sie diese Anforderung wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
+        "confirm": "Löschen",
+        "deleting": "Wird gelöscht…",
+        "cancel": "Abbrechen"
+      },
+      "statusModal": {
+        "title": "Status ändern",
+        "fields": {
+          "requirement": "Anforderung",
+          "newStatus": "Neuer Status",
+          "comment": "Kommentar",
+          "commentPlaceholder": "Grund für die Statusänderung…"
+        },
+        "cancel": "Abbrechen",
+        "apply": "Anwenden",
+        "applying": "Wird angewendet…"
+      },
+      "evidencePanel": {
+        "title": "Nachweise",
+        "subtitle": "Angehängte Nachweise für diese Anforderung",
+        "addTitle": "Nachweis hinzufügen",
+        "fields": {
+          "type": "Typ",
+          "description": "Beschreibung",
+          "descriptionPlaceholder": "Nachweis beschreiben…",
+          "fileUrl": "Datei-URL",
+          "fileUrlPlaceholder": "https://…",
+          "notes": "Hinweise",
+          "notesPlaceholder": "Optionale Hinweise…"
+        },
+        "types": {
+          "DOC": "Dokument",
+          "RECORD": "Aufzeichnung",
+          "AUDIT": "Audit",
+          "LINK": "Link"
+        },
+        "add": "Nachweis hinzufügen",
+        "adding": "Wird hinzugefügt…",
+        "delete": "Löschen",
+        "viewFile": "Datei ansehen",
+        "close": "Schließen",
+        "submittedAt": "Eingereicht am",
+        "empty": "Noch keine Nachweise angehängt."
+      },
+      "messages": {
+        "loadFailed": "Anforderungen konnten nicht geladen werden",
+        "evidenceLoadFailed": "Nachweise konnten nicht geladen werden",
+        "updateSuccess": "Anforderung aktualisiert",
+        "createSuccess": "Anforderung erstellt",
+        "saveFailed": "Anforderung konnte nicht gespeichert werden",
+        "deleteSuccess": "Anforderung gelöscht",
+        "deleteFailed": "Löschen fehlgeschlagen",
+        "statusUpdateSuccess": "Status aktualisiert",
+        "statusUpdateFailed": "Statusaktualisierung fehlgeschlagen",
+        "evidenceAddSuccess": "Nachweis hinzugefügt",
+        "evidenceAddFailed": "Nachweis konnte nicht hinzugefügt werden",
+        "evidenceDeleteSuccess": "Nachweis gelöscht",
+        "evidenceDeleteFailed": "Nachweis konnte nicht gelöscht werden",
+        "kpiUpdateSuccess": "KPI aktualisiert: {{compliant}}/{{total}} Konform ({{non_compliant}} Nicht-Konform, {{partial}} Teilweise)",
+        "kpiUpdateFailed": "KPI-Aktualisierung fehlgeschlagen",
+        "kpiRunFailed": "Monatliche KPI-Ausführung fehlgeschlagen"
+      }
     },
-    "table": {
-      "indicatorCode": "Indikatorcode",
-      "area": "Bereich",
-      "name": "Name",
-      "target": "Zielwert",
-      "status": "Status",
-      "active": "Aktiv",
-      "disabled": "Deaktiviert",
-      "logMeasurement": "Messwert protokollieren",
-      "noResults": "Keine Indikatoren entsprechen Ihrer aktuellen Auswahl."
+    "safetyTargetReview": {
+      "title": "Sicherheitsziele-Überprüfung",
+      "subtitle": "SPI / KPI",
+      "monthsSelector": {
+        "label": "Analysiere die letzten",
+        "3": "3 Monate",
+        "6": "6 Monate",
+        "12": "12 Monate"
+      },
+      "generate": "Generieren",
+      "generating": "Generierung…",
+      "tableSubtitle": "Überprüfen Sie die vorgeschlagenen SPI/KPI-Ziele der letzten {{months}} Monate. Genehmigen Sie, um das neue Ziel anzuwenden.",
+      "stats": {
+        "totalIndicators": "Gesamtindikatoren",
+        "pendingReview": "Ausstehende Überprüfung",
+        "approved": "Genehmigt",
+        "rejected": "Abgelehnt"
+      },
+      "table": {
+        "sectionTitle": "Zielvorschläge",
+        "columns": {
+          "area": "Bereich",
+          "indicator": "Indikator",
+          "type": "Typ",
+          "current": "Aktuell",
+          "suggested": "Vorgeschlagen",
+          "diff": "Δ Diff",
+          "created": "Erstellt",
+          "status": "Status",
+          "actions": "Aktionen"
+        },
+        "tooltips": {
+          "approve": "Genehmigen",
+          "reject": "Ablehnen"
+        },
+        "empty": "Noch keine Vorschläge generiert. Zeitraum wählen und auf Generieren klicken.",
+        "emptyHint": "Klicken Sie auf Generieren, um die letzten {{months}} Monate zu analysieren."
+      },
+      "actionModal": {
+        "approveTitle": "Vorschlag genehmigen",
+        "rejectTitle": "Vorschlag ablehnen",
+        "fields": {
+          "indicator": "Indikator",
+          "area": "Bereich",
+          "currentTarget": "Aktuelles Ziel",
+          "suggestedTarget": "Vorgeschlagenes Ziel",
+          "delta": "Δ Differenz",
+          "notes": "Hinweise",
+          "notesPlaceholder": "Hinweis zu dieser Entscheidung hinzufügen…"
+        },
+        "alerts": {
+          "approve": "Sie sind dabei, dieses vorgeschlagene Ziel zu genehmigen. Der aktive KPI-Schwellenwert wird aktualisiert.",
+          "reject": "Sie sind dabei, diesen Vorschlag abzulehnen. Das aktuelle Ziel bleibt unverändert."
+        },
+        "cancel": "Abbrechen",
+        "approve": "Genehmigen",
+        "reject": "Ablehnen",
+        "processing": "Wird verarbeitet…"
+      },
+      "generatedSummary": "Generierte Vorschläge: {{pending}} ausstehend (letzte {{months}} Monate)",
+      "messages": {
+        "loadFailed": "Vorschläge konnten nicht geladen werden",
+        "generateFailed": "Vorschläge konnten nicht generiert werden",
+        "actionFailed": "Aktion fehlgeschlagen"
+      }
     },
-    "form": {
-      "editTitle": "Indikator bearbeiten",
-      "newTitle": "Neuer Indikator",
-      "code": "Code",
-      "codePlaceholder": "z.B. OPS_SAFETY_01",
-      "codeHint": "Unveränderlich nach dem Speichern",
-      "unit": "Einheit",
-      "unitPlaceholder": "% / Anzahl / Stunden",
-      "type": "Typ",
-      "kpiOption": "KPI - Schlüsselleistung",
-      "spiOption": "SPI - Sicherheitsleistung",
-      "area": "Bereich",
-      "indicatorName": "Indikatorname",
-      "namePlaceholder": "Beschreibenden Namen eingeben...",
-      "targetValue": "Zielwert",
-      "frequency": "Berichtsfrequenz",
-      "description": "Beschreibung",
-      "descPlaceholder": "Erklären Sie, was dieser Indikator misst...",
-      "statusLabel": "Status",
-      "activeMonitoring": "Aktiv / Überwachung",
-      "disabledDraft": "Deaktiviert / Entwurf",
-      "cancel": "Abbrechen",
-      "processing": "Verarbeitung...",
-      "updateIndicator": "Indikator aktualisieren",
-      "createIndicator": "Indikator erstellen"
-    },
-    "frequency": {
-      "MONTHLY": "Monatlich",
-      "WEEKLY": "Wöchentlich",
-      "QUARTERLY": "Vierteljährlich",
-      "YEARLY": "Jährlich"
-    },
-    "validation": {
-      "codeMinChars": "Mindestens 3 Zeichen",
-      "codeFormat": "Nur Großbuchstaben, Zahlen und Unterstriche",
-      "nameRequired": "Name ist erforderlich",
-      "unitRequired": "Einheit ist erforderlich",
-      "targetPositive": "Muss eine positive Zahl sein",
-      "dateRequired": "Datum ist erforderlich",
-      "valueNumber": "Muss eine gültige Zahl sein"
-    },
-    "log": {
-      "title": "Messung protokollieren",
-      "measurementDate": "Messdatum",
-      "actualValue": "Ist-Wert",
-      "actualPlaceholder": "z.B. 87,5",
-      "targetValue": "Zielwert",
-      "status": "Status",
-      "statusGreen": "Im Soll / Über Ziel",
-      "statusYellow": "Gefährdet / Im Ziel",
-      "statusRed": "Überschritten / Unter Ziel",
-      "cancel": "Abbrechen",
-      "saving": "Speichern...",
-      "saveMeasurement": "Messung speichern"
-    },
-    "toast": {
-      "loadError": "Indikatoren konnten nicht geladen werden",
-      "recordSynced": "Datensatz synchronisiert",
-      "saveFailed": "Speichern fehlgeschlagen",
-      "activated": "Indikator aktiviert",
-      "deactivated": "Indikator deaktiviert",
-      "toggleFailed": "Umschalten fehlgeschlagen",
-      "measurementLogged": "Messung erfolgreich protokolliert",
-      "logFailed": "Protokollierung fehlgeschlagen"
+    "shared": {
+      "status": {
+        "COMPLIANT": "Konform",
+        "PARTIAL": "Teilweise",
+        "NON_COMPLIANT": "Nicht Konform",
+        "NOT_APPLICABLE": "Nicht Zutreffend",
+        "PENDING": "Ausstehend",
+        "APPROVED": "Genehmigt",
+        "REJECTED": "Abgelehnt"
+      },
+      "area": {
+        "OPERATIONS": "Betrieb",
+        "MAINTENANCE": "Wartung",
+        "TRAINING": "Schulung",
+        "SMS": "SMS",
+        "COMPLIANCE": "Compliance",
+        "ICT": "IKT"
+      },
+      "pagination": {
+        "rowsPerPage": "Zeilen pro Seite",
+        "pageInfo": "Seite {{current}} von {{total}}",
+        "first": "Erste Seite",
+        "previous": "Vorherige Seite",
+        "next": "Nächste Seite",
+        "last": "Letzte Seite"
+      }
     }
   }
-}
 }
