@@ -28,7 +28,12 @@
     "unknown": "Unknown",
     "noData": "No data available",
     "error": "An error occurred",
-    "success": "Success"
+    "success": "Success",
+    "never": "Never",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "daysAgo": "{{count}} days ago",
+    "monthsAgo": "{{count}} months ago"
   },
   "topbar": {
     "askAnything": "Ask anything…",

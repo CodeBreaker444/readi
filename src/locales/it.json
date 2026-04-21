@@ -28,7 +28,12 @@
     "unknown": "Sconosciuto",
     "noData": "Nessun dato disponibile",
     "error": "Si è verificato un errore",
-    "success": "Operazione riuscita"
+    "success": "Operazione riuscita",
+    "never": "Mai",
+    "today": "Oggi",
+    "yesterday": "Ieri",
+    "daysAgo": "{{count}} giorni fa",
+    "monthsAgo": "{{count}} mesi fa"
   },
   "topbar": {
     "askAnything": "Chiedi qualcosa…",

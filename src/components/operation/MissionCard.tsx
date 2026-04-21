@@ -357,7 +357,7 @@ export function MissionCard({ mission, draggable, onDragStart, onViewDetails, on
               {t("operations.board.card.completeTasks")}
             </Button>
           )}
-          {mission.mission_status_code === "10" && onUpdateMaintenance && (
+          {onUpdateMaintenance && (
             <TooltipProvider delayDuration={300}>
               <Tooltip>
                 <TooltipTrigger asChild>

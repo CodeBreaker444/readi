@@ -28,7 +28,12 @@
     "unknown": "Unbekannt",
     "noData": "Keine Daten verfügbar",
     "error": "Ein Fehler ist aufgetreten",
-    "success": "Erfolgreich"
+    "success": "Erfolgreich",
+    "never": "Nie",
+    "today": "Heute",
+    "yesterday": "Gestern",
+    "daysAgo": "Vor {{count}} Tagen",
+    "monthsAgo": "Vor {{count}} Monaten"
   },
   "topbar": {
     "askAnything": "Frag etwas…",

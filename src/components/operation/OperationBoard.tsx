@@ -253,7 +253,7 @@ export function OperationBoard() {
                             onDragStart={handleDragStart}
                             onDrop={handleDrop}
                             onViewDetails={(m) => setSelectedMission(m)}
-                            onUpdateMaintenance={(m) => setMaintenanceMission(m)}
+                            onUpdateMaintenance={col.id === "done" ? (m) => setMaintenanceMission(m) : undefined}
                             onOpenLuc={(m) => setLucMission(m)}
                             isDragOver={dragOverColumn === col.id}
                             onDragOver={(e) => handleDragOver(e, col.id)}
