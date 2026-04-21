@@ -2305,5 +2305,161 @@
         "last": "Ultima pagina"
       }
     }
+  },
+  "flytbase": {
+    "integration": {
+      "title": "Integrazione FlytBase",
+      "subtitle": "Collega il tuo account FlytBase per importare log di volo e dati di missione",
+      "viewFlights": "Visualizza Voli",
+      "needToken": "Hai bisogno di un token API FlytBase?",
+      "viewDocumentation": "Visualizza documentazione",
+      "tokenNote": "Usa una chiave API a lunga durata (RS256 JWT), non un token di sessione a breve durata."
+    },
+    "token": {
+      "title": "Token API FlytBase",
+      "subtitle": "Usato per recuperare i log di volo e la cronologia delle missioni da FlytBase",
+      "connected": "Connesso",
+      "notConnected": "Non connesso",
+      "secureNote": "Il tuo token è conservato in modo sicuro e non è mai esposto ad altri utenti o registrato.",
+      "savedNote": "Un token API FlytBase è attualmente salvato per il tuo account.",
+      "replaceToken": "Sostituisci token",
+      "removing": "Rimozione…",
+      "remove": "Rimuovi",
+      "removeTitle": "Rimuovere l'integrazione FlytBase?",
+      "removeDescription": "Questo eliminerà definitivamente il tuo token API salvato. Non potrai più recuperare log di volo o dati di missione finché non ti riconnetti con un nuovo token.",
+      "cancel": "Annulla",
+      "yesRemove": "Sì, rimuovi token",
+      "apiToken": "Token API",
+      "apiTokenPlaceholder": "Incolla la tua chiave API FlytBase a lunga durata",
+      "orgId": "ID Organizzazione",
+      "orgIdPlaceholder": "es. 684fbfd4c264f8f677beb444",
+      "orgIdHint": "Trovato nella dashboard FlytBase in Impostazioni Organizzazione.",
+      "verifying": "Verifica in corso…",
+      "verify": "Verifica token",
+      "verifiedTitle": "Token verificato — conferma che questo è il tuo account FlytBase",
+      "saving": "Salvataggio…",
+      "saveToken": "Sì, salva questo token",
+      "fields": {
+        "name": "Nome",
+        "username": "Nome utente",
+        "phone": "Telefono",
+        "organization": "Organizzazione",
+        "flytbaseId": "ID FlytBase"
+      },
+      "toasts": {
+        "enterToken": "Inserisci il tuo token API FlytBase.",
+        "enterOrgId": "Inserisci il tuo ID Organizzazione FlytBase.",
+        "verifyFailed": "Verifica del token fallita. Controlla il tuo token e l'ID Organizzazione.",
+        "saveSuccess": "Integrazione FlytBase salvata con successo.",
+        "saveFailed": "Impossibile salvare il token.",
+        "removed": "Integrazione FlytBase rimossa.",
+        "removeFailed": "Impossibile rimuovere il token."
+      }
+    },
+    "flights": {
+      "title": "Voli Recenti",
+      "subtitle": "Seleziona un volo per visualizzare il suo log GUTMA",
+      "refresh": "Aggiorna",
+      "settings": "Impostazioni",
+      "flightsLabel": "Voli",
+      "shown": "mostrati",
+      "of": "di",
+      "noToken": "Nessun token API FlytBase configurato per il tuo account.",
+      "setUp": "Configura ora",
+      "noRecentFlights": "Nessun volo recente trovato.",
+      "noFlightsInWindow": "Nessun volo trovato negli ultimi {{window}} minuti.",
+      "selectFlight": "Seleziona un volo per visualizzare il suo log GUTMA",
+      "latest20": "Ultimi 20",
+      "windows": {
+        "60": "Ultima 1 ora",
+        "360": "Ultime 6 ore",
+        "720": "Ultime 12 ore",
+        "1440": "Ultime 24 ore"
+      }
+    },
+    "preview": {
+      "savedToReadi": "Salvato su ReADI",
+      "notSaved": "Non salvato",
+      "archiving": "Archiviazione…",
+      "archiveToReadi": "Archivia su ReADI",
+      "tabs": {
+        "map": "Mappa",
+        "gutmaLog": "Log GUTMA",
+        "flightInfo": "Info Volo"
+      },
+      "downloadingLog": "Download del log GUTMA da FlytBase…",
+      "noGpsCoords": "Nessuna coordinata GPS trovata in questo file GUTMA.",
+      "noFlightInfo": "Nessuna informazione di volo aggiuntiva disponibile in questo file GUTMA.",
+      "noWaypointData": "Nessun dato di waypoint trovato in questo file GUTMA.",
+      "registerSerials": "Registra questi numeri di serie nel tuo inventario attrezzature prima di archiviare.",
+      "sections": {
+        "flightDetails": "Dettagli Volo",
+        "asset": "Asset",
+        "events": "Eventi",
+        "payloadBattery": "Payload / Batteria",
+        "aircraft": "Aeromobile",
+        "groundControlStation": "Stazione di Controllo a Terra",
+        "waypointLog": "Log Waypoint"
+      },
+      "fields": {
+        "pilotInCommand": "Pilota in Comando",
+        "mission": "Missione",
+        "startTime": "Ora di Inizio",
+        "endTime": "Ora di Fine",
+        "duration": "Durata",
+        "distance": "Distanza",
+        "loggingStart": "Inizio Registrazione",
+        "drone": "Drone",
+        "name": "Nome",
+        "model": "Modello",
+        "manufacturer": "Produttore",
+        "serialNumber": "Numero di serie",
+        "firmware": "Firmware",
+        "type": "Tipo",
+        "cycleCount": "Conteggio Cicli",
+        "designCapacity": "Capacità Nominale"
+      },
+      "eventsTable": {
+        "hash": "#",
+        "timestamp": "Timestamp",
+        "type": "Tipo",
+        "info": "Info",
+        "controller": "Controller"
+      },
+      "waypointTable": {
+        "hash": "#",
+        "timestamp": "Timestamp",
+        "lat": "Lat",
+        "lon": "Lon",
+        "altitude": "Alt (m)",
+        "speed": "Velocità",
+        "velocities": "Vx/Vy/Vz (m/s)",
+        "heading": "Prua (ψ)",
+        "roll": "Rollio (φ)",
+        "pitch": "Beccheggio (θ)",
+        "battery": "Batteria"
+      },
+      "pagination": {
+        "rows": "Righe",
+        "prev": "Prec",
+        "next": "Succ",
+        "showing": "Visualizzazione {{start}}-{{end}} di {{total}} waypoint · Pagina {{page}} di {{totalPages}}",
+        "showingFirst": "Visualizzazione dei primi {{count}} di {{total}} waypoint."
+      },
+      "subtitles": {
+        "events_one": "{{count}} evento",
+        "events_other": "{{count}} eventi",
+        "payload_one": "{{count}} elemento",
+        "payload_other": "{{count}} elementi",
+        "waypointLog": "{{count}} di {{total}} punti"
+      }
+    },
+    "archive": {
+      "archivedDetail_one": "Aggiornato {{count}} componente",
+      "archivedDetail_other": "Aggiornati {{count}} componenti",
+      "missionSynced": "Missione sincronizzata",
+      "archivedSuccess": "Log di volo archiviato su Readi.",
+      "archiveFailed": "Impossibile archiviare il log di volo."
+    }
   }
 }

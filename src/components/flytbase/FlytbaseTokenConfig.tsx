@@ -28,6 +28,7 @@ import {
   HiTrash,
   HiUser,
 } from 'react-icons/hi';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 interface FlytbaseUserInfo {
@@ -43,6 +44,7 @@ type Step = 'idle' | 'verifying' | 'confirmed' | 'saving';
 
 export function FlytbaseTokenConfig() {
   const { isDark } = useTheme();
+  const { t } = useTranslation();
 
   const [hasToken, setHasToken] = useState<boolean | null>(null);
   const [tokenInput, setTokenInput] = useState('');
@@ -67,11 +69,11 @@ export function FlytbaseTokenConfig() {
 
   async function handleVerify() {
     if (!tokenInput.trim()) {
-      toast.error('Please enter your FlytBase API token.');
+      toast.error(t('flytbase.token.toasts.enterToken'));
       return;
     }
     if (!orgIdInput.trim()) {
-      toast.error('Please enter your FlytBase Organization ID.');
+      toast.error(t('flytbase.token.toasts.enterOrgId'));
       return;
     }
     setStep('verifying');
@@ -87,7 +89,7 @@ export function FlytbaseTokenConfig() {
     } catch (err: any) {
       const msg =
         err?.response?.data?.message ??
-        'Token verification failed. Please check your token and Organization ID.';
+        t('flytbase.token.toasts.verifyFailed');
       toast.error(msg);
       setStep('idle');
     }
@@ -102,14 +104,14 @@ export function FlytbaseTokenConfig() {
         token: tokenInput.trim(),
         orgId: orgIdInput.trim(),
       });
-      toast.success('FlytBase integration saved successfully.');
+      toast.success(t('flytbase.token.toasts.saveSuccess'));
       setHasToken(true);
       setTokenInput('');
       setOrgIdInput('');
       setVerifiedUser(null);
       setStep('idle');
     } catch (err: any) {
-      const msg = err?.response?.data?.message ?? 'Failed to save token.';
+      const msg = err?.response?.data?.message ?? t('flytbase.token.toasts.saveFailed');
       toast.error(msg);
       setStep('confirmed');
     }
@@ -128,10 +130,10 @@ export function FlytbaseTokenConfig() {
     setIsRemoving(true);
     try {
       await axios.delete('/api/flytbase/token');
-      toast.success('FlytBase integration removed.');
+      toast.success(t('flytbase.token.toasts.removed'));
       setHasToken(false);
     } catch (err: any) {
-      toast.error(err?.response?.data?.message ?? 'Failed to remove token.');
+      toast.error(err?.response?.data?.message ?? t('flytbase.token.toasts.removeFailed'));
     } finally {
       setIsRemoving(false);
     }
@@ -161,10 +163,10 @@ export function FlytbaseTokenConfig() {
             </div>
             <div>
               <h2 className={`text-sm font-semibold leading-tight ${textPrimary}`}>
-                FlytBase API Token
+                {t('flytbase.token.title')}
               </h2>
               <p className={`text-xs mt-0.5 leading-relaxed ${textSecondary}`}>
-                Used to fetch your flight logs and mission history from FlytBase
+                {t('flytbase.token.subtitle')}
               </p>
             </div>
           </div>
@@ -180,7 +182,7 @@ export function FlytbaseTokenConfig() {
                   : 'border-slate-500/40 text-slate-400 bg-slate-500/10'
               }`}
             >
-              {hasToken ? 'Connected' : 'Not connected'}
+              {hasToken ? t('flytbase.token.connected') : t('flytbase.token.notConnected')}
             </Badge>
           )}
         </div>
@@ -196,7 +198,7 @@ export function FlytbaseTokenConfig() {
         >
           <HiShieldCheck className="w-4 h-4 shrink-0" />
           <span>
-            Your token is stored securely and never exposed to other users or logged.
+            {t('flytbase.token.secureNote')}
           </span>
         </div>
 
@@ -228,7 +230,7 @@ export function FlytbaseTokenConfig() {
             >
               <HiCheckCircle className="w-4 h-4 shrink-0" />
               <span className="text-xs">
-                A FlytBase API token is currently saved for your account.
+                {t('flytbase.token.savedNote')}
               </span>
             </div>
 
@@ -243,7 +245,7 @@ export function FlytbaseTokenConfig() {
                     : 'border-slate-200 text-slate-600 hover:bg-slate-50'
                 }`}
               >
-                Replace token
+                {t('flytbase.token.replaceToken')}
               </Button>
 
               <AlertDialog>
@@ -255,7 +257,7 @@ export function FlytbaseTokenConfig() {
                     className="h-8 text-xs gap-1.5 border-red-500/30 text-red-500 hover:bg-red-500/10 hover:border-red-500/50"
                   >
                     <HiTrash className="w-3.5 h-3.5" />
-                    {isRemoving ? 'Removing…' : 'Remove'}
+                    {isRemoving ? t('flytbase.token.removing') : t('flytbase.token.remove')}
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent
@@ -267,12 +269,10 @@ export function FlytbaseTokenConfig() {
                 >
                   <AlertDialogHeader>
                     <AlertDialogTitle className={textPrimary}>
-                      Remove FlytBase integration?
+                      {t('flytbase.token.removeTitle')}
                     </AlertDialogTitle>
                     <AlertDialogDescription className={textSecondary}>
-                      This will permanently delete your saved API token. You
-                      will no longer be able to fetch flight logs or mission data
-                      until you reconnect with a new token.
+                      {t('flytbase.token.removeDescription')}
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
@@ -283,14 +283,14 @@ export function FlytbaseTokenConfig() {
                           : 'border-slate-200 text-slate-600'
                       }`}
                     >
-                      Cancel
+                      {t('flytbase.token.cancel')}
                     </AlertDialogCancel>
                     <AlertDialogAction
                       onClick={handleRemove}
                       className="text-xs bg-red-600 hover:bg-red-500 text-white"
                     >
                       <HiTrash className="w-3.5 h-3.5 mr-1.5" />
-                      Yes, remove token
+                      {t('flytbase.token.yesRemove')}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
@@ -306,13 +306,13 @@ export function FlytbaseTokenConfig() {
                 htmlFor="flytbase-token"
                 className={`text-xs font-medium ${textPrimary}`}
               >
-                API Token
+                {t('flytbase.token.apiToken')}
               </Label>
               <div className="relative">
                 <Input
                   id="flytbase-token"
                   type={showToken ? 'text' : 'password'}
-                  placeholder="Paste your FlytBase long-lived API key"
+                  placeholder={t('flytbase.token.apiTokenPlaceholder')}
                   value={tokenInput}
                   onChange={(e) => setTokenInput(e.target.value.trim())}
                   disabled={step === 'verifying'}
@@ -337,19 +337,19 @@ export function FlytbaseTokenConfig() {
                 htmlFor="flytbase-org"
                 className={`text-xs font-medium ${textPrimary}`}
               >
-                Organization ID
+                {t('flytbase.token.orgId')}
               </Label>
               <Input
                 id="flytbase-org"
                 type="text"
-                placeholder="e.g. 684fbfd4c264f8f677beb444"
+                placeholder={t('flytbase.token.orgIdPlaceholder')}
                 value={orgIdInput}
                 onChange={(e) => setOrgIdInput(e.target.value.trim())}
                 disabled={step === 'verifying'}
                 className={`text-sm font-mono ${inputClass}`}
               />
               <p className={`text-[11px] leading-relaxed ${textSecondary}`}>
-                Found in your FlytBase dashboard under Organization Settings.
+                {t('flytbase.token.orgIdHint')}
               </p>
             </div>
 
@@ -369,10 +369,10 @@ export function FlytbaseTokenConfig() {
                 {step === 'verifying' ? (
                   <>
                     <span className="inline-block w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-1.5" />
-                    Verifying…
+                    {t('flytbase.token.verifying')}
                   </>
                 ) : (
-                  'Verify token'
+                  t('flytbase.token.verify')
                 )}
               </Button>
               {hasToken && (
@@ -387,7 +387,7 @@ export function FlytbaseTokenConfig() {
                       : 'border-slate-200 text-slate-600'
                   }`}
                 >
-                  Cancel
+                  {t('flytbase.token.cancel')}
                 </Button>
               )}
             </div>
@@ -410,7 +410,7 @@ export function FlytbaseTokenConfig() {
               >
                 <HiCheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
                 <span className={`text-xs font-medium ${textPrimary}`}>
-                  Token verified — confirm this is your FlytBase account
+                  {t('flytbase.token.verifiedTitle')}
                 </span>
               </div>
 
@@ -418,34 +418,34 @@ export function FlytbaseTokenConfig() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
                   {verifiedUser.name && (
                     <UserInfoRow
-                      label="Name"
+                      label={t('flytbase.token.fields.name')}
                       value={verifiedUser.name}
                       isDark={isDark}
                     />
                   )}
                   {verifiedUser.username && (
                     <UserInfoRow
-                      label="Username"
+                      label={t('flytbase.token.fields.username')}
                       value={verifiedUser.username}
                       isDark={isDark}
                     />
                   )}
                   {verifiedUser.phone && (
                     <UserInfoRow
-                      label="Phone"
+                      label={t('flytbase.token.fields.phone')}
                       value={verifiedUser.phone}
                       isDark={isDark}
                     />
                   )}
                   {verifiedUser.organization && (
                     <UserInfoRow
-                      label="Organization"
+                      label={t('flytbase.token.fields.organization')}
                       value={verifiedUser.organization}
                       isDark={isDark}
                     />
                   )}
                   <UserInfoRow
-                    label="FlytBase ID"
+                    label={t('flytbase.token.fields.flytbaseId')}
                     value={String(verifiedUser.id)}
                     isDark={isDark}
                   />
@@ -464,10 +464,10 @@ export function FlytbaseTokenConfig() {
                 {step === 'saving' ? (
                   <>
                     <span className="inline-block w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-1.5" />
-                    Saving…
+                    {t('flytbase.token.saving')}
                   </>
                 ) : (
-                  'Yes, save this token'
+                  t('flytbase.token.saveToken')
                 )}
               </Button>
               <Button
@@ -481,7 +481,7 @@ export function FlytbaseTokenConfig() {
                     : 'border-slate-200 text-slate-600'
                 }`}
               >
-                Cancel
+                {t('flytbase.token.cancel')}
               </Button>
             </div>
           </div>

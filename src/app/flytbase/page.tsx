@@ -1,13 +1,16 @@
 'use client';
 
 import { FlytbaseTokenConfig } from '@/components/flytbase/FlytbaseTokenConfig';
+import { LanguageSelect } from '@/components/LanguageSelect';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/components/useTheme';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { HiOutlineDocumentText } from 'react-icons/hi';
 
 export default function FlytbaseIntegrationPage() {
   const { isDark } = useTheme();
+  const { t } = useTranslation();
 
   const bg = isDark ? 'bg-slate-950' : 'bg-slate-50';
   const textPrimary = isDark ? 'text-white' : 'text-slate-900';
@@ -34,29 +37,31 @@ export default function FlytbaseIntegrationPage() {
                 <h1
                   className={`font-semibold text-base tracking-tight ${textPrimary}`}
                 >
-                  FlytBase Integration
+                  {t('flytbase.integration.title')}
                 </h1>
                 <p className={`text-xs ${textSecondary}`}>
-                  Connect your FlytBase account to import flight logs and
-                  mission data
+                  {t('flytbase.integration.subtitle')}
                 </p>
               </div>
             </div>
 
-            <Link href="/flytbase/flights">
-              <Button
-                variant="outline"
-                size="sm"
-                className={`h-8 text-xs gap-1.5 ${
-                  isDark
-                    ? 'border-slate-700 bg-slate-800 text-slate-300'
-                    : 'border-slate-200 text-slate-600'
-                }`}
-              >
-                <HiOutlineDocumentText className="w-3.5 h-3.5" />
-                View Flights
-              </Button>
-            </Link>
+            <div className="flex items-center gap-2">
+              <LanguageSelect isDark={isDark} />
+              <Link href="/flytbase/flights">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={`h-8 text-xs gap-1.5 ${
+                    isDark
+                      ? 'border-slate-700 bg-slate-800 text-slate-300'
+                      : 'border-slate-200 text-slate-600'
+                  }`}
+                >
+                  <HiOutlineDocumentText className="w-3.5 h-3.5" />
+                  {t('flytbase.integration.viewFlights')}
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
 
@@ -66,9 +71,9 @@ export default function FlytbaseIntegrationPage() {
               <FlytbaseTokenConfig />
               <div className="text-center space-y-1 pt-2">
                 <p className={`text-xs ${textSecondary}`}>
-                  Need a FlytBase API token?{' '}
+                  {t('flytbase.integration.needToken')}{' '}
                   <span className="text-violet-500 underline underline-offset-2">
-                    View documentation
+                    {t('flytbase.integration.viewDocumentation')}
                   </span>
                 </p>
                 <p
@@ -76,8 +81,7 @@ export default function FlytbaseIntegrationPage() {
                     isDark ? 'text-slate-600' : 'text-slate-400'
                   }`}
                 >
-                  Use a long-lived API key (RS256 JWT), not a short-lived
-                  session token.
+                  {t('flytbase.integration.tokenNote')}
                 </p>
               </div>
             </div>

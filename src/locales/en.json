@@ -2304,5 +2304,161 @@
         "last": "Last page"
       }
     }
+  },
+  "flytbase": {
+    "integration": {
+      "title": "FlytBase Integration",
+      "subtitle": "Connect your FlytBase account to import flight logs and mission data",
+      "viewFlights": "View Flights",
+      "needToken": "Need a FlytBase API token?",
+      "viewDocumentation": "View documentation",
+      "tokenNote": "Use a long-lived API key (RS256 JWT), not a short-lived session token."
+    },
+    "token": {
+      "title": "FlytBase API Token",
+      "subtitle": "Used to fetch your flight logs and mission history from FlytBase",
+      "connected": "Connected",
+      "notConnected": "Not connected",
+      "secureNote": "Your token is stored securely and never exposed to other users or logged.",
+      "savedNote": "A FlytBase API token is currently saved for your account.",
+      "replaceToken": "Replace token",
+      "removing": "Removing…",
+      "remove": "Remove",
+      "removeTitle": "Remove FlytBase integration?",
+      "removeDescription": "This will permanently delete your saved API token. You will no longer be able to fetch flight logs or mission data until you reconnect with a new token.",
+      "cancel": "Cancel",
+      "yesRemove": "Yes, remove token",
+      "apiToken": "API Token",
+      "apiTokenPlaceholder": "Paste your FlytBase long-lived API key",
+      "orgId": "Organization ID",
+      "orgIdPlaceholder": "e.g. 684fbfd4c264f8f677beb444",
+      "orgIdHint": "Found in your FlytBase dashboard under Organization Settings.",
+      "verifying": "Verifying…",
+      "verify": "Verify token",
+      "verifiedTitle": "Token verified — confirm this is your FlytBase account",
+      "saving": "Saving…",
+      "saveToken": "Yes, save this token",
+      "fields": {
+        "name": "Name",
+        "username": "Username",
+        "phone": "Phone",
+        "organization": "Organization",
+        "flytbaseId": "FlytBase ID"
+      },
+      "toasts": {
+        "enterToken": "Please enter your FlytBase API token.",
+        "enterOrgId": "Please enter your FlytBase Organization ID.",
+        "verifyFailed": "Token verification failed. Please check your token and Organization ID.",
+        "saveSuccess": "FlytBase integration saved successfully.",
+        "saveFailed": "Failed to save token.",
+        "removed": "FlytBase integration removed.",
+        "removeFailed": "Failed to remove token."
+      }
+    },
+    "flights": {
+      "title": "Recent Flights",
+      "subtitle": "Select a flight to preview its GUTMA log",
+      "refresh": "Refresh",
+      "settings": "Settings",
+      "flightsLabel": "Flights",
+      "shown": "shown",
+      "of": "of",
+      "noToken": "No FlytBase API token configured for your account.",
+      "setUp": "Set up now",
+      "noRecentFlights": "No recent flights found.",
+      "noFlightsInWindow": "No flights found in the last {{window}} minutes.",
+      "selectFlight": "Select a flight to preview its GUTMA log",
+      "latest20": "Latest 20",
+      "windows": {
+        "60": "Last 1 hr",
+        "360": "Last 6 hrs",
+        "720": "Last 12 hrs",
+        "1440": "Last 24 hrs"
+      }
+    },
+    "preview": {
+      "savedToReadi": "Saved to ReADI",
+      "notSaved": "Not saved",
+      "archiving": "Archiving…",
+      "archiveToReadi": "Archive to ReADI",
+      "tabs": {
+        "map": "Map",
+        "gutmaLog": "GUTMA Log",
+        "flightInfo": "Flight Info"
+      },
+      "downloadingLog": "Downloading GUTMA log from FlytBase…",
+      "noGpsCoords": "No GPS coordinates found in this GUTMA file.",
+      "noFlightInfo": "No additional flight info available in this GUTMA file.",
+      "noWaypointData": "No waypoint data found in this GUTMA file.",
+      "registerSerials": "Register these serial numbers in your equipment inventory before archiving.",
+      "sections": {
+        "flightDetails": "Flight Details",
+        "asset": "Asset",
+        "events": "Events",
+        "payloadBattery": "Payload / Battery",
+        "aircraft": "Aircraft",
+        "groundControlStation": "Ground Control Station",
+        "waypointLog": "Waypoint Log"
+      },
+      "fields": {
+        "pilotInCommand": "Pilot in Command",
+        "mission": "Mission",
+        "startTime": "Start Time",
+        "endTime": "End Time",
+        "duration": "Duration",
+        "distance": "Distance",
+        "loggingStart": "Logging Start",
+        "drone": "Drone",
+        "name": "Name",
+        "model": "Model",
+        "manufacturer": "Manufacturer",
+        "serialNumber": "Serial number",
+        "firmware": "Firmware",
+        "type": "Type",
+        "cycleCount": "Cycle Count",
+        "designCapacity": "Design Capacity"
+      },
+      "eventsTable": {
+        "hash": "#",
+        "timestamp": "Timestamp",
+        "type": "Type",
+        "info": "Info",
+        "controller": "Controller"
+      },
+      "waypointTable": {
+        "hash": "#",
+        "timestamp": "Timestamp",
+        "lat": "Lat",
+        "lon": "Lon",
+        "altitude": "Alt (m)",
+        "speed": "Speed",
+        "velocities": "Vx/Vy/Vz (m/s)",
+        "heading": "Heading (ψ)",
+        "roll": "Roll (φ)",
+        "pitch": "Pitch (θ)",
+        "battery": "Battery"
+      },
+      "pagination": {
+        "rows": "Rows",
+        "prev": "Prev",
+        "next": "Next",
+        "showing": "Showing {{start}}-{{end}} of {{total}} loaded waypoints · Page {{page}} of {{totalPages}}",
+        "showingFirst": "Showing first {{count}} of {{total}} waypoints."
+      },
+      "subtitles": {
+        "events_one": "{{count}} event",
+        "events_other": "{{count}} events",
+        "payload_one": "{{count}} item",
+        "payload_other": "{{count}} items",
+        "waypointLog": "{{count}} of {{total}} points"
+      }
+    },
+    "archive": {
+      "archivedDetail_one": "Updated {{count}} component",
+      "archivedDetail_other": "Updated {{count}} components",
+      "missionSynced": "Mission synced",
+      "archivedSuccess": "Flight log archived to Readi.",
+      "archiveFailed": "Failed to archive flight log."
+    }
   }
 }

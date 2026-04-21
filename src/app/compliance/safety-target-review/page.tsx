@@ -60,6 +60,10 @@ export default function SafetyTargetReviewPage() {
   const [pendingAction, setPendingAction] = useState<ActionType>('APPROVED');
   const [notes, setNotes] = useState('');
   const [actioning, setActioning] = useState(false);
+  const [pagination, setPagination] = useState({
+    pageIndex: 0,
+    pageSize: 8,
+  });
 
 
   const fetchProposals = useCallback(async () => {
@@ -96,10 +100,18 @@ export default function SafetyTargetReviewPage() {
   const table = useReactTable({
     data: proposals,
     columns,
+    state: {
+      pagination,
+    },
+    onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    initialState: { pagination: { pageSize: 8 } },
+    initialState: {
+      pagination: {
+        pageSize: 8
+      }
+    },
   });
 
 
@@ -125,7 +137,7 @@ export default function SafetyTargetReviewPage() {
         setActionTarget(null);
         fetchProposals();
       } else {
-        toast.error(res.data.error || t('compliance.safetyTargetReview.messages.actionFailed'));
+        toast.error(t('compliance.safetyTargetReview.messages.actionFailed'));
       }
     } catch {
       toast.error(t('compliance.safetyTargetReview.messages.actionFailed'));
@@ -280,7 +292,7 @@ export default function SafetyTargetReviewPage() {
               </TableBody>
             </Table>
           </div>
-          <TablePagination table={table}/>
+          <TablePagination table={table} />
         </div>
       </div>
 
