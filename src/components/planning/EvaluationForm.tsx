@@ -94,7 +94,7 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, isDark }) => 
       if (!response.data) { toast.error(t('planning.validation.loadProceduresError')); return; }
       setLUCProcedures(response.data.procedures || []);
     } catch (error) {
-      console.error('Error loading LUC procedures:', error);
+      console.error('Error loading procedures:', error);
       toast.error(t('planning.validation.loadProceduresError'));
     }
   };

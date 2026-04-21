@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
 
 import { createLucProcedure, getLucProcedures } from '@/backend/services/organization/lcu-service';
+import { internalError, zodError } from '@/lib/api-error';
 import { requirePermission } from '@/lib/auth/api-auth';
 import { E } from '@/lib/error-codes';
-import { internalError, zodError } from '@/lib/api-error';
 
 export async function GET(request: NextRequest) {
     try {
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({
             data: created,
-            message: 'LUC Procedure created successfully',
+            message: 'Procedure created successfully',
             code: 1,
             dataRows: 1,
         }, { status: 201 });

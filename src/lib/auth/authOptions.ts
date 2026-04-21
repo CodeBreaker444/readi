@@ -51,10 +51,10 @@ declare module 'next-auth/jwt' {
 
 export const authOptions: NextAuthOptions = {
   jwt: {
-    maxAge: 14 * 24 * 3600,
+    maxAge: 7 * 24 * 3600,
   },
   session: {
-    maxAge: 24 * 3600,
+    maxAge: 7 * 24 * 3600,
   },
 
   cookies: {

@@ -58,7 +58,7 @@ const createOperationCalendarSchema = z.object({
     fk_mission_type_id: z.number().int().nullable().optional(),
     fk_mission_category_id: z.number().int().nullable().optional(),
     fk_planning_id: z.number().int().nullable().optional(),
-    fk_luc_procedure_id: z.number().int().positive('LUC procedure is required'),
+    fk_luc_procedure_id: z.number().int().positive('Procedure is required'),
     location: z.string().optional(),
     notes: z.string().optional(),
     status_name: z.string().min(1),
@@ -329,9 +329,9 @@ export function AddOperationModal({ open, onClose, onSuccess, isDark }: AddOpera
 
                     <SelectField
                         name="fk_luc_procedure_id"
-                        label="LUC procedure (Mission)"
+                        label="Procedure (Mission)"
                         options={lucProcedures}
-                        placeholder="Select LUC procedure"
+                        placeholder="Select Procedure"
                     />
 
                     <div className={`rounded-lg border p-4 space-y-4 ${isDark ? 'border-slate-600 bg-slate-700/40' : 'border-slate-200 bg-slate-50'}`}>

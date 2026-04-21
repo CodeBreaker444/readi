@@ -681,7 +681,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                                     <Input value="Scheduled" disabled className={cn(inputCls, 'opacity-60 cursor-not-allowed')} />
                                 </div>
                                 <div>
-                                    <Label className={labelCls}>LUC Procedure <span className="text-red-500">*</span></Label>
+                                    <Label className={labelCls}>Procedure <span className="text-red-500">*</span></Label>
                                     <Select value={lucId} onValueChange={setLucId}>
                                         <SelectTrigger className={inputCls}>
                                             <SelectValue placeholder={lucProcedures.length === 0 ? 'None available' : 'Select procedure…'} />
@@ -741,7 +741,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                                 <ReviewRow label="Start" value={scheduledStart ? new Date(scheduledStart).toLocaleString() : undefined} isDark={isDark} />
                                 {typeId && <ReviewRow label="Type" value={types.find(t => String(t.id) === typeId)?.label} isDark={isDark} />}
                                 {categoryId && <ReviewRow label="Category" value={categories.find(c => String(c.id) === categoryId)?.label} isDark={isDark} />}
-                                <ReviewRow label="LUC Procedure" value={selectedLuc?.label} isDark={isDark} />
+                                <ReviewRow label="Procedure" value={selectedLuc?.label} isDark={isDark} />
                                 {pilotId && <ReviewRow label="Pilot" value={selectedPilot ? `${selectedPilot.first_name} ${selectedPilot.last_name}` : undefined} isDark={isDark} />}
                                 {location && <ReviewRow label="Location" value={location} isDark={isDark} />}
                             </div>

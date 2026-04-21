@@ -88,7 +88,7 @@ export const createOperationCalendarEntry = async (
   const statusName = input.status_name ?? 'Scheduled';
 
   if (!input.fk_luc_procedure_id) {
-    throw new Error('LUC procedure is required');
+    throw new Error('procedure is required');
   }
 
   let stepsSource: unknown = input.luc_procedure_steps;
@@ -101,8 +101,8 @@ export const createOperationCalendarEntry = async (
       .eq('procedure_status', 'MISSION')
       .eq('procedure_active', 'Y')
       .maybeSingle();
-    if (procErr) throw new Error(`LUC procedure lookup failed: ${procErr.message}`);
-    if (!procRow) throw new Error('LUC procedure not found or not available for missions');
+    if (procErr) throw new Error(`procedure lookup failed: ${procErr.message}`);
+    if (!procRow) throw new Error('procedure not found or not available for missions');
     stepsSource = procRow.procedure_steps;
   }
 

@@ -677,7 +677,7 @@
     },
     "form": {
       "client": "Cliente",
-      "lucProcedure": "Procedura LUC",
+      "lucProcedure": "Procedura",
       "status": "Stato",
       "requestDate": "Data Richiesta",
       "yearReference": "Anno di Riferimento",
@@ -694,7 +694,7 @@
       "loadingClients": "Caricamento clienti...",
       "selectClient": "Seleziona Cliente",
       "loadingProcedures": "Caricamento procedure...",
-      "selectLucProcedure": "Seleziona Procedura LUC",
+      "selectLucProcedure": "Seleziona Procedura",
       "selectStatus": "Seleziona Stato",
       "selectYear": "Seleziona Anno",
       "enterDescription": "Inserisci descrizione valutazione...",
@@ -725,14 +725,14 @@
     },
     "validation": {
       "selectClient": "Seleziona un cliente",
-      "selectLucProcedure": "Seleziona una Procedura LUC.",
+      "selectLucProcedure": "Seleziona una Procedura.",
       "selectPic": "Assegna un Pilota in Comando.",
       "enterDescription": "Inserisci una descrizione",
       "descriptionRequired": "La descrizione è obbligatoria.",
       "requestDateRequired": "La data di richiesta è obbligatoria.",
       "clientRequired": "Seleziona un cliente",
       "loadClientsError": "Errore nel caricamento dei clienti",
-      "loadProceduresError": "Errore nel caricamento delle procedure LUC"
+      "loadProceduresError": "Errore nel caricamento delle procedure  "
     },
     "actions": {
       "adding": "Aggiunta...",
@@ -1315,9 +1315,9 @@
           "inMaintenance": "In manutenzione"
         },
         "notAssigned": "Non assegnato",
-        "lucAllCompleted": "Tutti i compiti LUC completati",
-        "lucProcedureTasks": "Compiti procedura LUC",
-        "completeLucTasks": "Completa compiti LUC",
+        "lucAllCompleted": "Tutti i compiti completati",
+        "lucProcedureTasks": "Compiti procedura",
+        "completeLucTasks": "Completa compiti",
         "completeTasks": "Completa compiti",
         "updateMaintenance": "Aggiorna manutenzione",
         "updateMaintenanceCycle": "Aggiorna ciclo di manutenzione",
@@ -1439,7 +1439,7 @@
         "missionCategory": "Categoria Missione",
         "missionType": "Tipo Missione",
         "clientPlanning": "Cliente / Pianificazione",
-        "lucProcedure": "Procedura LUC (Missione)",
+        "lucProcedure": "Procedura (Missione)",
         "pilotInCommand": "Pilota in Comando",
         "selectedPilot": "Pilota Selezionato"
       },
@@ -1457,7 +1457,7 @@
         "selectCategory": "Seleziona categoria",
         "selectType": "Seleziona tipo",
         "selectClientPlanning": "Seleziona cliente / pianificazione",
-        "selectLuc": "Seleziona procedura LUC",
+        "selectLuc": "Seleziona procedura",
         "noMissionProcedures": "Nessuna procedura MISSIONE",
         "selectPilot": "Seleziona pilota"
       },
@@ -1473,12 +1473,12 @@
       "validation": {
         "selectAtLeastOneDay": "Seleziona almeno un giorno",
         "noMatchingDays": "Nessuno dei giorni selezionati cade tra {{start}} e {{end}}. Amplia l'intervallo o cambia i giorni.",
-        "lucRequired": "La procedura LUC è obbligatoria",
+        "lucRequired": "La procedura è obbligatoria",
         "recurrenceEndDate": "La data di fine ricorrenza deve essere uguale o successiva alla data di inizio",
         "noMatchingDaysRange": "Nessuno dei giorni selezionati cade tra {{start}} e {{end}}. Amplia l'intervallo o cambia i giorni selezionati.",
         "missionNameRequired": "⚠ Il nome della missione è obbligatorio.",
         "pilotRequired": "⚠ Il Pilota in Comando è obbligatorio.",
-        "createLucHint": "Crea prima una procedura LUC attiva con stato \"MISSIONE\" nella sezione Organizzazione."
+        "createLucHint": "Crea prima una procedura attiva con stato \"MISSIONE\" nella sezione Organizzazione."
       },
       "review": {
         "missionName": "Nome Missione",
@@ -1490,7 +1490,7 @@
         "tool": "Strumento",
         "type": "Tipo",
         "category": "Categoria",
-        "lucProcedure": "Procedura LUC",
+        "lucProcedure": "Procedura",
         "recurrence": "Ricorrenza",
         "weekly": "Settimanale",
         "repeatUntil": "Ripeti Fino a",

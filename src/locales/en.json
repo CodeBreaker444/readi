@@ -677,7 +677,7 @@
     },
     "form": {
       "client": "Client",
-      "lucProcedure": "LUC Procedure",
+      "lucProcedure": "Procedure",
       "status": "Status",
       "requestDate": "Request Date",
       "yearReference": "Year Reference",
@@ -694,7 +694,7 @@
       "loadingClients": "Loading clients...",
       "selectClient": "Select Client",
       "loadingProcedures": "Loading procedures...",
-      "selectLucProcedure": "Select LUC Procedure",
+      "selectLucProcedure": "Select Procedure",
       "selectStatus": "Select Status",
       "selectYear": "Select Year",
       "enterDescription": "Enter evaluation description...",
@@ -725,14 +725,14 @@
     },
     "validation": {
       "selectClient": "Please select a client",
-      "selectLucProcedure": "Please select a LUC Procedure.",
+      "selectLucProcedure": "Please select a Procedure.",
       "selectPic": "Please assign a Pilot in Command.",
       "enterDescription": "Please enter a description",
       "descriptionRequired": "Description is required.",
       "requestDateRequired": "Request date is required.",
       "clientRequired": "Please select a client",
       "loadClientsError": "Failed to load clients",
-      "loadProceduresError": "Failed to load LUC Procedures"
+      "loadProceduresError": "Failed to load Procedures"
     },
     "actions": {
       "adding": "Adding...",
@@ -1319,9 +1319,9 @@
           "inMaintenance": "In Maintenance"
         },
         "notAssigned": "Not Assigned",
-        "lucAllCompleted": "All LUC tasks completed",
-        "lucProcedureTasks": "LUC procedure tasks",
-        "completeLucTasks": "Complete LUC tasks",
+        "lucAllCompleted": "All tasks completed",
+        "lucProcedureTasks": "Procedure tasks",
+        "completeLucTasks": "Complete Procedure tasks",
         "completeTasks": "Complete Tasks",
         "updateMaintenance": "Update Maintenance",
         "updateMaintenanceCycle": "Update maintenance cycle",
@@ -1443,7 +1443,7 @@
         "missionCategory": "Mission Category",
         "missionType": "Mission Type",
         "clientPlanning": "Client / Planning",
-        "lucProcedure": "LUC procedure (Mission)",
+        "lucProcedure": "Procedure (Mission)",
         "pilotInCommand": "Pilot in Command",
         "selectedPilot": "Selected Pilot"
       },
@@ -1461,7 +1461,7 @@
         "selectCategory": "Select category",
         "selectType": "Select type",
         "selectClientPlanning": "Select client / planning",
-        "selectLuc": "Select LUC procedure",
+        "selectLuc": "Select Procedure",
         "noMissionProcedures": "No MISSION procedures",
         "selectPilot": "Select pilot"
       },
@@ -1477,12 +1477,12 @@
       "validation": {
         "selectAtLeastOneDay": "Select at least one day",
         "noMatchingDays": "None of the selected days fall between {{start}} and {{end}}. Widen the range or change the days.",
-        "lucRequired": "LUC procedure is required",
+        "lucRequired": "Procedure is required",
         "recurrenceEndDate": "Recurrence end date must be on or after the start date",
         "noMatchingDaysRange": "None of the selected days fall between {{start}} and {{end}}. Widen the range or change the selected days.",
         "missionNameRequired": "⚠ Mission name is required.",
         "pilotRequired": "⚠ Pilot in Command is required.",
-        "createLucHint": "Create an active LUC procedure with status \"MISSION\" under Organization first."
+        "createLucHint": "Create an active Procedure with status \"MISSION\" under Organization first."
       },
       "review": {
         "missionName": "Mission Name",
@@ -1494,7 +1494,7 @@
         "tool": "Tool",
         "type": "Type",
         "category": "Category",
-        "lucProcedure": "LUC procedure",
+        "lucProcedure": "Procedure",
         "recurrence": "Recurrence",
         "weekly": "Weekly",
         "repeatUntil": "Repeat Until",

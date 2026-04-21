@@ -677,7 +677,7 @@
     },
     "form": {
       "client": "Kunde",
-      "lucProcedure": "LUC-Verfahren",
+      "lucProcedure": "Verfahren",
       "status": "Status",
       "requestDate": "Anfragedatum",
       "yearReference": "Jahresreferenz",
@@ -694,7 +694,7 @@
       "loadingClients": "Kunden werden geladen...",
       "selectClient": "Kunden auswählen",
       "loadingProcedures": "Verfahren werden geladen...",
-      "selectLucProcedure": "LUC-Verfahren auswählen",
+      "selectLucProcedure": "Verfahren auswählen",
       "selectStatus": "Status auswählen",
       "selectYear": "Jahr auswählen",
       "enterDescription": "Bewertungsbeschreibung eingeben...",
@@ -725,14 +725,14 @@
     },
     "validation": {
       "selectClient": "Bitte wählen Sie einen Kunden aus",
-      "selectLucProcedure": "Bitte wählen Sie ein LUC-Verfahren aus.",
+      "selectLucProcedure": "Bitte wählen Sie ein Verfahren aus.",
       "selectPic": "Bitte weisen Sie einen Pilot in Command zu.",
       "enterDescription": "Bitte geben Sie eine Beschreibung ein",
       "descriptionRequired": "Beschreibung ist erforderlich.",
       "requestDateRequired": "Anfragedatum ist erforderlich.",
       "clientRequired": "Bitte wählen Sie einen Kunden aus",
       "loadClientsError": "Kunden konnten nicht geladen werden",
-      "loadProceduresError": "LUC-Verfahren konnten nicht geladen werden"
+      "loadProceduresError": "Verfahren konnten nicht geladen werden"
     },
     "actions": {
       "adding": "Wird hinzugefügt...",
@@ -1313,9 +1313,9 @@
           "inMaintenance": "In Wartung"
         },
         "notAssigned": "Nicht zugewiesen",
-        "lucAllCompleted": "Alle LUC-Aufgaben abgeschlossen",
-        "lucProcedureTasks": "LUC-Verfahrensaufgaben",
-        "completeLucTasks": "LUC-Aufgaben abschließen",
+        "lucAllCompleted": "Alle Aufgaben abgeschlossen",
+        "lucProcedureTasks": "Verfahrensaufgaben",
+        "completeLucTasks": "Aufgaben abschließen",
         "completeTasks": "Aufgaben abschließen",
         "updateMaintenance": "Wartung aktualisieren",
         "updateMaintenanceCycle": "Wartungszyklus aktualisieren",
@@ -1437,7 +1437,7 @@
         "missionCategory": "Missionskategorie",
         "missionType": "Missionstyp",
         "clientPlanning": "Kunde / Planung",
-        "lucProcedure": "LUC-Verfahren (Mission)",
+        "lucProcedure": "Verfahren (Mission)",
         "pilotInCommand": "Verantwortlicher Pilot",
         "selectedPilot": "Ausgewählter Pilot"
       },
@@ -1455,7 +1455,7 @@
         "selectCategory": "Kategorie auswählen",
         "selectType": "Typ auswählen",
         "selectClientPlanning": "Kunde / Planung auswählen",
-        "selectLuc": "LUC-Verfahren auswählen",
+        "selectLuc": "Verfahren auswählen",
         "noMissionProcedures": "Keine MISSIONS-Verfahren",
         "selectPilot": "Pilot auswählen"
       },
@@ -1471,12 +1471,12 @@
       "validation": {
         "selectAtLeastOneDay": "Mindestens einen Tag auswählen",
         "noMatchingDays": "Keiner der ausgewählten Tage liegt zwischen {{start}} und {{end}}. Bereich erweitern oder Tage ändern.",
-        "lucRequired": "LUC-Verfahren ist erforderlich",
+        "lucRequired": "Verfahren ist erforderlich",
         "recurrenceEndDate": "Das Enddatum der Wiederholung muss am oder nach dem Startdatum liegen",
         "noMatchingDaysRange": "Keiner der ausgewählten Tage liegt zwischen {{start}} und {{end}}. Bereich erweitern oder ausgewählte Tage ändern.",
         "missionNameRequired": "⚠ Missionsname ist erforderlich.",
         "pilotRequired": "⚠ Verantwortlicher Pilot ist erforderlich.",
-        "createLucHint": "Erstellen Sie zuerst ein aktives LUC-Verfahren mit Status \"MISSION\" unter Organisation."
+        "createLucHint": "Erstellen Sie zuerst ein aktives Verfahren mit Status \"MISSION\" unter Organisation."
       },
       "review": {
         "missionName": "Missionsname",
@@ -1488,7 +1488,7 @@
         "tool": "System",
         "type": "Typ",
         "category": "Kategorie",
-        "lucProcedure": "LUC-Verfahren",
+        "lucProcedure": "Verfahren",
         "recurrence": "Wiederholung",
         "weekly": "Wöchentlich",
         "repeatUntil": "Wiederholen bis",

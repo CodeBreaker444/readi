@@ -131,7 +131,7 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
 
   const fkLuc = input.fk_luc_procedure_id;
   if (!fkLuc) {
-    throw new Error('LUC procedure is required');
+    throw new Error('Procedure is required');
   }
   const { data: procRow, error: procErr } = await supabase
     .from('luc_procedure')
@@ -141,9 +141,9 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
     .eq('procedure_status', 'MISSION')
     .eq('procedure_active', 'Y')
     .maybeSingle();
-  if (procErr) throw new Error(`LUC procedure lookup failed: ${procErr.message}`);
+  if (procErr) throw new Error(`Procedure lookup failed: ${procErr.message}`);
   if (!procRow) {
-    throw new Error('LUC procedure not found or not available for missions');
+    throw new Error('Procedure not found or not available for missions');
   }
   const luc_procedure_progress =
     seedLucProcedureProgressFromSteps(procRow.procedure_steps) ?? {
@@ -365,9 +365,9 @@ export async function createRecurringOperations(
     .eq('procedure_status', 'MISSION')
     .eq('procedure_active', 'Y')
     .maybeSingle();
-  if (procErr) throw new Error(`LUC procedure lookup failed: ${procErr.message}`);
+  if (procErr) throw new Error(`Procedure lookup failed: ${procErr.message}`);
   if (!procRow) {
-    throw new Error('LUC procedure not found or not available for missions');
+    throw new Error('Procedure not found or not available for missions');
   }
   const luc_procedure_progress =
     seedLucProcedureProgressFromSteps(procRow.procedure_steps) ?? {
@@ -648,6 +648,6 @@ export async function getLucProcedureOptions(ownerId: number) {
     .eq('procedure_active', 'Y')
     .order('procedure_name');
 
-  if (error) throw new Error(`LUC procedures error: ${error.message}`);
+  if (error) throw new Error(`procedures error: ${error.message}`);
   return data ?? [];
 }
