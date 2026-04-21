@@ -9,6 +9,7 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import axios from 'axios';
 import { CalendarDays, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface TrainingCalendarEvent {
   id: string;
@@ -30,6 +31,7 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 export default function TrainingCalendarPage() {
+  const { t } = useTranslation();
   const { isDark } = useTheme();
   const calendarRef = useRef<FullCalendar>(null);
   const [events, setEvents] = useState<TrainingCalendarEvent[]>([]);
@@ -59,7 +61,6 @@ export default function TrainingCalendarPage() {
 
   return (
     <div className={`min-h-screen ${isDark ? 'bg-[#0a0e1a]' : 'bg-[#f4f6f9]'}`}>
-      {/* Header */}
       <div
         className={`top-0 z-20 backdrop-blur-xl border-b transition-colors ${
           isDark
@@ -67,15 +68,15 @@ export default function TrainingCalendarPage() {
             : 'bg-white/80 border-black/[0.06] shadow-[0_1px_2px_rgba(0,0,0,0.04)]'
         }`}
       >
-        <div className="mx-auto max-w-[1400px] px-6 py-3.5 flex items-center justify-between">
+        <div className="px-6 py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-3.5">
             <div className="w-1 h-6 rounded-full bg-violet-600" />
             <div>
-              <h1 className={`text-[15px] font-semibold tracking-[-0.01em] ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                Training Calendar
+             <h1 className={`text-[15px] font-semibold tracking-[-0.01em] ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                {t('training.title')}
               </h1>
               <p className={`text-[11px] mt-0.5 tracking-wide ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                View scheduled training sessions
+                {t('training.subtitle')}
               </p>
             </div>
           </div>
@@ -89,12 +90,12 @@ export default function TrainingCalendarPage() {
             }`}
           >
             <RefreshCw size={13} className={loading ? 'animate-spin' : ''} strokeWidth={2.5} />
-            Refresh
+           {t('training.refresh')}
           </button>
         </div>
       </div>
 
-      <div className="mx-auto max-w-[1400px] px-6 py-6">
+      <div className="px-6 py-6">
         {/* Legend */}
         <div
           className={`mb-5 rounded-xl border p-4 flex flex-wrap gap-4 ${
@@ -102,18 +103,18 @@ export default function TrainingCalendarPage() {
           }`}
         >
           <p className={`text-[11px] font-semibold uppercase tracking-wider self-center ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-            Legend:
+          {t('training.legend')}
           </p>
           {[
-            { color: '#2e7d32', label: 'Completed' },
-            { color: '#1976d2', label: 'In Progress' },
-            { color: '#ef6c00', label: 'Absent' },
-            { color: '#c62828', label: 'Failed' },
-            { color: '#6a1b9a', label: 'Other' },
-          ].map(({ color, label }) => (
-            <div key={label} className="flex items-center gap-1.5">
+            { color: '#2e7d32', key: 'COMPLETED' },
+            { color: '#1976d2', key: 'IN_PROGRESS' },
+            { color: '#ef6c00', key: 'ABSENT' },
+            { color: '#c62828', key: 'FAILED' },
+            { color: '#6a1b9a', key: 'OTHER' },
+          ].map(({ color, key }) => (
+            <div key={key} className="flex items-center gap-1.5">
               <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: color }} />
-              <span className={`text-[11px] ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{label}</span>
+              <span className={`text-[11px] ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{t(`training.statuses.${key}`)}</span>
             </div>
           ))}
         </div>
@@ -129,7 +130,7 @@ export default function TrainingCalendarPage() {
               <div className="flex flex-col items-center gap-3">
                 <CalendarDays size={32} className={isDark ? 'text-gray-700' : 'text-gray-300'} />
                 <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                  Loading training sessions…
+                {t('training.loading')}
                 </p>
               </div>
             </div>
@@ -178,13 +179,13 @@ export default function TrainingCalendarPage() {
               </h3>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className={`text-[11px] ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Participant</span>
+                  <span className={`text-[11px] ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('training.participant')}</span>
                   <span className={`text-xs font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
                     {selectedEvent.user_name ?? '—'}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className={`text-[11px] ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Session Date</span>
+                  <span className={`text-[11px] ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('training.sessionDate')}</span>
                   <span className={`text-xs font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
                     {new Date(selectedEvent.start).toLocaleDateString('en-GB', {
                       day: '2-digit',
@@ -194,7 +195,7 @@ export default function TrainingCalendarPage() {
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className={`text-[11px] ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Status</span>
+                  <span className={`text-[11px] ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('training.status')}</span>
                   <span
                     className="text-[10px] font-bold px-2 py-0.5 rounded-md border"
                     style={{
@@ -215,7 +216,7 @@ export default function TrainingCalendarPage() {
                   isDark ? 'border-white/[0.08] hover:bg-white/[0.05] text-gray-300' : 'border-gray-200 hover:bg-gray-50 text-gray-600'
                 }`}
               >
-                Close
+                {t('training.close')}
               </button>
             </div>
           </div>

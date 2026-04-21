@@ -2461,5 +2461,23 @@
       "archivedSuccess": "Log di volo archiviato su Readi.",
       "archiveFailed": "Impossibile archiviare il log di volo."
     }
+  },
+  "training": {
+  "title": "Calendario Formazione",
+  "subtitle": "Visualizza le sessioni di formazione programmate",
+  "refresh": "Aggiorna",
+  "loading": "Caricamento sessioni di formazione...",
+  "legend": "Legenda:",
+  "participant": "Partecipante",
+  "sessionDate": "Data Sessione",
+  "status": "Stato",
+  "close": "Chiudi",
+  "statuses": {
+    "COMPLETED": "Completato",
+    "IN_PROGRESS": "In Corso",
+    "FAILED": "Fallito",
+    "ABSENT": "Assente",
+    "OTHER": "Altro"
   }
+}
 }

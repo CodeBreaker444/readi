@@ -2460,5 +2460,23 @@
       "archivedSuccess": "Flight log archived to Readi.",
       "archiveFailed": "Failed to archive flight log."
     }
+  },
+  "training": {
+  "title": "Training Calendar",
+  "subtitle": "View scheduled training sessions",
+  "refresh": "Refresh",
+  "loading": "Loading training sessions...",
+  "legend": "Legend:",
+  "participant": "Participant",
+  "sessionDate": "Session Date",
+  "status": "Status",
+  "close": "Close",
+  "statuses": {
+    "COMPLETED": "Completed",
+    "IN_PROGRESS": "In Progress",
+    "FAILED": "Failed",
+    "ABSENT": "Absent",
+    "OTHER": "Other"
   }
+}
 }

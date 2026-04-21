@@ -2457,5 +2457,23 @@
       "archivedSuccess": "Flugprotokoll in Readi archiviert.",
       "archiveFailed": "Flugprotokoll konnte nicht archiviert werden."
     }
+  },
+"training": {
+  "title": "Schulungskalender",
+  "subtitle": "Geplante Schulungstermine anzeigen",
+  "refresh": "Aktualisieren",
+  "loading": "Schulungstermine werden geladen...",
+  "legend": "Legende:",
+  "participant": "Teilnehmer",
+  "sessionDate": "Sitzungsdatum",
+  "status": "Status",
+  "close": "Schließen",
+  "statuses": {
+    "COMPLETED": "Abgeschlossen",
+    "IN_PROGRESS": "In Bearbeitung",
+    "FAILED": "Fehlgeschlagen",
+    "ABSENT": "Abwesend",
+    "OTHER": "Andere"
   }
+}
 }
