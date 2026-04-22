@@ -562,19 +562,6 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                             <SectionTitle isDark={isDark}>Scheduler</SectionTitle>
 
                             <div className="max-w-xs">
-                                <Label className={labelCls}>Distance Flown (m) <span className="text-[10px] text-muted-foreground font-normal">(optional)</span></Label>
-                                <Input
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    value={distanceFlown}
-                                    onChange={e => setDistanceFlown(e.target.value)}
-                                    placeholder="e.g. 1500"
-                                    className={inputCls}
-                                />
-                            </div>
-
-                            <div className="max-w-xs">
                                 <Label className={labelCls}>Mission ID <span className="text-red-500">*</span></Label>
                                 <div className="flex gap-2 items-center">
                                     <Input
@@ -725,6 +712,20 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                                     <Label className={labelCls}>Mission Name <span className="text-[10px] text-muted-foreground font-normal">(optional)</span></Label>
                                     <Input value={missionName} onChange={e => setMissionName(e.target.value)} placeholder="e.g. Survey North Zone" className={inputCls} />
                                 </div>
+                                {isEdit && (
+                                    <div className="col-span-2">
+                                        <Label className={labelCls}>Distance Flown (m) <span className="text-[10px] text-muted-foreground font-normal">(optional)</span></Label>
+                                        <Input
+                                            type="number"
+                                            min="0"
+                                            step="0.01"
+                                            value={distanceFlown}
+                                            onChange={e => setDistanceFlown(e.target.value)}
+                                            placeholder="e.g. 1500"
+                                            className={inputCls}
+                                        />
+                                    </div>
+                                )}
                                 <div className="col-span-2">
                                     <Label className={labelCls}>Location <span className="text-[10px] text-muted-foreground font-normal">(optional)</span></Label>
                                     <Input value={location} onChange={e => setLocation(e.target.value)} placeholder="Zone A" className={inputCls} />
