@@ -429,9 +429,9 @@ function MissionDetailSheet({ mission, isDark, onClose }: { mission: Mission | n
                         <div className="space-y-6">
                             <section className="space-y-3">
                                 <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t("operations.board.detail.timeline")}</h3>
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 gap-2">
                                     <div className={cn("rounded-lg border p-3 space-y-1", isDark ? "bg-slate-800 border-slate-700" : "bg-muted/30")}>
-                                        <p className="text-xs text-muted-foreground flex items-center gap-1"><Calendar className="h-3 w-3" /> {t("operations.board.detail.scheduled")}</p>
+                                        <p className="text-xs text-muted-foreground flex items-center gap-1"><Calendar className="h-3 w-3" /> {t("operations.board.detail.plannedDate")}</p>
                                         <p className="text-sm font-medium">
                                             {mission.planned_at
                                                 ? formatBoardDate(mission.planned_at)
@@ -440,18 +440,14 @@ function MissionDetailSheet({ mission, isDark, onClose }: { mission: Mission | n
                                                     : "—"}
                                         </p>
                                     </div>
-                                    {mission.fk_status_id === 2 && mission.official_start && (
-                                        <div className={cn("rounded-lg border p-3 space-y-1", isDark ? "bg-slate-800 border-slate-700" : "bg-muted/30")}>
-                                            <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> {t("operations.board.detail.startedAt")}</p>
-                                            <p className="text-sm font-medium">{formatBoardDate(mission.official_start)}</p>
-                                        </div>
-                                    )}
-                                    {mission.date_end && (
-                                        <div className={cn("rounded-lg border p-3 space-y-1", isDark ? "bg-slate-800 border-slate-700" : "bg-muted/30")}>
-                                            <p className="text-xs text-muted-foreground flex items-center gap-1"><CheckCircle2 className="h-3 w-3 text-emerald-500" /> {t("operations.board.detail.completed")}</p>
-                                            <p className="text-sm font-medium">{mission.date_end}</p>
-                                        </div>
-                                    )}
+                                    <div className={cn("rounded-lg border p-3 space-y-1", isDark ? "bg-slate-800 border-slate-700" : "bg-muted/30")}>
+                                        <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3 text-amber-500" /> {t("operations.board.detail.officialStart")}</p>
+                                        <p className="text-sm font-medium">{mission.official_start ? formatBoardDate(mission.official_start) : "—"}</p>
+                                    </div>
+                                    <div className={cn("rounded-lg border p-3 space-y-1", isDark ? "bg-slate-800 border-slate-700" : "bg-muted/30")}>
+                                        <p className="text-xs text-muted-foreground flex items-center gap-1"><CheckCircle2 className="h-3 w-3 text-emerald-500" /> {t("operations.board.detail.officialEnd")}</p>
+                                        <p className="text-sm font-medium">{mission.official_end ? formatBoardDate(mission.official_end) : "—"}</p>
+                                    </div>
                                 </div>
                             </section>
 
