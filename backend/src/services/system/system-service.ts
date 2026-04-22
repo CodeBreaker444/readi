@@ -67,7 +67,8 @@ export async function getSystemList(
     const [{ data: missions }, { data: openTickets }, { data: openComponentTickets }] = await Promise.all([
       supabase
         .from('pilot_mission')
-        .select('fk_tool_id, flight_duration, distance_flown')
+        .select('fk_tool_id, fk_mission_status_id, flight_duration, distance_flown')
+        .eq('fk_owner_id', ownerId)
         .in('fk_tool_id', toolIds),
       // Tools with open maintenance tickets
       supabase
