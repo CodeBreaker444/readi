@@ -2,6 +2,7 @@
 
 import { Operation } from '@/app/operations/table/page';
 import { MaintenanceCycleModal } from '@/components/operation/MaintenanceCycleModal';
+import { MissionLucProcedureModal } from '@/components/operation/MissionLucProcedureModal';
 import { ReportIssueModal } from '@/components/operation/ReportIssueModal';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -116,6 +117,7 @@ export function OperationDetailSheet({
   const { t } = useTranslation();
   const [maintenanceOpen, setMaintenanceOpen] = useState(false);
   const [reportIssueOpen, setReportIssueOpen] = useState(false);
+  const [procedureOperation, setProcedureOperation] = useState<Operation | null>(null);
 
   const isCompleted = operation?.status_name === 'COMPLETED';
 
@@ -235,7 +237,7 @@ export function OperationDetailSheet({
                       variant="outline"
                       size="sm"
                       className="w-full gap-2 text-xs"
-                      onClick={() => { onEdit?.(operation); onClose(); }}
+                      onClick={() => { setProcedureOperation(operation); onClose(); }}
                     >
                       <ClipboardList className="h-3.5 w-3.5" />
                       {t('operations.table.detail.manageProcedure')}
@@ -456,6 +458,17 @@ export function OperationDetailSheet({
           )}
         </SheetContent>
       </Sheet>
+
+      {procedureOperation && (
+        <MissionLucProcedureModal
+          mission={{
+            mission_id: procedureOperation.pilot_mission_id,
+            fk_owner_id: procedureOperation.fk_pilot_user_id,
+          } as any}
+          isDark={isDark}
+          onClose={() => setProcedureOperation(null)}
+        />
+      )}
 
       {operation?.fk_tool_id && (
         <MaintenanceCycleModal
