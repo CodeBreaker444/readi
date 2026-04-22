@@ -92,7 +92,7 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, isDark }) => 
     try {
       const response = await axios.get('/api/luc-procedures/list?sector=EVALUATION');
       if (!response.data) { toast.error(t('planning.validation.loadProceduresError')); return; }
-      setLUCProcedures(response.data.procedures || []);
+      setLUCProcedures(response.data.data || []);
     } catch (error) {
       console.error('Error loading procedures:', error);
       toast.error(t('planning.validation.loadProceduresError'));
