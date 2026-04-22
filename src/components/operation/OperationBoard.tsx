@@ -363,6 +363,20 @@ export function OperationBoard() {
     );
 }
 
+function formatBoardDate(iso: string): string {
+    try {
+        return new Intl.DateTimeFormat("en-GB", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+        }).format(new Date(iso));
+    } catch {
+        return iso;
+    }
+}
+
 function MissionDetailSheet({ mission, isDark, onClose }: { mission: Mission | null; isDark: boolean; onClose: () => void }) {
     const { t } = useTranslation();
     const isDone = mission?.fk_status_id === 3;
@@ -410,9 +424,21 @@ function MissionDetailSheet({ mission, isDark, onClose }: { mission: Mission | n
                                 <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t("operations.board.detail.timeline")}</h3>
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className={cn("rounded-lg border p-3 space-y-1", isDark ? "bg-slate-800 border-slate-700" : "bg-muted/30")}>
-                                        <p className="text-xs text-muted-foreground flex items-center gap-1"><Calendar className="h-3 w-3" /> {mission.fk_status_id === 2 ? t("operations.board.detail.startedAt") : t("operations.board.detail.scheduled")}</p>
-                                        <p className="text-sm font-medium">{(mission.date_start || mission.time_start) ? `${mission.date_start} ${mission.time_start}`.trim() : "—"}</p>
+                                        <p className="text-xs text-muted-foreground flex items-center gap-1"><Calendar className="h-3 w-3" /> {t("operations.board.detail.scheduled")}</p>
+                                        <p className="text-sm font-medium">
+                                            {mission.planned_at
+                                                ? formatBoardDate(mission.planned_at)
+                                                : (mission.date_start || mission.time_start)
+                                                    ? `${mission.date_start} ${mission.time_start}`.trim()
+                                                    : "—"}
+                                        </p>
                                     </div>
+                                    {mission.fk_status_id === 2 && mission.official_start && (
+                                        <div className={cn("rounded-lg border p-3 space-y-1", isDark ? "bg-slate-800 border-slate-700" : "bg-muted/30")}>
+                                            <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> {t("operations.board.detail.startedAt")}</p>
+                                            <p className="text-sm font-medium">{formatBoardDate(mission.official_start)}</p>
+                                        </div>
+                                    )}
                                     {mission.date_end && (
                                         <div className={cn("rounded-lg border p-3 space-y-1", isDark ? "bg-slate-800 border-slate-700" : "bg-muted/30")}>
                                             <p className="text-xs text-muted-foreground flex items-center gap-1"><CheckCircle2 className="h-3 w-3 text-emerald-500" /> {t("operations.board.detail.completed")}</p>

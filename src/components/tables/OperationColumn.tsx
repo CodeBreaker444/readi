@@ -14,6 +14,7 @@ import { ColumnDef } from '@tanstack/react-table';
 import { TFunction } from 'i18next';
 import {
   AlertCircle,
+  Calendar,
   CheckCircle2,
   Clock,
   Eye,
@@ -31,11 +32,17 @@ export interface OperationTableMeta {
 }
 
 const STATUS_CONFIG: Record<string, { label: string; light: string; dark: string; icon: React.ReactNode }> = {
+  SCHEDULED: {
+    label: 'Scheduled',
+    light: 'bg-sky-100 text-sky-700 border-sky-300',
+    dark: 'bg-sky-900/50 text-sky-300 border-sky-600',
+    icon: <Calendar className="h-3 w-3" />,
+  },
   PLANNED: {
     label: 'Planned',
     light: 'bg-blue-100 text-blue-700 border-blue-300',
     dark: 'bg-blue-900/50 text-blue-300 border-blue-600',
-    icon: <Clock className="h-3 w-3" />,
+    icon: <Calendar className="h-3 w-3" />,
   },
   IN_PROGRESS: {
     label: 'In Progress',
