@@ -71,6 +71,7 @@ interface EditComponentModalProps {
 const EMPTY_FORM = {
   fk_tool_id: '',
   component_type: '',
+  component_name: '',
   component_code: '',
   component_desc: '',
   fk_tool_model_id: '',
@@ -145,6 +146,7 @@ export default function EditComponentModal({
     setFormData({
       fk_tool_id: String(comp.fk_tool_id || ''),
       component_type: comp.component_type || '',
+      component_name: comp.component_name || '',
       component_code: comp.component_code || '',
       component_desc: comp.component_desc || '',
       fk_tool_model_id: comp.fk_tool_model_id ? String(comp.fk_tool_model_id) : '',
@@ -275,6 +277,7 @@ export default function EditComponentModal({
       const payload = {
         fk_tool_id: Number(formData.fk_tool_id),
         component_type: formData.component_type,
+        component_name: formData.component_name || null,
         component_code: formData.component_code || null,
         component_desc: formData.component_desc || null,
         fk_tool_model_id: formData.fk_tool_model_id ? Number(formData.fk_tool_model_id) : null,
@@ -440,7 +443,11 @@ export default function EditComponentModal({
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-                  <div className="col-span-1 sm:col-span-5 min-w-0">
+                  <div className="col-span-1 sm:col-span-4">
+                    <Label className={labelCls}>Name</Label>
+                    <Input className={inputCls} value={formData.component_name} onChange={e => handleChange('component_name', e.target.value)} placeholder="Component name" />
+                  </div>
+                  <div className="col-span-1 sm:col-span-4 min-w-0">
                     <Label className={labelCls}>Brand / Model</Label>
                     <Select value={formData.fk_tool_model_id} onValueChange={handleModelSelect}>
                       <SelectTrigger className={`h-14 min-h-10 py-2 items-start ${selectTriggerCls}`}>
@@ -455,7 +462,7 @@ export default function EditComponentModal({
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="col-span-1 sm:col-span-7">
+                  <div className="col-span-1 sm:col-span-4">
                     <Label className={labelCls}>Description</Label>
                     <Input className={inputCls} value={formData.component_desc} onChange={e => handleChange('component_desc', e.target.value)} placeholder="Component description" />
                   </div>

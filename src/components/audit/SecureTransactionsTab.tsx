@@ -68,16 +68,16 @@ export function SecureTransactionsTab({ isDark }: Props) {
   const columns: ColumnDef<TransactionSign>[] = [];
 
 
-const table = useReactTable({
-  data: signs,
-  columns,
-  state: { pagination },
-  onPaginationChange: setPagination,
-  getCoreRowModel: getCoreRowModel(),
-  manualPagination: true,
-  pageCount: Math.ceil(total / pagination.pageSize), 
-  rowCount: total,
-});
+  const table = useReactTable({
+    data: signs,
+    columns,
+    state: { pagination },
+    onPaginationChange: setPagination,
+    getCoreRowModel: getCoreRowModel(),
+    manualPagination: true,
+    pageCount: Math.ceil(total / pagination.pageSize),
+    rowCount: total,
+  });
   const fetchSigns = useCallback(async () => {
     setLoading(true);
     try {

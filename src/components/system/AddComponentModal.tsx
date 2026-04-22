@@ -22,6 +22,7 @@ interface AddComponentModalProps {
 const INITIAL_FORM = {
   fk_tool_id: '',
   component_type: '',
+  component_name: '',
   component_code: '',
   component_desc: '',
   fk_tool_model_id: '',
@@ -183,6 +184,7 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
       const payload = {
         fk_tool_id: Number(formData.fk_tool_id),
         component_type: formData.component_type,
+        component_name: formData.component_name || null,
         component_code: formData.component_code || null,
         component_desc: formData.component_desc || null,
         fk_tool_model_id: formData.fk_tool_model_id ? Number(formData.fk_tool_model_id) : null,
@@ -284,7 +286,11 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 overflow-visible">
-              <div className="col-span-1 sm:col-span-5 min-w-0">
+              <div className="col-span-1 sm:col-span-4">
+                <Label className="pb-2">Name</Label>
+                <Input value={formData.component_name} onChange={(e) => handleChange('component_name', e.target.value)} placeholder="Component name" />
+              </div>
+              <div className="col-span-1 sm:col-span-4 min-w-0">
                 <Label className="pb-2">Brand / Model</Label>
                 <Select value={formData.fk_tool_model_id} onValueChange={handleModelSelect}>
                   <SelectTrigger className="w-full min-w-0">
@@ -301,7 +307,7 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
                   </SelectContent>
                 </Select>
               </div>
-              <div className="col-span-1 sm:col-span-7">
+              <div className="col-span-1 sm:col-span-4">
                 <Label className="pb-2">Description</Label>
                 <Input value={formData.component_desc} onChange={(e) => handleChange('component_desc', e.target.value)} placeholder="Component description" />
               </div>
