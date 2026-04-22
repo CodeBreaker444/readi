@@ -233,6 +233,13 @@ export function OperationBoard() {
         const mission = board[sourceColumn].find((m) => m.mission_id === missionId);
         if (!mission) return;
 
+        if (target === "in_progress" && mission.maintenance_status === "IN_MAINTENANCE") {
+            toast.error(t("operations.board.toast.droneInMaintenance"), {
+                description: `${mission.vehicle_code} — ${t("operations.board.toast.droneInMaintenanceDesc")}`,
+            });
+            return;
+        }
+
         try {
             await requireAuthorization({
                 actionType: target === "in_progress" ? "mission_start" : "mission_complete",

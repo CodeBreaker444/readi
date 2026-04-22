@@ -196,6 +196,11 @@ export interface Mission {
   link_loss: number;
   deviation_flag: number;
   maintenance_status?: 'OK' | 'ALERT' | 'DUE' | 'IN_MAINTENANCE';
+  last_closed_ticket?: {
+    ticket_id: number;
+    closed_at: string;
+    note: string | null;
+  } | null;
   fk_luc_procedure_id: number | null;
   luc_procedure_progress: Record<string, Record<string, string>> | null;
   luc_completed_at: string | null;

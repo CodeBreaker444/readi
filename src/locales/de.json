@@ -1321,7 +1321,9 @@
         "invalidMove": "Ungültige Verschiebung",
         "revertSuccess": "Mission zurück zu In Bearbeitung verschoben",
         "revertDesc": "Bitte aktualisieren Sie den Wartungszyklus, um die Mission abzuschließen.",
-        "revertError": "Missionsstatus konnte nicht zurückgesetzt werden"
+        "revertError": "Missionsstatus konnte nicht zurückgesetzt werden",
+        "droneInMaintenance": "Drohne in Wartung",
+        "droneInMaintenanceDesc": "Diese Drohne hat ein offenes Wartungsticket. Schließen Sie es, bevor Sie die Mission starten."
       },
       "card": {
         "status": {
@@ -1342,7 +1344,8 @@
         "updateMaintenance": "Wartung aktualisieren",
         "updateMaintenanceCycle": "Wartungszyklus aktualisieren",
         "missionDetails": "Missionsdetails",
-        "view": "Ansehen"
+        "view": "Ansehen",
+        "lastMaintenanceClosed": "Letzte Wartung abgeschlossen"
       }
     },
     "calendar": {

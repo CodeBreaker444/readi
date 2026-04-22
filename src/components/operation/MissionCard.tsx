@@ -6,7 +6,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Mission, MissionStatusCode } from "@/config/types/operation";
 import { cn } from "@/lib/utils";
-import { Calendar, CheckCircle2, ClipboardList, Clock, Crosshair, Gauge, Tag, User, Wrench } from "lucide-react";
+import { Calendar, CheckCircle2, ClipboardList, Clock, Crosshair, Gauge, Tag, User, Wrench, TicketCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { MissionLimitsPanel } from "./MissionLimitsPanel";
 
@@ -282,6 +282,26 @@ export function MissionCard({ mission, draggable, onDragStart, onViewDetails, on
             </Badge>
           )}
         </div>
+
+        {mission.mission_status_code === "00" && mission.last_closed_ticket && (
+          <div className={cn("mt-2 flex items-start gap-1.5 rounded-md border px-2 py-1.5", isDark ? "border-slate-700 bg-slate-800/60" : "border-slate-200 bg-slate-50")}>
+            <TicketCheck className={cn("mt-0.5 h-3 w-3 shrink-0", isDark ? "text-emerald-400" : "text-emerald-600")} />
+            <div className="min-w-0">
+              <p className={cn("text-[9px] font-semibold uppercase tracking-wide", isDark ? "text-slate-500" : "text-slate-400")}>
+                {t("operations.board.card.lastMaintenanceClosed")}
+              </p>
+              <p className={cn("text-[11px] font-medium", isDark ? "text-slate-300" : "text-slate-700")}>
+                {new Date(mission.last_closed_ticket.closed_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+                {" · "}#{mission.last_closed_ticket.ticket_id}
+              </p>
+              {mission.last_closed_ticket.note && (
+                <p className={cn("mt-0.5 truncate text-[10px]", isDark ? "text-slate-500" : "text-slate-500")}>
+                  {mission.last_closed_ticket.note}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
 
         <MissionLimitsPanel limitJson={mission.mission_planning_limit_json} isDark={isDark} />
 

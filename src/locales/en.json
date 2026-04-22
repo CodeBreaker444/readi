@@ -1325,7 +1325,9 @@
         "invalidMove": "Invalid move",
         "revertSuccess": "Mission moved back to In Progress",
         "revertDesc": "Please update the maintenance cycle to complete the mission.",
-        "revertError": "Failed to revert mission status"
+        "revertError": "Failed to revert mission status",
+        "droneInMaintenance": "Drone in maintenance",
+        "droneInMaintenanceDesc": "This drone has an open maintenance ticket. Close it before starting the mission."
       },
       "card": {
         "status": {
@@ -1346,7 +1348,8 @@
         "updateMaintenance": "Update Maintenance",
         "updateMaintenanceCycle": "Update maintenance cycle",
         "missionDetails": "Mission details",
-        "view": "View"
+        "view": "View",
+        "lastMaintenanceClosed": "Last maintenance closed"
       }
     },
     "calendar": {

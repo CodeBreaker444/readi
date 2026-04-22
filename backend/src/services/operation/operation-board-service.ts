@@ -48,6 +48,31 @@ const MISSION_SELECT = `
       )
 `;
 
+async function getLastClosedTicketPerTool(
+  toolIds: number[]
+): Promise<Record<number, Mission["last_closed_ticket"]>> {
+  const { data } = await supabase
+    .from("maintenance_ticket")
+    .select("ticket_id, fk_tool_id, closed_at, resolution_notes")
+    .in("fk_tool_id", toolIds)
+    .eq("ticket_status", "CLOSED")
+    .not("closed_at", "is", null)
+    .order("closed_at", { ascending: false });
+
+  const map: Record<number, Mission["last_closed_ticket"]> = {};
+  for (const row of data ?? []) {
+    const toolId = row.fk_tool_id as number;
+    if (!map[toolId]) {
+      map[toolId] = {
+        ticket_id: row.ticket_id as number,
+        closed_at: row.closed_at as string,
+        note: (row.resolution_notes as string | null) ?? null,
+      };
+    }
+  }
+  return map;
+}
+
 export async function getMissionBoard(
   ownerId: number,
   userId: number,
@@ -146,6 +171,15 @@ export async function getMissionBoard(
 
   for (const m of allMissions) {
     m.maintenance_status = (statusMap[m.fk_vehicle_id] as Mission['maintenance_status']) ?? "OK";
+  }
+
+  // Attach last closed ticket to scheduled missions only
+  const scheduledToolIds = [...new Set(scheduled.map(m => m.fk_vehicle_id).filter(Boolean))];
+  if (scheduledToolIds.length > 0) {
+    const lastClosedMap = await getLastClosedTicketPerTool(scheduledToolIds);
+    for (const m of scheduled) {
+      m.last_closed_ticket = lastClosedMap[m.fk_vehicle_id] ?? null;
+    }
   }
 
   return { scheduled, in_progress, done };

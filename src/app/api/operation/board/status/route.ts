@@ -3,6 +3,7 @@ import type { DccCallbackResult } from "@/types/dcc-callback";
 import { notifyDccExecution, notifyDccTermination } from "@/backend/services/mission/dcc-callback-service";
 import { updateMissionStatus } from "@/backend/services/operation/operation-board-service";
 import { checkDailyDeclaration } from "@/backend/services/operation/pilot-declaration-service";
+import { hasOpenTicketForTool } from "@/backend/services/system/maintenance-ticket";
 import { internalError } from "@/lib/api-error";
 import { requirePermission } from "@/lib/auth/api-auth";
 import { E } from "@/lib/error-codes";
@@ -44,6 +45,16 @@ export async function POST(req: NextRequest) {
           { code: 0, message: "Daily declaration not found", check_daily_declaration: "N" },
           { status: 422 }
         );
+      }
+
+      if (parsed.data.vehicle_id) {
+        const inMaintenance = await hasOpenTicketForTool(parsed.data.vehicle_id);
+        if (inMaintenance) {
+          return NextResponse.json(
+            { code: 0, message: "Drone is currently in maintenance. Close the maintenance ticket before starting this mission." },
+            { status: 409 }
+          );
+        }
       }
     }
 
