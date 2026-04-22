@@ -1,35 +1,37 @@
 'use client';
 
+import { SecureTransactionsTab } from '@/components/audit/SecureTransactionsTab';
 import ExportButtons from '@/components/system/ExportButtons';
 import { AuditLog, ENTITY_TYPES, EVENT_TYPE_COLORS, EVENT_TYPES, getAuditLogsColumns, Owner, UserOption } from '@/components/tables/AuditLogsTable';
 import { TablePagination } from '@/components/tables/Pagination';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ChevronDown, ChevronRight } from 'lucide-react';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
 import { useTheme } from '@/components/useTheme';
 import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import axios from 'axios';
-import { FilterX, RefreshCw, Search } from 'lucide-react';
+import { ChevronDown, ChevronRight, FilterX, RefreshCw, Search } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 export default function AuditLogsPage() {
   const { isDark } = useTheme();
+
+  const [activeTab, setActiveTab] = useState<'events' | 'transactions'>('events');
 
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [total, setTotal] = useState(0);
@@ -58,25 +60,25 @@ export default function AuditLogsPage() {
 
   const filteredLogs = search
     ? logs.filter(
-        (l) =>
-          l.description?.toLowerCase().includes(search.toLowerCase()) ||
-          l.user_name?.toLowerCase().includes(search.toLowerCase()) ||
-          l.entity_type?.toLowerCase().includes(search.toLowerCase())
-      )
+      (l) =>
+        l.description?.toLowerCase().includes(search.toLowerCase()) ||
+        l.user_name?.toLowerCase().includes(search.toLowerCase()) ||
+        l.entity_type?.toLowerCase().includes(search.toLowerCase())
+    )
     : logs;
 
- const columns = useMemo(() => getAuditLogsColumns(isSuperAdmin, owners), [isSuperAdmin, owners]);
- 
-   const table = useReactTable({
-     data: filteredLogs,
-     columns,
-     state: { pagination },
-     onPaginationChange: setPagination,
-     getCoreRowModel: getCoreRowModel(),
-     manualPagination: true,
-     pageCount: Math.ceil(total / pagination.pageSize),
-     rowCount: total,
-   });
+  const columns = useMemo(() => getAuditLogsColumns(isSuperAdmin, owners), [isSuperAdmin, owners]);
+
+  const table = useReactTable({
+    data: filteredLogs,
+    columns,
+    state: { pagination },
+    onPaginationChange: setPagination,
+    getCoreRowModel: getCoreRowModel(),
+    manualPagination: true,
+    pageCount: Math.ceil(total / pagination.pageSize),
+    rowCount: total,
+  });
 
   const fetchLogs = useCallback(async () => {
     setLoading(true);
@@ -135,7 +137,10 @@ export default function AuditLogsPage() {
             }))
           );
         }
-      } catch { /* ignore */ }
+      } catch(err:any) { 
+        console.log('Failed to load users:',err);
+        
+       }
     })();
   }, [selectedOwner]);
 
@@ -163,307 +168,328 @@ export default function AuditLogsPage() {
   return (
     <div className={`min-h-screen ${isDark ? 'bg-[#0a0e1a]' : 'bg-[#f4f6f9]'}`}>
       <div
-        className={`top-0 z-20 backdrop-blur-xl border-b transition-colors ${
-          isDark
+        className={`top-0 z-20 backdrop-blur-xl border-b transition-colors ${isDark
             ? 'bg-[#0a0e1a]/90 border-white/[0.06]'
             : 'bg-white/80 border-black/[0.06] shadow-[0_1px_2px_rgba(0,0,0,0.04)]'
-        }`}
+          }`}
       >
         <div className="mx-auto max-w-[1600px] px-6 py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-3.5">
             <div className="w-1 h-6 rounded-full bg-violet-600" />
             <div>
               <h1
-                className={`text-[15px] font-semibold tracking-[-0.01em] ${
-                  isDark ? 'text-white' : 'text-gray-900'
-                }`}
+                className={`text-[15px] font-semibold tracking-[-0.01em] ${isDark ? 'text-white' : 'text-gray-900'
+                  }`}
               >
                 Audit Logs
               </h1>
               <p
-                className={`text-[11px] mt-0.5 tracking-wide ${
-                  isDark ? 'text-gray-500' : 'text-gray-400'
-                }`}
+                className={`text-[11px] mt-0.5 tracking-wide ${isDark ? 'text-gray-500' : 'text-gray-400'
+                  }`}
               >
                 Track and monitor system-wide activity
               </p>
             </div>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={fetchLogs}
-            disabled={loading}
-            className={`h-8 gap-1.5 px-3.5 text-xs font-medium rounded-lg transition-all ${
-              isDark
-                ? 'border-white/[0.1] hover:bg-white/[0.05] text-white'
-                : 'border-gray-200 hover:bg-gray-50'
-            }`}
-          >
-            <RefreshCw size={13} className={loading ? 'animate-spin' : ''} strokeWidth={2.5} />
-            <span>Refresh</span>
-          </Button>
+          <div className="flex items-center gap-3">
+            <div className={`flex items-center rounded-lg border overflow-hidden ${isDark ? 'border-white/[0.1]' : 'border-gray-200'}`}>
+              {([
+                { id: 'events', label: 'Event Records' },
+                { id: 'transactions', label: 'Secure Transactions' },
+              ] as const).map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`px-4 py-1.5 text-xs font-medium transition-colors ${activeTab === tab.id
+                      ? isDark
+                        ? 'bg-violet-500/20 text-violet-400'
+                        : 'bg-violet-50 text-violet-700'
+                      : isDark
+                        ? 'text-slate-500 hover:text-slate-300 hover:bg-white/[0.04]'
+                        : 'text-slate-500 hover:text-slate-700 hover:bg-gray-50'
+                    }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchLogs}
+              disabled={loading}
+              className={`h-8 gap-1.5 px-3.5 text-xs font-medium rounded-lg transition-all ${isDark
+                  ? 'border-white/[0.1] hover:bg-white/[0.05] text-white'
+                  : 'border-gray-200 hover:bg-gray-50'
+                }`}
+            >
+              <RefreshCw size={13} className={loading ? 'animate-spin' : ''} strokeWidth={2.5} />
+              <span>Refresh</span>
+            </Button>
+          </div>
         </div>
       </div>
 
       <div className="mx-auto max-w-[1600px] px-6 py-6">
-        <div
-          className={`mb-5 rounded-xl border p-4 ${
-            isDark
-              ? 'bg-[#0f1320] border-white/[0.06] shadow-[0_0_0_1px_rgba(255,255,255,0.02)]'
-              : 'bg-white border-gray-200 shadow-[0_1px_3px_rgba(0,0,0,0.04)]'
-          }`}
-        >
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-            {isSuperAdmin && (
-              <Select value={selectedOwner || 'all'} onValueChange={(v) => setSelectedOwner(v === 'all' ? '' : v)}>
+        {activeTab === 'transactions' && (
+          <SecureTransactionsTab isDark={isDark} />
+        )}
+
+        {activeTab === 'events' && <>
+          <div
+            className={`mb-5 rounded-xl border p-4 ${isDark
+                ? 'bg-[#0f1320] border-white/[0.06] shadow-[0_0_0_1px_rgba(255,255,255,0.02)]'
+                : 'bg-white border-gray-200 shadow-[0_1px_3px_rgba(0,0,0,0.04)]'
+              }`}
+          >
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+              {isSuperAdmin && (
+                <Select value={selectedOwner || 'all'} onValueChange={(v) => setSelectedOwner(v === 'all' ? '' : v)}>
+                  <SelectTrigger className="h-8 text-xs bg-transparent border-white/[0.08]">
+                    <SelectValue placeholder="All Companies" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Companies</SelectItem>
+                    {owners.map((o) => (
+                      <SelectItem key={o.owner_id} value={String(o.owner_id)}>
+                        {o.owner_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+
+              <Select value={selectedUser || 'all'} onValueChange={(v) => setSelectedUser(v === 'all' ? '' : v)}>
                 <SelectTrigger className="h-8 text-xs bg-transparent border-white/[0.08]">
-                  <SelectValue placeholder="All Companies" />
+                  <SelectValue placeholder="All Users" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Companies</SelectItem>
-                  {owners.map((o) => (
-                    <SelectItem key={o.owner_id} value={String(o.owner_id)}>
-                      {o.owner_name}
+                  <SelectItem value="all">All Users</SelectItem>
+                  {users.map((u) => (
+                    <SelectItem key={u.user_id} value={String(u.user_id)}>
+                      {u.fullname}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-            )}
 
-            <Select value={selectedUser || 'all'} onValueChange={(v) => setSelectedUser(v === 'all' ? '' : v)}>
-              <SelectTrigger className="h-8 text-xs bg-transparent border-white/[0.08]">
-                <SelectValue placeholder="All Users" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Users</SelectItem>
-                {users.map((u) => (
-                  <SelectItem key={u.user_id} value={String(u.user_id)}>
-                    {u.fullname}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              <Select value={selectedEvent || 'all'} onValueChange={(v) => setSelectedEvent(v === 'all' ? '' : v)}>
+                <SelectTrigger className="h-8 text-xs bg-transparent border-white/[0.08]">
+                  <SelectValue placeholder="All Events" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Events</SelectItem>
+                  {EVENT_TYPES.map((e) => (
+                    <SelectItem key={e} value={e}>
+                      {e}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-            <Select value={selectedEvent || 'all'} onValueChange={(v) => setSelectedEvent(v === 'all' ? '' : v)}>
-              <SelectTrigger className="h-8 text-xs bg-transparent border-white/[0.08]">
-                <SelectValue placeholder="All Events" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Events</SelectItem>
-                {EVENT_TYPES.map((e) => (
-                  <SelectItem key={e} value={e}>
-                    {e}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              <Select value={selectedEntity || 'all'} onValueChange={(v) => setSelectedEntity(v === 'all' ? '' : v)}>
+                <SelectTrigger className="h-8 text-xs bg-transparent border-white/[0.08]">
+                  <SelectValue placeholder="All Sections" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Sections</SelectItem>
+                  {ENTITY_TYPES.map((e) => (
+                    <SelectItem key={e} value={e}>
+                      {e.replace(/_/g, ' ')}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-            <Select value={selectedEntity || 'all'} onValueChange={(v) => setSelectedEntity(v === 'all' ? '' : v)}>
-              <SelectTrigger className="h-8 text-xs bg-transparent border-white/[0.08]">
-                <SelectValue placeholder="All Sections" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Sections</SelectItem>
-                {ENTITY_TYPES.map((e) => (
-                  <SelectItem key={e} value={e}>
-                    {e.replace(/_/g, ' ')}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="h-8 text-xs bg-transparent border-white/[0.08]" />
-            <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="h-8 text-xs bg-transparent border-white/[0.08]" />
-          </div>
-
-          <div className="mt-3 flex items-center gap-3">
-            <div className="relative flex-1">
-              <Search size={14} className={`absolute left-2.5 top-1/2 -translate-y-1/2 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search description, user, section…"
-                className="h-8 pl-8 text-xs bg-transparent border-white/[0.08]"
-              />
+              <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="h-8 text-xs bg-transparent border-white/[0.08]" />
+              <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="h-8 text-xs bg-transparent border-white/[0.08]" />
             </div>
-            {hasFilters && (
-              <Button variant="ghost" size="sm" onClick={clearFilters} className="h-8 gap-1.5 text-xs hover:bg-red-500/10 hover:text-red-500">
-                <FilterX size={13} /> Clear
-              </Button>
-            )}
-          </div>
-        </div>
 
-        <div
-          className={`rounded-xl border overflow-hidden ${
-            isDark
-              ? 'bg-[#0f1320] border-white/[0.06] shadow-[0_0_0_1px_rgba(255,255,255,0.02)]'
-              : 'bg-white border-gray-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.04)]'
-          }`}
-        >
-          <div className={`px-5 py-4 border-b ${isDark ? 'border-white/[0.06]' : 'border-gray-100'}`}>
-            <h2 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Event Records</h2>
-            <p className={`text-[11px] mt-0.5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-              Detailed chronological log of platform interactions
-            </p>
+            <div className="mt-3 flex items-center gap-3">
+              <div className="relative flex-1">
+                <Search size={14} className={`absolute left-2.5 top-1/2 -translate-y-1/2 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
+                <Input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search description, user, section…"
+                  className="h-8 pl-8 text-xs bg-transparent border-white/[0.08]"
+                />
+              </div>
+              {hasFilters && (
+                <Button variant="ghost" size="sm" onClick={clearFilters} className="h-8 gap-1.5 text-xs hover:bg-red-500/10 hover:text-red-500">
+                  <FilterX size={13} /> Clear
+                </Button>
+              )}
+            </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow
-                    key={headerGroup.id}
-                    className={`${isDark ? 'border-white/[0.06] bg-white/[0.02]' : 'border-gray-100 bg-gray-50/50'}`}
-                  >
-                    {headerGroup.headers.map((header) => (
-                      <TableHead
-                        key={header.id}
-                        className="text-[11px] font-bold uppercase tracking-wider"
-                        style={{ width: header.getSize() !== 150 ? header.getSize() : undefined }}
-                      >
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(header.column.columnDef.header, header.getContext())}
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableHeader>
-              <TableBody>
-                {loading ? (
-                  Array.from({ length: 8 }).map((_, i) => (
-                    <TableRow key={i} className={isDark ? 'border-white/[0.06]' : 'border-gray-100'}>
-                      {Array.from({ length: table.getAllColumns().length }).map((_, j) => (
-                        <TableCell key={j}>
-                          <Skeleton className="h-4 w-full opacity-20" />
-                        </TableCell>
+          <div
+            className={`rounded-xl border overflow-hidden ${isDark
+                ? 'bg-[#0f1320] border-white/[0.06] shadow-[0_0_0_1px_rgba(255,255,255,0.02)]'
+                : 'bg-white border-gray-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.04)]'
+              }`}
+          >
+            <div className={`px-5 py-4 border-b ${isDark ? 'border-white/[0.06]' : 'border-gray-100'}`}>
+              <h2 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Event Records</h2>
+              <p className={`text-[11px] mt-0.5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                Detailed chronological log of platform interactions
+              </p>
+            </div>
+
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <TableRow
+                      key={headerGroup.id}
+                      className={`${isDark ? 'border-white/[0.06] bg-white/[0.02]' : 'border-gray-100 bg-gray-50/50'}`}
+                    >
+                      {headerGroup.headers.map((header) => (
+                        <TableHead
+                          key={header.id}
+                          className="text-[11px] font-bold uppercase tracking-wider"
+                          style={{ width: header.getSize() !== 150 ? header.getSize() : undefined }}
+                        >
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(header.column.columnDef.header, header.getContext())}
+                        </TableHead>
                       ))}
                     </TableRow>
-                  ))
-                ) : table.getRowModel().rows.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={table.getAllColumns().length} className="py-20 text-center">
-                      <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                        No activity logs found matching your criteria.
-                      </p>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  table.getRowModel().rows.map((row) => {
-                    const log = row.original;
-                    const isDccReport = log.entity_type === 'dcc_bug_report';
-                    const isExpanded = expandedRows.has(log.id);
-                    const dcc = isDccReport ? (log.metadata as any)?.dcc : null;
-                    const colSpan = table.getAllColumns().length;
-                    return (
-                      <>
-                        <TableRow
-                          key={row.id}
-                          className={`group ${isDccReport ? 'cursor-pointer' : ''} ${
-                            isDark
-                              ? 'border-white/[0.06] hover:bg-white/[0.02]'
-                              : 'border-gray-50 hover:bg-gray-50/50'
-                          }`}
-                          onClick={isDccReport ? () => toggleRow(log.id) : undefined}
-                        >
-                          <TableCell className="text-[11px] tabular-nums whitespace-nowrap">
-                            <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>
-                              {new Date(log.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-                            </span>
-                            <br />
-                            <span className={isDark ? 'text-gray-500' : 'text-gray-400'}>
-                              {new Date(log.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                            </span>
+                  ))}
+                </TableHeader>
+                <TableBody>
+                  {loading ? (
+                    Array.from({ length: 8 }).map((_, i) => (
+                      <TableRow key={i} className={isDark ? 'border-white/[0.06]' : 'border-gray-100'}>
+                        {Array.from({ length: table.getAllColumns().length }).map((_, j) => (
+                          <TableCell key={j}>
+                            <Skeleton className="h-4 w-full opacity-20" />
                           </TableCell>
-                          <TableCell>
-                            <span
-                              className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-bold tracking-tight ${
-                                EVENT_TYPE_COLORS[log.event_type] ?? ''
+                        ))}
+                      </TableRow>
+                    ))
+                  ) : table.getRowModel().rows.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={table.getAllColumns().length} className="py-20 text-center">
+                        <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                          No activity logs found matching your criteria.
+                        </p>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    table.getRowModel().rows.map((row) => {
+                      const log = row.original;
+                      const isDccReport = log.entity_type === 'dcc_bug_report';
+                      const isExpanded = expandedRows.has(log.id);
+                      const dcc = isDccReport ? (log.metadata as any)?.dcc : null;
+                      const colSpan = table.getAllColumns().length;
+                      return (
+                        <>
+                          <TableRow
+                            key={row.id}
+                            className={`group ${isDccReport ? 'cursor-pointer' : ''} ${isDark
+                                ? 'border-white/[0.06] hover:bg-white/[0.02]'
+                                : 'border-gray-50 hover:bg-gray-50/50'
                               }`}
-                            >
-                              {log.event_type}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-1">
-                              {isDccReport && (
-                                isExpanded
-                                  ? <ChevronDown className="h-3 w-3 text-amber-500 shrink-0" />
-                                  : <ChevronRight className="h-3 w-3 text-amber-500 shrink-0" />
-                              )}
-                              <span className={`text-[11px] font-medium capitalize ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                                {log.entity_type.replace(/_/g, ' ')}
+                            onClick={isDccReport ? () => toggleRow(log.id) : undefined}
+                          >
+                            <TableCell className="text-[11px] tabular-nums whitespace-nowrap">
+                              <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>
+                                {new Date(log.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                               </span>
-                            </div>
-                          </TableCell>
-                          <TableCell className={`text-[11px] leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                            {log.description ?? '—'}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex flex-col">
-                              <span className={`text-[11px] font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                                {log.user_name ?? 'System'}
+                              <br />
+                              <span className={isDark ? 'text-gray-500' : 'text-gray-400'}>
+                                {new Date(log.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                               </span>
-                              <span className="text-[10px] text-gray-500 opacity-80">{log.user_email}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-[10px] font-medium text-gray-500 uppercase tracking-tighter">
-                              {log.user_role ?? '—'}
-                            </span>
-                          </TableCell>
-                          {isSuperAdmin && (
-                            <TableCell className="text-[11px] text-gray-500">
-                              {owners.find((o) => o.owner_id === log.owner_id)?.owner_name ?? log.owner_id}
                             </TableCell>
-                          )}
-                        </TableRow>
-                        {isDccReport && isExpanded && dcc && (
-                          <TableRow key={`${row.id}-dcc`} className={isDark ? 'border-white/[0.06]' : 'border-gray-50'}>
-                            <TableCell colSpan={colSpan} className="py-0 px-0">
-                              <div className={`mx-4 mb-3 rounded-lg border p-3 text-xs ${isDark ? 'bg-amber-950/20 border-amber-800/30' : 'bg-amber-50 border-amber-200'}`}>
-                                <p className={`text-[10px] font-bold uppercase tracking-wider mb-2 ${isDark ? 'text-amber-400' : 'text-amber-700'}`}>
-                                  DCC Error Details
-                                </p>
-                                <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 md:grid-cols-4">
-                                  <DccField label="Endpoint" value={dcc.path} mono />
-                                  <DccField label="Outcome" value={dcc.outcome} />
-                                  <DccField label="Message" value={dcc.message} />
-                                  {dcc.httpStatus != null && (
-                                    <DccField label="HTTP Status" value={String(dcc.httpStatus)} />
-                                  )}
-                                </div>
-                                {dcc.responseBody?.trim() && (
-                                  <div className="mt-2">
-                                    <p className={`text-[10px] font-medium mb-1 ${isDark ? 'text-amber-400/70' : 'text-amber-600'}`}>Response Body</p>
-                                    <pre className={`text-[10px] rounded p-2 overflow-x-auto whitespace-pre-wrap break-all max-h-32 ${isDark ? 'bg-black/30 text-amber-200' : 'bg-white text-amber-900'}`}>
-                                      {dcc.responseBody.trim()}
-                                    </pre>
-                                  </div>
+                            <TableCell>
+                              <span
+                                className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-bold tracking-tight ${EVENT_TYPE_COLORS[log.event_type] ?? ''
+                                  }`}
+                              >
+                                {log.event_type}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1">
+                                {isDccReport && (
+                                  isExpanded
+                                    ? <ChevronDown className="h-3 w-3 text-amber-500 shrink-0" />
+                                    : <ChevronRight className="h-3 w-3 text-amber-500 shrink-0" />
                                 )}
+                                <span className={`text-[11px] font-medium capitalize ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                                  {log.entity_type.replace(/_/g, ' ')}
+                                </span>
                               </div>
                             </TableCell>
+                            <TableCell className={`text-[11px] leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                              {log.description ?? '—'}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex flex-col">
+                                <span className={`text-[11px] font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                                  {log.user_name ?? 'System'}
+                                </span>
+                                <span className="text-[10px] text-gray-500 opacity-80">{log.user_email}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <span className="text-[10px] font-medium text-gray-500 uppercase tracking-tighter">
+                                {log.user_role ?? '—'}
+                              </span>
+                            </TableCell>
+                            {isSuperAdmin && (
+                              <TableCell className="text-[11px] text-gray-500">
+                                {owners.find((o) => o.owner_id === log.owner_id)?.owner_name ?? log.owner_id}
+                              </TableCell>
+                            )}
                           </TableRow>
-                        )}
-                      </>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
+                          {isDccReport && isExpanded && dcc && (
+                            <TableRow key={`${row.id}-dcc`} className={isDark ? 'border-white/[0.06]' : 'border-gray-50'}>
+                              <TableCell colSpan={colSpan} className="py-0 px-0">
+                                <div className={`mx-4 mb-3 rounded-lg border p-3 text-xs ${isDark ? 'bg-amber-950/20 border-amber-800/30' : 'bg-amber-50 border-amber-200'}`}>
+                                  <p className={`text-[10px] font-bold uppercase tracking-wider mb-2 ${isDark ? 'text-amber-400' : 'text-amber-700'}`}>
+                                    DCC Error Details
+                                  </p>
+                                  <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 md:grid-cols-4">
+                                    <DccField label="Endpoint" value={dcc.path} mono />
+                                    <DccField label="Outcome" value={dcc.outcome} />
+                                    <DccField label="Message" value={dcc.message} />
+                                    {dcc.httpStatus != null && (
+                                      <DccField label="HTTP Status" value={String(dcc.httpStatus)} />
+                                    )}
+                                  </div>
+                                  {dcc.responseBody?.trim() && (
+                                    <div className="mt-2">
+                                      <p className={`text-[10px] font-medium mb-1 ${isDark ? 'text-amber-400/70' : 'text-amber-600'}`}>Response Body</p>
+                                      <pre className={`text-[10px] rounded p-2 overflow-x-auto whitespace-pre-wrap break-all max-h-32 ${isDark ? 'bg-black/30 text-amber-200' : 'bg-white text-amber-900'}`}>
+                                        {dcc.responseBody.trim()}
+                                      </pre>
+                                    </div>
+                                  )}
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </>
+                      );
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </div>
-        </div>
 
-        <div className="flex items-center justify-between px-2 mt-2">
-          <ExportButtons
-            filename="Audit Logs"
-            headers={['Date', 'Event', 'Section', 'Description', 'User', 'Email', 'Role']}
-            rows={table.getFilteredRowModel().rows.map(r => { const l = r.original as any; return [l.created_at, l.event_type, l.entity_type, l.description ?? '', l.user_name ?? '', l.user_email ?? '', l.user_role ?? '']; })}
-          />
-          <TablePagination table={table} />
-        </div>
+          <div className="flex items-center justify-between px-2 mt-2">
+            <ExportButtons
+              filename="Audit Logs"
+              headers={['Date', 'Event', 'Section', 'Description', 'User', 'Email', 'Role']}
+              rows={table.getFilteredRowModel().rows.map(r => { const l = r.original as any; return [l.created_at, l.event_type, l.entity_type, l.description ?? '', l.user_name ?? '', l.user_email ?? '', l.user_role ?? '']; })}
+            />
+            <TablePagination table={table} />
+          </div>
+        </>}
       </div>
     </div>
   );

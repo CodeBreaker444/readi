@@ -1,5 +1,6 @@
 'use client';
 
+import { useAuthorization } from '@/components/authorization/AuthorizationProvider';
 import EditComponentModal from '@/components/system/EditComponentModal';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -46,9 +47,11 @@ const STATUS_STYLES_DARK: Record<string, string> = {
 
 export default function EditSystemModal({ open, toolId, onClose, onSuccess, clients, models = [], tools = [] }: EditSystemModalProps) {
   const { isDark } = useTheme();
+  const { requireAuthorization } = useAuthorization();
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(false);
   const [formData, setFormData] = useState(EMPTY_FORM);
+  const [originalStatus, setOriginalStatus] = useState<string>('OPERATIONAL');
   const [components, setComponents] = useState<any[]>([]);
   const [detachingId, setDetachingId] = useState<number | null>(null);
   const [detachConfirm, setDetachConfirm] = useState<{ id: number; name: string } | null>(null);
@@ -73,10 +76,12 @@ export default function EditSystemModal({ open, toolId, onClose, onSuccess, clie
       if (result.code === 1) {
         const tool = result.data.find((t: any) => t.tool_id === toolId);
         if (tool) {
+          const status = tool.tool_status || 'OPERATIONAL';
+          setOriginalStatus(status);
           setFormData({
             tool_code: tool.tool_code || '',
             tool_desc: tool.tool_desc || '',
-            tool_status: tool.tool_status || 'OPERATIONAL',
+            tool_status: status,
             tool_active: tool.active || 'Y',
             fk_client_id: tool.fk_client_id ? String(tool.fk_client_id) : '',
             tool_latitude: tool.tool_latitude != null ? String(tool.tool_latitude) : '',
@@ -109,6 +114,24 @@ export default function EditSystemModal({ open, toolId, onClose, onSuccess, clie
   };
 
   const handleDetach = async (componentId: number) => {
+    const comp = components.find(c => c.tool_component_id === componentId);
+    try {
+      await requireAuthorization({
+        actionType: 'component_detach',
+        entityType: 'component',
+        entityId:   String(componentId),
+        label:      `Remove Component: ${comp?.component_code ?? comp?.component_sn ?? `#${componentId}`}`,
+        details: {
+          component_id:   componentId,
+          component_type: comp?.component_type,
+          tool_id:        toolId,
+        },
+      });
+    } catch {
+      setDetachConfirm(null);
+      return;
+    }
+
     setDetachingId(componentId);
     try {
       const res = await fetch(`/api/system/component/${componentId}/detach`, { method: 'POST' });
@@ -129,6 +152,27 @@ export default function EditSystemModal({ open, toolId, onClose, onSuccess, clie
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    // Require authorization when putting a drone back in operation after maintenance
+    if (formData.tool_status === 'OPERATIONAL' && originalStatus !== 'OPERATIONAL') {
+      try {
+        await requireAuthorization({
+          actionType: 'drone_put_in_operation',
+          entityType: 'system',
+          entityId:   String(toolId),
+          label:      `Put System in Operation: ${formData.tool_code}`,
+          details: {
+            tool_id:  toolId,
+            from:     originalStatus,
+            to:       'OPERATIONAL',
+            tool_code: formData.tool_code,
+          },
+        });
+      } catch {
+        return;
+      }
+    }
+
     setLoading(true);
     try {
       const payload = {

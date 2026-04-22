@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuthorization } from "@/components/authorization/AuthorizationProvider";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -37,6 +38,7 @@ const VALID_TRANSITIONS: Record<string, ColumnId[]> = {
 export function OperationBoard() {
     const { isDark } = useTheme();
     const { t } = useTranslation();
+    const { requireAuthorization } = useAuthorization();
     const [board, setBoard] = useState<MissionBoardData>({
         scheduled: [],
         in_progress: [],
@@ -231,6 +233,23 @@ export function OperationBoard() {
         const mission = board[sourceColumn].find((m) => m.mission_id === missionId);
         if (!mission) return;
 
+        try {
+            await requireAuthorization({
+                actionType: target === "in_progress" ? "mission_start" : "mission_complete",
+                entityType: "mission",
+                entityId:   String(missionId),
+                label:      `${target === "in_progress" ? t("operations.board.toast.missionStarted") : t("operations.board.toast.missionCompleted")}: ${mission.mission_name ?? `#${missionId}`}`,
+                details: {
+                    mission_id:   missionId,
+                    mission_code: mission.mission_name ?? mission.mission_id,
+                    from:         sourceColumn,
+                    to:           target,
+                },
+            });
+        } catch {
+            return; // user cancelled or wrong PIN
+        }
+
         await executeMissionStatusUpdate(missionId, sourceColumn, target, mission);
     };
 
@@ -292,8 +311,19 @@ export function OperationBoard() {
                         setCompletedMission(null);
                         loadBoard(true);
                     }}
-                    onSkip={() => {
+                    onSkip={async () => {
                         const mission = completedMission;
+                        try {
+                            await requireAuthorization({
+                                actionType: "mission_revert",
+                                entityType: "mission",
+                                entityId:   String(mission.mission_id),
+                                label:      `Revert to In Progress: ${mission.mission_id ?? `#${mission.mission_id}`}`,
+                                details:    { mission_id: mission.mission_id, mission_code: mission.mission_name ?? mission.mission_id },
+                            });
+                        } catch {
+                            return;
+                        }
                         setCompletedMission(null);
                         handleRevertMission(mission);
                     }}

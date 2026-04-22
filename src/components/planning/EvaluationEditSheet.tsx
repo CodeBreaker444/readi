@@ -1,5 +1,6 @@
 'use client';
 
+import { useAuthorization } from '@/components/authorization/AuthorizationProvider';
 import { zodResolver } from '@hookform/resolvers/zod';
 import axios from 'axios';
 import { Loader2, Save } from 'lucide-react';
@@ -83,6 +84,7 @@ export function EvaluationEditSheet({
     onUpdated,
 }: EvaluationEditSheetProps) {
     const { t } = useTranslation();
+    const { requireAuthorization } = useAuthorization();
     const [isUpdating, setIsUpdating] = useState(false);
 
 const form = useForm<UpdateEvaluationFormValues>({
@@ -125,6 +127,28 @@ const form = useForm<UpdateEvaluationFormValues>({
     }, [evaluation, form]);
 
    async function onSubmit(values: UpdateEvaluationFormValues) {
+        const prevStatus = evaluation?.evaluation_status;
+        const authRequired = (values.evaluation_status === 'DONE' || values.evaluation_status === 'REVIEW')
+            && values.evaluation_status !== prevStatus;
+
+        if (authRequired) {
+            try {
+                await requireAuthorization({
+                    actionType: values.evaluation_status === 'DONE' ? 'evaluation_done' : 'evaluation_review',
+                    entityType: 'evaluation',
+                    entityId:   String(values.evaluation_id),
+                    label:      `Set Evaluation ${values.evaluation_status}: EVAL_${values.evaluation_id}`,
+                    details: {
+                        evaluation_id: values.evaluation_id,
+                        from:          prevStatus,
+                        to:            values.evaluation_status,
+                    },
+                });
+            } catch {
+                return;
+            }
+        }
+
         try {
             setIsUpdating(true);
             const response = await axios.put(
