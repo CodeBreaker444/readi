@@ -86,7 +86,7 @@ function MissionChecklistModal({
   checklistName: string;
   isDark: boolean;
   onClose: () => void;
-  onComplete: () => void;
+  onComplete: (section: Section, code: string) => void;
 }) {
   const { t } = useTranslation();
   const [checklistJson, setChecklistJson] = useState<Record<string, unknown> | null>(null);
@@ -118,7 +118,7 @@ function MissionChecklistModal({
         ...(transactionSignId ? { transaction_sign_id: transactionSignId } : {}),
       });
       toast.success(t('planning.evaluation.savedSuccess'));
-      onComplete();
+      onComplete('checklist', checklistCode);
     } catch {
       toast.error(t('planning.evaluation.saveFailed'));
     } finally {
@@ -230,7 +230,7 @@ function MissionAssignmentModal({
   assignmentName: string;
   ownerId: number;
   onClose: () => void;
-  onComplete: () => void;
+  onComplete: (section: Section, code: string) => void;
 }) {
   const { t } = useTranslation();
   const [users, setUsers] = useState<OrgUser[]>([]);
@@ -268,7 +268,7 @@ function MissionAssignmentModal({
         completed: true,
       });
       toast.success('Assignment sent successfully');
-      onComplete();
+      onComplete('assignment', assignmentCode);
     } catch (err: any) {
       toast.error(err?.response?.data?.message ?? 'Failed to send assignment');
     } finally {
@@ -376,7 +376,7 @@ function MissionCommunicationModal({
   communicationCode: string;
   communicationName: string;
   onClose: () => void;
-  onComplete: () => void;
+  onComplete: (section: Section, code: string) => void;
 }) {
   const { t } = useTranslation();
   const [users, setUsers] = useState<OrgUser[]>([]);
@@ -417,7 +417,7 @@ function MissionCommunicationModal({
         completed: true,
       });
       toast.success(t('planning.communication.sentSuccess'));
-      onComplete();
+      onComplete('communication', communicationCode);
     } catch (err: any) {
       toast.error(err?.response?.data?.message ?? t('planning.communication.sendError'));
     } finally {
@@ -635,15 +635,19 @@ export function MissionLucProcedureModal({ mission, isDark, onClose }: Props) {
     return () => { cancelled = true; };
   }, [mission.mission_id, t]);
 
-  async function refreshProgress() {
-    try {
-      const { data } = await axios.get(`/api/operation/missions/${mission.mission_id}/luc`);
-      setProgress(data.luc_procedure_progress ?? { checklist: {}, communication: {}, assignment: {} });
-      setAllDone(!!data.luc_completed_at);
-    } catch {
-      console.log("Failed to refresh progress");
-    }
+  function markDone(section: Section, code: string) {
+    setProgress(prev => ({
+      ...prev,
+      [section]: { ...prev[section], [code]: 'Y' },
+    }));
     setActiveModal({ type: 'none' });
+    // Background sync to update allDone banner
+    axios.get(`/api/operation/missions/${mission.mission_id}/luc`)
+      .then(({ data }) => {
+        setProgress(data.luc_procedure_progress ?? { checklist: {}, communication: {}, assignment: {} });
+        setAllDone(!!data.luc_completed_at);
+      })
+      .catch(() => {});
   }
 
   const tasks = procedure?.procedure_steps?.tasks;
@@ -807,7 +811,7 @@ export function MissionLucProcedureModal({ mission, isDark, onClose }: Props) {
           checklistName={activeModal.checklistName}
           isDark={isDark}
           onClose={() => setActiveModal({ type: 'none' })}
-          onComplete={refreshProgress}
+          onComplete={markDone}
         />
       )}
 
@@ -819,7 +823,7 @@ export function MissionLucProcedureModal({ mission, isDark, onClose }: Props) {
           assignmentName={activeModal.assignmentName}
           ownerId={mission.fk_owner_id}
           onClose={() => setActiveModal({ type: 'none' })}
-          onComplete={refreshProgress}
+          onComplete={markDone}
         />
       )}
 
@@ -830,7 +834,7 @@ export function MissionLucProcedureModal({ mission, isDark, onClose }: Props) {
           communicationCode={activeModal.communicationCode}
           communicationName={activeModal.communicationName}
           onClose={() => setActiveModal({ type: 'none' })}
-          onComplete={refreshProgress}
+          onComplete={markDone}
         />
       )}
     </>
