@@ -1,8 +1,8 @@
 import { supabase } from '@/backend/database/database';
 import type {
-    CreateLucProcedurePayload,
-    LucProcedure,
-    UpdateLucProcedurePayload,
+  CreateLucProcedurePayload,
+  LucProcedure,
+  UpdateLucProcedurePayload,
 } from '@/config/types/lcuProcedures';
 
 export async function getLucProcedures(
@@ -20,7 +20,7 @@ export async function getLucProcedures(
   }
 
   const { data, error } = await query;
-  if (error) throw new Error(`Failed to fetch LUC procedures: ${error.message}`);
+  if (error) throw new Error(`Failed to fetch procedures: ${error.message}`);
   return data ?? [];
 }
 
@@ -35,7 +35,7 @@ export async function getLucProcedureById(
 
   if (error) {
     if (error.code === 'PGRST116') return null;
-    throw new Error(`Failed to fetch LUC procedure: ${error.message}`);
+    throw new Error(`Failed to fetch Procedure: ${error.message}`);
   }
   return data;
 }
@@ -49,7 +49,7 @@ export async function createLucProcedure(
     .select()
     .single();
 
-  if (error) throw new Error(`Failed to create LUC procedure: ${error.message}`);
+  if (error) throw new Error(`Failed to create Procedure: ${error.message}`);
   return data;
 }
 
@@ -65,7 +65,7 @@ export async function updateLucProcedure(
     .select()
     .single();
 
-  if (error) throw new Error(`Failed to update LUC procedure: ${error.message}`);
+  if (error) throw new Error(`Failed to update Procedure: ${error.message}`);
   return data;
 }
 
@@ -79,7 +79,7 @@ export async function deleteLucProcedure(procedureId: number): Promise<boolean> 
     if (error.code === '23503') {
       throw new Error('This procedure is linked to one or more evaluations and cannot be deleted. Remove the linked evaluations first.');
     }
-    throw new Error(`Failed to delete LUC procedure: ${error.message}`);
+    throw new Error(`Failed to delete Procedure: ${error.message}`);
   }
   return true;
 }
@@ -92,6 +92,6 @@ export async function deactivateLucProcedure(procedureId: number): Promise<LucPr
     .select()
     .single();
 
-  if (error) throw new Error(`Failed to deactivate LUC procedure: ${error.message}`);
+  if (error) throw new Error(`Failed to deactivate Procedure: ${error.message}`);
   return data;
 }

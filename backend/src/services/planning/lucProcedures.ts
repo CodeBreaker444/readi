@@ -2,7 +2,7 @@ import { supabase } from '../../database/database';
 
 export async function getLUCProceduresList(ownerId: number, sector?: string) {
   try {
-    console.log('Fetching LUC procedures for owner:', ownerId, 'sector:', sector);
+    console.log('Fetching procedures for owner:', ownerId, 'sector:', sector);
     
     let query = supabase
       .from('luc_procedure')
@@ -45,8 +45,8 @@ export async function getLUCProceduresList(ownerId: number, sector?: string) {
       }))
     };
   } catch (error) {
-    console.error('Error fetching LUC procedures:', error);
-    throw new Error('Failed to fetch LUC procedures');
+    console.error('Error fetching procedures:', error);
+    throw new Error('Failed to fetch procedures');
   }
 }
 
@@ -76,7 +76,7 @@ export async function getLUCProcedureById(procedureId: number) {
       }
     };
   } catch (error) {
-    console.error('Error fetching LUC procedure:', error);
-    throw new Error('Failed to fetch LUC procedure');
+    console.error('Error fetching Procedure:', error);
+    throw new Error('Failed to fetch Procedure');
   }
 }

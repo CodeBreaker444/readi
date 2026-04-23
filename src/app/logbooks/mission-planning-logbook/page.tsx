@@ -1,5 +1,6 @@
 "use client";
 
+import '@/lib/i18n/config';
 import { FilterPanel } from "@/components/logbook/FilterPanel";
 import { MissionLogbookTable } from "@/components/logbook/MissionLogbookTable";
 import { Button } from "@/components/ui/button";
@@ -46,7 +47,7 @@ export default function MissionPlanningLogbookPage() {
         });
       }
     } catch (e: any) {
-      toast.error(e?.message ?? t('missionPlanning.filterError'));
+      toast.error(e?.message ?? t('logbooks.missionPlanning.filterError'));
     } finally {
       setFiltersLoading(false);
     }
@@ -60,11 +61,11 @@ export default function MissionPlanningLogbookPage() {
       if (json.code === 200) {
         setData(json.data ?? []);
       } else {
-        toast.error(json.message ?? t('missionPlanning.loadError'));
+        toast.error(json.message ?? t('logbooks.missionPlanning.loadError'));
         setData([]);
       }
     } catch (e: any) {
-      toast.error(e?.message ?? t('missionPlanning.networkError'));
+      toast.error(e?.message ?? t('logbooks.missionPlanning.networkError'));
       setData([]);
     } finally {
       setLoading(false);
@@ -92,10 +93,10 @@ export default function MissionPlanningLogbookPage() {
             <div className="w-1 h-6 rounded-full bg-violet-600" />
             <div>
               <h1 className={`font-semibold text-base tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                {t('missionPlanning.logbook')}
+                {t('logbooks.missionPlanning.logbook')}
               </h1>
               <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                {t('missionPlanning.logbookSubtitle')}
+                {t('logbooks.missionPlanning.logbookSubtitle')}
               </p>
             </div>
           </div>
@@ -116,7 +117,7 @@ export default function MissionPlanningLogbookPage() {
               ) : (
                 <RefreshCw className="h-3.5 w-3.5" />
               )}
-              {t('missionPlanning.refresh')}
+              {t('logbooks.missionPlanning.refresh')}
             </Button>
           </div>
         </div>

@@ -17,6 +17,8 @@ interface FilterState {
   search: string;
   statusFilter: string;
   pilotFilter: string;
+  droneFilter: string;
+  clientFilter: string;
   dateStart: string;
   dateEnd: string;
 }
@@ -27,11 +29,24 @@ interface Pilot {
   last_name: string;
 }
 
+interface Tool {
+  tool_id: number;
+  tool_name: string;
+  tool_code: string;
+}
+
+interface Client {
+  client_id: number;
+  client_name: string;
+}
+
 interface OperationsFiltersProps {
   isDark: boolean;
   loading: boolean;
   filters: FilterState;
   pilots: Pilot[];
+  tools: Tool[];
+  clients: Client[];
   operationsCount: number;
   onFilterChange: (filters: FilterState) => void;
   onReset: () => void;
@@ -42,6 +57,8 @@ export function OperationsFilters({
   loading,
   filters,
   pilots,
+  tools,
+  clients,
   operationsCount,
   onFilterChange,
   onReset,
@@ -70,7 +87,7 @@ export function OperationsFilters({
             value={filters.statusFilter}
             onValueChange={(v) => onFilterChange({ ...filters, statusFilter: v })}
           >
-            <SelectTrigger className="w-36">
+            <SelectTrigger className="w-36 cursor-pointer">
               <SelectValue placeholder={t('operations.table.filters.allStatuses')} />
             </SelectTrigger>
             <SelectContent>
@@ -87,7 +104,7 @@ export function OperationsFilters({
             value={filters.pilotFilter}
             onValueChange={(v) => onFilterChange({ ...filters, pilotFilter: v })}
           >
-            <SelectTrigger className="w-44">
+            <SelectTrigger className="w-44 cursor-pointer">
               <SelectValue placeholder={t('operations.table.filters.allPilots')} />
             </SelectTrigger>
             <SelectContent>
@@ -100,20 +117,54 @@ export function OperationsFilters({
             </SelectContent>
           </Select>
 
+          <Select
+            value={filters.droneFilter}
+            onValueChange={(v) => onFilterChange({ ...filters, droneFilter: v })}
+          >
+            <SelectTrigger className="w-44 cursor-pointer">
+              <SelectValue placeholder={t('operations.table.filters.allDrones')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">{t('operations.table.filters.allDrones')}</SelectItem>
+              {tools.map((tool) => (
+                <SelectItem key={tool.tool_id} value={tool.tool_id.toString()}>
+                  {tool.tool_name} {tool.tool_code ? `(${tool.tool_code})` : ''}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={filters.clientFilter}
+            onValueChange={(v) => onFilterChange({ ...filters, clientFilter: v })}
+          >
+            <SelectTrigger className="w-44 cursor-pointer">
+              <SelectValue placeholder={t('operations.table.filters.allClients')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">{t('operations.table.filters.allClients')}</SelectItem>
+              {clients.map((c) => (
+                <SelectItem key={c.client_id} value={c.client_id.toString()}>
+                  {c.client_name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
           <Input
             type="date"
             value={filters.dateStart}
             onChange={(e) => onFilterChange({ ...filters, dateStart: e.target.value })}
-            className="w-36 text-sm"
+            className="w-36 text-sm cursor-pointer"
           />
           <Input
             type="date"
             value={filters.dateEnd}
             onChange={(e) => onFilterChange({ ...filters, dateEnd: e.target.value })}
-            className="w-36 text-sm"
+            className="w-36 text-sm cursor-pointer"
           />
 
-          <Button variant="outline" size="sm" onClick={onReset} className="gap-1.5">
+          <Button variant="outline" size="sm" onClick={onReset} className="cursor-pointer gap-1.5">
             <RotateCcw className="h-3.5 w-3.5" />
             {t('operations.table.filters.reset')}
           </Button>

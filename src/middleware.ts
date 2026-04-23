@@ -1,39 +1,8 @@
 import { createServerClient } from '@supabase/ssr'
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
-import { getApiRoutePermission, Role, roleHasPermission, ROUTE_PERMISSIONS, RoutePermissionEntry } from './lib/auth/roles'
-
-/**
- * Decode the payload of a JWT without verifying the signature.
- * Used only for permission checks in middleware (UX layer).
- * Actual signature verification happens in getUserSession() inside API handlers.
- */
-function decodeJwtPayload(token: string): Record<string, unknown> | null {
-  try {
-    const parts = token.split('.')
-    if (parts.length !== 3) return null
-    return JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'))
-  } catch {
-    return null
-  }
-}
-
-function isJwtExpired(token: string): boolean {
-  const payload = decodeJwtPayload(token)
-  if (!payload || typeof payload.exp !== 'number') return true
-  return payload.exp < Math.floor(Date.now() / 1000)
-}
-
-function decodeJwtRole(token: string): Role | null {
-  const payload = decodeJwtPayload(token)
-  return (payload?.role as Role) ?? null
-}
-
-function hasRoutePermission(role: Role, entry: RoutePermissionEntry): boolean {
-  if (role === 'SUPERADMIN' || role === 'ADMIN') return true
-  const perms = Array.isArray(entry) ? entry : [entry]
-  return perms.some((p) => roleHasPermission(role, p))
-}
+import { getApiRoutePermission, Role, roleHasPermission, ROUTE_PERMISSIONS } from './lib/auth/roles'
+import { decodeJwtRole, hasRoutePermission, isJwtExpired } from './lib/utils'
 
 export async function updateSession(request: NextRequest) {
 
@@ -111,6 +80,13 @@ export async function updateSession(request: NextRequest) {
     const redirectResponse = NextResponse.redirect(loginUrl)
     redirectResponse.cookies.delete('readi_auth_token')
     return redirectResponse
+  }
+
+  if (!jwtToken) {
+    if (isPublicRoute) {
+      return response
+    }
+    return NextResponse.redirect(new URL('/auth/login', request.url))
   }
 
   if (jwtToken) {

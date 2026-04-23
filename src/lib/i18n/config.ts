@@ -8,9 +8,9 @@ import en from '@/locales/en.json';
 import it from '@/locales/it.json';
 
 export const LANGUAGES = [
-  { code: 'en', label: 'English', flag: '🇬🇧' },
-  { code: 'it', label: 'Italiano', flag: '🇮🇹' },
-  { code: 'de', label: 'Deutsch', flag: '🇩🇪' },
+  { code: 'en', label: 'English', flag: '🇬🇧', countryCode: 'gb' },
+  { code: 'it', label: 'Italiano', flag: '🇮🇹', countryCode: 'it' },
+  { code: 'de', label: 'Deutsch', flag: '🇩🇪', countryCode: 'de' },
 ] as const;
 
 export type LanguageCode = (typeof LANGUAGES)[number]['code'];

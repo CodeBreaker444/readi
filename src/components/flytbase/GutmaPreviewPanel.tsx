@@ -4,6 +4,7 @@ import type { FlightWaypoint } from '@/components/flytbase/FlightPathMap';
 import { Skeleton } from '@/components/ui/skeleton';
 import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   HiChip,
   HiClock,
@@ -109,6 +110,7 @@ export function GutmaPreviewPanel({
   flight, preview, loading, isDark, previewError,
   canArchive, archiving, archived, archiveError, onArchive,
 }: Props) {
+  const { t } = useTranslation();
   const [tab, setTab] = useState<'map' | 'gutma' | 'info'>('map');
   const [waypointPage, setWaypointPage] = useState(1);
   const [waypointPageSize, setWaypointPageSize] = useState(10);
@@ -183,11 +185,11 @@ export function GutmaPreviewPanel({
               <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
               </svg>
-              Saved to S3
+              {t('flytbase.preview.savedToReadi')}
             </span>
           ) : preview && !loading ? (
             <span className={`text-[11px] font-medium ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
-              Not saved
+              {t('flytbase.preview.notSaved')}
             </span>
           ) : null}
 
@@ -196,7 +198,7 @@ export function GutmaPreviewPanel({
             <button
               onClick={onArchive}
               disabled={archiving}
-              className="h-7 px-3 rounded text-[11px] font-medium bg-violet-600 hover:bg-violet-500 disabled:opacity-60 text-white flex items-center gap-1.5"
+              className="h-7 px-3 cursor-pointer rounded text-[11px] font-medium bg-violet-600 hover:bg-violet-500 disabled:opacity-60 text-white flex items-center gap-1.5"
             >
               {archiving && (
                 <svg className="w-3 h-3 animate-spin" viewBox="0 0 24 24" fill="none">
@@ -204,13 +206,12 @@ export function GutmaPreviewPanel({
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                 </svg>
               )}
-              {archiving ? 'Archiving…' : 'Archive to Readi'}
+              {archiving ? t('flytbase.preview.archiving') : t('flytbase.preview.archiveToReadi')}
             </button>
           )}
         </div>
       </div>
 
-      {/* Serial-number validation error — shown inline below the header */}
       {archiveError && (
         <div className={`flex items-start gap-3 px-5 py-3 border-b text-xs ${isDark ? 'bg-red-950/20 border-red-800/30' : 'bg-red-50 border-red-200'}`}>
           <svg className={`w-4 h-4 mt-0.5 shrink-0 ${isDark ? 'text-red-400' : 'text-red-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -226,7 +227,7 @@ export function GutmaPreviewPanel({
               </ul>
             )}
             <p className={`mt-1 ${isDark ? 'text-red-500' : 'text-red-500'}`}>
-              Register these serial numbers in your equipment inventory before archiving.
+              {t('flytbase.preview.registerSerials')}
             </p>
           </div>
         </div>
@@ -234,9 +235,9 @@ export function GutmaPreviewPanel({
 
       {!loading && preview && (
         <div className={`flex border-b ${tabBorder} px-3`}>
-          <TabButton id="map"   icon={<HiMap               className="w-3.5 h-3.5" />} label="Map" />
-          <TabButton id="gutma" icon={<HiTable             className="w-3.5 h-3.5" />} label="GUTMA Log" />
-          <TabButton id="info"  icon={<HiInformationCircle className="w-3.5 h-3.5" />} label="Flight Info" />
+          <TabButton id="map"   icon={<HiMap               className="w-3.5 h-3.5" />} label={t('flytbase.preview.tabs.map')} />
+          <TabButton id="gutma" icon={<HiTable             className="w-3.5 h-3.5" />} label={t('flytbase.preview.tabs.gutmaLog')} />
+          <TabButton id="info"  icon={<HiInformationCircle className="w-3.5 h-3.5" />} label={t('flytbase.preview.tabs.flightInfo')} />
         </div>
       )}
 
@@ -248,7 +249,7 @@ export function GutmaPreviewPanel({
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
               </svg>
-              Downloading GUTMA log from FlytBase…
+              {t('flytbase.preview.downloadingLog')}
             </div>
             <Skeleton className={`h-95 w-full rounded-lg ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`} />
           </div>
@@ -309,7 +310,7 @@ export function GutmaPreviewPanel({
             ) : (
               <div className={`rounded-lg border p-8 text-center ${sectionBg}`}>
                 <HiMap className={`w-8 h-8 mx-auto mb-2 ${textSecondary}`} />
-                <p className={`text-xs ${textSecondary}`}>No GPS coordinates found in this GUTMA file.</p>
+                <p className={`text-xs ${textSecondary}`}>{t('flytbase.preview.noGpsCoords')}</p>
               </div>
             )}
           </div>
@@ -319,28 +320,28 @@ export function GutmaPreviewPanel({
           <div className="space-y-5">
             {/* Flight metadata — always shown when any field exists */}
             {(flight.pilot_name || preview.pilot || flight.mission_name || flight.start_time || flight.end_time || flight.duration != null || flight.distance != null || preview.logging_start) && (
-              <Section title="Flight Details" icon={<HiUser className="w-3.5 h-3.5" />} isDark={isDark}>
+              <Section title={t('flytbase.preview.sections.flightDetails')} icon={<HiUser className="w-3.5 h-3.5" />} isDark={isDark}>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {(preview.pilot || flight.pilot_name) && (
-                    <StatBox label="Pilot in Command" value={preview.pilot ?? flight.pilot_name!} isDark={isDark} />
+                    <StatBox label={t('flytbase.preview.fields.pilotInCommand')} value={preview.pilot ?? flight.pilot_name!} isDark={isDark} />
                   )}
                   {flight.mission_name && (
-                    <StatBox label="Mission" value={flight.mission_name} isDark={isDark} />
+                    <StatBox label={t('flytbase.preview.fields.mission')} value={flight.mission_name} isDark={isDark} />
                   )}
                   {flight.start_time && (
-                    <StatBox label="Start Time" value={new Date(flight.start_time).toLocaleString()} isDark={isDark} />
+                    <StatBox label={t('flytbase.preview.fields.startTime')} value={new Date(flight.start_time).toLocaleString()} isDark={isDark} />
                   )}
                   {flight.end_time && (
-                    <StatBox label="End Time" value={new Date(flight.end_time).toLocaleString()} isDark={isDark} />
+                    <StatBox label={t('flytbase.preview.fields.endTime')} value={new Date(flight.end_time).toLocaleString()} isDark={isDark} />
                   )}
                   {flight.duration != null && (
-                    <StatBox label="Duration" value={formatDuration(flight.duration)} isDark={isDark} />
+                    <StatBox label={t('flytbase.preview.fields.duration')} value={formatDuration(flight.duration)} isDark={isDark} />
                   )}
                   {flight.distance != null && (
-                    <StatBox label="Distance" value={formatDistance(flight.distance)} isDark={isDark} />
+                    <StatBox label={t('flytbase.preview.fields.distance')} value={formatDistance(flight.distance)} isDark={isDark} />
                   )}
                   {preview.logging_start && (
-                    <StatBox label="Logging Start" value={new Date(preview.logging_start).toLocaleString()} isDark={isDark} />
+                    <StatBox label={t('flytbase.preview.fields.loggingStart')} value={new Date(preview.logging_start).toLocaleString()} isDark={isDark} />
                   )}
                 </div>
               </Section>
@@ -348,9 +349,9 @@ export function GutmaPreviewPanel({
 
             {/* Mission */}
             {flight.mission_name === undefined && flight.drone_name && (
-              <Section title="Asset" icon={<HiFlag className="w-3.5 h-3.5" />} isDark={isDark}>
+              <Section title={t('flytbase.preview.sections.asset')} icon={<HiFlag className="w-3.5 h-3.5" />} isDark={isDark}>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {flight.drone_name && <StatBox label="Drone" value={flight.drone_name} isDark={isDark} />}
+                  {flight.drone_name && <StatBox label={t('flytbase.preview.fields.drone')} value={flight.drone_name} isDark={isDark} />}
                 </div>
               </Section>
             )}
@@ -358,8 +359,8 @@ export function GutmaPreviewPanel({
             {/* Events */}
             {preview.events && preview.events.length > 0 && (
               <Section
-                title="Events"
-                subtitle={`${preview.events.length} event${preview.events.length !== 1 ? 's' : ''}`}
+                title={t('flytbase.preview.sections.events')}
+                subtitle={t('flytbase.preview.subtitles.events', { count: preview.events.length })}
                 icon={<HiClock className="w-3.5 h-3.5" />}
                 isDark={isDark}
               >
@@ -367,7 +368,7 @@ export function GutmaPreviewPanel({
                   <table className="w-full text-[11px]">
                     <thead>
                       <tr className={`border-b ${tableBorder}`}>
-                        {['#', 'Timestamp', 'Type', 'Info', 'Controller'].map((h) => (
+                        {[t('flytbase.preview.eventsTable.hash'), t('flytbase.preview.eventsTable.timestamp'), t('flytbase.preview.eventsTable.type'), t('flytbase.preview.eventsTable.info'), t('flytbase.preview.eventsTable.controller')].map((h) => (
                           <th key={h} className={`px-3 py-2 text-left font-medium uppercase tracking-wider whitespace-nowrap ${textSecondary}`}>
                             {h}
                           </th>
@@ -403,8 +404,8 @@ export function GutmaPreviewPanel({
             {/* Payload / Battery */}
             {preview.payload && preview.payload.length > 0 && (
               <Section
-                title="Payload / Battery"
-                subtitle={`${preview.payload.length} item${preview.payload.length !== 1 ? 's' : ''}`}
+                title={t('flytbase.preview.sections.payloadBattery')}
+                subtitle={t('flytbase.preview.subtitles.payload', { count: preview.payload.length })}
                 icon={<HiChip className="w-3.5 h-3.5" />}
                 isDark={isDark}
               >
@@ -415,11 +416,11 @@ export function GutmaPreviewPanel({
                         {item.type ?? `Battery ${i + 1}`}
                       </p>
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                        {item.model && <StatBox label="Model" value={item.model} isDark={isDark} />}
-                        {item.serial_number && <StatBox label="Serial Number" value={item.serial_number} isDark={isDark} mono />}
-                        {item.firmware_version && <StatBox label="Firmware" value={item.firmware_version} isDark={isDark} mono />}
-                        {item.cycle_count != null && <StatBox label="Cycle Count" value={String(item.cycle_count)} isDark={isDark} />}
-                        {item.design_capacity != null && <StatBox label="Design Capacity" value={`${item.design_capacity} mAh`} isDark={isDark} />}
+                        {item.model && <StatBox label={t('flytbase.preview.fields.model')} value={item.model} isDark={isDark} />}
+                        {item.serial_number && <StatBox label={t('flytbase.preview.fields.serialNumber')} value={item.serial_number} isDark={isDark} mono />}
+                        {item.firmware_version && <StatBox label={t('flytbase.preview.fields.firmware')} value={item.firmware_version} isDark={isDark} mono />}
+                        {item.cycle_count != null && <StatBox label={t('flytbase.preview.fields.cycleCount')} value={String(item.cycle_count)} isDark={isDark} />}
+                        {item.design_capacity != null && <StatBox label={t('flytbase.preview.fields.designCapacity')} value={`${item.design_capacity} mAh`} isDark={isDark} />}
                       </div>
                     </div>
                   ))}
@@ -431,7 +432,7 @@ export function GutmaPreviewPanel({
             {!preview.pilot && !preview.logging_start && (!preview.events || preview.events.length === 0) && (!preview.payload || preview.payload.length === 0) && (
               <div className={`rounded-lg border p-8 text-center ${sectionBg}`}>
                 <HiInformationCircle className={`w-8 h-8 mx-auto mb-2 ${textSecondary}`} />
-                <p className={`text-xs ${textSecondary}`}>No additional flight info available in this GUTMA file.</p>
+                <p className={`text-xs ${textSecondary}`}>{t('flytbase.preview.noFlightInfo')}</p>
               </div>
             )}
           </div>
@@ -440,38 +441,38 @@ export function GutmaPreviewPanel({
         {!loading && preview && tab === 'gutma' && (
           <div className="space-y-5">
             {preview.aircraft && Object.values(preview.aircraft).some(Boolean) && (
-              <Section title="Aircraft" icon={<HiChip className="w-3.5 h-3.5" />} isDark={isDark}>
+              <Section title={t('flytbase.preview.sections.aircraft')} icon={<HiChip className="w-3.5 h-3.5" />} isDark={isDark}>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {preview.aircraft.product_name && (
-                    <StatBox label="Name" value={preview.aircraft.product_name} isDark={isDark} />
+                    <StatBox label={t('flytbase.preview.fields.name')} value={preview.aircraft.product_name} isDark={isDark} />
                   )}
                   {preview.aircraft.model && (
-                    <StatBox label="Model" value={preview.aircraft.model} isDark={isDark} />
+                    <StatBox label={t('flytbase.preview.fields.model')} value={preview.aircraft.model} isDark={isDark} />
                   )}
                   {preview.aircraft.manufacturer && (
-                    <StatBox label="Manufacturer" value={preview.aircraft.manufacturer} isDark={isDark} />
+                    <StatBox label={t('flytbase.preview.fields.manufacturer')} value={preview.aircraft.manufacturer} isDark={isDark} />
                   )}
                   {preview.aircraft.serial_number && (
-                    <StatBox label="Serial number" value={preview.aircraft.serial_number} isDark={isDark} mono />
+                    <StatBox label={t('flytbase.preview.fields.serialNumber')} value={preview.aircraft.serial_number} isDark={isDark} mono />
                   )}
                   {preview.aircraft.firmware_version && (
-                    <StatBox label="Firmware" value={preview.aircraft.firmware_version} isDark={isDark} mono />
+                    <StatBox label={t('flytbase.preview.fields.firmware')} value={preview.aircraft.firmware_version} isDark={isDark} mono />
                   )}
                 </div>
               </Section>
             )}
 
             {preview.gcs && Object.values(preview.gcs).some(Boolean) && (
-              <Section title="Ground Control Station" icon={<HiLocationMarker className="w-3.5 h-3.5" />} isDark={isDark}>
+              <Section title={t('flytbase.preview.sections.groundControlStation')} icon={<HiLocationMarker className="w-3.5 h-3.5" />} isDark={isDark}>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {preview.gcs.name && (
-                    <StatBox label="Name" value={preview.gcs.name} isDark={isDark} />
+                    <StatBox label={t('flytbase.preview.fields.name')} value={preview.gcs.name} isDark={isDark} />
                   )}
                   {preview.gcs.type && (
-                    <StatBox label="Type" value={preview.gcs.type} isDark={isDark} />
+                    <StatBox label={t('flytbase.preview.fields.type')} value={preview.gcs.type} isDark={isDark} />
                   )}
                   {preview.gcs.serial_number && (
-                    <StatBox label="Serial number" value={preview.gcs.serial_number} isDark={isDark} mono />
+                    <StatBox label={t('flytbase.preview.fields.serialNumber')} value={preview.gcs.serial_number} isDark={isDark} mono />
                   )}
                 </div>
               </Section>
@@ -479,8 +480,8 @@ export function GutmaPreviewPanel({
 
             {preview.waypoints.length > 0 ? (
               <Section
-                title="Waypoint Log"
-                subtitle={`${preview.waypoints.length} of ${preview.total_waypoints} points`}
+                title={t('flytbase.preview.sections.waypointLog')}
+                subtitle={t('flytbase.preview.subtitles.waypointLog', { count: preview.waypoints.length, total: preview.total_waypoints })}
                 icon={<HiClock className="w-3.5 h-3.5" />}
                 isDark={isDark}
               >
@@ -488,7 +489,7 @@ export function GutmaPreviewPanel({
                   <table className="w-full text-[11px]">
                     <thead>
                       <tr className={`border-b ${tableBorder}`}>
-                        {['#', 'Timestamp', 'Lat', 'Lon', 'Alt (m)', 'Speed', 'Vx/Vy/Vz (m/s)', 'Heading (ψ)', 'Roll (φ)', 'Pitch (θ)', 'Battery'].map((h) => (
+                        {[t('flytbase.preview.waypointTable.hash'), t('flytbase.preview.waypointTable.timestamp'), t('flytbase.preview.waypointTable.lat'), t('flytbase.preview.waypointTable.lon'), t('flytbase.preview.waypointTable.altitude'), t('flytbase.preview.waypointTable.speed'), t('flytbase.preview.waypointTable.velocities'), t('flytbase.preview.waypointTable.heading'), t('flytbase.preview.waypointTable.roll'), t('flytbase.preview.waypointTable.pitch'), t('flytbase.preview.waypointTable.battery')].map((h) => (
                           <th key={h} className={`px-3 py-2 text-left font-medium uppercase tracking-wider whitespace-nowrap ${textSecondary}`}>
                             {h}
                           </th>
@@ -536,13 +537,19 @@ export function GutmaPreviewPanel({
                     </tbody>
                   </table>
                 </div>
-                {preview.waypoints.length > 0 && (
+             {preview.waypoints.length > 0 && (
                   <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <p className={`text-[11px] ${textSecondary}`}>
-                      Showing {waypointStart + 1}-{Math.min(waypointEnd, totalWaypointRows)} of {totalWaypointRows} loaded waypoints · Page {safeWaypointPage} of {totalWaypointPages}
+                      {t('flytbase.preview.pagination.showing', {
+                        start: waypointStart + 1,
+                        end: Math.min(waypointEnd, totalWaypointRows),
+                        total: totalWaypointRows,
+                        page: safeWaypointPage,
+                        totalPages: totalWaypointPages
+                      })}
                     </p>
                     <div className="flex items-center gap-2">
-                      <label className={`text-[11px] ${textSecondary}`}>Rows</label>
+                      <label className={`text-[11px] ${textSecondary}`}>{t('flytbase.preview.pagination.rows')}</label>
                       <select
                         value={waypointPageSize}
                         onChange={(e) => setWaypointPageSize(Number(e.target.value))}
@@ -560,7 +567,7 @@ export function GutmaPreviewPanel({
                           isDark ? 'border-slate-700 bg-slate-900 text-slate-200 disabled:text-slate-600' : 'border-slate-300 bg-white text-slate-700 disabled:text-slate-400'
                         }`}
                       >
-                        Prev
+                        {t('flytbase.preview.pagination.prev')}
                       </button>
                       <button
                         type="button"
@@ -570,20 +577,23 @@ export function GutmaPreviewPanel({
                           isDark ? 'border-slate-700 bg-slate-900 text-slate-200 disabled:text-slate-600' : 'border-slate-300 bg-white text-slate-700 disabled:text-slate-400'
                         }`}
                       >
-                        Next
+                        {t('flytbase.preview.pagination.next')}
                       </button>
                     </div>
                   </div>
                 )}
                 {preview.total_waypoints > preview.waypoints.length && (
                   <p className={`text-[11px] mt-2 ${textSecondary}`}>
-                    Showing first {preview.waypoints.length} of {preview.total_waypoints} waypoints.
+                   {t('flytbase.preview.pagination.showingFirst', {
+                      count: preview.waypoints.length,
+                      total: preview.total_waypoints
+                    })}
                   </p>
                 )}
               </Section>
             ) : (
               <div className={`rounded-lg border p-4 text-center ${sectionBg}`}>
-                <p className={`text-xs ${textSecondary}`}>No waypoint data found in this GUTMA file.</p>
+               <p className={`text-xs ${textSecondary}`}>{t('flytbase.preview.noWaypointData')}</p>
               </div>
             )}
           </div>

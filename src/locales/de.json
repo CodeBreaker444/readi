@@ -28,7 +28,12 @@
     "unknown": "Unbekannt",
     "noData": "Keine Daten verfügbar",
     "error": "Ein Fehler ist aufgetreten",
-    "success": "Erfolgreich"
+    "success": "Erfolgreich",
+    "never": "Nie",
+    "today": "Heute",
+    "yesterday": "Gestern",
+    "daysAgo": "Vor {{count}} Tagen",
+    "monthsAgo": "Vor {{count}} Monaten"
   },
   "topbar": {
     "askAnything": "Frag etwas…",
@@ -677,7 +682,7 @@
     },
     "form": {
       "client": "Kunde",
-      "lucProcedure": "LUC-Verfahren",
+      "lucProcedure": "Verfahren",
       "status": "Status",
       "requestDate": "Anfragedatum",
       "yearReference": "Jahresreferenz",
@@ -694,7 +699,7 @@
       "loadingClients": "Kunden werden geladen...",
       "selectClient": "Kunden auswählen",
       "loadingProcedures": "Verfahren werden geladen...",
-      "selectLucProcedure": "LUC-Verfahren auswählen",
+      "selectLucProcedure": "Verfahren auswählen",
       "selectStatus": "Status auswählen",
       "selectYear": "Jahr auswählen",
       "enterDescription": "Bewertungsbeschreibung eingeben...",
@@ -725,14 +730,14 @@
     },
     "validation": {
       "selectClient": "Bitte wählen Sie einen Kunden aus",
-      "selectLucProcedure": "Bitte wählen Sie ein LUC-Verfahren aus.",
+      "selectLucProcedure": "Bitte wählen Sie ein Verfahren aus.",
       "selectPic": "Bitte weisen Sie einen Pilot in Command zu.",
       "enterDescription": "Bitte geben Sie eine Beschreibung ein",
       "descriptionRequired": "Beschreibung ist erforderlich.",
       "requestDateRequired": "Anfragedatum ist erforderlich.",
       "clientRequired": "Bitte wählen Sie einen Kunden aus",
       "loadClientsError": "Kunden konnten nicht geladen werden",
-      "loadProceduresError": "LUC-Verfahren konnten nicht geladen werden"
+      "loadProceduresError": "Verfahren konnten nicht geladen werden"
     },
     "actions": {
       "adding": "Wird hinzugefügt...",
@@ -1164,19 +1169,24 @@
     }
   },
   "operations": {
+    "actions": {
+      "view": "Details anzeigen",
+      "edit": "Operation bearbeiten",
+      "delete": "Operation löschen"
+    },
     "declaration": {
-    "title": "Tägliche Pilotenerklärung",
-    "subtitle": "Bestätigen Sie alle Punkte, um heute mit der Mission zu beginnen.",
-    "rested": "Ich bin ausreichend ausgeruht und nicht übermüdet",
-    "fit": "Ich bin körperlich und geistig flugtauglich",
-    "medication": "Ich stehe nicht unter dem Einfluss von Medikamenten, die meine Leistung beeinträchtigen könnten",
-    "briefed": "Ich habe den Missionsplan und das Einsatzgebiet überprüft",
-    "equipment": "Die Ausrüstung und die Drohnensysteme wurden inspiziert und sind lufttüchtig",
-    "submit": "Erklärung absenden",
-    "saving": "Speichern...",
-    "warning": "Bitte bestätigen Sie alle Checklistenpunkte vor dem Absenden.",
-    "error": "Fehler beim Speichern der Erklärung"
-  },
+      "title": "Tägliche Pilotenerklärung",
+      "subtitle": "Bestätigen Sie alle Punkte, um heute mit der Mission zu beginnen.",
+      "rested": "Ich bin ausreichend ausgeruht und nicht übermüdet",
+      "fit": "Ich bin körperlich und geistig flugtauglich",
+      "medication": "Ich stehe nicht unter dem Einfluss von Medikamenten, die meine Leistung beeinträchtigen könnten",
+      "briefed": "Ich habe den Missionsplan und das Einsatzgebiet überprüft",
+      "equipment": "Die Ausrüstung und die Drohnensysteme wurden inspiziert und sind lufttüchtig",
+      "submit": "Erklärung absenden",
+      "saving": "Speichern...",
+      "warning": "Bitte bestätigen Sie alle Checklistenpunkte vor dem Absenden.",
+      "error": "Fehler beim Speichern der Erklärung"
+    },
     "table": {
       "title": "Betrieb",
       "subtitle": "Pilotenmissionen & Flugoperationen",
@@ -1193,6 +1203,8 @@
         "searchPlaceholder": "Operationen suchen…",
         "allStatuses": "Alle Status",
         "allPilots": "Alle Piloten",
+        "allDrones": "Alle Drohnen",
+        "allClients": "Alle Kunden",
         "reset": "Zurücksetzen"
       },
       "status": {
@@ -1238,7 +1250,22 @@
         "updateMaintenanceCycles": "Wartungszyklen aktualisieren",
         "logFlightsHours": "Flüge & Stunden für {{code}} nach dieser Mission protokollieren.",
         "updateMaintenance": "Wartung aktualisieren",
-        "reportIssue": "Problem melden"
+        "reportIssue": "Problem melden",
+        "plannedDate": "Geplantes Datum",
+        "officialStart": "Offizieller Start",
+        "officialEnd": "Offizielles Ende",
+        "procedure": "Verfahren",
+        "procedureCompleted": "Verfahren abgeschlossen",
+        "stepsPending": "Schritte ausstehend",
+        "stepsCompleteNotFinalized": "Schritte abgeschlossen, nicht finalisiert",
+        "assignment": "Zuweisung",
+        "checklist": "Checkliste",
+        "manageProcedure": "Verfahren verwalten",
+        "missionDetails": "Missionsdetails",
+        "client": "Kunde",
+        "missionPlan": "Missionsplan",
+        "category": "Kategorie",
+        "type": "Typ"
       },
       "toast": {
         "deleteSuccess": "{{count}} Operation(en) gelöscht",
@@ -1294,7 +1321,9 @@
         "invalidMove": "Ungültige Verschiebung",
         "revertSuccess": "Mission zurück zu In Bearbeitung verschoben",
         "revertDesc": "Bitte aktualisieren Sie den Wartungszyklus, um die Mission abzuschließen.",
-        "revertError": "Missionsstatus konnte nicht zurückgesetzt werden"
+        "revertError": "Missionsstatus konnte nicht zurückgesetzt werden",
+        "droneInMaintenance": "Drohne in Wartung",
+        "droneInMaintenanceDesc": "Diese Drohne hat ein offenes Wartungsticket. Schließen Sie es, bevor Sie die Mission starten."
       },
       "card": {
         "status": {
@@ -1308,14 +1337,15 @@
           "inMaintenance": "In Wartung"
         },
         "notAssigned": "Nicht zugewiesen",
-        "lucAllCompleted": "Alle LUC-Aufgaben abgeschlossen",
-        "lucProcedureTasks": "LUC-Verfahrensaufgaben",
-        "completeLucTasks": "LUC-Aufgaben abschließen",
+        "lucAllCompleted": "Alle Aufgaben abgeschlossen",
+        "lucProcedureTasks": "Verfahrensaufgaben",
+        "completeLucTasks": "Aufgaben abschließen",
         "completeTasks": "Aufgaben abschließen",
         "updateMaintenance": "Wartung aktualisieren",
         "updateMaintenanceCycle": "Wartungszyklus aktualisieren",
         "missionDetails": "Missionsdetails",
-        "view": "Ansehen"
+        "view": "Ansehen",
+        "lastMaintenanceClosed": "Letzte Wartung abgeschlossen"
       }
     },
     "calendar": {
@@ -1350,6 +1380,7 @@
         "addUsage": "Nutzung hinzufügen",
         "flights": "Flüge",
         "hours": "Stunden",
+        "days": "Tage",
         "hmin": "h.min",
         "daysTracked": "Tage werden automatisch ab dem letzten Wartungsdatum erfasst.",
         "overdue": "Wartung ist überfällig — Wartung bald einplanen",
@@ -1432,7 +1463,7 @@
         "missionCategory": "Missionskategorie",
         "missionType": "Missionstyp",
         "clientPlanning": "Kunde / Planung",
-        "lucProcedure": "LUC-Verfahren (Mission)",
+        "lucProcedure": "Verfahren (Mission)",
         "pilotInCommand": "Verantwortlicher Pilot",
         "selectedPilot": "Ausgewählter Pilot"
       },
@@ -1450,7 +1481,7 @@
         "selectCategory": "Kategorie auswählen",
         "selectType": "Typ auswählen",
         "selectClientPlanning": "Kunde / Planung auswählen",
-        "selectLuc": "LUC-Verfahren auswählen",
+        "selectLuc": "Verfahren auswählen",
         "noMissionProcedures": "Keine MISSIONS-Verfahren",
         "selectPilot": "Pilot auswählen"
       },
@@ -1466,12 +1497,12 @@
       "validation": {
         "selectAtLeastOneDay": "Mindestens einen Tag auswählen",
         "noMatchingDays": "Keiner der ausgewählten Tage liegt zwischen {{start}} und {{end}}. Bereich erweitern oder Tage ändern.",
-        "lucRequired": "LUC-Verfahren ist erforderlich",
+        "lucRequired": "Verfahren ist erforderlich",
         "recurrenceEndDate": "Das Enddatum der Wiederholung muss am oder nach dem Startdatum liegen",
         "noMatchingDaysRange": "Keiner der ausgewählten Tage liegt zwischen {{start}} und {{end}}. Bereich erweitern oder ausgewählte Tage ändern.",
         "missionNameRequired": "⚠ Missionsname ist erforderlich.",
         "pilotRequired": "⚠ Verantwortlicher Pilot ist erforderlich.",
-        "createLucHint": "Erstellen Sie zuerst ein aktives LUC-Verfahren mit Status \"MISSION\" unter Organisation."
+        "createLucHint": "Erstellen Sie zuerst ein aktives Verfahren mit Status \"MISSION\" unter Organisation."
       },
       "review": {
         "missionName": "Missionsname",
@@ -1483,7 +1514,7 @@
         "tool": "System",
         "type": "Typ",
         "category": "Kategorie",
-        "lucProcedure": "LUC-Verfahren",
+        "lucProcedure": "Verfahren",
         "recurrence": "Wiederholung",
         "weekly": "Wöchentlich",
         "repeatUntil": "Wiederholen bis",
@@ -1693,5 +1724,759 @@
     "reported": "Gemeldet ✓",
     "reporting": "Meldung…",
     "reportBug": "Fehler melden"
+  },
+  "logbooks": {
+    "missionPlanning": {
+      "title": "Missionsplanungs-Dashboard",
+      "titleAlt": "Missionsplanung",
+      "subtitle": "Missionslogbücher und operative Planungsparameter verwalten",
+      "planningMission": "Planungsmission",
+      "editRequest": "Missionsplanungsanfrage bearbeiten",
+      "addNew": "Missionsplanungs-Logbuch Neu hinzufügen",
+      "logbook": "Missionsplanungs-Logbuch",
+      "logbookSubtitle": "Missionspläne nach Bewertungen und Planungen durchsuchen und filtern",
+      "repositoryFiles": "Repository-Dateien",
+      "deleteTitle": "Sind Sie absolut sicher?",
+      "deleteDesc": "Diese Aktion kann nicht rückgängig gemacht werden. Der Logbuch-Eintrag und alle zugehörigen Daten werden dauerhaft gelöscht.",
+      "loadError": "Missionsdaten konnten nicht geladen werden.",
+      "filterError": "Filter konnten nicht geladen werden",
+      "networkError": "Netzwerkfehler",
+      "deleteSuccess": "Logbuch-Eintrag erfolgreich gelöscht",
+      "deleteFailed": "Löschen fehlgeschlagen. Die Liste wurde wiederhergestellt.",
+      "addSuccess": "Mission erfolgreich hinzugefügt",
+      "addFailed": "Mission konnte nicht hinzugefügt werden.",
+      "updated": "Planung aktualisiert",
+      "searchLogbook": "Logbuch durchsuchen...",
+      "refresh": "Aktualisieren",
+      "record": "Eintrag",
+      "records": "Einträge",
+      "noEntries": "Keine Missionsplanungs-Logbuch-Einträge gefunden.",
+      "planId": "Plan-ID",
+      "code": "Code",
+      "tests": "Tests",
+      "fillForm": "Füllen Sie das Formular aus, um eine neue Missionsplanung hinzuzufügen.",
+      "addingEntry": "Wird hinzugefügt...",
+      "addNewEntry": "Neue Missionsplanung hinzufügen",
+      "progress": "FORTSCHRITT",
+      "filter": {
+        "client": "Kunde",
+        "allClients": "Alle Kunden",
+        "pic": "PiC",
+        "allPilots": "Alle Piloten",
+        "evaluation": "Bewertung",
+        "allEvaluations": "Alle Bewertungen",
+        "planning": "Planung",
+        "allPlannings": "Alle Planungen",
+        "updateFrom": "Aktualisiert von",
+        "updateTo": "Aktualisiert bis",
+        "search": "Suchen",
+        "reset": "Zurücksetzen"
+      },
+      "table": {
+        "searchPlaceholder": "In allen Spalten suchen…",
+        "active": "Aktiv",
+        "inactive": "Inaktiv",
+        "noResults": "Keine Missionspläne gefunden",
+        "noResultsHint": "Passen Sie Ihre Filter an und suchen Sie erneut"
+      },
+      "columns": {
+        "client": "Kunde",
+        "evaluation": "Bewertung",
+        "planning": "Planung",
+        "missionDesc": "Missionsbeschreibung",
+        "missionPlan": "Missionsplan",
+        "version": "Version",
+        "active": "Aktiv"
+      }
+    },
+    "operationLogbook": {
+      "title": "Operatives Fluglogbuch",
+      "subtitle": "Flugmissionsaufzeichnungen durchsuchen, filtern und analysieren",
+      "refresh": "Aktualisieren",
+      "filterError": "Filter konnten nicht geladen werden",
+      "loadError": "Daten konnten nicht geladen werden",
+      "networkError": "Netzwerkfehler",
+      "filter": {
+        "title": "Filter",
+        "dateStart": "Startdatum",
+        "dateEnd": "Enddatum",
+        "pic": "PiC",
+        "client": "Kunde",
+        "droneSystem": "Drohnensystem",
+        "missionType": "Missionstyp",
+        "category": "Kategorie",
+        "status": "Status",
+        "result": "Ergebnis",
+        "missionPlan": "Missionsplan",
+        "all": "Alle",
+        "search": "Suchen",
+        "reset": "Zurücksetzen"
+      },
+      "table": {
+        "flightsFound": "Flüge gefunden",
+        "searchPlaceholder": "Tabelle durchsuchen…",
+        "noFlights": "Keine Flüge gefunden",
+        "noFlightsHint": "Filter anpassen und erneut suchen"
+      },
+      "export": {
+        "filename": "Operatives Logbuch",
+        "missionId": "Missions-ID",
+        "dateStart": "Startdatum",
+        "dateEnd": "Enddatum",
+        "pic": "PIC",
+        "client": "Kunde",
+        "category": "Kategorie",
+        "type": "Typ",
+        "vehicle": "Fahrzeug",
+        "status": "Status",
+        "result": "Ergebnis",
+        "planCode": "Plancode",
+        "flownTime": "Flugzeit",
+        "flownMeters": "Geflogene Meter",
+        "notes": "Notizen"
+      },
+      "columns": {
+        "start": "Start",
+        "end": "Ende",
+        "pic": "PiC",
+        "client": "Kunde",
+        "category": "Kategorie",
+        "type": "Typ",
+        "droneSystem": "Drohnensystem",
+        "status": "Status",
+        "result": "Ergebnis",
+        "missionPlan": "Missionsplan",
+        "time": "Zeit",
+        "distance": "Distanz",
+        "notes": "Notizen"
+      }
+    }
+  },
+  "safety": {
+    "spiKpi": {
+      "pageTitle": "SPI / KPI Definitionen",
+      "pageSubtitle": "Sicherheitsmanagement · Überwachung von Sicherheitsleistungsindikatoren",
+      "newIndicator": "Neuer Indikator",
+      "stats": {
+        "totalIndicators": "Gesamtindikatoren",
+        "activeMonitors": "Aktive Überwachungen",
+        "operationsArea": "Betriebsbereich"
+      },
+      "infoBanner": "Indikatoren erscheinen erst im Sicherheits-Dashboard, wenn Messwerte protokolliert wurden. Verwenden Sie die",
+      "infoBannerLogValue": "Wert protokollieren",
+      "infoBannerSuffix": "Schaltfläche in jeder Zeile zur Dateneingabe.",
+      "filters": {
+        "searchDefinitions": "Definitionen suchen",
+        "searchPlaceholder": "Code, Name oder Beschreibung...",
+        "area": "Bereich",
+        "allAreas": "Alle Bereiche",
+        "status": "Status",
+        "allStatus": "Alle Status",
+        "activeOnly": "Nur Aktive",
+        "inactiveOnly": "Nur Inaktive",
+        "apply": "Anwenden"
+      },
+      "areas": {
+        "COMPLIANCE": "Compliance",
+        "TRAINING": "Schulung",
+        "OPERATIONS": "Betrieb",
+        "MAINTENANCE": "Wartung"
+      },
+      "table": {
+        "indicatorCode": "Indikatorcode",
+        "area": "Bereich",
+        "name": "Name",
+        "target": "Zielwert",
+        "status": "Status",
+        "active": "Aktiv",
+        "disabled": "Deaktiviert",
+        "logMeasurement": "Messwert protokollieren",
+        "noResults": "Keine Indikatoren entsprechen Ihrer aktuellen Auswahl."
+      },
+      "form": {
+        "editTitle": "Indikator bearbeiten",
+        "newTitle": "Neuer Indikator",
+        "code": "Code",
+        "codePlaceholder": "z.B. OPS_SAFETY_01",
+        "codeHint": "Unveränderlich nach dem Speichern",
+        "unit": "Einheit",
+        "unitPlaceholder": "% / Anzahl / Stunden",
+        "type": "Typ",
+        "kpiOption": "KPI - Schlüsselleistung",
+        "spiOption": "SPI - Sicherheitsleistung",
+        "area": "Bereich",
+        "indicatorName": "Indikatorname",
+        "namePlaceholder": "Beschreibenden Namen eingeben...",
+        "targetValue": "Zielwert",
+        "frequency": "Berichtsfrequenz",
+        "description": "Beschreibung",
+        "descPlaceholder": "Erklären Sie, was dieser Indikator misst...",
+        "statusLabel": "Status",
+        "activeMonitoring": "Aktiv / Überwachung",
+        "disabledDraft": "Deaktiviert / Entwurf",
+        "cancel": "Abbrechen",
+        "processing": "Verarbeitung...",
+        "updateIndicator": "Indikator aktualisieren",
+        "createIndicator": "Indikator erstellen"
+      },
+      "frequency": {
+        "MONTHLY": "Monatlich",
+        "WEEKLY": "Wöchentlich",
+        "QUARTERLY": "Vierteljährlich",
+        "YEARLY": "Jährlich"
+      },
+      "validation": {
+        "codeMinChars": "Mindestens 3 Zeichen",
+        "codeFormat": "Nur Großbuchstaben, Zahlen und Unterstriche",
+        "nameRequired": "Name ist erforderlich",
+        "unitRequired": "Einheit ist erforderlich",
+        "targetPositive": "Muss eine positive Zahl sein",
+        "dateRequired": "Datum ist erforderlich",
+        "valueNumber": "Muss eine gültige Zahl sein"
+      },
+      "log": {
+        "title": "Messung protokollieren",
+        "measurementDate": "Messdatum",
+        "actualValue": "Ist-Wert",
+        "actualPlaceholder": "z.B. 87,5",
+        "targetValue": "Zielwert",
+        "status": "Status",
+        "statusGreen": "Im Soll / Über Ziel",
+        "statusYellow": "Gefährdet / Im Ziel",
+        "statusRed": "Überschritten / Unter Ziel",
+        "cancel": "Abbrechen",
+        "saving": "Speichern...",
+        "saveMeasurement": "Messung speichern"
+      },
+      "toast": {
+        "loadError": "Indikatoren konnten nicht geladen werden",
+        "recordSynced": "Datensatz synchronisiert",
+        "saveFailed": "Speichern fehlgeschlagen",
+        "activated": "Indikator aktiviert",
+        "deactivated": "Indikator deaktiviert",
+        "toggleFailed": "Umschalten fehlgeschlagen",
+        "measurementLogged": "Messung erfolgreich protokolliert",
+        "logFailed": "Protokollierung fehlgeschlagen"
+      }
+    }
+  },
+  "compliance": {
+    "generalAuditPlan": {
+      "title": "Allgemeiner Auditplan",
+      "subtitle": "SMS Version 3.2 · Revision 01",
+      "stats": {
+        "totalRequirements": "Gesamtanforderungen",
+        "compliant": "Konform",
+        "partialNonCompliant": "Teilweise / Nicht Konform",
+        "notApplicable": "Nicht Zutreffend"
+      },
+      "filters": {
+        "searchPlaceholder": "Nach Code, Titel, Bereich oder Quelle suchen…",
+        "statusAll": "Alle Status",
+        "areaAll": "Alle Bereiche",
+        "clear": "Zurücksetzen"
+      },
+      "auditSchedule": {
+        "sectionTitle": "Jährlicher Auditplan",
+        "subtitle": "Vier Quartalsaudits für alle Compliance-Bereiche",
+        "footer": "Ausgabe & Archivierung: Quartalsberichte unterzeichnet von CMM und validiert von AM; PDF-Archivierung für 3 Jahre; Maßnahmenregister mit Fristen und Verantwortlichkeiten.",
+        "columns": {
+          "period": "Zeitraum",
+          "type": "Typ",
+          "area": "Bereich / Thema",
+          "responsible": "Verantwortlicher",
+          "mode": "Modus",
+          "output": "Erwartetes Ergebnis"
+        }
+      },
+      "table": {
+        "sectionTitle": "Compliance-Anforderungen",
+        "addButton": "Neue Anforderung",
+        "columns": {
+          "ref": "Ref.",
+          "title": "Titel",
+          "type": "Typ",
+          "regulatoryBody": "Regulierungsbehörde",
+          "status": "Status",
+          "criticality": "Kritikalität",
+          "nextDue": "Nächste Fälligkeit",
+          "actions": "Aktionen"
+        },
+        "empty": "Keine Compliance-Anforderungen gefunden.",
+        "emptyHint": "Fügen Sie Ihre erste Anforderung über die Schaltfläche oben hinzu.",
+        "requirementCount_one": "{{count}} Anforderung",
+        "requirementCount_other": "{{count}} Anforderungen"
+      },
+      "modal": {
+        "createTitle": "Neue Compliance-Anforderung",
+        "editTitle": "Anforderung bearbeiten",
+        "fields": {
+          "code": "Ref-Code",
+          "codePlaceholder": "z.B. EU-2019/947-A1",
+          "title": "Titel",
+          "titlePlaceholder": "Kurzbeschreibung der Anforderung",
+          "type": "Typ",
+          "typePlaceholder": "z.B. Regulatorisch",
+          "regulatoryBody": "Regulierungsbehörde",
+          "regulatoryBodyPlaceholder": "z.B. Reg. (EU) 2019/947",
+          "status": "Status",
+          "criticality": "Kritikalität (1–5)",
+          "nextReviewDate": "Nächstes Fälligkeitsdatum",
+          "notes": "Hinweise",
+          "notesPlaceholder": "Zusätzlicher Kontext, Nachweise, Korrekturmaßnahmen…"
+        },
+        "cancel": "Abbrechen",
+        "save": "Speichern",
+        "saving": "Wird gespeichert…",
+        "update": "Aktualisieren",
+        "create": "Erstellen"
+      },
+      "deleteModal": {
+        "title": "Anforderung löschen",
+        "message": "Möchten Sie diese Compliance-Anforderung wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
+        "confirm": "Löschen",
+        "deleting": "Wird gelöscht…",
+        "cancel": "Abbrechen"
+      },
+      "messages": {
+        "loadFailed": "Compliance-Daten konnten nicht geladen werden",
+        "saveSuccess": "Änderungen gespeichert",
+        "createSuccess": "Anforderung hinzugefügt",
+        "saveFailed": "Anforderung konnte nicht gespeichert werden",
+        "deleteSuccess": "Anforderung gelöscht",
+        "deleteFailed": "Anforderung konnte nicht gelöscht werden"
+      }
+    },
+    "calendar": {
+      "title": "Compliance-Kalender",
+      "subtitle": "Fälligkeitsdaten und Überprüfungsplan für Compliance-Anforderungen",
+      "buttonText": {
+        "today": "Heute",
+        "month": "Monat",
+        "list": "Liste"
+      },
+      "legend": {
+        "compliant": "Konform",
+        "partial": "Teilweise",
+        "nonCompliant": "Nicht Konform",
+        "notApplicable": "Nicht Zutreffend"
+      },
+      "eventModal": {
+        "title": "Anforderungsdetail",
+        "fields": {
+          "code": "Code",
+          "title": "Titel",
+          "status": "Status",
+          "area": "Bereich",
+          "source": "Quelle",
+          "dueDate": "Fälligkeitsdatum"
+        },
+        "close": "Schließen"
+      },
+      "loading": "Kalender wird geladen…",
+      "empty": "Keine Compliance-Ereignisse für diesen Zeitraum gefunden.",
+      "eventCount_one": "{{count}} Ereignis",
+      "eventCount_other": "{{count}} Ereignisse",
+      "messages": {
+        "loadFailed": "Kalendereinträge konnten nicht geladen werden"
+      }
+    },
+    "requirementsEvidences": {
+      "title": "Anforderungen & Nachweise",
+      "subtitle": "Verwaltung von Compliance-Anforderungen mit Nachweiserfassung",
+      "actions": {
+        "updateKpi": "KPI aktualisieren",
+        "filter": "Filtern",
+        "refresh": "Aktualisieren",
+        "newRequirement": "Neue Anforderung"
+      },
+      "stats": {
+        "total": "Gesamt",
+        "compliant": "Konform",
+        "nonCompliant": "Nicht Konform",
+        "partial": "Teilweise"
+      },
+      "filters": {
+        "searchPlaceholder": "Anforderungen suchen…",
+        "areaAll": "Alle Bereiche",
+        "statusAll": "Alle Status",
+        "clear": "Zurücksetzen"
+      },
+      "table": {
+        "columns": {
+          "code": "Code",
+          "title": "Titel",
+          "area": "Bereich",
+          "source": "Quelle",
+          "status": "Status",
+          "criticality": "Kritikalität",
+          "nextDue": "Nächste Fälligkeit",
+          "actions": "Aktionen"
+        },
+        "tooltips": {
+          "changeStatus": "Status ändern",
+          "manageEvidence": "Nachweise verwalten",
+          "edit": "Bearbeiten",
+          "delete": "Löschen"
+        },
+        "empty": "Keine Anforderungen gefunden.",
+        "requirementCount_one": "{{count}} Anforderung",
+        "requirementCount_other": "{{count}} Anforderungen"
+      },
+      "requirementModal": {
+        "createTitle": "Neue Anforderung",
+        "editTitle": "Anforderung bearbeiten",
+        "fields": {
+          "code": "Code",
+          "codePlaceholder": "z.B. REQ-001",
+          "title": "Titel",
+          "titlePlaceholder": "Titel der Anforderung",
+          "area": "Bereich",
+          "source": "Quelle",
+          "sourcePlaceholder": "z.B. ICAO Anhang 19",
+          "status": "Status",
+          "criticality": "Kritikalität",
+          "nextDue": "Nächste Fälligkeit",
+          "notes": "Hinweise",
+          "notesPlaceholder": "Zusätzliche Hinweise…"
+        },
+        "cancel": "Abbrechen",
+        "save": "Speichern",
+        "saving": "Wird gespeichert…",
+        "update": "Aktualisieren",
+        "create": "Erstellen"
+      },
+      "deleteModal": {
+        "title": "Anforderung löschen",
+        "message": "Möchten Sie diese Anforderung wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
+        "confirm": "Löschen",
+        "deleting": "Wird gelöscht…",
+        "cancel": "Abbrechen"
+      },
+      "statusModal": {
+        "title": "Status ändern",
+        "fields": {
+          "requirement": "Anforderung",
+          "newStatus": "Neuer Status",
+          "comment": "Kommentar",
+          "commentPlaceholder": "Grund für die Statusänderung…"
+        },
+        "cancel": "Abbrechen",
+        "apply": "Anwenden",
+        "applying": "Wird angewendet…"
+      },
+      "evidencePanel": {
+        "title": "Nachweise",
+        "subtitle": "Angehängte Nachweise für diese Anforderung",
+        "addTitle": "Nachweis hinzufügen",
+        "fields": {
+          "type": "Typ",
+          "description": "Beschreibung",
+          "descriptionPlaceholder": "Nachweis beschreiben…",
+          "fileUrl": "Datei-URL",
+          "fileUrlPlaceholder": "https://…",
+          "notes": "Hinweise",
+          "notesPlaceholder": "Optionale Hinweise…"
+        },
+        "types": {
+          "DOC": "Dokument",
+          "RECORD": "Aufzeichnung",
+          "AUDIT": "Audit",
+          "LINK": "Link"
+        },
+        "add": "Nachweis hinzufügen",
+        "adding": "Wird hinzugefügt…",
+        "delete": "Löschen",
+        "viewFile": "Datei ansehen",
+        "close": "Schließen",
+        "submittedAt": "Eingereicht am",
+        "empty": "Noch keine Nachweise angehängt."
+      },
+      "messages": {
+        "loadFailed": "Anforderungen konnten nicht geladen werden",
+        "evidenceLoadFailed": "Nachweise konnten nicht geladen werden",
+        "updateSuccess": "Anforderung aktualisiert",
+        "createSuccess": "Anforderung erstellt",
+        "saveFailed": "Anforderung konnte nicht gespeichert werden",
+        "deleteSuccess": "Anforderung gelöscht",
+        "deleteFailed": "Löschen fehlgeschlagen",
+        "statusUpdateSuccess": "Status aktualisiert",
+        "statusUpdateFailed": "Statusaktualisierung fehlgeschlagen",
+        "evidenceAddSuccess": "Nachweis hinzugefügt",
+        "evidenceAddFailed": "Nachweis konnte nicht hinzugefügt werden",
+        "evidenceDeleteSuccess": "Nachweis gelöscht",
+        "evidenceDeleteFailed": "Nachweis konnte nicht gelöscht werden",
+        "kpiUpdateSuccess": "KPI aktualisiert: {{compliant}}/{{total}} Konform ({{non_compliant}} Nicht-Konform, {{partial}} Teilweise)",
+        "kpiUpdateFailed": "KPI-Aktualisierung fehlgeschlagen",
+        "kpiRunFailed": "Monatliche KPI-Ausführung fehlgeschlagen"
+      }
+    },
+    "safetyTargetReview": {
+      "title": "Sicherheitsziele-Überprüfung",
+      "subtitle": "SPI / KPI",
+      "monthsSelector": {
+        "label": "Analysiere die letzten",
+        "3": "3 Monate",
+        "6": "6 Monate",
+        "12": "12 Monate"
+      },
+      "generate": "Generieren",
+      "generating": "Generierung…",
+      "tableSubtitle": "Überprüfen Sie die vorgeschlagenen SPI/KPI-Ziele der letzten {{months}} Monate. Genehmigen Sie, um das neue Ziel anzuwenden.",
+      "stats": {
+        "totalIndicators": "Gesamtindikatoren",
+        "pendingReview": "Ausstehende Überprüfung",
+        "approved": "Genehmigt",
+        "rejected": "Abgelehnt"
+      },
+      "table": {
+        "sectionTitle": "Zielvorschläge",
+        "columns": {
+          "area": "Bereich",
+          "indicator": "Indikator",
+          "type": "Typ",
+          "current": "Aktuell",
+          "suggested": "Vorgeschlagen",
+          "diff": "Δ Diff",
+          "created": "Erstellt",
+          "status": "Status",
+          "actions": "Aktionen"
+        },
+        "tooltips": {
+          "approve": "Genehmigen",
+          "reject": "Ablehnen"
+        },
+        "empty": "Noch keine Vorschläge generiert. Zeitraum wählen und auf Generieren klicken.",
+        "emptyHint": "Klicken Sie auf Generieren, um die letzten {{months}} Monate zu analysieren."
+      },
+      "actionModal": {
+        "approveTitle": "Vorschlag genehmigen",
+        "rejectTitle": "Vorschlag ablehnen",
+        "fields": {
+          "indicator": "Indikator",
+          "area": "Bereich",
+          "currentTarget": "Aktuelles Ziel",
+          "suggestedTarget": "Vorgeschlagenes Ziel",
+          "delta": "Δ Differenz",
+          "notes": "Hinweise",
+          "notesPlaceholder": "Hinweis zu dieser Entscheidung hinzufügen…"
+        },
+        "alerts": {
+          "approve": "Sie sind dabei, dieses vorgeschlagene Ziel zu genehmigen. Der aktive KPI-Schwellenwert wird aktualisiert.",
+          "reject": "Sie sind dabei, diesen Vorschlag abzulehnen. Das aktuelle Ziel bleibt unverändert."
+        },
+        "cancel": "Abbrechen",
+        "approve": "Genehmigen",
+        "reject": "Ablehnen",
+        "processing": "Wird verarbeitet…"
+      },
+      "generatedSummary": "Generierte Vorschläge: {{pending}} ausstehend (letzte {{months}} Monate)",
+      "messages": {
+        "loadFailed": "Vorschläge konnten nicht geladen werden",
+        "generateFailed": "Vorschläge konnten nicht generiert werden",
+        "actionFailed": "Aktion fehlgeschlagen"
+      }
+    },
+    "shared": {
+      "status": {
+        "COMPLIANT": "Konform",
+        "PARTIAL": "Teilweise",
+        "NON_COMPLIANT": "Nicht Konform",
+        "NOT_APPLICABLE": "Nicht Zutreffend",
+        "PENDING": "Ausstehend",
+        "APPROVED": "Genehmigt",
+        "REJECTED": "Abgelehnt"
+      },
+      "area": {
+        "OPERATIONS": "Betrieb",
+        "MAINTENANCE": "Wartung",
+        "TRAINING": "Schulung",
+        "SMS": "SMS",
+        "COMPLIANCE": "Compliance",
+        "ICT": "IKT"
+      },
+      "pagination": {
+        "rowsPerPage": "Zeilen pro Seite",
+        "pageInfo": "Seite {{current}} von {{total}}",
+        "first": "Erste Seite",
+        "previous": "Vorherige Seite",
+        "next": "Nächste Seite",
+        "last": "Letzte Seite"
+      }
+    }
+  },
+  "flytbase": {
+    "integration": {
+      "title": "FlytBase Integration",
+      "subtitle": "Verbinde dein FlytBase-Konto, um Flugprotokolle und Missionsdaten zu importieren",
+      "viewFlights": "Flüge anzeigen",
+      "needToken": "Benötigst du ein FlytBase API-Token?",
+      "viewDocumentation": "Dokumentation anzeigen",
+      "tokenNote": "Verwende einen langlebigen API-Schlüssel (RS256 JWT), kein kurzlebiges Sitzungstoken."
+    },
+    "token": {
+      "title": "FlytBase API-Token",
+      "subtitle": "Wird verwendet, um deine Flugprotokolle und Missionshistorie von FlytBase abzurufen",
+      "connected": "Verbunden",
+      "notConnected": "Nicht verbunden",
+      "secureNote": "Dein Token wird sicher gespeichert und wird niemals anderen Nutzern zugänglich gemacht oder protokolliert.",
+      "savedNote": "Ein FlytBase API-Token ist derzeit für dein Konto gespeichert.",
+      "replaceToken": "Token ersetzen",
+      "removing": "Wird entfernt…",
+      "remove": "Entfernen",
+      "removeTitle": "FlytBase-Integration entfernen?",
+      "removeDescription": "Dadurch wird dein gespeichertes API-Token dauerhaft gelöscht. Du kannst keine Flugprotokolle oder Missionsdaten mehr abrufen, bis du dich mit einem neuen Token neu verbindest.",
+      "cancel": "Abbrechen",
+      "yesRemove": "Ja, Token entfernen",
+      "apiToken": "API-Token",
+      "apiTokenPlaceholder": "Füge deinen langlebigen FlytBase API-Schlüssel ein",
+      "orgId": "Organisations-ID",
+      "orgIdPlaceholder": "z.B. 684fbfd4c264f8f677beb444",
+      "orgIdHint": "Zu finden in deinem FlytBase-Dashboard unter Organisationseinstellungen.",
+      "verifying": "Wird verifiziert…",
+      "verify": "Token verifizieren",
+      "verifiedTitle": "Token verifiziert — bestätige, dass dies dein FlytBase-Konto ist",
+      "saving": "Wird gespeichert…",
+      "saveToken": "Ja, diesen Token speichern",
+      "fields": {
+        "name": "Name",
+        "username": "Benutzername",
+        "phone": "Telefon",
+        "organization": "Organisation",
+        "flytbaseId": "FlytBase-ID"
+      },
+      "toasts": {
+        "enterToken": "Bitte gib deinen FlytBase API-Token ein.",
+        "enterOrgId": "Bitte gib deine FlytBase Organisations-ID ein.",
+        "verifyFailed": "Token-Verifizierung fehlgeschlagen. Bitte überprüfe deinen Token und die Organisations-ID.",
+        "saveSuccess": "FlytBase-Integration erfolgreich gespeichert.",
+        "saveFailed": "Token konnte nicht gespeichert werden.",
+        "removed": "FlytBase-Integration entfernt.",
+        "removeFailed": "Token konnte nicht entfernt werden."
+      }
+    },
+    "flights": {
+      "title": "Aktuelle Flüge",
+      "subtitle": "Wähle einen Flug aus, um das GUTMA-Protokoll anzuzeigen",
+      "refresh": "Aktualisieren",
+      "settings": "Einstellungen",
+      "flightsLabel": "Flüge",
+      "shown": "angezeigt",
+      "of": "von",
+      "noToken": "Kein FlytBase API-Token für dein Konto konfiguriert.",
+      "setUp": "Jetzt einrichten",
+      "noRecentFlights": "Keine aktuellen Flüge gefunden.",
+      "noFlightsInWindow": "Keine Flüge in den letzten {{window}} Minuten gefunden.",
+      "selectFlight": "Wähle einen Flug aus, um das GUTMA-Protokoll anzuzeigen",
+      "latest20": "Neueste 20",
+      "windows": {
+        "60": "Letzte 1 Std.",
+        "360": "Letzte 6 Std.",
+        "720": "Letzte 12 Std.",
+        "1440": "Letzte 24 Std."
+      }
+    },
+    "preview": {
+      "savedToReadi": "In ReADI gespeichert",
+      "notSaved": "Nicht gespeichert",
+      "archiving": "Wird archiviert…",
+      "archiveToReadi": "In ReADI archivieren",
+      "tabs": {
+        "map": "Karte",
+        "gutmaLog": "GUTMA-Protokoll",
+        "flightInfo": "Fluginformationen"
+      },
+      "downloadingLog": "GUTMA-Protokoll wird von FlytBase heruntergeladen…",
+      "noGpsCoords": "Keine GPS-Koordinaten in dieser GUTMA-Datei gefunden.",
+      "noFlightInfo": "Keine zusätzlichen Fluginformationen in dieser GUTMA-Datei verfügbar.",
+      "noWaypointData": "Keine Wegpunktdaten in dieser GUTMA-Datei gefunden.",
+      "registerSerials": "Registriere diese Seriennummern in deinem Ausrüstungsinventar, bevor du archivierst.",
+      "sections": {
+        "flightDetails": "Flugdetails",
+        "asset": "Asset",
+        "events": "Ereignisse",
+        "payloadBattery": "Nutzlast / Batterie",
+        "aircraft": "Luftfahrzeug",
+        "groundControlStation": "Bodenstation",
+        "waypointLog": "Wegpunkt-Protokoll"
+      },
+      "fields": {
+        "pilotInCommand": "Verantwortlicher Pilot",
+        "mission": "Mission",
+        "startTime": "Startzeit",
+        "endTime": "Endzeit",
+        "duration": "Dauer",
+        "distance": "Entfernung",
+        "loggingStart": "Protokollierungsbeginn",
+        "drone": "Drohne",
+        "name": "Name",
+        "model": "Modell",
+        "manufacturer": "Hersteller",
+        "serialNumber": "Seriennummer",
+        "firmware": "Firmware",
+        "type": "Typ",
+        "cycleCount": "Zyklenanzahl",
+        "designCapacity": "Nennkapazität"
+      },
+      "eventsTable": {
+        "hash": "#",
+        "timestamp": "Zeitstempel",
+        "type": "Typ",
+        "info": "Info",
+        "controller": "Controller"
+      },
+      "waypointTable": {
+        "hash": "#",
+        "timestamp": "Zeitstempel",
+        "lat": "Lat",
+        "lon": "Lon",
+        "altitude": "Alt (m)",
+        "speed": "Geschwindigkeit",
+        "velocities": "Vx/Vy/Vz (m/s)",
+        "heading": "Kurs (ψ)",
+        "roll": "Rollen (φ)",
+        "pitch": "Nicken (θ)",
+        "battery": "Batterie"
+      },
+      "pagination": {
+        "rows": "Zeilen",
+        "prev": "Zurück",
+        "next": "Weiter",
+        "showing": "Anzeige {{start}}-{{end}} von {{total}} Wegpunkten · Seite {{page}} von {{totalPages}}",
+        "showingFirst": "Anzeige der ersten {{count}} von {{total}} Wegpunkten."
+      },
+      "subtitles": {
+        "events_one": "{{count}} Ereignis",
+        "events_other": "{{count}} Ereignisse",
+        "payload_one": "{{count}} Element",
+        "payload_other": "{{count}} Elemente",
+        "waypointLog": "{{count}} von {{total}} Punkten"
+      }
+    },
+    "archive": {
+      "archivedDetail_one": "{{count}} Komponente aktualisiert",
+      "archivedDetail_other": "{{count}} Komponenten aktualisiert",
+      "missionSynced": "Mission synchronisiert",
+      "archivedSuccess": "Flugprotokoll in Readi archiviert.",
+      "archiveFailed": "Flugprotokoll konnte nicht archiviert werden."
+    }
+  },
+"training": {
+  "title": "Schulungskalender",
+  "subtitle": "Geplante Schulungstermine anzeigen",
+  "refresh": "Aktualisieren",
+  "loading": "Schulungstermine werden geladen...",
+  "legend": "Legende:",
+  "participant": "Teilnehmer",
+  "sessionDate": "Sitzungsdatum",
+  "status": "Status",
+  "close": "Schließen",
+  "statuses": {
+    "COMPLETED": "Abgeschlossen",
+    "IN_PROGRESS": "In Bearbeitung",
+    "FAILED": "Fehlgeschlagen",
+    "ABSENT": "Abwesend",
+    "OTHER": "Andere"
   }
+}
 }

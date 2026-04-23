@@ -6,7 +6,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Mission, MissionStatusCode } from "@/config/types/operation";
 import { cn } from "@/lib/utils";
-import { Calendar, CheckCircle2, ClipboardList, Clock, Crosshair, Gauge, Tag, User, Wrench } from "lucide-react";
+import { Calendar, CheckCircle2, ClipboardList, Clock, Crosshair, Gauge, Tag, User, Wrench, TicketCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { MissionLimitsPanel } from "./MissionLimitsPanel";
 
@@ -283,6 +283,26 @@ export function MissionCard({ mission, draggable, onDragStart, onViewDetails, on
           )}
         </div>
 
+        {mission.mission_status_code === "00" && mission.last_closed_ticket && (
+          <div className={cn("mt-2 flex items-start gap-1.5 rounded-md border px-2 py-1.5", isDark ? "border-slate-700 bg-slate-800/60" : "border-slate-200 bg-slate-50")}>
+            <TicketCheck className={cn("mt-0.5 h-3 w-3 shrink-0", isDark ? "text-emerald-400" : "text-emerald-600")} />
+            <div className="min-w-0">
+              <p className={cn("text-[9px] font-semibold uppercase tracking-wide", isDark ? "text-slate-500" : "text-slate-400")}>
+                {t("operations.board.card.lastMaintenanceClosed")}
+              </p>
+              <p className={cn("text-[11px] font-medium", isDark ? "text-slate-300" : "text-slate-700")}>
+                {new Date(mission.last_closed_ticket.closed_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+                {" · "}#{mission.last_closed_ticket.ticket_id}
+              </p>
+              {mission.last_closed_ticket.note && (
+                <p className={cn("mt-0.5 truncate text-[10px]", isDark ? "text-slate-500" : "text-slate-500")}>
+                  {mission.last_closed_ticket.note}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
         <MissionLimitsPanel limitJson={mission.mission_planning_limit_json} isDark={isDark} />
 
         {onOpenLuc != null && mission.fk_luc_procedure_id != null && (
@@ -357,14 +377,14 @@ export function MissionCard({ mission, draggable, onDragStart, onViewDetails, on
               {t("operations.board.card.completeTasks")}
             </Button>
           )}
-          {mission.mission_status_code === "10" && onUpdateMaintenance && (
+          {onUpdateMaintenance && (
             <TooltipProvider delayDuration={300}>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
                     onClick={onUpdateMaintenance}
                     className={cn(
-                      "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium transition-colors",
+                      "inline-flex cursor-pointer items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium transition-colors",
                       isDark
                         ? "border-violet-500/30 bg-violet-500/10 text-violet-400 hover:bg-violet-500/20"
                         : "border-violet-200 bg-violet-50 text-violet-600 hover:bg-violet-100"
@@ -387,7 +407,7 @@ export function MissionCard({ mission, draggable, onDragStart, onViewDetails, on
               <Button
                 size="sm"
                 variant="ghost"
-                className={`h-7 px-2.5 text-[11px] ${isDark
+                className={`h-7 cursor-pointer px-2.5 text-[11px] ${isDark
                   ? "text-slate-400 hover:bg-white/[0.06] hover:text-slate-100"
                   : "text-slate-500 hover:bg-slate-100 hover:text-slate-800"
                 }`}

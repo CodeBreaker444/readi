@@ -19,6 +19,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuthorization } from '@/components/authorization/AuthorizationProvider';
 import axios from 'axios';
 import { CalendarDays, ClipboardPlus, FileText, FolderOpen, Loader2, User } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -54,6 +55,7 @@ export function AddPlanningModal({
     onCreated,
 }: AddPlanningModalProps) {
     const { t } = useTranslation();
+    const { requireAuthorization } = useAuthorization();
     const currentYear = new Date().getFullYear();
 
     const [lucProcedureId, setLucProcedureId] = useState('');
@@ -124,6 +126,22 @@ export function AddPlanningModal({
         const error = validate();
         if (error) {
             toast.error(error);
+            return;
+        }
+
+        try {
+            await requireAuthorization({
+                actionType: 'planning_create',
+                entityType: 'evaluation',
+                entityId:   String(evaluationId),
+                label:      `Create Planning from Evaluation #${evaluationId}`,
+                details: {
+                    evaluation_id: evaluationId,
+                    client_id:     clientId,
+                    planning_type: planningType || 'standard',
+                },
+            });
+        } catch {
             return;
         }
 

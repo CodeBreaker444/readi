@@ -22,9 +22,13 @@ export interface Operation {
   fk_luc_procedure_id?: number | null;
   luc_procedure_progress?: Record<string, Record<string, string>> | null;
   luc_completed_at?: string | null;
-  pilot_name?: string;
-  tool_code?: string;
-  status_name?: string;
+  pilot_name?: string | null;
+  tool_code?: string | null;
+  status_name?: string | null;
+  client_name?: string | null;
+  category_name?: string | null;
+  type_name?: string | null;
+  planning_name?: string | null;
   attachment_count?: number;
   created_at: string;
   updated_at: string;
@@ -36,6 +40,8 @@ export interface ListOperationsQuerySchema {
   status?: string;
   search?: string;
   pilot_id?: number;
+  tool_id?: number;
+  client_id?: number;
   date_start?: string;
   date_end?: string;
 }
@@ -171,6 +177,10 @@ export interface Mission {
   client_name: string;
   vehicle_code: string;
   vehicle_desc: string;
+  mission_name: string | null;
+  planned_at: string | null;
+  official_start: string | null;
+  official_end: string | null;
   date_start: string;
   time_start: string;
   date_end: string | null;
@@ -186,6 +196,11 @@ export interface Mission {
   link_loss: number;
   deviation_flag: number;
   maintenance_status?: 'OK' | 'ALERT' | 'DUE' | 'IN_MAINTENANCE';
+  last_closed_ticket?: {
+    ticket_id: number;
+    closed_at: string;
+    note: string | null;
+  } | null;
   fk_luc_procedure_id: number | null;
   luc_procedure_progress: Record<string, Record<string, string>> | null;
   luc_completed_at: string | null;
@@ -253,12 +268,10 @@ export type CreateOperationCalendarInput = {
   location?: string
   notes?: string
   status_name?: string
-  // recurrence
   is_recurring?: boolean
   days_of_week?: number[]
   recur_until?: string
   mission_group_label?: string
-  // LUC procedure (required for new calendar missions)
   fk_luc_procedure_id: number
   luc_procedure_steps?: Record<string, unknown> | null
 }

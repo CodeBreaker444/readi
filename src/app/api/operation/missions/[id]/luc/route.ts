@@ -59,10 +59,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       return NextResponse.json({ code: 0, error: 'task_type and task_code are required' }, { status: 400 });
     }
 
-    // Fetch current progress
+    // Fetch current progress and the linked procedure id
     const { data: mission, error: mErr } = await supabase
       .from('pilot_mission')
-      .select('luc_procedure_progress')
+      .select('luc_procedure_progress, fk_luc_procedure_id')
       .eq('pilot_mission_id', missionId)
       .eq('fk_owner_id', session!.user.ownerId)
       .single();
@@ -78,10 +78,32 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     if (!progress[task_type]) progress[task_type] = {};
     progress[task_type][task_code] = completed ? 'Y' : 'N';
 
-    // Check if all tasks are done
-    const allDone = Object.values(progress).every((group) =>
-      Object.values(group).every((v) => v === 'Y'),
-    );
+    // Check if all tasks are done by verifying every expected task code is marked 'Y'.
+    // We must compare against the procedure definition — not just the progress keys —
+    // because Object.values({}).every(...) is vacuously true for untouched sections.
+    let allDone = false;
+    if (mission.fk_luc_procedure_id) {
+      const { data: proc } = await supabase
+        .from('luc_procedure')
+        .select('procedure_steps')
+        .eq('procedure_id', mission.fk_luc_procedure_id)
+        .single();
+
+      if (proc?.procedure_steps) {
+        const rawTasks: any[] = Array.isArray(proc.procedure_steps.tasks)
+          ? proc.procedure_steps.tasks
+          : [];
+        const expectedCodes: Record<string, string[]> = {
+          checklist:     rawTasks.flatMap((t: any) => (t.checklist     ?? []).map((c: any) => c.checklist_code)),
+          assignment:    rawTasks.flatMap((t: any) => (t.assignment    ?? []).map((a: any) => a.assignment_code)),
+          communication: rawTasks.flatMap((t: any) => (t.communication ?? []).map((c: any) => c.communication_code)),
+        };
+        const totalTasks = Object.values(expectedCodes).reduce((sum, codes) => sum + codes.length, 0);
+        allDone = totalTasks > 0 && Object.entries(expectedCodes).every(([section, codes]) =>
+          codes.every((code) => progress[section]?.[code] === 'Y'),
+        );
+      }
+    }
 
     const { error: uErr } = await supabase
       .from('pilot_mission')

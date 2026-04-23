@@ -6,51 +6,45 @@ import { TablePagination } from '@/components/tables/Pagination';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
 import { useTheme } from '@/components/useTheme';
 import {
-    flexRender,
-    getCoreRowModel,
-    getFilteredRowModel,
-    getPaginationRowModel,
-    useReactTable,
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  useReactTable,
 } from '@tanstack/react-table';
 import axios from 'axios';
 import {
-    AlertTriangle,
-    CheckCircle2,
-    Filter,
-    MinusCircle,
-    Plus,
-    RefreshCw,
-    ShieldCheck,
-    X,
+  AlertTriangle,
+  CheckCircle2,
+  Filter,
+  MinusCircle,
+  Plus,
+  RefreshCw,
+  ShieldCheck,
+  X,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 
 type ComplianceStatus = 'COMPLIANT' | 'PARTIAL' | 'NON_COMPLIANT' | 'NOT_APPLICABLE';
-
-const STATUS_OPTIONS: { value: ComplianceStatus; label: string }[] = [
-  { value: 'COMPLIANT', label: 'Compliant' },
-  { value: 'PARTIAL', label: 'Partial' },
-  { value: 'NON_COMPLIANT', label: 'Non-Compliant' },
-  { value: 'NOT_APPLICABLE', label: 'Not Applicable' },
-];
 
 const AREA_OPTIONS = [
   'Documentation',
@@ -122,6 +116,7 @@ const EMPTY_FORM: FormState = {
 
 
 export default function GeneralAuditPlanPage() {
+  const { t } = useTranslation();
   const { isDark } = useTheme();
 
   const [records, setRecords] = useState<ComplianceRequirement[]>([]);
@@ -144,6 +139,22 @@ export default function GeneralAuditPlanPage() {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
 
+  const statusOptions = [
+    { value: 'COMPLIANT' as ComplianceStatus, label: t('compliance.shared.status.COMPLIANT') },
+    { value: 'PARTIAL' as ComplianceStatus, label: t('compliance.shared.status.PARTIAL') },
+    { value: 'NON_COMPLIANT' as ComplianceStatus, label: t('compliance.shared.status.NON_COMPLIANT') },
+    { value: 'NOT_APPLICABLE' as ComplianceStatus, label: t('compliance.shared.status.NOT_APPLICABLE') },
+  ];
+
+  const auditScheduleColumns = [
+    t('compliance.generalAuditPlan.auditSchedule.columns.period'),
+    t('compliance.generalAuditPlan.auditSchedule.columns.type'),
+    t('compliance.generalAuditPlan.auditSchedule.columns.area'),
+    t('compliance.generalAuditPlan.auditSchedule.columns.responsible'),
+    t('compliance.generalAuditPlan.auditSchedule.columns.mode'),
+    t('compliance.generalAuditPlan.auditSchedule.columns.output'),
+  ];
+
   const fetchRecords = useCallback(async () => {
     setLoading(true);
     try {
@@ -155,7 +166,7 @@ export default function GeneralAuditPlanPage() {
       if (statsRes.data.code === 1) setStats(statsRes.data.data);
     } catch (err) {
       console.error('Failed to fetch compliance data', err);
-      toast.error('Failed to load compliance data');
+      toast.error(t('compliance.generalAuditPlan.messages.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -183,8 +194,8 @@ export default function GeneralAuditPlanPage() {
   }, [records, q, filterStatus, filterArea]);
 
   const columns = useMemo(
-    () => getComplianceRequirementsColumns(isDark, openEdit, (r) => setDeleteTarget(r)),
-    [isDark]
+    () => getComplianceRequirementsColumns(isDark, openEdit, (r) => setDeleteTarget(r), t),
+    [isDark, t]
   );
 
   const table = useReactTable({
@@ -238,11 +249,13 @@ export default function GeneralAuditPlanPage() {
 
       await axios.post(endpoint, payload);
       setModalOpen(false);
-      toast.success(`${form.requirement_id ? 'Changes saved' : 'Requirement added'} successfully`);
+      toast.success(form.requirement_id
+        ? t('compliance.generalAuditPlan.messages.saveSuccess')
+        : t('compliance.generalAuditPlan.messages.createSuccess'));
       fetchRecords();
     } catch (err) {
       console.error('Failed to save requirement', err);
-      toast.error('Failed to save requirement');
+      toast.error(t('compliance.generalAuditPlan.messages.saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -255,13 +268,13 @@ export default function GeneralAuditPlanPage() {
     try {
       await axios.post('/api/compliance/audit-plan/delete', { requirement_id: id });
       fetchRecords();
-      toast.success('Requirement deleted successfully');
+      toast.success(t('compliance.generalAuditPlan.messages.deleteSuccess'));
     } catch (err) {
       if (axios.isAxiosError(err)) {
         const msg = err.response?.data?.error;
-        toast.error(msg || 'Failed to delete requirement');
+        toast.error(msg || t('compliance.generalAuditPlan.messages.deleteFailed'));
       } else {
-        toast.error('Failed to delete requirement');
+        toast.error(t('compliance.generalAuditPlan.messages.deleteFailed'));
       }
     }
   }
@@ -282,7 +295,6 @@ export default function GeneralAuditPlanPage() {
 
   return (
     <div className={`min-h-screen ${bg}`}>
-
       <div
         className={`backdrop-blur-xl border-b ${
           isDark
@@ -295,10 +307,10 @@ export default function GeneralAuditPlanPage() {
             <div className="w-1 h-6 rounded-full bg-violet-600" />
             <div>
               <h1 className={`text-[15px] font-semibold tracking-[-0.01em] ${textPrimary}`}>
-                General Audit Plan
+                {t('compliance.generalAuditPlan.title')}
               </h1>
               <p className={`text-[11px] mt-0.5 ${textMuted}`}>
-                Annual Compliance Monitoring Plan · CMM · Ed.01 Rev.00 · 25/02/2025
+                {t('compliance.generalAuditPlan.subtitle')}
               </p>
             </div>
           </div>
@@ -314,7 +326,7 @@ export default function GeneralAuditPlanPage() {
               }`}
             >
               <Filter size={13} strokeWidth={2.5} />
-              Filter
+              {t('compliance.requirementsEvidences.actions.filter')}
             </Button>
             <Button
               variant="outline"
@@ -331,7 +343,7 @@ export default function GeneralAuditPlanPage() {
               className="h-8 gap-1.5 text-xs bg-violet-600 hover:bg-violet-700 text-white"
             >
               <Plus size={14} strokeWidth={2.5} />
-              New Requirement
+              {t('compliance.generalAuditPlan.table.addButton')}
             </Button>
           </div>
         </div>
@@ -344,7 +356,7 @@ export default function GeneralAuditPlanPage() {
             <Input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Search by ref, title, area or source…"
+              placeholder={t('compliance.generalAuditPlan.filters.searchPlaceholder')}
               className={`h-8 flex-1 min-w-48 text-xs ${inputCls}`}
             />
             <Select
@@ -356,11 +368,11 @@ export default function GeneralAuditPlanPage() {
                   isDark ? 'bg-white/4 border-white/8 text-white' : 'bg-gray-50 border-gray-200'
                 }`}
               >
-                <SelectValue placeholder="All Status" />
+                <SelectValue placeholder={t('compliance.generalAuditPlan.filters.statusAll')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                {STATUS_OPTIONS.map((s) => (
+                <SelectItem value="all">{t('compliance.generalAuditPlan.filters.statusAll')}</SelectItem>
+                {statusOptions.map((s) => (
                   <SelectItem key={s.value} value={s.value}>
                     {s.label}
                   </SelectItem>
@@ -376,10 +388,10 @@ export default function GeneralAuditPlanPage() {
                   isDark ? 'bg-white/4 border-white/8 text-white' : 'bg-gray-50 border-gray-200'
                 }`}
               >
-                <SelectValue placeholder="All Areas" />
+                <SelectValue placeholder={t('compliance.generalAuditPlan.filters.areaAll')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Areas</SelectItem>
+                <SelectItem value="all">{t('compliance.generalAuditPlan.filters.areaAll')}</SelectItem>
                 {AREA_OPTIONS.map((a) => (
                   <SelectItem key={a} value={a}>
                     {a}
@@ -398,7 +410,7 @@ export default function GeneralAuditPlanPage() {
                 }}
                 className="h-8 gap-1 text-xs text-red-400 hover:bg-red-500/10 hover:text-red-400"
               >
-                <X size={13} /> Clear
+                <X size={13} /> {t('compliance.generalAuditPlan.filters.clear')}
               </Button>
             )}
           </div>
@@ -408,39 +420,39 @@ export default function GeneralAuditPlanPage() {
           {(
             [
               {
-                label: 'Total Requirements',
+                labelKey: 'compliance.generalAuditPlan.stats.totalRequirements',
                 value: stats.total,
                 icon: ShieldCheck,
                 color: 'text-violet-400',
                 iconBg: isDark ? 'bg-violet-500/10' : 'bg-violet-50',
               },
               {
-                label: 'Compliant',
+                labelKey: 'compliance.generalAuditPlan.stats.compliant',
                 value: stats.compliant,
                 icon: CheckCircle2,
                 color: 'text-emerald-400',
                 iconBg: isDark ? 'bg-emerald-500/10' : 'bg-emerald-50',
               },
               {
-                label: 'Partial / Non-Compliant',
+                labelKey: 'compliance.generalAuditPlan.stats.partialNonCompliant',
                 value: stats.partial + stats.non_compliant,
                 icon: AlertTriangle,
                 color: 'text-amber-400',
                 iconBg: isDark ? 'bg-amber-500/10' : 'bg-amber-50',
               },
               {
-                label: 'Not Applicable',
+                labelKey: 'compliance.generalAuditPlan.stats.notApplicable',
                 value: stats.not_applicable,
                 icon: MinusCircle,
                 color: 'text-slate-400',
                 iconBg: isDark ? 'bg-slate-500/10' : 'bg-slate-100',
               },
             ] as const
-          ).map(({ label, value, icon: Icon, color, iconBg }) => (
-            <div key={label} className={`rounded-xl border p-4 ${cardBg}`}>
+          ).map(({ labelKey, value, icon: Icon, color, iconBg }) => (
+            <div key={labelKey} className={`rounded-xl border p-4 ${cardBg}`}>
               <div className="flex items-center justify-between mb-3">
                 <p className={`text-[11px] font-medium uppercase tracking-wider ${textMuted}`}>
-                  {label}
+                  {t(labelKey)}
                 </p>
                 <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${iconBg}`}>
                   <Icon size={14} className={color} />
@@ -453,25 +465,25 @@ export default function GeneralAuditPlanPage() {
 
         <div className={`rounded-xl border overflow-hidden ${cardBg}`}>
           <div className={`px-5 py-4 border-b ${borderMuted}`}>
-            <h2 className={`text-sm font-semibold ${textPrimary}`}>Annual Audit Schedule</h2>
+            <h2 className={`text-sm font-semibold ${textPrimary}`}>
+              {t('compliance.generalAuditPlan.auditSchedule.sectionTitle')}
+            </h2>
             <p className={`text-[11px] mt-0.5 ${textMuted}`}>
-              Four quarterly audits covering all compliance domains
+              {t('compliance.generalAuditPlan.auditSchedule.subtitle')}
             </p>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
                 <tr className={`${tableHeadBg} border-b ${borderMuted}`}>
-                  {['Period', 'Type', 'Area / Subject', 'Responsible', 'Mode', 'Expected Output'].map(
-                    (h) => (
-                      <th
-                        key={h}
-                        className={`px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-wider ${textMuted}`}
-                      >
-                        {h}
-                      </th>
-                    )
-                  )}
+                  {auditScheduleColumns.map((h) => (
+                    <th
+                      key={h}
+                      className={`px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-wider ${textMuted}`}
+                    >
+                      {h}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
@@ -513,17 +525,18 @@ export default function GeneralAuditPlanPage() {
           </div>
           <div className={`px-5 py-3 border-t ${borderMuted}`}>
             <p className={`text-[11px] ${textMuted}`}>
-              Output &amp; archiving: quarterly reports signed by CMM and validated by AM; PDF
-              archiving for 3 years; corrective action register with deadlines and responsibilities.
+              {t('compliance.generalAuditPlan.auditSchedule.footer')}
             </p>
           </div>
         </div>
 
         <div className={`rounded-xl border overflow-hidden ${cardBg}`}>
           <div className={`px-5 py-4 border-b ${borderMuted}`}>
-            <h2 className={`text-sm font-semibold ${textPrimary}`}>Compliance Requirements</h2>
+            <h2 className={`text-sm font-semibold ${textPrimary}`}>
+              {t('compliance.generalAuditPlan.table.sectionTitle')}
+            </h2>
             <p className={`text-[11px] mt-0.5 ${textMuted}`}>
-              {filtered.length} requirement{filtered.length !== 1 ? 's' : ''}
+              {t('compliance.generalAuditPlan.table.requirementCount', { count: filtered.length })}
             </p>
           </div>
 
@@ -571,9 +584,11 @@ export default function GeneralAuditPlanPage() {
                           isDark ? 'text-gray-700' : 'text-gray-300'
                         }`}
                       />
-                      <p className={`text-sm ${textMuted}`}>No compliance requirements found.</p>
+                      <p className={`text-sm ${textMuted}`}>
+                        {t('compliance.generalAuditPlan.table.empty')}
+                      </p>
                       <p className={`text-xs mt-1 ${textMuted}`}>
-                        Add your first requirement using the button above.
+                        {t('compliance.generalAuditPlan.table.emptyHint')}
                       </p>
                     </TableCell>
                   </TableRow>
@@ -612,7 +627,9 @@ export default function GeneralAuditPlanPage() {
           >
             <div className={`flex items-center justify-between px-6 py-4 border-b ${borderMuted}`}>
               <h2 className={`text-sm font-semibold ${textPrimary}`}>
-                {form.requirement_id ? 'Edit Requirement' : 'New Compliance Requirement'}
+                {form.requirement_id
+                  ? t('compliance.generalAuditPlan.modal.editTitle')
+                  : t('compliance.generalAuditPlan.modal.createTitle')}
               </h2>
               <Button
                 variant="ghost"
@@ -632,23 +649,23 @@ export default function GeneralAuditPlanPage() {
               <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>
-                    Ref Code *
+                    {t('compliance.generalAuditPlan.modal.fields.code')} *
                   </label>
                   <Input
                     value={form.requirement_code}
                     onChange={(e) => setForm((f) => ({ ...f, requirement_code: e.target.value }))}
-                    placeholder="e.g. EU-2019/947-A1"
+                    placeholder={t('compliance.generalAuditPlan.modal.fields.codePlaceholder')}
                     className={`h-9 text-xs font-mono ${inputCls}`}
                   />
                 </div>
                 <div className="col-span-2">
                   <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>
-                    Title *
+                    {t('compliance.generalAuditPlan.modal.fields.title')} *
                   </label>
                   <Input
                     value={form.requirement_title}
                     onChange={(e) => setForm((f) => ({ ...f, requirement_title: e.target.value }))}
-                    placeholder="Short description of the requirement"
+                    placeholder={t('compliance.generalAuditPlan.modal.fields.titlePlaceholder')}
                     className={`h-9 text-xs ${inputCls}`}
                   />
                 </div>
@@ -657,7 +674,7 @@ export default function GeneralAuditPlanPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>
-                    Type
+                    {t('compliance.generalAuditPlan.modal.fields.type')}
                   </label>
                   <Select
                     value={form.requirement_type || 'none'}
@@ -672,7 +689,7 @@ export default function GeneralAuditPlanPage() {
                           : 'bg-gray-50 border-gray-200'
                       }`}
                     >
-                      <SelectValue placeholder="Select type" />
+                      <SelectValue placeholder={t('compliance.generalAuditPlan.modal.fields.typePlaceholder')} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">— None —</SelectItem>
@@ -686,12 +703,12 @@ export default function GeneralAuditPlanPage() {
                 </div>
                 <div>
                   <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>
-                    Regulatory Body
+                    {t('compliance.generalAuditPlan.modal.fields.regulatoryBody')}
                   </label>
                   <Input
                     value={form.regulatory_body}
                     onChange={(e) => setForm((f) => ({ ...f, regulatory_body: e.target.value }))}
-                    placeholder="e.g. Reg. (EU) 2019/947"
+                    placeholder={t('compliance.generalAuditPlan.modal.fields.regulatoryBodyPlaceholder')}
                     className={`h-9 text-xs ${inputCls}`}
                   />
                 </div>
@@ -700,7 +717,7 @@ export default function GeneralAuditPlanPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>
-                    Status
+                    {t('compliance.generalAuditPlan.modal.fields.status')}
                   </label>
                   <Select
                     value={form.requirement_status}
@@ -718,7 +735,7 @@ export default function GeneralAuditPlanPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {STATUS_OPTIONS.map((s) => (
+                      {statusOptions.map((s) => (
                         <SelectItem key={s.value} value={s.value}>
                           {s.label}
                         </SelectItem>
@@ -728,7 +745,7 @@ export default function GeneralAuditPlanPage() {
                 </div>
                 <div>
                   <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>
-                    Criticality (1–5)
+                    {t('compliance.generalAuditPlan.modal.fields.criticality')}
                   </label>
                   <Input
                     type="number"
@@ -744,7 +761,7 @@ export default function GeneralAuditPlanPage() {
 
               <div>
                 <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>
-                  Next Due Date
+                  {t('compliance.generalAuditPlan.modal.fields.nextReviewDate')}
                 </label>
                 <Input
                   type="date"
@@ -756,13 +773,13 @@ export default function GeneralAuditPlanPage() {
 
               <div>
                 <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>
-                  Notes
+                  {t('compliance.generalAuditPlan.modal.fields.notes')}
                 </label>
                 <textarea
                   rows={3}
                   value={form.requirement_description}
                   onChange={(e) => setForm((f) => ({ ...f, requirement_description: e.target.value }))}
-                  placeholder="Additional context, evidence, corrective actions…"
+                  placeholder={t('compliance.generalAuditPlan.modal.fields.notesPlaceholder')}
                   className={`w-full rounded-md border px-3 py-2 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-violet-500/40 ${inputCls}`}
                 />
               </div>
@@ -777,7 +794,7 @@ export default function GeneralAuditPlanPage() {
                   isDark ? 'border-white/8 hover:bg-white/5 text-gray-300' : ''
                 }`}
               >
-                Cancel
+                {t('compliance.generalAuditPlan.modal.cancel')}
               </Button>
               <Button
                 size="sm"
@@ -785,7 +802,11 @@ export default function GeneralAuditPlanPage() {
                 disabled={saving || !form.requirement_code.trim() || !form.requirement_title.trim()}
                 className="h-8 text-xs bg-violet-600 hover:bg-violet-700 text-white"
               >
-                {saving ? 'Saving…' : form.requirement_id ? 'Update' : 'Create'}
+                {saving
+                  ? t('compliance.generalAuditPlan.modal.saving')
+                  : form.requirement_id
+                    ? t('compliance.generalAuditPlan.modal.update')
+                    : t('compliance.generalAuditPlan.modal.create')}
               </Button>
             </div>
           </div>
@@ -803,11 +824,11 @@ export default function GeneralAuditPlanPage() {
               <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center mb-4">
                 <AlertTriangle size={18} className="text-red-400" />
               </div>
-              <h3 className={`text-sm font-semibold mb-1 ${textPrimary}`}>Delete Requirement</h3>
+              <h3 className={`text-sm font-semibold mb-1 ${textPrimary}`}>
+                {t('compliance.generalAuditPlan.deleteModal.title')}
+              </h3>
               <p className={`text-xs ${textMuted}`}>
-                Remove{' '}
-                <span className="font-semibold text-red-400">{deleteTarget.requirement_code}</span> —{' '}
-                <span className="font-semibold">{deleteTarget.requirement_title}</span>? This cannot be undone.
+                {t('compliance.generalAuditPlan.deleteModal.message')}
               </p>
             </div>
             <div className={`flex justify-end gap-2 px-6 py-4 border-t ${borderMuted}`}>
@@ -819,14 +840,14 @@ export default function GeneralAuditPlanPage() {
                   isDark ? 'border-white/8 hover:bg-white/5 text-gray-300' : ''
                 }`}
               >
-                Cancel
+                {t('compliance.generalAuditPlan.deleteModal.cancel')}
               </Button>
               <Button
                 size="sm"
                 onClick={handleDelete}
                 className="h-8 cursor-pointer text-xs bg-red-600 hover:bg-red-700 text-white"
               >
-                Delete
+                {t('compliance.generalAuditPlan.deleteModal.confirm')}
               </Button>
             </div>
           </div>

@@ -22,6 +22,7 @@ interface AddComponentModalProps {
 const INITIAL_FORM = {
   fk_tool_id: '',
   component_type: '',
+  component_name: '',
   component_code: '',
   component_desc: '',
   fk_tool_model_id: '',
@@ -45,6 +46,31 @@ export interface ComponentType {
   type_id: number;
   type_value: string;
   type_label: string;
+}
+
+function SystemOptionLabel({ tool }: { tool: any }) {
+  const statusColors: Record<string, string> = {
+    OPERATIONAL: 'bg-green-100 text-green-700',
+    MAINTENANCE: 'bg-yellow-100 text-yellow-700',
+    NOT_OPERATIONAL: 'bg-red-100 text-red-700',
+  };
+  const statusClass = statusColors[tool.tool_status] || 'bg-gray-100 text-gray-600';
+  return (
+    <div className="flex flex-col gap-0.5 leading-tight">
+      <div className="flex gap-2">
+        <span className="w-20 shrink-0 text-[10px] font-semibold uppercase text-muted-foreground">Code</span>
+        <span className="truncate text-[11px] font-medium">{tool.tool_code}</span>
+      </div>
+      <div className="flex gap-2">
+        <span className="w-20 shrink-0 text-[10px] font-semibold uppercase text-muted-foreground">Description</span>
+        <span className="truncate text-[11px]">{tool.tool_desc || '—'}</span>
+      </div>
+      <div className="flex gap-2 items-center">
+        <span className="w-20 shrink-0 text-[10px] font-semibold uppercase text-muted-foreground">Status</span>
+        <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${statusClass}`}>{tool.tool_status || '—'}</span>
+      </div>
+    </div>
+  );
 }
 
 function ModelOptionLabel({ model }: { model: any }) {
@@ -158,6 +184,7 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
       const payload = {
         fk_tool_id: Number(formData.fk_tool_id),
         component_type: formData.component_type,
+        component_name: formData.component_name || null,
         component_code: formData.component_code || null,
         component_desc: formData.component_desc || null,
         fk_tool_model_id: formData.fk_tool_model_id ? Number(formData.fk_tool_model_id) : null,
@@ -206,10 +233,18 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
               <div className="col-span-1 sm:col-span-3 min-w-0">
                 <Label className="pb-2">System *</Label>
                 <Select value={formData.fk_tool_id} onValueChange={(v) => handleChange('fk_tool_id', v)}>
-                  <SelectTrigger className="w-full truncate"><SelectValue placeholder="Select System" /></SelectTrigger>
+                  <SelectTrigger className="w-full truncate">
+                    <SelectValue placeholder="Select System">
+                      {formData.fk_tool_id
+                        ? (() => { const t = tools.find(x => String(x.tool_id) === formData.fk_tool_id); return t ? <span className="block w-full truncate text-left">{t.tool_code}</span> : null; })()
+                        : null}
+                    </SelectValue>
+                  </SelectTrigger>
                   <SelectContent className="z-50 max-h-60 overflow-y-auto">
                     {tools.map((tool: any) => (
-                      <SelectItem key={tool.tool_id} value={tool.tool_id.toString()}>{tool.tool_code}</SelectItem>
+                      <SelectItem key={tool.tool_id} value={tool.tool_id.toString()}>
+                        <SystemOptionLabel tool={tool} />
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -251,7 +286,11 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 overflow-visible">
-              <div className="col-span-1 sm:col-span-5 min-w-0">
+              <div className="col-span-1 sm:col-span-4">
+                <Label className="pb-2">Name</Label>
+                <Input value={formData.component_name} onChange={(e) => handleChange('component_name', e.target.value)} placeholder="Component name" />
+              </div>
+              <div className="col-span-1 sm:col-span-4 min-w-0">
                 <Label className="pb-2">Brand / Model</Label>
                 <Select value={formData.fk_tool_model_id} onValueChange={handleModelSelect}>
                   <SelectTrigger className="w-full min-w-0">
@@ -268,7 +307,7 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
                   </SelectContent>
                 </Select>
               </div>
-              <div className="col-span-1 sm:col-span-7">
+              <div className="col-span-1 sm:col-span-4">
                 <Label className="pb-2">Description</Label>
                 <Input value={formData.component_desc} onChange={(e) => handleChange('component_desc', e.target.value)} placeholder="Component description" />
               </div>

@@ -1,5 +1,6 @@
 'use client';
 
+import { AuthorizationProvider } from '@/components/authorization/AuthorizationProvider';
 import { Session, SessionUser } from '@/lib/auth/server-session';
 import axios from 'axios';
 import { usePathname, useRouter } from 'next/navigation';
@@ -39,7 +40,6 @@ const ClientLayoutWrapper: React.FC<ClientLayoutWrapperProps> = ({
     router.replace('/auth/login');
   };
 
-  // Redirect to login if session is missing (expired token) on initial load
   useEffect(() => {
     sessionPromise.then((sess) => {
       setSession(sess);
@@ -50,7 +50,6 @@ const ClientLayoutWrapper: React.FC<ClientLayoutWrapperProps> = ({
     });
   }, [sessionPromise]);
 
-  // Global axios interceptor: auto-logout on any 401 response
   useEffect(() => {
     interceptorRef.current = axios.interceptors.response.use(
       (response) => response,
@@ -76,6 +75,7 @@ const ClientLayoutWrapper: React.FC<ClientLayoutWrapperProps> = ({
 
   return (
     <RouteLoadingProvider>
+      <AuthorizationProvider>
       {isAuthPage ? (
         <>
           {children}
@@ -110,6 +110,7 @@ const ClientLayoutWrapper: React.FC<ClientLayoutWrapperProps> = ({
           </div>
         </div>
       )}
+      </AuthorizationProvider>
     </RouteLoadingProvider>
   );
 };

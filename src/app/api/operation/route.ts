@@ -15,6 +15,8 @@ const listOperationsQuerySchema = z.object({
   status: z.enum(['PLANNED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'ABORTED']).optional(),
   search: z.string().optional(),
   pilot_id: z.coerce.number().int().positive().optional(),
+  tool_id: z.coerce.number().int().positive().optional(),
+  client_id: z.coerce.number().int().positive().optional(),
   date_start: z.string().optional(),
   date_end: z.string().optional(),
 });
@@ -71,6 +73,8 @@ export async function GET(req: NextRequest) {
       status: searchParams.get('status') ?? undefined,
       search: searchParams.get('search') ?? undefined,
       pilot_id: searchParams.get('pilot_id') ?? undefined,
+      tool_id: searchParams.get('tool_id') ?? undefined,
+      client_id: searchParams.get('client_id') ?? undefined,
       date_start: searchParams.get('date_start') ?? undefined,
       date_end: searchParams.get('date_end') ?? undefined,
     });

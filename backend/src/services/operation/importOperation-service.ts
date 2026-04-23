@@ -269,17 +269,37 @@ export async function importClinets(ownerId: number) {
 
     return data
 }
-export async function importDrones(ownerId: number) {
-    let query = supabase
+export async function importDrones(ownerId: number, clientId?: number) {
+    const { data, error } = await supabase
         .from('tool')
-        .select('tool_id, tool_code, tool_name')
+        .select('tool_id, tool_code, tool_name, tool_metadata')
         .eq('fk_owner_id', ownerId)
         .eq('tool_active', 'Y')
         .order('tool_code');
-    const { data, error } = await query;
     if (error) throw error;
 
-    return data
+    const toolIds = (data || []).map((t: any) => t.tool_id);
+    const inMaintenanceSet = new Set<number>();
+    if (toolIds.length > 0) {
+        const { data: openTickets } = await supabase
+            .from('maintenance_ticket')
+            .select('fk_tool_id')
+            .in('fk_tool_id', toolIds)
+            .neq('ticket_status', 'CLOSED');
+        (openTickets || []).forEach((t: any) => inMaintenanceSet.add(t.fk_tool_id));
+    }
+
+    let filtered = data || [];
+    if (clientId && clientId > 0) {
+        filtered = filtered.filter((t: any) => Number(t.tool_metadata?.clientId) === clientId);
+    }
+
+    return filtered.map((t: any) => ({
+        tool_id: t.tool_id,
+        tool_code: t.tool_code,
+        tool_name: t.tool_name,
+        in_maintenance: inMaintenanceSet.has(t.tool_id),
+    }));
 }
 
 export async function importPlans(ownerId: number, clientId?: number, vehicleId?: number) {

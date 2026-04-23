@@ -1,6 +1,6 @@
 import { getLUCProceduresList } from '@/backend/services/planning/lucProcedures';
-import { requirePermission } from '@/lib/auth/api-auth';
 import { internalError } from '@/lib/api-error';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       code: 1,
-      message: 'LUC procedures list fetched successfully',
+      message: 'Procedures list fetched successfully',
       data: result.procedures,
       dataRows: result.procedures.length,
     });

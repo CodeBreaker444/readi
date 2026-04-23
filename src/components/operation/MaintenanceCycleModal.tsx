@@ -456,7 +456,7 @@ export function MaintenanceCycleModal({
                       <CycleProgressBar
                         current={comp.current_days}
                         limit={comp.limit_day}
-                        label={t("planning.form.year")}
+                        label={t("common.days", "Days")}
                         icon={CalendarDays}
                         status={comp.status}
                         isDark={isDark}

@@ -1,7 +1,7 @@
 
 import { addPlanningWithAssignment, deletePlanning, getPlanningData, getPlanningList, updatePlanning } from "@/backend/services/planning/planning-dashboard";
-import { requirePermission } from "@/lib/auth/api-auth";
 import { forbidden, internalError, zodError } from "@/lib/api-error";
+import { requirePermission } from "@/lib/auth/api-auth";
 import { E } from "@/lib/error-codes";
 import { NextRequest, NextResponse } from "next/server";
 import z from "zod";
@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
 const addEvaluationPlanningSchema = z.object({
   fk_evaluation_id: z.number().int().positive("Evaluation ID is required"),
   fk_client_id: z.number().int().positive("Client ID is required"),
-  fk_luc_procedure_id: z.number().int().positive("LUC Procedure is required"),
+  fk_luc_procedure_id: z.number().int().positive("Procedure is required"),
   assigned_to_user_id: z
     .number()
     .int()

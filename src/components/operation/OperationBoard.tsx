@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuthorization } from "@/components/authorization/AuthorizationProvider";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -37,6 +38,7 @@ const VALID_TRANSITIONS: Record<string, ColumnId[]> = {
 export function OperationBoard() {
     const { isDark } = useTheme();
     const { t } = useTranslation();
+    const { requireAuthorization } = useAuthorization();
     const [board, setBoard] = useState<MissionBoardData>({
         scheduled: [],
         in_progress: [],
@@ -231,6 +233,30 @@ export function OperationBoard() {
         const mission = board[sourceColumn].find((m) => m.mission_id === missionId);
         if (!mission) return;
 
+        if (target === "in_progress" && mission.maintenance_status === "IN_MAINTENANCE") {
+            toast.error(t("operations.board.toast.droneInMaintenance"), {
+                description: `${mission.vehicle_code} — ${t("operations.board.toast.droneInMaintenanceDesc")}`,
+            });
+            return;
+        }
+
+        try {
+            await requireAuthorization({
+                actionType: target === "in_progress" ? "mission_start" : "mission_complete",
+                entityType: "mission",
+                entityId:   String(missionId),
+                label:      `${target === "in_progress" ? t("operations.board.toast.missionStarted") : t("operations.board.toast.missionCompleted")}: ${mission.mission_name ?? `#${missionId}`}`,
+                details: {
+                    mission_id:   missionId,
+                    mission_code: mission.mission_name ?? mission.mission_id,
+                    from:         sourceColumn,
+                    to:           target,
+                },
+            });
+        } catch {
+            return; // user cancelled or wrong PIN
+        }
+
         await executeMissionStatusUpdate(missionId, sourceColumn, target, mission);
     };
 
@@ -253,7 +279,7 @@ export function OperationBoard() {
                             onDragStart={handleDragStart}
                             onDrop={handleDrop}
                             onViewDetails={(m) => setSelectedMission(m)}
-                            onUpdateMaintenance={(m) => setMaintenanceMission(m)}
+                            onUpdateMaintenance={col.id === "done" ? (m) => setMaintenanceMission(m) : undefined}
                             onOpenLuc={(m) => setLucMission(m)}
                             isDragOver={dragOverColumn === col.id}
                             onDragOver={(e) => handleDragOver(e, col.id)}
@@ -292,8 +318,19 @@ export function OperationBoard() {
                         setCompletedMission(null);
                         loadBoard(true);
                     }}
-                    onSkip={() => {
+                    onSkip={async () => {
                         const mission = completedMission;
+                        try {
+                            await requireAuthorization({
+                                actionType: "mission_revert",
+                                entityType: "mission",
+                                entityId:   String(mission.mission_id),
+                                label:      `Revert to In Progress: ${mission.mission_id ?? `#${mission.mission_id}`}`,
+                                details:    { mission_id: mission.mission_id, mission_code: mission.mission_name ?? mission.mission_id },
+                            });
+                        } catch {
+                            return;
+                        }
                         setCompletedMission(null);
                         handleRevertMission(mission);
                     }}
@@ -331,6 +368,20 @@ export function OperationBoard() {
             )}
         </div>
     );
+}
+
+function formatBoardDate(iso: string): string {
+    try {
+        return new Intl.DateTimeFormat("en-GB", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+        }).format(new Date(iso));
+    } catch {
+        return iso;
+    }
 }
 
 function MissionDetailSheet({ mission, isDark, onClose }: { mission: Mission | null; isDark: boolean; onClose: () => void }) {
@@ -378,17 +429,25 @@ function MissionDetailSheet({ mission, isDark, onClose }: { mission: Mission | n
                         <div className="space-y-6">
                             <section className="space-y-3">
                                 <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t("operations.board.detail.timeline")}</h3>
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 gap-2">
                                     <div className={cn("rounded-lg border p-3 space-y-1", isDark ? "bg-slate-800 border-slate-700" : "bg-muted/30")}>
-                                        <p className="text-xs text-muted-foreground flex items-center gap-1"><Calendar className="h-3 w-3" /> {mission.fk_status_id === 2 ? t("operations.board.detail.startedAt") : t("operations.board.detail.scheduled")}</p>
-                                        <p className="text-sm font-medium">{(mission.date_start || mission.time_start) ? `${mission.date_start} ${mission.time_start}`.trim() : "—"}</p>
+                                        <p className="text-xs text-muted-foreground flex items-center gap-1"><Calendar className="h-3 w-3" /> {t("operations.board.detail.plannedDate")}</p>
+                                        <p className="text-sm font-medium">
+                                            {mission.planned_at
+                                                ? formatBoardDate(mission.planned_at)
+                                                : (mission.date_start || mission.time_start)
+                                                    ? `${mission.date_start} ${mission.time_start}`.trim()
+                                                    : "—"}
+                                        </p>
                                     </div>
-                                    {mission.date_end && (
-                                        <div className={cn("rounded-lg border p-3 space-y-1", isDark ? "bg-slate-800 border-slate-700" : "bg-muted/30")}>
-                                            <p className="text-xs text-muted-foreground flex items-center gap-1"><CheckCircle2 className="h-3 w-3 text-emerald-500" /> {t("operations.board.detail.completed")}</p>
-                                            <p className="text-sm font-medium">{mission.date_end}</p>
-                                        </div>
-                                    )}
+                                    <div className={cn("rounded-lg border p-3 space-y-1", isDark ? "bg-slate-800 border-slate-700" : "bg-muted/30")}>
+                                        <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3 text-amber-500" /> {t("operations.board.detail.officialStart")}</p>
+                                        <p className="text-sm font-medium">{mission.official_start ? formatBoardDate(mission.official_start) : "—"}</p>
+                                    </div>
+                                    <div className={cn("rounded-lg border p-3 space-y-1", isDark ? "bg-slate-800 border-slate-700" : "bg-muted/30")}>
+                                        <p className="text-xs text-muted-foreground flex items-center gap-1"><CheckCircle2 className="h-3 w-3 text-emerald-500" /> {t("operations.board.detail.officialEnd")}</p>
+                                        <p className="text-sm font-medium">{mission.official_end ? formatBoardDate(mission.official_end) : "—"}</p>
+                                    </div>
                                 </div>
                             </section>
 

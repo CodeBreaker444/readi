@@ -2,10 +2,10 @@
 
 import GeneralCommunicationDialog from '@/components/operation/GeneralCommunicationDialog';
 import ImportOperationDialog from '@/components/operation/ImportOperationDialog';
+import { NewOperationModal } from '@/components/operation/NewOperationModal';
 import {
   AttachmentsDialog,
   DeleteDialog,
-  OperationDialog,
 } from '@/components/operation/OperationDialogs';
 import { OperationDetailSheet } from '@/components/operation/table/OperationDetailSheet';
 import { OperationsBatchBar } from '@/components/operation/table/OperationsBatchBar';
@@ -54,6 +54,10 @@ export interface Operation {
   pilot_name?: string | null;
   tool_code?: string | null;
   status_name?: string | null;
+  client_name?: string | null;
+  category_name?: string | null;
+  type_name?: string | null;
+  planning_name?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -62,6 +66,8 @@ interface FilterState {
   search: string;
   statusFilter: string;
   pilotFilter: string;
+  droneFilter: string;
+  clientFilter: string;
   dateStart: string;
   dateEnd: string;
 }
@@ -70,6 +76,8 @@ const DEFAULT_FILTERS: FilterState = {
   search: '',
   statusFilter: 'ALL',
   pilotFilter: 'ALL',
+  droneFilter: 'ALL',
+  clientFilter: 'ALL',
   dateStart: '',
   dateEnd: '',
 };
@@ -98,6 +106,8 @@ export default function OperationsPage() {
   const [pilots, setPilots] = useState<
     { user_id: number; first_name: string; last_name: string }[]
   >([]);
+  const [tools, setTools] = useState<{ tool_id: number; tool_name: string; tool_code: string }[]>([]);
+  const [clients, setClients] = useState<{ client_id: number; client_name: string }[]>([]);
   const [optionsLoaded, setOptionsLoaded] = useState(false);
 
   useEffect(() => {
@@ -108,6 +118,8 @@ export default function OperationsPage() {
         if (filters.search) params.set('search', filters.search);
         if (filters.statusFilter !== 'ALL') params.set('status', filters.statusFilter);
         if (filters.pilotFilter !== 'ALL') params.set('pilot_id', filters.pilotFilter);
+        if (filters.droneFilter !== 'ALL') params.set('tool_id', filters.droneFilter);
+        if (filters.clientFilter !== 'ALL') params.set('client_id', filters.clientFilter);
         if (filters.dateStart) params.set('date_start', filters.dateStart);
         if (filters.dateEnd) params.set('date_end', filters.dateEnd);
 
@@ -120,6 +132,8 @@ export default function OperationsPage() {
 
         if (optRes) {
           setPilots(optRes.data.pilots ?? []);
+          setTools(optRes.data.tools ?? []);
+          setClients(optRes.data.clients ?? []);
           setOptionsLoaded(true);
         }
       } catch (e) {
@@ -131,7 +145,7 @@ export default function OperationsPage() {
     fetchOperations();
   }, [filters, refreshKey]);
 
-const columns = useMemo(() => getOperationColumns(t), [t]);
+const columns = useMemo(() => getOperationColumns(t, isDark), [t, isDark]);
 
 const tableMeta = useMemo<OperationTableMeta>(
   () => ({
@@ -328,6 +342,8 @@ const table = useReactTable({
           loading={loading}
           filters={filters}
           pilots={pilots}
+          tools={tools}
+          clients={clients}
           operationsCount={operations.length}
           onFilterChange={setFilters}
           onReset={() => setFilters(DEFAULT_FILTERS)}
@@ -349,7 +365,6 @@ const table = useReactTable({
             onClearSelection={() => setRowSelection({})}
           />
         )}
-
         <OperationsTable isDark={isDark} loading={loading} table={table} />
       </div>
 
@@ -360,16 +375,12 @@ const table = useReactTable({
         onEdit={(op) => { setDetailTarget(null); setEditTarget(op); }}
       />
 
-      <OperationDialog
-        open={createOpen}
-        onClose={() => setCreateOpen(false)}
-        onSaved={handleSaved}
-        onSuccess={() => setRefreshKey((k) => k + 1)}
-      />
-      <OperationDialog
-        open={!!editTarget}
-        initial={editTarget}
-        onClose={() => setEditTarget(null)}
+      <NewOperationModal
+        open={createOpen || !!editTarget}
+        onClose={() => { setCreateOpen(false); setEditTarget(null); }}
+        onSuccess={() => { setRefreshKey((k) => k + 1); setCreateOpen(false); setEditTarget(null); }}
+        isDark={isDark}
+        editOperation={editTarget}
         onSaved={handleSaved}
       />
       <DeleteDialog

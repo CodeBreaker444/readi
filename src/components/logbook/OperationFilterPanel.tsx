@@ -113,7 +113,7 @@ export function OperationFilterPanel({
             isDark ? "text-slate-300" : "text-slate-600"
           }`}
         >
-          {t('operationLogbook.filter.title')}
+          {t('logbooks.operationLogbook.filter.title')}
         </h2>
       </div>
 
@@ -125,7 +125,7 @@ export function OperationFilterPanel({
               isDark ? "text-slate-500" : "text-slate-400"
             }`}
           >
-            {t('operationLogbook.filter.dateStart')}
+            {t('logbooks.operationLogbook.filter.dateStart')}
           </Label>
           <Input
             type="date"
@@ -146,7 +146,7 @@ export function OperationFilterPanel({
               isDark ? "text-slate-500" : "text-slate-400"
             }`}
           >
-            {t('operationLogbook.filter.dateEnd')}
+            {t('logbooks.operationLogbook.filter.dateEnd')}
           </Label>
           <Input
             type="date"
@@ -160,28 +160,28 @@ export function OperationFilterPanel({
           />
         </div>
 
-        <FilterSelect label={t('operationLogbook.filter.pic')} allLabel={t('operationLogbook.filter.all')} value={picId} onChange={setPicId} isDark={isDark}
+        <FilterSelect label={t('logbooks.operationLogbook.filter.pic')} allLabel={t('logbooks.operationLogbook.filter.all')} value={picId} onChange={setPicId} isDark={isDark}
           options={pilots.map((p) => ({ value: String(p.user_id), label: `${p.fullname} [${p.pilot_status_desc}]` }))}
         />
-        <FilterSelect label={t('operationLogbook.filter.client')} allLabel={t('operationLogbook.filter.all')} value={clientId} onChange={setClientId} isDark={isDark}
+        <FilterSelect label={t('logbooks.operationLogbook.filter.client')} allLabel={t('logbooks.operationLogbook.filter.all')} value={clientId} onChange={setClientId} isDark={isDark}
           options={clients.map((c) => ({ value: String(c.client_id), label: c.client_name }))}
         />
-        <FilterSelect label={t('operationLogbook.filter.droneSystem')} allLabel={t('operationLogbook.filter.all')} value={droneId} onChange={setDroneId} isDark={isDark}
+        <FilterSelect label={t('logbooks.operationLogbook.filter.droneSystem')} allLabel={t('logbooks.operationLogbook.filter.all')} value={droneId} onChange={setDroneId} isDark={isDark}
           options={drones.map((d) => ({ value: String(d.tool_id), label: `${d.tool_code} — ${d.tool_desc}` }))}
         />
-        <FilterSelect label={t('operationLogbook.filter.missionType')} allLabel={t('operationLogbook.filter.all')} value={typeId} onChange={setTypeId} isDark={isDark}
+        <FilterSelect label={t('logbooks.operationLogbook.filter.missionType')} allLabel={t('logbooks.operationLogbook.filter.all')} value={typeId} onChange={setTypeId} isDark={isDark}
           options={missionTypes.map((mt) => ({ value: String(mt.mission_type_id), label: mt.mission_type_desc }))}
         />
-        <FilterSelect label={t('operationLogbook.filter.category')} allLabel={t('operationLogbook.filter.all')} value={categoryId} onChange={setCategoryId} isDark={isDark}
+        <FilterSelect label={t('logbooks.operationLogbook.filter.category')} allLabel={t('logbooks.operationLogbook.filter.all')} value={categoryId} onChange={setCategoryId} isDark={isDark}
           options={missionCategories.map((c) => ({ value: String(c.mission_category_id), label: c.mission_category_desc }))}
         />
-        <FilterSelect label={t('operationLogbook.filter.status')} allLabel={t('operationLogbook.filter.all')} value={statusId} onChange={setStatusId} isDark={isDark}
+        <FilterSelect label={t('logbooks.operationLogbook.filter.status')} allLabel={t('logbooks.operationLogbook.filter.all')} value={statusId} onChange={setStatusId} isDark={isDark}
           options={missionStatuses.map((s) => ({ value: String(s.mission_status_id), label: s.mission_status_desc }))}
         />
-        <FilterSelect label={t('operationLogbook.filter.result')} allLabel={t('operationLogbook.filter.all')} value={resultId} onChange={setResultId} isDark={isDark}
+        <FilterSelect label={t('logbooks.operationLogbook.filter.result')} allLabel={t('logbooks.operationLogbook.filter.all')} value={resultId} onChange={setResultId} isDark={isDark}
           options={missionResults.map((r) => ({ value: String(r.mission_result_id), label: r.mission_result_desc }))}
         />
-        <FilterSelect label={t('operationLogbook.filter.missionPlan')} allLabel={t('operationLogbook.filter.all')} value={planId} onChange={setPlanId} isDark={isDark}
+        <FilterSelect label={t('logbooks.operationLogbook.filter.missionPlan')} allLabel={t('logbooks.operationLogbook.filter.all')} value={planId} onChange={setPlanId} isDark={isDark}
           options={missionPlans.map((p) => ({ value: String(p.mission_planning_id), label: `${p.mission_planning_code} — ${p.mission_planning_desc}` }))}
         />
       </div>
@@ -203,7 +203,7 @@ export function OperationFilterPanel({
           }`}
         >
           <Search className="h-3.5 w-3.5" />
-          {t('operationLogbook.filter.search')}
+          {t('logbooks.operationLogbook.filter.search')}
         </Button>
         <Button
           onClick={handleReset}
@@ -217,7 +217,7 @@ export function OperationFilterPanel({
           }`}
         >
           <X className="h-3.5 w-3.5" />
-          {t('operationLogbook.filter.reset')}
+          {t('logbooks.operationLogbook.filter.reset')}
         </Button>
       </div>
     </div>

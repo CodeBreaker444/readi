@@ -28,7 +28,12 @@
     "unknown": "Sconosciuto",
     "noData": "Nessun dato disponibile",
     "error": "Si è verificato un errore",
-    "success": "Operazione riuscita"
+    "success": "Operazione riuscita",
+    "never": "Mai",
+    "today": "Oggi",
+    "yesterday": "Ieri",
+    "daysAgo": "{{count}} giorni fa",
+    "monthsAgo": "{{count}} mesi fa"
   },
   "topbar": {
     "askAnything": "Chiedi qualcosa…",
@@ -677,7 +682,7 @@
     },
     "form": {
       "client": "Cliente",
-      "lucProcedure": "Procedura LUC",
+      "lucProcedure": "Procedura",
       "status": "Stato",
       "requestDate": "Data Richiesta",
       "yearReference": "Anno di Riferimento",
@@ -694,7 +699,7 @@
       "loadingClients": "Caricamento clienti...",
       "selectClient": "Seleziona Cliente",
       "loadingProcedures": "Caricamento procedure...",
-      "selectLucProcedure": "Seleziona Procedura LUC",
+      "selectLucProcedure": "Seleziona Procedura",
       "selectStatus": "Seleziona Stato",
       "selectYear": "Seleziona Anno",
       "enterDescription": "Inserisci descrizione valutazione...",
@@ -725,14 +730,14 @@
     },
     "validation": {
       "selectClient": "Seleziona un cliente",
-      "selectLucProcedure": "Seleziona una Procedura LUC.",
+      "selectLucProcedure": "Seleziona una Procedura.",
       "selectPic": "Assegna un Pilota in Comando.",
       "enterDescription": "Inserisci una descrizione",
       "descriptionRequired": "La descrizione è obbligatoria.",
       "requestDateRequired": "La data di richiesta è obbligatoria.",
       "clientRequired": "Seleziona un cliente",
       "loadClientsError": "Errore nel caricamento dei clienti",
-      "loadProceduresError": "Errore nel caricamento delle procedure LUC"
+      "loadProceduresError": "Errore nel caricamento delle procedure  "
     },
     "actions": {
       "adding": "Aggiunta...",
@@ -1166,19 +1171,24 @@
     }
   },
   "operations": {
+    "actions": {
+      "view": "Visualizza dettagli",
+      "edit": "Modifica operazione",
+      "delete": "Elimina operazione"
+    },
     "declaration": {
-    "title": "Dichiarazione Giornaliera Pilota",
-    "subtitle": "Conferma tutti i punti per procedere con l'inizio della missione oggi.",
-    "rested": "Sono adeguatamente riposato e non affaticato",
-    "fit": "Sono fisicamente e mentalmente idoneo al volo",
-    "medication": "Non sono sotto l'influenza di farmaci che potrebbero compromettere le mie prestazioni",
-    "briefed": "Ho esaminato il piano di missione e l'area operativa",
-    "equipment": "L'attrezzatura e i sistemi drone sono stati ispezionati e sono atti al volo",
-    "submit": "Invia Dichiarazione",
-    "saving": "Salvataggio...",
-    "warning": "Confermare tutti i punti della checklist prima di inviare.",
-    "error": "Impossibile salvare la dichiarazione"
-  },
+      "title": "Dichiarazione Giornaliera Pilota",
+      "subtitle": "Conferma tutti i punti per procedere con l'inizio della missione oggi.",
+      "rested": "Sono adeguatamente riposato e non affaticato",
+      "fit": "Sono fisicamente e mentalmente idoneo al volo",
+      "medication": "Non sono sotto l'influenza di farmaci che potrebbero compromettere le mie prestazioni",
+      "briefed": "Ho esaminato il piano di missione e l'area operativa",
+      "equipment": "L'attrezzatura e i sistemi drone sono stati ispezionati e sono atti al volo",
+      "submit": "Invia Dichiarazione",
+      "saving": "Salvataggio...",
+      "warning": "Confermare tutti i punti della checklist prima di inviare.",
+      "error": "Impossibile salvare la dichiarazione"
+    },
     "table": {
       "title": "Operazioni",
       "subtitle": "Missioni pilota & operazioni di volo",
@@ -1195,6 +1205,8 @@
         "searchPlaceholder": "Cerca operazioni…",
         "allStatuses": "Tutti gli stati",
         "allPilots": "Tutti i piloti",
+        "allDrones": "Tutti i droni",
+        "allClients": "Tutti i clienti",
         "reset": "Reimposta"
       },
       "status": {
@@ -1240,7 +1252,22 @@
         "updateMaintenanceCycles": "Aggiorna cicli di manutenzione",
         "logFlightsHours": "Registra voli & ore per {{code}} dopo questa missione.",
         "updateMaintenance": "Aggiorna manutenzione",
-        "reportIssue": "Segnala problema"
+        "reportIssue": "Segnala problema",
+        "plannedDate": "Data pianificata",
+        "officialStart": "Inizio ufficiale",
+        "officialEnd": "Fine ufficiale",
+        "procedure": "Procedura",
+        "procedureCompleted": "Procedura completata",
+        "stepsPending": "Passaggi in sospeso",
+        "stepsCompleteNotFinalized": "Passaggi completati, non finalizzati",
+        "assignment": "Assegnazione",
+        "checklist": "Lista di controllo",
+        "manageProcedure": "Gestisci procedura",
+        "missionDetails": "Dettagli missione",
+        "client": "Cliente",
+        "missionPlan": "Piano missione",
+        "category": "Categoria",
+        "type": "Tipo"
       },
       "toast": {
         "deleteSuccess": "{{count}} operazione/i eliminata/e",
@@ -1296,7 +1323,9 @@
         "invalidMove": "Spostamento non valido",
         "revertSuccess": "Missione riportata a In Corso",
         "revertDesc": "Aggiornare il ciclo di manutenzione per completare la missione.",
-        "revertError": "Ripristino dello stato missione fallito"
+        "revertError": "Ripristino dello stato missione fallito",
+        "droneInMaintenance": "Drone in manutenzione",
+        "droneInMaintenanceDesc": "Questo drone ha un ticket di manutenzione aperto. Chiuderlo prima di avviare la missione."
       },
       "card": {
         "status": {
@@ -1310,14 +1339,15 @@
           "inMaintenance": "In manutenzione"
         },
         "notAssigned": "Non assegnato",
-        "lucAllCompleted": "Tutti i compiti LUC completati",
-        "lucProcedureTasks": "Compiti procedura LUC",
-        "completeLucTasks": "Completa compiti LUC",
+        "lucAllCompleted": "Tutti i compiti completati",
+        "lucProcedureTasks": "Compiti procedura",
+        "completeLucTasks": "Completa compiti",
         "completeTasks": "Completa compiti",
         "updateMaintenance": "Aggiorna manutenzione",
         "updateMaintenanceCycle": "Aggiorna ciclo di manutenzione",
         "missionDetails": "Dettagli missione",
-        "view": "Visualizza"
+        "view": "Visualizza",
+        "lastMaintenanceClosed": "Ultima manutenzione chiusa"
       }
     },
     "calendar": {
@@ -1352,6 +1382,7 @@
         "addUsage": "Aggiungi utilizzo",
         "flights": "Voli",
         "hours": "Ore",
+        "days": "Giorni",
         "hmin": "h.min",
         "daysTracked": "I giorni vengono tracciati automaticamente dalla data dell'ultima manutenzione.",
         "overdue": "La manutenzione è in ritardo — pianifica la manutenzione al più presto",
@@ -1434,7 +1465,7 @@
         "missionCategory": "Categoria Missione",
         "missionType": "Tipo Missione",
         "clientPlanning": "Cliente / Pianificazione",
-        "lucProcedure": "Procedura LUC (Missione)",
+        "lucProcedure": "Procedura (Missione)",
         "pilotInCommand": "Pilota in Comando",
         "selectedPilot": "Pilota Selezionato"
       },
@@ -1452,7 +1483,7 @@
         "selectCategory": "Seleziona categoria",
         "selectType": "Seleziona tipo",
         "selectClientPlanning": "Seleziona cliente / pianificazione",
-        "selectLuc": "Seleziona procedura LUC",
+        "selectLuc": "Seleziona procedura",
         "noMissionProcedures": "Nessuna procedura MISSIONE",
         "selectPilot": "Seleziona pilota"
       },
@@ -1468,12 +1499,12 @@
       "validation": {
         "selectAtLeastOneDay": "Seleziona almeno un giorno",
         "noMatchingDays": "Nessuno dei giorni selezionati cade tra {{start}} e {{end}}. Amplia l'intervallo o cambia i giorni.",
-        "lucRequired": "La procedura LUC è obbligatoria",
+        "lucRequired": "La procedura è obbligatoria",
         "recurrenceEndDate": "La data di fine ricorrenza deve essere uguale o successiva alla data di inizio",
         "noMatchingDaysRange": "Nessuno dei giorni selezionati cade tra {{start}} e {{end}}. Amplia l'intervallo o cambia i giorni selezionati.",
         "missionNameRequired": "⚠ Il nome della missione è obbligatorio.",
         "pilotRequired": "⚠ Il Pilota in Comando è obbligatorio.",
-        "createLucHint": "Crea prima una procedura LUC attiva con stato \"MISSIONE\" nella sezione Organizzazione."
+        "createLucHint": "Crea prima una procedura attiva con stato \"MISSIONE\" nella sezione Organizzazione."
       },
       "review": {
         "missionName": "Nome Missione",
@@ -1485,7 +1516,7 @@
         "tool": "Strumento",
         "type": "Tipo",
         "category": "Categoria",
-        "lucProcedure": "Procedura LUC",
+        "lucProcedure": "Procedura",
         "recurrence": "Ricorrenza",
         "weekly": "Settimanale",
         "repeatUntil": "Ripeti Fino a",
@@ -1614,7 +1645,7 @@
       }
     }
   },
- "repository": {
+  "repository": {
     "title": "Archivio Documenti",
     "subtitle": "Gestisci e monitora i documenti di conformità aziendale",
     "newDocument": "Nuovo Documento",
@@ -1695,5 +1726,761 @@
     "reported": "Segnalato ✓",
     "reporting": "Segnalazione…",
     "reportBug": "Segnala bug"
+  },
+  "logbooks": {
+    "missionPlanning": {
+      "title": "Dashboard Pianificazione Missione",
+      "titleAlt": "Missione",
+      "subtitle": "Gestisci i registri di missione e i parametri operativi di pianificazione",
+      "planningMission": "Missione di Pianificazione",
+      "editRequest": "Modifica Richiesta di Pianificazione Missione",
+      "addNew": "Aggiunta Nuova al Registro Pianificazione Missione",
+      "logbook": "Registro Pianificazione Missione",
+      "logbookSubtitle": "Sfoglia e filtra i modelli di piano missione per valutazioni e pianificazioni",
+      "repositoryFiles": "File Repository",
+      "deleteTitle": "Sei assolutamente sicuro?",
+      "deleteDesc": "Questa azione non può essere annullata. Eliminerà definitivamente la voce del registro e tutti i dati associati.",
+      "loadError": "Errore nel caricamento dei dati missione.",
+      "filterError": "Impossibile caricare i filtri",
+      "networkError": "Errore di rete",
+      "deleteSuccess": "Voce del registro eliminata con successo",
+      "deleteFailed": "Eliminazione fallita. L'elenco è stato ripristinato.",
+      "addSuccess": "Missione aggiunta con successo",
+      "addFailed": "Aggiunta missione fallita.",
+      "updated": "Pianificazione aggiornata",
+      "searchLogbook": "Cerca nel registro...",
+      "refresh": "Aggiorna",
+      "record": "record",
+      "records": "record",
+      "noEntries": "Nessuna voce trovata nel registro di pianificazione missione.",
+      "planId": "ID Piano",
+      "code": "Codice",
+      "tests": "Test",
+      "fillForm": "Compila il modulo per aggiungere una nuova pianificazione missione.",
+      "addingEntry": "Aggiunta...",
+      "addNewEntry": "Aggiungi Nuova Pianificazione Missione",
+      "progress": "PROGRESSO",
+      "completed": "COMPLETATO",
+      "failed": "FALLITO",
+      "filter": {
+        "client": "Cliente",
+        "allClients": "Tutti i clienti",
+        "pic": "PiC",
+        "allPilots": "Tutti i piloti",
+        "evaluation": "Valutazione",
+        "allEvaluations": "Tutte le valutazioni",
+        "planning": "Pianificazione",
+        "allPlannings": "Tutte le pianificazioni",
+        "updateFrom": "Aggiornato dal",
+        "updateTo": "Aggiornato al",
+        "search": "Cerca",
+        "reset": "Reimposta"
+      },
+      "table": {
+        "searchPlaceholder": "Cerca in tutte le colonne…",
+        "active": "Attivo",
+        "inactive": "Inattivo",
+        "noResults": "Nessun piano missione trovato",
+        "noResultsHint": "Prova a modificare i filtri e a cercare di nuovo"
+      },
+      "columns": {
+        "client": "Cliente",
+        "evaluation": "Valutazione",
+        "planning": "Pianificazione",
+        "missionDesc": "Desc. Missione",
+        "missionPlan": "Piano Missione",
+        "version": "Versione",
+        "active": "Attivo"
+      }
+    },
+    "operationLogbook": {
+      "title": "Registro di Volo Operativo",
+      "subtitle": "Sfoglia, filtra e analizza i record delle missioni di volo",
+      "refresh": "Aggiorna",
+      "filterError": "Caricamento filtri non riuscito",
+      "loadError": "Caricamento dati non riuscito",
+      "networkError": "Errore di rete",
+      "filter": {
+        "title": "Filtri",
+        "dateStart": "Data Inizio",
+        "dateEnd": "Data Fine",
+        "pic": "PiC",
+        "client": "Cliente",
+        "droneSystem": "Sistema Drone",
+        "missionType": "Tipo Missione",
+        "category": "Categoria",
+        "status": "Stato",
+        "result": "Risultato",
+        "missionPlan": "Piano Missione",
+        "all": "Tutti",
+        "search": "Cerca",
+        "reset": "Reimposta"
+      },
+      "table": {
+        "flightsFound": "voli trovati",
+        "searchPlaceholder": "Cerca nella tabella…",
+        "noFlights": "Nessun volo trovato",
+        "noFlightsHint": "Modifica i filtri e cerca di nuovo"
+      },
+      "export": {
+        "filename": "Registro Operativo",
+        "missionId": "ID Missione",
+        "dateStart": "Data Inizio",
+        "dateEnd": "Data Fine",
+        "pic": "PIC",
+        "client": "Cliente",
+        "category": "Categoria",
+        "type": "Tipo",
+        "vehicle": "Veicolo",
+        "status": "Stato",
+        "result": "Risultato",
+        "planCode": "Codice Piano",
+        "flownTime": "Tempo di Volo",
+        "flownMeters": "Metri Percorsi",
+        "notes": "Note"
+      },
+      "columns": {
+        "start": "Inizio",
+        "end": "Fine",
+        "pic": "PiC",
+        "client": "Cliente",
+        "category": "Categoria",
+        "type": "Tipo",
+        "droneSystem": "Sistema Drone",
+        "status": "Stato",
+        "result": "Risultato",
+        "missionPlan": "Piano Missione",
+        "time": "Tempo",
+        "distance": "Distanza",
+        "notes": "Note"
+      }
+    }
+  },
+  "safety": {
+    "spiKpi": {
+      "pageTitle": "Definizioni SPI / KPI",
+      "pageSubtitle": "Gestione della Sicurezza · Monitoraggio degli indicatori di prestazione della sicurezza",
+      "newIndicator": "Nuovo Indicatore",
+      "stats": {
+        "totalIndicators": "Totale Indicatori",
+        "activeMonitors": "Monitor Attivi",
+        "operationsArea": "Area Operazioni"
+      },
+      "infoBanner": "Gli indicatori appaiono nel Dashboard della Sicurezza solo dopo che i valori di misurazione sono stati registrati. Usa il pulsante",
+      "infoBannerLogValue": "Registra Valore",
+      "infoBannerSuffix": "su ogni riga per inserire i dati.",
+      "filters": {
+        "searchDefinitions": "Cerca Definizioni",
+        "searchPlaceholder": "Codice, nome o descrizione...",
+        "area": "Area",
+        "allAreas": "Tutte le Aree",
+        "status": "Stato",
+        "allStatus": "Tutti gli Stati",
+        "activeOnly": "Solo Attivi",
+        "inactiveOnly": "Solo Inattivi",
+        "apply": "Applica"
+      },
+      "areas": {
+        "COMPLIANCE": "Conformità",
+        "TRAINING": "Formazione",
+        "OPERATIONS": "Operazioni",
+        "MAINTENANCE": "Manutenzione"
+      },
+      "table": {
+        "indicatorCode": "Codice Indicatore",
+        "area": "Area",
+        "name": "Nome",
+        "target": "Obiettivo",
+        "status": "Stato",
+        "active": "Attivo",
+        "disabled": "Disabilitato",
+        "logMeasurement": "Registra valore di misurazione",
+        "noResults": "Nessun indicatore corrisponde alla selezione corrente."
+      },
+      "form": {
+        "editTitle": "Modifica Indicatore",
+        "newTitle": "Nuovo Indicatore",
+        "code": "Codice",
+        "codePlaceholder": "es. OPS_SAFETY_01",
+        "codeHint": "Immutabile dopo il salvataggio",
+        "unit": "Unità",
+        "unitPlaceholder": "% / conteggio / ore",
+        "type": "Tipo",
+        "kpiOption": "KPI - Prestazione Chiave",
+        "spiOption": "SPI - Prestazione di Sicurezza",
+        "area": "Area",
+        "indicatorName": "Nome Indicatore",
+        "namePlaceholder": "Inserisci nome descrittivo...",
+        "targetValue": "Valore Obiettivo",
+        "frequency": "Frequenza di Reportistica",
+        "description": "Descrizione",
+        "descPlaceholder": "Spiega cosa misura questo indicatore...",
+        "statusLabel": "Stato",
+        "activeMonitoring": "Attivo / Monitoraggio",
+        "disabledDraft": "Disabilitato / Bozza",
+        "cancel": "Annulla",
+        "processing": "Elaborazione...",
+        "updateIndicator": "Aggiorna Indicatore",
+        "createIndicator": "Crea Indicatore"
+      },
+      "frequency": {
+        "MONTHLY": "Mensile",
+        "WEEKLY": "Settimanale",
+        "QUARTERLY": "Trimestrale",
+        "YEARLY": "Annuale"
+      },
+      "validation": {
+        "codeMinChars": "Minimo 3 caratteri",
+        "codeFormat": "Solo maiuscole, numeri e trattini bassi",
+        "nameRequired": "Il nome è obbligatorio",
+        "unitRequired": "L'unità è obbligatoria",
+        "targetPositive": "Deve essere un numero positivo",
+        "dateRequired": "La data è obbligatoria",
+        "valueNumber": "Deve essere un numero valido"
+      },
+      "log": {
+        "title": "Registra Misurazione",
+        "measurementDate": "Data Misurazione",
+        "actualValue": "Valore Effettivo",
+        "actualPlaceholder": "es. 87.5",
+        "targetValue": "Valore Obiettivo",
+        "status": "Stato",
+        "statusGreen": "In Linea / Sopra Obiettivo",
+        "statusYellow": "A Rischio / Sul Bersaglio",
+        "statusRed": "Superato / Sotto Obiettivo",
+        "cancel": "Annulla",
+        "saving": "Salvataggio...",
+        "saveMeasurement": "Salva Misurazione"
+      },
+      "toast": {
+        "loadError": "Impossibile caricare gli indicatori",
+        "recordSynced": "Record sincronizzato",
+        "saveFailed": "Salvataggio fallito",
+        "activated": "Indicatore attivato",
+        "deactivated": "Indicatore disattivato",
+        "toggleFailed": "Commutazione fallita",
+        "measurementLogged": "Misurazione registrata con successo",
+        "logFailed": "Registrazione fallita"
+      }
+    }
+  },
+  "compliance": {
+    "generalAuditPlan": {
+      "title": "Piano di Audit Generale",
+      "subtitle": "SMS Versione 3.2 · Revisione 01",
+      "stats": {
+        "totalRequirements": "Requisiti Totali",
+        "compliant": "Conforme",
+        "partialNonCompliant": "Parziale / Non Conforme",
+        "notApplicable": "Non Applicabile"
+      },
+      "filters": {
+        "searchPlaceholder": "Cerca per codice, titolo, area o fonte…",
+        "statusAll": "Tutti gli Stati",
+        "areaAll": "Tutte le Aree",
+        "clear": "Cancella"
+      },
+      "auditSchedule": {
+        "sectionTitle": "Programma di Audit Annuale",
+        "subtitle": "Quattro audit trimestrali per tutti i domini di conformità",
+        "footer": "Output & archiviazione: rapporti trimestrali firmati dal CMM e validati dall'AM; archiviazione PDF per 3 anni; registro azioni correttive con scadenze e responsabilità.",
+        "columns": {
+          "period": "Periodo",
+          "type": "Tipo",
+          "area": "Area / Oggetto",
+          "responsible": "Responsabile",
+          "mode": "Modalità",
+          "output": "Output Atteso"
+        }
+      },
+      "table": {
+        "sectionTitle": "Requisiti di Conformità",
+        "addButton": "Nuovo Requisito",
+        "columns": {
+          "ref": "Rif.",
+          "title": "Titolo",
+          "type": "Tipo",
+          "regulatoryBody": "Ente Regolatore",
+          "status": "Stato",
+          "criticality": "Criticità",
+          "nextDue": "Prossima Scadenza",
+          "actions": "Azioni"
+        },
+        "empty": "Nessun requisito di conformità trovato.",
+        "emptyHint": "Aggiungi il primo requisito usando il pulsante in alto.",
+        "requirementCount_one": "{{count}} requisito",
+        "requirementCount_other": "{{count}} requisiti"
+      },
+      "modal": {
+        "createTitle": "Nuovo Requisito di Conformità",
+        "editTitle": "Modifica Requisito",
+        "fields": {
+          "code": "Codice Rif.",
+          "codePlaceholder": "es. EU-2019/947-A1",
+          "title": "Titolo",
+          "titlePlaceholder": "Breve descrizione del requisito",
+          "type": "Tipo",
+          "typePlaceholder": "es. Normativo",
+          "regulatoryBody": "Ente Regolatore",
+          "regulatoryBodyPlaceholder": "es. Reg. (UE) 2019/947",
+          "status": "Stato",
+          "criticality": "Criticità (1–5)",
+          "nextReviewDate": "Prossima Data di Scadenza",
+          "notes": "Note",
+          "notesPlaceholder": "Contesto aggiuntivo, evidenze, azioni correttive…"
+        },
+        "cancel": "Annulla",
+        "save": "Salva",
+        "saving": "Salvataggio…",
+        "update": "Aggiorna",
+        "create": "Crea"
+      },
+      "deleteModal": {
+        "title": "Elimina Requisito",
+        "message": "Sei sicuro di voler eliminare questo requisito di conformità? Questa azione non può essere annullata.",
+        "confirm": "Elimina",
+        "deleting": "Eliminazione…",
+        "cancel": "Annulla"
+      },
+      "messages": {
+        "loadFailed": "Impossibile caricare i dati di conformità",
+        "saveSuccess": "Modifiche salvate",
+        "createSuccess": "Requisito aggiunto",
+        "saveFailed": "Impossibile salvare il requisito",
+        "deleteSuccess": "Requisito eliminato",
+        "deleteFailed": "Impossibile eliminare il requisito"
+      }
+    },
+    "calendar": {
+      "title": "Calendario di Conformità",
+      "subtitle": "Scadenze dei requisiti di conformità e programma di revisione",
+      "buttonText": {
+        "today": "Oggi",
+        "month": "Mese",
+        "list": "Lista"
+      },
+      "legend": {
+        "compliant": "Conforme",
+        "partial": "Parziale",
+        "nonCompliant": "Non Conforme",
+        "notApplicable": "Non Applicabile"
+      },
+      "eventModal": {
+        "title": "Dettaglio Requisito",
+        "fields": {
+          "code": "Codice",
+          "title": "Titolo",
+          "status": "Stato",
+          "area": "Area",
+          "source": "Fonte",
+          "dueDate": "Data di Scadenza"
+        },
+        "close": "Chiudi"
+      },
+      "loading": "Caricamento calendario…",
+      "empty": "Nessun evento di conformità trovato per questo periodo.",
+      "eventCount_one": "{{count}} evento",
+      "eventCount_other": "{{count}} eventi",
+      "messages": {
+        "loadFailed": "Impossibile caricare gli eventi del calendario"
+      }
+    },
+    "requirementsEvidences": {
+      "title": "Requisiti & Evidenze",
+      "subtitle": "Gestione dei requisiti di conformità con tracciamento delle evidenze",
+      "actions": {
+        "updateKpi": "Aggiorna KPI",
+        "filter": "Filtra",
+        "refresh": "Aggiorna",
+        "newRequirement": "Nuovo Requisito"
+      },
+      "stats": {
+        "total": "Totale",
+        "compliant": "Conforme",
+        "nonCompliant": "Non Conforme",
+        "partial": "Parziale"
+      },
+      "filters": {
+        "searchPlaceholder": "Cerca requisiti…",
+        "areaAll": "Tutte le Aree",
+        "statusAll": "Tutti gli Stati",
+        "clear": "Cancella"
+      },
+      "table": {
+        "columns": {
+          "code": "Codice",
+          "title": "Titolo",
+          "area": "Area",
+          "source": "Fonte",
+          "status": "Stato",
+          "criticality": "Criticità",
+          "nextDue": "Prossima Scadenza",
+          "actions": "Azioni"
+        },
+        "tooltips": {
+          "changeStatus": "Cambia Stato",
+          "manageEvidence": "Gestisci Evidenze",
+          "edit": "Modifica",
+          "delete": "Elimina"
+        },
+        "empty": "Nessun requisito trovato.",
+        "requirementCount_one": "{{count}} requisito",
+        "requirementCount_other": "{{count}} requisiti"
+      },
+      "requirementModal": {
+        "createTitle": "Nuovo Requisito",
+        "editTitle": "Modifica Requisito",
+        "fields": {
+          "code": "Codice",
+          "codePlaceholder": "es. REQ-001",
+          "title": "Titolo",
+          "titlePlaceholder": "Titolo del requisito",
+          "area": "Area",
+          "source": "Fonte",
+          "sourcePlaceholder": "es. ICAO Allegato 19",
+          "status": "Stato",
+          "criticality": "Criticità",
+          "nextDue": "Prossima Scadenza",
+          "notes": "Note",
+          "notesPlaceholder": "Note aggiuntive…"
+        },
+        "cancel": "Annulla",
+        "save": "Salva",
+        "saving": "Salvataggio…",
+        "update": "Aggiorna",
+        "create": "Crea"
+      },
+      "deleteModal": {
+        "title": "Elimina Requisito",
+        "message": "Sei sicuro di voler eliminare questo requisito? Questa azione non può essere annullata.",
+        "confirm": "Elimina",
+        "deleting": "Eliminazione…",
+        "cancel": "Annulla"
+      },
+      "statusModal": {
+        "title": "Cambia Stato",
+        "fields": {
+          "requirement": "Requisito",
+          "newStatus": "Nuovo Stato",
+          "comment": "Commento",
+          "commentPlaceholder": "Motivo del cambio di stato…"
+        },
+        "cancel": "Annulla",
+        "apply": "Applica",
+        "applying": "Applicazione…"
+      },
+      "evidencePanel": {
+        "title": "Evidenze",
+        "subtitle": "Evidenze allegate a questo requisito",
+        "addTitle": "Aggiungi Evidenza",
+        "fields": {
+          "type": "Tipo",
+          "description": "Descrizione",
+          "descriptionPlaceholder": "Descrivi l'evidenza…",
+          "fileUrl": "URL File",
+          "fileUrlPlaceholder": "https://…",
+          "notes": "Note",
+          "notesPlaceholder": "Note opzionali…"
+        },
+        "types": {
+          "DOC": "Documento",
+          "RECORD": "Registro",
+          "AUDIT": "Audit",
+          "LINK": "Link"
+        },
+        "add": "Aggiungi Evidenza",
+        "adding": "Aggiunta…",
+        "delete": "Elimina",
+        "viewFile": "Visualizza File",
+        "close": "Chiudi",
+        "submittedAt": "Inviato il",
+        "empty": "Nessuna evidenza allegata."
+      },
+      "messages": {
+        "loadFailed": "Impossibile caricare i requisiti",
+        "evidenceLoadFailed": "Impossibile caricare le evidenze",
+        "updateSuccess": "Requisito aggiornato",
+        "createSuccess": "Requisito creato",
+        "saveFailed": "Impossibile salvare il requisito",
+        "deleteSuccess": "Requisito eliminato",
+        "deleteFailed": "Eliminazione fallita",
+        "statusUpdateSuccess": "Stato aggiornato",
+        "statusUpdateFailed": "Aggiornamento stato fallito",
+        "evidenceAddSuccess": "Evidenza aggiunta",
+        "evidenceAddFailed": "Impossibile aggiungere l'evidenza",
+        "evidenceDeleteSuccess": "Evidenza eliminata",
+        "evidenceDeleteFailed": "Impossibile eliminare l'evidenza",
+        "kpiUpdateSuccess": "KPI aggiornato: {{compliant}}/{{total}} Conformi ({{non_compliant}} Non conformi, {{partial}} Parziali)",
+        "kpiUpdateFailed": "Aggiornamento KPI fallito",
+        "kpiRunFailed": "Esecuzione KPI mensile fallita"
+      }
+    },
+    "safetyTargetReview": {
+      "title": "Revisione Obiettivi di Sicurezza",
+      "subtitle": "SPI / KPI",
+      "monthsSelector": {
+        "label": "Analizza gli ultimi",
+        "3": "3 Mesi",
+        "6": "6 Mesi",
+        "12": "12 Mesi"
+      },
+      "generate": "Genera",
+      "generating": "Generazione…",
+      "tableSubtitle": "Analizza i target SPI/KPI suggeriti degli ultimi {{months}} mesi. Approva per applicare il nuovo obiettivo.",
+      "stats": {
+        "totalIndicators": "Indicatori Totali",
+        "pendingReview": "In Attesa di Revisione",
+        "approved": "Approvato",
+        "rejected": "Rifiutato"
+      },
+      "table": {
+        "sectionTitle": "Proposte di Obiettivo",
+        "columns": {
+          "area": "Area",
+          "indicator": "Indicatore",
+          "type": "Tipo",
+          "current": "Attuale",
+          "suggested": "Proposto",
+          "diff": "Δ Diff",
+          "created": "Creato",
+          "status": "Stato",
+          "actions": "Azioni"
+        },
+        "tooltips": {
+          "approve": "Approva",
+          "reject": "Rifiuta"
+        },
+        "empty": "Nessuna proposta generata. Seleziona un periodo e clicca su Genera.",
+        "emptyHint": "Clicca su Genera per analizzare gli ultimi {{months}} mesi."
+      },
+      "actionModal": {
+        "approveTitle": "Approva Proposta",
+        "rejectTitle": "Rifiuta Proposta",
+        "fields": {
+          "indicator": "Indicatore",
+          "area": "Area",
+          "currentTarget": "Obiettivo Attuale",
+          "suggestedTarget": "Obiettivo Proposto",
+          "delta": "Δ Differenza",
+          "notes": "Note",
+          "notesPlaceholder": "Aggiungi una nota per questa decisione…"
+        },
+        "alerts": {
+          "approve": "Stai per approvare questo obiettivo proposto. Verrà aggiornata la soglia KPI attiva.",
+          "reject": "Stai per rifiutare questa proposta. L'obiettivo attuale rimarrà invariato."
+        },
+        "cancel": "Annulla",
+        "approve": "Approva",
+        "reject": "Rifiuta",
+        "processing": "Elaborazione…"
+      },
+      "generatedSummary": "Proposte generate: {{pending}} in attesa (ultimi {{months}} mesi)",
+      "messages": {
+        "loadFailed": "Impossibile caricare le proposte",
+        "generateFailed": "Impossibile generare le proposte",
+        "actionFailed": "Azione fallita"
+      }
+    },
+    "shared": {
+      "status": {
+        "COMPLIANT": "Conforme",
+        "PARTIAL": "Parziale",
+        "NON_COMPLIANT": "Non Conforme",
+        "NOT_APPLICABLE": "Non Applicabile",
+        "PENDING": "In Attesa",
+        "APPROVED": "Approvato",
+        "REJECTED": "Rifiutato"
+      },
+      "area": {
+        "OPERATIONS": "Operazioni",
+        "MAINTENANCE": "Manutenzione",
+        "TRAINING": "Formazione",
+        "SMS": "SMS",
+        "COMPLIANCE": "Conformità",
+        "ICT": "ICT"
+      },
+      "pagination": {
+        "rowsPerPage": "Righe per pagina",
+        "pageInfo": "Pagina {{current}} di {{total}}",
+        "first": "Prima pagina",
+        "previous": "Pagina precedente",
+        "next": "Pagina successiva",
+        "last": "Ultima pagina"
+      }
+    }
+  },
+  "flytbase": {
+    "integration": {
+      "title": "Integrazione FlytBase",
+      "subtitle": "Collega il tuo account FlytBase per importare log di volo e dati di missione",
+      "viewFlights": "Visualizza Voli",
+      "needToken": "Hai bisogno di un token API FlytBase?",
+      "viewDocumentation": "Visualizza documentazione",
+      "tokenNote": "Usa una chiave API a lunga durata (RS256 JWT), non un token di sessione a breve durata."
+    },
+    "token": {
+      "title": "Token API FlytBase",
+      "subtitle": "Usato per recuperare i log di volo e la cronologia delle missioni da FlytBase",
+      "connected": "Connesso",
+      "notConnected": "Non connesso",
+      "secureNote": "Il tuo token è conservato in modo sicuro e non è mai esposto ad altri utenti o registrato.",
+      "savedNote": "Un token API FlytBase è attualmente salvato per il tuo account.",
+      "replaceToken": "Sostituisci token",
+      "removing": "Rimozione…",
+      "remove": "Rimuovi",
+      "removeTitle": "Rimuovere l'integrazione FlytBase?",
+      "removeDescription": "Questo eliminerà definitivamente il tuo token API salvato. Non potrai più recuperare log di volo o dati di missione finché non ti riconnetti con un nuovo token.",
+      "cancel": "Annulla",
+      "yesRemove": "Sì, rimuovi token",
+      "apiToken": "Token API",
+      "apiTokenPlaceholder": "Incolla la tua chiave API FlytBase a lunga durata",
+      "orgId": "ID Organizzazione",
+      "orgIdPlaceholder": "es. 684fbfd4c264f8f677beb444",
+      "orgIdHint": "Trovato nella dashboard FlytBase in Impostazioni Organizzazione.",
+      "verifying": "Verifica in corso…",
+      "verify": "Verifica token",
+      "verifiedTitle": "Token verificato — conferma che questo è il tuo account FlytBase",
+      "saving": "Salvataggio…",
+      "saveToken": "Sì, salva questo token",
+      "fields": {
+        "name": "Nome",
+        "username": "Nome utente",
+        "phone": "Telefono",
+        "organization": "Organizzazione",
+        "flytbaseId": "ID FlytBase"
+      },
+      "toasts": {
+        "enterToken": "Inserisci il tuo token API FlytBase.",
+        "enterOrgId": "Inserisci il tuo ID Organizzazione FlytBase.",
+        "verifyFailed": "Verifica del token fallita. Controlla il tuo token e l'ID Organizzazione.",
+        "saveSuccess": "Integrazione FlytBase salvata con successo.",
+        "saveFailed": "Impossibile salvare il token.",
+        "removed": "Integrazione FlytBase rimossa.",
+        "removeFailed": "Impossibile rimuovere il token."
+      }
+    },
+    "flights": {
+      "title": "Voli Recenti",
+      "subtitle": "Seleziona un volo per visualizzare il suo log GUTMA",
+      "refresh": "Aggiorna",
+      "settings": "Impostazioni",
+      "flightsLabel": "Voli",
+      "shown": "mostrati",
+      "of": "di",
+      "noToken": "Nessun token API FlytBase configurato per il tuo account.",
+      "setUp": "Configura ora",
+      "noRecentFlights": "Nessun volo recente trovato.",
+      "noFlightsInWindow": "Nessun volo trovato negli ultimi {{window}} minuti.",
+      "selectFlight": "Seleziona un volo per visualizzare il suo log GUTMA",
+      "latest20": "Ultimi 20",
+      "windows": {
+        "60": "Ultima 1 ora",
+        "360": "Ultime 6 ore",
+        "720": "Ultime 12 ore",
+        "1440": "Ultime 24 ore"
+      }
+    },
+    "preview": {
+      "savedToReadi": "Salvato su ReADI",
+      "notSaved": "Non salvato",
+      "archiving": "Archiviazione…",
+      "archiveToReadi": "Archivia su ReADI",
+      "tabs": {
+        "map": "Mappa",
+        "gutmaLog": "Log GUTMA",
+        "flightInfo": "Info Volo"
+      },
+      "downloadingLog": "Download del log GUTMA da FlytBase…",
+      "noGpsCoords": "Nessuna coordinata GPS trovata in questo file GUTMA.",
+      "noFlightInfo": "Nessuna informazione di volo aggiuntiva disponibile in questo file GUTMA.",
+      "noWaypointData": "Nessun dato di waypoint trovato in questo file GUTMA.",
+      "registerSerials": "Registra questi numeri di serie nel tuo inventario attrezzature prima di archiviare.",
+      "sections": {
+        "flightDetails": "Dettagli Volo",
+        "asset": "Asset",
+        "events": "Eventi",
+        "payloadBattery": "Payload / Batteria",
+        "aircraft": "Aeromobile",
+        "groundControlStation": "Stazione di Controllo a Terra",
+        "waypointLog": "Log Waypoint"
+      },
+      "fields": {
+        "pilotInCommand": "Pilota in Comando",
+        "mission": "Missione",
+        "startTime": "Ora di Inizio",
+        "endTime": "Ora di Fine",
+        "duration": "Durata",
+        "distance": "Distanza",
+        "loggingStart": "Inizio Registrazione",
+        "drone": "Drone",
+        "name": "Nome",
+        "model": "Modello",
+        "manufacturer": "Produttore",
+        "serialNumber": "Numero di serie",
+        "firmware": "Firmware",
+        "type": "Tipo",
+        "cycleCount": "Conteggio Cicli",
+        "designCapacity": "Capacità Nominale"
+      },
+      "eventsTable": {
+        "hash": "#",
+        "timestamp": "Timestamp",
+        "type": "Tipo",
+        "info": "Info",
+        "controller": "Controller"
+      },
+      "waypointTable": {
+        "hash": "#",
+        "timestamp": "Timestamp",
+        "lat": "Lat",
+        "lon": "Lon",
+        "altitude": "Alt (m)",
+        "speed": "Velocità",
+        "velocities": "Vx/Vy/Vz (m/s)",
+        "heading": "Prua (ψ)",
+        "roll": "Rollio (φ)",
+        "pitch": "Beccheggio (θ)",
+        "battery": "Batteria"
+      },
+      "pagination": {
+        "rows": "Righe",
+        "prev": "Prec",
+        "next": "Succ",
+        "showing": "Visualizzazione {{start}}-{{end}} di {{total}} waypoint · Pagina {{page}} di {{totalPages}}",
+        "showingFirst": "Visualizzazione dei primi {{count}} di {{total}} waypoint."
+      },
+      "subtitles": {
+        "events_one": "{{count}} evento",
+        "events_other": "{{count}} eventi",
+        "payload_one": "{{count}} elemento",
+        "payload_other": "{{count}} elementi",
+        "waypointLog": "{{count}} di {{total}} punti"
+      }
+    },
+    "archive": {
+      "archivedDetail_one": "Aggiornato {{count}} componente",
+      "archivedDetail_other": "Aggiornati {{count}} componenti",
+      "missionSynced": "Missione sincronizzata",
+      "archivedSuccess": "Log di volo archiviato su Readi.",
+      "archiveFailed": "Impossibile archiviare il log di volo."
+    }
+  },
+  "training": {
+  "title": "Calendario Formazione",
+  "subtitle": "Visualizza le sessioni di formazione programmate",
+  "refresh": "Aggiorna",
+  "loading": "Caricamento sessioni di formazione...",
+  "legend": "Legenda:",
+  "participant": "Partecipante",
+  "sessionDate": "Data Sessione",
+  "status": "Stato",
+  "close": "Chiudi",
+  "statuses": {
+    "COMPLETED": "Completato",
+    "IN_PROGRESS": "In Corso",
+    "FAILED": "Fallito",
+    "ABSENT": "Assente",
+    "OTHER": "Altro"
   }
+}
 }

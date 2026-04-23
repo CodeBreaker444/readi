@@ -12,7 +12,7 @@ import { CalendarDays, Plus } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useTheme } from '../useTheme'
-import { AddOperationModal } from './AddOperationModal'
+import { NewOperationModal } from './NewOperationModal'
 import { DeleteOperationDialog } from './DeleteOperationDialog'
 
 export function OperationCalendar() {
@@ -279,7 +279,7 @@ export function OperationCalendar() {
         </div>
       </div>
 
-      <AddOperationModal
+      <NewOperationModal
         open={addModalOpen}
         onClose={() => setAddModalOpen(false)}
         onSuccess={() => fetchOperations()}

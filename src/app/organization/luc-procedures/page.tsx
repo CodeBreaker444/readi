@@ -217,7 +217,7 @@ export default function LucProceduresPage() {
             <div className="w-1 h-6 rounded-full bg-violet-600" />
             <div>
               <h1 className={`font-semibold text-base tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                LUC Procedures
+                Procedures
               </h1>
               <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                 Manage light UAS operator certificate procedures
@@ -379,7 +379,7 @@ export default function LucProceduresPage() {
                       <p className={`text-xs ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>
                         {globalFilter || columnFilters.length > 0
                           ? 'Try adjusting your filters'
-                          : 'Add your first LUC procedure to get started'}
+                          : 'Add your first Procedure to get started'}
                       </p>
                     </div>
                   </TableCell>

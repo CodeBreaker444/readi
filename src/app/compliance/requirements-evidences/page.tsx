@@ -41,6 +41,7 @@ import {
   X,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 
@@ -56,13 +57,6 @@ interface Evidence {
   notes: string | null;
   submitted_at: string;
 }
-
-const STATUS_OPTIONS: { value: ComplianceStatus; label: string }[] = [
-  { value: 'COMPLIANT', label: 'Compliant' },
-  { value: 'PARTIAL', label: 'Partial' },
-  { value: 'NON_COMPLIANT', label: 'Non-Compliant' },
-  { value: 'NOT_APPLICABLE', label: 'Not Applicable' },
-];
 
 const AREA_OPTIONS = ['OPERATIONS', 'MAINTENANCE', 'TRAINING', 'SMS', 'COMPLIANCE', 'ICT'];
 const EVIDENCE_TYPE_OPTIONS: EvidenceType[] = ['DOC', 'RECORD', 'AUDIT', 'LINK'];
@@ -108,6 +102,7 @@ const EMPTY_EVI: EvidenceForm = {
 
 
 export default function RequirementsEvidencesPage() {
+  const { t } = useTranslation();
   const { isDark } = useTheme();
 
   const [records, setRecords] = useState<ComplianceRequirement[]>([]);
@@ -139,6 +134,12 @@ export default function RequirementsEvidencesPage() {
 
   const [kpiRunning, setKpiRunning] = useState(false);
 
+  const statusOptions = [
+    { value: 'COMPLIANT' as ComplianceStatus, label: t('compliance.shared.status.COMPLIANT') },
+    { value: 'PARTIAL' as ComplianceStatus, label: t('compliance.shared.status.PARTIAL') },
+    { value: 'NON_COMPLIANT' as ComplianceStatus, label: t('compliance.shared.status.NON_COMPLIANT') },
+    { value: 'NOT_APPLICABLE' as ComplianceStatus, label: t('compliance.shared.status.NOT_APPLICABLE') },
+  ];
 
   const fetchRecords = useCallback(async (p = 1) => {
     setLoading(true);
@@ -153,7 +154,7 @@ export default function RequirementsEvidencesPage() {
         setTotal(res.data.total ?? 0);
       }
     } catch {
-      toast.error('Failed to load requirements');
+      toast.error(t('compliance.requirementsEvidences.messages.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -167,7 +168,7 @@ export default function RequirementsEvidencesPage() {
       const res = await axios.get(`/api/compliance/requirements-evidences/evidence/list?requirement_id=${requirementId}`);
       if (res.data.code === 1) setEvidences(res.data.data ?? []);
     } catch {
-      toast.error('Failed to load evidences');
+      toast.error(t('compliance.requirementsEvidences.messages.evidenceLoadFailed'));
     } finally {
       setEviLoading(false);
     }
@@ -178,9 +179,10 @@ export default function RequirementsEvidencesPage() {
     () => getComplianceRequirementsColumns(
       isDark,
       (r) => openEditReq(r),
-      (r) => setDeleteTarget(r)
+      (r) => setDeleteTarget(r),
+      t
     ),
-    [isDark]
+    [isDark, t]
   );
 
   const table = useReactTable({
@@ -232,10 +234,12 @@ export default function RequirementsEvidencesPage() {
         : '/api/compliance/requirements-evidences/add';
       await axios.post(endpoint, payload);
       setReqModalOpen(false);
-      toast.success(reqForm.requirement_id ? 'Requirement updated' : 'Requirement created');
+      toast.success(reqForm.requirement_id
+        ? t('compliance.requirementsEvidences.messages.updateSuccess')
+        : t('compliance.requirementsEvidences.messages.createSuccess'));
       fetchRecords(page);
     } catch {
-      toast.error('Failed to save requirement');
+      toast.error(t('compliance.requirementsEvidences.messages.saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -247,11 +251,11 @@ export default function RequirementsEvidencesPage() {
     setDeleteTarget(null);
     try {
       await axios.post('/api/compliance/requirements-evidences/delete', { requirement_id: id });
-      toast.success('Requirement deleted');
+      toast.success(t('compliance.requirementsEvidences.messages.deleteSuccess'));
       fetchRecords(page);
     } catch (err) {
-      if (axios.isAxiosError(err)) toast.error(err.response?.data?.error || 'Failed to delete');
-      else toast.error('Failed to delete');
+      if (axios.isAxiosError(err)) toast.error(err.response?.data?.error || t('compliance.requirementsEvidences.messages.deleteFailed'));
+      else toast.error(t('compliance.requirementsEvidences.messages.deleteFailed'));
     }
   }
 
@@ -272,10 +276,10 @@ export default function RequirementsEvidencesPage() {
         comment: statusComment || null,
       });
       setStatusTarget(null);
-      toast.success('Status updated');
+      toast.success(t('compliance.requirementsEvidences.messages.statusUpdateSuccess'));
       fetchRecords(page);
     } catch {
-      toast.error('Failed to update status');
+      toast.error(t('compliance.requirementsEvidences.messages.statusUpdateFailed'));
     } finally {
       setStatusSaving(false);
     }
@@ -300,10 +304,10 @@ export default function RequirementsEvidencesPage() {
         notes: eviForm.notes.trim() || null,
       });
       setEviForm(EMPTY_EVI);
-      toast.success('Evidence added');
+      toast.success(t('compliance.requirementsEvidences.messages.evidenceAddSuccess'));
       fetchEvidences(eviTarget.requirement_id);
     } catch {
-      toast.error('Failed to add evidence');
+      toast.error(t('compliance.requirementsEvidences.messages.evidenceAddFailed'));
     } finally {
       setEviSaving(false);
     }
@@ -312,10 +316,10 @@ export default function RequirementsEvidencesPage() {
   const handleDeleteEvidence = async (evidenceId: number) => {
     try {
       await axios.post('/api/compliance/requirements-evidences/evidence/delete', { evidence_id: evidenceId });
-      toast.success('Evidence deleted');
+      toast.success(t('compliance.requirementsEvidences.messages.evidenceDeleteSuccess'));
       if (eviTarget) fetchEvidences(eviTarget.requirement_id);
     } catch {
-      toast.error('Failed to delete evidence');
+      toast.error(t('compliance.requirementsEvidences.messages.evidenceDeleteFailed'));
     }
   }
 
@@ -332,14 +336,12 @@ export default function RequirementsEvidencesPage() {
       if (res.data.code === 1) {
         const { compliant, non_compliant, partial, total } = res.data.data;
 
-        toast.success(
-          `KPI Updated: ${compliant}/${total} Compliant (${non_compliant} Non-Compliant, ${partial} Partial)`
-        );
+        toast.success(t('compliance.requirementsEvidences.messages.kpiUpdateSuccess', { compliant, total, non_compliant, partial }));
       } else {
-        toast.error(res.data.error || 'KPI update failed');
+        toast.error(res.data.error || t('compliance.requirementsEvidences.messages.kpiUpdateFailed'));
       }
     } catch (err) {
-      toast.error('Failed to run monthly KPI');
+      toast.error(t('compliance.requirementsEvidences.messages.kpiRunFailed'));
     } finally {
       setKpiRunning(false);
     }
@@ -363,17 +365,16 @@ export default function RequirementsEvidencesPage() {
 
   return (
     <div className={`min-h-screen ${bg}`}>
-      {/* Header */}
       <div className={`backdrop-blur-xl border-b ${isDark ? 'bg-[#0a0e1a]/90 border-white/6' : 'bg-white/80 border-black/6 shadow-[0_1px_2px_rgba(0,0,0,0.04)]'}`}>
         <div className="mx-auto px-6 py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-3.5">
             <div className="w-1 h-6 rounded-full bg-violet-600" />
             <div>
               <h1 className={`text-[15px] font-semibold tracking-[-0.01em] ${textPrimary}`}>
-                Requirements &amp; Evidences
+                {t('compliance.requirementsEvidences.title')}
               </h1>
               <p className={`text-[11px] mt-0.5 ${textMuted}`}>
-                Compliance requirements management with evidence tracking
+                {t('compliance.requirementsEvidences.subtitle')}
               </p>
             </div>
           </div>
@@ -386,7 +387,7 @@ export default function RequirementsEvidencesPage() {
               className={`h-8 gap-1.5 text-xs ${btnOutline}`}
             >
               <RefreshCw size={13} className={kpiRunning ? 'animate-spin' : ''} strokeWidth={2.5} />
-              Update KPI
+              {t('compliance.requirementsEvidences.actions.updateKpi')}
             </Button>
             <Button
               variant="outline"
@@ -395,7 +396,7 @@ export default function RequirementsEvidencesPage() {
               className={`h-8 gap-1.5 text-xs ${filterOpen ? 'bg-violet-600/10 border-violet-500/30 text-violet-400' : btnOutline}`}
             >
               <Filter size={13} strokeWidth={2.5} />
-              Filter
+              {t('compliance.requirementsEvidences.actions.filter')}
             </Button>
             <Button
               variant="outline"
@@ -412,7 +413,7 @@ export default function RequirementsEvidencesPage() {
               className="h-8 gap-1.5 text-xs bg-violet-600 hover:bg-violet-700 text-white"
             >
               <Plus size={14} strokeWidth={2.5} />
-              New Requirement
+              {t('compliance.requirementsEvidences.actions.newRequirement')}
             </Button>
           </div>
         </div>
@@ -420,31 +421,30 @@ export default function RequirementsEvidencesPage() {
 
       <div className="mx-auto px-6 py-6 space-y-5">
 
-        {/* Filters */}
         {filterOpen && (
           <div className={`rounded-xl border p-4 flex flex-wrap gap-3 items-center ${cardBg}`}>
             <Input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Search ref, title or source…"
+              placeholder={t('compliance.requirementsEvidences.filters.searchPlaceholder')}
               className={`h-8 flex-1 min-w-48 text-xs ${inputCls}`}
             />
             <Select value={filterArea || 'all'} onValueChange={(v) => setFilterArea(v === 'all' ? '' : v)}>
               <SelectTrigger className={`h-8 w-44 text-xs ${selectTrigger}`}>
-                <SelectValue placeholder="All Areas" />
+                <SelectValue placeholder={t('compliance.requirementsEvidences.filters.areaAll')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Areas</SelectItem>
-                {AREA_OPTIONS.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+                <SelectItem value="all">{t('compliance.requirementsEvidences.filters.areaAll')}</SelectItem>
+                {AREA_OPTIONS.map((a) => <SelectItem key={a} value={a}>{t(`compliance.shared.area.${a}`, { defaultValue: a })}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select value={filterStatus || 'all'} onValueChange={(v) => setFilterStatus(v === 'all' ? '' : v)}>
               <SelectTrigger className={`h-8 w-44 text-xs ${selectTrigger}`}>
-                <SelectValue placeholder="All Status" />
+                <SelectValue placeholder={t('compliance.requirementsEvidences.filters.statusAll')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                {STATUS_OPTIONS.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                <SelectItem value="all">{t('compliance.requirementsEvidences.filters.statusAll')}</SelectItem>
+                {statusOptions.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
               </SelectContent>
             </Select>
             {(q || filterArea || filterStatus) && (
@@ -454,24 +454,23 @@ export default function RequirementsEvidencesPage() {
                 onClick={() => { setQ(''); setFilterArea(''); setFilterStatus(''); }}
                 className="h-8 gap-1 text-xs text-red-400 hover:bg-red-500/10"
               >
-                <X size={13} /> Clear
+                <X size={13} /> {t('compliance.requirementsEvidences.filters.clear')}
               </Button>
             )}
             <span className={`ml-auto text-xs ${textMuted}`}>Total: {total}</span>
           </div>
         )}
 
-        {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {([
-            { label: 'Total', value: total, icon: ShieldCheck, color: 'text-violet-400', iconBg: isDark ? 'bg-violet-500/10' : 'bg-violet-50' },
-            { label: 'Compliant', value: records.filter(r => r.requirement_status === 'COMPLIANT').length, icon: CheckCircle2, color: 'text-emerald-400', iconBg: isDark ? 'bg-emerald-500/10' : 'bg-emerald-50' },
-            { label: 'Non-Compliant', value: records.filter(r => r.requirement_status === 'NON_COMPLIANT').length, icon: AlertTriangle, color: 'text-red-400', iconBg: isDark ? 'bg-red-500/10' : 'bg-red-50' },
-            { label: 'Partial', value: records.filter(r => r.requirement_status === 'PARTIAL').length, icon: MinusCircle, color: 'text-amber-400', iconBg: isDark ? 'bg-amber-500/10' : 'bg-amber-50' },
-          ] as const).map(({ label, value, icon: Icon, color, iconBg }) => (
-            <div key={label} className={`rounded-xl border p-4 ${cardBg}`}>
+            { labelKey: 'compliance.requirementsEvidences.stats.total', value: total, icon: ShieldCheck, color: 'text-violet-400', iconBg: isDark ? 'bg-violet-500/10' : 'bg-violet-50' },
+            { labelKey: 'compliance.requirementsEvidences.stats.compliant', value: records.filter(r => r.requirement_status === 'COMPLIANT').length, icon: CheckCircle2, color: 'text-emerald-400', iconBg: isDark ? 'bg-emerald-500/10' : 'bg-emerald-50' },
+            { labelKey: 'compliance.requirementsEvidences.stats.nonCompliant', value: records.filter(r => r.requirement_status === 'NON_COMPLIANT').length, icon: AlertTriangle, color: 'text-red-400', iconBg: isDark ? 'bg-red-500/10' : 'bg-red-50' },
+            { labelKey: 'compliance.requirementsEvidences.stats.partial', value: records.filter(r => r.requirement_status === 'PARTIAL').length, icon: MinusCircle, color: 'text-amber-400', iconBg: isDark ? 'bg-amber-500/10' : 'bg-amber-50' },
+          ] as const).map(({ labelKey, value, icon: Icon, color, iconBg }) => (
+            <div key={labelKey} className={`rounded-xl border p-4 ${cardBg}`}>
               <div className="flex items-center justify-between mb-3">
-                <p className={`text-[11px] font-medium uppercase tracking-wider ${textMuted}`}>{label}</p>
+                <p className={`text-[11px] font-medium uppercase tracking-wider ${textMuted}`}>{t(labelKey)}</p>
                 <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${iconBg}`}>
                   <Icon size={14} className={color} />
                 </div>
@@ -481,12 +480,13 @@ export default function RequirementsEvidencesPage() {
           ))}
         </div>
 
-        {/* Requirements table */}
         <div className={`rounded-xl border overflow-hidden ${cardBg}`}>
           <div className={`px-5 py-4 border-b flex items-center justify-between ${borderMuted}`}>
             <div>
-              <h2 className={`text-sm font-semibold ${textPrimary}`}>Compliance Requirements</h2>
-              <p className={`text-[11px] mt-0.5 ${textMuted}`}>{total} requirement{total !== 1 ? 's' : ''}</p>
+              <h2 className={`text-sm font-semibold ${textPrimary}`}>
+                {t('compliance.generalAuditPlan.table.sectionTitle')}
+              </h2>
+              <p className={`text-[11px] mt-0.5 ${textMuted}`}>{t('compliance.requirementsEvidences.table.requirementCount', { count: total })}</p>
             </div>
           </div>
 
@@ -504,9 +504,8 @@ export default function RequirementsEvidencesPage() {
                         {flexRender(header.column.columnDef.header, header.getContext())}
                       </TableHead>
                     ))}
-                    {/* Extra action columns */}
                     <TableHead className={`text-[11px] font-bold uppercase tracking-wider ${textMuted} w-24`}>
-                      Actions
+                      {t('compliance.requirementsEvidences.table.columns.actions')}
                     </TableHead>
                   </TableRow>
                 ))}
@@ -527,7 +526,7 @@ export default function RequirementsEvidencesPage() {
                   <TableRow>
                     <TableCell colSpan={columns.length + 1} className="py-20 text-center">
                       <ShieldCheck size={32} className={`mx-auto mb-3 ${isDark ? 'text-gray-700' : 'text-gray-300'}`} />
-                      <p className={`text-sm ${textMuted}`}>No requirements found.</p>
+                      <p className={`text-sm ${textMuted}`}>{t('compliance.requirementsEvidences.table.empty')}</p>
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -546,14 +545,14 @@ export default function RequirementsEvidencesPage() {
                           <button
                             onClick={() => openStatusModal(row.original)}
                             className={`p-1.5 rounded-md transition-colors text-xs ${isDark ? 'text-slate-500 hover:text-blue-400 hover:bg-blue-500/8' : 'text-slate-400 hover:text-blue-600 hover:bg-blue-50'}`}
-                            title="Change status"
+                            title={t('compliance.requirementsEvidences.table.tooltips.changeStatus')}
                           >
                             <RefreshCw size={13} strokeWidth={2} />
                           </button>
                           <button
                             onClick={() => openEviPanel(row.original)}
                             className={`p-1.5 rounded-md transition-colors ${isDark ? 'text-slate-500 hover:text-amber-400 hover:bg-amber-500/8' : 'text-slate-400 hover:text-amber-600 hover:bg-amber-50'}`}
-                            title="Manage evidence"
+                            title={t('compliance.requirementsEvidences.table.tooltips.manageEvidence')}
                           >
                             <Paperclip size={13} strokeWidth={2} />
                           </button>
@@ -575,7 +574,9 @@ export default function RequirementsEvidencesPage() {
           <div className={`w-full max-w-lg rounded-xl border shadow-2xl ${isDark ? 'bg-[#0f1320] border-white/8' : 'bg-white border-gray-200'}`}>
             <div className={`flex items-center justify-between px-6 py-4 border-b ${borderMuted}`}>
               <h2 className={`text-sm font-semibold ${textPrimary}`}>
-                {reqForm.requirement_id ? 'Edit Requirement' : 'New Requirement'}
+                {reqForm.requirement_id
+                  ? t('compliance.requirementsEvidences.requirementModal.editTitle')
+                  : t('compliance.requirementsEvidences.requirementModal.createTitle')}
               </h2>
               <Button variant="ghost" size="icon" onClick={() => setReqModalOpen(false)} className={`h-7 w-7 ${isDark ? 'text-gray-400 hover:bg-white/8' : 'text-gray-400 hover:bg-gray-100'}`}>
                 <X size={15} />
@@ -584,57 +585,79 @@ export default function RequirementsEvidencesPage() {
             <div className="px-6 py-5 space-y-4 max-h-[70vh] overflow-y-auto">
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>Ref Code *</label>
-                  <Input value={reqForm.requirement_code} onChange={(e) => setReqForm(f => ({ ...f, requirement_code: e.target.value }))} placeholder="e.g. OP-001" className={`h-9 text-xs font-mono ${inputCls}`} />
+                  <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>
+                    {t('compliance.requirementsEvidences.requirementModal.fields.code')} *
+                  </label>
+                  <Input value={reqForm.requirement_code} onChange={(e) => setReqForm(f => ({ ...f, requirement_code: e.target.value }))} placeholder={t('compliance.requirementsEvidences.requirementModal.fields.codePlaceholder')} className={`h-9 text-xs font-mono ${inputCls}`} />
                 </div>
                 <div className="col-span-2">
-                  <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>Title *</label>
-                  <Input value={reqForm.requirement_title} onChange={(e) => setReqForm(f => ({ ...f, requirement_title: e.target.value }))} placeholder="Requirement title" className={`h-9 text-xs ${inputCls}`} />
+                  <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>
+                    {t('compliance.requirementsEvidences.requirementModal.fields.title')} *
+                  </label>
+                  <Input value={reqForm.requirement_title} onChange={(e) => setReqForm(f => ({ ...f, requirement_title: e.target.value }))} placeholder={t('compliance.requirementsEvidences.requirementModal.fields.titlePlaceholder')} className={`h-9 text-xs ${inputCls}`} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>Area</label>
+                  <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>
+                    {t('compliance.requirementsEvidences.requirementModal.fields.area')}
+                  </label>
                   <Select value={reqForm.requirement_type} onValueChange={(v) => setReqForm(f => ({ ...f, requirement_type: v }))}>
                     <SelectTrigger className={`h-9 text-xs ${selectTrigger}`}><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {AREA_OPTIONS.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+                      {AREA_OPTIONS.map((a) => <SelectItem key={a} value={a}>{t(`compliance.shared.area.${a}`, { defaultValue: a })}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>Source</label>
-                  <Input value={reqForm.regulatory_body} onChange={(e) => setReqForm(f => ({ ...f, regulatory_body: e.target.value }))} placeholder="e.g. INTERNAL" className={`h-9 text-xs ${inputCls}`} />
+                  <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>
+                    {t('compliance.requirementsEvidences.requirementModal.fields.source')}
+                  </label>
+                  <Input value={reqForm.regulatory_body} onChange={(e) => setReqForm(f => ({ ...f, regulatory_body: e.target.value }))} placeholder={t('compliance.requirementsEvidences.requirementModal.fields.sourcePlaceholder')} className={`h-9 text-xs ${inputCls}`} />
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>Status</label>
+                  <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>
+                    {t('compliance.requirementsEvidences.requirementModal.fields.status')}
+                  </label>
                   <Select value={reqForm.requirement_status} onValueChange={(v) => setReqForm(f => ({ ...f, requirement_status: v as ComplianceStatus }))}>
                     <SelectTrigger className={`h-9 text-xs ${selectTrigger}`}><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {STATUS_OPTIONS.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                      {statusOptions.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>Criticality (1–5)</label>
+                  <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>
+                    {t('compliance.requirementsEvidences.requirementModal.fields.criticality')}
+                  </label>
                   <Input type="number" min={1} max={5} value={reqForm.review_frequency} onChange={(e) => setReqForm(f => ({ ...f, review_frequency: e.target.value }))} className={`h-9 text-xs ${inputCls}`} />
                 </div>
                 <div>
-                  <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>Next Due</label>
+                  <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>
+                    {t('compliance.requirementsEvidences.requirementModal.fields.nextDue')}
+                  </label>
                   <Input type="date" value={reqForm.next_review_date} onChange={(e) => setReqForm(f => ({ ...f, next_review_date: e.target.value }))} className={`h-9 text-xs ${inputCls}`} />
                 </div>
               </div>
               <div>
-                <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>Notes</label>
-                <textarea rows={3} value={reqForm.requirement_description} onChange={(e) => setReqForm(f => ({ ...f, requirement_description: e.target.value }))} placeholder="Additional context…" className={`w-full rounded-md border px-3 py-2 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-violet-500/40 ${inputCls}`} />
+                <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>
+                  {t('compliance.requirementsEvidences.requirementModal.fields.notes')}
+                </label>
+                <textarea rows={3} value={reqForm.requirement_description} onChange={(e) => setReqForm(f => ({ ...f, requirement_description: e.target.value }))} placeholder={t('compliance.requirementsEvidences.requirementModal.fields.notesPlaceholder')} className={`w-full rounded-md border px-3 py-2 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-violet-500/40 ${inputCls}`} />
               </div>
             </div>
             <div className={`flex justify-end gap-2 px-6 py-4 border-t ${borderMuted}`}>
-              <Button variant="outline" size="sm" onClick={() => setReqModalOpen(false)} className={`h-8 text-xs ${isDark ? 'border-white/8 hover:bg-white/5 text-gray-300' : ''}`}>Cancel</Button>
+              <Button variant="outline" size="sm" onClick={() => setReqModalOpen(false)} className={`h-8 text-xs ${isDark ? 'border-white/8 hover:bg-white/5 text-gray-300' : ''}`}>
+                {t('compliance.requirementsEvidences.requirementModal.cancel')}
+              </Button>
               <Button size="sm" onClick={handleSaveReq} disabled={saving || !reqForm.requirement_code.trim() || !reqForm.requirement_title.trim()} className="h-8 text-xs bg-violet-600 hover:bg-violet-700 text-white">
-                {saving ? 'Saving…' : reqForm.requirement_id ? 'Update' : 'Create'}
+                {saving
+                  ? t('compliance.requirementsEvidences.requirementModal.saving')
+                  : reqForm.requirement_id
+                    ? t('compliance.requirementsEvidences.requirementModal.update')
+                    : t('compliance.requirementsEvidences.requirementModal.create')}
               </Button>
             </div>
           </div>
@@ -648,14 +671,20 @@ export default function RequirementsEvidencesPage() {
               <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center mb-4">
                 <AlertTriangle size={18} className="text-red-400" />
               </div>
-              <h3 className={`text-sm font-semibold mb-1 ${textPrimary}`}>Delete Requirement</h3>
+              <h3 className={`text-sm font-semibold mb-1 ${textPrimary}`}>
+                {t('compliance.requirementsEvidences.deleteModal.title')}
+              </h3>
               <p className={`text-xs ${textMuted}`}>
-                Remove <span className="font-semibold text-red-400">{deleteTarget.requirement_code}</span>? This cannot be undone.
+                {t('compliance.requirementsEvidences.deleteModal.message')}
               </p>
             </div>
             <div className={`flex justify-end gap-2 px-6 py-4 border-t ${borderMuted}`}>
-              <Button variant="outline" size="sm" onClick={() => setDeleteTarget(null)} className={`h-8 text-xs ${isDark ? 'border-white/8 hover:bg-white/5 text-gray-300' : ''}`}>Cancel</Button>
-              <Button size="sm" onClick={handleDeleteReq} className="h-8 text-xs bg-red-600 hover:bg-red-700 text-white">Delete</Button>
+              <Button variant="outline" size="sm" onClick={() => setDeleteTarget(null)} className={`h-8 text-xs ${isDark ? 'border-white/8 hover:bg-white/5 text-gray-300' : ''}`}>
+                {t('compliance.requirementsEvidences.deleteModal.cancel')}
+              </Button>
+              <Button size="sm" onClick={handleDeleteReq} className="h-8 text-xs bg-red-600 hover:bg-red-700 text-white">
+                {t('compliance.requirementsEvidences.deleteModal.confirm')}
+              </Button>
             </div>
           </div>
         </div>
@@ -665,31 +694,42 @@ export default function RequirementsEvidencesPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
           <div className={`w-full max-w-sm rounded-xl border ${isDark ? 'bg-[#0f1320] border-white/8' : 'bg-white border-gray-200'}`}>
             <div className={`flex items-center justify-between px-6 py-4 border-b ${borderMuted}`}>
-              <h2 className={`text-sm font-semibold ${textPrimary}`}>Change Status</h2>
+              <h2 className={`text-sm font-semibold ${textPrimary}`}>
+                {t('compliance.requirementsEvidences.statusModal.title')}
+              </h2>
               <Button variant="ghost" size="icon" onClick={() => setStatusTarget(null)} className={`h-7 w-7 ${isDark ? 'text-gray-400 hover:bg-white/8' : ''}`}><X size={15} /></Button>
             </div>
             <div className="px-6 py-5 space-y-4">
               <p className={`text-xs ${textMuted}`}>
-                Requirement: <span className={`font-semibold ${textPrimary}`}>{statusTarget.requirement_code}</span>
+                {t('compliance.requirementsEvidences.statusModal.fields.requirement')}:{' '}
+                <span className={`font-semibold ${textPrimary}`}>{statusTarget.requirement_code}</span>
               </p>
               <div>
-                <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>New Status</label>
+                <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>
+                  {t('compliance.requirementsEvidences.statusModal.fields.newStatus')}
+                </label>
                 <Select value={newStatus} onValueChange={(v) => setNewStatus(v as ComplianceStatus)}>
                   <SelectTrigger className={`h-9 text-xs ${selectTrigger}`}><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {STATUS_OPTIONS.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                    {statusOptions.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>Comment (optional)</label>
-                <textarea rows={3} value={statusComment} onChange={(e) => setStatusComment(e.target.value)} placeholder="Add a note about this change…" className={`w-full rounded-md border px-3 py-2 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-violet-500/40 ${inputCls}`} />
+                <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>
+                  {t('compliance.requirementsEvidences.statusModal.fields.comment')}
+                </label>
+                <textarea rows={3} value={statusComment} onChange={(e) => setStatusComment(e.target.value)} placeholder={t('compliance.requirementsEvidences.statusModal.fields.commentPlaceholder')} className={`w-full rounded-md border px-3 py-2 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-violet-500/40 ${inputCls}`} />
               </div>
             </div>
             <div className={`flex justify-end gap-2 px-6 py-4 border-t ${borderMuted}`}>
-              <Button variant="outline" size="sm" onClick={() => setStatusTarget(null)} className={`h-8 text-xs ${isDark ? 'border-white/8 hover:bg-white/5 text-gray-300' : ''}`}>Cancel</Button>
+              <Button variant="outline" size="sm" onClick={() => setStatusTarget(null)} className={`h-8 text-xs ${isDark ? 'border-white/8 hover:bg-white/5 text-gray-300' : ''}`}>
+                {t('compliance.requirementsEvidences.statusModal.cancel')}
+              </Button>
               <Button size="sm" onClick={handleStatusChange} disabled={statusSaving} className="h-8 text-xs bg-violet-600 hover:bg-violet-700 text-white">
-                {statusSaving ? 'Saving…' : 'Update Status'}
+                {statusSaving
+                  ? t('compliance.requirementsEvidences.statusModal.applying')
+                  : t('compliance.requirementsEvidences.statusModal.apply')}
               </Button>
             </div>
           </div>
@@ -701,7 +741,9 @@ export default function RequirementsEvidencesPage() {
           <div className={`w-full max-w-xl rounded-xl border shadow-2xl ${isDark ? 'bg-[#0f1320] border-white/8' : 'bg-white border-gray-200'}`}>
             <div className={`flex items-center justify-between px-6 py-4 border-b ${borderMuted}`}>
               <div>
-                <h2 className={`text-sm font-semibold ${textPrimary}`}>Evidence</h2>
+                <h2 className={`text-sm font-semibold ${textPrimary}`}>
+                  {t('compliance.requirementsEvidences.evidencePanel.title')}
+                </h2>
                 <p className={`text-[11px] mt-0.5 ${textMuted}`}>{eviTarget.requirement_code} — {eviTarget.requirement_title}</p>
               </div>
               <Button variant="ghost" size="icon" onClick={() => setEviTarget(null)} className={`h-7 w-7 ${isDark ? 'text-gray-400 hover:bg-white/8' : ''}`}><X size={15} /></Button>
@@ -715,7 +757,7 @@ export default function RequirementsEvidencesPage() {
               ) : evidences.length === 0 ? (
                 <div className={`text-xs text-center py-8 ${textMuted}`}>
                   <FileText size={28} className="mx-auto mb-2 opacity-40" />
-                  No evidence items yet
+                  {t('compliance.requirementsEvidences.evidencePanel.empty')}
                 </div>
               ) : (
                 evidences.map((ev) => (
@@ -723,13 +765,13 @@ export default function RequirementsEvidencesPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${isDark ? 'bg-violet-500/10 text-violet-300' : 'bg-violet-50 text-violet-700'}`}>
-                          {ev.evidence_type}
+                          {t(`compliance.requirementsEvidences.evidencePanel.types.${ev.evidence_type}`, { defaultValue: ev.evidence_type })}
                         </span>
                         <span className={`text-xs font-medium truncate ${textPrimary}`}>{ev.evidence_description}</span>
                       </div>
                       {ev.file_path && (
                         <a href={ev.file_path} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[11px] text-violet-400 hover:underline">
-                          <ExternalLink size={11} /> Open file
+                          <ExternalLink size={11} /> {t('compliance.requirementsEvidences.evidencePanel.viewFile')}
                         </a>
                       )}
                       {ev.notes && <p className={`text-[11px] mt-0.5 ${textMuted}`}>{ev.notes}</p>}
@@ -746,24 +788,30 @@ export default function RequirementsEvidencesPage() {
             </div>
 
             <div className={`px-6 py-4 border-t ${borderMuted} space-y-3`}>
-              <p className={`text-[11px] font-semibold uppercase tracking-wider ${textMuted}`}>Add Evidence</p>
+              <p className={`text-[11px] font-semibold uppercase tracking-wider ${textMuted}`}>
+                {t('compliance.requirementsEvidences.evidencePanel.addTitle')}
+              </p>
               <div className="grid grid-cols-4 gap-2">
                 <Select value={eviForm.evidence_type} onValueChange={(v) => setEviForm(f => ({ ...f, evidence_type: v as EvidenceType }))}>
                   <SelectTrigger className={`h-8 text-xs ${selectTrigger}`}><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {EVIDENCE_TYPE_OPTIONS.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                    {EVIDENCE_TYPE_OPTIONS.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {t(`compliance.requirementsEvidences.evidencePanel.types.${type}`, { defaultValue: type })}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 <Input
                   value={eviForm.evidence_description}
                   onChange={(e) => setEviForm(f => ({ ...f, evidence_description: e.target.value }))}
-                  placeholder="Title *"
+                  placeholder={`${t('compliance.requirementsEvidences.evidencePanel.fields.description')} *`}
                   className={`col-span-2 h-8 text-xs ${inputCls}`}
                 />
                 <Input
                   value={eviForm.file_path}
                   onChange={(e) => setEviForm(f => ({ ...f, file_path: e.target.value }))}
-                  placeholder="File URL"
+                  placeholder={t('compliance.requirementsEvidences.evidencePanel.fields.fileUrlPlaceholder')}
                   className={`h-8 text-xs ${inputCls}`}
                 />
               </div>
@@ -771,7 +819,7 @@ export default function RequirementsEvidencesPage() {
                 <Input
                   value={eviForm.notes}
                   onChange={(e) => setEviForm(f => ({ ...f, notes: e.target.value }))}
-                  placeholder="Notes (optional)"
+                  placeholder={t('compliance.requirementsEvidences.evidencePanel.fields.notesPlaceholder')}
                   className={`flex-1 h-8 text-xs ${inputCls}`}
                 />
                 <Button
@@ -780,7 +828,9 @@ export default function RequirementsEvidencesPage() {
                   disabled={eviSaving || !eviForm.evidence_description.trim()}
                   className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
                 >
-                  {eviSaving ? 'Adding…' : 'Add'}
+                  {eviSaving
+                    ? t('compliance.requirementsEvidences.evidencePanel.adding')
+                    : t('compliance.requirementsEvidences.evidencePanel.add')}
                 </Button>
               </div>
             </div>

@@ -14,7 +14,7 @@ export async function listOperations(
   params: ListOperationsQuerySchema,
   ownerId: number
 ): Promise<OperationsListResponse> {
-  const { page, pageSize, status, search, pilot_id, date_start, date_end } = params;
+  const { page, pageSize, status, search, pilot_id, tool_id, client_id, date_start, date_end } = params;
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
@@ -40,12 +40,17 @@ export async function listOperations(
       fk_mission_type_id,
       fk_mission_category_id,
       fk_luc_procedure_id,
+      luc_procedure_progress,
+      luc_completed_at,
       fk_owner_id,
       status_name,
       created_at,
       updated_at,
       pilot:users!fk_pilot_user_id ( first_name, last_name ),
-      tool:tool!fk_tool_id ( tool_code, tool_name )
+      tool:tool!fk_tool_id ( tool_code, tool_name ),
+      category:pilot_mission_category!fk_mission_category_id ( category_name ),
+      type_data:pilot_mission_type!fk_mission_type_id ( type_name ),
+      planning:planning!fk_planning_id ( planning_name, client:client!fk_client_id ( client_name ) )
     `,
       { count: 'exact' }
     )
@@ -57,6 +62,17 @@ export async function listOperations(
   if (date_end) query = query.lte('scheduled_start', date_end + 'T23:59:59');
   if (status) query = query.eq('status_name', status);
   if (pilot_id) query = query.eq('fk_pilot_user_id', pilot_id);
+  if (tool_id) query = query.eq('fk_tool_id', tool_id);
+  if (client_id) {
+    const { data: plannings } = await supabase
+      .from('planning')
+      .select('planning_id')
+      .eq('fk_owner_id', ownerId)
+      .eq('fk_client_id', client_id);
+    const ids = (plannings ?? []).map((p: any) => p.planning_id);
+    if (ids.length === 0) return { data: [], total: 0, page, pageSize };
+    query = query.in('fk_planning_id', ids);
+  }
   if (search) {
     query = query.or(
       `mission_code.ilike.%${search}%,mission_name.ilike.%${search}%,location.ilike.%${search}%`
@@ -72,6 +88,10 @@ export async function listOperations(
       ? `${row.pilot.first_name ?? ''} ${row.pilot.last_name ?? ''}`.trim()
       : null,
     tool_code: row.tool?.tool_code ?? null,
+    category_name: row.category?.category_name ?? null,
+    type_name: row.type_data?.type_name ?? null,
+    planning_name: row.planning?.planning_name ?? null,
+    client_name: row.planning?.client?.client_name ?? null,
   })) as Operation[];
 
   return { data: operations, total: count ?? 0, page, pageSize };
@@ -120,7 +140,7 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
 
   const fkLuc = input.fk_luc_procedure_id;
   if (!fkLuc) {
-    throw new Error('LUC procedure is required');
+    throw new Error('Procedure is required');
   }
   const { data: procRow, error: procErr } = await supabase
     .from('luc_procedure')
@@ -130,9 +150,9 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
     .eq('procedure_status', 'MISSION')
     .eq('procedure_active', 'Y')
     .maybeSingle();
-  if (procErr) throw new Error(`LUC procedure lookup failed: ${procErr.message}`);
+  if (procErr) throw new Error(`Procedure lookup failed: ${procErr.message}`);
   if (!procRow) {
-    throw new Error('LUC procedure not found or not available for missions');
+    throw new Error('Procedure not found or not available for missions');
   }
   const luc_procedure_progress =
     seedLucProcedureProgressFromSteps(procRow.procedure_steps) ?? {
@@ -354,9 +374,9 @@ export async function createRecurringOperations(
     .eq('procedure_status', 'MISSION')
     .eq('procedure_active', 'Y')
     .maybeSingle();
-  if (procErr) throw new Error(`LUC procedure lookup failed: ${procErr.message}`);
+  if (procErr) throw new Error(`Procedure lookup failed: ${procErr.message}`);
   if (!procRow) {
-    throw new Error('LUC procedure not found or not available for missions');
+    throw new Error('Procedure not found or not available for missions');
   }
   const luc_procedure_progress =
     seedLucProcedureProgressFromSteps(procRow.procedure_steps) ?? {
@@ -637,6 +657,6 @@ export async function getLucProcedureOptions(ownerId: number) {
     .eq('procedure_active', 'Y')
     .order('procedure_name');
 
-  if (error) throw new Error(`LUC procedures error: ${error.message}`);
+  if (error) throw new Error(`procedures error: ${error.message}`);
   return data ?? [];
 }

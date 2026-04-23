@@ -8,6 +8,7 @@ import { useTheme } from '@/components/useTheme';
 import axios from 'axios';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   HiChevronRight,
   HiClock,
@@ -35,10 +36,10 @@ interface Props {
 }
 
 const WINDOWS = [
-  { label: 'Last 1 hr', value: 60 },
-  { label: 'Last 6 hrs', value: 360 },
-  { label: 'Last 12 hrs', value: 720 },
-  { label: 'Last 24 hrs', value: 1440 },
+  { value: 60 },
+  { value: 360 },
+  { value: 720 },
+  { value: 1440 },
 ];
 
 function formatDuration(secs?: number): string {
@@ -57,6 +58,7 @@ type FilterMode = 'window' | 'latest';
 
 export function FlytbaseFlights({ token }: Props) {
   const { isDark } = useTheme();
+  const { t } = useTranslation();
   const [window, setWindow] = useState(1440);
   const [filterMode, setFilterMode] = useState<FilterMode>('window');
   const [flights, setFlights] = useState<Flight[]>([]);
@@ -66,7 +68,6 @@ export function FlytbaseFlights({ token }: Props) {
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [preview, setPreview] = useState<any | null>(null);
-  /** true once the GUTMA is already in S3 (loaded from cache or just archived) */
   const [canArchive, setCanArchive] = useState(false);
   const [archiving, setArchiving] = useState(false);
   const [archived, setArchived] = useState(false);
@@ -94,7 +95,7 @@ export function FlytbaseFlights({ token }: Props) {
       setFlights(res.data.flights ?? []);
       setTotal(res.data.total ?? 0);
     } catch (err: any) {
-      const msg = err?.response?.data?.message ?? 'Failed to load flights.';
+     const msg = err?.response?.data?.message ?? t('flytbase.flights.noRecentFlights'); 
       setError(err?.response?.status === 422 ? 'no_token' : msg);
     } finally {
       setLoading(false);
@@ -168,14 +169,14 @@ export function FlytbaseFlights({ token }: Props) {
       const missionSynced = body.mission_synced ?? false;
 
       let detail = updated.length > 0
-        ? `Updated ${updated.length} component${updated.length !== 1 ? 's' : ''}`
+        ? t('flytbase.archive.archivedDetail', { count: updated.length })
         : '';
       if (durationSecs > 0) detail += ` · ${formatDuration(durationSecs)}`;
-      if (missionSynced) detail += ' · Mission synced';
+      if (missionSynced) detail += ` · ${t('flytbase.archive.missionSynced')}`;
 
-      toast.success('Flight log archived to Readi.', { description: detail || undefined });
+      toast.success(t('flytbase.archive.archivedSuccess'), { description: detail || undefined });
     } catch (err: any) {
-      toast.error(err?.message ?? 'Failed to archive flight log.');
+      toast.error(err?.message ?? t('flytbase.archive.archiveFailed'));
     } finally {
       setArchiving(false);
     }
@@ -189,18 +190,18 @@ export function FlytbaseFlights({ token }: Props) {
   const rowSelected = isDark ? 'bg-violet-950/40 border-l-2 border-violet-500' : 'bg-violet-50 border-l-2 border-violet-500';
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${bg}`}>
-      <div className="animate-in fade-in duration-700">
+    <div className={`h-screen flex flex-col overflow-hidden transition-colors duration-300 ${bg}`}>
+      <div className="flex-1 flex flex-col overflow-hidden animate-in fade-in duration-700">
         <div className={`backdrop-blur-md w-full ${isDark ? 'bg-slate-900/80 border-b border-slate-800' : 'bg-white/80 border-b border-slate-200 shadow-[0_1px_3px_rgba(0,0,0,0.06)]'} px-6 py-4 mb-6`}>
           <div className="mx-auto max-w-[1800px] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="w-1 h-6 rounded-full bg-violet-600" />
               <div>
                 <h1 className={`font-semibold text-base tracking-tight ${textPrimary}`}>
-                  Recent Flights
+                  {t('flytbase.flights.title')}
                 </h1>
                 <p className={`text-xs ${textSecondary}`}>
-                  Select a flight to preview its GUTMA log
+                  {t('flytbase.flights.subtitle')}
                 </p>
               </div>
             </div>
@@ -211,7 +212,7 @@ export function FlytbaseFlights({ token }: Props) {
                   <button
                     key={w.value}
                     onClick={() => { setFilterMode('window'); setWindow(w.value); }}
-                    className={`px-2.5 py-1 rounded text-[11px] font-medium ${
+                    className={`px-2.5 py-1 cursor-pointer rounded text-[11px] font-medium ${
                       filterMode === 'window' && window === w.value
                         ? 'bg-violet-600 text-white'
                         : isDark
@@ -219,12 +220,12 @@ export function FlytbaseFlights({ token }: Props) {
                         : 'text-slate-500 bg-slate-100'
                     }`}
                   >
-                    {w.label}
+                    {t(`flytbase.flights.windows.${w.value}`)}
                   </button>
                 ))}
                 <button
                   onClick={() => setFilterMode('latest')}
-                  className={`px-2.5 py-1 rounded text-[11px] font-medium ${
+                  className={`px-2.5 py-1 cursor-pointer rounded text-[11px] font-medium ${
                     filterMode === 'latest'
                       ? 'bg-violet-600 text-white'
                       : isDark
@@ -232,7 +233,7 @@ export function FlytbaseFlights({ token }: Props) {
                       : 'text-slate-500 bg-slate-100'
                   }`}
                 >
-                  Latest 20
+                  {t('flytbase.flights.latest20')}
                 </button>
               </div>
 
@@ -240,36 +241,36 @@ export function FlytbaseFlights({ token }: Props) {
                 variant="outline"
                 size="sm"
                 onClick={() => fetchFlights(window, filterMode)}
-                className={`h-8 gap-1.5 text-xs ${isDark ? 'border-slate-700 bg-slate-800 text-slate-300' : 'border-slate-200 text-slate-600'}`}
+                className={`h-8 gap-1.5 cursor-pointer text-xs ${isDark ? 'border-slate-700 bg-slate-800 text-slate-300' : 'border-slate-200 text-slate-600'}`}
               >
                 <HiRefresh className="h-3.5 w-3.5" />
-                Refresh
+                {t('flytbase.flights.refresh')}
               </Button>
 
               <Button
                 variant="outline"
                 size="sm"
-                className={`h-8 text-xs ${isDark ? 'border-slate-700 bg-slate-800 text-slate-300' : 'border-slate-200 text-slate-600'}`}
+                className={`h-8 cursor-pointer text-xs ${isDark ? 'border-slate-700 bg-slate-800 text-slate-300' : 'border-slate-200 text-slate-600'}`}
               >
-                Settings
+                {t('flytbase.flights.settings')}
               </Button>
             </div>
           </div>
         </div>
 
-        <div className="px-6 max-w-[1800px] mx-auto">
-          <div>
+        <div className="flex-1 flex flex-col overflow-hidden px-6 max-w-[1800px] mx-auto w-full">
+          <div className="flex-1 flex flex-col overflow-hidden">
             {error === 'no_token' && (
               <div className={`flex items-center justify-between gap-4 rounded-xl border p-4 mb-6 ${isDark ? 'bg-violet-950/20 border-violet-800/30' : 'bg-violet-50 border-violet-200'}`}>
                 <div className="flex items-center gap-3">
                   <HiExclamationCircle className={`w-4 h-4 shrink-0 ${isDark ? 'text-violet-400' : 'text-violet-600'}`} />
                   <p className={`text-xs font-medium ${isDark ? 'text-violet-300' : 'text-violet-700'}`}>
-                    No FlytBase API token configured for your account.
+                    {t('flytbase.flights.noToken')}
                   </p>
                 </div>
                 <Link href="/flytbase">
                   <Button size="sm" className="h-7 text-xs shrink-0 bg-violet-600 hover:bg-violet-500 text-white">
-                    Set up now
+                    {t('flytbase.flights.setUp')}
                   </Button>
                 </Link>
               </div>
@@ -282,20 +283,20 @@ export function FlytbaseFlights({ token }: Props) {
               </div>
             )}
 
-            <div className="flex gap-4">
-              <div className={`rounded-xl border flex-shrink-0 w-full max-w-sm ${card}`}>
+            <div className="flex gap-4 flex-1 min-h-0">
+              <div className={`rounded-xl border flex-shrink-0 w-full max-w-sm flex flex-col ${card}`}>
                 <div className="flex items-center justify-between px-4 py-3 border-b ${isDark ? 'border-slate-800' : 'border-slate-200'}">
                   <span className={`text-xs font-semibold uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                    Flights
+                    {t('flytbase.flights.flightsLabel')}
                   </span>
                   {!loading && (
                     <span className={`text-[11px] font-mono ${textSecondary}`}>
-                      {flights.length} shown{total > flights.length ? ` of ${total}` : ''}
+                      {flights.length} {t('flytbase.flights.shown')}{total > flights.length ? ` ${t('flytbase.flights.of')} ${total}` : ''}
                     </span>
                   )}
                 </div>
 
-                <div className="divide-y divide-slate-800/50 overflow-y-auto max-h-150 scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent">
+                <div className="divide-y divide-slate-800/50 overflow-y-auto flex-1 min-h-0 scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent">
                   {loading && Array.from({ length: 5 }).map((_, i) => (
                     <div key={i} className="px-4 py-3 space-y-1.5">
                       <Skeleton className={`h-3 w-2/3 ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`} />
@@ -308,8 +309,8 @@ export function FlytbaseFlights({ token }: Props) {
                       <HiClock className={`w-6 h-6 mx-auto mb-2 ${textSecondary}`} />
                       <p className={`text-xs ${textSecondary}`}>
                         {filterMode === 'latest'
-                          ? 'No recent flights found.'
-                          : `No flights found in the last ${window} minutes.`}
+                          ? t('flytbase.flights.noRecentFlights')
+                          : t('flytbase.flights.noFlightsInWindow', { window })}
                       </p>
                     </div>
                   )}
@@ -368,11 +369,11 @@ export function FlytbaseFlights({ token }: Props) {
                 </div>
               </div>
 
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 overflow-y-auto">
                 {!selectedFlight && !loading && (
                   <div className={`rounded-xl border h-64 flex flex-col items-center justify-center gap-3 ${card}`}>
                     <HiOutlineDocumentText className={`w-8 h-8 ${textSecondary}`} />
-                    <p className={`text-xs ${textSecondary}`}>Select a flight to preview its GUTMA log</p>
+                    <p className={`text-xs ${textSecondary}`}>{t('flytbase.flights.selectFlight')}</p>
                   </div>
                 )}
 

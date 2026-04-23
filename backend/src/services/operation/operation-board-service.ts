@@ -48,6 +48,31 @@ const MISSION_SELECT = `
       )
 `;
 
+async function getLastClosedTicketPerTool(
+  toolIds: number[]
+): Promise<Record<number, Mission["last_closed_ticket"]>> {
+  const { data } = await supabase
+    .from("maintenance_ticket")
+    .select("ticket_id, fk_tool_id, closed_at, resolution_notes")
+    .in("fk_tool_id", toolIds)
+    .eq("ticket_status", "CLOSED")
+    .not("closed_at", "is", null)
+    .order("closed_at", { ascending: false });
+
+  const map: Record<number, Mission["last_closed_ticket"]> = {};
+  for (const row of data ?? []) {
+    const toolId = row.fk_tool_id as number;
+    if (!map[toolId]) {
+      map[toolId] = {
+        ticket_id: row.ticket_id as number,
+        closed_at: row.closed_at as string,
+        note: (row.resolution_notes as string | null) ?? null,
+      };
+    }
+  }
+  return map;
+}
+
 export async function getMissionBoard(
   ownerId: number,
   userId: number,
@@ -58,8 +83,6 @@ export async function getMissionBoard(
 
   const today = new Date();
   const todayStr = today.toISOString().split("T")[0];
-  const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-  const weekAgoStr = weekAgo.toISOString().split("T")[0];
 
   let scheduledQuery = supabase
     .from("pilot_mission")
@@ -87,13 +110,14 @@ export async function getMissionBoard(
     inProgressQuery = inProgressQuery.eq("fk_pilot_user_id", pilotFilter);
   }
 
-  // Done missions from the past 7 days
+  // Done missions completed today only
   let doneQuery = supabase
     .from("pilot_mission")
     .select(MISSION_SELECT)
     .eq('fk_owner_id', ownerId)
     .eq("fk_mission_status_id", 3)
-    .gte("actual_end", `${weekAgoStr}T00:00:00`)
+    .gte("actual_end", `${todayStr}T00:00:00`)
+    .lte("actual_end", `${todayStr}T23:59:59`)
     .not("fk_pilot_user_id", "is", null)
     .order("actual_end", { ascending: false })
     .limit(100);
@@ -149,6 +173,15 @@ export async function getMissionBoard(
     m.maintenance_status = (statusMap[m.fk_vehicle_id] as Mission['maintenance_status']) ?? "OK";
   }
 
+  // Attach last closed ticket to scheduled missions only
+  const scheduledToolIds = [...new Set(scheduled.map(m => m.fk_vehicle_id).filter(Boolean))];
+  if (scheduledToolIds.length > 0) {
+    const lastClosedMap = await getLastClosedTicketPerTool(scheduledToolIds);
+    for (const m of scheduled) {
+      m.last_closed_ticket = lastClosedMap[m.fk_vehicle_id] ?? null;
+    }
+  }
+
   return { scheduled, in_progress, done };
 }
 
@@ -180,6 +213,10 @@ function transformMissionRow(row: Record<string, unknown>): Mission | null {
 
     return {
       mission_id: row.pilot_mission_id as number,
+      mission_name: (row.mission_name as string | null) ?? null,
+      planned_at: scheduledStart,
+      official_start: actualStart,
+      official_end: actualEnd,
       fk_owner_id: (planning?.fk_owner_id as number) ?? 0,
       fk_vehicle_id: (tool?.tool_id as number) ?? 0,
       fk_pic_id: row.fk_pilot_user_id as number,

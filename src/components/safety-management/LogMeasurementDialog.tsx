@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/select'
 import { SpiKpiDefinition } from '@/config/types/safetyMng'
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 interface FormState {
     measurement_date: string
@@ -51,15 +52,16 @@ function todayStr() {
     return new Date().toISOString().slice(0, 10)
 }
 
-function validate(form: FormState): FormErrors {
+function validate(form: FormState, t: any): FormErrors { 
     const errors: FormErrors = {}
-    if (!form.measurement_date) errors.measurement_date = 'Date is required'
+    if (!form.measurement_date) errors.measurement_date = t('safety.spiKpi.validation.dateRequired')
     if (form.actual_value === '' || isNaN(Number(form.actual_value)))
-        errors.actual_value = 'Must be a valid number'
+        errors.actual_value = t('safety.spiKpi.validation.valueNumber')
     return errors
 }
 
 export function LogMeasurementDialog({ open, onClose, onSubmit, indicator, loading, isDark }: Props) {
+    const { t } = useTranslation();
     const [form, setForm] = useState<FormState>({
         measurement_date: todayStr(),
         actual_value: '',
@@ -85,7 +87,7 @@ export function LogMeasurementDialog({ open, onClose, onSubmit, indicator, loadi
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        const errs = validate(form)
+        const errs = validate(form, t)
         if (Object.keys(errs).length > 0) { setErrors(errs); return }
         if (!indicator) return
         await onSubmit({
@@ -101,18 +103,17 @@ export function LogMeasurementDialog({ open, onClose, onSubmit, indicator, loadi
     const inputClass = isDark ? 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-500' : 'bg-slate-50 border-slate-200 text-gray-900'
     const labelClass = isDark ? 'text-slate-400' : 'text-slate-500'
 
-    const STATUS_OPTIONS: { value: 'GREEN' | 'YELLOW' | 'RED'; label: string; dot: string }[] = [
-        { value: 'GREEN', label: 'On Track / Above Target', dot: 'bg-green-500' },
-        { value: 'YELLOW', label: 'At Risk / On Target', dot: 'bg-yellow-400' },
-        { value: 'RED', label: 'Breached / Below Target', dot: 'bg-red-500' },
-    ]
-
+const STATUS_OPTIONS: { value: 'GREEN' | 'YELLOW' | 'RED'; label: string; dot: string }[] = [
+    { value: 'GREEN', label: t('safety.spiKpi.log.statusGreen'), dot: 'bg-green-500' },
+    { value: 'YELLOW', label: t('safety.spiKpi.log.statusYellow'), dot: 'bg-yellow-400' },
+    { value: 'RED', label: t('safety.spiKpi.log.statusRed'), dot: 'bg-red-500' },
+]
     return (
         <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
             <DialogContent className={`max-w-md transition-colors duration-300 ${bgClass}`}>
                 <DialogHeader>
                     <DialogTitle className="text-lg font-bold tracking-tight">
-                        Log Measurement
+                     {t('safety.spiKpi.log.title')}
                     </DialogTitle>
                     {indicator && (
                         <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
@@ -126,7 +127,7 @@ export function LogMeasurementDialog({ open, onClose, onSubmit, indicator, loadi
 
                     <div className="space-y-1.5">
                         <Label className={`text-[10px] uppercase tracking-widest font-bold ${labelClass}`}>
-                            Measurement Date
+                          {t('safety.spiKpi.log.measurementDate')}
                         </Label>
                         <Input
                             type="date"
@@ -142,14 +143,14 @@ export function LogMeasurementDialog({ open, onClose, onSubmit, indicator, loadi
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1.5">
                             <Label className={`text-[10px] uppercase tracking-widest font-bold ${labelClass}`}>
-                                Actual Value ({indicator?.unit || '—'})
+                           {t('safety.spiKpi.log.actualValue')} ({indicator?.unit || '—'})
                             </Label>
                             <Input
                                 type="number"
                                 step="0.01"
                                 value={form.actual_value}
                                 onChange={(e) => set('actual_value', e.target.value)}
-                                placeholder="e.g. 87.5"
+                                placeholder={t('safety.spiKpi.log.actualPlaceholder')}
                                 className={`h-10 font-mono ${inputClass}`}
                             />
                             {errors.actual_value && (
@@ -159,7 +160,7 @@ export function LogMeasurementDialog({ open, onClose, onSubmit, indicator, loadi
 
                         <div className="space-y-1.5">
                             <Label className={`text-[10px] uppercase tracking-widest font-bold ${labelClass}`}>
-                                Target Value ({indicator?.unit || '—'})
+                         {t('safety.spiKpi.log.targetValue')} ({indicator?.unit || '—'})
                             </Label>
                             <Input
                                 type="number"
@@ -173,7 +174,7 @@ export function LogMeasurementDialog({ open, onClose, onSubmit, indicator, loadi
 
                     <div className="space-y-1.5">
                         <Label className={`text-[10px] uppercase tracking-widest font-bold ${labelClass}`}>
-                            Status
+                        {t('safety.spiKpi.log.status')}
                         </Label>
                         <Select value={form.status} onValueChange={(v) => set('status', v as FormState['status'])}>
                             <SelectTrigger className={`h-10 ${inputClass}`}>
@@ -199,14 +200,14 @@ export function LogMeasurementDialog({ open, onClose, onSubmit, indicator, loadi
                             onClick={onClose}
                             className={`${isDark ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:bg-slate-100'}`}
                         >
-                            Cancel
+                           {t('safety.spiKpi.log.cancel')}
                         </Button>
                         <Button
                             type="submit"
                             disabled={loading}
                             className="bg-violet-600 hover:bg-violet-500 text-white px-8 shadow-lg shadow-violet-500/20"
                         >
-                            {loading ? 'Saving...' : 'Save Measurement'}
+                           {loading ? t('safety.spiKpi.log.saving') : t('safety.spiKpi.log.saveMeasurement')}
                         </Button>
                     </DialogFooter>
                 </form>

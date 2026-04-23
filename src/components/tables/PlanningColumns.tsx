@@ -117,7 +117,7 @@ export function getPlanningColumns({
     },
     {
       accessorKey: "luc_procedure_code",
-      header: "Luc Procedure Code",
+      header: "Procedure Code",
       size: 160,
       cell: ({ row }) => (
         <span>

@@ -131,14 +131,14 @@ function CycleProgressBar({
   );
 }
 
-function formatLastMaintenance(dateStr: string | null): string {
-  if (!dateStr) return "Never";
+function formatLastMaintenance(dateStr: string | null, t: ReturnType<typeof useTranslation>["t"]): string {
+  if (!dateStr) return t("common.never");
   const d = new Date(dateStr);
   const diffDays = Math.floor((Date.now() - d.getTime()) / (1000 * 60 * 60 * 24));
-  if (diffDays === 0) return "Today";
-  if (diffDays === 1) return "Yesterday";
-  if (diffDays < 30) return `${diffDays} days ago`;
-  if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
+  if (diffDays === 0) return t("common.today");
+  if (diffDays === 1) return t("common.yesterday");
+  if (diffDays < 30) return t("common.daysAgo", { count: diffDays });
+  if (diffDays < 365) return t("common.monthsAgo", { count: Math.floor(diffDays / 30) });
   return d.toLocaleDateString();
 }
  
@@ -259,7 +259,7 @@ export function MaintenanceTab({
                 <span className={cn("text-[10px]", isDark ? "text-slate-600" : "text-slate-400")}>
                   {t("operations.missionComplete.maintenance.lastUpdated")}{" "}
                   <span className={cn("font-medium", isDark ? "text-slate-400" : "text-slate-500")}>
-                    {formatLastMaintenance(comp.last_maintenance_date)}
+                    {formatLastMaintenance(comp.last_maintenance_date, t)}
                   </span>
                 </span>
               </div>
@@ -290,7 +290,7 @@ export function MaintenanceTab({
                   <CycleProgressBar
                     current={comp.current_days}
                     limit={comp.limit_day}
-                    label="Days"
+                    label={t("operations.missionComplete.maintenance.days")}
                     icon={CalendarDays}
                     status={comp.status}
                     isDark={isDark}

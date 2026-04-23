@@ -112,7 +112,7 @@ export function LoginForm() {
                   <input
                     type="email"
                     name="email"
-                    placeholder="name@company.com"
+                    placeholder="name@gmail.com"
                     required
                     className="w-full h-10 pl-9 pr-4 text-sm text-slate-800 placeholder:text-slate-300 rounded-lg border border-slate-200 bg-white focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none transition-all duration-150"
                     value={formData.email}
