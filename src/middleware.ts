@@ -66,14 +66,14 @@ export async function updateSession(request: NextRequest) {
   const isPublicRoute = publicRoutes.includes(pathname)
   const isAuthFlowRoute = authFlowRoutes.includes(pathname)
 
+  const jwtToken = request.cookies.get('readi_auth_token')?.value
+
   if (pathname === '/') {
-    if (user) {
+    if ((jwtToken && !isJwtExpired(jwtToken)) || user) {
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
     return NextResponse.redirect(new URL('/auth/login', request.url))
   }
-
-  const jwtToken = request.cookies.get('readi_auth_token')?.value
 
   if (jwtToken && isJwtExpired(jwtToken)) {
     const loginUrl = new URL('/auth/login', request.url)

@@ -54,7 +54,7 @@ export default function Setup2FAPage() {
         { fk_user_id: userId, setting_key: 'mfa_setup_shown', setting_value: 'true', setting_type: 'boolean', updated_at: new Date().toISOString() }
       ], { onConflict: 'fk_user_id,setting_key' })
 
-      document.cookie = 'mfa_verified=true; path=/; max-age=86400; samesite=strict'
+      document.cookie = 'mfa_verified=true; path=/; max-age=604800; samesite=strict'
       router.push('/dashboard')
     } catch (err: any) {
       setError('Invalid code. Please try again.')

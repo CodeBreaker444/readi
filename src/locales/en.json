@@ -1375,7 +1375,8 @@
       "title": "Mission Complete",
       "tabs": {
         "maintenance": "Maintenance",
-        "flightLogs": "Flight Logs"
+        "flightLogs": "Flight Logs",
+        "postFlight": "Post-Flight Data"
       },
       "maintenance": {
         "noComponents": "No components configured for this system.",
@@ -1410,12 +1411,37 @@
           "24hrs": "Last 24 hrs"
         }
       },
+      "postFlight": {
+        "sections": {
+          "outcome": "Mission Outcome",
+          "flightData": "Flight Data",
+          "performance": "Performance",
+          "notes": "Notes"
+        },
+        "fields": {
+          "missionResult": "Mission Result",
+          "duration": "Duration",
+          "actualStart": "Actual Start",
+          "actualEnd": "Actual End",
+          "distanceFlown": "Distance Flown",
+          "maxAltitude": "Max Altitude"
+        },
+        "placeholders": {
+          "selectResult": "Select mission result…",
+          "notes": "Post-flight notes, observations, incidents…"
+        },
+        "validation": {
+          "endBeforeStart": "End time must be after start time"
+        }
+      },
       "footer": {
         "updateWarning": "Update maintenance to complete mission",
         "backToInProgress": "Back to In Progress",
         "close": "Close",
         "updateMaintenance": "Update Maintenance",
-        "updating": "Updating…"
+        "updating": "Updating…",
+        "savePostFlight": "Save Post-Flight Data",
+        "saving": "Saving…"
       },
       "toast": {
         "loadError": "Failed to load maintenance data",
@@ -1426,7 +1452,8 @@
         "noFlightsFound": "No flights found in this time window.",
         "attachSuccess": "Flight log attached from FlytBase",
         "autoSyncSuccess_one": "Auto-filled usage for {{count}} component from GUTMA",
-        "autoSyncSuccess_other": "Auto-filled usage for {{count}} components from GUTMA"
+        "autoSyncSuccess_other": "Auto-filled usage for {{count}} components from GUTMA",
+        "postFlightSuccess": "Post-flight data saved"
       }
     },
     "dialog": {

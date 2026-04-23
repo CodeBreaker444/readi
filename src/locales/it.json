@@ -1373,7 +1373,8 @@
       "title": "Missione completata",
       "tabs": {
         "maintenance": "Manutenzione",
-        "flightLogs": "Log di volo"
+        "flightLogs": "Log di volo",
+        "postFlight": "Dati Post-Volo"
       },
       "maintenance": {
         "noComponents": "Nessun componente configurato per questo sistema.",
@@ -1408,12 +1409,37 @@
           "24hrs": "Ultime 24 ore"
         }
       },
+      "postFlight": {
+        "sections": {
+          "outcome": "Esito Missione",
+          "flightData": "Dati di Volo",
+          "performance": "Performance",
+          "notes": "Note"
+        },
+        "fields": {
+          "missionResult": "Risultato Missione",
+          "duration": "Durata",
+          "actualStart": "Inizio Effettivo",
+          "actualEnd": "Fine Effettiva",
+          "distanceFlown": "Distanza Percorsa",
+          "maxAltitude": "Altitudine Massima"
+        },
+        "placeholders": {
+          "selectResult": "Seleziona risultato…",
+          "notes": "Note post-volo, osservazioni, incidenti…"
+        },
+        "validation": {
+          "endBeforeStart": "L'orario di fine deve essere successivo a quello di inizio"
+        }
+      },
       "footer": {
         "updateWarning": "Aggiorna la manutenzione per completare la missione",
         "backToInProgress": "Torna a In Corso",
         "close": "Chiudi",
         "updateMaintenance": "Aggiorna manutenzione",
-        "updating": "Aggiornamento…"
+        "updating": "Aggiornamento…",
+        "savePostFlight": "Salva dati post-volo",
+        "saving": "Salvataggio…"
       },
       "toast": {
         "loadError": "Impossibile caricare i dati di manutenzione",
@@ -1424,7 +1450,8 @@
         "noFlightsFound": "Nessun volo trovato in questa finestra temporale.",
         "attachSuccess": "Log di volo allegato da FlytBase",
         "autoSyncSuccess_one": "Utilizzo per {{count}} componente compilato automaticamente da GUTMA",
-        "autoSyncSuccess_other": "Utilizzo per {{count}} componenti compilato automaticamente da GUTMA"
+        "autoSyncSuccess_other": "Utilizzo per {{count}} componenti compilato automaticamente da GUTMA",
+        "postFlightSuccess": "Dati post-volo salvati"
       }
     },
     "dialog": {

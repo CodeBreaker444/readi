@@ -1371,7 +1371,8 @@
       "title": "Mission abgeschlossen",
       "tabs": {
         "maintenance": "Wartung",
-        "flightLogs": "Flugprotokolle"
+        "flightLogs": "Flugprotokolle",
+        "postFlight": "Nachflugdaten"
       },
       "maintenance": {
         "noComponents": "Keine Komponenten für dieses System konfiguriert.",
@@ -1406,12 +1407,37 @@
           "24hrs": "Letzte 24 Std"
         }
       },
+      "postFlight": {
+        "sections": {
+          "outcome": "Missionsergebnis",
+          "flightData": "Flugdaten",
+          "performance": "Leistung",
+          "notes": "Notizen"
+        },
+        "fields": {
+          "missionResult": "Missionsergebnis",
+          "duration": "Dauer",
+          "actualStart": "Tatsächlicher Start",
+          "actualEnd": "Tatsächliches Ende",
+          "distanceFlown": "Zurückgelegte Strecke",
+          "maxAltitude": "Max. Höhe"
+        },
+        "placeholders": {
+          "selectResult": "Ergebnis auswählen…",
+          "notes": "Nachflugnotizen, Beobachtungen, Vorfälle…"
+        },
+        "validation": {
+          "endBeforeStart": "Endzeit muss nach der Startzeit liegen"
+        }
+      },
       "footer": {
         "updateWarning": "Wartung aktualisieren, um Mission abzuschließen",
         "backToInProgress": "Zurück zu In Bearbeitung",
         "close": "Schließen",
         "updateMaintenance": "Wartung aktualisieren",
-        "updating": "Wird aktualisiert…"
+        "updating": "Wird aktualisiert…",
+        "savePostFlight": "Nachflugdaten speichern",
+        "saving": "Wird gespeichert…"
       },
       "toast": {
         "loadError": "Wartungsdaten konnten nicht geladen werden",
@@ -1422,7 +1448,8 @@
         "noFlightsFound": "Keine Flüge in diesem Zeitfenster gefunden.",
         "attachSuccess": "Flugprotokoll von FlytBase angehängt",
         "autoSyncSuccess_one": "Nutzung für {{count}} Komponente aus GUTMA ausgefüllt",
-        "autoSyncSuccess_other": "Nutzung für {{count}} Komponenten aus GUTMA ausgefüllt"
+        "autoSyncSuccess_other": "Nutzung für {{count}} Komponenten aus GUTMA ausgefüllt",
+        "postFlightSuccess": "Nachflugdaten gespeichert"
       }
     },
     "dialog": {
