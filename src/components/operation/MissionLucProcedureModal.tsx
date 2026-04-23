@@ -1,6 +1,7 @@
 'use client';
 
 import { ChecklistRenderer } from '@/components/checklist/ChecklistRenderer';
+import { AuthorizationModal } from '@/components/authorization/AuthorizationModal';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -33,7 +34,7 @@ import {
   Users,
   X,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
@@ -91,6 +92,10 @@ function MissionChecklistModal({
   const [checklistJson, setChecklistJson] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const pendingSurveyRef = useRef<any>(null);
+
+  const requiresAuth = checklistJson?.digital_authorization === true;
 
   useEffect(() => {
     if (!open || !checklistCode) return;
@@ -103,13 +108,14 @@ function MissionChecklistModal({
       .finally(() => setLoading(false));
   }, [open, missionId, checklistCode, t]);
 
-  async function handleSurveyComplete(survey: any) {
+  async function saveCompletion(transactionSignId?: string) {
     setSaving(true);
     try {
       await axios.patch(`/api/operation/missions/${missionId}/luc`, {
         task_type: 'checklist',
         task_code: checklistCode,
         completed: true,
+        ...(transactionSignId ? { transaction_sign_id: transactionSignId } : {}),
       });
       toast.success(t('planning.evaluation.savedSuccess'));
       onComplete();
@@ -120,55 +126,91 @@ function MissionChecklistModal({
     }
   }
 
+  async function handleSurveyComplete(survey: any) {
+    if (requiresAuth) {
+      pendingSurveyRef.current = survey;
+      setShowAuthModal(true);
+    } else {
+      await saveCompletion();
+    }
+  }
+
+  async function handleAuthSuccess(transactionSignId: string) {
+    setShowAuthModal(false);
+    await saveCompletion(transactionSignId);
+  }
+
+  function handleAuthCancel() {
+    setShowAuthModal(false);
+    pendingSurveyRef.current = null;
+  }
+
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0">
-        <DialogHeader className="px-6 pt-5 pb-3 border-b border-slate-100 dark:border-slate-700">
-          <div className="flex items-start gap-3">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-50 border border-emerald-100">
-              <FileCheck className="h-4 w-4 text-emerald-600" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <DialogTitle className="text-sm font-semibold text-slate-800 dark:text-slate-100 leading-snug">
-                {checklistName}
-              </DialogTitle>
-              <p className="mt-0.5 font-mono text-xs text-slate-400">{checklistCode}</p>
-            </div>
-          </div>
-        </DialogHeader>
-        <div className="px-6 py-4">
-          {loading ? (
-            <div className="flex items-center justify-center py-16">
-              <Loader2 className="h-6 w-6 animate-spin text-violet-500" />
-            </div>
-          ) : !checklistJson ? (
-            <div className="flex flex-col items-center justify-center gap-3 py-16 text-slate-400">
-              <AlertCircle className="h-8 w-8" />
-              <div className="text-center">
-                <p className="text-sm font-medium text-slate-600 dark:text-slate-300">
-                  {t('planning.evaluation.checklistNotFound')}
-                </p>
-                <p className="text-xs mt-1">
-                  {t('planning.evaluation.noChecklistDef')}{' '}
-                  <span className="font-mono">{checklistCode}</span>.
-                </p>
+    <>
+      <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0">
+          <DialogHeader className="px-6 pt-5 pb-3 border-b border-slate-100 dark:border-slate-700">
+            <div className="flex items-start gap-3">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-50 border border-emerald-100">
+                <FileCheck className="h-4 w-4 text-emerald-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <DialogTitle className="text-sm font-semibold text-slate-800 dark:text-slate-100 leading-snug">
+                  {checklistName}
+                </DialogTitle>
+                <p className="mt-0.5 font-mono text-xs text-slate-400">{checklistCode}</p>
               </div>
             </div>
-          ) : (
-            <ChecklistRenderer
-              checklistJson={checklistJson}
-              onComplete={handleSurveyComplete}
-            />
-          )}
-        </div>
-        {saving && (
-          <div className="px-6 pb-4 flex items-center gap-2 text-xs text-slate-400">
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            {t('planning.evaluation.saving')}…
+          </DialogHeader>
+          <div className="px-6 py-4">
+            {loading ? (
+              <div className="flex items-center justify-center py-16">
+                <Loader2 className="h-6 w-6 animate-spin text-violet-500" />
+              </div>
+            ) : !checklistJson ? (
+              <div className="flex flex-col items-center justify-center gap-3 py-16 text-slate-400">
+                <AlertCircle className="h-8 w-8" />
+                <div className="text-center">
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-300">
+                    {t('planning.evaluation.checklistNotFound')}
+                  </p>
+                  <p className="text-xs mt-1">
+                    {t('planning.evaluation.noChecklistDef')}{' '}
+                    <span className="font-mono">{checklistCode}</span>.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <ChecklistRenderer
+                checklistJson={checklistJson}
+                onComplete={handleSurveyComplete}
+              />
+            )}
           </div>
-        )}
-      </DialogContent>
-    </Dialog>
+          {saving && (
+            <div className="px-6 pb-4 flex items-center gap-2 text-xs text-slate-400">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              {t('planning.evaluation.saving')}…
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {requiresAuth && (
+        <AuthorizationModal
+          open={showAuthModal}
+          context={{
+            actionType: 'checklist_complete',
+            entityType: 'checklist',
+            entityId: checklistCode,
+            label: `Complete checklist: ${checklistName}`,
+          }}
+          onSuccess={handleAuthSuccess}
+          onCancel={handleAuthCancel}
+          isDark={isDark}
+        />
+      )}
+    </>
   );
 }
 
