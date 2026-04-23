@@ -39,7 +39,7 @@ export async function getChecklistByCode(
         .eq('fk_owner_id', ownerId)
         .eq('checklist_code', checklistCode)
         .eq('checklist_active', 'Y')
-        .single()
+        .maybeSingle()
 
     if (error) {
         throw new Error(`Failed to fetch check list by code: ${error.message}`);

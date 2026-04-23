@@ -93,24 +93,19 @@ function MissionChecklistModal({
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (!open || !checklistId) return;
+    if (!open || !checklistCode) return;
     setChecklistJson(null);
     setLoading(true);
     axios
-      .get(`/api/organization/checklist/${checklistId}`)
+      .get(`/api/operation/missions/${missionId}/checklist?code=${encodeURIComponent(checklistCode)}`)
       .then(({ data }) => setChecklistJson(data.checklist_json ?? null))
       .catch(() => toast.error(t('planning.evaluation.loadError')))
       .finally(() => setLoading(false));
-  }, [open, checklistId, t]);
+  }, [open, missionId, checklistCode, t]);
 
   async function handleSurveyComplete(survey: any) {
     setSaving(true);
     try {
-      await axios.post('/api/organization/checklist/result', {
-        checklist_data: survey.data,
-        checklist_code: checklistCode,
-        mission_id: missionId,
-      });
       await axios.patch(`/api/operation/missions/${missionId}/luc`, {
         task_type: 'checklist',
         task_code: checklistCode,
@@ -578,7 +573,18 @@ export function MissionLucProcedureModal({ mission, isDark, onClose }: Props) {
       .get(`/api/operation/missions/${mission.mission_id}/luc`)
       .then(({ data }) => {
         if (cancelled) return;
-        setProcedure(data.procedure ?? null);
+        const raw = data.procedure ?? null;
+        if (raw?.procedure_steps) {
+          const rawTasks: any[] = Array.isArray(raw.procedure_steps.tasks)
+            ? raw.procedure_steps.tasks
+            : [];
+          raw.procedure_steps.tasks = {
+            checklist:     rawTasks.flatMap((t: any) => t.checklist     ?? []),
+            assignment:    rawTasks.flatMap((t: any) => t.assignment    ?? []),
+            communication: rawTasks.flatMap((t: any) => t.communication ?? []),
+          };
+        }
+        setProcedure(raw);
         setProgress(data.luc_procedure_progress ?? { checklist: {}, communication: {}, assignment: {} });
         setAllDone(!!data.luc_completed_at);
       })
@@ -593,7 +599,7 @@ export function MissionLucProcedureModal({ mission, isDark, onClose }: Props) {
       setProgress(data.luc_procedure_progress ?? { checklist: {}, communication: {}, assignment: {} });
       setAllDone(!!data.luc_completed_at);
     } catch {
-      console.log('Failed to fetch mission data');
+      console.log("Failed to refresh progress");
     }
     setActiveModal({ type: 'none' });
   }
