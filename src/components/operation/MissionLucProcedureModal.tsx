@@ -1,7 +1,7 @@
 'use client';
 
-import { ChecklistRenderer } from '@/components/checklist/ChecklistRenderer';
 import { AuthorizationModal } from '@/components/authorization/AuthorizationModal';
+import { ChecklistRenderer } from '@/components/checklist/ChecklistRenderer';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -641,7 +641,6 @@ export function MissionLucProcedureModal({ mission, isDark, onClose }: Props) {
       [section]: { ...prev[section], [code]: 'Y' },
     }));
     setActiveModal({ type: 'none' });
-    // Background sync to update allDone banner
     axios.get(`/api/operation/missions/${mission.mission_id}/luc`)
       .then(({ data }) => {
         setProgress(data.luc_procedure_progress ?? { checklist: {}, communication: {}, assignment: {} });
