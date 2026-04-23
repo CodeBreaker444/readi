@@ -125,12 +125,17 @@ export function OperationBoard() {
         mission: Mission,
     ) => {
         const workflow = target === "in_progress" ? "_START" : "_END";
+        const updatedMission = { ...mission, fk_status_id: COLUMN_STATUS_MAP[target] };
 
         setBoard((prev) => ({
             ...prev,
             [sourceColumn]: prev[sourceColumn].filter((m) => m.mission_id !== missionId),
-            [target]: [...prev[target], { ...mission, fk_status_id: COLUMN_STATUS_MAP[target] }],
+            [target]: [...prev[target], updatedMission],
         }));
+
+        if (target === "done") {
+            setCompletedMission(updatedMission);
+        }
 
         try {
             const { data } = await axios.post<{
@@ -158,16 +163,15 @@ export function OperationBoard() {
             } else {
                 toast.success(mainTitle, { description: moveDesc });
             }
-
-            if (target === "done") {
-                setCompletedMission({ ...mission, fk_status_id: COLUMN_STATUS_MAP[target] });
-            }
         } catch (err: any) {
             setBoard((prev) => ({
                 ...prev,
                 [target]: prev[target].filter((m) => m.mission_id !== missionId),
                 [sourceColumn]: [...prev[sourceColumn], mission],
             }));
+            if (target === "done") {
+                setCompletedMission(null);
+            }
 
             const responseData = err?.response?.data;
 

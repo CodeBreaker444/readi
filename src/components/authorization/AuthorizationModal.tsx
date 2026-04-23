@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import axios from 'axios';
 import { AlertTriangle, Loader2, ShieldCheck, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { Skeleton } from '../ui/skeleton';
 import { PinInput } from './PinInput';
 
 export interface AuthContext {
@@ -206,13 +207,32 @@ export function AuthorizationModal({ open, context, onSuccess, onCancel, isDark 
                 </p>
               </div>
 
-              <PinInput
-                value={pin}
-                onChange={setPin}
-                disabled={loading || hasPin === null}
-                error={!!error}
-                isDark={isDark}
-              />
+              {hasPin === null ? (
+                <div className="space-y-2">
+                  <div className="flex justify-center gap-2">
+                    {Array.from({ length: 6 }).map((_, idx) => (
+                      <Skeleton
+                        key={idx}
+                        className={cn(
+                          'h-11 w-11 rounded-lg',
+                          isDark ? 'bg-slate-700/70' : 'bg-slate-200'
+                        )}
+                      />
+                    ))}
+                  </div>
+                  <p className={cn('text-center text-xs', isDark ? 'text-slate-500' : 'text-slate-400')}>
+                    Loading authorization key...
+                  </p>
+                </div>
+              ) : (
+                <PinInput
+                  value={pin}
+                  onChange={setPin}
+                  disabled={loading}
+                  error={!!error}
+                  isDark={isDark}
+                />
+              )}
 
               {loading && (
                 <div className="flex items-center justify-center gap-2">
