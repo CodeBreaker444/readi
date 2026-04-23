@@ -162,6 +162,7 @@
     "flightLogbook": "Fluglogbuch",
     "safetyManagement": "Sicherheitsmanagement",
     "spiKpiDefinitions": "SPI- und KPI-Definitionen",
+    "emergencyContactList": "Notfallkontaktliste",
     "compliance": "Compliance",
     "generalAuditPlan": "Allgemeiner Auditplan",
     "safetyTargetReview": "Prufung der Sicherheitsziele",
@@ -2495,22 +2496,63 @@
       "archiveFailed": "Flugprotokoll konnte nicht archiviert werden."
     }
   },
-"training": {
-  "title": "Schulungskalender",
-  "subtitle": "Geplante Schulungstermine anzeigen",
-  "refresh": "Aktualisieren",
-  "loading": "Schulungstermine werden geladen...",
-  "legend": "Legende:",
-  "participant": "Teilnehmer",
-  "sessionDate": "Sitzungsdatum",
-  "status": "Status",
-  "close": "Schließen",
-  "statuses": {
-    "COMPLETED": "Abgeschlossen",
-    "IN_PROGRESS": "In Bearbeitung",
-    "FAILED": "Fehlgeschlagen",
-    "ABSENT": "Abwesend",
-    "OTHER": "Andere"
+  "training": {
+    "title": "Schulungskalender",
+    "subtitle": "Geplante Schulungstermine anzeigen",
+    "refresh": "Aktualisieren",
+    "loading": "Schulungstermine werden geladen...",
+    "legend": "Legende:",
+    "participant": "Teilnehmer",
+    "sessionDate": "Sitzungsdatum",
+    "status": "Status",
+    "close": "Schließen",
+    "statuses": {
+      "COMPLETED": "Abgeschlossen",
+      "IN_PROGRESS": "In Bearbeitung",
+      "FAILED": "Fehlgeschlagen",
+      "ABSENT": "Abwesend",
+      "OTHER": "Andere"
+    }
+  },
+  "erp": {
+    "pageTitle": "Notfallreaktionsplan",
+    "pageSubtitle": "Sicherheitsmanagement · Notfallkontaktliste und Reaktionspläne",
+    "newPlan": "ERP erstellen",
+    "infoBanner": "Definieren Sie Notfallreaktionspläne mit Kontakten für jedes Szenario. Alle Pläne werden nach Ihrer Organisation gefiltert.",
+    "stats": {
+      "total": "Pläne insgesamt",
+      "general": "Allgemeine Pläne",
+      "other": "Spezialpläne"
+    },
+    "types": {
+      "GENERAL": "Allgemein",
+      "MEDICAL": "Medizinisch",
+      "FIRE": "Brand",
+      "SECURITY": "Sicherheit",
+      "ENVIRONMENTAL": "Umwelt"
+    },
+    "form": {
+      "title": "Neuer Notfallreaktionsplan",
+      "type": "Typ",
+      "contact": "Kontakt",
+      "contactPlaceholder": "z.B. +49 555 000 0000",
+      "description": "Beschreibung",
+      "descriptionPlaceholder": "Beschreiben Sie das Reaktionsverfahren und die Eskalationsschritte...",
+      "cancel": "Abbrechen",
+      "create": "Plan erstellen",
+      "processing": "Speichern..."
+    },
+    "table": {
+      "type": "Typ",
+      "contact": "Kontakt",
+      "description": "Beschreibung",
+      "createdAt": "Erstellt",
+      "noResults": "Keine Notfallreaktionspläne gefunden. Erstellen Sie einen, um zu beginnen."
+    },
+    "toast": {
+      "loadError": "Notfallreaktionspläne konnten nicht geladen werden",
+      "created": "Notfallreaktionsplan erfolgreich erstellt",
+      "saveFailed": "Plan konnte nicht gespeichert werden"
+    }
   }
-}
 }

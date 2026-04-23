@@ -162,6 +162,7 @@
     "flightLogbook": "Registro voli",
     "safetyManagement": "Gestione sicurezza",
     "spiKpiDefinitions": "Definizioni SPI e KPI",
+    "emergencyContactList": "Elenco Contatti Emergenza",
     "compliance": "Conformita",
     "generalAuditPlan": "Piano audit generale",
     "safetyTargetReview": "Revisione obiettivi sicurezza",
@@ -2500,21 +2501,62 @@
     }
   },
   "training": {
-  "title": "Calendario Formazione",
-  "subtitle": "Visualizza le sessioni di formazione programmate",
-  "refresh": "Aggiorna",
-  "loading": "Caricamento sessioni di formazione...",
-  "legend": "Legenda:",
-  "participant": "Partecipante",
-  "sessionDate": "Data Sessione",
-  "status": "Stato",
-  "close": "Chiudi",
-  "statuses": {
-    "COMPLETED": "Completato",
-    "IN_PROGRESS": "In Corso",
-    "FAILED": "Fallito",
-    "ABSENT": "Assente",
-    "OTHER": "Altro"
+    "title": "Calendario Formazione",
+    "subtitle": "Visualizza le sessioni di formazione programmate",
+    "refresh": "Aggiorna",
+    "loading": "Caricamento sessioni di formazione...",
+    "legend": "Legenda:",
+    "participant": "Partecipante",
+    "sessionDate": "Data Sessione",
+    "status": "Stato",
+    "close": "Chiudi",
+    "statuses": {
+      "COMPLETED": "Completato",
+      "IN_PROGRESS": "In Corso",
+      "FAILED": "Fallito",
+      "ABSENT": "Assente",
+      "OTHER": "Altro"
+    }
+  },
+  "erp": {
+    "pageTitle": "Piano di Risposta alle Emergenze",
+    "pageSubtitle": "Gestione Sicurezza · Elenco contatti emergenza e piani di risposta",
+    "newPlan": "Crea ERP",
+    "infoBanner": "Definisci i piani di risposta alle emergenze con i contatti per ogni scenario. Tutti i piani sono filtrati per la tua organizzazione.",
+    "stats": {
+      "total": "Piani Totali",
+      "general": "Piani Generali",
+      "other": "Piani Specializzati"
+    },
+    "types": {
+      "GENERAL": "Generale",
+      "MEDICAL": "Medico",
+      "FIRE": "Incendio",
+      "SECURITY": "Sicurezza",
+      "ENVIRONMENTAL": "Ambientale"
+    },
+    "form": {
+      "title": "Nuovo Piano di Risposta alle Emergenze",
+      "type": "Tipo",
+      "contact": "Contatto",
+      "contactPlaceholder": "es. +39 555 000 0000",
+      "description": "Descrizione",
+      "descriptionPlaceholder": "Descrivi la procedura di risposta e i passaggi di escalation...",
+      "cancel": "Annulla",
+      "create": "Crea Piano",
+      "processing": "Salvataggio..."
+    },
+    "table": {
+      "type": "Tipo",
+      "contact": "Contatto",
+      "description": "Descrizione",
+      "createdAt": "Creato",
+      "noResults": "Nessun piano di risposta alle emergenze trovato. Creane uno per iniziare."
+    },
+    "toast": {
+      "loadError": "Impossibile caricare i piani di risposta alle emergenze",
+      "created": "Piano di risposta alle emergenze creato con successo",
+      "saveFailed": "Impossibile salvare il piano"
+    }
   }
-}
 }

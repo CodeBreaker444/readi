@@ -18,6 +18,7 @@ import {
   HiOutlineHome,
   HiOutlineOfficeBuilding,
   HiOutlinePaperAirplane,
+  HiOutlinePhone,
   HiOutlineShieldCheck,
   HiOutlineTemplate,
   HiOutlineUsers
@@ -104,6 +105,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
       subItems: [
         { name: t('sidebar.spiKpiDefinitions'), href: '/safety/spi-kpi-definitions' },
       ]
+    },
+    {
+      name: t('sidebar.emergencyContactList'),
+      href: '/emergency-contact',
+      icon: HiOutlinePhone,
     },
     {
       name: t('sidebar.compliance'),

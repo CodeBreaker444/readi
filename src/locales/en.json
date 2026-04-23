@@ -162,6 +162,7 @@
     "flightLogbook": "Flight Logbook",
     "safetyManagement": "Safety Management",
     "spiKpiDefinitions": "SPI & KPI Definitions",
+    "emergencyContactList": "Emergency Contact List",
     "compliance": "Compliance",
     "generalAuditPlan": "General Audit Plan",
     "safetyTargetReview": "Safety Target Review",
@@ -2500,21 +2501,62 @@
     }
   },
   "training": {
-  "title": "Training Calendar",
-  "subtitle": "View scheduled training sessions",
-  "refresh": "Refresh",
-  "loading": "Loading training sessions...",
-  "legend": "Legend:",
-  "participant": "Participant",
-  "sessionDate": "Session Date",
-  "status": "Status",
-  "close": "Close",
-  "statuses": {
-    "COMPLETED": "Completed",
-    "IN_PROGRESS": "In Progress",
-    "FAILED": "Failed",
-    "ABSENT": "Absent",
-    "OTHER": "Other"
+    "title": "Training Calendar",
+    "subtitle": "View scheduled training sessions",
+    "refresh": "Refresh",
+    "loading": "Loading training sessions...",
+    "legend": "Legend:",
+    "participant": "Participant",
+    "sessionDate": "Session Date",
+    "status": "Status",
+    "close": "Close",
+    "statuses": {
+      "COMPLETED": "Completed",
+      "IN_PROGRESS": "In Progress",
+      "FAILED": "Failed",
+      "ABSENT": "Absent",
+      "OTHER": "Other"
+    }
+  },
+  "erp": {
+    "pageTitle": "Emergency Response Plan",
+    "pageSubtitle": "Safety Management · Emergency contact list and response plans",
+    "newPlan": "Create ERP",
+    "infoBanner": "Define emergency response plans with contacts for each scenario. All plans are filtered by your organization.",
+    "stats": {
+      "total": "Total Plans",
+      "general": "General Plans",
+      "other": "Specialized Plans"
+    },
+    "types": {
+      "GENERAL": "General",
+      "MEDICAL": "Medical",
+      "FIRE": "Fire",
+      "SECURITY": "Security",
+      "ENVIRONMENTAL": "Environmental"
+    },
+    "form": {
+      "title": "New Emergency Response Plan",
+      "type": "Type",
+      "contact": "Contact",
+      "contactPlaceholder": "e.g. +1 555 000 0000",
+      "description": "Description",
+      "descriptionPlaceholder": "Describe the response procedure and escalation steps...",
+      "cancel": "Cancel",
+      "create": "Create Plan",
+      "processing": "Saving..."
+    },
+    "table": {
+      "type": "Type",
+      "contact": "Contact",
+      "description": "Description",
+      "createdAt": "Created",
+      "noResults": "No emergency response plans found. Create one to get started."
+    },
+    "toast": {
+      "loadError": "Failed to load emergency response plans",
+      "created": "Emergency response plan created successfully",
+      "saveFailed": "Failed to save the plan"
+    }
   }
-}
 }
