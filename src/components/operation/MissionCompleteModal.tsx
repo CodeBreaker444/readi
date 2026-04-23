@@ -116,14 +116,6 @@ function isoToLocalInput(iso: string | null | undefined): string {
   }
 }
 
-/** Convert minutes to {h, m} strings for the duration inputs */
-function minutesToHM(minutes: number | null | undefined): { h: string; m: string } {
-  if (!minutes || minutes <= 0) return { h: "", m: "" };
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  return { h: h > 0 ? String(h) : "", m: m > 0 ? String(m) : "" };
-}
-
 
 export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId, isDark }: Props) {
   const { t } = useTranslation();
@@ -156,12 +148,17 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
   const [resultOptions, setResultOptions] = useState<MissionResultOption[]>([]);
   const [postFlightFromLog, setPostFlightFromLog] = useState(false);
   const [postFlight, setPostFlight] = useState<PostFlightState>({
-    duration_h: "",
-    duration_m: "",
-    result_id: null,
-    actual_start: "",
     actual_end: "",
+    result_id: null,
+    flight_duration_min: "",
     distance_m: "",
+    battery_charge_start: "",
+    battery_charge_end: "",
+    incident_flag: false,
+    rth_unplanned: false,
+    link_loss: false,
+    deviation_flag: false,
+    weather_temp: "",
     notes: "",
   });
 
@@ -207,14 +204,18 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
       if (data.code === 1 && data.data) {
         const { flight, result_options } = data.data;
         setResultOptions(result_options ?? []);
-        const { h, m } = minutesToHM(flight?.flight_duration);
         setPostFlight({
-          duration_h: h,
-          duration_m: m,
-          result_id: flight?.fk_mission_result_type_id ?? null,
-          actual_start: isoToLocalInput(flight?.actual_start),
           actual_end: isoToLocalInput(flight?.actual_end),
+          result_id: flight?.fk_mission_result_type_id ?? null,
+          flight_duration_min: flight?.flight_duration != null ? String(flight.flight_duration) : "",
           distance_m: flight?.distance_flown != null ? String(flight.distance_flown) : "",
+          battery_charge_start: flight?.battery_charge_start != null ? String(flight.battery_charge_start) : "",
+          battery_charge_end: flight?.battery_charge_end != null ? String(flight.battery_charge_end) : "",
+          incident_flag: flight?.incident_flag ?? false,
+          rth_unplanned: flight?.rth_unplanned ?? false,
+          link_loss: flight?.link_loss ?? false,
+          deviation_flag: flight?.deviation_flag ?? false,
+          weather_temp: flight?.weather_temperature != null ? String(flight.weather_temperature) : "",
           notes: flight?.notes ?? "",
         });
       }
@@ -304,16 +305,18 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
   };
 
   const handleSubmitPostFlight = async () => {
-    const h = parseInt(postFlight.duration_h || "0", 10);
-    const m = parseInt(postFlight.duration_m || "0", 10);
-    const flightDurationMinutes = h * 60 + m || null;
-
     const payload: Record<string, unknown> = {
       mission_id: missionId,
-      flight_duration: flightDurationMinutes,
-      actual_start: postFlight.actual_start ? new Date(postFlight.actual_start).toISOString() : null,
+      flight_duration: postFlight.flight_duration_min ? parseInt(postFlight.flight_duration_min, 10) : null,
       actual_end: postFlight.actual_end ? new Date(postFlight.actual_end).toISOString() : null,
       distance_flown: postFlight.distance_m ? parseFloat(postFlight.distance_m) : null,
+      battery_charge_start: postFlight.battery_charge_start ? parseFloat(postFlight.battery_charge_start) : null,
+      battery_charge_end: postFlight.battery_charge_end ? parseFloat(postFlight.battery_charge_end) : null,
+      incident_flag: postFlight.incident_flag,
+      rth_unplanned: postFlight.rth_unplanned,
+      link_loss: postFlight.link_loss,
+      deviation_flag: postFlight.deviation_flag,
+      weather_temperature: postFlight.weather_temp ? parseFloat(postFlight.weather_temp) : null,
       notes: postFlight.notes || null,
       fk_mission_result_type_id: postFlight.result_id,
     };
@@ -480,16 +483,12 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
 
             // Sync post-flight fields from GUTMA
             const durationTotalMinutes = Math.round(durationSeconds / 60);
-            const pfH = Math.floor(durationTotalMinutes / 60);
-            const pfM = durationTotalMinutes % 60;
             setPostFlight((prev) => ({
               ...prev,
-              duration_h: durationTotalMinutes > 0 ? String(pfH) : prev.duration_h,
-              duration_m: durationTotalMinutes > 0 ? String(pfM) : prev.duration_m,
-              actual_start: preview.start_time ? isoToLocalInput(preview.start_time) : prev.actual_start,
+              flight_duration_min: durationTotalMinutes > 0 ? String(durationTotalMinutes) : prev.flight_duration_min,
               actual_end: preview.end_time ? isoToLocalInput(preview.end_time) : prev.actual_end,
             }));
-            if (durationTotalMinutes > 0 || preview.start_time || preview.end_time) {
+            if (durationTotalMinutes > 0 || preview.end_time) {
               setPostFlightFromLog(true);
             }
 

@@ -19,7 +19,9 @@ export async function GET(req: NextRequest) {
     const [missionRes, resultsRes] = await Promise.all([
       supabase
         .from("pilot_mission")
-        .select("flight_duration, actual_start, actual_end, distance_flown, notes, fk_mission_result_type_id")
+        .select(
+          "flight_duration, actual_end, distance_flown, battery_charge_start, battery_charge_end, incident_flag, rth_unplanned, link_loss, deviation_flag, weather_temperature, notes, fk_mission_result_type_id"
+        )
         .eq("pilot_mission_id", missionId)
         .single(),
       getMissionResultList(session!.user.ownerId),
@@ -44,9 +46,15 @@ export async function GET(req: NextRequest) {
 const postFlightSchema = z.object({
   mission_id: z.number().int().positive(),
   flight_duration: z.number().nonnegative().nullable().optional(),
-  actual_start: z.string().nullable().optional(),
   actual_end: z.string().nullable().optional(),
   distance_flown: z.number().nonnegative().nullable().optional(),
+  battery_charge_start: z.number().min(0).max(100).nullable().optional(),
+  battery_charge_end: z.number().min(0).max(100).nullable().optional(),
+  incident_flag: z.boolean().nullable().optional(),
+  rth_unplanned: z.boolean().nullable().optional(),
+  link_loss: z.boolean().nullable().optional(),
+  deviation_flag: z.boolean().nullable().optional(),
+  weather_temperature: z.number().nullable().optional(),
   notes: z.string().nullable().optional(),
   fk_mission_result_type_id: z.number().int().positive().nullable().optional(),
 });
@@ -65,7 +73,7 @@ export async function POST(req: NextRequest) {
   const parsed = postFlightSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
-      { code: 0, message: "Validation error", errors: parsed.error.flatten() },
+      { code: 0, message: "Validation error", errors: parsed.error.issues },
       { status: 400 }
     );
   }
@@ -73,9 +81,15 @@ export async function POST(req: NextRequest) {
   const { mission_id, ...fields } = parsed.data;
   const payload: Record<string, unknown> = {};
   if (fields.flight_duration !== undefined) payload.flight_duration = fields.flight_duration;
-  if (fields.actual_start !== undefined) payload.actual_start = fields.actual_start || null;
   if (fields.actual_end !== undefined) payload.actual_end = fields.actual_end || null;
   if (fields.distance_flown !== undefined) payload.distance_flown = fields.distance_flown;
+  if (fields.battery_charge_start !== undefined) payload.battery_charge_start = fields.battery_charge_start;
+  if (fields.battery_charge_end !== undefined) payload.battery_charge_end = fields.battery_charge_end;
+  if (fields.incident_flag !== undefined) payload.incident_flag = fields.incident_flag;
+  if (fields.rth_unplanned !== undefined) payload.rth_unplanned = fields.rth_unplanned;
+  if (fields.link_loss !== undefined) payload.link_loss = fields.link_loss;
+  if (fields.deviation_flag !== undefined) payload.deviation_flag = fields.deviation_flag;
+  if (fields.weather_temperature !== undefined) payload.weather_temperature = fields.weather_temperature;
   if (fields.notes !== undefined) payload.notes = fields.notes || null;
   if (fields.fk_mission_result_type_id !== undefined)
     payload.fk_mission_result_type_id = fields.fk_mission_result_type_id;

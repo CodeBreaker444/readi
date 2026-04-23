@@ -1411,23 +1411,30 @@
         "sections": {
           "outcome": "Missionsergebnis",
           "flightData": "Flugdaten",
-          "performance": "Leistung",
-          "notes": "Notizen"
+          "battery": "Batterie",
+          "incidents": "Vorfälle & Markierungen",
+          "weather": "Wetter & Notizen",
+          "notes": "Missionsnotizen"
         },
         "fields": {
           "missionResult": "Missionsergebnis",
-          "duration": "Dauer",
-          "actualStart": "Tatsächlicher Start",
-          "actualEnd": "Tatsächliches Ende",
-          "distanceFlown": "Zurückgelegte Strecke",
-          "maxAltitude": "Max. Höhe"
+          "actualEnd": "Enddatum / Uhrzeit",
+          "duration": "Gesamtflugzeit (Min.)",
+          "distanceFlown": "Zurückgelegte Strecke (Mt)",
+          "batteryChargeStart": "Akkuladestand Start",
+          "batteryChargeEnd": "Akkuladestand Ende",
+          "incidentFlag": "Vorfallflag",
+          "rthUnplanned": "Ungeplante Rückkehr zum Startpunkt",
+          "linkLoss": "Verbindungsverlust",
+          "deviationFlag": "Abweichungsflag",
+          "weatherTemp": "Temperatur (Durchschnitt)"
         },
         "placeholders": {
           "selectResult": "Ergebnis auswählen…",
           "notes": "Nachflugnotizen, Beobachtungen, Vorfälle…"
         },
         "validation": {
-          "endBeforeStart": "Endzeit muss nach der Startzeit liegen"
+          "incidentFlagged": "Ein oder mehrere Vorfallflaggen sind aktiv — vor dem Speichern prüfen"
         }
       },
       "footer": {

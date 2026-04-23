@@ -1413,23 +1413,30 @@
         "sections": {
           "outcome": "Esito Missione",
           "flightData": "Dati di Volo",
-          "performance": "Performance",
-          "notes": "Note"
+          "battery": "Batteria",
+          "incidents": "Incidenti & Segnalazioni",
+          "weather": "Meteo & Note",
+          "notes": "Note Missione"
         },
         "fields": {
           "missionResult": "Risultato Missione",
-          "duration": "Durata",
-          "actualStart": "Inizio Effettivo",
-          "actualEnd": "Fine Effettiva",
-          "distanceFlown": "Distanza Percorsa",
-          "maxAltitude": "Altitudine Massima"
+          "actualEnd": "Data / Ora Fine",
+          "duration": "Tempo Totale di Volo (Min)",
+          "distanceFlown": "Distanza Percorsa (Mt)",
+          "batteryChargeStart": "Carica Batteria Inizio",
+          "batteryChargeEnd": "Carica Batteria Fine",
+          "incidentFlag": "Segnalazione Incidente",
+          "rthUnplanned": "Ritorno a Casa Non Pianificato",
+          "linkLoss": "Perdita di Collegamento",
+          "deviationFlag": "Segnalazione Deviazione",
+          "weatherTemp": "Temperatura Meteo (Media)"
         },
         "placeholders": {
           "selectResult": "Seleziona risultato…",
           "notes": "Note post-volo, osservazioni, incidenti…"
         },
         "validation": {
-          "endBeforeStart": "L'orario di fine deve essere successivo a quello di inizio"
+          "incidentFlagged": "Uno o più flag di incidente sono attivi — verificare prima di salvare"
         }
       },
       "footer": {

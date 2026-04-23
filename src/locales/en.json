@@ -1415,23 +1415,30 @@
         "sections": {
           "outcome": "Mission Outcome",
           "flightData": "Flight Data",
-          "performance": "Performance",
-          "notes": "Notes"
+          "battery": "Battery",
+          "incidents": "Incidents & Flags",
+          "weather": "Weather & Notes",
+          "notes": "Mission Notes"
         },
         "fields": {
           "missionResult": "Mission Result",
-          "duration": "Duration",
-          "actualStart": "Actual Start",
-          "actualEnd": "Actual End",
-          "distanceFlown": "Distance Flown",
-          "maxAltitude": "Max Altitude"
+          "actualEnd": "End Date / Time",
+          "duration": "Total Flown Time (Min)",
+          "distanceFlown": "Total Flown Distance (Mt)",
+          "batteryChargeStart": "Battery Charge Start",
+          "batteryChargeEnd": "Battery Charge End",
+          "incidentFlag": "Incident Flag",
+          "rthUnplanned": "Return to Home Unplanned",
+          "linkLoss": "Link Loss",
+          "deviationFlag": "Deviation Flag",
+          "weatherTemp": "Weather Temp (Average)"
         },
         "placeholders": {
           "selectResult": "Select mission result…",
           "notes": "Post-flight notes, observations, incidents…"
         },
         "validation": {
-          "endBeforeStart": "End time must be after start time"
+          "incidentFlagged": "One or more incident flags are active — review before saving"
         }
       },
       "footer": {
