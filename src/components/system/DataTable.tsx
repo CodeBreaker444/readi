@@ -23,6 +23,8 @@ interface DataTableProps<TData, TValue> {
   data: TData[];
   loading?: boolean;
   exportFilename?: string;
+  /** Optional slot rendered at the right end of the search bar row */
+  actions?: React.ReactNode;
 }
 
 export default function DataTable<TData, TValue>({
@@ -30,6 +32,7 @@ export default function DataTable<TData, TValue>({
   data,
   loading = false,
   exportFilename,
+  actions,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -76,13 +79,19 @@ export default function DataTable<TData, TValue>({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      {/* Search bar row: input left, actions right, wraps on small screens */}
+      <div className="flex flex-wrap items-center gap-2">
         <Input
           placeholder="Search..."
           value={globalFilter ?? ''}
           onChange={(event) => setGlobalFilter(event.target.value)}
-          className="max-w-sm"
+          className="flex-1 min-w-[180px] max-w-sm"
         />
+        {actions && (
+          <div className="flex items-center gap-2 ml-auto">
+            {actions}
+          </div>
+        )}
       </div>
 
       <div className="rounded-md border">

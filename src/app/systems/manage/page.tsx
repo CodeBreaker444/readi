@@ -4,6 +4,7 @@ import AddComponentModal from '@/components/system/AddComponentModal';
 import AddModelModal from '@/components/system/AddModelModal';
 import AddSystemModal from '@/components/system/AddSystemModal';
 import { ComponentLogModal } from '@/components/system/ComponentLogModal';
+import ComponentRelationsModal from '@/components/system/ComponentRelationsModal';
 import DataTable from '@/components/system/DataTable';
 import EditComponentModal from '@/components/system/EditComponentModal';
 import EditModelModal from '@/components/system/EditModelModal';
@@ -23,7 +24,7 @@ import {
 } from '@/components/ui/dialog';
 import { useTheme } from '@/components/useTheme';
 import axios from 'axios';
-import { AlertTriangle, Loader2, Plus, RefreshCw } from 'lucide-react';
+import { AlertTriangle, GitBranch, Loader2, Plus, RefreshCw } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -71,6 +72,10 @@ export default function DroneToolPage() {
     const [deleteConfirm, setDeleteConfirm] = useState<DeleteConfirm | null>(null);
     const [deleting, setDeleting] = useState(false);
     const [detachingComponent, setDetachingComponent] = useState(false);
+
+    const [showRelations, setShowRelations] = useState(false);
+    const [relationsToolId, setRelationsToolId] = useState<number | null>(null);
+    const [relationsToolCode, setRelationsToolCode] = useState<string>('');
 
     const [filesModal, setFilesModal] = useState<{
         open: boolean;
@@ -438,7 +443,24 @@ const modelColumns = useMemo(
                             <DataTable columns={modelColumns} data={models} loading={loadingModels} exportFilename="models" />
                         )}
                         {activeTab === 'component' && (
-                            <DataTable columns={componentColumns} data={componentData} loading={loadingComponents} exportFilename="components" />
+                            <DataTable
+                                columns={componentColumns}
+                                data={componentData}
+                                loading={loadingComponents}
+                                exportFilename="components"
+                                actions={
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => setShowRelations(true)}
+                                        className={`h-8 cursor-pointer gap-1.5 text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white hover:text-white shadow-sm`}
+                                    >
+                                        <GitBranch size={14} />
+                                        <span className="hidden sm:inline">Organise Relations</span>
+                                        <span className="sm:hidden">Relations</span>
+                                    </Button>
+                                }
+                            />
                         )}
                     </CardContent>
                 </Card>
@@ -505,6 +527,15 @@ const modelColumns = useMemo(
 
             <FilesDownloadModal open={filesModal.open} toolCode={filesModal.toolCode} files={filesModal.files}
                 onClose={() => setFilesModal({ open: false, toolCode: '', files: [] })} />
+
+            <ComponentRelationsModal
+                open={showRelations}
+                toolId={relationsToolId}
+                toolCode={relationsToolCode}
+                tools={tools}
+                onClose={() => { setShowRelations(false); setRelationsToolId(null); setRelationsToolCode(''); }}
+                onSuccess={() => { fetchAllComponents(); }}
+            />
 
             {deleteConfirm && (
                 <Dialog open={deleteConfirm.open} onOpenChange={() => setDeleteConfirm(null)}>
