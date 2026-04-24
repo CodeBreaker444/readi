@@ -17,7 +17,7 @@ const updateProfileSchema = z.object({
     .string()
     .max(64, 'Timezone too long')
     .optional()
-    .default('IST'),
+    .default('Europe/Berlin'),
 });
 
 export async function GET() {
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
       fullname: rawFields.fullname ?? '',
       email: rawFields.email ?? '',
       phone: rawFields.phone ?? '',
-      timezone: rawFields.timezone ?? 'IST',
+      timezone: rawFields.timezone ?? 'Europe/Berlin',
     });
 
     const avatarEntry = formData.get('avatar');

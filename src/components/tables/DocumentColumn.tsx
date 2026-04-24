@@ -2,11 +2,11 @@
  
 import { RepositoryDocument } from '@/config/types/repository';
 import { ColumnDef } from '@tanstack/react-table';
-import { format } from 'date-fns';
 import type { TFunction } from 'i18next';
 import { ArrowUpDown, Calendar, Download, History, Pencil, Trash2 } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
+import { formatDateInTz } from '@/lib/utils';
 
 const STATUS_CLASSES: Record<string, string> = {
   DRAFT:     'bg-gray-100 text-gray-700',
@@ -44,14 +44,14 @@ function AreaBadge({ area }: { area?: string | null }) {
   );
 }
 
-function fmtDate(d?: string | null) {
-  if (!d) return '—';
-  try { return format(new Date(d), 'dd/MM/yyyy'); } catch { return d; }
+function fmtDate(d: string | null | undefined, tz: string) {
+  return formatDateInTz(d, tz);
 }
  
 
 export interface ColumnActions {
   t: TFunction;
+  timezone?: string;
   onEdit:     (doc: RepositoryDocument) => void;
   onDelete:   (doc: RepositoryDocument) => void;
   onHistory:  (doc: RepositoryDocument) => void;
@@ -59,7 +59,7 @@ export interface ColumnActions {
 }
 
 export function getRepositoryColumns(actions: ColumnActions): ColumnDef<RepositoryDocument>[] {
-  const { t } = actions;
+  const { t, timezone } = actions;
 
   return [
     {
@@ -170,12 +170,12 @@ export function getRepositoryColumns(actions: ColumnActions): ColumnDef<Reposito
         <div className="flex flex-col gap-0.5 text-[11px]">
           <div className="flex items-center gap-1 text-slate-700 dark:text-slate-200">
             <span className="text-[9px] font-bold text-slate-400 uppercase">Eff:</span>
-            {fmtDate(row.original.effective_date)}
+            {fmtDate(row.original.effective_date, timezone ?? 'Europe/Berlin')}
           </div>
           {row.original.expiry_date && (
             <div className="flex items-center gap-1 text-slate-400">
                <span className="text-[9px] font-bold text-slate-300 uppercase">Exp:</span>
-               {fmtDate(row.original.expiry_date)}
+               {fmtDate(row.original.expiry_date, timezone ?? 'Europe/Berlin')}
             </div>
           )}
         </div>

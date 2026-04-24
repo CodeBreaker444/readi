@@ -15,6 +15,7 @@ import { OperationsStats } from '@/components/operation/table/OperationsStats';
 import { OperationsTable } from '@/components/operation/table/OperationsTable';
 import { getOperationColumns, OperationTableMeta } from '@/components/tables/OperationColumn';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { useTimezone } from '@/components/TimezoneProvider';
 import { useTheme } from '@/components/useTheme';
 import {
   getCoreRowModel,
@@ -84,6 +85,7 @@ const DEFAULT_FILTERS: FilterState = {
 
 export default function OperationsPage() {
   const { isDark } = useTheme();
+  const { timezone } = useTimezone();
   const { t } = useTranslation();
 
   const [operations, setOperations] = useState<Operation[]>([]);
@@ -145,7 +147,7 @@ export default function OperationsPage() {
     fetchOperations();
   }, [filters, refreshKey]);
 
-const columns = useMemo(() => getOperationColumns(t, isDark), [t, isDark]);
+const columns = useMemo(() => getOperationColumns(t, isDark, timezone), [t, isDark, timezone]);
 
 const tableMeta = useMemo<OperationTableMeta>(
   () => ({

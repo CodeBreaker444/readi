@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Evaluation } from "@/config/types/evaluation";
+import { formatDateInTz } from "@/lib/utils";
 import { Column, type ColumnDef } from "@tanstack/react-table";
 import {
   ArrowDown,
@@ -147,17 +148,13 @@ function EvalResultBadge({ result }: { result: string }) {
 }
 
  
-function formatDate(raw: unknown): { display: string; relative: string } {
+function formatDate(raw: unknown, tz?: string): { display: string; relative: string } {
   if (!raw) return { display: "—", relative: "" };
   const str = String(raw);
   const d = new Date(str);
   if (isNaN(d.getTime())) return { display: str, relative: "" };
 
-  const display = d.toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+  const display = formatDateInTz(d, tz);
 
   const now = new Date();
   const diffMs = now.getTime() - d.getTime();
@@ -171,7 +168,7 @@ function formatDate(raw: unknown): { display: string; relative: string } {
   return { display, relative };
 }
  
-export const getEvaluationColumns = (): ColumnDef<Evaluation>[] => [
+export const getEvaluationColumns = (timezone?: string): ColumnDef<Evaluation>[] => [
   {
     accessorKey: "evaluation_year",
     header: ({ column }) => <SortableHeader column={column} label="Year" />,
@@ -240,7 +237,7 @@ export const getEvaluationColumns = (): ColumnDef<Evaluation>[] => [
       <SortableHeader column={column} label="Requested" />
     ),
     cell: ({ getValue }) => {
-      const { display, relative } = formatDate(getValue());
+      const { display, relative } = formatDate(getValue(), timezone);
       return (
         <div className="flex items-center gap-1.5">
           <Calendar className="h-3 w-3 text-slate-300 shrink-0" />

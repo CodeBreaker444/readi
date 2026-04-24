@@ -10,6 +10,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import { formatDateTimeInTz } from '@/lib/utils';
 import { ColumnDef } from '@tanstack/react-table';
 import { TFunction } from 'i18next';
 import {
@@ -86,18 +87,8 @@ function StatusBadge({ status, t, isDark }: { status?: string | null; t: TFuncti
   );
 }
 
-function formatShortDate(val?: string | null): string {
-  if (!val) return '—';
-  try {
-    return new Intl.DateTimeFormat('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(new Date(val));
-  } catch {
-    return val;
-  }
+function formatShortDate(val: string | null | undefined, tz: string): string {
+  return formatDateTimeInTz(val, tz);
 }
 
 function getProcedureStatus(op: Operation): { assignmentDone: boolean; checklistDone: boolean; hasLuc: boolean } {
@@ -154,7 +145,7 @@ function ProcedureBadge({ op, isDark }: { op: Operation; isDark: boolean }) {
   );
 }
 
-export const getOperationColumns = (t: TFunction, isDark = false): ColumnDef<any>[] => [
+export const getOperationColumns = (t: TFunction, isDark = false, timezone = 'Europe/Berlin'): ColumnDef<any>[] => [
   {
     id: 'select',
     size: 40,
@@ -194,7 +185,7 @@ export const getOperationColumns = (t: TFunction, isDark = false): ColumnDef<any
     header: t('planning.operationLogbook.columns.start'),
     cell: ({ getValue }) => (
       <span className="text-xs text-muted-foreground whitespace-nowrap">
-        {formatShortDate(getValue<string>())}
+        {formatShortDate(getValue<string>(), timezone)}
       </span>
     ),
   },
@@ -203,7 +194,7 @@ export const getOperationColumns = (t: TFunction, isDark = false): ColumnDef<any
     header: t('planning.operationLogbook.columns.end'),
     cell: ({ getValue }) => (
       <span className="text-xs text-muted-foreground whitespace-nowrap">
-        {formatShortDate(getValue<string>())}
+        {formatShortDate(getValue<string>(), timezone)}
       </span>
     ),
   },

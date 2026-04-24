@@ -1,5 +1,6 @@
 'use client';
 
+import { useTimezone } from '@/components/TimezoneProvider';
 import { useTheme } from '@/components/useTheme';
 import { Session } from '@/lib/auth/server-session';
 import {
@@ -69,6 +70,7 @@ const STAT_CONFIG = [
 
 export default function ClientManagement({ session }: ClientManagementProps) {
   const { isDark } = useTheme();
+  const { timezone } = useTimezone();
   const isSuperAdmin = session.user.role === 'SUPERADMIN';
   const [clients, setClients] = useState<ClientData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -191,8 +193,8 @@ export default function ClientManagement({ session }: ClientManagementProps) {
   );
 
   const columns = useMemo(
-    () => getClientColumns({ isDark, onEdit: handleEdit, onDelete: handleDelete }),
-    [isDark]
+    () => getClientColumns({ isDark, onEdit: handleEdit, onDelete: handleDelete, timezone }),
+    [isDark, timezone]
   );
 
   const table = useReactTable({

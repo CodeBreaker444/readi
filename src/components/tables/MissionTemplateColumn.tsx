@@ -1,5 +1,6 @@
 'use client';
 
+import { formatDateInTz } from '@/lib/utils';
 import { type ColumnDef } from '@tanstack/react-table';
 import { TFunction } from 'i18next';
 import { Download } from 'lucide-react';
@@ -27,7 +28,8 @@ export interface MissionTemplateRow {
 
 interface ColumnOptions {
   isDark: boolean;
-  t: TFunction; // Added TFunction to options
+  t: TFunction;
+  timezone?: string;
 }
 
 function formatFileSize(bytes: number | null): string {
@@ -37,22 +39,14 @@ function formatFileSize(bytes: number | null): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function formatDate(dateStr: string | null): string {
-  if (!dateStr) return '—';
-  try {
-    return new Date(dateStr).toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    });
-  } catch {
-    return dateStr;
-  }
+function formatDate(dateStr: string | null, tz?: string): string {
+  return formatDateInTz(dateStr, tz);
 }
 
 export function getMissionTemplateColumns({
   isDark,
-  t, // Destructured t
+  t,
+  timezone,
 }: ColumnOptions): ColumnDef<MissionTemplateRow, any>[] {
   return [
     {
@@ -191,7 +185,7 @@ export function getMissionTemplateColumns({
       size: 110,
       cell: ({ getValue }) => (
         <span className="tabular-nums text-[11px]">
-          {formatDate(getValue() as string)}
+          {formatDate(getValue() as string, timezone)}
         </span>
       ),
     },

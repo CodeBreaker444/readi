@@ -4,6 +4,7 @@ import { AssignmentForm, AssignmentModal } from '@/components/organization/Assig
 import { getAssignmentColumns } from '@/components/tables/AssignmentColumn'
 import { TablePagination } from '@/components/tables/Pagination'
 import { Button } from '@/components/ui/button'
+import { useTimezone } from '@/components/TimezoneProvider'
 import { useTheme } from '@/components/useTheme'
 import {
   flexRender,
@@ -34,6 +35,7 @@ const emptyForm: FormData = {
 }
 export default function AssignmentPage() {
   const { isDark } = useTheme()
+  const { timezone } = useTimezone()
   const [assignments, setAssignments] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [globalFilter, setGlobalFilter] = useState('')
@@ -69,8 +71,9 @@ export default function AssignmentPage() {
         return;
       }
       setConfirmDelete(item);
-    }
-  ), [isDark])
+    },
+    timezone,
+  ), [isDark, timezone])
 
   const table = useReactTable({
     data: assignments,

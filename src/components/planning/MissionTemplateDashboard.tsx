@@ -1,6 +1,7 @@
 
 'use client';
 
+import { useTimezone } from '@/components/TimezoneProvider';
 import {
     getMissionTemplateColumns,
     type MissionTemplateRow,
@@ -62,6 +63,7 @@ const MissionTemplateDashboard: React.FC<MissionTemplateDashboardProps> = ({
     isDark = false,
 }) => {
     const { t } = useTranslation();
+    const { timezone } = useTimezone();
     const [loading, setLoading] = useState(true);
     const [data, setData] = useState<MissionTemplateRow[]>([]);
     const [sorting, setSorting] = useState<SortingState>([]);
@@ -129,7 +131,7 @@ const MissionTemplateDashboard: React.FC<MissionTemplateDashboardProps> = ({
         fetchLogbook();
     };
 
-    const columns = useMemo(() => getMissionTemplateColumns({ isDark, t }), [isDark, t]);
+    const columns = useMemo(() => getMissionTemplateColumns({ isDark, t, timezone }), [isDark, t, timezone]);
 
     const table = useReactTable({
         data,

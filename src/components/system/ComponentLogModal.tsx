@@ -1,8 +1,10 @@
 'use client';
 
 import { ExportButton } from '@/components/ExportButton';
+import { useTimezone } from '@/components/TimezoneProvider';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
+import { formatDateTimeInTz } from '@/lib/utils';
 import { useEffect, useMemo, useState } from 'react';
 
 interface AuditLog {
@@ -38,13 +40,6 @@ interface LogEntry {
   source: 'audit' | 'ticket';
 }
 
-function fmt(iso: string | null) {
-  if (!iso) return '—';
-  return new Date(iso).toLocaleString('en-GB', {
-    day: '2-digit', month: 'short', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  });
-}
 
 const EVENT_COLORS: Record<string, string> = {
   CREATE: 'bg-emerald-100 text-emerald-700 border-emerald-200',
@@ -69,24 +64,25 @@ export function ComponentLogModal({
   componentId: number | null;
   componentLabel: string;
 }) {
+  const { timezone } = useTimezone();
   const [loading, setLoading] = useState(false);
   const [entries, setEntries] = useState<LogEntry[]>([]);
 
   const exportData = useMemo(
     () =>
       entries.map((e) => ({
-        timestamp: fmt(e.time),
+        timestamp: formatDateTimeInTz(e.time, timezone),
         type: e.type,
         source: e.source === 'ticket' ? 'Maintenance' : 'System',
         description: e.description,
       })),
-    [entries]
+    [entries, timezone]
   );
 
   const EXPORT_COLUMNS = [
-    { header: 'Timestamp',   key: 'timestamp' },
-    { header: 'Type',        key: 'type' },
-    { header: 'Source',      key: 'source' },
+    { header: 'Timestamp', key: 'timestamp' },
+    { header: 'Type', key: 'type' },
+    { header: 'Source', key: 'source' },
     { header: 'Description', key: 'description' },
   ];
 
@@ -126,7 +122,7 @@ export function ComponentLogModal({
         logs.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
         setEntries(logs);
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoading(false));
   }, [open, componentId]);
 
@@ -180,7 +176,7 @@ export function ComponentLogModal({
                     </span>
                   </div>
                   <p className="text-sm text-slate-700">{entry.description}</p>
-                  <time className="text-xs text-slate-400">{fmt(entry.time)}</time>
+                  <time className="text-xs text-slate-400">{formatDateTimeInTz(entry.time, timezone)}</time>
                 </li>
               ))}
             </ol>

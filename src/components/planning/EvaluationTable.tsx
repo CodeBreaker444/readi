@@ -26,10 +26,12 @@ import { TablePagination } from '../tables/Pagination';
 import { Evaluation } from '@/config/types/evaluation';
 import { cn } from '@/lib/utils';
 import ExportButtons from '../system/ExportButtons';
+import { useTimezone } from '@/components/TimezoneProvider';
 import { getEvaluationColumns } from '../tables/EvaluationColumn';
 
 export function EvaluationTable({ onView, isDark }: { onView?: (ev: Evaluation) => void; isDark?: boolean }) {
   const { t } = useTranslation();
+  const { timezone } = useTimezone();
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -72,8 +74,8 @@ export function EvaluationTable({ onView, isDark }: { onView?: (ev: Evaluation) 
   }
 
   const columns = useMemo(() =>
-    getEvaluationColumns(),
-    [onView]);
+    getEvaluationColumns(timezone),
+    [onView, timezone]);
 
   const table = useReactTable({
     data: evaluations,

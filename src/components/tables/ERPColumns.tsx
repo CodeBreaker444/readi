@@ -1,6 +1,7 @@
 import { Badge } from '@/components/ui/badge'
 import { EmergencyResponsePlan, ErpType } from '@/config/types/erp'
 import { createColumnHelper } from '@tanstack/react-table'
+import { formatDateInTz } from '@/lib/utils'
 
 const columnHelper = createColumnHelper<EmergencyResponsePlan>()
 
@@ -12,7 +13,7 @@ const TYPE_COLORS: Record<ErpType, string> = {
   ENVIRONMENTAL: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
 }
 
-export const getErpColumns = (isDark: boolean, t: (key: string) => string) => [
+export const getErpColumns = (isDark: boolean, t: (key: string) => string, timezone?: string) => [
   columnHelper.accessor('type', {
     header: t('erp.table.type'),
     cell: (info) => (
@@ -47,7 +48,7 @@ export const getErpColumns = (isDark: boolean, t: (key: string) => string) => [
       if (!val) return <span className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>—</span>
       return (
         <span className={`text-xs font-mono ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-          {new Date(val).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+          {formatDateInTz(val, timezone)}
         </span>
       )
     },

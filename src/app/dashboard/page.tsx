@@ -16,7 +16,7 @@ export default async function DashboardPage() {
   const dashboardData = await getDashboardData({
     owner_id: ownerId,
     user_id: userId,
-    user_timezone: session.user.timezone || 'IST',
+    user_timezone: session.user.timezone || 'Europe/Berlin',
     user_profile_code: userProfileCode,
   });
   

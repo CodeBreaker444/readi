@@ -3,7 +3,7 @@
 import {
     ColumnDef
 } from '@tanstack/react-table';
-import { format } from 'date-fns';
+import { formatDateInTz, formatTimeInTz } from '@/lib/utils';
 
 export interface AuditLog {
   id: number;
@@ -50,18 +50,20 @@ export const ENTITY_TYPES = [
   'spi_kpi', 'company', 'dcc_bug_report',
 ];
 
-export const getAuditLogsColumns = (isSuperAdmin: boolean, owners: Owner[]): ColumnDef<AuditLog>[] => {
+export const getAuditLogsColumns = (isSuperAdmin: boolean, owners: Owner[], timezone?: string): ColumnDef<AuditLog>[] => {
   const columns: ColumnDef<AuditLog>[] = [
     {
       accessorKey: 'created_at',
       header: 'Time',
       size: 160,
       cell: ({ getValue }) => {
-        const date = new Date(getValue<string>());
-        return {
-          date: format(date, 'dd MMM yyyy'),
-          time: format(date, 'HH:mm:ss'),
-        };
+        const date = getValue<string>();
+        return (
+          <div className="flex flex-col gap-0.5">
+            <span className="text-xs font-medium">{formatDateInTz(date, timezone)}</span>
+            <span className="text-[10px] text-muted-foreground">{formatTimeInTz(date, timezone)}</span>
+          </div>
+        );
       },
     },
     {

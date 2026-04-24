@@ -48,7 +48,7 @@ const initialForm = {
     admin_fullname: '',
     admin_email: '',
     admin_phone: '',
-    admin_timezone: 'IST',
+    admin_timezone: 'Europe/Berlin',
 };
 export default function AddOwnerModal({ open, onClose, onSuccess }: AddOwnerModalProps) {
     const [form, setForm] = useState(initialForm);
@@ -222,16 +222,19 @@ export default function AddOwnerModal({ open, onClose, onSuccess }: AddOwnerModa
                                     <SelectValue placeholder="Select Timezone" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="Asia/Kolkata">India (IST)</SelectItem>
-                                    <Separator className="my-1" />
+                                    <SelectItem value="Europe/Berlin">Central Europe (CET/CEST)</SelectItem>
+                                    <SelectItem value="Europe/London">UK / Ireland (GMT/BST)</SelectItem>
+                                    <SelectItem value="Europe/Paris">France / Belgium (CET/CEST)</SelectItem>
+                                    <SelectItem value="Europe/Rome">Italy / Spain (CET/CEST)</SelectItem>
                                     <SelectItem value="UTC">UTC</SelectItem>
-                                    <SelectItem value="America/New_York">US Eastern</SelectItem>
-                                    <SelectItem value="America/Chicago">US Central</SelectItem>
-                                    <SelectItem value="America/Los_Angeles">US Pacific</SelectItem>
-                                    <SelectItem value="Europe/London">UK</SelectItem>
-                                    <SelectItem value="Europe/Rome">Central Europe</SelectItem>
-                                    <SelectItem value="Asia/Dubai">Gulf</SelectItem>
-                                    <SelectItem value="Asia/Tokyo">Japan</SelectItem>
+                                    <SelectItem value="America/New_York">US Eastern (EST/EDT)</SelectItem>
+                                    <SelectItem value="America/Chicago">US Central (CST/CDT)</SelectItem>
+                                    <SelectItem value="America/Los_Angeles">US Pacific (PST/PDT)</SelectItem>
+                                    <SelectItem value="Asia/Kolkata">India (IST)</SelectItem>
+                                    <SelectItem value="Asia/Dubai">Gulf (GST)</SelectItem>
+                                    <SelectItem value="Asia/Tokyo">Japan (JST)</SelectItem>
+                                    <SelectItem value="Asia/Singapore">Singapore (SGT)</SelectItem>
+                                    <SelectItem value="Australia/Sydney">Sydney (AEST/AEDT)</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
