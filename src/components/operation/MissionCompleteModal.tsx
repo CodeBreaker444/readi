@@ -483,12 +483,14 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
 
             // Sync post-flight fields from GUTMA
             const durationTotalMinutes = Math.round(durationSeconds / 60);
+            const previewDistanceM: number | null = preview.distance_m ?? null;
             setPostFlight((prev) => ({
               ...prev,
               flight_duration_min: durationTotalMinutes > 0 ? String(durationTotalMinutes) : prev.flight_duration_min,
               actual_end: preview.end_time ? isoToLocalInput(preview.end_time) : prev.actual_end,
+              distance_m: previewDistanceM != null && previewDistanceM > 0 ? String(previewDistanceM) : prev.distance_m,
             }));
-            if (durationTotalMinutes > 0 || preview.end_time) {
+            if (durationTotalMinutes > 0 || preview.end_time || previewDistanceM) {
               setPostFlightFromLog(true);
             }
 
