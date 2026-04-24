@@ -70,16 +70,20 @@ export async function gutmaArchiveAndSync(
   s3ObjectKey: string,
 ): Promise<GutmaSyncResult> {
 
+  const PLACEHOLDER_SNS = new Set(['n/a', 'na', 'unknown', 'none', '-', 'null']);
+  const isValidSn = (sn: string | undefined) =>
+    !!sn && !PLACEHOLDER_SNS.has(sn.toLowerCase());
+
   const snsToFind: string[] = [];
   const aircraftSn = preview.aircraft?.serial_number?.trim();
   const gcsSn = preview.gcs?.serial_number?.trim();
 
-  if (aircraftSn) snsToFind.push(aircraftSn);
-  if (gcsSn) snsToFind.push(gcsSn);
+  if (isValidSn(aircraftSn)) snsToFind.push(aircraftSn!);
+  if (isValidSn(gcsSn)) snsToFind.push(gcsSn!);
 
   for (const p of preview.payload ?? []) {
     const sn = p.serial_number?.trim();
-    if (sn) snsToFind.push(sn);
+    if (isValidSn(sn)) snsToFind.push(sn!);
   }
 
   if (snsToFind.length === 0) {

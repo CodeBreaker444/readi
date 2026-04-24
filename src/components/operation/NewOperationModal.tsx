@@ -1,13 +1,13 @@
 'use client'
 
 import { Operation } from '@/app/operations/table/page'
+import { useTimezone } from '@/components/TimezoneProvider'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { useTimezone } from '@/components/TimezoneProvider'
 import { cn, formatDateTimeInTz } from '@/lib/utils'
 import axios from 'axios'
 import {
@@ -160,7 +160,6 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                 })))
                 setPlannings(res.data.plannings ?? [])
                 if (editOperation) {
-                    console.log('drones:',res.data.tools);
                     setDrones((res.data.tools ?? []).map((t: any) => ({
                         tool_id: t.tool_id,
                         tool_code: t.tool_code,
