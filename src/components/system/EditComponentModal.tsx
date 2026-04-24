@@ -105,7 +105,8 @@ export default function EditComponentModal({
   const [components, setComponents] = useState<any[]>([]);
   const [selectedComponentId, setSelectedComponentId] = useState<string>('');
   const [showManageTypes, setShowManageTypes] = useState(false);
-  
+  const [loadingParent, setLoadingParent] = useState(false);
+
     const [formData, setFormData] = useState(EMPTY_FORM);
 
     const [types, setTypes] = useState<ComponentType[]>([]);
@@ -266,6 +267,26 @@ export default function EditComponentModal({
     if (value === '' || num >= 0) handleChange(field, value);
   };
 
+  const handleSystemChange = async (v: string) => {
+    handleChange('fk_tool_id', v);
+    handleChange('fk_parent_component_id', '');
+    if (!v) return;
+    setLoadingParent(true);
+    try {
+      const res = await fetch('/api/system/component/list', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tool_id: Number(v) }),
+      });
+      const result = await res.json();
+      if (result.code === 1) setComponents(result.data || []);
+    } catch {
+      toast.error('Error loading components');
+    } finally {
+      setLoadingParent(false);
+    }
+  };
+
   const showHours = formData.maintenance_cycle === 'HOURS' || formData.maintenance_cycle === 'MIXED';
   const showDays = formData.maintenance_cycle === 'DAYS' || formData.maintenance_cycle === 'MIXED';
   const showFlights = formData.maintenance_cycle === 'FLIGHTS' || formData.maintenance_cycle === 'MIXED';
@@ -378,7 +399,7 @@ export default function EditComponentModal({
                 <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
                   <div className="col-span-1 sm:col-span-3 min-w-0">
                     <Label className={labelCls}>System</Label>
-                    <Select value={formData.fk_tool_id} onValueChange={v => { handleChange('fk_tool_id', v); handleChange('fk_parent_component_id', ''); }}>
+                    <Select value={formData.fk_tool_id} onValueChange={handleSystemChange}>
                       <SelectTrigger className={`w-full truncate ${selectTriggerCls}`}>
                         <SelectValue placeholder="Select System">
                           {formData.fk_tool_id
@@ -402,6 +423,7 @@ export default function EditComponentModal({
                     <Select
                       value={formData.fk_parent_component_id}
                       onValueChange={(v) => handleChange('fk_parent_component_id', v === '_none' ? '' : v)}
+                      disabled={loadingParent}
                     >
                       <SelectTrigger className={`w-full truncate ${selectTriggerCls}`}>
                         <SelectValue placeholder="None (top-level)">
