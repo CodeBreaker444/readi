@@ -41,6 +41,7 @@ const INITIAL_FORM = {
   maintenance_cycle_day: '',
   maintenance_cycle_flight: '',
   battery_cycle_ratio: '',
+  fk_parent_component_id: '',
 };
 export interface ComponentType {
   type_id: number;
@@ -100,6 +101,9 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [showManageTypes, setShowManageTypes] = useState(false);
+  const [parentComponents, setParentComponents] = useState<any[]>([]);
+  const [parentLoading, setParentLoading] = useState(false);
+
   const selectedModel = models.find((m) => String(m.tool_model_id) === formData.fk_tool_model_id);
   const selectedModelLabel = selectedModel
     ? `${selectedModel.factory_type ?? '—'} / ${selectedModel.factory_model ?? '—'} / ${selectedModel.factory_serie ?? '—'}`
@@ -108,6 +112,21 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
   useEffect(() => {
     if (open) setFormData(INITIAL_FORM);
   }, [open]);
+
+  // When system changes, reload the candidate parent components
+  useEffect(() => {
+    if (!formData.fk_tool_id) { setParentComponents([]); return; }
+    setParentLoading(true);
+    fetch('/api/system/component/list', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tool_id: Number(formData.fk_tool_id) }),
+    })
+      .then(r => r.json())
+      .then(res => { if (res.code === 1) setParentComponents(res.data ?? []); })
+      .catch(() => setParentComponents([]))
+      .finally(() => setParentLoading(false));
+  }, [formData.fk_tool_id]);
 
    const [types, setTypes] = useState<ComponentType[]>([]);
    const [typesLoading, setTypesLoading] = useState(false);
@@ -203,6 +222,7 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
         maintenance_cycle_day: formData.maintenance_cycle_day ? Number(formData.maintenance_cycle_day) : null,
         maintenance_cycle_flight: formData.maintenance_cycle_flight ? Number(formData.maintenance_cycle_flight) : null,
         battery_cycle_ratio: formData.battery_cycle_ratio ? Number(formData.battery_cycle_ratio) : null,
+        fk_parent_component_id: formData.fk_parent_component_id ? Number(formData.fk_parent_component_id) : null,
       };
 
       const response = await axios.post('/api/system/component/add', payload);
@@ -232,7 +252,7 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
             <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 overflow-visible">
               <div className="col-span-1 sm:col-span-3 min-w-0">
                 <Label className="pb-2">System *</Label>
-                <Select value={formData.fk_tool_id} onValueChange={(v) => handleChange('fk_tool_id', v)}>
+                <Select value={formData.fk_tool_id} onValueChange={(v) => { handleChange('fk_tool_id', v); handleChange('fk_parent_component_id', ''); }}>
                   <SelectTrigger className="w-full truncate">
                     <SelectValue placeholder="Select System">
                       {formData.fk_tool_id
@@ -249,6 +269,46 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Parent Component — only shown once a system is selected */}
+              {formData.fk_tool_id && (
+                <div className="col-span-1 sm:col-span-3 min-w-0">
+                  <Label className="pb-2">Parent Component <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                  <Select
+                    value={formData.fk_parent_component_id}
+                    onValueChange={(v) => handleChange('fk_parent_component_id', v === '_none' ? '' : v)}
+                    disabled={parentLoading}
+                  >
+                    <SelectTrigger className="w-full truncate">
+                      {parentLoading ? (
+                        <span className="flex items-center gap-2 text-muted-foreground">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading...
+                        </span>
+                      ) : (
+                        <SelectValue placeholder="None (top-level)">
+                          {formData.fk_parent_component_id
+                            ? (() => {
+                                const p = parentComponents.find(c => String(c.tool_component_id) === formData.fk_parent_component_id);
+                                return p ? <span className="block w-full truncate text-left">{p.component_code || p.component_name || `#${p.tool_component_id}`}</span> : null;
+                              })()
+                            : null}
+                        </SelectValue>
+                      )}
+                    </SelectTrigger>
+                    <SelectContent className="z-50 max-h-60 overflow-y-auto">
+                      <SelectItem value="_none"><span className="text-muted-foreground italic">None (top-level)</span></SelectItem>
+                      {parentComponents.map((c: any) => (
+                        <SelectItem key={c.tool_component_id} value={String(c.tool_component_id)}>
+                          <div className="flex flex-col gap-0.5 leading-tight">
+                            <span className="text-[11px] font-medium">{c.component_code || c.component_name || `#${c.tool_component_id}`}</span>
+                            <span className="text-[10px] text-muted-foreground">{c.component_type}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               <div className="col-span-1 sm:col-span-3">
                 <div className="flex items-center gap-1.5 pb-2">

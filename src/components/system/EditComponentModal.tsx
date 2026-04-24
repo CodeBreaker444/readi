@@ -89,6 +89,7 @@ const EMPTY_FORM = {
   maintenance_cycle_day: '',
   maintenance_cycle_flight: '',
   battery_cycle_ratio: '',
+  fk_parent_component_id: '',
 };
 interface ComponentType {
   type_id: number;
@@ -164,6 +165,7 @@ export default function EditComponentModal({
       maintenance_cycle_day: comp.maintenance_cycle_day != null && comp.maintenance_cycle_day !== '' ? String(comp.maintenance_cycle_day) : '',
       maintenance_cycle_flight: comp.maintenance_cycle_flight != null && comp.maintenance_cycle_flight !== '' ? String(comp.maintenance_cycle_flight) : '',
       battery_cycle_ratio: comp.battery_cycle_ratio != null ? String(comp.battery_cycle_ratio) : '',
+      fk_parent_component_id: comp.fk_parent_component_id ? String(comp.fk_parent_component_id) : '',
     });
   };
 
@@ -295,6 +297,7 @@ export default function EditComponentModal({
         maintenance_cycle_day: formData.maintenance_cycle_day ? Number(formData.maintenance_cycle_day) : null,
         maintenance_cycle_flight: formData.maintenance_cycle_flight ? Number(formData.maintenance_cycle_flight) : null,
         battery_cycle_ratio: formData.battery_cycle_ratio ? Number(formData.battery_cycle_ratio) : null,
+        fk_parent_component_id: formData.fk_parent_component_id ? Number(formData.fk_parent_component_id) : null,
       };
 
       const res = await fetch(`/api/system/component/${selectedComponentId}/update`, {
@@ -370,28 +373,12 @@ export default function EditComponentModal({
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <p className={sectionLabelCls}>Select Component to Edit</p>
-              <Select value={selectedComponentId} onValueChange={handleComponentSelect}>
-                <SelectTrigger className={selectTriggerCls}>
-                  <SelectValue placeholder="Select a component..." />
-                </SelectTrigger>
-                <SelectContent className={selectContentCls}>
-                  {components.map(c => (
-                    <SelectItem key={c.tool_component_id} value={String(c.tool_component_id)}>
-                      <ComponentOptionLabel comp={c} />
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
             {selectedComponentId && (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
                   <div className="col-span-1 sm:col-span-3 min-w-0">
                     <Label className={labelCls}>System</Label>
-                    <Select value={formData.fk_tool_id} onValueChange={v => handleChange('fk_tool_id', v)}>
+                    <Select value={formData.fk_tool_id} onValueChange={v => { handleChange('fk_tool_id', v); handleChange('fk_parent_component_id', ''); }}>
                       <SelectTrigger className={`w-full truncate ${selectTriggerCls}`}>
                         <SelectValue placeholder="Select System">
                           {formData.fk_tool_id
@@ -403,6 +390,39 @@ export default function EditComponentModal({
                         {tools.map((tool: any) => (
                           <SelectItem key={tool.tool_id} value={tool.tool_id.toString()}>
                             <SystemOptionLabel tool={tool} />
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Parent Component — lists siblings, excludes self */}
+                  <div className="col-span-1 sm:col-span-3 min-w-0">
+                    <Label className={labelCls}>Parent Component <span className="font-normal opacity-60">(optional)</span></Label>
+                    <Select
+                      value={formData.fk_parent_component_id}
+                      onValueChange={(v) => handleChange('fk_parent_component_id', v === '_none' ? '' : v)}
+                    >
+                      <SelectTrigger className={`w-full truncate ${selectTriggerCls}`}>
+                        <SelectValue placeholder="None (top-level)">
+                          {formData.fk_parent_component_id
+                            ? (() => {
+                                const p = components.find((c: any) => String(c.tool_component_id) === formData.fk_parent_component_id);
+                                return p ? <span className="block w-full truncate text-left">{p.component_code || p.component_name || `#${p.tool_component_id}`}</span> : null;
+                              })()
+                            : null}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent className={`z-50 max-h-60 overflow-y-auto ${selectContentCls}`}>
+                        <SelectItem value="_none"><span className={`italic ${isDark ? 'text-slate-400' : 'text-muted-foreground'}`}>None (top-level)</span></SelectItem>
+                        {components
+                          .filter((c: any) => String(c.tool_component_id) !== selectedComponentId)
+                          .map((c: any) => (
+                          <SelectItem key={c.tool_component_id} value={String(c.tool_component_id)}>
+                            <div className="flex flex-col gap-0.5 leading-tight">
+                              <span className="text-[11px] font-medium">{c.component_code || c.component_name || `#${c.tool_component_id}`}</span>
+                              <span className="text-[10px] text-muted-foreground">{c.component_type}</span>
+                            </div>
                           </SelectItem>
                         ))}
                       </SelectContent>

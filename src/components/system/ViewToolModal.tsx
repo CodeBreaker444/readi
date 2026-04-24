@@ -426,19 +426,39 @@ export default function ViewSystemModal({ open, toolId, onClose }: ViewSystemMod
                   <div className="text-center py-8 text-gray-500 border rounded-lg border-dashed">
                     No components found for this tool
                   </div>
-                ) : (
-                  <div className="space-y-3">
-                    {components.map((component: any) => {
-                      const inMaintenance = component.component_status === 'MAINTENANCE';
-                      return (
-                        <div key={component.tool_component_id} className={`border rounded-lg p-4 shadow-sm ${inMaintenance ? 'border-yellow-300 bg-yellow-50' : ''}`}>
+                ) : (() => {
+                  // Build a tree: top-level components and their children
+                  const allComps = components as any[];
+                  const parentIds = new Set(allComps.map(c => c.fk_parent_component_id).filter(Boolean));
+                  const topLevel = allComps.filter(c => !c.fk_parent_component_id);
+                  // Any component whose declared parent doesn't exist in the list → treat as top-level
+                  const orphaned = allComps.filter(c => c.fk_parent_component_id && !allComps.find(p => p.tool_component_id === c.fk_parent_component_id));
+                  const roots = [...topLevel, ...orphaned];
+                  const childrenOf = (parentId: number) => allComps.filter(c => c.fk_parent_component_id === parentId);
+
+                  const renderComponent = (component: any, isChild = false) => {
+                    const inMaintenance = component.component_status === 'MAINTENANCE';
+                    const children = childrenOf(component.tool_component_id);
+                    return (
+                      <div key={component.tool_component_id} className={isChild ? 'ml-6' : ''}>
+                        <div className={`border rounded-lg p-4 shadow-sm ${isChild ? 'border-l-4 border-l-violet-300' : ''} ${inMaintenance ? 'border-yellow-300 bg-yellow-50' : ''}`}>
                           <div className="flex justify-between items-start">
                             <div>
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                {isChild && (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-violet-500 bg-violet-50 border border-violet-200 rounded px-1.5 py-0.5">
+                                    ↳ child
+                                  </span>
+                                )}
                                 <h4 className="font-semibold">{component.factory_model || component.component_code || `#${component.tool_component_id}`}</h4>
                                 {inMaintenance && (
                                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-yellow-200 text-yellow-800 border border-yellow-300">
                                     In Maintenance
+                                  </span>
+                                )}
+                                {parentIds.has(component.tool_component_id) && (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500 bg-slate-100 border border-slate-200 rounded px-1.5 py-0.5">
+                                    parent
                                   </span>
                                 )}
                               </div>
@@ -469,11 +489,24 @@ export default function ViewSystemModal({ open, toolId, onClose }: ViewSystemMod
                             </div>
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
+                        {/* Children */}
+                        {children.length > 0 && (
+                          <div className="mt-2 space-y-2">
+                            {children.map(child => renderComponent(child, true))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  };
+
+                  return (
+                    <div className="space-y-3">
+                      {roots.map(c => renderComponent(c, false))}
+                    </div>
+                  );
+                })()}
               </TabsContent>
+
 
               <TabsContent value="maintenance" className="pt-4">
                 {loadingTickets ? (
