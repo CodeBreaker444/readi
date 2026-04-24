@@ -6,7 +6,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Skeleton } from "@/components/ui/skeleton";
 import { Mission, MissionBoardData } from "@/config/types/operation";
 import { toastAfterDccAction } from "@/lib/dcc-toast";
-import { cn } from "@/lib/utils";
+import { useTimezone } from "@/components/TimezoneProvider";
+import { cn, formatDateTimeInTz } from "@/lib/utils";
 import type { DccCallbackResult } from "@/types/dcc-callback";
 import axios from "axios";
 import { Activity, Calendar, CheckCircle2, Clock, Crosshair, FileText, MapPin, Navigation, Tag, User, Wrench } from "lucide-react";
@@ -374,22 +375,13 @@ export function OperationBoard() {
     );
 }
 
-function formatBoardDate(iso: string): string {
-    try {
-        return new Intl.DateTimeFormat("en-GB", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-        }).format(new Date(iso));
-    } catch {
-        return iso;
-    }
+function formatBoardDate(iso: string, tz: string): string {
+    return formatDateTimeInTz(iso, tz);
 }
 
 function MissionDetailSheet({ mission, isDark, onClose }: { mission: Mission | null; isDark: boolean; onClose: () => void }) {
     const { t } = useTranslation();
+    const { timezone } = useTimezone();
     const isDone = mission?.fk_status_id === 3;
     
     const STATUS_LABEL: Record<string, { label: string; cls: string; darkCls: string }> = {
@@ -438,7 +430,7 @@ function MissionDetailSheet({ mission, isDark, onClose }: { mission: Mission | n
                                         <p className="text-xs text-muted-foreground flex items-center gap-1"><Calendar className="h-3 w-3" /> {t("operations.board.detail.plannedDate")}</p>
                                         <p className="text-sm font-medium">
                                             {mission.planned_at
-                                                ? formatBoardDate(mission.planned_at)
+                                                ? formatBoardDate(mission.planned_at, timezone)
                                                 : (mission.date_start || mission.time_start)
                                                     ? `${mission.date_start} ${mission.time_start}`.trim()
                                                     : "—"}
@@ -446,11 +438,11 @@ function MissionDetailSheet({ mission, isDark, onClose }: { mission: Mission | n
                                     </div>
                                     <div className={cn("rounded-lg border p-3 space-y-1", isDark ? "bg-slate-800 border-slate-700" : "bg-muted/30")}>
                                         <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3 text-amber-500" /> {t("operations.board.detail.officialStart")}</p>
-                                        <p className="text-sm font-medium">{mission.official_start ? formatBoardDate(mission.official_start) : "—"}</p>
+                                        <p className="text-sm font-medium">{mission.official_start ? formatBoardDate(mission.official_start, timezone) : "—"}</p>
                                     </div>
                                     <div className={cn("rounded-lg border p-3 space-y-1", isDark ? "bg-slate-800 border-slate-700" : "bg-muted/30")}>
                                         <p className="text-xs text-muted-foreground flex items-center gap-1"><CheckCircle2 className="h-3 w-3 text-emerald-500" /> {t("operations.board.detail.officialEnd")}</p>
-                                        <p className="text-sm font-medium">{mission.official_end ? formatBoardDate(mission.official_end) : "—"}</p>
+                                        <p className="text-sm font-medium">{mission.official_end ? formatBoardDate(mission.official_end, timezone) : "—"}</p>
                                     </div>
                                 </div>
                             </section>

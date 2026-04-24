@@ -10,7 +10,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { useTimezone } from '@/components/TimezoneProvider'
 import { OperationItem } from '@/config/types/operation'
+import { formatDateInTz } from '@/lib/utils'
 import axios from 'axios'
 import { Loader2 } from 'lucide-react'
 import { useState } from 'react'
@@ -33,6 +35,7 @@ export function DeleteOperationDialog({
     isDark,
 }: DeleteOperationDialogProps) {
     const { t } = useTranslation()
+    const { timezone } = useTimezone()
     const [isDeleting, setIsDeleting] = useState(false)
 
     const handleDelete = async () => {
@@ -71,7 +74,7 @@ export function DeleteOperationDialog({
                             <>
                                 {' — '}{t('operations.table.detail.scheduled')}:{' '}
                                 <span className="font-semibold text-current">
-                                    {new Date(operation.scheduled_start).toLocaleDateString()}
+                                    {formatDateInTz(operation.scheduled_start, timezone)}
                                 </span>
                             </>
                         )}

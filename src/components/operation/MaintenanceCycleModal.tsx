@@ -8,7 +8,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { cn } from "@/lib/utils";
+import { useTimezone } from "@/components/TimezoneProvider";
+import { cn, formatDateInTz } from "@/lib/utils";
 import axios from "axios";
 import {
   AlertTriangle,
@@ -155,6 +156,7 @@ export function MaintenanceCycleModal({
   isDark,
 }: Props) {
   const { t } = useTranslation();
+  const { timezone } = useTimezone();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [systemData, setSystemData] = useState<SystemData | null>(null);
@@ -188,7 +190,7 @@ export function MaintenanceCycleModal({
     const now = new Date();
     const diffDays = Math.floor((now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24));
     if (diffDays === 0) return t("operations.calendar.calendarButtons.today");
-    return d.toLocaleDateString();
+    return formatDateInTz(dateStr, timezone);
   };
 
   const loadData = useCallback(async () => {

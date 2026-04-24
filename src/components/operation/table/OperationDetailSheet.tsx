@@ -12,7 +12,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
-import { cn } from '@/lib/utils';
+import { useTimezone } from '@/components/TimezoneProvider';
+import { cn, formatDateTimeInTz } from '@/lib/utils';
 import {
   Activity,
   AlertTriangle,
@@ -43,20 +44,6 @@ const STATUS_BADGE: Record<string, { className: string }> = {
   ABORTED: { className: 'bg-red-50 text-red-700 border-red-200' },
 };
 
-function formatDateTime(val?: string | null) {
-  if (!val) return '—';
-  try {
-    return new Intl.DateTimeFormat('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(new Date(val));
-  } catch {
-    return val;
-  }
-}
 
 function DetailRow({
   icon,
@@ -119,6 +106,7 @@ export function OperationDetailSheet({
   const [reportIssueOpen, setReportIssueOpen] = useState(false);
   const [procedureOperation, setProcedureOperation] = useState<Operation | null>(null);
 
+  const { timezone } = useTimezone();
   const isCompleted = operation?.status_name === 'COMPLETED';
 
   const statusLabel = operation?.status_name
@@ -258,21 +246,21 @@ export function OperationDetailSheet({
                         <Clock className="h-3 w-3" />
                         {t('operations.table.detail.plannedDate')}
                       </p>
-                      <p className="text-sm font-medium">{formatDateTime(operation.scheduled_start)}</p>
+                      <p className="text-sm font-medium">{formatDateTimeInTz(operation.scheduled_start, timezone)}</p>
                     </div>
                     <div className={`rounded-lg border p-3 space-y-1 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-muted/30'}`}>
                       <p className="text-xs text-muted-foreground flex items-center gap-1">
                         <Clock className="h-3 w-3 text-amber-500" />
                         {t('operations.table.detail.officialStart')}
                       </p>
-                      <p className="text-sm font-medium">{formatDateTime(operation.actual_start)}</p>
+                      <p className="text-sm font-medium">{formatDateTimeInTz(operation.actual_start, timezone)}</p>
                     </div>
                     <div className={`rounded-lg border p-3 space-y-1 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-muted/30'}`}>
                       <p className="text-xs text-muted-foreground flex items-center gap-1">
                         <Clock className="h-3 w-3 text-emerald-500" />
                         {t('operations.table.detail.officialEnd')}
                       </p>
-                      <p className="text-sm font-medium">{formatDateTime(operation.actual_end)}</p>
+                      <p className="text-sm font-medium">{formatDateTimeInTz(operation.actual_end, timezone)}</p>
                     </div>
                   </div>
                 </section>

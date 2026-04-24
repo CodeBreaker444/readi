@@ -7,7 +7,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { cn } from '@/lib/utils'
+import { useTimezone } from '@/components/TimezoneProvider'
+import { cn, formatDateTimeInTz } from '@/lib/utils'
 import axios from 'axios'
 import {
     AlertTriangle,
@@ -60,6 +61,7 @@ const STEPS = [
 
 export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperation, onSaved }: NewOperationModalProps) {
     const isEdit = !!editOperation
+    const { timezone } = useTimezone()
     const [step, setStep] = useState(1)
     const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -658,7 +660,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                                     </div>
                                     {conflicts.map(c => (
                                         <p key={c.id} className={cn('text-xs pl-5', isDark ? 'text-amber-400/80' : 'text-amber-600')}>
-                                            • {c.title} ({new Date(c.start).toLocaleString()}{c.end ? ` → ${new Date(c.end).toLocaleString()}` : ''})
+                                            • {c.title} ({formatDateTimeInTz(c.start, timezone)}{c.end ? ` → ${formatDateTimeInTz(c.end, timezone)}` : ''})
                                         </p>
                                     ))}
                                 </div>
@@ -769,7 +771,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                                 {opType === 'PDRA' && <ReviewRow label="Flight Mode" value={flightMode} isDark={isDark} />}
                                 {missionCode && <ReviewRow label="Mission ID" value={missionCode} isDark={isDark} />}
                                 <ReviewRow label="Mission Name" value={missionName} isDark={isDark} />
-                                <ReviewRow label="Start" value={scheduledStart ? new Date(scheduledStart).toLocaleString() : undefined} isDark={isDark} />
+                                <ReviewRow label="Start" value={scheduledStart ? formatDateTimeInTz(scheduledStart, timezone) : undefined} isDark={isDark} />
                                 {typeId && <ReviewRow label="Type" value={types.find(t => String(t.id) === typeId)?.label} isDark={isDark} />}
                                 {categoryId && <ReviewRow label="Category" value={categories.find(c => String(c.id) === categoryId)?.label} isDark={isDark} />}
                                 <ReviewRow label="Procedure" value={selectedLuc?.label} isDark={isDark} />

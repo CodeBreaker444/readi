@@ -95,6 +95,17 @@ export function formatTimeInTz(
   return formatInTz(date, tz, { hour: '2-digit', minute: '2-digit', hour12: false });
 }
 
+ 
+export function nowAsLocalInput(tz: string | null | undefined, offsetHours = 0): string {
+  const d = new Date(Date.now() + offsetHours * 3600_000);
+  const resolved = resolveIanaTimezone(tz);
+  return new Intl.DateTimeFormat('sv', {
+    timeZone: resolved,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hour12: false,
+  }).format(d).slice(0, 16).replace(' ', 'T');
+}
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }

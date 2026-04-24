@@ -1,5 +1,7 @@
 'use client'
 
+import { useTimezone } from '@/components/TimezoneProvider'
+import { nowAsLocalInput } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -74,13 +76,9 @@ const createOperationCalendarSchema = z.object({
     { message: 'Recurrence end date is required', path: ['recur_until'] }
 )
 
-const now = new Date()
-const pad = (n: number) => String(n).padStart(2, '0')
-const defaultStart = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:00`
-const defaultEnd = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours() + 1)}:00`
-
 export function AddOperationModal({ open, onClose, onSuccess, isDark }: AddOperationModalProps) {
     const { t } = useTranslation()
+    const { timezone } = useTimezone()
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [pilots, setPilots] = useState<OptionItem[]>([])
     const [tools, setTools] = useState<OptionItem[]>([])
@@ -110,8 +108,8 @@ export function AddOperationModal({ open, onClose, onSuccess, isDark }: AddOpera
     } = useForm<FormData>({
         resolver: zodResolver(createOperationCalendarSchema) as any,
         defaultValues: {
-            scheduled_start: defaultStart,
-            scheduled_end: defaultEnd,
+            scheduled_start: nowAsLocalInput(timezone),
+            scheduled_end: nowAsLocalInput(timezone, 1),
             status_name: 'Scheduled',
             fk_pilot_user_id: undefined,
             fk_tool_id: null,
@@ -130,6 +128,8 @@ export function AddOperationModal({ open, onClose, onSuccess, isDark }: AddOpera
 
     useEffect(() => {
         if (!open) return
+        setValue('scheduled_start', nowAsLocalInput(timezone))
+        setValue('scheduled_end', nowAsLocalInput(timezone, 1))
         const fetchOptions = async () => {
             try {
                 const res = await axios.get('/api/operation/options')

@@ -1,5 +1,6 @@
 import { Operation } from "@/app/operations/table/page";
-import { cn } from "@/lib/utils";
+import { useTimezone } from "@/components/TimezoneProvider";
+import { cn, formatDateInTz, formatDateTimeInTz } from "@/lib/utils";
 import axios from "axios";
 import { CheckCircle2, ChevronLeft, ChevronRight, ClipboardCheck, Clock, Download, FileText, Loader2, Paperclip, RefreshCw, Settings, Trash2, Upload, User } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
@@ -119,6 +120,7 @@ const EMPTY_FORM: OperationForm = {
 export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: OperationFormProps) {
     const isEdit = !!initial;
     const { t } = useTranslation();
+    const { timezone } = useTimezone();
     const [isPending, startTransition] = useTransition();
     const [step, setStep] = useState<Step>(0);
 
@@ -702,7 +704,7 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
                                     <ReviewRow label={t('operations.dialog.review.missionCode')} value={form.mission_code} />
                                     <ReviewRow label={t('operations.dialog.review.location')} value={form.location} />
                                     <ReviewRow label={t('operations.dialog.review.status')} value={form.status_name} />
-                                    <ReviewRow label={t('operations.dialog.review.scheduled')} value={form.scheduled_start ? new Date(form.scheduled_start).toLocaleString() : undefined} />
+                                    <ReviewRow label={t('operations.dialog.review.scheduled')} value={form.scheduled_start ? formatDateTimeInTz(form.scheduled_start, timezone) : undefined} />
                                     <ReviewRow label={t('operations.dialog.review.pilot')} value={selectedPilot ? `${selectedPilot.first_name} ${selectedPilot.last_name}` : undefined} />
                                     <ReviewRow label={t('operations.dialog.review.tool')} value={selectedTool ? `${selectedTool.tool_name} (${selectedTool.tool_code})` : undefined} />
                                     <ReviewRow label={t('operations.dialog.review.type')} value={selectedType?.type_name} />
@@ -802,11 +804,8 @@ export function formatBytes(bytes?: number) {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function formatDate(iso?: string) {
-    if (!iso) return '—';
-    return new Date(iso).toLocaleDateString('en-GB', {
-        day: '2-digit', month: 'short', year: 'numeric',
-    });
+export function formatDate(iso?: string, tz?: string) {
+    return formatDateInTz(iso, tz);
 }
 
 interface Attachment {
@@ -825,6 +824,7 @@ export function AttachmentsDialog({ open, onClose, operationId, operationName }:
     operationName: string;
 }) {
     const { t } = useTranslation();
+    const { timezone } = useTimezone();
     const [attachments, setAttachments] = useState<Attachment[]>([]);
     const [loading, setLoading] = useState(false);
     const [uploading, setUploading] = useState(false);
@@ -954,7 +954,7 @@ export function AttachmentsDialog({ open, onClose, operationId, operationName }:
                                 <a href={a.s3_url} target="_blank" rel="noopener noreferrer" className="block truncate text-sm font-medium text-primary hover:underline">
                                     {a.file_name}
                                 </a>
-                                <p className="text-xs text-muted-foreground">{formatBytes(a.file_size)} · {formatDate(a.uploaded_at)}</p>
+                                <p className="text-xs text-muted-foreground">{formatBytes(a.file_size)} · {formatDate(a.uploaded_at, timezone)}</p>
                             </div>
                             <button onClick={() => handleDeleteAttachment(a.attachment_id)} className="ml-auto shrink-0 text-sm hover:text-destructive transition-colors">
                                 <Trash2 className="h-4 w-4" />
