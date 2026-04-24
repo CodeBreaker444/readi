@@ -14,6 +14,7 @@ import { useMemo, useState } from 'react';
 interface ComponentRow {
   tool_component_id: number;
   fk_tool_id: number | null;
+  fk_parent_component_id?: number | null;
   component_type?: string | null;
   component_desc?: string | null;
   component_code?: string | null;
@@ -76,6 +77,29 @@ export default function SystemComponentsTable({
     });
     return map;
   }, [components]);
+
+  const getHierarchy = (systemComponents: ComponentRow[]) => {
+    const byId = new Map<number, ComponentRow>();
+    systemComponents.forEach((c) => byId.set(c.tool_component_id, c));
+
+    const roots: ComponentRow[] = [];
+    systemComponents.forEach((c) => {
+      const parentId = c.fk_parent_component_id ?? null;
+      if (!parentId || !byId.has(parentId)) roots.push(c);
+    });
+
+    const childrenOf = (parentId: number) =>
+      systemComponents.filter((c) => (c.fk_parent_component_id ?? null) === parentId);
+
+    const ordered: Array<{ comp: ComponentRow; level: number }> = [];
+    const walk = (node: ComponentRow, level: number) => {
+      ordered.push({ comp: node, level });
+      childrenOf(node.tool_component_id).forEach((child) => walk(child, level + 1));
+    };
+
+    roots.forEach((r) => walk(r, 0));
+    return ordered;
+  };
 
   const filteredSystems = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -151,6 +175,12 @@ export default function SystemComponentsTable({
               ) : (
                 pagedSystems.map((system) => {
                   const systemComps = componentsBySystem[system.tool_id] ?? [];
+                  const hierarchyRows = getHierarchy(systemComps);
+                  const parentIds = new Set(
+                    systemComps
+                      .map((c) => c.fk_parent_component_id)
+                      .filter((id): id is number => typeof id === 'number' && id > 0),
+                  );
                   const isOpen = !!expanded[system.tool_id];
                   return (
                     <Fragment key={system.tool_id}>
@@ -185,13 +215,25 @@ export default function SystemComponentsTable({
                         </td>
                       </tr>
                       {isOpen &&
-                        (systemComps.length ? (
-                          systemComps.map((comp) => (
+                        (hierarchyRows.length ? (
+                          hierarchyRows.map(({ comp, level }) => (
                             <tr key={comp.tool_component_id} className={`border-t ${isDark ? 'border-slate-700 bg-slate-800/40' : 'border-slate-100 bg-slate-50/70'}`}>
-                              <td className="pl-10 pr-3 py-2.5">
-                                <p className={`text-sm font-medium ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{comp.component_name || comp.component_code || `#${comp.tool_component_id}`}</p>
-                                <p className="text-xs text-slate-400">{comp.component_type || '—'}</p>
-                                {comp.component_desc ? <p className="text-xs text-slate-400 italic">{comp.component_desc}</p> : null}
+                              <td className="pr-3 py-2.5" style={{ paddingLeft: `${40 + level * 24}px` }}>
+                                <div className="flex items-start gap-2">
+                                  {parentIds.has(comp.tool_component_id) ? (
+                                    <div className="w-1 h-6 shrink-0 rounded-full bg-violet-600" />
+                                  ) : null}
+                                  <div>
+                                    <p className={`text-sm font-medium ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
+                                      {comp.component_name || comp.component_code || `#${comp.tool_component_id}`}
+                                    </p>
+                                    <p className="text-xs text-slate-400">
+                                      {level > 0 ? '↳ ' : ''}
+                                      {comp.component_type || '—'}
+                                    </p>
+                                    {comp.component_desc ? <p className="text-xs text-slate-400 italic">{comp.component_desc}</p> : null}
+                                  </div>
+                                </div>
                               </td>
                               <td className={`px-3 py-2.5 text-xs font-mono ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{comp.component_sn || '—'}</td>
                               <td className="px-3 py-2.5"><StatusPill status={comp.component_status} /></td>
