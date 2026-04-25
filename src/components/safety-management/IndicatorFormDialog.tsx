@@ -135,14 +135,15 @@ export function IndicatorFormDialog({ open, onClose, onSubmit, initial, loading,
 
     return (
         <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-            <DialogContent className={`max-w-2xl transition-colors duration-300 ${bgClass}`}>
-                <DialogHeader>
+            <DialogContent className={`max-w-2xl transition-colors duration-300 flex flex-col overflow-hidden p-0 gap-0 ${bgClass}`}>
+                <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
                     <DialogTitle className="text-lg font-semibold">
                         {isEdit ? t('safety.spiKpi.form.editTitle') : t('safety.spiKpi.form.newTitle')}
                     </DialogTitle>
                 </DialogHeader>
 
-                <form onSubmit={handleSubmit} className="space-y-5">
+                <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+                    <div className="flex-1 overflow-y-auto px-6 py-4">
                     <div className="grid grid-cols-2 gap-x-6 gap-y-4">
 
                         <div className="space-y-1.5">
@@ -263,7 +264,8 @@ export function IndicatorFormDialog({ open, onClose, onSubmit, initial, loading,
 
                     </div>
 
-                    <DialogFooter className="pt-4 border-t border-slate-700/50 mt-4">
+                    </div>
+                    <DialogFooter className="shrink-0 px-6 py-4 border-t">
                         <Button
                             type="button"
                             variant="ghost"

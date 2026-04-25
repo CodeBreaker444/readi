@@ -440,7 +440,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                 </div>}
 
                 {/* Card content */}
-                <div className="px-6 py-5 min-h-[300px] max-h-[60vh] overflow-y-auto overflow-x-hidden">
+                <div className="px-6 py-5 h-[60vh] overflow-y-auto overflow-x-hidden">
 
                     {(!isEdit || editTab === 'data') && step === 1 && (
                         <div className="space-y-4">

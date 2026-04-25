@@ -931,7 +931,7 @@ export function AttachmentsDialog({ open, onClose, operationId, operationName }:
                     )}
                 </div>
 
-                <div className="max-h-60 overflow-y-auto scrollbar-thin space-y-1.5">
+                <div className="h-60 overflow-y-auto scrollbar-thin space-y-1.5">
                     {loading && (
                         Array.from({ length: 2 }).map((_, i) => (
                             <div key={i} className="flex items-center gap-3 rounded-md border px-3 py-2">
