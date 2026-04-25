@@ -16,13 +16,18 @@ import {
     CheckCircle2,
     ChevronLeft,
     ChevronRight,
+    FileUp,
+    History,
     Loader2,
     RefreshCw,
     Settings,
+    Shield,
     User,
 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
+import { EmergencyResponsePlan } from '@/config/types/erp'
+import { FlightLogsTab } from '@/components/operation/FlightLogsTab'
 
 
 interface Client { client_id: number; client_name: string; client_code: string }
@@ -103,6 +108,10 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
     const [loadingOptions, setLoadingOptions] = useState(false)
     const [existingMissionCodes, setExistingMissionCodes] = useState<Set<string>>(new Set())
     const [generatingId, setGeneratingId] = useState(false)
+
+    const [editTab, setEditTab] = useState<'data' | 'execution' | 'log' | 'history' | 'group'>('data')
+    const [erps, setErps] = useState<EmergencyResponsePlan[]>([])
+    const [loadingErps, setLoadingErps] = useState(false)
 
     function generateMissionId(exclude: Set<string>): string {
         const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
@@ -240,6 +249,15 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
         return () => { cancelled = true }
     }, [step, droneId, scheduledStart, scheduledEnd])
 
+    useEffect(() => {
+        if (!isEdit || editTab !== 'execution') return
+        setLoadingErps(true)
+        axios.get('/api/erp/list')
+            .then(res => setErps(res.data.data ?? []))
+            .catch(() => toast.error('Failed to load ERPs'))
+            .finally(() => setLoadingErps(false))
+    }, [editTab, isEdit])
+
     function resetForm() {
         setStep(1)
         setClientId(''); setOpType('OPEN'); setDroneId(''); setPlanId('')
@@ -251,6 +269,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
         setDrones([]); setClients([]); setPlannings([])
         setTypes([]); setCategories([]); setLucProcedures([]); setPilots([])
         setExistingMissionCodes(new Set()); setGeneratingId(false)
+        setEditTab('data'); setErps([])
     }
 
     const clientPlannings = plannings.filter(p => String(p.fk_client_id) === clientId)
@@ -347,15 +366,47 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
 
     return (
         <Dialog open={open} onOpenChange={v => !v && onClose()}>
-            <DialogContent className={cn('max-w-2xl gap-0 p-0 overflow-hidden', isDark && 'bg-slate-800 border-slate-700 text-white')}>
+            <DialogContent className={cn('max-w-4xl gap-0 p-0 overflow-hidden', isDark && 'bg-slate-800 border-slate-700 text-white')}>
                 <DialogHeader className={cn('px-6 pt-6 pb-4 border-b', isDark ? 'border-slate-700' : 'border-gray-100')}>
                     <DialogTitle className={cn('text-base font-semibold', isDark && 'text-white')}>
                         {isEdit ? 'Edit Operation' : 'New Operation'}
                     </DialogTitle>
                 </DialogHeader>
 
-                {/* Step bar */}
-                <div className="px-6 pt-4 pb-2">
+                {isEdit && (
+                    <div className={cn('flex border-b overflow-x-auto', isDark ? 'border-slate-700' : 'border-gray-200')}>
+                        {([
+                            { id: 'data',      label: 'Mission Data',      icon: Settings },
+                            { id: 'execution', label: 'Mission Execution',  icon: Shield },
+                            { id: 'log',       label: 'Mission Log',        icon: FileUp },
+                            // { id: 'history',   label: 'Mission History',    icon: History },
+                            // { id: 'group',     label: 'Mission Group',      icon: RefreshCw },
+                        ] as const).map(tab => {
+                            const Icon = tab.icon
+                            return (
+                                <button
+                                    key={tab.id}
+                                    type="button"
+                                    onClick={() => setEditTab(tab.id)}
+                                    className={cn(
+                                        'flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap shrink-0',
+                                        editTab === tab.id
+                                            ? 'border-violet-600 text-violet-600'
+                                            : isDark
+                                                ? 'border-transparent text-slate-400 hover:text-slate-200'
+                                                : 'border-transparent text-slate-500 hover:text-slate-800'
+                                    )}
+                                >
+                                    <Icon className="h-3.5 w-3.5" />
+                                    {tab.label}
+                                </button>
+                            )
+                        })}
+                    </div>
+                )}
+
+                {/* Step bar — only shown on data tab */}
+                {(!isEdit || editTab === 'data') && <div className="px-6 pt-4 pb-2">
                     <div className="flex items-center gap-0">
                         {STEPS.map((s, i) => {
                             const Icon = s.icon
@@ -386,12 +437,12 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                             )
                         })}
                     </div>
-                </div>
+                </div>}
 
                 {/* Card content */}
                 <div className="px-6 py-5 min-h-[300px] max-h-[60vh] overflow-y-auto overflow-x-hidden">
 
-                    {step === 1 && (
+                    {(!isEdit || editTab === 'data') && step === 1 && (
                         <div className="space-y-4">
                             <SectionTitle isDark={isDark}>Choose Client</SectionTitle>
                             {loadingClients ? (
@@ -424,7 +475,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                         </div>
                     )}
 
-                    {step === 2 && (
+                    {(!isEdit || editTab === 'data') && step === 2 && (
                         <div className="space-y-4">
                             <SectionTitle isDark={isDark}>Drone &amp; Mission</SectionTitle>
 
@@ -558,7 +609,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                         </div>
                     )}
 
-                    {step === 3 && (
+                    {(!isEdit || editTab === 'data') && step === 3 && (
                         <div className="space-y-3">
                             <SectionTitle isDark={isDark}>Scheduler</SectionTitle>
 
@@ -740,7 +791,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                         </div>
                     )}
 
-                    {step === 4 && (
+                    {(!isEdit || editTab === 'data') && step === 4 && (
                         <div className="space-y-4">
                             <SectionTitle isDark={isDark}>Pilot in Command</SectionTitle>
 
@@ -779,10 +830,93 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                             </div>
                         </div>
                     )}
+
+                    {/* Mission Execution — ERP list */}
+                    {isEdit && editTab === 'execution' && (
+                        <div className="space-y-4">
+                            <SectionTitle isDark={isDark}>Emergency Response Plans</SectionTitle>
+                            {loadingErps ? (
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <Loader2 className="h-4 w-4 animate-spin" /> Loading ERPs…
+                                </div>
+                            ) : erps.length === 0 ? (
+                                <div className={cn('text-sm rounded-lg border p-8 text-center', isDark ? 'border-slate-600 bg-slate-700/30 text-slate-400' : 'border-slate-200 bg-slate-50 text-slate-500')}>
+                                    No Emergency Response Plans configured for this account.
+                                </div>
+                            ) : (
+                                <div className={cn('overflow-hidden rounded-lg border', isDark ? 'border-slate-700' : 'border-slate-200')}>
+                                    <table className="w-full text-sm">
+                                        <thead>
+                                            <tr className={cn('border-b text-left', isDark ? 'bg-slate-700/50 border-slate-700' : 'bg-slate-50 border-slate-200')}>
+                                                <th className={cn('px-4 py-2.5 text-xs font-semibold uppercase tracking-wide', isDark ? 'text-slate-400' : 'text-slate-500')}>Type</th>
+                                                <th className={cn('px-4 py-2.5 text-xs font-semibold uppercase tracking-wide', isDark ? 'text-slate-400' : 'text-slate-500')}>Description</th>
+                                                <th className={cn('px-4 py-2.5 text-xs font-semibold uppercase tracking-wide', isDark ? 'text-slate-400' : 'text-slate-500')}>Contact</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className={cn('divide-y', isDark ? 'divide-slate-700' : 'divide-slate-100')}>
+                                            {erps.map(erp => (
+                                                <tr key={erp.id} className={cn(isDark ? 'hover:bg-slate-700/40' : 'hover:bg-slate-50')}>
+                                                    <td className="px-4 py-3">
+                                                        <span className={cn('inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold',
+                                                            erp.type === 'MEDICAL'       ? 'bg-red-100 text-red-700'
+                                                            : erp.type === 'FIRE'        ? 'bg-orange-100 text-orange-700'
+                                                            : erp.type === 'SECURITY'    ? 'bg-blue-100 text-blue-700'
+                                                            : erp.type === 'ENVIRONMENTAL' ? 'bg-green-100 text-green-700'
+                                                            : 'bg-slate-100 text-slate-700'
+                                                        )}>
+                                                            {erp.type}
+                                                        </span>
+                                                    </td>
+                                                    <td className={cn('px-4 py-3 text-sm', isDark ? 'text-slate-200' : 'text-slate-700')}>{erp.description}</td>
+                                                    <td className={cn('px-4 py-3 text-sm', isDark ? 'text-slate-400' : 'text-slate-500')}>{erp.contact}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Mission Log */}
+                    {isEdit && editTab === 'log' && editOperation && (
+                        <EditMissionLogTab missionId={editOperation.pilot_mission_id} isDark={isDark} />
+                    )}
+
+                    {/* Mission History — placeholder */}
+                    {/* {isEdit && editTab === 'history' && (
+                        <div className="space-y-4">
+                            <SectionTitle isDark={isDark}>Mission History</SectionTitle>
+                            <div className={cn('flex flex-col items-center justify-center py-12 rounded-lg border', isDark ? 'border-slate-700 bg-slate-700/20 text-slate-500' : 'border-slate-200 bg-slate-50 text-slate-400')}>
+                                <History className="h-8 w-8 mb-3 opacity-40" />
+                                <p className="text-sm font-medium">Mission history coming soon</p>
+                                <p className="text-xs mt-1 opacity-70">Change logs and audit trail will appear here.</p>
+                            </div>
+                        </div>
+                    )} */}
+
+                    {/* Mission Group */}
+                    {/* {isEdit && editTab === 'group' && (
+                        <div className="space-y-4">
+                            <SectionTitle isDark={isDark}>Mission Group</SectionTitle>
+                            {(editOperation as any)?.mission_group_label ? (
+                                <div className={cn('rounded-lg border p-4 space-y-2', isDark ? 'border-slate-700 bg-slate-700/30' : 'border-slate-200 bg-slate-50')}>
+                                    <p className={cn('text-xs font-semibold uppercase tracking-wide', isDark ? 'text-slate-400' : 'text-slate-500')}>Group Label</p>
+                                    <p className={cn('text-sm font-medium', isDark ? 'text-slate-200' : 'text-slate-700')}>{(editOperation as any).mission_group_label}</p>
+                                </div>
+                            ) : (
+                                <div className={cn('flex flex-col items-center justify-center py-12 rounded-lg border', isDark ? 'border-slate-700 bg-slate-700/20 text-slate-500' : 'border-slate-200 bg-slate-50 text-slate-400')}>
+                                    <RefreshCw className="h-8 w-8 mb-3 opacity-40" />
+                                    <p className="text-sm font-medium">Not part of a recurring group</p>
+                                    <p className="text-xs mt-1 opacity-70">Create a recurring operation to use mission groups.</p>
+                                </div>
+                            )}
+                        </div>
+                    )} */}
                 </div>
 
                 {/* Footer navigation */}
-                <div className={cn('flex items-center justify-between px-6 pb-6 pt-2 border-t', isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-muted/20')}>
+                {(!isEdit || editTab === 'data') && <div className={cn('flex items-center justify-between px-6 pb-6 pt-2 border-t', isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-muted/20')}>
                     <Button
                         variant="outline"
                         size="sm"
@@ -815,7 +949,14 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                             }
                         </Button>
                     )}
-                </div>
+                </div>}
+                {isEdit && editTab !== 'data' && (
+                    <div className={cn('flex items-center justify-end px-6 pb-6 pt-2 border-t', isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-muted/20')}>
+                        <Button variant="outline" size="sm" onClick={onClose} className={cn(isDark && 'border-slate-600 text-slate-300 hover:bg-slate-700')}>
+                            Close
+                        </Button>
+                    </div>
+                )}
             </DialogContent>
         </Dialog>
     )
@@ -837,5 +978,139 @@ function ReviewRow({ label, value, isDark }: { label: string; value?: string; is
             <span className={cn('w-28 shrink-0 text-xs', isDark ? 'text-slate-400' : 'text-muted-foreground')}>{label}</span>
             <span className={cn('text-xs font-medium', isDark && 'text-slate-200')}>{value}</span>
         </div>
+    )
+}
+
+interface FlightLog {
+    log_id: number
+    log_source: 'manual' | 'flytbase'
+    original_filename: string
+    flytbase_flight_id: string | null
+    uploaded_at: string
+    download_url: string
+}
+
+interface FlytbaseFlight {
+    flight_id: string
+    flight_name?: string
+    start_time?: number
+    end_time?: number
+    duration?: number
+    distance?: number
+    drone_name?: string
+    status?: string
+}
+
+function EditMissionLogTab({ missionId, isDark }: { missionId: number; isDark: boolean }) {
+    const [logs, setLogs] = useState<FlightLog[]>([])
+    const [loadingLogs, setLoadingLogs] = useState(false)
+    const [uploading, setUploading] = useState(false)
+    const fileInputRef = useRef<HTMLInputElement>(null)
+    const [fbWindow, setFbWindow] = useState(30)
+    const [loadingFlights, setLoadingFlights] = useState(false)
+    const [flights, setFlights] = useState<FlytbaseFlight[]>([])
+    const [selectedFlight, setSelectedFlight] = useState<string | null>(null)
+    const [attachingFlight, setAttachingFlight] = useState(false)
+    const [autoSyncingFlight, setAutoSyncingFlight] = useState(false)
+    const [flightsError, setFlightsError] = useState<string | null>(null)
+
+    useEffect(() => {
+        setLoadingLogs(true)
+        axios.get(`/api/operation/board/flight-logs?mission_id=${missionId}`)
+            .then(res => { if (res.data.code === 1) setLogs(res.data.data ?? []) })
+            .catch(() => toast.error('Failed to load flight logs'))
+            .finally(() => setLoadingLogs(false))
+    }, [missionId])
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+        setUploading(true)
+        try {
+            const form = new FormData()
+            form.append('mission_id', String(missionId))
+            form.append('file', file)
+            const { data } = await axios.post('/api/operation/board/flight-logs/upload', form)
+            if (data.code === 1) {
+                toast.success('Log file uploaded')
+                const res = await axios.get(`/api/operation/board/flight-logs?mission_id=${missionId}`)
+                if (res.data.code === 1) setLogs(res.data.data ?? [])
+            } else {
+                toast.error(data.message ?? 'Upload failed')
+            }
+        } catch {
+            toast.error('Upload failed')
+        } finally {
+            setUploading(false)
+            if (fileInputRef.current) fileInputRef.current.value = ''
+        }
+    }
+
+    const handleFetchFlights = async () => {
+        setLoadingFlights(true)
+        setFlights([])
+        setSelectedFlight(null)
+        setFlightsError(null)
+        try {
+            const { data } = await axios.get(`/api/flytbase/flights?window=${fbWindow}`)
+            if (data.success) {
+                setFlights(data.flights ?? [])
+                if ((data.flights ?? []).length === 0) setFlightsError('No flights found in this time window.')
+            } else {
+                setFlightsError(data.error ?? 'Failed to fetch flights')
+            }
+        } catch {
+            setFlightsError('Failed to fetch Flytbase flights')
+        } finally {
+            setLoadingFlights(false)
+        }
+    }
+
+    const handleAttachFlight = async () => {
+        if (!selectedFlight) return
+        setAttachingFlight(true)
+        setFlightsError(null)
+        try {
+            const { data } = await axios.post('/api/operation/board/flight-logs/flytbase', {
+                mission_id: missionId,
+                flight_id: selectedFlight,
+            })
+            if (data.code === 1) {
+                toast.success('Flight attached')
+                setSelectedFlight(null)
+                setFlights([])
+                const res = await axios.get(`/api/operation/board/flight-logs?mission_id=${missionId}`)
+                if (res.data.code === 1) setLogs(res.data.data ?? [])
+            } else {
+                toast.error(data.message ?? 'Attach failed')
+            }
+        } catch {
+            toast.error('Failed to attach flight')
+        } finally {
+            setAttachingFlight(false)
+            setAutoSyncingFlight(false)
+        }
+    }
+
+    return (
+        <FlightLogsTab
+            logs={logs}
+            loadingLogs={loadingLogs}
+            uploading={uploading}
+            fileInputRef={fileInputRef}
+            fbWindow={fbWindow}
+            loadingFlights={loadingFlights}
+            flights={flights}
+            selectedFlight={selectedFlight}
+            attachingFlight={attachingFlight}
+            autoSyncingFlight={autoSyncingFlight}
+            flightsError={flightsError}
+            isDark={isDark}
+            onFileChange={handleFileChange}
+            onWindowChange={setFbWindow}
+            onFetchFlights={handleFetchFlights}
+            onSelectFlight={id => setSelectedFlight(prev => prev === id ? null : id)}
+            onAttachFlight={handleAttachFlight}
+        />
     )
 }
