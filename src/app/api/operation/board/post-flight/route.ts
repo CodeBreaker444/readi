@@ -1,6 +1,6 @@
-import { supabase } from "@/backend/database/database";
+import { getPostFlightData, updatePostFlightData } from "@/backend/services/mission/post-flight-service";
 import { getMissionResultList } from "@/backend/services/mission/result-service";
-import { internalError } from "@/lib/api-error";
+import { apiError, dbError, internalError, notFound, zodError } from "@/lib/api-error";
 import { requirePermission } from "@/lib/auth/api-auth";
 import { E } from "@/lib/error-codes";
 import { NextRequest, NextResponse } from "next/server";
@@ -12,33 +12,26 @@ export async function GET(req: NextRequest) {
 
   const missionId = parseInt(req.nextUrl.searchParams.get("mission_id") ?? "", 10);
   if (isNaN(missionId)) {
-    return NextResponse.json({ code: 0, message: "mission_id is required" }, { status: 400 });
+    return apiError(E.VL002, 400);
   }
 
   try {
-    const [missionRes, resultsRes] = await Promise.all([
-      supabase
-        .from("pilot_mission")
-        .select(
-          "flight_duration, actual_end, distance_flown, battery_charge_start, battery_charge_end, incident_flag, rth_unplanned, link_loss, deviation_flag, weather_temperature, notes, fk_mission_result_type_id"
-        )
-        .eq("pilot_mission_id", missionId)
-        .single(),
+    const [flightData, resultsRes] = await Promise.all([
+      getPostFlightData(missionId),
       getMissionResultList(session!.user.ownerId),
     ]);
-
-    if (missionRes.error) {
-      return NextResponse.json({ code: 0, message: missionRes.error.message }, { status: 422 });
-    }
 
     return NextResponse.json({
       code: 1,
       data: {
-        flight: missionRes.data,
+        flight: flightData,
         result_options: resultsRes.data,
       },
     });
   } catch (err) {
+    const supaErr = err as { code?: string } | null;
+    if (supaErr?.code === 'PGRST116') return notFound(E.NF003);
+    if (supaErr?.code) return dbError(E.DB001, err);
     return internalError(E.SV001, err);
   }
 }
@@ -67,15 +60,12 @@ export async function POST(req: NextRequest) {
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ code: 0, message: "Invalid JSON body" }, { status: 400 });
+    return apiError(E.VL001, 400);
   }
 
   const parsed = postFlightSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json(
-      { code: 0, message: "Validation error", errors: parsed.error.issues },
-      { status: 400 }
-    );
+    return zodError(E.VL011, parsed.error);
   }
 
   const { mission_id, ...fields } = parsed.data;
@@ -95,17 +85,11 @@ export async function POST(req: NextRequest) {
     payload.fk_mission_result_type_id = fields.fk_mission_result_type_id;
 
   try {
-    const { error: updateError } = await supabase
-      .from("pilot_mission")
-      .update(payload)
-      .eq("pilot_mission_id", mission_id);
-
-    if (updateError) {
-      return NextResponse.json({ code: 0, message: updateError.message }, { status: 422 });
-    }
-
+    await updatePostFlightData(mission_id, payload);
     return NextResponse.json({ code: 1, message: "Post-flight data saved successfully" });
   } catch (err) {
+    const supaErr = err as { code?: string } | null;
+    if (supaErr?.code) return dbError(E.DB003, err);
     return internalError(E.SV001, err);
   }
 }
