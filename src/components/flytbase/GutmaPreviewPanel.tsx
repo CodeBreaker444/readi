@@ -194,7 +194,7 @@ export function GutmaPreviewPanel({
           ) : null}
 
           {/* Archive button */}
-          {canArchive && !archived && (
+          {/* {canArchive && !archived && (
             <button
               onClick={onArchive}
               disabled={archiving}
@@ -208,7 +208,7 @@ export function GutmaPreviewPanel({
               )}
               {archiving ? t('flytbase.preview.archiving') : t('flytbase.preview.archiveToReadi')}
             </button>
-          )}
+          )} */}
         </div>
       </div>
 

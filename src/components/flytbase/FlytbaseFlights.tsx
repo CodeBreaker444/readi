@@ -16,7 +16,6 @@ import {
   HiOutlineDocumentText,
   HiRefresh,
 } from 'react-icons/hi';
-import { toast } from 'sonner';
 
 interface Flight {
   flight_id: string;
@@ -141,46 +140,46 @@ export function FlytbaseFlights({ token }: Props) {
     }
   }
 
-  async function handleArchive() {
-    if (!selectedFlight || !preview) return;
-    setArchiving(true);
-    setArchiveError(null);
-    try {
-      const res = await fetch('/api/flytbase/flights/archive', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ flightId: selectedFlight.flight_id, preview }),
-      });
-      const body = await res.json().catch(() => ({}));
+  // async function handleArchive() {
+  //   if (!selectedFlight || !preview) return;
+  //   setArchiving(true);
+  //   setArchiveError(null);
+  //   try {
+  //     const res = await fetch('/api/flytbase/flights/archive', {
+  //       method: 'POST',
+  //       headers: { 'Content-Type': 'application/json' },
+  //       body: JSON.stringify({ flightId: selectedFlight.flight_id, preview }),
+  //     });
+  //     const body = await res.json().catch(() => ({}));
 
-      if (!res.ok) {
-        if (body?.code === 'SN_MISMATCH') {
-          setArchiveError({ message: body.message, missing_sns: body.missing_sns ?? [] });
-          return;
-        }
-        throw new Error(body?.message ?? `Archive failed (${res.status})`);
-      }
+  //     if (!res.ok) {
+  //       if (body?.code === 'SN_MISMATCH') {
+  //         setArchiveError({ message: body.message, missing_sns: body.missing_sns ?? [] });
+  //         return;
+  //       }
+  //       throw new Error(body?.message ?? `Archive failed (${res.status})`);
+  //     }
 
-      setArchived(true);
-      setCanArchive(false);
+  //     setArchived(true);
+  //     setCanArchive(false);
 
-      const updated = body.updated_components ?? [];
-      const durationSecs = body.duration_seconds ?? 0;
-      const missionSynced = body.mission_synced ?? false;
+  //     const updated = body.updated_components ?? [];
+  //     const durationSecs = body.duration_seconds ?? 0;
+  //     const missionSynced = body.mission_synced ?? false;
 
-      let detail = updated.length > 0
-        ? t('flytbase.archive.archivedDetail', { count: updated.length })
-        : '';
-      if (durationSecs > 0) detail += ` · ${formatDuration(durationSecs)}`;
-      if (missionSynced) detail += ` · ${t('flytbase.archive.missionSynced')}`;
+  //     let detail = updated.length > 0
+  //       ? t('flytbase.archive.archivedDetail', { count: updated.length })
+  //       : '';
+  //     if (durationSecs > 0) detail += ` · ${formatDuration(durationSecs)}`;
+  //     if (missionSynced) detail += ` · ${t('flytbase.archive.missionSynced')}`;
 
-      toast.success(t('flytbase.archive.archivedSuccess'), { description: detail || undefined });
-    } catch (err: any) {
-      toast.error(err?.message ?? t('flytbase.archive.archiveFailed'));
-    } finally {
-      setArchiving(false);
-    }
-  }
+  //     toast.success(t('flytbase.archive.archivedSuccess'), { description: detail || undefined });
+  //   } catch (err: any) {
+  //     toast.error(err?.message ?? t('flytbase.archive.archiveFailed'));
+  //   } finally {
+  //     setArchiving(false);
+  //   }
+  // }
 
   const bg = isDark ? 'bg-slate-950' : 'bg-slate-50';
   const card = isDark ? 'bg-[#0c0f1a] border-slate-800' : 'bg-white border-slate-200 shadow-sm';
@@ -388,7 +387,7 @@ export function FlytbaseFlights({ token }: Props) {
                     archiving={archiving}
                     archived={archived}
                     archiveError={archiveError}
-                    onArchive={handleArchive}
+                    // onArchive={handleArchive}
                   />
                 )}
               </div>
