@@ -405,6 +405,8 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
     if (!selectedFlight) return;
     setAttachingFlight(true);
     setFlightsError(null);
+    // Capture listing metadata before state is cleared
+    const selectedFlightMeta = flights.find((f) => f.flight_id === selectedFlight) ?? null;
     try {
       const { data } = await axios.post("/api/operation/board/flight-logs/flytbase", {
         mission_id: missionId,
@@ -435,6 +437,11 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
                 durationSeconds = Math.round((end - start) / 1000);
                 durationHhmm = secondsToHhmm(durationSeconds);
               }
+            }
+            // Fallback to flight-listing duration if GUTMA had no timestamps
+            if (durationSeconds === 0 && selectedFlightMeta?.duration && selectedFlightMeta.duration > 0) {
+              durationSeconds = selectedFlightMeta.duration;
+              durationHhmm = secondsToHhmm(durationSeconds);
             }
 
             // Sync maintenance inputs
@@ -484,13 +491,17 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
             // Sync post-flight fields from GUTMA
             const durationTotalMinutes = Math.round(durationSeconds / 60);
             const previewDistanceM: number | null = preview.distance_m ?? null;
+            const previewBattStart: number | null = preview.battery_charge_start ?? null;
+            const previewBattEnd: number | null = preview.battery_charge_end ?? null;
             setPostFlight((prev) => ({
               ...prev,
               flight_duration_min: durationTotalMinutes > 0 ? String(durationTotalMinutes) : prev.flight_duration_min,
               actual_end: preview.end_time ? isoToLocalInput(preview.end_time) : prev.actual_end,
               distance_m: previewDistanceM != null && previewDistanceM > 0 ? String(previewDistanceM) : prev.distance_m,
+              battery_charge_start: previewBattStart != null ? String(previewBattStart) : prev.battery_charge_start,
+              battery_charge_end: previewBattEnd != null ? String(previewBattEnd) : prev.battery_charge_end,
             }));
-            if (durationTotalMinutes > 0 || preview.end_time || previewDistanceM) {
+            if (durationTotalMinutes > 0 || preview.end_time || previewDistanceM || previewBattStart != null || previewBattEnd != null) {
               setPostFlightFromLog(true);
             }
 

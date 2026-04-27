@@ -73,6 +73,16 @@ function parseGutma(flightId: string, gutma: any): Record<string, any> {
     };
   });
 
+  // Battery charge: first and last logged data points
+  let battery_charge_start: number | null = null;
+  let battery_charge_end: number | null = null;
+  if (batteryIdx >= 0 && items.length > 0) {
+    const first = items[0][batteryIdx];
+    const last  = items[items.length - 1][batteryIdx];
+    if (first != null) battery_charge_start = Math.round(Number(first));
+    if (last  != null) battery_charge_end   = Math.round(Number(last));
+  }
+
   // Compute total distance in metres from all GPS points (not just the 500-item waypoint slice)
   let distance_m: number | null = null;
   if (latIdx >= 0 && lonIdx >= 0 && items.length > 1) {
@@ -104,19 +114,21 @@ function parseGutma(flightId: string, gutma: any): Record<string, any> {
     null;
 
   return {
-    flight_id:       flightId,
-    filename:        gutmaFilename(flightId, gutma),
-    aircraft:        flightData?.aircraft ?? {},
-    gcs:             flightData?.gcs ?? {},
-    payload:         flightData?.payload ?? [],
-    pilot:           flightData?.pilot_in_command ?? null,
-    logging_start:   loggingStart,
-    events:          logging?.events ?? [],
+    flight_id:            flightId,
+    filename:             gutmaFilename(flightId, gutma),
+    aircraft:             flightData?.aircraft ?? {},
+    gcs:                  flightData?.gcs ?? {},
+    payload:              flightData?.payload ?? [],
+    pilot:                flightData?.pilot_in_command ?? null,
+    logging_start:        loggingStart,
+    events:               logging?.events ?? [],
     waypoints,
-    total_waypoints: items.length,
+    total_waypoints:      items.length,
     distance_m,
     start_time,
     end_time,
+    battery_charge_start,
+    battery_charge_end,
   };
 }
 
