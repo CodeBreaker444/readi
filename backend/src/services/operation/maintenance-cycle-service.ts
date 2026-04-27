@@ -254,10 +254,10 @@ export async function updateComponentMaintenanceCycle(
         }),
       };
 
-      if (limitHour > 0 && upd.add_hours > 0) {
+      if (upd.add_hours > 0) {
         updatePayload.current_maintenance_hours = newHours;
       }
-      if (limitFlight > 0 && upd.add_flights > 0) {
+      if (upd.add_flights > 0) {
         updatePayload.current_maintenance_flights = newFlights;
       }
 
@@ -275,8 +275,8 @@ export async function updateComponentMaintenanceCycle(
         return null;
       }
 
-      const finalHours = limitHour > 0 ? newHours : prevHours;
-      const finalFlights = limitFlight > 0 ? newFlights : prevFlights;
+      const finalHours = upd.add_hours > 0 ? newHours : prevHours;
+      const finalFlights = upd.add_flights > 0 ? newFlights : prevFlights;
 
       const { status, trigger } = computeComponentStatus(
         finalHours, finalFlights, currentDays,
