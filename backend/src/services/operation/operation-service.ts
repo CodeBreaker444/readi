@@ -10,6 +10,13 @@ const STATUS_NAME_TO_ID: Record<string, number> = {
   Cancelled: 4,
 }
 
+// actual_start/actual_end are stored as TIMESTAMP WITHOUT TIME ZONE but are always set
+// as UTC (via new Date().toISOString()). Append 'Z' so browsers parse them as UTC.
+function asUtc(ts: string | null | undefined): string | null {
+  if (!ts) return null;
+  return ts.endsWith('Z') || ts.includes('+') ? ts : ts + 'Z';
+}
+
 export async function listOperations(
   params: ListOperationsQuerySchema,
   ownerId: number
@@ -84,6 +91,8 @@ export async function listOperations(
 
   const operations = (data ?? []).map((row: any) => ({
     ...row,
+    actual_start: asUtc(row.actual_start),
+    actual_end: asUtc(row.actual_end),
     pilot_name: row.pilot
       ? `${row.pilot.first_name ?? ''} ${row.pilot.last_name ?? ''}`.trim()
       : null,
@@ -117,6 +126,8 @@ export async function getOperation(id: number): Promise<Operation | null> {
 
   return {
     ...data,
+    actual_start: asUtc(data.actual_start),
+    actual_end: asUtc(data.actual_end),
     pilot_name: data.pilot
       ? `${data.pilot.first_name ?? ''} ${data.pilot.last_name ?? ''}`.trim()
       : null,
