@@ -3,12 +3,12 @@
 import { Skeleton } from '@/components/ui/skeleton';
 import { SessionUser } from '@/lib/auth/server-session';
 import { AlertTriangle, Check, ChevronDown, FileText, LogOut, Moon, Search, Send, Settings, Sparkles, Sun, User, UserCircle, UserCog, X } from 'lucide-react';
-import { LanguageSelect } from './LanguageSelect';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { supabase } from '../lib/supabase/client';
+import { LanguageSelect } from './LanguageSelect';
 import NotificationDropdown from './NotificationDropdown';
 import ProfileModal from './ProfileModal';
 
@@ -451,7 +451,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
                 {isAdmin && (
                   <button
                     onClick={() => { setShowSearch(false); router.push('/knowledge-config'); }}
-                    className={`p-1.5 rounded-lg transition-colors ${isDark ? 'text-slate-400 hover:bg-slate-700 hover:text-violet-400' : 'text-gray-400 hover:bg-gray-100 hover:text-violet-600'}`}
+                    className={`p-1.5 cursor-pointer rounded-lg transition-colors ${isDark ? 'text-slate-400 hover:bg-slate-700 hover:text-violet-400' : 'text-gray-400 hover:bg-gray-100 hover:text-violet-600'}`}
                     aria-label={t('knowledge.title')}
                     title={t('knowledge.title')}
                   >

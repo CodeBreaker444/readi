@@ -1,5 +1,6 @@
 'use client';
 
+import { Skeleton } from '@/components/ui/skeleton';
 import { useTheme } from '@/components/useTheme';
 import { AlertCircle, ArrowLeft, CheckCircle2, ExternalLink, FileText, HardDrive, Loader2, RefreshCw, Search, Trash2, Upload } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -15,6 +16,36 @@ interface DocumentRecord {
     section_title: string;
     source_file: string;
     created_at: string;
+}
+
+function DocumentListSkeleton({ isDark }: { isDark: boolean }) {
+    const bg = isDark ? 'bg-slate-800' : '';
+    return (
+        <div className={`divide-y ${isDark ? 'divide-slate-700/50' : 'divide-gray-100'}`}>
+            {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="p-5 space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3 min-w-0 flex-1">
+                            <Skeleton className={`w-10 h-10 rounded-xl shrink-0 ${bg}`} />
+                            <div className="flex-1 space-y-2">
+                                <Skeleton className={`h-4 w-3/5 rounded-md ${bg}`} />
+                                <div className="flex items-center gap-2">
+                                    <Skeleton className={`h-3 w-16 rounded-md ${bg}`} />
+                                    <Skeleton className={`h-3 w-20 rounded-md ${bg}`} />
+                                </div>
+                            </div>
+                        </div>
+                        <Skeleton className={`w-7 h-7 rounded-lg shrink-0 ${bg}`} />
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pl-11">
+                        {Array.from({ length: 3 }).map((_, j) => (
+                            <Skeleton key={j} className={`h-8 w-full rounded-lg ${bg}`} />
+                        ))}
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
 }
 
 export default function KnowledgeConfigPage() {
@@ -135,8 +166,37 @@ export default function KnowledgeConfigPage() {
 
     if (isAuthorized === null) {
         return (
-            <div className={`min-h-screen flex items-center justify-center ${isDark ? 'bg-slate-950' : 'bg-gray-50'}`}>
-                <Loader2 className="w-8 h-8 animate-spin text-violet-500" />
+            <div className={`min-h-screen ${isDark ? 'bg-slate-950' : 'bg-gray-50'}`}>
+                {/* Header skeleton */}
+                <div className={`border-b px-6 py-4 ${isDark ? 'bg-slate-900/80 border-slate-700/60' : 'bg-white/80 border-gray-200'}`}>
+                    <div className="flex items-center gap-4">
+                        <Skeleton className={`w-8 h-8 rounded-lg ${isDark ? 'bg-slate-800' : ''}`} />
+                        <Skeleton className={`w-8 h-8 rounded-lg ${isDark ? 'bg-slate-800' : ''}`} />
+                        <div className="flex-1 space-y-1.5">
+                            <Skeleton className={`h-4 w-40 rounded-md ${isDark ? 'bg-slate-800' : ''}`} />
+                            <Skeleton className={`h-3 w-56 rounded-md ${isDark ? 'bg-slate-800' : ''}`} />
+                        </div>
+                        <Skeleton className={`h-7 w-24 rounded-lg ${isDark ? 'bg-slate-800' : ''}`} />
+                    </div>
+                </div>
+                {/* Content skeleton */}
+                <main className="px-6 py-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div className={`rounded-2xl border p-5 space-y-4 ${isDark ? 'bg-slate-900 border-slate-700/60' : 'bg-white border-gray-200'}`}>
+                            <Skeleton className={`h-3 w-36 rounded-md ${isDark ? 'bg-slate-800' : ''}`} />
+                            <Skeleton className={`h-32 w-full rounded-xl ${isDark ? 'bg-slate-800' : ''}`} />
+                            <Skeleton className={`h-20 w-full rounded-xl ${isDark ? 'bg-slate-800' : ''}`} />
+                            <Skeleton className={`h-16 w-full rounded-xl ${isDark ? 'bg-slate-800' : ''}`} />
+                        </div>
+                        <div className={`lg:col-span-2 rounded-2xl border overflow-hidden ${isDark ? 'bg-slate-900 border-slate-700/60' : 'bg-white border-gray-200'}`}>
+                            <div className={`flex items-center justify-between px-5 py-4 border-b ${isDark ? 'border-slate-700/60' : 'border-gray-100'}`}>
+                                <Skeleton className={`h-3 w-28 rounded-md ${isDark ? 'bg-slate-800' : ''}`} />
+                                <Skeleton className={`h-7 w-48 rounded-lg ${isDark ? 'bg-slate-800' : ''}`} />
+                            </div>
+                            <DocumentListSkeleton isDark={isDark} />
+                        </div>
+                    </div>
+                </main>
             </div>
         );
     }
@@ -281,10 +341,7 @@ export default function KnowledgeConfigPage() {
 
                             <div className="overflow-y-auto" style={{ maxHeight: '60vh' }}>
                                 {isLoadingDocs ? (
-                                    <div className="flex flex-col items-center justify-center py-16 gap-3">
-                                        <Loader2 className="w-6 h-6 animate-spin text-violet-500" />
-                                        <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{t('knowledge.loading')}</p>
-                                    </div>
+                                    <DocumentListSkeleton isDark={isDark} />
                                 ) : filteredSources.length === 0 ? (
                                     <div className="flex flex-col items-center justify-center py-16 gap-3">
                                         <FileText size={36} className={isDark ? 'text-slate-700' : 'text-gray-300'} />
