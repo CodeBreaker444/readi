@@ -1,8 +1,34 @@
 import { importMissionFromLog } from '@/backend/services/operation/importOperation-service';
+import { env } from '@/backend/config/env';
+import { getFlytbaseCredentials } from '@/backend/services/integrations/flytbase-service';
 import { requirePermission } from '@/lib/auth/api-auth';
 import { internalError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
+
+async function fetchFlytbaseGutmaFile(userId: number, flightId: string): Promise<File> {
+  const creds = await getFlytbaseCredentials(userId);
+  if (!creds) throw new Error('No FlytBase integration configured.');
+
+  const gutmaUrl = `${env.FLYTBASE_URL}/v2/flight/report/download/gutma?${new URLSearchParams({ flightIds: flightId })}`;
+  const upstream = await fetch(gutmaUrl, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${creds.token}`,
+      'org-id': creds.orgId,
+    },
+    signal: AbortSignal.timeout(30_000),
+  });
+
+  if (!upstream.ok) {
+    const errText = await upstream.text().catch(() => '');
+    throw new Error(`FlytBase returned ${upstream.status}: ${errText.slice(0, 200)}`);
+  }
+
+  const payload = await upstream.text();
+  const filename = `FlytBase_Export_${flightId}.gutma`;
+  return new File([payload], filename, { type: 'application/json' });
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,9 +38,15 @@ export async function POST(req: NextRequest) {
     const ownerId = session!.user.ownerId;
     const formData = await req.formData();
 
-    const file = formData.get('mission_file_log') as File | null;
+    const requestedFile = formData.get('mission_file_log') as File | null;
+    const flytbaseFlightId = String(formData.get('flytbase_flight_id') ?? '').trim();
+
+    let file: File | null = requestedFile;
+    if (!file && flytbaseFlightId) {
+      file = await fetchFlytbaseGutmaFile(session!.user.userId, flytbaseFlightId);
+    }
     if (!file) {
-      return NextResponse.json({ code: 0, message: 'No file received' }, { status: 400 });
+      return NextResponse.json({ code: 0, message: 'No file or FlytBase flight selected' }, { status: 400 });
     }
 
     const ext = file.name.split('.').pop()?.toLowerCase();

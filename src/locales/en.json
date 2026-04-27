@@ -1614,6 +1614,8 @@
         "chooseClient": "Choose a Client",
         "ccPlatform": "CC Platform",
         "uploadLogFile": "Upload Log File (.gutma or .zip)",
+        "flytbaseWindow": "FlytBase Window",
+        "selectFlightLog": "Select Flight Log",
         "droneSystem": "Drone System",
         "missionCategory": "Mission Category",
         "missionType": "Mission Type",
@@ -1629,6 +1631,7 @@
       "placeholders": {
         "selectClient": "Select client…",
         "selectPilot": "Select pilot…",
+        "selectFlightLog": "Select a FlytBase flight…",
         "location": "e.g. Grid A-7, Site North",
         "groupLabel": "e.g. Spring Survey 2025",
         "notes": "Additional notes…",
@@ -1637,6 +1640,7 @@
       "info": {
         "gutmaAutoExtract": "Mission code, altitude, distance and timestamps are extracted automatically from the GUTMA log file.",
         "clickToUpload": "Click to upload",
+        "uploadOrSelectFlight": "Upload a .gutma/.zip file or select a FlytBase flight log to auto-fetch.",
         "noPlansForDrone": "No plans for this drone",
         "selectDroneFirst": "Select drone first",
         "youAreAllSet": "You are all set",
@@ -1659,6 +1663,7 @@
       "buttons": {
         "previous": "Previous",
         "next": "Next",
+        "refreshFlights": "Refresh Flights",
         "importing": "Importing…",
         "importMission": "Import Mission",
         "done": "Done"
@@ -1668,6 +1673,8 @@
         "loadDronesError": "Failed to load drones",
         "loadMissionOptionsError": "Failed to load mission options",
         "loadPilotsError": "Failed to load pilots",
+        "loadFlightsError": "Failed to load FlytBase flights",
+        "noFlightsFound": "No FlytBase flights found in this time window",
         "importSuccess": "Imported {{count}} mission(s)",
         "importSuccessWithSkipped": "Imported {{count}} mission(s), {{skipped}} duplicate(s) skipped",
         "allDuplicates": "All {{count}} mission(s) were already imported (duplicates skipped)",

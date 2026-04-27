@@ -41,6 +41,15 @@ interface DroneSystem   { tool_id: number; tool_code: string; tool_name: string 
 interface MissionPlan   { mission_planning_id: number; mission_planning_code: string; mission_planning_desc: string }
 interface SelectOption  { id: number; name: string }
 interface Pilot         { user_id: number; first_name: string; last_name: string }
+interface FlytbaseFlight {
+    flight_id: string;
+    flight_name?: string;
+    start_time?: number;
+    end_time?: number;
+    duration?: number;
+    distance?: number;
+    drone_name?: string;
+}
 
 interface ImportOperationDialogProps {
     open: boolean;
@@ -74,10 +83,20 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
     const [types,      setTypes]      = useState<SelectOption[]>([]);
     const [statuses,   setStatuses]   = useState<SelectOption[]>([]);
     const [pilots,     setPilots]     = useState<Pilot[]>([]);
+    const [loadingClients, setLoadingClients] = useState(false);
+    const [loadingDrones, setLoadingDrones] = useState(false);
+    const [loadingMissionOptions, setLoadingMissionOptions] = useState(false);
+    const [loadingPlans, setLoadingPlans] = useState(false);
+    const [loadingPilots, setLoadingPilots] = useState(false);
 
     const [clientId,    setClientId]    = useState('');
     const [platform,    setPlatform]    = useState('FLYTBASE');
     const [logFile,     setLogFile]     = useState<File | null>(null);
+    const [fbWindow, setFbWindow] = useState('30');
+    const [flights, setFlights] = useState<FlytbaseFlight[]>([]);
+    const [loadingFlights, setLoadingFlights] = useState(false);
+    const [selectedFlightId, setSelectedFlightId] = useState('');
+    const [flightsError, setFlightsError] = useState('');
     const [vehicleId,   setVehicleId]   = useState('');
     const [categoryId,  setCategoryId]  = useState('');
     const [typeId,      setTypeId]      = useState('');
@@ -91,21 +110,26 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
     useEffect(() => {
         if (!open) return;
         resetForm();
+        setLoadingClients(true);
         axios.get('/api/operation/import/options?type=clients')
             .then((r) => setClients(r.data.clients ?? []))
-            .catch(() => toast.error(t(`${ns}.toast.loadClientsError`)));
+            .catch(() => toast.error(t(`${ns}.toast.loadClientsError`)))
+            .finally(() => setLoadingClients(false));
     }, [open]);
 
     useEffect(() => {
         if (!clientId) { setDrones([]); setVehicleId(''); return; }
         setDrones([]); setVehicleId(''); setPlans([]); setPlanId('N');
+        setLoadingDrones(true);
         axios.get(`/api/operation/import/options?type=drones&client_id=${clientId}`)
             .then((r) => setDrones(r.data.drones ?? []))
-            .catch(() => toast.error(t(`${ns}.toast.loadDronesError`)));
+            .catch(() => toast.error(t(`${ns}.toast.loadDronesError`)))
+            .finally(() => setLoadingDrones(false));
     }, [clientId]);
 
     useEffect(() => {
         if (step !== 3) return;
+        setLoadingMissionOptions(true);
         Promise.all([
             axios.get('/api/operation/import/options?type=categories'),
             axios.get('/api/operation/import/options?type=types'),
@@ -114,21 +138,27 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
             setCategories(cat.data.categories ?? []);
             setTypes(typ.data.types ?? []);
             setStatuses(sta.data.statuses ?? []);
-        }).catch(() => toast.error(t(`${ns}.toast.loadMissionOptionsError`)));
+        }).catch(() => toast.error(t(`${ns}.toast.loadMissionOptionsError`)))
+          .finally(() => setLoadingMissionOptions(false));
     }, [step]);
 
     useEffect(() => {
         if (!vehicleId || !clientId) { setPlans([]); setPlanId('N'); return; }
         setPlans([]); setPlanId('N');
+        setLoadingPlans(true);
         axios.get(`/api/operation/import/options?type=plans&client_id=${clientId}&vehicle_id=${vehicleId}`)
             .then((r) => setPlans(r.data.plans ?? []))
+            .catch(() => toast.error(t(`${ns}.toast.loadMissionOptionsError`)))
+            .finally(() => setLoadingPlans(false));
     }, [vehicleId, clientId]);
 
     useEffect(() => {
         if (step !== 4) return;
+        setLoadingPilots(true);
         axios.get('/api/operation/import/options?type=pilots')
             .then((r) => setPilots(r.data.pilots ?? []))
-            .catch(() => toast.error(t(`${ns}.toast.loadPilotsError`)));
+            .catch(() => toast.error(t(`${ns}.toast.loadPilotsError`)))
+            .finally(() => setLoadingPilots(false));
     }, [step]);
 
     function resetForm() {
@@ -136,23 +166,53 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
         setClientId(''); setPlatform('FLYTBASE'); setLogFile(null);
         setVehicleId(''); setCategoryId(''); setTypeId(''); setPlanId('N');
         setStatusId(''); setLocation(''); setGroupLabel(''); setNotes(''); setPilotId('');
+        setFbWindow('30'); setFlights([]); setSelectedFlightId(''); setFlightsError('');
         setDrones([]); setPlans([]); setCategories([]); setTypes([]); setStatuses([]); setPilots([]);
+        setLoadingClients(false); setLoadingDrones(false); setLoadingMissionOptions(false); setLoadingPlans(false); setLoadingPilots(false);
     }
+
+    const fetchFlytbaseFlights = useCallback(async () => {
+        setLoadingFlights(true);
+        setFlights([]);
+        setSelectedFlightId('');
+        setFlightsError('');
+        try {
+            const { data } = await axios.get(`/api/flytbase/flights?window=${fbWindow}`);
+            if (data.success) {
+                const loaded = data.flights ?? [];
+                setFlights(loaded);
+                if (loaded.length === 0) {
+                    setFlightsError(t(`${ns}.toast.noFlightsFound`));
+                }
+            } else {
+                setFlightsError(data.message ?? t(`${ns}.toast.loadFlightsError`));
+            }
+        } catch (e: any) {
+            setFlightsError(e?.response?.data?.message ?? t(`${ns}.toast.loadFlightsError`));
+        } finally {
+            setLoadingFlights(false);
+        }
+    }, [fbWindow, ns, t]);
+
+    useEffect(() => {
+        if (step !== 2 || platform !== 'FLYTBASE') return;
+        fetchFlytbaseFlights();
+    }, [step, platform, fetchFlytbaseFlights]);
 
     const canNext = useCallback(() => {
         if (step === 1) return !!clientId;
-        if (step === 2) return !!logFile;
+        if (step === 2) return !!logFile || !!selectedFlightId;
         if (step === 3) return !!vehicleId && !!categoryId && !!typeId && !!statusId;
         if (step === 4) return !!pilotId;
         return true;
     }, [step, clientId, logFile, vehicleId, categoryId, typeId, statusId, pilotId]);
 
     async function handleSubmit() {
-        if (!logFile) return;
+        if (!logFile && !selectedFlightId) return;
         setSubmitting(true);
         try {
             const fd = new FormData();
-            fd.append('mission_file_log',    logFile);
+            if (logFile) fd.append('mission_file_log', logFile);
             fd.append('client_id',           clientId);
             fd.append('mission_ccPlatform',  platform);
             fd.append('mission_vehicle',     vehicleId);
@@ -164,6 +224,9 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
             fd.append('mission_group_label', groupLabel);
             fd.append('mission_notes',       notes);
             fd.append('pilot_id',            pilotId);
+            if (selectedFlightId) {
+                fd.append('flytbase_flight_id', selectedFlightId);
+            }
 
             const { data } = await axios.post('/api/operation/import', fd);
             if (data.code === 1) {
@@ -247,8 +310,14 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                             <SectionTitle>{t(`${ns}.sections.clientDetails`)}</SectionTitle>
                             <div className="max-w-xs">
                                 <Label className="mb-1.5 block">{t(`${ns}.fields.chooseClient`)}</Label>
-                                <Select value={clientId} onValueChange={setClientId}>
-                                    <SelectTrigger><SelectValue placeholder={t(`${ns}.placeholders.selectClient`)} /></SelectTrigger>
+                                <Select value={clientId} onValueChange={setClientId} disabled={loadingClients}>
+                                    <SelectTrigger>
+                                        {loadingClients ? (
+                                            <span className="flex items-center gap-2 text-muted-foreground">
+                                                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading...
+                                            </span>
+                                        ) : <SelectValue placeholder={t(`${ns}.placeholders.selectClient`)} />}
+                                    </SelectTrigger>
                                     <SelectContent>
                                         {clients.map((c) => (
                                             <SelectItem key={c.client_id} value={String(c.client_id)}>
@@ -288,7 +357,10 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                         onClick={() => document.getElementById('log-file-input')?.click()}
                                     >
                                         <input id="log-file-input" type="file" accept=".gutma,.zip" className="hidden"
-                                            onChange={(e) => setLogFile(e.target.files?.[0] ?? null)} />
+                                            onChange={(e) => {
+                                                setLogFile(e.target.files?.[0] ?? null);
+                                                setSelectedFlightId('');
+                                            }} />
                                         {logFile ? (
                                             <div className="flex items-center justify-center gap-2 text-emerald-700 dark:text-emerald-400">
                                                 <FileText className="h-4 w-4" />
@@ -303,6 +375,50 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                     </div>
                                 </div>
                             </div>
+                            <div className="rounded-md border p-3 space-y-3">
+                                <div className="flex items-end gap-3">
+                                    <div className="w-40">
+                                        <Label className="mb-1.5 block">{t(`${ns}.fields.flytbaseWindow`)}</Label>
+                                        <Select value={fbWindow} onValueChange={setFbWindow}>
+                                            <SelectTrigger><SelectValue /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="30">30 min</SelectItem>
+                                                <SelectItem value="120">2 h</SelectItem>
+                                                <SelectItem value="360">6 h</SelectItem>
+                                                <SelectItem value="720">12 h</SelectItem>
+                                                <SelectItem value="1440">24 h</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <Button type="button" variant="outline" size="sm" onClick={fetchFlytbaseFlights} disabled={loadingFlights}>
+                                        {loadingFlights ? <Loader2 className="h-4 w-4 animate-spin" /> : t(`${ns}.buttons.refreshFlights`)}
+                                    </Button>
+                                </div>
+                                <div>
+                                    <Label className="mb-1.5 block">{t(`${ns}.fields.selectFlightLog`)}</Label>
+                                    <Select value={selectedFlightId} onValueChange={(value) => {
+                                        setSelectedFlightId(value);
+                                        setLogFile(null);
+                                    }}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder={t(`${ns}.placeholders.selectFlightLog`)} />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {flights.map((f) => (
+                                                <SelectItem key={f.flight_id} value={f.flight_id}>
+                                                    {(f.flight_name || f.flight_id)}{f.drone_name ? ` · ${f.drone_name}` : ''}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    {flightsError && (
+                                        <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">{flightsError}</p>
+                                    )}
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                    {t(`${ns}.info.uploadOrSelectFlight`)}
+                                </p>
+                            </div>
                         </div>
                     )}
 
@@ -313,8 +429,14 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                             <div className="grid grid-cols-3 gap-3">
                                 <div>
                                     <Label className="mb-1.5 block">{t(`${ns}.fields.droneSystem`)} <span className="text-red-500">*</span></Label>
-                                    <Select value={vehicleId} onValueChange={setVehicleId}>
-                                        <SelectTrigger><SelectValue placeholder={t(`${ns}.placeholders.selectDot`)} /></SelectTrigger>
+                                    <Select value={vehicleId} onValueChange={setVehicleId} disabled={loadingDrones}>
+                                        <SelectTrigger>
+                                            {loadingDrones ? (
+                                                <span className="flex items-center gap-2 text-muted-foreground">
+                                                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading...
+                                                </span>
+                                            ) : <SelectValue placeholder={t(`${ns}.placeholders.selectDot`)} />}
+                                        </SelectTrigger>
                                         <SelectContent>
                                             {drones.map((d) => (
                                                 <SelectItem key={d.tool_id} value={String(d.tool_id)}>{d.tool_code}</SelectItem>
@@ -324,8 +446,14 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                 </div>
                                 <div>
                                     <Label className="mb-1.5 block">{t(`${ns}.fields.missionCategory`)} <span className="text-red-500">*</span></Label>
-                                    <Select value={categoryId} onValueChange={setCategoryId}>
-                                        <SelectTrigger><SelectValue placeholder={t(`${ns}.placeholders.selectDot`)} /></SelectTrigger>
+                                    <Select value={categoryId} onValueChange={setCategoryId} disabled={loadingMissionOptions}>
+                                        <SelectTrigger>
+                                            {loadingMissionOptions ? (
+                                                <span className="flex items-center gap-2 text-muted-foreground">
+                                                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading...
+                                                </span>
+                                            ) : <SelectValue placeholder={t(`${ns}.placeholders.selectDot`)} />}
+                                        </SelectTrigger>
                                         <SelectContent>
                                             {categories.map((c) => (
                                                 <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
@@ -335,8 +463,14 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                 </div>
                                 <div>
                                     <Label className="mb-1.5 block">{t(`${ns}.fields.missionType`)} <span className="text-red-500">*</span></Label>
-                                    <Select value={typeId} onValueChange={setTypeId}>
-                                        <SelectTrigger><SelectValue placeholder={t(`${ns}.placeholders.selectDot`)} /></SelectTrigger>
+                                    <Select value={typeId} onValueChange={setTypeId} disabled={loadingMissionOptions}>
+                                        <SelectTrigger>
+                                            {loadingMissionOptions ? (
+                                                <span className="flex items-center gap-2 text-muted-foreground">
+                                                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading...
+                                                </span>
+                                            ) : <SelectValue placeholder={t(`${ns}.placeholders.selectDot`)} />}
+                                        </SelectTrigger>
                                         <SelectContent>
                                             {types.map((ty) => (
                                                 <SelectItem key={ty.id} value={String(ty.id)}>{ty.name}</SelectItem>
@@ -349,8 +483,14 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                             <div className="grid grid-cols-3 gap-3">
                                 <div>
                                     <Label className="mb-1.5 block">{t(`${ns}.fields.missionStatus`)} <span className="text-red-500">*</span></Label>
-                                    <Select value={statusId} onValueChange={setStatusId}>
-                                        <SelectTrigger><SelectValue placeholder={t(`${ns}.placeholders.selectDot`)} /></SelectTrigger>
+                                    <Select value={statusId} onValueChange={setStatusId} disabled={loadingMissionOptions}>
+                                        <SelectTrigger>
+                                            {loadingMissionOptions ? (
+                                                <span className="flex items-center gap-2 text-muted-foreground">
+                                                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading...
+                                                </span>
+                                            ) : <SelectValue placeholder={t(`${ns}.placeholders.selectDot`)} />}
+                                        </SelectTrigger>
                                         <SelectContent>
                                             {statuses.map((s) => (
                                                 <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
@@ -363,8 +503,14 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                         {t(`${ns}.fields.missionPlan`)}
                                         <span className="ml-1 text-[10px] text-muted-foreground font-normal">{t(`${ns}.fields.optional`)}</span>
                                     </Label>
-                                    <Select value={planId} onValueChange={setPlanId}>
-                                        <SelectTrigger><SelectValue placeholder={t(`${ns}.placeholders.selectDot`)} /></SelectTrigger>
+                                    <Select value={planId} onValueChange={setPlanId} disabled={loadingPlans}>
+                                        <SelectTrigger>
+                                            {loadingPlans ? (
+                                                <span className="flex items-center gap-2 text-muted-foreground">
+                                                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading...
+                                                </span>
+                                            ) : <SelectValue placeholder={t(`${ns}.placeholders.selectDot`)} />}
+                                        </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="N">— {t(`${ns}.info.none`)} —</SelectItem>
                                             {plans.length === 0 ? (
@@ -418,8 +564,14 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <Label className="mb-1.5 block">{t(`${ns}.fields.pilotInCommand`)} <span className="text-red-500">*</span></Label>
-                                    <Select value={pilotId} onValueChange={setPilotId}>
-                                        <SelectTrigger><SelectValue placeholder={t(`${ns}.placeholders.selectPilot`)} /></SelectTrigger>
+                                    <Select value={pilotId} onValueChange={setPilotId} disabled={loadingPilots}>
+                                        <SelectTrigger>
+                                            {loadingPilots ? (
+                                                <span className="flex items-center gap-2 text-muted-foreground">
+                                                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading...
+                                                </span>
+                                            ) : <SelectValue placeholder={t(`${ns}.placeholders.selectPilot`)} />}
+                                        </SelectTrigger>
                                         <SelectContent>
                                             {pilots.map((p) => (
                                                 <SelectItem key={p.user_id} value={String(p.user_id)}>
@@ -455,7 +607,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                     <div className="mt-2 rounded-lg border bg-muted/30 p-4 text-left space-y-1.5">
                                         <Row label={t(`${ns}.review.client`)}   value={clients.find((c) => String(c.client_id) === clientId)?.client_name} />
                                         <Row label={t(`${ns}.review.platform`)} value={platform} />
-                                        <Row label={t(`${ns}.review.file`)}     value={logFile?.name} />
+                                        <Row label={t(`${ns}.review.file`)}     value={logFile?.name || flights.find((f) => f.flight_id === selectedFlightId)?.flight_name || selectedFlightId} />
                                         <Row label={t(`${ns}.review.drone`)}    value={drones.find((d) => String(d.tool_id) === vehicleId)?.tool_code} />
                                         <Row label={t(`${ns}.review.category`)} value={categories.find((c) => String(c.id) === categoryId)?.name} />
                                         <Row label={t(`${ns}.review.type`)}     value={types.find((tp) => String(tp.id) === typeId)?.name} />

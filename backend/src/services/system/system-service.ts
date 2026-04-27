@@ -605,6 +605,24 @@ export async function getComponentList(ownerId: number, toolId?: number) {
 
 
 export async function addComponent(componentData: any) {
+  const normalizedSerial = typeof componentData.component_sn === 'string'
+    ? componentData.component_sn.trim()
+    : '';
+
+  if (normalizedSerial) {
+    const { data: duplicate, error: duplicateError } = await supabase
+      .from('tool_component')
+      .select('component_id')
+      .ilike('serial_number', normalizedSerial)
+      .limit(1)
+      .maybeSingle();
+
+    if (duplicateError) throw duplicateError;
+    if (duplicate) {
+      return { code: 0, message: `Component serial number "${normalizedSerial}" already exists.` };
+    }
+  }
+
   let maintenanceCycle: string | null = null;
   let maintenanceCycleHour: number | null = null;
   let maintenanceCycleDay: number | null = null;
@@ -644,7 +662,7 @@ export async function addComponent(componentData: any) {
       component_type: componentData.component_type,
       component_code: componentData.component_code || componentData.component_type,
       component_description: componentData.component_desc || componentData.component_vendor || null,
-      serial_number: componentData.component_sn || null,
+      serial_number: normalizedSerial || null,
       installation_date: componentData.component_activation_date || null,
       component_active: 'Y',
 
@@ -675,6 +693,25 @@ export async function addComponent(componentData: any) {
 
 
 export async function updateComponent(componentId: number, componentData: any) {
+  const normalizedSerial = typeof componentData.component_sn === 'string'
+    ? componentData.component_sn.trim()
+    : '';
+
+  if (normalizedSerial) {
+    const { data: duplicate, error: duplicateError } = await supabase
+      .from('tool_component')
+      .select('component_id')
+      .ilike('serial_number', normalizedSerial)
+      .neq('component_id', componentId)
+      .limit(1)
+      .maybeSingle();
+
+    if (duplicateError) throw duplicateError;
+    if (duplicate) {
+      return { code: 0, message: `Component serial number "${normalizedSerial}" already exists.` };
+    }
+  }
+
   if (componentData.fk_tool_id) {
     await refreshMaintenanceDaysForTool(componentData.fk_tool_id);
   }
@@ -686,7 +723,7 @@ export async function updateComponent(componentId: number, componentData: any) {
       component_type: componentData.component_type,
       component_code: componentData.component_code || null,
       component_description: componentData.component_desc || null,
-      serial_number: componentData.component_sn || null,
+      serial_number: normalizedSerial || null,
       installation_date: componentData.component_activation_date || null,
       dcc_drone_id: componentData.dcc_drone_id ?? null,
       maintenance_cycle: componentData.maintenance_cycle || null,
