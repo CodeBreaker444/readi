@@ -3,6 +3,7 @@
 import AddComponentModal from '@/components/system/AddComponentModal';
 import AddModelModal from '@/components/system/AddModelModal';
 import AddSystemModal from '@/components/system/AddSystemModal';
+import { ComponentFlightLogsModal } from '@/components/system/ComponentFlightLogsModal';
 import { ComponentLogModal } from '@/components/system/ComponentLogModal';
 import ComponentRelationsModal from '@/components/system/ComponentRelationsModal';
 import DataTable from '@/components/system/DataTable';
@@ -56,6 +57,8 @@ export default function DroneToolPage() {
     const [selectedComponent, setSelectedComponent] = useState<any | null>(null);
     const [showComponentLog, setShowComponentLog] = useState<boolean>(false);
     const [logComponent, setLogComponent] = useState<any | null>(null);
+    const [showFlightLogs, setShowFlightLogs] = useState<boolean>(false);
+    const [flightLogsComponent, setFlightLogsComponent] = useState<any | null>(null);
     const [showEditSystem, setShowEditSystem] = useState<boolean>(false);
     const [showEditModel, setShowEditModel] = useState<boolean>(false);
     const [showEditComponent, setShowEditComponent] = useState<boolean>(false);
@@ -167,6 +170,7 @@ export default function DroneToolPage() {
     const handleView = (toolId: number) => { setSelectedToolId(toolId); setShowViewTool(true); };
     const handleViewComponent = (row: any) => { setSelectedComponent(row); setShowViewComponent(true); };
     const handleLogComponent = (row: any) => { setLogComponent(row); setShowComponentLog(true); };
+    const handleFlightLogsComponent = (row: any) => { setFlightLogsComponent(row); setShowFlightLogs(true); };
     const handleEditSystem = (tool: DroneToolData) => { setSelectedToolId(tool.tool_id); setShowEditSystem(true); };
 
     const handleDelete = async (toolId: number) => {
@@ -425,6 +429,7 @@ const modelColumns = useMemo(
                                 onEditComponent={handleEditComponentDirect}
                                 onDeleteComponent={handleDeleteComponent}
                                 onLogComponent={handleLogComponent}
+                                onFlightLogsComponent={handleFlightLogsComponent}
                                 onOpenRelations={(toolId, toolCode) => {
                                     setRelationsToolId(toolId);
                                     setRelationsToolCode(toolCode);
@@ -474,6 +479,15 @@ const modelColumns = useMemo(
                     ? `${logComponent.component_type ?? ''}${logComponent.component_code ? ` — ${logComponent.component_code}` : ''}`
                     : ''}
                 onClose={() => { setShowComponentLog(false); setLogComponent(null); }}
+            />
+
+            <ComponentFlightLogsModal
+                open={showFlightLogs}
+                componentId={flightLogsComponent?.tool_component_id ?? null}
+                componentLabel={flightLogsComponent
+                    ? `${flightLogsComponent.component_type ?? ''}${flightLogsComponent.component_code ? ` — ${flightLogsComponent.component_code}` : ''}`
+                    : ''}
+                onClose={() => { setShowFlightLogs(false); setFlightLogsComponent(null); }}
             />
 
             {showEditSystem && (

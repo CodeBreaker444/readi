@@ -789,3 +789,78 @@ export async function getMaintenanceDashboard(
 
   return { code: 1, message: 'Success', dataRows: maintenanceNeeded.length, data: maintenanceNeeded };
 }
+
+export interface ComponentFlightLog {
+  log_id: number;
+  mission_id: number;
+  mission_code: string | null;
+  log_source: string;
+  original_filename: string;
+  flytbase_flight_id: string | null;
+  uploaded_at: string;
+  flight_duration: number | null;
+  distance_flown: number | null;
+  actual_start: string | null;
+  actual_end: string | null;
+}
+
+export async function getComponentFlightLogs(
+  componentId: number,
+  ownerId: number,
+): Promise<{ code: number; message: string; data: ComponentFlightLog[] }> {
+  const { data: component } = await supabase
+    .from('tool_component')
+    .select('component_id, fk_tool_id')
+    .eq('component_id', componentId)
+    .maybeSingle();
+
+  if (!component) return { code: 0, message: 'Component not found', data: [] };
+
+  const toolId = component.fk_tool_id;
+  if (!toolId) return { code: 1, message: 'Component not attached to a system', data: [] };
+
+  const { data: tool } = await supabase
+    .from('tool')
+    .select('tool_id')
+    .eq('tool_id', toolId)
+    .eq('fk_owner_id', ownerId)
+    .maybeSingle();
+
+  if (!tool) return { code: 0, message: 'Access denied', data: [] };
+
+  const { data: missions } = await supabase
+    .from('pilot_mission')
+    .select('pilot_mission_id, mission_code, actual_start, actual_end, flight_duration, distance_flown')
+    .eq('fk_tool_id', toolId)
+    .order('actual_start', { ascending: false, nullsFirst: false });
+
+  if (!missions || missions.length === 0) return { code: 1, message: 'No missions found', data: [] };
+
+  const missionIds = missions.map((m) => m.pilot_mission_id);
+  const missionMap = new Map(missions.map((m) => [m.pilot_mission_id, m]));
+
+  const { data: logs } = await supabase
+    .from('mission_flight_logs')
+    .select('log_id, fk_mission_id, log_source, original_filename, flytbase_flight_id, uploaded_at')
+    .in('fk_mission_id', missionIds)
+    .order('uploaded_at', { ascending: false });
+
+  const data: ComponentFlightLog[] = (logs ?? []).map((log) => {
+    const mission = missionMap.get(log.fk_mission_id);
+    return {
+      log_id: log.log_id,
+      mission_id: log.fk_mission_id,
+      mission_code: mission?.mission_code ?? null,
+      log_source: log.log_source,
+      original_filename: log.original_filename,
+      flytbase_flight_id: log.flytbase_flight_id,
+      uploaded_at: log.uploaded_at,
+      flight_duration: mission?.flight_duration ?? null,
+      distance_flown: mission?.distance_flown ?? null,
+      actual_start: mission?.actual_start ?? null,
+      actual_end: mission?.actual_end ?? null,
+    };
+  });
+
+  return { code: 1, message: 'Success', data };
+}

@@ -11,6 +11,18 @@ import { ChevronRight, GitBranch } from 'lucide-react';
 import { Fragment } from 'react';
 import { useMemo, useState } from 'react';
 
+function formatFlightTime(minutes: number): string {
+  if (!minutes) return '0m';
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
+function formatDistance(meters: number): string {
+  if (!meters) return '0 m';
+  return meters >= 1000 ? `${(meters / 1000).toFixed(2)} km` : `${Math.round(meters)} m`;
+}
+
 interface ComponentRow {
   tool_component_id: number;
   fk_tool_id: number | null;
@@ -21,6 +33,10 @@ interface ComponentRow {
   component_name?: string | null;
   component_sn?: string | null;
   component_status?: string | null;
+  current_maintenance_flights?: number;
+  current_usage_hours?: number;
+  current_maintenance_hours?: number;
+  current_maintenance_days?: number;
 }
 
 interface SystemComponentsTableProps {
@@ -35,6 +51,7 @@ interface SystemComponentsTableProps {
   onEditComponent: (componentId: number) => void;
   onDeleteComponent: (componentId: number, componentName: string) => void;
   onLogComponent: (row: ComponentRow) => void;
+  onFlightLogsComponent: (row: ComponentRow) => void;
   onOpenRelations: (toolId: number, toolCode: string) => void;
 }
 
@@ -61,6 +78,7 @@ export default function SystemComponentsTable({
   onEditComponent,
   onDeleteComponent,
   onLogComponent,
+  onFlightLogsComponent,
   onOpenRelations,
 }: SystemComponentsTableProps) {
   const { isDark } = useTheme();
@@ -198,7 +216,16 @@ export default function SystemComponentsTable({
                             </div>
                           </div>
                         </td>
-                        <td className={`px-3 py-3 text-xs ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{system.client_name || '—'}</td>
+                        <td className={`px-3 py-3 text-xs ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                          <div>{system.client_name || '—'}</div>
+                          {(system.tot_mission > 0 || system.tot_flown_time > 0) && (
+                            <div className={`flex flex-wrap gap-x-3 gap-y-0.5 mt-1 text-[11px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                              <span>{system.tot_mission} flight{system.tot_mission === 1 ? '' : 's'}</span>
+                              {system.tot_flown_time > 0 && <span>{formatFlightTime(system.tot_flown_time)}</span>}
+                              {system.tot_flown_meter > 0 && <span>{formatDistance(system.tot_flown_meter)}</span>}
+                            </div>
+                          )}
+                        </td>
                         <td className="px-3 py-3">
                           <StatusPill status={system.tool_status} />
                         </td>
@@ -242,6 +269,14 @@ export default function SystemComponentsTable({
                                   <Button size="sm" variant="outline" onClick={() => onViewComponent(comp)}>View</Button>
                                   <Button size="sm" variant="outline" onClick={() => onEditComponent(comp.tool_component_id)}>Edit</Button>
                                   <Button size="sm" variant="outline" onClick={() => onLogComponent(comp)}>Log</Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => onFlightLogsComponent(comp)}
+                                    className="gap-1 text-violet-600 border-violet-200 hover:bg-violet-50 hover:text-violet-700"
+                                  >
+                                    Flights
+                                  </Button>
                                   <Button
                                     size="sm"
                                     variant="destructive"
