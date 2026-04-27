@@ -3,6 +3,7 @@
 import { FlatTrainingRecord } from '@/backend/services/training/training-service';
 import { TablePagination } from '@/components/tables/Pagination';
 import { getTrainingCoursesColumns } from '@/components/tables/TrainingCoursesColumn';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -29,7 +30,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import axios from 'axios';
-import { Award, BookOpen, Filter, Plus, RefreshCw, ShieldCheck, X } from 'lucide-react';
+import { Award, BookOpen, CheckCircle2, Clock, Filter, GraduationCap, Plus, RefreshCw, ShieldCheck, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -37,6 +38,29 @@ interface UserOption {
   user_id: number;
   full_name: string;
   email: string;
+}
+
+interface CurriculumRecord {
+  attendance_id: number;
+  training_name: string;
+  training_type: string | null;
+  certificate_type: string | null;
+  session_code: string | null;
+  completion_date: string | null;
+  expiry_date: string | null;
+  status: 'VALID' | 'EXPIRED' | null;
+}
+
+const CERT_LABELS: Record<string, string> = {
+  PARTICIPATION: 'Participation',
+  QUALIFICATION: 'Qualification',
+};
+
+function fmtCurrDate(val: string | null) {
+  if (!val) return '—';
+  const [y, m, d] = val.split('-');
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${d} ${months[Number(m) - 1]} ${y}`;
 }
 
 interface FormState {
@@ -87,6 +111,10 @@ export default function TrainingCoursesPage() {
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [userSearch, setUserSearch] = useState('');
 
+  const [viewTarget, setViewTarget] = useState<FlatTrainingRecord | null>(null);
+  const [viewCurriculum, setViewCurriculum] = useState<CurriculumRecord[]>([]);
+  const [viewLoading, setViewLoading] = useState(false);
+
 
   const fetchRecords = useCallback(async () => {
     setLoading(true);
@@ -125,7 +153,7 @@ export default function TrainingCoursesPage() {
   }, [records, q, filterStatus]);
 
   const columns = useMemo(
-    () => getTrainingCoursesColumns(isDark, openEdit, (r) => setDeleteTarget(r)),
+    () => getTrainingCoursesColumns(isDark, openEdit, (r) => setDeleteTarget(r), openView),
     [isDark]
   );
 
@@ -144,6 +172,20 @@ export default function TrainingCoursesPage() {
     expired: records.filter((r) => r.status === 'EXPIRED').length,
   }), [records]);
 
+
+  async function openView(record: FlatTrainingRecord) {
+    setViewTarget(record);
+    setViewCurriculum([]);
+    setViewLoading(true);
+    try {
+      const res = await axios.get(`/api/training/curriculum?user_id=${record.fk_user_id}`);
+      if (res.data.code === 1) setViewCurriculum(res.data.data);
+    } catch (err) {
+      console.error('Failed to fetch curriculum', err);
+    } finally {
+      setViewLoading(false);
+    }
+  }
 
   function openCreate() {
     setForm(EMPTY_FORM);
@@ -581,6 +623,133 @@ export default function TrainingCoursesPage() {
         </div>
       )}
 
+
+      {viewTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className={`w-full max-w-3xl rounded-2xl border shadow-2xl flex flex-col max-h-[85vh] ${isDark ? 'bg-[#0f1320] border-white/8' : 'bg-white border-gray-200'}`}>
+
+            <div className={`flex items-center justify-between px-6 py-4 border-b ${borderMuted}`}>
+              <div className="flex items-center gap-2.5">
+                <GraduationCap size={16} className="text-violet-400" />
+                <div>
+                  <h2 className={`text-sm font-semibold ${textPrimary}`}>Training Curriculum</h2>
+                  <p className={`text-[11px] mt-0.5 ${textMuted}`}>{viewTarget.user_name ?? `User #${viewTarget.fk_user_id}`}</p>
+                </div>
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => setViewTarget(null)} className={`h-7 w-7 ${isDark ? 'text-gray-400 hover:bg-white/8' : 'text-gray-400 hover:bg-gray-100'}`}>
+                <X size={15} />
+              </Button>
+            </div>
+
+            <div className="px-6 py-5 overflow-y-auto space-y-5">
+              {viewLoading ? (
+                <div className="space-y-3 py-4">
+                  {[1, 2, 3].map((n) => (
+                    <div key={n} className={`h-3 rounded animate-pulse ${isDark ? 'bg-white/6' : 'bg-gray-100'}`} />
+                  ))}
+                </div>
+              ) : viewCurriculum.length === 0 ? (
+                <div className="text-center py-12">
+                  <GraduationCap size={32} className={`mx-auto mb-3 ${isDark ? 'text-gray-700' : 'text-gray-300'}`} />
+                  <p className={`text-sm ${textMuted}`}>No training records found for this user.</p>
+                </div>
+              ) : (
+                <>
+                  {viewCurriculum.filter((r) => r.status === 'VALID' || r.status === null).length > 0 && (
+                    <div>
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <CheckCircle2 size={13} className="text-emerald-500" />
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-500">Active</p>
+                      </div>
+                      <div className={`rounded-xl border overflow-hidden ${isDark ? 'border-white/6' : 'border-gray-200'}`}>
+                        <Table>
+                          <TableHeader>
+                            <TableRow className={`${isDark ? 'bg-white/2 border-white/6' : 'bg-gray-50/50 border-gray-100'}`}>
+                              {['Course', 'Certificate', 'Completion', 'Expiry', 'Status'].map((h) => (
+                                <TableHead key={h} className={`text-[10px] font-bold uppercase tracking-wider ${textMuted}`}>{h}</TableHead>
+                              ))}
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {viewCurriculum.filter((r) => r.status === 'VALID' || r.status === null).map((r) => (
+                              <TableRow key={r.attendance_id} className={`border-b ${borderMuted}`}>
+                                <TableCell>
+                                  <p className={`text-xs font-medium ${textPrimary}`}>{r.training_name}</p>
+                                  {r.training_type && <p className={`text-[10px] mt-0.5 ${textMuted}`}>{r.training_type}</p>}
+                                </TableCell>
+                                <TableCell>
+                                  {r.certificate_type ? (
+                                    <Badge variant="outline" className={`text-[10px] font-bold ${r.certificate_type === 'QUALIFICATION' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : 'bg-teal-500/10 text-teal-500 border-teal-500/20'}`}>
+                                      {CERT_LABELS[r.certificate_type] ?? r.certificate_type}
+                                    </Badge>
+                                  ) : <span className={`text-[11px] ${isDark ? 'text-gray-600' : 'text-gray-300'}`}>—</span>}
+                                </TableCell>
+                                <TableCell className={`text-xs ${textMuted}`}>{fmtCurrDate(r.completion_date)}</TableCell>
+                                <TableCell className={`text-xs ${textMuted}`}>{fmtCurrDate(r.expiry_date)}</TableCell>
+                                <TableCell>
+                                  <Badge variant="outline" className="text-[10px] font-bold bg-green-500/10 text-green-500 border-green-500/20">VALID</Badge>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+                  )}
+
+                  {viewCurriculum.filter((r) => r.status === 'EXPIRED').length > 0 && (
+                    <div>
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <Clock size={13} className={textMuted} />
+                        <p className={`text-[10px] font-bold uppercase tracking-wider ${textMuted}`}>History</p>
+                      </div>
+                      <div className={`rounded-xl border overflow-hidden opacity-60 ${isDark ? 'border-white/6' : 'border-gray-200'}`}>
+                        <Table>
+                          <TableHeader>
+                            <TableRow className={`${isDark ? 'bg-white/2 border-white/6' : 'bg-gray-50/50 border-gray-100'}`}>
+                              {['Course', 'Certificate', 'Completion', 'Expiry', 'Status'].map((h) => (
+                                <TableHead key={h} className={`text-[10px] font-bold uppercase tracking-wider ${textMuted}`}>{h}</TableHead>
+                              ))}
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {viewCurriculum.filter((r) => r.status === 'EXPIRED').map((r) => (
+                              <TableRow key={r.attendance_id} className={`border-b ${borderMuted}`}>
+                                <TableCell>
+                                  <p className={`text-xs font-medium ${textPrimary}`}>{r.training_name}</p>
+                                  {r.training_type && <p className={`text-[10px] mt-0.5 ${textMuted}`}>{r.training_type}</p>}
+                                </TableCell>
+                                <TableCell>
+                                  {r.certificate_type ? (
+                                    <Badge variant="outline" className={`text-[10px] font-bold ${r.certificate_type === 'QUALIFICATION' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : 'bg-teal-500/10 text-teal-500 border-teal-500/20'}`}>
+                                      {CERT_LABELS[r.certificate_type] ?? r.certificate_type}
+                                    </Badge>
+                                  ) : <span className={`text-[11px] ${isDark ? 'text-gray-600' : 'text-gray-300'}`}>—</span>}
+                                </TableCell>
+                                <TableCell className={`text-xs ${textMuted}`}>{fmtCurrDate(r.completion_date)}</TableCell>
+                                <TableCell className="text-xs text-red-400 font-medium">{fmtCurrDate(r.expiry_date)}</TableCell>
+                                <TableCell>
+                                  <Badge variant="outline" className="text-[10px] font-bold bg-red-500/10 text-red-500 border-red-500/20">EXPIRED</Badge>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            <div className={`flex justify-end px-6 py-4 border-t ${borderMuted}`}>
+              <Button variant="outline" size="sm" onClick={() => setViewTarget(null)} className={`h-8 text-xs ${isDark ? 'border-white/8 hover:bg-white/5 text-gray-300' : ''}`}>
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
