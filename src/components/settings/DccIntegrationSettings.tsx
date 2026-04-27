@@ -12,6 +12,36 @@ import { useTheme } from '../useTheme';
 const ENDPOINTS = [
   {
     method: 'POST',
+    path: '/dcc/missions',
+    trigger: 'PMVD creates a scheduled or on-demand mission',
+    body: [
+      { field: 'type',      type: 'string',  required: true,  description: '"SCHEDULED" or "ON-DEMAND"' },
+      { field: 'missions',  type: 'array',   required: true,  description: 'Array of { missionId: string, startDateTime: ISO-UTC }' },
+      { field: 'target',    type: 'string',  required: false, description: 'Human-readable mission target' },
+      { field: 'localization', type: 'object', required: false, description: 'Highway / range / waypoint info' },
+      { field: 'priority',  type: 'string',  required: false, description: 'Mission priority (e.g. HIGH)' },
+      { field: 'notes',     type: 'string',  required: false, description: 'Free-text notes' },
+      { field: 'operator',  type: 'string',  required: false, description: 'Operator identifier' },
+    ],
+    responses: [
+      '200 — DCC saved all missions',
+      '4xx/5xx — DCC rejected; PMVD will roll back created missions',
+    ],
+  },
+  {
+    method: 'POST',
+    path: '/dcc/missions/cancel',
+    trigger: 'PMVD cancels a scheduled program',
+    body: [
+      { field: 'missionIds', type: 'string[]', required: true, description: 'Complete list of mission IDs belonging to the cancelled program' },
+    ],
+    responses: [
+      '200 — DCC cancelled the missions',
+      '4xx — One or more IDs not found on DCC side',
+    ],
+  },
+  {
+    method: 'POST',
     path: '/dcc/missions/{missionId}/acceptance',
     trigger: 'OPM assigns request to a planning mission',
     body: [
@@ -66,7 +96,6 @@ export default function DccIntegrationSettings() {
   const { isDark } = useTheme();
   const [loading, setLoading]         = useState(true);
   const [saving, setSaving]           = useState(false);
-  const [testing, setTesting]         = useState(false);
   const [displayName, setDisplayName] = useState('');
   const [callbackUrl, setCallbackUrl] = useState('');
   const [saved, setSaved]             = useState(false);

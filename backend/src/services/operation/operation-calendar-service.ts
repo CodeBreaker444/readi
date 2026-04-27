@@ -77,10 +77,19 @@ export const getOperationCalendarEvents = async (
 }
 
 
+export interface MissionCreationResult {
+  firstMissionId: number;
+  missions: Array<{
+    pilotMissionId: number;
+    dccMissionId: string;
+    startDateTime: string;
+  }>;
+}
+
 export const createOperationCalendarEntry = async (
   input: CreateOperationCalendarInput,
   ownerId: number
-): Promise<number> => {
+): Promise<MissionCreationResult> => {
   if (input.fk_tool_id) {
     await assertToolNotInMaintenance(input.fk_tool_id);
   }
@@ -168,37 +177,39 @@ export const createOperationCalendarEntry = async (
     const daysSet = new Set(input.days_of_week.map((d: any) => Number(d)))
 
     const rows: object[] = []
+    const rowMeta: Array<{ dccMissionId: string; startDateTime: string }> = []
     let instanceIndex = 0
     let iterations = 0
 
     while (cursorDate <= untilDate && iterations < 1000) {
       iterations++
-      const dayOfWeek = cursorDate.getUTCDay()  
+      const dayOfWeek = cursorDate.getUTCDay()
 
       if (daysSet.has(dayOfWeek)) {
         instanceIndex++
 
         const y = cursorDate.getUTCFullYear()
-        const m = cursorDate.getUTCMonth()     
+        const m = cursorDate.getUTCMonth()
         const d = cursorDate.getUTCDate()
 
         const instanceStart = new Date(Date.UTC(y, m, d, sHour, sMin, 0, 0))
         const instanceEnd = new Date(instanceStart.getTime() + durationMs)
 
         const dateTag = `${y}${String(m + 1).padStart(2, '0')}${String(d).padStart(2, '0')}`
-        const instanceCode = input.mission_code
+        const dccMissionId = input.mission_code
           ? `${input.mission_code}-${dateTag}-${instanceIndex}`
-          : null
+          : crypto.randomUUID()
 
         rows.push({
           ...base,
-          mission_code: instanceCode,
+          mission_code: dccMissionId,
           scheduled_start: instanceStart.toISOString(),
           actual_end: instanceEnd.toISOString(),
           recurring_group_id: recurringGroupId,
           mission_date_until: input.recur_until,
           mission_group_label: input.mission_group_label ?? null,
         })
+        rowMeta.push({ dccMissionId, startDateTime: instanceStart.toISOString() })
       }
 
       cursorDate = new Date(Date.UTC(
@@ -213,17 +224,28 @@ export const createOperationCalendarEntry = async (
     const { data, error } = await supabase
       .from('pilot_mission')
       .insert(rows)
-      .select('pilot_mission_id')
+      .select('pilot_mission_id, scheduled_start')
 
     if (error) throw new Error(`Failed to create recurring operations: ${error.message}`)
-    return data[0].pilot_mission_id
+
+    return {
+      firstMissionId: data[0].pilot_mission_id,
+      missions: data.map((row: any, i: number) => ({
+        pilotMissionId: row.pilot_mission_id,
+        dccMissionId:   rowMeta[i].dccMissionId,
+        startDateTime:  rowMeta[i].startDateTime,
+      })),
+    }
   }
+
+  // mission code doubles as DCC mission ID for PMVD-initiated missions
+  const dccMissionId = input.mission_code ?? crypto.randomUUID()
 
   const { data, error } = await supabase
     .from('pilot_mission')
     .insert({
       ...base,
-      mission_code: input.mission_code ?? null,
+      mission_code: dccMissionId,
       scheduled_start: input.scheduled_start,
       actual_end: input.scheduled_end,
     })
@@ -231,14 +253,30 @@ export const createOperationCalendarEntry = async (
     .single()
 
   if (error) throw new Error(`Failed to create operation: ${error.message}`)
-  return data.pilot_mission_id
+
+  return {
+    firstMissionId: data.pilot_mission_id,
+    missions: [{
+      pilotMissionId: data.pilot_mission_id,
+      dccMissionId,
+      startDateTime: input.scheduled_start,
+    }],
+  }
 }
 
 
 export const deleteOperationCalendarEntry = async (
   operationId: number,
   ownerId: number
-): Promise<void> => {
+): Promise<{ deletedDccId: string | null }> => {
+  // Fetch before delete so we can notify DCC with the mission's DCC ID
+  const { data: mission } = await supabase
+    .from('pilot_mission')
+    .select('mission_code')
+    .eq('pilot_mission_id', operationId)
+    .eq('fk_owner_id', ownerId)
+    .single()
+
   const { error } = await supabase
     .from('pilot_mission')
     .delete()
@@ -246,6 +284,8 @@ export const deleteOperationCalendarEntry = async (
     .eq('fk_owner_id', ownerId)
 
   if (error) throw new Error(`Failed to delete operation: ${error.message}`)
+
+  return { deletedDccId: (mission as any)?.mission_code ?? null }
 }
 
 

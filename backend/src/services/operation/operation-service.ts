@@ -363,7 +363,11 @@ export async function createRecurringOperations(
     mission_group_label?: string | null;
   },
   ownerId: number
-): Promise<{ count: number; first_id: number }> {
+): Promise<{
+  count: number;
+  first_id: number;
+  missions: Array<{ pilotMissionId: number; dccMissionId: string; startDateTime: string }>;
+}> {
   const recurringGroupId = crypto.randomUUID();
 
   const { data: procRow, error: procErr } = await supabase
@@ -402,6 +406,7 @@ export async function createRecurringOperations(
   let cursorDate = new Date(Date.UTC(sYear, sMonth - 1, sDay));
 
   const rows: object[] = [];
+  const rowMeta: Array<{ dccMissionId: string; startDateTime: string }> = [];
   let instanceIndex = 0;
   let iterations = 0;
 
@@ -416,10 +421,12 @@ export async function createRecurringOperations(
       const d = cursorDate.getUTCDate();
 
       const instanceStart = new Date(Date.UTC(y, m, d, sHour, sMin, 0, 0));
+      // mission_code doubles as DCC mission ID; generate a UUID when none provided
       const instanceCode = input.mission_code
         ? `${input.mission_code}-${instanceIndex}`
-        : null;
+        : crypto.randomUUID();
 
+      rowMeta.push({ dccMissionId: instanceCode, startDateTime: instanceStart.toISOString() });
       rows.push({
         fk_owner_id: ownerId,
         mission_name: input.mission_name,
@@ -457,10 +464,18 @@ export async function createRecurringOperations(
   const { data, error } = await supabase
     .from('pilot_mission')
     .insert(rows)
-    .select('pilot_mission_id');
+    .select('pilot_mission_id, scheduled_start');
 
   if (error) throw new Error(`Failed to create recurring operations: ${error.message}`);
-  return { count: rows.length, first_id: data[0].pilot_mission_id };
+  return {
+    count: rows.length,
+    first_id: data[0].pilot_mission_id,
+    missions: data.map((row: any, i: number) => ({
+      pilotMissionId: row.pilot_mission_id,
+      dccMissionId:   rowMeta[i].dccMissionId,
+      startDateTime:  rowMeta[i].startDateTime,
+    })),
+  };
 }
 
 export async function batchSetPilot(
