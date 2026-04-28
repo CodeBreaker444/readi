@@ -27,7 +27,8 @@ export type Permission =
   | 'view_notifications'
   | 'manage_users'
   | 'add_company'
-  | 'view_client';
+  | 'view_client'
+  | 'view_erp';
 
 type WildcardPermission = '*';
 export type RolePermission = Permission | WildcardPermission;
@@ -38,7 +39,7 @@ export const ROLE_PERMISSIONS: Record<Role, RolePermission[]> = {
     'view_dashboard', 'view_pilot_dashboard', 'view_operations', 'view_compliance',
     'view_training', 'view_safety_mgmt', 'view_config', 'view_repository', 'view_logs',
     'view_planning', 'view_planning_advanced', 'view_logbooks', 'view_notifications',
-    'manage_users', 'view_client', 'add_company'
+    'manage_users', 'view_client', 'add_company', 'view_erp'
   ],
   PIC: [
     'view_pilot_dashboard',
@@ -47,14 +48,14 @@ export const ROLE_PERMISSIONS: Record<Role, RolePermission[]> = {
     'view_notifications',
     'view_repository',
   ],
-  OPM: ['view_dashboard', 'view_operations', 'view_logs', 'view_repository', 'view_planning', 'view_planning_advanced', 'view_logbooks', 'view_safety_mgmt', 'view_config', 'view_notifications', 'view_client', 'manage_users'],
-  SM:  ['view_dashboard', 'view_safety_mgmt', 'view_repository', 'view_notifications', 'view_config'],
-  AM:  ['view_dashboard', 'view_logs', 'view_repository', 'view_logbooks', 'view_config', 'view_notifications', 'manage_users'],
-  CMM: ['view_dashboard', 'view_compliance', 'view_repository', 'view_notifications'],
-  RM:  ['view_operations', 'view_logs', 'view_logbooks', 'view_notifications'],
-  TM:  ['view_dashboard', 'view_training', 'view_repository', 'view_notifications'],
-  DC:  ['view_repository', 'view_config', 'view_notifications'],
-  SLA: ['view_dashboard', 'view_logs', 'view_config', 'view_notifications'],
+  OPM: ['view_dashboard', 'view_operations', 'view_logs', 'view_repository', 'view_planning', 'view_planning_advanced', 'view_logbooks', 'view_safety_mgmt', 'view_config', 'view_notifications', 'view_client', 'manage_users', 'view_erp'],
+  SM:  ['view_dashboard', 'view_safety_mgmt', 'view_repository', 'view_notifications', 'view_config', 'view_erp'],
+  AM:  ['view_dashboard', 'view_logs', 'view_repository', 'view_logbooks', 'view_config', 'view_notifications', 'manage_users', 'view_erp'],
+  CMM: ['view_dashboard', 'view_compliance', 'view_repository', 'view_notifications', 'view_erp'],
+  RM:  ['view_operations', 'view_logs', 'view_logbooks', 'view_notifications', 'view_erp'],
+  TM:  ['view_dashboard', 'view_training', 'view_repository', 'view_notifications', 'view_erp'],
+  DC:  ['view_repository', 'view_config', 'view_notifications', 'view_erp'],
+  SLA: ['view_dashboard', 'view_logs', 'view_config', 'view_notifications', 'view_erp'],
 };
 
 export function roleHasPermission(role: Role | null | undefined, permission: Permission): boolean {
@@ -84,6 +85,7 @@ export const ROUTE_PERMISSIONS: Record<string, RoutePermissionEntry> = {
   '/logbooks/mission-planning-logbook': 'view_logbooks',
   '/logbooks/operation-logbook': 'view_logbooks',
   '/safety/spi-kpi-definitions': 'view_safety_mgmt',
+  '/emergency-contact': 'view_erp',
   '/compliance/general-audit-plan': 'view_compliance',
   '/compliance/safety-target-review': 'view_compliance',
   '/compliance/requirements-evidences': 'view_compliance',
@@ -128,6 +130,7 @@ export const API_ROUTE_PERMISSIONS: Array<{ prefix: string; permission: ApiPermi
   { prefix: '/api/evaluation', permission: 'view_planning_advanced' },
   { prefix: '/api/operation', permission: 'view_operations' },
   { prefix: '/api/logbooks', permission: 'view_logbooks' },
+  { prefix: '/api/erp', permission: 'view_erp' },
   { prefix: '/api/safety', permission: 'view_safety_mgmt' },
   { prefix: '/api/compliance', permission: 'view_compliance' },
   { prefix: '/api/notification', permission: 'view_notifications' },

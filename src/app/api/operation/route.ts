@@ -1,5 +1,6 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
-import { createOperation, createRecurringOperations, listOperations } from '@/backend/services/operation/operation-service';
+import { notifyDccMissionCreation } from '@/backend/services/mission/dcc-callback-service';
+import { createOperation, createRecurringOperations, deleteOperation, listOperations } from '@/backend/services/operation/operation-service';
 import { assertToolNotInMaintenance } from '@/backend/services/system/maintenance-ticket';
 import { CreateOperationSchema, ListOperationsQuerySchema } from '@/config/types/operation';
 import { internalError } from '@/lib/api-error';
@@ -8,6 +9,9 @@ import { getUserSession } from '@/lib/auth/server-session';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import { ZodError, z } from 'zod';
+
+// Only 409 or 422 mean DCC explicitly rejected the data, all other errors are non-blocking.
+const DCC_REJECTION_CODES = new Set([409, 422]);
 
 const listOperationsQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
@@ -83,7 +87,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(result);
   } catch (err) {
     if (err instanceof ZodError) {
-      return NextResponse.json({ error: 'Validation failed', details: err.flatten() }, { status: 400 });
+      return NextResponse.json({ error: 'Validation failed', details: err.issues }, { status: 400 });
     }
     console.error('[GET /api/operation]', err);
        return internalError(E.SV001, err);  
@@ -102,12 +106,32 @@ export async function POST(req: NextRequest) {
 
     if (body.is_recurring === true) {
       const validated = createRecurringSchema.parse(body);
-      let result: { count: number; first_id: number };
+      let result: Awaited<ReturnType<typeof createRecurringOperations>>;
       try {
         result = await createRecurringOperations(validated, ownerId);
       } catch (appErr: any) {
         return NextResponse.json({ success: false, error: appErr.message }, { status: 400 });
       }
+
+      const dcc = await notifyDccMissionCreation(ownerId, {
+        type: 'SCHEDULED',
+        target: validated.mission_name,
+        missions: result.missions.map((m) => ({
+          missionId:     m.dccMissionId,
+          startDateTime: m.startDateTime,
+        })),
+        notes:    validated.notes ?? undefined,
+        operator: session.user.email ?? undefined,
+      });
+
+      if (dcc.outcome === 'http_error' && DCC_REJECTION_CODES.has(dcc.httpStatus!)) {
+        await Promise.allSettled(result.missions.map((m) => deleteOperation(m.pilotMissionId)));
+        return NextResponse.json(
+          { success: false, error: 'DCC rejected the mission creation - operation rolled back', dcc },
+          { status: 502 },
+        );
+      }
+
       logEvent({
         eventType: 'CREATE',
         entityType: 'operation',
@@ -118,7 +142,7 @@ export async function POST(req: NextRequest) {
         userRole: session.user.role,
         ownerId,
       });
-      return NextResponse.json({ success: true, count: result.count, first_id: result.first_id }, { status: 201 });
+      return NextResponse.json({ success: true, count: result.count, first_id: result.first_id, dcc }, { status: 201 });
     }
 
     const validated = createOperationSchema.parse(body) as CreateOperationSchema;
@@ -137,6 +161,26 @@ export async function POST(req: NextRequest) {
     } catch (appErr: any) {
       return NextResponse.json({ error: appErr.message }, { status: 400 });
     }
+
+    const dcc = await notifyDccMissionCreation(ownerId, {
+      type: 'ON-DEMAND',
+      target: validated.mission_name,
+      missions: [{
+        missionId:     operation.mission_code,
+        startDateTime: operation.scheduled_start ?? new Date().toISOString(),
+      }],
+      notes:    validated.notes ?? undefined,
+      operator: session.user.email ?? undefined,
+    });
+
+    if (dcc.outcome === 'http_error' && DCC_REJECTION_CODES.has(dcc.httpStatus!)) {
+      await deleteOperation(operation.pilot_mission_id);
+      return NextResponse.json(
+        { success: false, error: 'DCC rejected the mission creation - operation rolled back', dcc },
+        { status: 502 },
+      );
+    }
+
     logEvent({
       eventType: 'CREATE',
       entityType: 'operation',
@@ -147,10 +191,10 @@ export async function POST(req: NextRequest) {
       userRole: session.user.role,
       ownerId,
     });
-    return NextResponse.json(operation, { status: 201 });
+    return NextResponse.json({ ...operation, dcc }, { status: 201 });
   } catch (err) {
     if (err instanceof ZodError) {
-      return NextResponse.json({ error: 'Validation failed', details: err.flatten() }, { status: 400 });
+      return NextResponse.json({ error: 'Validation failed', details: err.issues }, { status: 400 });
     }
     console.error('[POST /api/operation]', err);
     return internalError(E.SV001, err);  

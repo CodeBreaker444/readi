@@ -2,7 +2,8 @@
 
 import { Badge } from "@/components/ui/badge";
  
-import { cn } from "@/lib/utils";
+import { useTimezone } from "@/components/TimezoneProvider";
+import { cn, formatDateInTz } from "@/lib/utils";
 import {
     AlertTriangle,
     CalendarDays,
@@ -131,7 +132,7 @@ function CycleProgressBar({
   );
 }
 
-function formatLastMaintenance(dateStr: string | null, t: ReturnType<typeof useTranslation>["t"]): string {
+function formatLastMaintenance(dateStr: string | null, t: ReturnType<typeof useTranslation>["t"], tz: string): string {
   if (!dateStr) return t("common.never");
   const d = new Date(dateStr);
   const diffDays = Math.floor((Date.now() - d.getTime()) / (1000 * 60 * 60 * 24));
@@ -139,7 +140,7 @@ function formatLastMaintenance(dateStr: string | null, t: ReturnType<typeof useT
   if (diffDays === 1) return t("common.yesterday");
   if (diffDays < 30) return t("common.daysAgo", { count: diffDays });
   if (diffDays < 365) return t("common.monthsAgo", { count: Math.floor(diffDays / 30) });
-  return d.toLocaleDateString();
+  return formatDateInTz(dateStr, tz);
 }
  
 
@@ -167,6 +168,7 @@ export function MaintenanceTab({
   onResetHours,
 }: MaintenanceTabProps) {
   const { t } = useTranslation();
+  const { timezone } = useTimezone();
   const hasComponents = systemData && systemData.components.length > 0;
 
   if (loadingMaint) {
@@ -259,7 +261,7 @@ export function MaintenanceTab({
                 <span className={cn("text-[10px]", isDark ? "text-slate-600" : "text-slate-400")}>
                   {t("operations.missionComplete.maintenance.lastUpdated")}{" "}
                   <span className={cn("font-medium", isDark ? "text-slate-400" : "text-slate-500")}>
-                    {formatLastMaintenance(comp.last_maintenance_date, t)}
+                    {formatLastMaintenance(comp.last_maintenance_date, t, timezone)}
                   </span>
                 </span>
               </div>

@@ -2,6 +2,110 @@ import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { Role, RoutePermissionEntry, roleHasPermission } from "./auth/roles";
 
+export const DEFAULT_TIMEZONE = 'Europe/Berlin';
+
+const TIMEZONE_ABBR_MAP: Record<string, string> = {
+  IST: 'Asia/Kolkata',
+  CET: 'Europe/Berlin',
+  CEST: 'Europe/Berlin',
+  EST: 'America/New_York',
+  EDT: 'America/New_York',
+  PST: 'America/Los_Angeles',
+  PDT: 'America/Los_Angeles',
+  CST: 'America/Chicago',
+  MST: 'America/Denver',
+  GMT: 'Europe/London',
+  BST: 'Europe/London',
+  JST: 'Asia/Tokyo',
+  AST: 'Asia/Dubai',
+  UTC: 'UTC',
+};
+
+export function resolveIanaTimezone(tz?: string | null): string {
+  if (!tz) return DEFAULT_TIMEZONE;
+  if (tz.includes('/') || tz === 'UTC') return tz;
+  return TIMEZONE_ABBR_MAP[tz.toUpperCase()] ?? DEFAULT_TIMEZONE;
+}
+
+/**
+ * Formats a UTC date string (or Date object) into the given timezone.
+ *
+ * @param date   ISO string or Date object (always treated as UTC).
+ * @param tz     IANA timezone id (e.g. 'Europe/Berlin') or legacy abbreviation.
+ * @param opts   Intl.DateTimeFormatOptions – defaults to date + time.
+ * @returns      Localised string in the target timezone.
+ */
+export function formatInTz(
+  date: string | Date | null | undefined,
+  tz: string | null | undefined,
+  opts: Intl.DateTimeFormatOptions = {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  },
+): string {
+  if (!date) return '—';
+  try {
+    const resolved = resolveIanaTimezone(tz);
+    return new Intl.DateTimeFormat('en-GB', { ...opts, timeZone: resolved }).format(
+      typeof date === 'string' ? new Date(date) : date,
+    );
+  } catch {
+    return String(date);
+  }
+}
+
+/**
+ * Date-only shorthand — shows day, month name, year in the user's timezone.
+ */
+export function formatDateInTz(
+  date: string | Date | null | undefined,
+  tz: string | null | undefined,
+): string {
+  return formatInTz(date, tz, { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+/**
+ * Date + HH:mm shorthand in the user's timezone.
+ */
+export function formatDateTimeInTz(
+  date: string | Date | null | undefined,
+  tz: string | null | undefined,
+): string {
+  return formatInTz(date, tz, {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+}
+
+/**
+ * Time-only shorthand (HH:mm) in the user's timezone.
+ */
+export function formatTimeInTz(
+  date: string | Date | null | undefined,
+  tz: string | null | undefined,
+): string {
+  return formatInTz(date, tz, { hour: '2-digit', minute: '2-digit', hour12: false });
+}
+
+ 
+export function nowAsLocalInput(tz: string | null | undefined, offsetHours = 0): string {
+  const d = new Date(Date.now() + offsetHours * 3600_000);
+  const resolved = resolveIanaTimezone(tz);
+  return new Intl.DateTimeFormat('sv', {
+    timeZone: resolved,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hour12: false,
+  }).format(d).slice(0, 16).replace(' ', 'T');
+}
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }

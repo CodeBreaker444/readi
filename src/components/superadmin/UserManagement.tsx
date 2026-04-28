@@ -184,7 +184,7 @@ export default function UserManagement({ session }: UserManagementProps) {
         user_type: formData.user_type,
         user_viewer: formData.is_viewer,
         user_manager: formData.is_manager,
-        timezone: 'IST',
+        timezone: 'Europe/Berlin',
         ...(isSuperAdmin && { owner_id: formData.owner_id }),
       });
       const data = res.data;

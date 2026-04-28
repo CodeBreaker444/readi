@@ -3,12 +3,14 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ColumnDef } from '@tanstack/react-table'
 import { ArrowUpDown, Pencil, Play, Trash2 } from 'lucide-react'
+import { formatDateInTz } from '@/lib/utils'
 
 export const getAssignmentColumns = (
   isDark: boolean,
   onEdit: (item: Assignment) => void,
   onPreview: (item: Assignment) => void,
-  onDelete: (item: Assignment) => void
+  onDelete: (item: Assignment) => void,
+  timezone?: string,
 ): ColumnDef<Assignment>[] => [
   {
     id: 'index',
@@ -97,7 +99,7 @@ export const getAssignmentColumns = (
     cell: ({ row }) => (
       <span className="text-xs text-slate-600 dark:text-slate-300">
         {row.original.updated_at
-          ? new Date(row.original.updated_at).toLocaleDateString('en-GB')
+          ? formatDateInTz(row.original.updated_at, timezone)
           : <span className="text-slate-300 dark:text-slate-600">—</span>
         }
       </span>

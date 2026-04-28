@@ -162,6 +162,7 @@
     "flightLogbook": "Flight Logbook",
     "safetyManagement": "Safety Management",
     "spiKpiDefinitions": "SPI & KPI Definitions",
+    "emergencyContactList": "Emergency Contact List",
     "compliance": "Compliance",
     "generalAuditPlan": "General Audit Plan",
     "safetyTargetReview": "Safety Target Review",
@@ -1375,7 +1376,8 @@
       "title": "Mission Complete",
       "tabs": {
         "maintenance": "Maintenance",
-        "flightLogs": "Flight Logs"
+        "flightLogs": "Flight Logs",
+        "postFlight": "Post-Flight Data"
       },
       "maintenance": {
         "noComponents": "No components configured for this system.",
@@ -1410,12 +1412,44 @@
           "24hrs": "Last 24 hrs"
         }
       },
+      "postFlight": {
+        "sections": {
+          "outcome": "Mission Outcome",
+          "flightData": "Flight Data",
+          "battery": "Battery",
+          "incidents": "Incidents & Flags",
+          "weather": "Weather & Notes",
+          "notes": "Mission Notes"
+        },
+        "fields": {
+          "missionResult": "Mission Result",
+          "actualEnd": "End Date / Time",
+          "duration": "Total Flown Time (Min)",
+          "distanceFlown": "Total Flown Distance (Mt)",
+          "batteryChargeStart": "Battery Charge Start",
+          "batteryChargeEnd": "Battery Charge End",
+          "incidentFlag": "Incident Flag",
+          "rthUnplanned": "Return to Home Unplanned",
+          "linkLoss": "Link Loss",
+          "deviationFlag": "Deviation Flag",
+          "weatherTemp": "Weather Temp (Average)"
+        },
+        "placeholders": {
+          "selectResult": "Select mission result…",
+          "notes": "Post-flight notes, observations, incidents…"
+        },
+        "validation": {
+          "incidentFlagged": "One or more incident flags are active — review before saving"
+        }
+      },
       "footer": {
         "updateWarning": "Update maintenance to complete mission",
         "backToInProgress": "Back to In Progress",
         "close": "Close",
         "updateMaintenance": "Update Maintenance",
-        "updating": "Updating…"
+        "updating": "Updating…",
+        "savePostFlight": "Save Post-Flight Data",
+        "saving": "Saving…"
       },
       "toast": {
         "loadError": "Failed to load maintenance data",
@@ -1426,7 +1460,8 @@
         "noFlightsFound": "No flights found in this time window.",
         "attachSuccess": "Flight log attached from FlytBase",
         "autoSyncSuccess_one": "Auto-filled usage for {{count}} component from GUTMA",
-        "autoSyncSuccess_other": "Auto-filled usage for {{count}} components from GUTMA"
+        "autoSyncSuccess_other": "Auto-filled usage for {{count}} components from GUTMA",
+        "postFlightSuccess": "Post-flight data saved"
       }
     },
     "dialog": {
@@ -1579,6 +1614,8 @@
         "chooseClient": "Choose a Client",
         "ccPlatform": "CC Platform",
         "uploadLogFile": "Upload Log File (.gutma or .zip)",
+        "flytbaseWindow": "FlytBase Window",
+        "selectFlightLog": "Select Flight Log",
         "droneSystem": "Drone System",
         "missionCategory": "Mission Category",
         "missionType": "Mission Type",
@@ -1594,6 +1631,7 @@
       "placeholders": {
         "selectClient": "Select client…",
         "selectPilot": "Select pilot…",
+        "selectFlightLog": "Select a FlytBase flight…",
         "location": "e.g. Grid A-7, Site North",
         "groupLabel": "e.g. Spring Survey 2025",
         "notes": "Additional notes…",
@@ -1602,6 +1640,7 @@
       "info": {
         "gutmaAutoExtract": "Mission code, altitude, distance and timestamps are extracted automatically from the GUTMA log file.",
         "clickToUpload": "Click to upload",
+        "uploadOrSelectFlight": "Upload a .gutma/.zip file or select a FlytBase flight log to auto-fetch.",
         "noPlansForDrone": "No plans for this drone",
         "selectDroneFirst": "Select drone first",
         "youAreAllSet": "You are all set",
@@ -1624,6 +1663,7 @@
       "buttons": {
         "previous": "Previous",
         "next": "Next",
+        "refreshFlights": "Refresh Flights",
         "importing": "Importing…",
         "importMission": "Import Mission",
         "done": "Done"
@@ -1633,6 +1673,8 @@
         "loadDronesError": "Failed to load drones",
         "loadMissionOptionsError": "Failed to load mission options",
         "loadPilotsError": "Failed to load pilots",
+        "loadFlightsError": "Failed to load FlytBase flights",
+        "noFlightsFound": "No FlytBase flights found in this time window",
         "importSuccess": "Imported {{count}} mission(s)",
         "importSuccessWithSkipped": "Imported {{count}} mission(s), {{skipped}} duplicate(s) skipped",
         "allDuplicates": "All {{count}} mission(s) were already imported (duplicates skipped)",
@@ -2466,21 +2508,62 @@
     }
   },
   "training": {
-  "title": "Training Calendar",
-  "subtitle": "View scheduled training sessions",
-  "refresh": "Refresh",
-  "loading": "Loading training sessions...",
-  "legend": "Legend:",
-  "participant": "Participant",
-  "sessionDate": "Session Date",
-  "status": "Status",
-  "close": "Close",
-  "statuses": {
-    "COMPLETED": "Completed",
-    "IN_PROGRESS": "In Progress",
-    "FAILED": "Failed",
-    "ABSENT": "Absent",
-    "OTHER": "Other"
+    "title": "Training Calendar",
+    "subtitle": "View scheduled training sessions",
+    "refresh": "Refresh",
+    "loading": "Loading training sessions...",
+    "legend": "Legend:",
+    "participant": "Participant",
+    "sessionDate": "Session Date",
+    "status": "Status",
+    "close": "Close",
+    "statuses": {
+      "COMPLETED": "Completed",
+      "IN_PROGRESS": "In Progress",
+      "FAILED": "Failed",
+      "ABSENT": "Absent",
+      "OTHER": "Other"
+    }
+  },
+  "erp": {
+    "pageTitle": "Emergency Response Plan",
+    "pageSubtitle": "Safety Management · Emergency contact list and response plans",
+    "newPlan": "Create ERP",
+    "infoBanner": "Define emergency response plans with contacts for each scenario. All plans are filtered by your organization.",
+    "stats": {
+      "total": "Total Plans",
+      "general": "General Plans",
+      "other": "Specialized Plans"
+    },
+    "types": {
+      "GENERAL": "General",
+      "MEDICAL": "Medical",
+      "FIRE": "Fire",
+      "SECURITY": "Security",
+      "ENVIRONMENTAL": "Environmental"
+    },
+    "form": {
+      "title": "New Emergency Response Plan",
+      "type": "Type",
+      "contact": "Contact",
+      "contactPlaceholder": "e.g. +1 555 000 0000",
+      "description": "Description",
+      "descriptionPlaceholder": "Describe the response procedure and escalation steps...",
+      "cancel": "Cancel",
+      "create": "Create Plan",
+      "processing": "Saving..."
+    },
+    "table": {
+      "type": "Type",
+      "contact": "Contact",
+      "description": "Description",
+      "createdAt": "Created",
+      "noResults": "No emergency response plans found. Create one to get started."
+    },
+    "toast": {
+      "loadError": "Failed to load emergency response plans",
+      "created": "Emergency response plan created successfully",
+      "saveFailed": "Failed to save the plan"
+    }
   }
-}
 }

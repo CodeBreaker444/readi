@@ -24,6 +24,14 @@ async function existsInS3(key: string): Promise<boolean> {
   }
 }
 
+function haversineM(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+
 function parseGutma(flightId: string, gutma: any): Record<string, any> {
   const message    = gutma?.exchange?.message ?? {};
   const flightData = message?.flight_data ?? {};
@@ -65,19 +73,62 @@ function parseGutma(flightId: string, gutma: any): Record<string, any> {
     };
   });
 
+  // Battery charge: first and last logged data points
+  let battery_charge_start: number | null = null;
+  let battery_charge_end: number | null = null;
+  if (batteryIdx >= 0 && items.length > 0) {
+    const first = items[0][batteryIdx];
+    const last  = items[items.length - 1][batteryIdx];
+    if (first != null) battery_charge_start = Math.round(Number(first));
+    if (last  != null) battery_charge_end   = Math.round(Number(last));
+  }
+
+  // Compute total distance in metres from all GPS points (not just the 500-item waypoint slice)
+  let distance_m: number | null = null;
+  if (latIdx >= 0 && lonIdx >= 0 && items.length > 1) {
+    let total = 0;
+    for (let i = 1; i < items.length; i++) {
+      const lat1 = items[i - 1][latIdx];
+      const lon1 = items[i - 1][lonIdx];
+      const lat2 = items[i][latIdx];
+      const lon2 = items[i][lonIdx];
+      if (lat1 != null && lon1 != null && lat2 != null && lon2 != null) {
+        total += haversineM(lat1, lon1, lat2, lon2);
+      }
+    }
+    if (total > 0) distance_m = Math.round(total);
+  }
+
+  // FlytBase GUTMA may use start_dtg/end_dtg instead of start_time/end_time
+  const loggingStart = logging?.logging_start_dtg ?? null;
+  const start_time =
+    flightData?.start_time ??
+    flightData?.start_dtg ??
+    message?.start_time ??
+    loggingStart ??
+    null;
+  const end_time =
+    flightData?.end_time ??
+    flightData?.end_dtg ??
+    message?.end_time ??
+    null;
+
   return {
-    flight_id:       flightId,
-    filename:        gutmaFilename(flightId, gutma),
-    aircraft:        flightData?.aircraft ?? {},
-    gcs:             flightData?.gcs ?? {},
-    payload:         flightData?.payload ?? [],
-    pilot:           flightData?.pilot_in_command ?? null,
-    logging_start:   logging?.logging_start_dtg ?? null,
-    events:          logging?.events ?? [],
+    flight_id:            flightId,
+    filename:             gutmaFilename(flightId, gutma),
+    aircraft:             flightData?.aircraft ?? {},
+    gcs:                  flightData?.gcs ?? {},
+    payload:              flightData?.payload ?? [],
+    pilot:                flightData?.pilot_in_command ?? null,
+    logging_start:        loggingStart,
+    events:               logging?.events ?? [],
     waypoints,
-    total_waypoints: items.length,
-    start_time:      flightData?.start_time ?? message?.start_time ?? null,
-    end_time:        flightData?.end_time   ?? message?.end_time   ?? null,
+    total_waypoints:      items.length,
+    distance_m,
+    start_time,
+    end_time,
+    battery_charge_start,
+    battery_charge_end,
   };
 }
 

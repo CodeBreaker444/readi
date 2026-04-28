@@ -1,5 +1,6 @@
 'use client';
 
+import { formatDateInTz } from '@/lib/utils';
 import { ColumnDef } from '@tanstack/react-table';
 import { Building2, Globe, Mail, MoreHorizontal, Pencil, Phone, Trash2 } from 'lucide-react';
 import { Badge } from '../ui/badge';
@@ -38,9 +39,10 @@ interface GetClientColumnsOptions {
   isDark: boolean;
   onEdit: (client: ClientData) => void;
   onDelete: (clientId: number) => void;
+  timezone?: string;
 }
 
-export function getClientColumns({ isDark, onEdit, onDelete }: GetClientColumnsOptions): ColumnDef<ClientData>[] {
+export function getClientColumns({ isDark, onEdit, onDelete, timezone }: GetClientColumnsOptions): ColumnDef<ClientData>[] {
   return [
     {
       accessorKey: 'client_name',
@@ -151,7 +153,7 @@ export function getClientColumns({ isDark, onEdit, onDelete }: GetClientColumnsO
         const isExpired = d < new Date();
         return (
           <span className={`text-xs font-medium ${isExpired ? (isDark ? 'text-rose-400' : 'text-rose-600') : (isDark ? 'text-slate-300' : 'text-slate-700')}`}>
-            {d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+            {formatDateInTz(date, timezone)}
           </span>
         );
       },

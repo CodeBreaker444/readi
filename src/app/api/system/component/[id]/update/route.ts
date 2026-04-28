@@ -27,6 +27,7 @@ const schema = z.object({
   maintenance_cycle_day: z.number().optional().nullable(),
   maintenance_cycle_flight: z.number().optional().nullable(),
   battery_cycle_ratio: z.number().min(0).max(1).optional().nullable(),
+  fk_parent_component_id: z.number().positive().optional().nullable(),
 });
 
 export async function POST(
@@ -43,7 +44,7 @@ export async function POST(
     const parsed = schema.safeParse(body);
     if (!parsed.success) return zodError(E.VL009, parsed.error);
 
-    const result = await updateComponent(Number(id), parsed.data);
+    const result = await updateComponent(Number(id), { ...parsed.data, fk_parent_component_id: parsed.data.fk_parent_component_id ?? null });
 
     if (result.code === 1) {
       logEvent({

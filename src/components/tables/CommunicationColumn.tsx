@@ -5,11 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Communication } from "@/config/types/communication";
 import { type ColumnDef } from "@tanstack/react-table";
 import { HiPencil, HiTrash } from "react-icons/hi";
+import { formatDateInTz } from '@/lib/utils';
 
 export function getCommunicationColumns(
   isDark: boolean,
   onEdit: (communication: Communication) => void,
-  onDelete: (communicationId: number) => void
+  onDelete: (communicationId: number) => void,
+  timezone?: string,
 ): ColumnDef<Communication>[] {
   return [
     {
@@ -80,7 +82,7 @@ export function getCommunicationColumns(
         return (
           <div className="flex flex-col">
             <span className="text-xs font-medium text-slate-700 dark:text-slate-200">
-              {new Date(val).toLocaleDateString("en-GB", { day: '2-digit', month: 'short', year: 'numeric' })}
+              {formatDateInTz(val, timezone)}
             </span>
           </div>
         );

@@ -48,7 +48,7 @@ const initialForm = {
     admin_fullname: '',
     admin_email: '',
     admin_phone: '',
-    admin_timezone: 'IST',
+    admin_timezone: 'Europe/Berlin',
 };
 export default function AddOwnerModal({ open, onClose, onSuccess }: AddOwnerModalProps) {
     const [form, setForm] = useState(initialForm);
@@ -148,11 +148,12 @@ export default function AddOwnerModal({ open, onClose, onSuccess }: AddOwnerModa
 
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
-            <DialogContent className="sm:max-w-3xl max-h-[85vh] overflow-y-auto">
-                <DialogHeader>
+            <DialogContent className="sm:max-w-3xl max-h-[85vh] flex flex-col overflow-hidden p-0 gap-0">
+                <DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">
                     <DialogTitle>Add Company</DialogTitle>
                 </DialogHeader>
 
+                <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
                 {error && <p className="rounded bg-red-50 p-2 text-sm text-red-600">{error}</p>}
 
                 <div className="space-y-4">
@@ -222,23 +223,27 @@ export default function AddOwnerModal({ open, onClose, onSuccess }: AddOwnerModa
                                     <SelectValue placeholder="Select Timezone" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="Asia/Kolkata">India (IST)</SelectItem>
-                                    <Separator className="my-1" />
+                                    <SelectItem value="Europe/Berlin">Central Europe (CET/CEST)</SelectItem>
+                                    <SelectItem value="Europe/London">UK / Ireland (GMT/BST)</SelectItem>
+                                    <SelectItem value="Europe/Paris">France / Belgium (CET/CEST)</SelectItem>
+                                    <SelectItem value="Europe/Rome">Italy / Spain (CET/CEST)</SelectItem>
                                     <SelectItem value="UTC">UTC</SelectItem>
-                                    <SelectItem value="America/New_York">US Eastern</SelectItem>
-                                    <SelectItem value="America/Chicago">US Central</SelectItem>
-                                    <SelectItem value="America/Los_Angeles">US Pacific</SelectItem>
-                                    <SelectItem value="Europe/London">UK</SelectItem>
-                                    <SelectItem value="Europe/Rome">Central Europe</SelectItem>
-                                    <SelectItem value="Asia/Dubai">Gulf</SelectItem>
-                                    <SelectItem value="Asia/Tokyo">Japan</SelectItem>
+                                    <SelectItem value="America/New_York">US Eastern (EST/EDT)</SelectItem>
+                                    <SelectItem value="America/Chicago">US Central (CST/CDT)</SelectItem>
+                                    <SelectItem value="America/Los_Angeles">US Pacific (PST/PDT)</SelectItem>
+                                    <SelectItem value="Asia/Kolkata">India (IST)</SelectItem>
+                                    <SelectItem value="Asia/Dubai">Gulf (GST)</SelectItem>
+                                    <SelectItem value="Asia/Tokyo">Japan (JST)</SelectItem>
+                                    <SelectItem value="Asia/Singapore">Singapore (SGT)</SelectItem>
+                                    <SelectItem value="Australia/Sydney">Sydney (AEST/AEDT)</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
                     </div>
                 </div>
+                </div>
 
-                <DialogFooter>
+                <DialogFooter className="shrink-0 px-6 py-4 border-t">
                     <Button variant="outline" onClick={onClose}>
                         Close
                     </Button>

@@ -2,7 +2,8 @@
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
  
-import { cn } from "@/lib/utils";
+import { useTimezone } from "@/components/TimezoneProvider";
+import { cn, formatDateTimeInTz } from "@/lib/utils";
 import {
     CheckCircle2,
     Clock,
@@ -98,6 +99,7 @@ export function FlightLogsTab({
   onAttachFlight,
 }: FlightLogsTabProps) {
   const { t } = useTranslation();
+  const { timezone } = useTimezone();
 
   return (
     <div className="space-y-5">
@@ -131,7 +133,7 @@ export function FlightLogsTab({
                     {log.log_source === "flytbase"
                       ? t("operations.missionComplete.logs.sourceFlytbase")
                       : t("operations.missionComplete.logs.sourceManual")
-                    } · {new Date(log.uploaded_at).toLocaleString()}
+                    } · {formatDateTimeInTz(log.uploaded_at, timezone)}
                   </p>
                 </div>
                 <a href={log.download_url} target="_blank" rel="noopener noreferrer" title="Download">

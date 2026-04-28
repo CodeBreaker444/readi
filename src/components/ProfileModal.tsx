@@ -1,10 +1,12 @@
 'use client';
 import { SessionUser } from '@/lib/auth/server-session';
+import { formatDateInTz } from '@/lib/utils';
 import axios from 'axios';
 import { Camera, CheckCircle2, Clock, GraduationCap, Loader2, User } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { useTimezone } from './TimezoneProvider';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -139,6 +141,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   userData,
 }) => {
   const { t } = useTranslation();
+  const { timezone } = useTimezone();
   const canEditEmail =
     userData?.role === 'ADMIN' || userData?.role === 'SUPERADMIN';
 
@@ -146,7 +149,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     fullName: userData?.fullname || '',
     email: userData?.email || '',
     phone: userData?.phone || '',
-    timezone: '',
+    timezone: 'Europe/Berlin',
     department: 'Global',
     client: '',
     profile: '',
@@ -186,7 +189,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           fullName: data.user.fullName || '',
           email: data.user.email || '',
           phone: data.user.phone || '',
-          timezone: data.user.user_timezone || 'IST',
+          timezone: data.user.user_timezone || 'Europe/Berlin',
           department: 'Global',
           client: '',
           profile: '',
@@ -291,12 +294,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
   const displayAvatar = avatarPreview || currentAvatarUrl;
 
-  const formatDate = (dateStr: string) =>
-    new Date(dateStr).toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    });
+  const formatDate = (dateStr: string) => formatDateInTz(dateStr, timezone);
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -417,12 +415,25 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                         <SelectValue placeholder={t('profile.placeholders.timezone')} />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="Europe/Berlin">Central Europe (CET/CEST)</SelectItem>
+                        <SelectItem value="Europe/London">UK / Ireland (GMT/BST)</SelectItem>
+                        <SelectItem value="Europe/Paris">France / Belgium (CET/CEST)</SelectItem>
+                        <SelectItem value="Europe/Rome">Italy / Spain (CET/CEST)</SelectItem>
+                        <SelectItem value="Europe/Helsinki">Finland / Estonia (EET/EEST)</SelectItem>
+                        <SelectItem value="Europe/Moscow">Moscow (MSK)</SelectItem>
                         <SelectItem value="UTC">UTC</SelectItem>
-                        <SelectItem value="EST">EST</SelectItem>
-                        <SelectItem value="PST">PST</SelectItem>
-                        <SelectItem value="IST">IST</SelectItem>
-                        <SelectItem value="CET">CET</SelectItem>
-                        <SelectItem value="GMT">GMT</SelectItem>
+                        <SelectItem value="America/New_York">US Eastern (EST/EDT)</SelectItem>
+                        <SelectItem value="America/Chicago">US Central (CST/CDT)</SelectItem>
+                        <SelectItem value="America/Denver">US Mountain (MST/MDT)</SelectItem>
+                        <SelectItem value="America/Los_Angeles">US Pacific (PST/PDT)</SelectItem>
+                        <SelectItem value="America/Sao_Paulo">Brazil (BRT)</SelectItem>
+                        <SelectItem value="Asia/Kolkata">India (IST)</SelectItem>
+                        <SelectItem value="Asia/Dubai">Gulf (GST)</SelectItem>
+                        <SelectItem value="Asia/Tokyo">Japan (JST)</SelectItem>
+                        <SelectItem value="Asia/Singapore">Singapore (SGT)</SelectItem>
+                        <SelectItem value="Asia/Shanghai">China (CST)</SelectItem>
+                        <SelectItem value="Australia/Sydney">Sydney (AEST/AEDT)</SelectItem>
+                        <SelectItem value="Pacific/Auckland">New Zealand (NZST/NZDT)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import ClientLayoutWrapper from "../components/ClientLayoutWrapper";
 import { I18nProvider } from "../components/I18nProvider";
 import { ThemeProvider } from "../components/ThemeProvider";
+import { TimezoneProvider } from "../components/TimezoneProvider";
 import { getUserSession } from "../lib/auth/server-session";
 import "./globals.css";
 
@@ -27,16 +28,19 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const sessionPromise = getUserSession();
+  const session = await sessionPromise;
   
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <ThemeProvider>
           <I18nProvider>
-            <Toaster />
-            <ClientLayoutWrapper sessionPromise={sessionPromise}>
-              {children}
-            </ClientLayoutWrapper>
+            <TimezoneProvider userTimezone={session?.user?.timezone}>
+              <Toaster />
+              <ClientLayoutWrapper sessionPromise={Promise.resolve(session)}>
+                {children}
+              </ClientLayoutWrapper>
+            </TimezoneProvider>
           </I18nProvider>
         </ThemeProvider>
       </body>

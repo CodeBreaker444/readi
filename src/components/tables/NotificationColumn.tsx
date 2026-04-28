@@ -3,31 +3,17 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Notification } from "@/config/types/notification";
+import { formatDateInTz, formatTimeInTz } from "@/lib/utils";
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
 import { ArrowUpDown, CheckCircle, Trash2, User } from "lucide-react";
 
-function fmtDate(s: string | null) {
-  if (!s) return "—";
-  return new Date(s).toLocaleString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-function fmtTime(s: string | null) {
-  if (!s) return "";
-  return new Date(s).toLocaleString("en-GB", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 const columnHelper = createColumnHelper<Notification>();
 
 export const getColumns = (
   handleMarkRead: (id: number) => void,
-  setDeleteTarget: (n: Notification) => void
+  setDeleteTarget: (n: Notification) => void,
+  timezone?: string,
 ): ColumnDef<Notification, any>[] => [
   {
     accessorKey: "notification_id",
@@ -89,10 +75,10 @@ export const getColumns = (
     cell: ({ row }) => (
       <div className="flex flex-col gap-0.5">
         <span className="text-xs font-medium text-slate-800 dark:text-white">
-          {fmtDate(row.getValue("created_at"))}
+          {formatDateInTz(row.getValue("created_at"), timezone)}
         </span>
         <span className="text-[10px] text-slate-400">
-          {fmtTime(row.getValue("created_at"))}
+          {formatTimeInTz(row.getValue("created_at"), timezone)}
         </span>
       </div>
     ),

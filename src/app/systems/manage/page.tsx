@@ -3,15 +3,18 @@
 import AddComponentModal from '@/components/system/AddComponentModal';
 import AddModelModal from '@/components/system/AddModelModal';
 import AddSystemModal from '@/components/system/AddSystemModal';
+import { ComponentFlightLogsModal } from '@/components/system/ComponentFlightLogsModal';
 import { ComponentLogModal } from '@/components/system/ComponentLogModal';
+import ComponentRelationsModal from '@/components/system/ComponentRelationsModal';
 import DataTable from '@/components/system/DataTable';
 import EditComponentModal from '@/components/system/EditComponentModal';
 import EditModelModal from '@/components/system/EditModelModal';
 import EditSystemModal from '@/components/system/EditSystemModal';
 import { FilesDownloadModal, SystemFile } from '@/components/system/FilesDownloadModal';
+import SystemComponentsTable from '@/components/system/SystemComponentsTable';
 import ViewComponentModal from '@/components/system/ViewComponentModal';
 import ViewToolModal from '@/components/system/ViewToolModal';
-import { DroneToolData, getComponentColumns, getModelColumns, systemCreateColumns } from '@/components/tables/SystemColumn';
+import { DroneToolData, getModelColumns } from '@/components/tables/SystemColumn';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -27,7 +30,7 @@ import { AlertTriangle, Loader2, Plus, RefreshCw } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
-type ActiveTab = 'system' | 'model' | 'component' | 'maintenance';
+type ActiveTab = 'system' | 'model' | 'maintenance';
 
 interface DeleteConfirm {
     open: boolean;
@@ -54,6 +57,8 @@ export default function DroneToolPage() {
     const [selectedComponent, setSelectedComponent] = useState<any | null>(null);
     const [showComponentLog, setShowComponentLog] = useState<boolean>(false);
     const [logComponent, setLogComponent] = useState<any | null>(null);
+    const [showFlightLogs, setShowFlightLogs] = useState<boolean>(false);
+    const [flightLogsComponent, setFlightLogsComponent] = useState<any | null>(null);
     const [showEditSystem, setShowEditSystem] = useState<boolean>(false);
     const [showEditModel, setShowEditModel] = useState<boolean>(false);
     const [showEditComponent, setShowEditComponent] = useState<boolean>(false);
@@ -72,6 +77,10 @@ export default function DroneToolPage() {
     const [deleting, setDeleting] = useState(false);
     const [detachingComponent, setDetachingComponent] = useState(false);
 
+    const [showRelations, setShowRelations] = useState(false);
+    const [relationsToolId, setRelationsToolId] = useState<number | null>(null);
+    const [relationsToolCode, setRelationsToolCode] = useState<string>('');
+
     const [filesModal, setFilesModal] = useState<{
         open: boolean;
         toolCode: string;
@@ -85,8 +94,8 @@ export default function DroneToolPage() {
     }, []);
 
     useEffect(() => {
-        if (activeTab === 'component') fetchAllComponents();
-    }, [activeTab]);
+        fetchAllComponents();
+    }, []);
 
     const fetchToolData = async () => {
         setLoading(true);
@@ -161,6 +170,7 @@ export default function DroneToolPage() {
     const handleView = (toolId: number) => { setSelectedToolId(toolId); setShowViewTool(true); };
     const handleViewComponent = (row: any) => { setSelectedComponent(row); setShowViewComponent(true); };
     const handleLogComponent = (row: any) => { setLogComponent(row); setShowComponentLog(true); };
+    const handleFlightLogsComponent = (row: any) => { setFlightLogsComponent(row); setShowFlightLogs(true); };
     const handleEditSystem = (tool: DroneToolData) => { setSelectedToolId(tool.tool_id); setShowEditSystem(true); };
 
     const handleDelete = async (toolId: number) => {
@@ -301,18 +311,6 @@ export default function DroneToolPage() {
         return map;
     }, [toolData]);
 
-    const systemColumns = useMemo(
-        () =>
-            systemCreateColumns({
-                onView: handleView,
-                onDelete: handleDelete,
-                onEditSystem: handleEditSystem,
-                onViewFiles: handleViewFiles,
-                isDark,
-            }),
-        [isDark, toolData],
-    );
-
 const modelColumns = useMemo(
         () => getModelColumns({ 
             isDark, 
@@ -322,22 +320,9 @@ const modelColumns = useMemo(
         [isDark]
     );
 
-    const componentColumns = useMemo(
-        () => getComponentColumns({
-            isDark,
-            toolCodeMap,
-            onView: handleViewComponent,
-            onEdit: handleEditComponentDirect,
-            onDelete: handleDeleteComponent,
-            onLog: handleLogComponent,
-        }),
-        [isDark, toolCodeMap]
-    );
-
     const tabConfig: { key: ActiveTab; label: string }[] = [
         { key: 'system', label: 'Systems' },
         { key: 'model', label: 'Models' },
-        { key: 'component', label: 'Components' },
     ];
 
     return (
@@ -358,14 +343,14 @@ const modelColumns = useMemo(
                                     Drone System List
                                 </h1>
                                 <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                                    Manage drone tools, models, and sub-components
+                                    Manage systems, models, and system components
                                 </p>
                             </div>
                         </div>
                         <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => { fetchToolData(); fetchModels(); if (activeTab === 'component') fetchAllComponents(); }}
+                            onClick={() => { fetchToolData(); fetchModels(); fetchAllComponents(); }}
                             disabled={loading}
                             className={`sm:hidden h-8 gap-1.5 text-xs transition-all ${
                                 isDark
@@ -381,7 +366,7 @@ const modelColumns = useMemo(
                         <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => { fetchToolData(); fetchModels(); if (activeTab === 'component') fetchAllComponents(); }}
+                            onClick={() => { fetchToolData(); fetchModels(); fetchAllComponents(); }}
                             disabled={loading}
                             className={`hidden sm:flex h-8 gap-1.5 text-xs transition-all ${
                                 isDark
@@ -432,13 +417,28 @@ const modelColumns = useMemo(
                 </div>
                     <CardContent className="pt-6">
                         {activeTab === 'system' && (
-                            <DataTable columns={systemColumns} data={toolData} loading={loading} exportFilename="systems" />
+                            <SystemComponentsTable
+                                systems={toolData}
+                                components={componentData}
+                                loading={loading || loadingComponents}
+                                onViewSystem={handleView}
+                                onEditSystem={handleEditSystem}
+                                onDeleteSystem={handleDelete}
+                                onViewFiles={handleViewFiles}
+                                onViewComponent={handleViewComponent}
+                                onEditComponent={handleEditComponentDirect}
+                                onDeleteComponent={handleDeleteComponent}
+                                onLogComponent={handleLogComponent}
+                                onFlightLogsComponent={handleFlightLogsComponent}
+                                onOpenRelations={(toolId, toolCode) => {
+                                    setRelationsToolId(toolId);
+                                    setRelationsToolCode(toolCode);
+                                    setShowRelations(true);
+                                }}
+                            />
                         )}
                         {activeTab === 'model' && (
                             <DataTable columns={modelColumns} data={models} loading={loadingModels} exportFilename="models" />
-                        )}
-                        {activeTab === 'component' && (
-                            <DataTable columns={componentColumns} data={componentData} loading={loadingComponents} exportFilename="components" />
                         )}
                     </CardContent>
                 </Card>
@@ -457,7 +457,7 @@ const modelColumns = useMemo(
 
             {showAddComponent && (
                 <AddComponentModal open={showAddComponent} onClose={() => setShowAddComponent(false)}
-                    onSuccess={() => setShowAddComponent(false)} tools={tools} models={models} />
+                    onSuccess={() => { setShowAddComponent(false); fetchAllComponents(); fetchToolData(); }} tools={tools} models={models} />
             )}
 
             {showViewTool && selectedToolId && (
@@ -481,6 +481,15 @@ const modelColumns = useMemo(
                 onClose={() => { setShowComponentLog(false); setLogComponent(null); }}
             />
 
+            <ComponentFlightLogsModal
+                open={showFlightLogs}
+                componentId={flightLogsComponent?.tool_component_id ?? null}
+                componentLabel={flightLogsComponent
+                    ? `${flightLogsComponent.component_type ?? ''}${flightLogsComponent.component_code ? ` — ${flightLogsComponent.component_code}` : ''}`
+                    : ''}
+                onClose={() => { setShowFlightLogs(false); setFlightLogsComponent(null); }}
+            />
+
             {showEditSystem && (
                 <EditSystemModal open={showEditSystem} toolId={selectedToolId}
                     onClose={() => { setShowEditSystem(false); setSelectedToolId(null); }}
@@ -499,12 +508,21 @@ const modelColumns = useMemo(
                 <EditComponentModal open={showEditComponent} toolId={selectedToolId}
                     initialComponentId={directComponentId}
                     onClose={() => { setShowEditComponent(false); setSelectedToolId(null); setDirectComponentId(null); }}
-                    onSuccess={() => { setShowEditComponent(false); setSelectedToolId(null); setDirectComponentId(null); fetchAllComponents(); }}
+                    onSuccess={() => { setShowEditComponent(false); setSelectedToolId(null); setDirectComponentId(null); fetchAllComponents(); fetchToolData(); }}
                     models={models} clients={clients} tools={tools} />
             )}
 
             <FilesDownloadModal open={filesModal.open} toolCode={filesModal.toolCode} files={filesModal.files}
                 onClose={() => setFilesModal({ open: false, toolCode: '', files: [] })} />
+
+            <ComponentRelationsModal
+                open={showRelations}
+                toolId={relationsToolId}
+                toolCode={relationsToolCode}
+                tools={tools}
+                onClose={() => { setShowRelations(false); setRelationsToolId(null); setRelationsToolCode(''); }}
+                onSuccess={() => { fetchAllComponents(); fetchToolData(); }}
+            />
 
             {deleteConfirm && (
                 <Dialog open={deleteConfirm.open} onOpenChange={() => setDeleteConfirm(null)}>

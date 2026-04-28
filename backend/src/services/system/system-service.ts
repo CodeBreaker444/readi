@@ -582,6 +582,7 @@ export async function getComponentList(ownerId: number, toolId?: number) {
       component_guarantee_day: item.component_metadata?.component_guarantee_day || 0,
       fk_client_id: item.component_metadata?.fk_client_id || null,
       fk_tool_model_id: item.component_metadata?.fk_tool_model_id || null,
+      fk_parent_component_id: item.component_metadata?.fk_parent_component_id ?? null,
       cc_platform: item.component_metadata?.cc_platform || '',
       gcs_type: item.component_metadata?.gcs_type || '',
       factory_serie: item.component_code,
@@ -604,6 +605,24 @@ export async function getComponentList(ownerId: number, toolId?: number) {
 
 
 export async function addComponent(componentData: any) {
+  const normalizedSerial = typeof componentData.component_sn === 'string'
+    ? componentData.component_sn.trim()
+    : '';
+
+  if (normalizedSerial) {
+    const { data: duplicate, error: duplicateError } = await supabase
+      .from('tool_component')
+      .select('component_id')
+      .ilike('serial_number', normalizedSerial)
+      .limit(1)
+      .maybeSingle();
+
+    if (duplicateError) throw duplicateError;
+    if (duplicate) {
+      return { code: 0, message: `Component serial number "${normalizedSerial}" already exists.` };
+    }
+  }
+
   let maintenanceCycle: string | null = null;
   let maintenanceCycleHour: number | null = null;
   let maintenanceCycleDay: number | null = null;
@@ -643,7 +662,7 @@ export async function addComponent(componentData: any) {
       component_type: componentData.component_type,
       component_code: componentData.component_code || componentData.component_type,
       component_description: componentData.component_desc || componentData.component_vendor || null,
-      serial_number: componentData.component_sn || null,
+      serial_number: normalizedSerial || null,
       installation_date: componentData.component_activation_date || null,
       component_active: 'Y',
 
@@ -658,6 +677,7 @@ export async function addComponent(componentData: any) {
         component_status: componentData.component_status || 'OPERATIONAL',
         component_category: componentData.component_category || 'STANDARD',
         fk_tool_model_id: componentData.fk_tool_model_id || null,
+        fk_parent_component_id: componentData.fk_parent_component_id ?? null,
         component_purchase_date: componentData.component_purchase_date || null,
         component_guarantee_day: componentData.component_guarantee_day || null,
         component_vendor: componentData.component_vendor || null,
@@ -673,6 +693,25 @@ export async function addComponent(componentData: any) {
 
 
 export async function updateComponent(componentId: number, componentData: any) {
+  const normalizedSerial = typeof componentData.component_sn === 'string'
+    ? componentData.component_sn.trim()
+    : '';
+
+  if (normalizedSerial) {
+    const { data: duplicate, error: duplicateError } = await supabase
+      .from('tool_component')
+      .select('component_id')
+      .ilike('serial_number', normalizedSerial)
+      .neq('component_id', componentId)
+      .limit(1)
+      .maybeSingle();
+
+    if (duplicateError) throw duplicateError;
+    if (duplicate) {
+      return { code: 0, message: `Component serial number "${normalizedSerial}" already exists.` };
+    }
+  }
+
   if (componentData.fk_tool_id) {
     await refreshMaintenanceDaysForTool(componentData.fk_tool_id);
   }
@@ -684,7 +723,7 @@ export async function updateComponent(componentId: number, componentData: any) {
       component_type: componentData.component_type,
       component_code: componentData.component_code || null,
       component_description: componentData.component_desc || null,
-      serial_number: componentData.component_sn || null,
+      serial_number: normalizedSerial || null,
       installation_date: componentData.component_activation_date || null,
       dcc_drone_id: componentData.dcc_drone_id ?? null,
       maintenance_cycle: componentData.maintenance_cycle || null,
@@ -697,6 +736,7 @@ export async function updateComponent(componentId: number, componentData: any) {
         component_status: componentData.component_status || 'OPERATIONAL',
         component_category: componentData.component_category || 'STANDARD',
         fk_tool_model_id: componentData.fk_tool_model_id || null,
+        fk_parent_component_id: componentData.fk_parent_component_id ?? null,
         component_purchase_date: componentData.component_purchase_date || null,
         component_guarantee_day: componentData.component_guarantee_day || null,
         component_vendor: componentData.component_vendor || null,
@@ -748,4 +788,79 @@ export async function getMaintenanceDashboard(
   });
 
   return { code: 1, message: 'Success', dataRows: maintenanceNeeded.length, data: maintenanceNeeded };
+}
+
+export interface ComponentFlightLog {
+  log_id: number;
+  mission_id: number;
+  mission_code: string | null;
+  log_source: string;
+  original_filename: string;
+  flytbase_flight_id: string | null;
+  uploaded_at: string;
+  flight_duration: number | null;
+  distance_flown: number | null;
+  actual_start: string | null;
+  actual_end: string | null;
+}
+
+export async function getComponentFlightLogs(
+  componentId: number,
+  ownerId: number,
+): Promise<{ code: number; message: string; data: ComponentFlightLog[] }> {
+  const { data: component } = await supabase
+    .from('tool_component')
+    .select('component_id, fk_tool_id')
+    .eq('component_id', componentId)
+    .maybeSingle();
+
+  if (!component) return { code: 0, message: 'Component not found', data: [] };
+
+  const toolId = component.fk_tool_id;
+  if (!toolId) return { code: 1, message: 'Component not attached to a system', data: [] };
+
+  const { data: tool } = await supabase
+    .from('tool')
+    .select('tool_id')
+    .eq('tool_id', toolId)
+    .eq('fk_owner_id', ownerId)
+    .maybeSingle();
+
+  if (!tool) return { code: 0, message: 'Access denied', data: [] };
+
+  const { data: missions } = await supabase
+    .from('pilot_mission')
+    .select('pilot_mission_id, mission_code, actual_start, actual_end, flight_duration, distance_flown')
+    .eq('fk_tool_id', toolId)
+    .order('actual_start', { ascending: false, nullsFirst: false });
+
+  if (!missions || missions.length === 0) return { code: 1, message: 'No missions found', data: [] };
+
+  const missionIds = missions.map((m) => m.pilot_mission_id);
+  const missionMap = new Map(missions.map((m) => [m.pilot_mission_id, m]));
+
+  const { data: logs } = await supabase
+    .from('mission_flight_logs')
+    .select('log_id, fk_mission_id, log_source, original_filename, flytbase_flight_id, uploaded_at')
+    .in('fk_mission_id', missionIds)
+    .order('uploaded_at', { ascending: false });
+
+  const data: ComponentFlightLog[] = (logs ?? []).map((log) => {
+    const mission = missionMap.get(log.fk_mission_id);
+    return {
+      log_id: log.log_id,
+      mission_id: log.fk_mission_id,
+      mission_code: mission?.mission_code ?? null,
+      log_source: log.log_source,
+      original_filename: log.original_filename,
+      flytbase_flight_id: log.flytbase_flight_id,
+      uploaded_at: log.uploaded_at,
+      flight_duration: mission?.flight_duration ?? null,
+      distance_flown: mission?.distance_flown ?? null,
+      actual_start: mission?.actual_start ?? null,
+      actual_end: mission?.actual_end ?? null,
+    };
+  });
+
+  return { code: 1, message: 'Success', data };
 }

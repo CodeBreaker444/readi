@@ -30,17 +30,28 @@ async function getExternalMissionIdForPlanning(planningId: number): Promise<stri
 }
 
 /**
- * Returns the external_mission_id by walking pilot_mission → planning → flight_requests.
+ * Returns the external_mission_id for a given pilot_mission.
+ *
+ * For DCC-initiated missions: walks pilot_mission → planning → flight_requests.
+ * For PMVD-initiated missions: falls back to mission_code (which stores the
+ * PMVD-generated UUID assigned at creation time).
  */
 export async function getExternalMissionIdForMission(missionId: number): Promise<string | null> {
   const { data, error } = await supabase
     .from('pilot_mission')
-    .select('fk_planning_id')
+    .select('fk_planning_id, mission_code')
     .eq('pilot_mission_id', missionId)
     .single();
 
-  if (error || !data?.fk_planning_id) return null;
-  return getExternalMissionIdForPlanning(data.fk_planning_id as number);
+  if (error || !data) return null;
+
+  if (data.fk_planning_id) {
+    const externalId = await getExternalMissionIdForPlanning(data.fk_planning_id as number);
+    if (externalId) return externalId;
+  }
+
+  // Fallback: PMVD-initiated missions store their DCC ID in mission_code
+  return (data.mission_code as string | null) ?? null;
 }
 
 /**
@@ -276,6 +287,54 @@ export async function notifyDccTermination(
       outcome: 'network_error',
       message: err?.message ?? String(err),
     };
+  }
+}
+
+export interface DccMissionCreationPayload {
+  type: string;
+  target?: string;
+  localization?: Record<string, unknown>;
+  missions: Array<{ missionId: string; startDateTime: string }>;
+  priority?: string;
+  notes?: string;
+  operator?: string;
+}
+
+/**
+ * POST /dcc/missions
+ * Called when PMVD creates a scheduled or on-demand mission.
+ * Sends the full list of pre-generated mission IDs and their planned start times
+ * so DCC can persist them on its side. On DCC failure the caller should roll back.
+ */
+export async function notifyDccMissionCreation(
+  ownerId: number,
+  payload: DccMissionCreationPayload,
+): Promise<DccCallbackResult> {
+  const path = '/dcc/missions';
+  try {
+    return await dccPost(ownerId, path, payload);
+  } catch (err: any) {
+    console.error('[DCC] notifyDccMissionCreation error:', err?.message ?? err);
+    return { path, outcome: 'network_error', message: err?.message ?? String(err) };
+  }
+}
+
+/**
+ * POST /dcc/missions/cancel
+ * Called when PMVD cancels a scheduled program.
+ * Sends the complete list of mission IDs belonging to the program so DCC can
+ * remove them from its own systems.
+ */
+export async function notifyDccBulkCancellation(
+  ownerId: number,
+  missionIds: string[],
+): Promise<DccCallbackResult> {
+  const path = '/dcc/missions/cancel';
+  try {
+    return await dccPost(ownerId, path, { missionIds });
+  } catch (err: any) {
+    console.error('[DCC] notifyDccBulkCancellation error:', err?.message ?? err);
+    return { path, outcome: 'network_error', message: err?.message ?? String(err) };
   }
 }
 

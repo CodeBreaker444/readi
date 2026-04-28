@@ -14,7 +14,7 @@ import { internalError } from "@/lib/api-error";
 
 export const dynamic = "force-dynamic";
 
-const RESTRICTED_ROLES = ['SUPERADMIN', 'ADMIN'];
+const RESTRICTED_ROLES = ['SUPERADMIN'];
 
 /** Accumulates token usage across multiple Groq calls within one request. */
 class TokenAccumulator {
@@ -205,11 +205,39 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "question required" }, { status: 400 });
         }
 
-        const user = {
+        let user = {
             role: session.user.role,
             userId: session.user.userId,
             ownerID: session.user.ownerId,
         };
+
+        // ADMIN must impersonate an OPM user to use the chat agent
+        if (session.user.role === 'ADMIN') {
+            const impersonateEmail = req.headers.get('x-opm-impersonate');
+            if (!impersonateEmail) {
+                return NextResponse.json({ error: "Select an OPM user to chat as." }, { status: 400 });
+            }
+
+            const supabase = getSupabase();
+            const { data: opmUser, error: opmError } = await supabase
+                .from('users')
+                .select('user_id, fk_owner_id, user_role')
+                .eq('email', impersonateEmail)
+                .eq('fk_owner_id', session.user.ownerId)
+                .eq('user_role', 'OPM')
+                .eq('user_active', 'Y')
+                .single();
+
+            if (opmError || !opmUser) {
+                return NextResponse.json({ error: "OPM user not found or inactive." }, { status: 403 });
+            }
+
+            user = {
+                role: opmUser.user_role,
+                userId: opmUser.user_id,
+                ownerID: opmUser.fk_owner_id,
+            };
+        }
 
         // Enforce token limits before running any expensive AI calls
         const limitCheck = await checkTokenLimits(user.userId);

@@ -42,7 +42,7 @@ export default function VerifyMFAPage() {
       const { error: verifyError } = await supabase.auth.mfa.verify({ factorId, challengeId: challengeData.id, code })
       if (verifyError) throw verifyError
 
-      document.cookie = 'mfa_verified=true; path=/; max-age=86400; samesite=strict'
+      document.cookie = 'mfa_verified=true; path=/; max-age=604800; samesite=strict'
       router.push('/dashboard')
     } catch (err: any) {
       setError('Invalid code. Please try again.')

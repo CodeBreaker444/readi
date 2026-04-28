@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Mission, MissionStatusCode } from "@/config/types/operation";
-import { cn } from "@/lib/utils";
+import { useTimezone } from "@/components/TimezoneProvider";
+import { cn, formatDateInTz } from "@/lib/utils";
 import { Calendar, CheckCircle2, ClipboardList, Clock, Crosshair, Gauge, Tag, User, Wrench, TicketCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { MissionLimitsPanel } from "./MissionLimitsPanel";
@@ -116,6 +117,7 @@ const MAINTENANCE_LABEL_KEY: Record<string, string> = {
 
 export function MissionCard({ mission, draggable, onDragStart, onViewDetails, onOpenTasks, onOpenLuc, onUpdateMaintenance, isDark}: MissionCardProps) {
   const { t } = useTranslation();
+  const { timezone } = useTimezone();
 
   const statusCfg = statusConfig[mission.mission_status_code] ?? statusConfig["00"];
   const statusColor = isDark ? statusCfg.darkColor : statusCfg.lightColor;
@@ -291,7 +293,7 @@ export function MissionCard({ mission, draggable, onDragStart, onViewDetails, on
                 {t("operations.board.card.lastMaintenanceClosed")}
               </p>
               <p className={cn("text-[11px] font-medium", isDark ? "text-slate-300" : "text-slate-700")}>
-                {new Date(mission.last_closed_ticket.closed_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+                {formatDateInTz(mission.last_closed_ticket.closed_at, timezone)}
                 {" · "}#{mission.last_closed_ticket.ticket_id}
               </p>
               {mission.last_closed_ticket.note && (

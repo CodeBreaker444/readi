@@ -2,12 +2,14 @@ import { Badge } from '@/components/organization/ChecklistUi'
 import { Checklist } from '@/config/types/checklist'
 import { ColumnDef } from '@tanstack/react-table'
 import { HiPencilAlt, HiPlay, HiTrash } from 'react-icons/hi'
+import { formatDateInTz } from '@/lib/utils'
 
 export const getColumns = (
   isDark: boolean,
   onEdit: (item: Checklist) => void,
   onPreview: (item: Checklist) => void,
-  onDelete: (item: Checklist) => void
+  onDelete: (item: Checklist) => void,
+  timezone?: string,
 ): ColumnDef<Checklist>[] => [
   {
     accessorKey: 'id_index',
@@ -47,7 +49,7 @@ export const getColumns = (
     header: 'Last Updated',
     cell: ({ row }) => (
       <span className="text-xs">
-        {row.original.updated_at ? new Date(row.original.updated_at).toLocaleDateString('en-GB') : '—'}
+        {row.original.updated_at ? formatDateInTz(row.original.updated_at, timezone) : '—'}
       </span>
     ),
   },

@@ -33,7 +33,6 @@ export interface GutmaPreviewForSync {
 
 export interface GutmaSyncResult {
   success: boolean;
-  /** Present only when validation fails — lists the unrecognised serial numbers */
   missing_sns?: string[];
   updated_components?: Array<{
     serial_number: string;
@@ -71,17 +70,20 @@ export async function gutmaArchiveAndSync(
   s3ObjectKey: string,
 ): Promise<GutmaSyncResult> {
 
-  // Collecting every serial number present in the gutma
+  const PLACEHOLDER_SNS = new Set(['n/a', 'na', 'unknown', 'none', '-', 'null']);
+  const isValidSn = (sn: string | undefined) =>
+    !!sn && !PLACEHOLDER_SNS.has(sn.toLowerCase());
+
   const snsToFind: string[] = [];
   const aircraftSn = preview.aircraft?.serial_number?.trim();
   const gcsSn = preview.gcs?.serial_number?.trim();
 
-  if (aircraftSn) snsToFind.push(aircraftSn);
-  if (gcsSn) snsToFind.push(gcsSn);
+  if (isValidSn(aircraftSn)) snsToFind.push(aircraftSn!);
+  if (isValidSn(gcsSn)) snsToFind.push(gcsSn!);
 
   for (const p of preview.payload ?? []) {
     const sn = p.serial_number?.trim();
-    if (sn) snsToFind.push(sn);
+    if (isValidSn(sn)) snsToFind.push(sn!);
   }
 
   if (snsToFind.length === 0) {
@@ -149,7 +151,7 @@ export async function gutmaArchiveAndSync(
     return { success: false, missing_sns: missingSns };
   }
 
-  //compute flight duration from gutma timestamps
+  // computing flight duration from gutma timestamps
   let durationSeconds = 0;
   if (preview.start_time && preview.end_time) {
     const start = new Date(preview.start_time).getTime();
@@ -160,7 +162,7 @@ export async function gutmaArchiveAndSync(
   }
   const durationHhmm = secondsToHhmm(durationSeconds);
 
-  // upload parsed GUTMA JSON to S3 (server-side — no presigned URL needed)
+  // server-side — no presigned URL needed
   await s3.send(
     new PutObjectCommand({
       Bucket: BUCKET,
@@ -173,6 +175,11 @@ export async function gutmaArchiveAndSync(
 
   // Update each matched component
   const now = new Date().toISOString();
+  // Derive the calendar date of this log for battery deduplication 
+  const logDate = preview.start_time
+    ? new Date(preview.start_time).toISOString().split('T')[0]
+    : now.split('T')[0];
+
   const updatedComponents: Array<{ serial_number: string; component_type: string | null }> = [];
 
   for (const comp of foundComponents) {
@@ -186,7 +193,6 @@ export async function gutmaArchiveAndSync(
     const newMaintHours = addHhmmHours(prevMaintHours, durationHhmm);
     const newMaintFlights = prevMaintFlights + 1;
 
-    // preserve existing metadata — only merge gutma-specific fields
     let existingMeta: Record<string, unknown> = {};
     const rawMeta = comp.component_metadata;
     if (rawMeta) {
@@ -202,14 +208,27 @@ export async function gutmaArchiveAndSync(
       (p) => p.serial_number?.trim() === comp.serial_number,
     );
 
+    // For battery components: skip cycle update if this log date was already applied
+    if (gutmaBattery != null) {
+      const prevLogDate = existingMeta.last_battery_log_date as string | undefined;
+      if (prevLogDate === logDate) {
+        continue;
+      }
+    }
+
     const updatePayload: Record<string, unknown> = {
       current_usage_hours: newLifetimeHours,
       component_metadata: JSON.stringify({
         ...existingMeta,
         last_flytbase_flight_id: preview.flight_id,
         last_gutma_sync: now,
-        ...(gutmaBattery?.cycle_count != null
-          ? { gutma_battery_cycle_count: gutmaBattery.cycle_count }
+        ...(gutmaBattery != null
+          ? {
+              last_battery_log_date: logDate,
+              ...(gutmaBattery.cycle_count != null
+                ? { gutma_battery_cycle_count: gutmaBattery.cycle_count }
+                : {}),
+            }
           : {}),
       }),
     };

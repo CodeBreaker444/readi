@@ -22,6 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useTimezone } from '@/components/TimezoneProvider';
 import { useTheme } from '@/components/useTheme';
 import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import axios from 'axios';
@@ -30,6 +31,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 export default function AuditLogsPage() {
   const { isDark } = useTheme();
+  const { timezone } = useTimezone();
 
   const [activeTab, setActiveTab] = useState<'events' | 'transactions'>('events');
 
@@ -67,7 +69,7 @@ export default function AuditLogsPage() {
     )
     : logs;
 
-  const columns = useMemo(() => getAuditLogsColumns(isSuperAdmin, owners), [isSuperAdmin, owners]);
+  const columns = useMemo(() => getAuditLogsColumns(isSuperAdmin, owners, timezone), [isSuperAdmin, owners, timezone]);
 
   const table = useReactTable({
     data: filteredLogs,

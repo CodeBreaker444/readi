@@ -1,6 +1,8 @@
 "use client";
 
+import { useTimezone } from "@/components/TimezoneProvider";
 import { Button } from "@/components/ui/button";
+import { formatInTz } from "@/lib/utils";
 import { Loader2, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -13,6 +15,7 @@ interface Props {
 
 export function BoardHeader({ onRefresh, isRefreshing, isDark }: Props) {
     const { t } = useTranslation();
+    const { timezone } = useTimezone();
     const [now, setNow] = useState<Date | null>(null);
 
     useEffect(() => {
@@ -55,10 +58,10 @@ export function BoardHeader({ onRefresh, isRefreshing, isDark }: Props) {
                     {now && (
                         <div className="hidden md:flex items-center gap-2 border-r border-slate-200 dark:border-slate-800 pr-4">
                             <span className={`text-[11px] font-medium ${isDark ? "text-slate-500" : "text-slate-400"}`}>
-                                {now.toLocaleDateString("en-GB", { weekday: 'short', day: 'numeric', month: 'short' })}
+                                {formatInTz(now, timezone, { weekday: 'short', day: 'numeric', month: 'short' })}
                             </span>
                             <span className={`text-[11px] font-mono font-bold ${isDark ? "text-slate-300" : "text-slate-600"}`}>
-                                {now.toLocaleTimeString("en-GB", { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                                {formatInTz(now, timezone, { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                             </span>
                         </div>
                     )}

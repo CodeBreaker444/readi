@@ -187,8 +187,8 @@ export function AddPlanningModal({
 
     return (
         <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
-            <DialogContent className="!max-w-[900px] w-[90vw] max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
+            <DialogContent className="!max-w-[900px] w-[90vw] max-h-[90vh] flex flex-col overflow-hidden p-0 gap-0">
+                <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
                     <div className="flex items-center gap-2">
                         <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-violet-100">
                             <ClipboardPlus className="w-4 h-4 text-violet-600" />
@@ -204,6 +204,7 @@ export function AddPlanningModal({
                     </div>
                 </DialogHeader>
 
+                <div className="flex-1 overflow-y-auto px-6 py-4">
                 {loadingDropdowns ? (
                     <div className="space-y-5">
                         <div className="grid grid-cols-2 gap-4">
@@ -414,8 +415,9 @@ export function AddPlanningModal({
                         </div>
                     </div>
                 )}
+                </div>
 
-                <DialogFooter className="gap-2">
+                <DialogFooter className="shrink-0 px-6 py-4 border-t gap-2">
                     <Button
                         variant="outline"
                         size="sm"

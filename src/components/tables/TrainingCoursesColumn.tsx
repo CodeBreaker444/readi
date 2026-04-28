@@ -4,7 +4,7 @@ import { FlatTrainingRecord } from '@/backend/services/training/training-service
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ColumnDef } from '@tanstack/react-table';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Eye, Pencil, Trash2 } from 'lucide-react';
 
 const TYPE_STYLES: Record<string, string> = {
   INITIAL:   'bg-blue-500/10 text-blue-500 border-blue-500/20',
@@ -34,7 +34,8 @@ function fmtDate(val: string | null) {
 export function getTrainingCoursesColumns(
   isDark: boolean,
   onEdit: (record: FlatTrainingRecord) => void,
-  onDelete: (record: FlatTrainingRecord) => void
+  onDelete: (record: FlatTrainingRecord) => void,
+  onView?: (record: FlatTrainingRecord) => void
 ): ColumnDef<FlatTrainingRecord>[] {
   const muted = isDark ? 'text-gray-400' : 'text-gray-600';
   const dimmed = isDark ? 'text-gray-600' : 'text-gray-300';
@@ -140,9 +141,19 @@ export function getTrainingCoursesColumns(
     {
       id: 'actions',
       header: '',
-      size: 72,
+      size: 90,
       cell: ({ row }) => (
         <div className="flex items-center justify-end gap-0.5">
+          {onView && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onView(row.original)}
+              className={`h-7 w-7 ${isDark ? 'text-gray-500 hover:text-violet-400 hover:bg-violet-500/10' : 'text-gray-400 hover:text-violet-600 hover:bg-violet-50'}`}
+            >
+              <Eye size={13} />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"
