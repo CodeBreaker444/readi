@@ -383,23 +383,25 @@ export async function deleteComponent(ownerId: number, componentId: number, forc
 
   if (compError || !comp) throw new Error('Component not found');
 
-  const { data: tool } = await supabase
-    .from('tool')
-    .select('tool_id, tool_code')
-    .eq('tool_id', comp.fk_tool_id)
-    .eq('fk_owner_id', ownerId)
-    .maybeSingle();
+  if (comp.fk_tool_id !== null) {
+    const { data: tool } = await supabase
+      .from('tool')
+      .select('tool_id, tool_code')
+      .eq('tool_id', comp.fk_tool_id)
+      .eq('fk_owner_id', ownerId)
+      .maybeSingle();
 
-  if (!tool) throw new Error('Component not found or unauthorized');
+    if (!tool) throw new Error('Component not found or unauthorized');
 
-  const isDetached = comp.component_metadata?.system_detached === true;
+    const isDetached = comp.component_metadata?.system_detached === true;
 
-  if (!force && !isDetached) {
-    return {
-      code: 2,
-      message: `Component is attached to system "${tool.tool_code}". Detach it from the system before deleting.`,
-      system_code: tool.tool_code,
-    };
+    if (!force && !isDetached) {
+      return {
+        code: 2,
+        message: `Component is attached to system "${tool.tool_code}". Detach it from the system before deleting.`,
+        system_code: tool.tool_code,
+      };
+    }
   }
 
   const { error } = await supabase
