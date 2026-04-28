@@ -14,7 +14,7 @@ import { FilesDownloadModal, SystemFile } from '@/components/system/FilesDownloa
 import SystemComponentsTable from '@/components/system/SystemComponentsTable';
 import ViewComponentModal from '@/components/system/ViewComponentModal';
 import ViewToolModal from '@/components/system/ViewToolModal';
-import { DroneToolData, getModelColumns } from '@/components/tables/SystemColumn';
+import { DroneToolData, getComponentColumns, getModelColumns } from '@/components/tables/SystemColumn';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -30,7 +30,7 @@ import { AlertTriangle, Loader2, Plus, RefreshCw } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
-type ActiveTab = 'system' | 'model' | 'maintenance';
+type ActiveTab = 'system' | 'model' | 'component';
 
 interface DeleteConfirm {
     open: boolean;
@@ -312,17 +312,35 @@ export default function DroneToolPage() {
     }, [toolData]);
 
 const modelColumns = useMemo(
-        () => getModelColumns({ 
-            isDark, 
-            onEdit: handleEditModelDirect, 
-            onDelete: handleDeleteModel 
+        () => getModelColumns({
+            isDark,
+            onEdit: handleEditModelDirect,
+            onDelete: handleDeleteModel
         }),
         [isDark]
+    );
+
+    const componentColumns = useMemo(
+        () => getComponentColumns({
+            isDark,
+            toolCodeMap,
+            onView: handleViewComponent,
+            onEdit: handleEditComponentDirect,
+            onDelete: handleDeleteComponent,
+            onLog: handleLogComponent,
+        }),
+        [isDark, toolCodeMap]
+    );
+
+    const standaloneComponents = useMemo(
+        () => componentData.filter((c: any) => !c.fk_tool_id || c.system_detached),
+        [componentData]
     );
 
     const tabConfig: { key: ActiveTab; label: string }[] = [
         { key: 'system', label: 'Systems' },
         { key: 'model', label: 'Models' },
+        { key: 'component', label: 'Components' },
     ];
 
     return (
@@ -439,6 +457,9 @@ const modelColumns = useMemo(
                         )}
                         {activeTab === 'model' && (
                             <DataTable columns={modelColumns} data={models} loading={loadingModels} exportFilename="models" />
+                        )}
+                        {activeTab === 'component' && (
+                            <DataTable columns={componentColumns} data={standaloneComponents} loading={loadingComponents} exportFilename="components" />
                         )}
                     </CardContent>
                 </Card>

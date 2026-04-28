@@ -438,7 +438,10 @@ export default function EditComponentModal({
                       <SelectContent className={`z-50 max-h-60 overflow-y-auto ${selectContentCls}`}>
                         <SelectItem value="_none"><span className={`italic ${isDark ? 'text-slate-400' : 'text-muted-foreground'}`}>None (top-level)</span></SelectItem>
                         {components
-                          .filter((c: any) => String(c.tool_component_id) !== selectedComponentId)
+                          .filter((c: any) =>
+                            String(c.tool_component_id) !== selectedComponentId &&
+                            String(c.fk_tool_id) === formData.fk_tool_id
+                          )
                           .map((c: any) => (
                           <SelectItem key={c.tool_component_id} value={String(c.tool_component_id)}>
                             <div className="flex flex-col gap-0.5 leading-tight">

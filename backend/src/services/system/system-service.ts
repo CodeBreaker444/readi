@@ -547,30 +547,49 @@ export async function getComponentList(ownerId: number, toolId?: number) {
     dcc_drone_id
   `;
 
-  if (toolIds.length === 0) {
-    return { code: 1, message: 'Success', dataRows: 0, data: [] };
+  // only attached, non-detached components for that system
+  if (toolId && toolId !== 0) {
+    if (toolIds.length === 0) {
+      return { code: 1, message: 'Success', dataRows: 0, data: [] };
+    }
+    const { data: rawData, error } = await supabase
+      .from('tool_component')
+      .select(selectFields)
+      .in('fk_tool_id', toolIds)
+      .eq('component_active', 'Y')
+      .order('component_id', { ascending: false });
+    if (error) throw error;
+    const data = (rawData || []).filter(item => item.component_metadata?.system_detached !== true);
+    return buildComponentListResult(data);
   }
 
-  const { data: rawData, error } = await supabase
+  // components attached to owner's tools + standalone (fk_tool_id IS NULL)
+  let compQuery = supabase
     .from('tool_component')
     .select(selectFields)
-    .in('fk_tool_id', toolIds)
-    .eq('component_active', 'Y')
-    .order('component_id', { ascending: false });
+    .eq('component_active', 'Y');
 
+  if (toolIds.length > 0) {
+    compQuery = (compQuery as any).or(`fk_tool_id.in.(${toolIds.join(',')}),fk_tool_id.is.null`);
+  } else {
+    compQuery = (compQuery as any).is('fk_tool_id', null);
+  }
+
+  const { data: rawData, error } = await compQuery.order('component_id', { ascending: false });
   if (error) throw error;
 
-  const data = (toolId && toolId !== 0)
-    ? (rawData || []).filter(item => item.component_metadata?.system_detached !== true)
-    : (rawData || []);
+  return buildComponentListResult(rawData || []);
+}
 
+function buildComponentListResult(data: any[]) {
   return {
     code: 1,
     message: 'Success',
-    dataRows: data?.length || 0,
-    data: (data || []).map((item) => ({
+    dataRows: data.length,
+    data: data.map((item) => ({
       tool_component_id: item.component_id,
       fk_tool_id: item.fk_tool_id,
+      system_detached: item.component_metadata?.system_detached === true,
       component_type: item.component_type,
       component_code: item.component_code,
       component_name: item.component_name,
@@ -603,7 +622,6 @@ export async function getComponentList(ownerId: number, toolId?: number) {
     })),
   };
 }
-
 
 
 export async function addComponent(componentData: any) {

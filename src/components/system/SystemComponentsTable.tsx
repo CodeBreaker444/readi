@@ -26,6 +26,7 @@ function formatDistance(meters: number): string {
 interface ComponentRow {
   tool_component_id: number;
   fk_tool_id: number | null;
+  system_detached?: boolean;
   fk_parent_component_id?: number | null;
   component_type?: string | null;
   component_desc?: string | null;
@@ -89,7 +90,7 @@ export default function SystemComponentsTable({
   const componentsBySystem = useMemo(() => {
     const map: Record<number, ComponentRow[]> = {};
     components.forEach((c) => {
-      if (!c.fk_tool_id) return;
+      if (!c.fk_tool_id || c.system_detached) return;
       if (!map[c.fk_tool_id]) map[c.fk_tool_id] = [];
       map[c.fk_tool_id].push(c);
     });
