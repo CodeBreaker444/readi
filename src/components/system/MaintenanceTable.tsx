@@ -38,6 +38,16 @@ function computeExpiry(lastMaintenance: string | null, cycleDays: number | null)
   return d.toLocaleDateString("en-GB");
 }
 
+function nextMaintenanceInfo(lastMaintenance: string | null, cycleDays: number | null): { date: string; cls: string } | null {
+  if (!lastMaintenance || !cycleDays || cycleDays <= 0) return null;
+  const d = new Date(lastMaintenance);
+  d.setDate(d.getDate() + cycleDays);
+  const daysUntil = Math.floor((d.getTime() - Date.now()) / 86400000);
+  const date = d.toLocaleDateString("en-GB");
+  const cls = daysUntil < 0 ? "text-rose-500" : daysUntil <= 30 ? "text-amber-500" : "text-emerald-500";
+  return { date, cls };
+}
+
 function cleanTrigger(arr: (string | null)[] | null): string[] {
   if (!Array.isArray(arr)) return [];
   return arr.filter((v): v is string => !!v && v !== "null");
@@ -378,6 +388,15 @@ function ComponentSubRow({ comp, threshold, isDark }: { comp: MaintenanceCompone
           : "—"}
       </td>
 
+      <td className="px-3 py-2.5 text-xs">
+        {(() => {
+          const info = nextMaintenanceInfo(comp.last_maintenance, comp.model.maintenance_cycle_day);
+          return info
+            ? <span className={`font-medium ${info.cls}`}>{info.date}</span>
+            : <span className={isDark ? "text-slate-600" : "text-slate-300"}>—</span>;
+        })()}
+      </td>
+
       <td className="px-3 py-2.5">
         <UsageLimitCell
           current={comp.total_hours}
@@ -484,6 +503,17 @@ function buildColumns(threshold: number, isDark: boolean): ColumnDef<Maintenance
             {val ? new Date(val).toLocaleDateString("en-GB") : <span className={isDark ? "text-slate-600" : "text-slate-300"}>—</span>}
           </span>
         );
+      },
+    },
+    {
+      id: "next_maintenance",
+      header: "Next Maint.",
+      cell: ({ row }) => {
+        const d = row.original;
+        const info = nextMaintenanceInfo(d.last_maintenance, d.model.maintenance_cycle_day);
+        return info
+          ? <span className={`text-xs font-medium ${info.cls}`}>{info.date}</span>
+          : <span className={`text-xs ${isDark ? "text-slate-600" : "text-slate-300"}`}>—</span>;
       },
     },
     {
@@ -700,8 +730,16 @@ export default function MaintenanceTable({
         <div className={`border-t px-2 flex items-center justify-between ${isDark ? "border-slate-700" : "border-slate-200"}`}>
           <ExportButtons
             filename="Maintenance Dashboard"
-            headers={['Code', 'Serial', 'Status', 'Total Hours', 'Total Flights', 'Last Maintenance']}
-            rows={filtered.map(d => [d.code, d.serial_number ?? '', d.status, d.total_hours, d.total_flights, d.last_maintenance ?? ''])}
+            headers={['Code', 'Serial', 'Status', 'Total Hours', 'Total Flights', 'Last Maintenance', 'Next Maintenance']}
+            rows={filtered.map(d => [
+              d.code,
+              d.serial_number ?? '',
+              d.status,
+              d.total_hours,
+              d.total_flights,
+              d.last_maintenance ?? '',
+              computeExpiry(d.last_maintenance, d.model.maintenance_cycle_day) ?? '',
+            ])}
           />
           <TablePagination table={table} />
         </div>
