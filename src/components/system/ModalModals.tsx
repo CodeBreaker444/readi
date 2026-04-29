@@ -1,5 +1,9 @@
 'use client';
 
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Textarea } from '@/components/ui/textarea';
 import type {
   ComponentOption,
   DroneOption,
@@ -8,10 +12,6 @@ import type {
   TicketType,
   UserOption,
 } from '@/config/types/maintenance';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { CheckCircle2, Loader2 } from 'lucide-react';
 import { useRef } from 'react';
@@ -352,7 +352,7 @@ export function CloseTicketModal({
           <Button
             onClick={onSubmit}
             disabled={loading || !note.trim()}
-            className="h-9 px-4 text-sm bg-emerald-600 hover:bg-emerald-500 text-white"
+            className="h-9 cursor-pointer px-4 text-sm bg-emerald-600 hover:bg-emerald-500 text-white"
           >
             {loading ? (
               <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />Closing…</>

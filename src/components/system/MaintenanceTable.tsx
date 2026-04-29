@@ -31,16 +31,18 @@ function daysSince(dateStr: string | null): number | null {
   return Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24));
 }
 
-function computeExpiry(lastMaintenance: string | null, cycleDays: number | null): string | null {
-  if (!lastMaintenance || !cycleDays || cycleDays <= 0) return null;
-  const d = new Date(lastMaintenance);
+function computeExpiry(lastMaintenance: string | null, cycleDays: number | null, activationDate?: string | null): string | null {
+  const ref = lastMaintenance ?? activationDate ?? null;
+  if (!ref || !cycleDays || cycleDays <= 0) return null;
+  const d = new Date(ref);
   d.setDate(d.getDate() + cycleDays);
   return d.toLocaleDateString("en-GB");
 }
 
-function nextMaintenanceInfo(lastMaintenance: string | null, cycleDays: number | null): { date: string; cls: string } | null {
-  if (!lastMaintenance || !cycleDays || cycleDays <= 0) return null;
-  const d = new Date(lastMaintenance);
+function nextMaintenanceInfo(lastMaintenance: string | null, cycleDays: number | null, activationDate?: string | null): { date: string; cls: string } | null {
+  const ref = lastMaintenance ?? activationDate ?? null;
+  if (!ref || !cycleDays || cycleDays <= 0) return null;
+  const d = new Date(ref);
   d.setDate(d.getDate() + cycleDays);
   const daysUntil = Math.floor((d.getTime() - Date.now()) / 86400000);
   const date = d.toLocaleDateString("en-GB");
@@ -390,7 +392,7 @@ function ComponentSubRow({ comp, threshold, isDark }: { comp: MaintenanceCompone
 
       <td className="px-3 py-2.5 text-xs">
         {(() => {
-          const info = nextMaintenanceInfo(comp.last_maintenance, comp.model.maintenance_cycle_day);
+          const info = nextMaintenanceInfo(comp.last_maintenance, comp.model.maintenance_cycle_day, comp.activation_date);
           return info
             ? <span className={`font-medium ${info.cls}`}>{info.date}</span>
             : <span className={isDark ? "text-slate-600" : "text-slate-300"}>—</span>;
@@ -427,7 +429,7 @@ function ComponentSubRow({ comp, threshold, isDark }: { comp: MaintenanceCompone
           status={comp.status}
           isTriggered={triggers.includes("DAY")}
           threshold={threshold}
-          expiresOn={computeExpiry(comp.last_maintenance, model.maintenance_cycle_day)}
+          expiresOn={computeExpiry(comp.last_maintenance, model.maintenance_cycle_day, comp.activation_date)}
         />
       </td>
 
@@ -510,7 +512,7 @@ function buildColumns(threshold: number, isDark: boolean): ColumnDef<Maintenance
       header: "Next Maint.",
       cell: ({ row }) => {
         const d = row.original;
-        const info = nextMaintenanceInfo(d.last_maintenance, d.model.maintenance_cycle_day);
+        const info = nextMaintenanceInfo(d.last_maintenance, d.model.maintenance_cycle_day, d.activation_date);
         return info
           ? <span className={`text-xs font-medium ${info.cls}`}>{info.date}</span>
           : <span className={`text-xs ${isDark ? "text-slate-600" : "text-slate-300"}`}>—</span>;
@@ -560,13 +562,13 @@ function buildColumns(threshold: number, isDark: boolean): ColumnDef<Maintenance
         const triggers = cleanTrigger(d.trigger);
         return (
           <UsageLimitCell
-            current={daysSince(d.last_maintenance)}
+            current={daysSince(d.last_maintenance ?? d.activation_date)}
             limit={d.model.maintenance_cycle_day}
             unit="d"
             status={d.status}
             isTriggered={triggers.includes("DAY")}
             threshold={threshold}
-            expiresOn={computeExpiry(d.last_maintenance, d.model.maintenance_cycle_day)}
+            expiresOn={computeExpiry(d.last_maintenance, d.model.maintenance_cycle_day, d.activation_date)}
           />
         );
       },
@@ -738,7 +740,7 @@ export default function MaintenanceTable({
               d.total_hours,
               d.total_flights,
               d.last_maintenance ?? '',
-              computeExpiry(d.last_maintenance, d.model.maintenance_cycle_day) ?? '',
+              computeExpiry(d.last_maintenance, d.model.maintenance_cycle_day, d.activation_date) ?? '',
             ])}
           />
           <TablePagination table={table} />

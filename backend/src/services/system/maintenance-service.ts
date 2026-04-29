@@ -74,6 +74,7 @@ let toolQuery = supabase
     tool_description,
     fk_owner_id,
     fk_model_id,
+    tool_metadata,
     tool_model (
       model_id,
       manufacturer,
@@ -230,6 +231,7 @@ let toolQuery = supabase
       component_type: comp.component_type,
       serial_number: comp.serial_number,
       last_maintenance: lastMaint,
+      activation_date: comp.installation_date ?? null,
       total_hours: compHours,
       total_flights: compFlights,
       total_days: compDays,
@@ -263,12 +265,14 @@ let toolQuery = supabase
       ? "IN_MAINTENANCE"
       : computed.status;
 
+    const toolMeta = (tool.tool_metadata ?? {}) as Record<string, unknown>;
     return {
       tool_id: toolId,
       code: String(tool.tool_code ?? `#${toolId}`),
       serial_number: String(tool.tool_name ?? ""),
       description: (tool.tool_description as string | null) ?? null,
       last_maintenance: lastMaint,
+      activation_date: (toolMeta.activationDate as string | null) ?? null,
       total_hours: Math.round(stats.totalHours * 100) / 100,
       total_flights: stats.totalFlights,
       status: droneStatus,
