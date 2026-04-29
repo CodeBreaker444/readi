@@ -97,6 +97,15 @@ export default function SystemComponentsTable({
     return map;
   }, [components]);
 
+  const componentCountBySystem = useMemo(() => {
+    const map: Record<number, number> = {};
+    components.forEach((c) => {
+      if (!c.fk_tool_id) return;
+      map[c.fk_tool_id] = (map[c.fk_tool_id] ?? 0) + 1;
+    });
+    return map;
+  }, [components]);
+
   const getHierarchy = (systemComponents: ComponentRow[]) => {
     const byId = new Map<number, ComponentRow>();
     systemComponents.forEach((c) => byId.set(c.tool_component_id, c));
@@ -194,6 +203,7 @@ export default function SystemComponentsTable({
               ) : (
                 pagedSystems.map((system) => {
                   const systemComps = componentsBySystem[system.tool_id] ?? [];
+                  const totalComponentCount = componentCountBySystem[system.tool_id] ?? 0;
                   const hierarchyRows = getHierarchy(systemComps);
                   const parentIds = new Set(
                     systemComps
@@ -212,7 +222,7 @@ export default function SystemComponentsTable({
                             <ChevronRight className={`h-4 w-4 mt-0.5 transition-transform ${isOpen ? 'rotate-90' : ''}`} />
                             <div>
                               <p className={`font-semibold ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>{system.tool_code}</p>
-                              <p className="text-xs text-slate-400">{systemComps.length} component{systemComps.length === 1 ? '' : 's'}</p>
+                              <p className="text-xs text-slate-400">{totalComponentCount} component{totalComponentCount === 1 ? '' : 's'}</p>
                               {system.tool_desc ? <p className="text-xs text-slate-400">{system.tool_desc}</p> : null}
                             </div>
                           </div>
