@@ -736,6 +736,14 @@ export async function updateComponent(componentId: number, componentData: any) {
     await refreshMaintenanceDaysForTool(componentData.fk_tool_id);
   }
 
+  const { data: existing } = await supabase
+    .from('tool_component')
+    .select('component_metadata')
+    .eq('component_id', componentId)
+    .single();
+
+  const existingMeta = existing?.component_metadata || {};
+
   const { data, error } = await supabase
     .from('tool_component')
     .update({
@@ -751,6 +759,7 @@ export async function updateComponent(componentId: number, componentData: any) {
       maintenance_cycle_day: componentData.maintenance_cycle_day ?? null,
       maintenance_cycle_flight: componentData.maintenance_cycle_flight ?? null,
       component_metadata: {
+        ...existingMeta,
         cc_platform: componentData.cc_platform || null,
         gcs_type: componentData.gcs_type || null,
         component_status: componentData.component_status || 'OPERATIONAL',

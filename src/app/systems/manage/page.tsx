@@ -419,7 +419,7 @@ const modelColumns = useMemo(
                         <button
                             key={key}
                             onClick={() => setActiveTab(key)}
-                            className={`px-5 py-1.5 rounded-md text-sm font-medium transition-all ${
+                            className={`px-5 cursor-pointer py-1.5 rounded-md text-sm font-medium transition-all ${
                                 activeTab === key
                                     ? isDark
                                         ? 'bg-violet-600 text-white shadow-sm'

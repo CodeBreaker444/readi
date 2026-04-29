@@ -89,7 +89,7 @@ const EMPTY_FORM = {
   maintenance_cycle_day: '',
   maintenance_cycle_flight: '',
   battery_cycle_ratio: '',
-  fk_parent_component_id: '',
+  fk_parent_component_id: '_none',
 };
 interface ComponentType {
   type_id: number;
@@ -166,7 +166,7 @@ export default function EditComponentModal({
       maintenance_cycle_day: comp.maintenance_cycle_day != null && comp.maintenance_cycle_day !== '' ? String(comp.maintenance_cycle_day) : '',
       maintenance_cycle_flight: comp.maintenance_cycle_flight != null && comp.maintenance_cycle_flight !== '' ? String(comp.maintenance_cycle_flight) : '',
       battery_cycle_ratio: comp.battery_cycle_ratio != null ? String(comp.battery_cycle_ratio) : '',
-      fk_parent_component_id: comp.fk_parent_component_id ? String(comp.fk_parent_component_id) : '',
+      fk_parent_component_id: comp.fk_parent_component_id ? String(comp.fk_parent_component_id) : '_none',
     });
   };
 
@@ -269,7 +269,7 @@ export default function EditComponentModal({
 
   const handleSystemChange = async (v: string) => {
     handleChange('fk_tool_id', v);
-    handleChange('fk_parent_component_id', '');
+    handleChange('fk_parent_component_id', '_none');
     if (!v) return;
     setLoadingParent(true);
     try {
@@ -318,7 +318,7 @@ export default function EditComponentModal({
         maintenance_cycle_day: formData.maintenance_cycle_day ? Number(formData.maintenance_cycle_day) : null,
         maintenance_cycle_flight: formData.maintenance_cycle_flight ? Number(formData.maintenance_cycle_flight) : null,
         battery_cycle_ratio: formData.battery_cycle_ratio ? Number(formData.battery_cycle_ratio) : null,
-        fk_parent_component_id: formData.fk_parent_component_id ? Number(formData.fk_parent_component_id) : null,
+        fk_parent_component_id: formData.fk_parent_component_id && formData.fk_parent_component_id !== '_none' ? Number(formData.fk_parent_component_id) : null,
       };
 
       const res = await fetch(`/api/system/component/${selectedComponentId}/update`, {
@@ -422,12 +422,12 @@ export default function EditComponentModal({
                     <Label className={labelCls}>Parent Component <span className="font-normal opacity-60">(optional)</span></Label>
                     <Select
                       value={formData.fk_parent_component_id}
-                      onValueChange={(v) => handleChange('fk_parent_component_id', v === '_none' ? '' : v)}
+                      onValueChange={(v) => handleChange('fk_parent_component_id', v)}
                       disabled={loadingParent}
                     >
                       <SelectTrigger className={`w-full truncate ${selectTriggerCls}`}>
                         <SelectValue placeholder="None (top-level)">
-                          {formData.fk_parent_component_id
+                          {formData.fk_parent_component_id && formData.fk_parent_component_id !== '_none'
                             ? (() => {
                                 const p = components.find((c: any) => String(c.tool_component_id) === formData.fk_parent_component_id);
                                 return p ? <span className="block w-full truncate text-left">{p.component_code || p.component_name || `#${p.tool_component_id}`}</span> : null;
@@ -440,7 +440,8 @@ export default function EditComponentModal({
                         {components
                           .filter((c: any) =>
                             String(c.tool_component_id) !== selectedComponentId &&
-                            String(c.fk_tool_id) === formData.fk_tool_id
+                            String(c.fk_tool_id) === formData.fk_tool_id &&
+                            c.component_status !== 'DECOMMISSIONED'
                           )
                           .map((c: any) => (
                           <SelectItem key={c.tool_component_id} value={String(c.tool_component_id)}>

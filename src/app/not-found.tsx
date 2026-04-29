@@ -66,14 +66,14 @@ export default function NotFound() {
           <div className="flex flex-col sm:flex-row gap-3">
             <button
               onClick={() => router.back()}
-              className="flex-1 h-10 rounded-lg text-sm font-semibold border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 transition-all duration-150 active:scale-[0.99] flex items-center justify-center gap-2"
+              className="flex-1 cursor-pointer h-10 rounded-lg text-sm font-semibold border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 transition-all duration-150 active:scale-[0.99] flex items-center justify-center gap-2"
             >
               <ArrowLeftIcon className="h-4 w-4" />
               Go back
             </button>
             <button
               onClick={() => router.push('/')}
-              className="flex-1 h-10 rounded-lg text-white text-sm font-semibold transition-all duration-150 active:scale-[0.99] flex items-center justify-center gap-2 bg-gradient-to-br from-violet-600 to-violet-700 shadow-[0_2px_12px_rgba(124,58,237,0.25)]"
+              className="flex-1 cursor-pointer h-10 rounded-lg text-white text-sm font-semibold transition-all duration-150 active:scale-[0.99] flex items-center justify-center gap-2 bg-gradient-to-br from-violet-600 to-violet-700 shadow-[0_2px_12px_rgba(124,58,237,0.25)]"
             >
               <HomeIcon className="h-4 w-4" />
               Home

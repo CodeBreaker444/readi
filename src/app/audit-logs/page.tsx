@@ -4,6 +4,7 @@ import { SecureTransactionsTab } from '@/components/audit/SecureTransactionsTab'
 import ExportButtons from '@/components/system/ExportButtons';
 import { AuditLog, ENTITY_TYPES, EVENT_TYPE_COLORS, EVENT_TYPES, getAuditLogsColumns, Owner, UserOption } from '@/components/tables/AuditLogsTable';
 import { TablePagination } from '@/components/tables/Pagination';
+import { useTimezone } from '@/components/TimezoneProvider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -22,7 +23,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { useTimezone } from '@/components/TimezoneProvider';
 import { useTheme } from '@/components/useTheme';
 import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import axios from 'axios';
@@ -202,7 +202,7 @@ export default function AuditLogsPage() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`px-4 py-1.5 text-xs font-medium transition-colors ${activeTab === tab.id
+                  className={`px-4 cursor-pointer py-1.5 text-xs font-medium transition-colors ${activeTab === tab.id
                       ? isDark
                         ? 'bg-violet-500/20 text-violet-400'
                         : 'bg-violet-50 text-violet-700'
@@ -220,7 +220,7 @@ export default function AuditLogsPage() {
               size="sm"
               onClick={fetchLogs}
               disabled={loading}
-              className={`h-8 gap-1.5 px-3.5 text-xs font-medium rounded-lg transition-all ${isDark
+              className={`h-8 cursor-pointer gap-1.5 px-3.5 text-xs font-medium rounded-lg transition-all ${isDark
                   ? 'border-white/[0.1] hover:bg-white/[0.05] text-white'
                   : 'border-gray-200 hover:bg-gray-50'
                 }`}
