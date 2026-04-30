@@ -1,12 +1,13 @@
 import { getDashboardData } from "@/backend/services/dashboard/dashboard";
 import DashboardClient from "@/components/dashboard/DashboardClient";
 import { getUserSession } from "@/lib/auth/server-session";
+import { redirect } from "next/navigation";
 
 export default async function DashboardPage() {
   const session = await getUserSession();
-  
+
   if (!session) {
-    return null;
+    redirect('/api/auth/logout');
   }
 
   const ownerId = session.user.ownerId!;
