@@ -70,7 +70,7 @@ export const E = {
   AU009: { code: 'AU009', category: 'Authentication', message: 'Email address is already registered', detail: 'POST /api/team/user/add or registration route: duplicate email detected before insert.' },
 
   /** JWT decode/verify failed in jwt-utils. */
-  AU010: { code: 'AU010', category: 'Authentication', message: 'Session token is invalid or expired', detail: 'jwt-utils.ts: JWT signature verification or expiry check threw or returned null.' },
+  AU010: { code: 'AU010', category: 'Authentication', message: 'Token is invalid or expired', detail: 'jwt-utils.ts: JWT signature verification or expiry check threw or returned null.' },
 
   /** getUserSession threw an unexpected exception. */
   AU011: { code: 'AU011', category: 'Authentication', message: 'Authentication required', detail: 'getUserSession: unexpected exception in session retrieval (cookie store error, etc.).' },

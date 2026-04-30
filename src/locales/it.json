@@ -200,6 +200,7 @@
     "securityApiKeys": "Sicurezza e chiavi API",
     "integrations": "Integrazioni",
     "configuration": "Configurazione",
+    "droneAtc": "Drone ATC",
     "collapse": "Comprimi barra laterale",
     "expand": "Espandi barra laterale",
     "appSubtitle": "Controllo droni"

@@ -91,8 +91,7 @@ export async function hasFlytbaseToken(userId: number): Promise<boolean> {
   return !!(data?.flytbase_api_token && data?.flytbase_org_id);
 }
 
-/**
-/** Returns the stored credentials for internal API calls. */
+ 
 export async function getFlytbaseCredentials(
   userId: number,
 ): Promise<{ token: string; orgId: string } | null> {

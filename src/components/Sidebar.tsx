@@ -23,7 +23,7 @@ import {
   HiOutlineTemplate,
   HiOutlineUsers
 } from 'react-icons/hi';
-import { TbLayoutSidebarFilled } from "react-icons/tb";
+import { TbLayoutSidebarFilled, TbRadar } from "react-icons/tb";
 import { Permission, Role, roleHasPermission, ROUTE_PERMISSIONS, RoutePermissionEntry } from '../lib/auth/roles';
 
 interface SubNavItem {
@@ -130,6 +130,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
         { name: t('sidebar.settings'), href: '/flytbase' },
         { name: t('sidebar.recentFlights'), href: '/flytbase/flights' },
       ],
+    },
+    {
+      name: t('sidebar.droneAtc'),
+      href: '/drone-atc',
+      icon: TbRadar,
     },
     {
       name: t('sidebar.training'),

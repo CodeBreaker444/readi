@@ -11,6 +11,7 @@ import { useTheme } from '@/components/useTheme';
 import { ChevronDown, Loader2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { Skeleton } from '../ui/skeleton';
 
 type SystemDraft = {
   tool_code: string;
@@ -336,9 +337,20 @@ export default function DuplicateSystemModal({
         </DialogHeader>
 
         {loadingDraft || !systemDraft ? (
-          <div className="flex-1 flex items-center justify-center text-sm text-slate-500">
-            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-            Preparing duplicate draft...
+          <div className="flex flex-col flex-1 overflow-hidden px-6">
+            <div className="flex gap-2 mt-4 mb-6">
+              <Skeleton className="h-9 w-32" />
+              <Skeleton className="h-9 w-32" />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {[...Array(8)].map((_, i) => (
+                <div key={i} className="space-y-2">
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              ))}
+            </div>
           </div>
         ) : (
           <Tabs defaultValue="system" className="flex flex-col flex-1 overflow-hidden">

@@ -28,7 +28,8 @@ export type Permission =
   | 'manage_users'
   | 'add_company'
   | 'view_client'
-  | 'view_erp';
+  | 'view_erp'
+  | 'view_drone_atc';
 
 type WildcardPermission = '*';
 export type RolePermission = Permission | WildcardPermission;
@@ -39,7 +40,7 @@ export const ROLE_PERMISSIONS: Record<Role, RolePermission[]> = {
     'view_dashboard', 'view_pilot_dashboard', 'view_operations', 'view_compliance',
     'view_training', 'view_safety_mgmt', 'view_config', 'view_repository', 'view_logs',
     'view_planning', 'view_planning_advanced', 'view_logbooks', 'view_notifications',
-    'manage_users', 'view_client', 'add_company', 'view_erp'
+    'manage_users', 'view_client', 'add_company', 'view_erp', 'view_drone_atc'
   ],
   PIC: [
     'view_pilot_dashboard',
@@ -47,8 +48,9 @@ export const ROLE_PERMISSIONS: Record<Role, RolePermission[]> = {
     'view_operations',
     'view_notifications',
     'view_repository',
+    'view_drone_atc',
   ],
-  OPM: ['view_dashboard', 'view_operations', 'view_logs', 'view_repository', 'view_planning', 'view_planning_advanced', 'view_logbooks', 'view_safety_mgmt', 'view_config', 'view_notifications', 'view_client', 'manage_users', 'view_erp'],
+  OPM: ['view_dashboard', 'view_operations', 'view_logs', 'view_repository', 'view_planning', 'view_planning_advanced', 'view_logbooks', 'view_safety_mgmt', 'view_config', 'view_notifications', 'view_client', 'manage_users', 'view_erp', 'view_drone_atc'],
   SM:  ['view_dashboard', 'view_safety_mgmt', 'view_repository', 'view_notifications', 'view_config', 'view_erp'],
   AM:  ['view_dashboard', 'view_logs', 'view_repository', 'view_logbooks', 'view_config', 'view_notifications', 'manage_users', 'view_erp'],
   CMM: ['view_dashboard', 'view_compliance', 'view_repository', 'view_notifications', 'view_erp'],
@@ -112,6 +114,7 @@ export const ROUTE_PERMISSIONS: Record<string, RoutePermissionEntry> = {
   '/audit-logs': 'view_logs',
   '/training/courses': 'view_training',
   '/training/calendar': 'view_training',
+  '/drone-atc': 'view_drone_atc',
 };
 
 export type ApiPermissionEntry = Permission | Permission[] | null;
@@ -148,6 +151,8 @@ export const API_ROUTE_PERMISSIONS: Array<{ prefix: string; permission: ApiPermi
   { prefix: '/api/audit-logs', permission: 'view_logs' },
   { prefix: '/api/training', permission: 'view_training' },
   { prefix: '/api/integrations/flytbase', permission: null },
+  { prefix: '/api/drone-atc/user-info', permission: null },
+  { prefix: '/api/drone-atc', permission: 'view_drone_atc' },
 ];
 
 export function getApiRoutePermission(pathname: string): ApiPermissionEntry | undefined {
