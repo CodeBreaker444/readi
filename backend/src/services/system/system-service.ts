@@ -738,19 +738,20 @@ export async function updateComponent(componentId: number, componentData: any) {
 
   const { data: existing } = await supabase
     .from('tool_component')
-    .select('component_metadata')
+    .select('component_metadata, fk_tool_id')
     .eq('component_id', componentId)
     .single();
 
   const existingMeta = existing?.component_metadata || {};
   const { system_detached: _ignored, ...existingMetaWithoutDetached } = existingMeta;
-  const baseMeta = componentData.fk_tool_id ? existingMetaWithoutDetached : existingMeta;
+  const baseMeta = componentData.system_detached ? existingMeta : existingMetaWithoutDetached;
 
   const { data, error } = await supabase
     .from('tool_component')
     .update({
       fk_tool_id: componentData.fk_tool_id,
       component_type: componentData.component_type,
+      component_name: componentData.component_name || null,
       component_code: componentData.component_code || null,
       component_description: componentData.component_desc || null,
       serial_number: normalizedSerial || null,

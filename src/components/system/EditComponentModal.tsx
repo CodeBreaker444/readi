@@ -69,7 +69,7 @@ interface EditComponentModalProps {
 }
 
 const EMPTY_FORM = {
-  fk_tool_id: '',
+  fk_tool_id: '_none',
   component_type: '',
   component_name: '',
   component_code: '',
@@ -106,6 +106,7 @@ export default function EditComponentModal({
   const [selectedComponentId, setSelectedComponentId] = useState<string>('');
   const [showManageTypes, setShowManageTypes] = useState(false);
   const [loadingParent, setLoadingParent] = useState(false);
+  const [originalFkToolId, setOriginalFkToolId] = useState<number | null>(null);
 
     const [formData, setFormData] = useState(EMPTY_FORM);
 
@@ -141,12 +142,14 @@ export default function EditComponentModal({
       setComponents([]);
       setSelectedComponentId('');
       setFormData(EMPTY_FORM);
+      setOriginalFkToolId(null);
     }
   }, [open, toolId, initialComponentId]);
 
   const populateForm = (comp: any) => {
+    setOriginalFkToolId(comp.fk_tool_id ?? null);
     setFormData({
-      fk_tool_id: String(comp.fk_tool_id || ''),
+      fk_tool_id: (comp.system_detached || !comp.fk_tool_id) ? '_none' : String(comp.fk_tool_id),
       component_type: comp.component_type || '',
       component_name: comp.component_name || '',
       component_code: comp.component_code || '',
@@ -270,7 +273,7 @@ export default function EditComponentModal({
   const handleSystemChange = async (v: string) => {
     handleChange('fk_tool_id', v);
     handleChange('fk_parent_component_id', '_none');
-    if (!v) return;
+    if (!v || v === '_none') return;
     setLoadingParent(true);
     try {
       const res = await fetch('/api/system/component/list', {
@@ -297,8 +300,12 @@ export default function EditComponentModal({
     if (!selectedComponentId) { toast.error('Please select a component'); return; }
     setLoading(true);
     try {
+      const isDetached = formData.fk_tool_id === '_none';
       const payload = {
-        fk_tool_id: Number(formData.fk_tool_id),
+        fk_tool_id: !isDetached
+          ? Number(formData.fk_tool_id)
+          : (originalFkToolId ?? Number(formData.fk_tool_id)),
+        system_detached: isDetached,
         component_type: formData.component_type,
         component_name: formData.component_name || null,
         component_code: formData.component_code || null,
@@ -385,7 +392,7 @@ export default function EditComponentModal({
               <Skeleton className={`h-10 w-32 ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
             </div>
           </div>
-        ) : components.length === 0 ? (
+        ) : components.length === 0 && !selectedComponentId ? (
           <div className="py-8 text-center text-sm text-gray-400">
             No components found for this system.
             <div className="mt-4">
@@ -402,12 +409,13 @@ export default function EditComponentModal({
                     <Select value={formData.fk_tool_id} onValueChange={handleSystemChange}>
                       <SelectTrigger className={`w-full truncate ${selectTriggerCls}`}>
                         <SelectValue placeholder="Select System">
-                          {formData.fk_tool_id
+                          {formData.fk_tool_id && formData.fk_tool_id !== '_none'
                             ? (() => { const t = tools.find((x: any) => String(x.tool_id) === formData.fk_tool_id); return t ? <span className="block w-full truncate text-left">{t.tool_code}</span> : null; })()
-                            : null}
+                            : formData.fk_tool_id === '_none' ? <span className={`italic ${isDark ? 'text-slate-400' : 'text-muted-foreground'}`}>None</span> : null}
                         </SelectValue>
                       </SelectTrigger>
                       <SelectContent className={`z-50 max-h-60 overflow-y-auto ${selectContentCls}`}>
+                        <SelectItem value="_none"><span className={`italic ${isDark ? 'text-slate-400' : 'text-muted-foreground'}`}>None</span></SelectItem>
                         {tools.map((tool: any) => (
                           <SelectItem key={tool.tool_id} value={tool.tool_id.toString()}>
                             <SystemOptionLabel tool={tool} />

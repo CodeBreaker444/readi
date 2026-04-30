@@ -267,13 +267,14 @@ export const getModelColumns = ({ isDark, onEdit, onDelete }: ModelColumnProps):
 interface ComponentColumnProps {
     isDark: boolean;
     toolCodeMap: Record<number, string>;
+    modelMap: Record<number, string>;
     onView: (row: any) => void;
     onEdit: (id: number) => void;
     onDelete: (id: number, name: string) => void;
     onLog: (row: any) => void;
 }
 
-export const getComponentColumns = ({ isDark, toolCodeMap, onView, onEdit, onDelete, onLog }: ComponentColumnProps): ColumnDef<any>[] => {
+export const getComponentColumns = ({ isDark, toolCodeMap, modelMap, onView, onEdit, onDelete, onLog }: ComponentColumnProps): ColumnDef<any>[] => {
     const text = isDark ? 'text-gray-200' : 'text-black';
     const hd = isDark ? 'text-gray-100' : '';
 
@@ -313,10 +314,21 @@ export const getComponentColumns = ({ isDark, toolCodeMap, onView, onEdit, onDel
             cell: ({ getValue }) => <span className={text}>{(getValue() as string) || '—'}</span>,
         },
         {
+            header: () => <span className={hd}>Model</span>,
+            accessorKey: 'fk_tool_model_id',
+            cell: ({ getValue }) => {
+                const label = modelMap[getValue() as number];
+                return label
+                    ? <span className={text}>{label}</span>
+                    : <span className="text-slate-400 text-xs">—</span>;
+            },
+        },
+        {
             header: () => <span className={hd}>System</span>,
             accessorKey: 'fk_tool_id',
-            cell: ({ getValue }) => {
-                const code = toolCodeMap[getValue() as number];
+            cell: ({ row }) => {
+                if (row.original.system_detached) return <span className="text-slate-400 text-xs">—</span>;
+                const code = toolCodeMap[row.original.fk_tool_id as number];
                 return code ? (
                     <span className={`px-2 py-0.5 rounded text-xs font-medium ${isDark ? 'bg-violet-900/40 text-violet-300' : 'bg-violet-50 text-violet-700'}`}>{code}</span>
                 ) : <span className="text-slate-400 text-xs">—</span>;
