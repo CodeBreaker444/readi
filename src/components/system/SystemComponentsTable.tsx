@@ -100,7 +100,7 @@ export default function SystemComponentsTable({
   const componentCountBySystem = useMemo(() => {
     const map: Record<number, number> = {};
     components.forEach((c) => {
-      if (!c.fk_tool_id) return;
+      if (!c.fk_tool_id || c.system_detached) return;
       map[c.fk_tool_id] = (map[c.fk_tool_id] ?? 0) + 1;
     });
     return map;

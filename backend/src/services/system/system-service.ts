@@ -743,6 +743,8 @@ export async function updateComponent(componentId: number, componentData: any) {
     .single();
 
   const existingMeta = existing?.component_metadata || {};
+  const { system_detached: _ignored, ...existingMetaWithoutDetached } = existingMeta;
+  const baseMeta = componentData.fk_tool_id ? existingMetaWithoutDetached : existingMeta;
 
   const { data, error } = await supabase
     .from('tool_component')
@@ -759,7 +761,7 @@ export async function updateComponent(componentId: number, componentData: any) {
       maintenance_cycle_day: componentData.maintenance_cycle_day ?? null,
       maintenance_cycle_flight: componentData.maintenance_cycle_flight ?? null,
       component_metadata: {
-        ...existingMeta,
+        ...baseMeta,
         cc_platform: componentData.cc_platform || null,
         gcs_type: componentData.gcs_type || null,
         component_status: componentData.component_status || 'OPERATIONAL',
