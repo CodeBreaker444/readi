@@ -46,6 +46,7 @@ interface SystemComponentsTableProps {
   loading?: boolean;
   onViewSystem: (toolId: number) => void;
   onEditSystem: (tool: DroneToolData) => void;
+  onDuplicateSystem: (tool: DroneToolData) => void;
   onDeleteSystem: (toolId: number) => void;
   onViewFiles: (tool: DroneToolData) => void;
   onViewComponent: (row: ComponentRow) => void;
@@ -73,6 +74,7 @@ export default function SystemComponentsTable({
   loading = false,
   onViewSystem,
   onEditSystem,
+  onDuplicateSystem,
   onDeleteSystem,
   onViewFiles,
   onViewComponent,
@@ -244,6 +246,7 @@ export default function SystemComponentsTable({
                           <div className="flex flex-wrap gap-2">
                             <Button size="sm" variant="outline" onClick={() => onViewSystem(system.tool_id)}>View</Button>
                             <Button size="sm" variant="outline" onClick={() => onEditSystem(system)}>Edit</Button>
+                            <Button size="sm" variant="outline" onClick={() => onDuplicateSystem(system)}>Duplicate</Button>
                             <Button size="sm" variant="outline" onClick={() => onViewFiles(system)}>Files</Button>
                             <Button size="sm" variant="outline" onClick={() => onOpenRelations(system.tool_id, system.tool_code)} className="gap-1">
                               <GitBranch size={13} /> Relations

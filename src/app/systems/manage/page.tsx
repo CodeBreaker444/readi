@@ -11,6 +11,7 @@ import EditComponentModal from '@/components/system/EditComponentModal';
 import EditModelModal from '@/components/system/EditModelModal';
 import EditSystemModal from '@/components/system/EditSystemModal';
 import { FilesDownloadModal, SystemFile } from '@/components/system/FilesDownloadModal';
+import DuplicateSystemModal from '@/components/system/DuplicateSystemModal';
 import SystemComponentsTable from '@/components/system/SystemComponentsTable';
 import ViewComponentModal from '@/components/system/ViewComponentModal';
 import ViewToolModal from '@/components/system/ViewToolModal';
@@ -60,9 +61,11 @@ export default function DroneToolPage() {
     const [showFlightLogs, setShowFlightLogs] = useState<boolean>(false);
     const [flightLogsComponent, setFlightLogsComponent] = useState<any | null>(null);
     const [showEditSystem, setShowEditSystem] = useState<boolean>(false);
+    const [showDuplicateSystem, setShowDuplicateSystem] = useState<boolean>(false);
     const [showEditModel, setShowEditModel] = useState<boolean>(false);
     const [showEditComponent, setShowEditComponent] = useState<boolean>(false);
     const [selectedToolId, setSelectedToolId] = useState<number | null>(null);
+    const [duplicateSourceSystemId, setDuplicateSourceSystemId] = useState<number | null>(null);
     const [directModelId, setDirectModelId] = useState<number | null>(null);
     const [directComponentId, setDirectComponentId] = useState<number | null>(null);
 
@@ -172,6 +175,10 @@ export default function DroneToolPage() {
     const handleLogComponent = (row: any) => { setLogComponent(row); setShowComponentLog(true); };
     const handleFlightLogsComponent = (row: any) => { setFlightLogsComponent(row); setShowFlightLogs(true); };
     const handleEditSystem = (tool: DroneToolData) => { setSelectedToolId(tool.tool_id); setShowEditSystem(true); };
+    const handleDuplicateSystem = (tool: DroneToolData) => {
+        setDuplicateSourceSystemId(tool.tool_id);
+        setShowDuplicateSystem(true);
+    };
 
     const handleDelete = async (toolId: number) => {
         const tool = toolData.find(t => t.tool_id === toolId);
@@ -441,6 +448,7 @@ const modelColumns = useMemo(
                                 loading={loading || loadingComponents}
                                 onViewSystem={handleView}
                                 onEditSystem={handleEditSystem}
+                                onDuplicateSystem={handleDuplicateSystem}
                                 onDeleteSystem={handleDelete}
                                 onViewFiles={handleViewFiles}
                                 onViewComponent={handleViewComponent}
@@ -517,6 +525,19 @@ const modelColumns = useMemo(
                     onSuccess={() => { setShowEditSystem(false); setSelectedToolId(null); fetchToolData(); }}
                     clients={clients} models={models} />
             )}
+
+            <DuplicateSystemModal
+                open={showDuplicateSystem}
+                sourceSystemId={duplicateSourceSystemId}
+                clients={clients}
+                onClose={() => { setShowDuplicateSystem(false); setDuplicateSourceSystemId(null); }}
+                onSuccess={() => {
+                    setShowDuplicateSystem(false);
+                    setDuplicateSourceSystemId(null);
+                    fetchToolData();
+                    fetchAllComponents();
+                }}
+            />
 
             {showEditModel && (
                 <EditModelModal open={showEditModel} toolId={selectedToolId}
