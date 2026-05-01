@@ -56,6 +56,12 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Server-to-server endpoints called by FlytRelay using RS256 JWT (no session cookie)
+  const FLYTRELAY_ROUTES = ['/api/drone-atc/user-info', '/api/drone-atc/users'];
+  if (FLYTRELAY_ROUTES.some((r) => pathname === r || pathname.startsWith(r + '/'))) {
+    return NextResponse.next();
+  }
+
   const publicRoutes = ['/auth/login', '/auth/activate', '/auth/update-password', '/auth/setup-2fa', '/auth/verify-mfa']
   const authFlowRoutes = [
     '/auth/change-password',
