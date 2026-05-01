@@ -155,7 +155,7 @@ function Divider({ isDark }: { isDark: boolean }) {
 }
 
 export default function LayerControlPanel({ layers, onToggle, isDark, droneCount, aircraftCount, hasOwmKey }: Props) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState<boolean>(false);
   const [open, setOpen] = useState({ traffic: true, airspace: true, weather: false });
   const toggle = (s: keyof typeof open) => setOpen(p => ({ ...p, [s]: !p[s] }));
 

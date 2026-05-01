@@ -1,11 +1,9 @@
 'use client';
 
 import type { AircraftState } from '@/app/api/drone-atc/flights/route';
-import { DEMO_AIRCRAFT } from '@/components/drone-atc/demoData';
 import DroneList from '@/components/drone-atc/DroneList';
 import LayerControlPanel, { type LayerVisibility } from '@/components/drone-atc/LayerControlPanel';
 import LiveFeedPanel from '@/components/drone-atc/LiveFeedPanel';
-import { useDemoDrones } from '@/components/drone-atc/useDemoDrones';
 import { useDroneATCSocket } from '@/components/drone-atc/useDroneATCSocket';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTheme } from '@/components/useTheme';
@@ -51,13 +49,10 @@ function StatusBadge({ status, count, isDark }: { status: string; count: number;
 export default function DroneATCPage() {
   const { isDark } = useTheme();
   const { drones: liveDrones, status, errorMessage, reconnect } = useDroneATCSocket();
-  const demoDrones = useDemoDrones();
-  // Show demo drones until a real connection delivers data
-  const drones = Object.keys(liveDrones).length > 0 ? liveDrones : demoDrones;
+  const drones = liveDrones ;
 
   const [selectedDroneId, setSelectedDroneId] = useState<string | null>(null);
-  // Initialise with demo aircraft; real fetch replaces when flights layer is toggled on
-  const [aircraft, setAircraft] = useState<AircraftState[]>(DEMO_AIRCRAFT);
+  const [aircraft, setAircraft] = useState<AircraftState[]>([]);
   const [layers, setLayers] = useState<LayerVisibility>({
     drones: true, flights: true,
     airspaceA: false, airspaceB: true, airspaceC: true, airspaceD: false,
@@ -100,7 +95,7 @@ export default function DroneATCPage() {
   }, []);
 
   useEffect(() => {
-    if (!layers.flights) { setAircraft(DEMO_AIRCRAFT); return; }
+    if (!layers.flights) { setAircraft([]); return; }
     fetchFlights();
     flightTimerRef.current = setInterval(fetchFlights, FLIGHT_REFRESH_MS);
     return () => { if (flightTimerRef.current) clearInterval(flightTimerRef.current); };
