@@ -43,49 +43,80 @@ export default function WeatherPanel({ lat, lon, isDark }: WeatherPanelProps) {
     setLoading(true);
     fetch(`/api/drone-atc/weather?lat=${lat}&lon=${lon}`)
       .then((r) => r.json())
-      .then((d) => { setWeather(d.current); setLoading(false); })
+      .then((d) => {
+        setWeather(d.current);
+        setLoading(false);
+      })
       .catch(() => setLoading(false));
   }, [lat, lon]);
 
   if (loading) {
-    return <div className={`text-xs px-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Loading weather...</div>;
+    return (
+      <div
+        className={`rounded-2xl border p-3 animate-pulse ${
+          isDark ? 'bg-slate-800/40 border-slate-700/50' : 'bg-white/80 border-slate-300'
+        }`}
+      >
+        <div className={`h-3 w-16 rounded mb-3 ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
+        <div className={`h-6 w-20 rounded ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
+      </div>
+    );
   }
 
   if (!weather) {
-    return <div className={`text-xs px-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Weather unavailable</div>;
+    return (
+      <div
+        className={`rounded-2xl border p-3 text-xs ${
+          isDark ? 'bg-slate-800/40 border-slate-700/50 text-slate-500' : 'bg-white/80 border-slate-300 text-slate-400'
+        }`}
+      >
+        Weather unavailable
+      </div>
+    );
   }
 
   return (
-    <div className={`rounded-xl border p-3 ${
-      isDark ? 'bg-slate-800/50 border-slate-700/60' : 'bg-white border-slate-200'
-    }`}>
-      <p className={`text-[10px] font-medium uppercase tracking-wider mb-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+    <div
+      className={`rounded-2xl border p-3 ${
+        isDark ? 'bg-slate-800/40 border-slate-700/50' : 'bg-white/80 border-slate-300'
+      }`}
+    >
+      <p
+        className={`text-[10px] font-bold uppercase tracking-widest mb-2 ${
+          isDark ? 'text-slate-500' : 'text-slate-400'
+        }`}
+      >
         Weather
       </p>
-      <div className="flex items-center gap-2 mb-2">
+
+      <div className="flex items-center gap-2.5 mb-2.5">
         <WeatherIcon code={weather.weather_code} />
         <div>
-          <p className={`text-lg font-bold leading-none ${isDark ? 'text-white' : 'text-slate-800'}`}>
+          <p className={`text-lg font-bold leading-none tabular-nums ${isDark ? 'text-white' : 'text-slate-800'}`}>
             {Math.round(weather.temperature_2m)}&deg;C
           </p>
-          <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+          <p className={`text-[10px] mt-0.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
             Feels {Math.round(weather.apparent_temperature)}&deg;C
           </p>
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
-        <div className="flex items-center gap-1">
-          <MdAir className={`w-3.5 h-3.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
-          <span className={`${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Wind </span>
-          <span className={`font-medium ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
-            {weather.wind_speed_10m.toFixed(1)} m/s {windDir(weather.wind_direction_10m)}
-          </span>
-        </div>
-        <div>
-          <span className={`${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Humidity </span>
-          <span className={`font-medium ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
-            {weather.relative_humidity_2m}%
-          </span>
+
+      <div className={`border-t pt-2 ${isDark ? 'border-slate-700/50' : 'border-slate-200'}`}>
+        <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[11px]">
+          <div className="flex items-center gap-1.5">
+            <MdAir className={`w-3.5 h-3.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
+            <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Wind</span>
+            <span className={`font-semibold font-mono tabular-nums ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
+              {weather.wind_speed_10m.toFixed(1)}<span className="text-[9px] ml-px">m/s</span>{' '}
+              {windDir(weather.wind_direction_10m)}
+            </span>
+          </div>
+          <div>
+            <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Humidity </span>
+            <span className={`font-semibold font-mono tabular-nums ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
+              {weather.relative_humidity_2m}%
+            </span>
+          </div>
         </div>
       </div>
     </div>
