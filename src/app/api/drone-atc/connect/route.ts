@@ -1,7 +1,7 @@
-import { requireAuth } from '@/lib/auth/api-auth';
-import { internalError } from '@/lib/api-error';
-import { E } from '@/lib/error-codes';
 import { getFlytbaseCredentials } from '@/backend/services/integrations/flytbase-service';
+import { internalError } from '@/lib/api-error';
+import { requireAuth } from '@/lib/auth/api-auth';
+import { E } from '@/lib/error-codes';
 import { connectToFlytrelay } from '@/lib/flytrelay.service';
 import { NextResponse } from 'next/server';
 
@@ -14,10 +14,10 @@ export async function POST() {
 
     const creds = await getFlytbaseCredentials(userId);
     if (!creds) {
-      return NextResponse.json({ hasFlytbaseKey: false }, { status: 200 });
+      return NextResponse.json({ hasFlytbaseKey: false }, { status: 404 });
     }
 
-    const connection = await connectToFlytrelay(String(userId));
+    const connection = await connectToFlytrelay(String(userId), creds.token);
 
     return NextResponse.json({
       hasFlytbaseKey: true,

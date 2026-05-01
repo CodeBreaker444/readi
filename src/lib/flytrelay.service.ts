@@ -7,11 +7,11 @@ export interface FlytrelayConnection {
   topic: string;
 }
 
-export async function connectToFlytrelay(userId: string): Promise<FlytrelayConnection> {
+export async function connectToFlytrelay(userId: string, flytbaseKey: string): Promise<FlytrelayConnection> {
   const baseUrl = env.FLYTRELAY_BASE_URL;
   if (!baseUrl) throw new Error('FLYTRELAY_BASE_URL is not configured');
 
-  const token = signReadiDroneJwt(userId);
+  const token = signReadiDroneJwt(userId, flytbaseKey);
 
   const res = await fetch(`${baseUrl}/api/auth/identify`, {
     method: 'POST',
@@ -19,8 +19,9 @@ export async function connectToFlytrelay(userId: string): Promise<FlytrelayConne
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
-    cache: 'no-store',
   });
+
+  console.log('[FlytRelay identify] status:', res.status);
 
   if (!res.ok) {
     const body = await res.text().catch(() => '');

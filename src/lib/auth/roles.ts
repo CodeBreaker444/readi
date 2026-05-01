@@ -152,6 +152,7 @@ export const API_ROUTE_PERMISSIONS: Array<{ prefix: string; permission: ApiPermi
   { prefix: '/api/training', permission: 'view_training' },
   { prefix: '/api/integrations/flytbase', permission: null },
   { prefix: '/api/drone-atc/user-info', permission: null },
+  { prefix: '/api/drone-atc/users', permission: null },
   { prefix: '/api/drone-atc', permission: 'view_drone_atc' },
 ];
 
