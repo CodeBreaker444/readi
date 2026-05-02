@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 
 export interface TelemetryData {
   drone_id: string;
   name?: string;
   model?: string;
+  device_type?: string;
   latitude: number;
   longitude: number;
   altitude: number;
@@ -77,6 +78,8 @@ export function useDroneATCSocket(): UseDroneATCSocketReturn {
 
       socket.on('telemetry', (payload: { droneId: string; data: TelemetryData; timestamp: number }) => {
         const telemetry = payload.data ?? (payload as unknown as TelemetryData);
+        console.log('telementry:',telemetry);
+        
         const id = telemetry.drone_id ?? payload.droneId;
         setDrones((prev) => ({ ...prev, [id]: { ...telemetry, drone_id: id } }));
       });

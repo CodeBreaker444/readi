@@ -49,7 +49,9 @@ function StatusBadge({ status, count, isDark }: { status: string; count: number;
 export default function DroneATCPage() {
   const { isDark } = useTheme();
   const { drones: liveDrones, status, errorMessage, reconnect } = useDroneATCSocket();
-  const drones =  liveDrones  ;
+  const drones = Object.fromEntries(
+    Object.entries(liveDrones).filter(([, d]) => d.device_type === 'Drone')
+  );
 
   const [selectedDroneId, setSelectedDroneId] = useState<string | null>(null);
   const [aircraft, setAircraft] = useState<AircraftState[]>([]);
@@ -138,7 +140,7 @@ export default function DroneATCPage() {
       <header className={`shrink-0 z-20 transition-colors ${isDark
           ? 'bg-slate-900/90 backdrop-blur-lg border-b border-slate-700/50'
           : 'bg-white/90 backdrop-blur-lg border-b border-slate-300 shadow-[0_1px_2px_rgba(0,0,0,0.04)]'
-        } px-4 py-1.5`}>
+        } px-4 py-4`}>
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="w-1 h-7 rounded-full bg-violet-600 shrink-0" />
