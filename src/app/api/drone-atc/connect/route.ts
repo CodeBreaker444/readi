@@ -19,9 +19,6 @@ export async function POST() {
 
     const connection = await connectToFlytrelay(String(userId), creds.token);
 
-    console.log('connection:',connection);
-    
-
     return NextResponse.json({
       hasFlytbaseKey: true,
       wsUrl: connection.wsUrl,

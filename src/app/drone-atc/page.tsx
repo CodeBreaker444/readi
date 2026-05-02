@@ -10,7 +10,7 @@ import { useTheme } from '@/components/useTheme';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { FiAlertTriangle } from 'react-icons/fi';
+import { FiAlertTriangle, FiCheck, FiRefreshCw } from 'react-icons/fi';
 import { MdFlight, MdRefresh } from 'react-icons/md';
 
 const DroneATCMap = dynamic(() => import('@/components/drone-atc/DroneATCMap'), {
@@ -59,9 +59,26 @@ export default function DroneATCPage() {
     wind: false, temp: false, clouds: false, precip: false, pressure: false,
   });
 
+  const [syncState, setSyncState] = useState<'idle' | 'loading' | 'ok' | 'error'>('idle');
+
   const boundsRef = useRef<{ latMin: number; lonMin: number; latMax: number; lonMax: number } | null>(null);
   const flightTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasAutoSelected = useRef(false);
+
+  const handleUpdateDrones = useCallback(async () => {
+    if (syncState === 'loading') return;
+    setSyncState('loading');
+    try {
+      const res = await fetch('/api/drone-atc/users', { method: 'PATCH' });
+      setSyncState(res.ok ? 'ok' : 'error');
+    } catch {
+      setSyncState('error');
+    } finally {
+      if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+      syncTimerRef.current = setTimeout(() => setSyncState('idle'), 3000);
+    }
+  }, [syncState]);
 
   const toggleLayer = useCallback((key: keyof LayerVisibility) => {
     setLayers(prev => ({ ...prev, [key]: !prev[key] }));
@@ -137,6 +154,29 @@ export default function DroneATCPage() {
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              onClick={handleUpdateDrones}
+              disabled={syncState === 'loading'}
+              className={`flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1 rounded-lg transition-colors disabled:opacity-60 ${
+                syncState === 'ok'
+                  ? 'bg-emerald-600/90 text-white'
+                  : syncState === 'error'
+                  ? 'bg-red-600/90 text-white'
+                  : isDark
+                  ? 'bg-slate-700/70 text-slate-200 hover:bg-slate-600/80 ring-1 ring-slate-600/40'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200 ring-1 ring-slate-200'
+              }`}
+            >
+              {syncState === 'loading' ? (
+                <FiRefreshCw className="w-3 h-3 animate-spin" />
+              ) : syncState === 'ok' ? (
+                <FiCheck className="w-3 h-3" />
+              ) : (
+                <FiRefreshCw className="w-3 h-3" />
+              )}
+              {syncState === 'loading' ? 'Updating…' : syncState === 'ok' ? 'Updated' : syncState === 'error' ? 'Failed' : 'Update Drones To FlytRelay'}
+            </button>
+
             <StatusBadge status={status} count={droneList.length} isDark={isDark} />
             {status === 'error' && (
               <button

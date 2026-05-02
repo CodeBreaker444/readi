@@ -35,9 +35,9 @@ function StatusBadge({ status, isDark }: { status?: string; isDark: boolean }) {
   );
   return (
     <span className={`inline-flex items-center gap-1 text-[9px] font-bold tracking-wide px-1.5 py-0.5 rounded-full ${
-      isDark ? 'bg-red-500/10 text-red-400 ring-1 ring-red-500/20' : 'bg-red-50 text-red-500 ring-1 ring-red-200'
+      isDark ? 'bg-slate-700/40 text-slate-400 ring-1 ring-slate-600/30' : 'bg-slate-100 text-slate-400 ring-1 ring-slate-200'
     }`}>
-      <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
+      <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
       OFFLINE
     </span>
   );
@@ -141,7 +141,7 @@ export default function DroneList({ drones, selectedDroneId, onSelect, isDark, i
           ? 'border-l-violet-500'
           : online  ? 'border-l-emerald-500'
           : standby ? 'border-l-amber-400'
-          : 'border-l-red-500';
+          : 'border-l-slate-500';
 
         const cardBg = isSelected
           ? isDark
