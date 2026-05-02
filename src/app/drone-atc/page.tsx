@@ -49,7 +49,7 @@ function StatusBadge({ status, count, isDark }: { status: string; count: number;
 export default function DroneATCPage() {
   const { isDark } = useTheme();
   const { drones: liveDrones, status, errorMessage, reconnect } = useDroneATCSocket();
-  const drones = liveDrones ;
+  const drones =  liveDrones  ;
 
   const [selectedDroneId, setSelectedDroneId] = useState<string | null>(null);
   const [aircraft, setAircraft] = useState<AircraftState[]>([]);
@@ -86,6 +86,8 @@ export default function DroneATCPage() {
       const res = await fetch(`/api/drone-atc/flights?latMin=${latMin}&lonMin=${lonMin}&latMax=${latMax}&lonMax=${lonMax}`);
       if (res.ok) {
         const data = await res.json();
+        console.log('data:',data);
+        
         setAircraft(data.aircraft ?? []);
       }
     } catch {
@@ -162,7 +164,7 @@ export default function DroneATCPage() {
 
       <div className="flex flex-1 gap-2 p-2 overflow-hidden">
 
-        <aside className={`w-52 shrink-0 flex flex-col overflow-hidden ${panelClass}`}>
+        <aside className={`w-64 shrink-0 flex flex-col overflow-hidden ${panelClass}`}>
           <div className={`px-3 py-2 border-b shrink-0 ${isDark ? 'border-slate-700/50' : 'border-slate-200'}`}>
             <div className="flex items-center justify-between">
               <span className={`text-[10px] font-bold uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>

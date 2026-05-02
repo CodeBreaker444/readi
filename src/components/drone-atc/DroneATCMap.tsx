@@ -3,7 +3,7 @@
 import type { AircraftState } from '@/app/api/drone-atc/flights/route';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { LayerVisibility } from './LayerControlPanel';
 import type { DroneMap, TelemetryData } from './useDroneATCSocket';
 
@@ -39,19 +39,24 @@ function altColor(alt: number | null): string {
   if (alt < 10000) return '#f59e0b';
   return '#34d399';
 }
-function droneIcon(selected: boolean, status?: string): L.DivIcon {
-  const isOnline = status === 'online' || !status;
-  const color = isOnline ? (selected ? '#8b5cf6' : '#10b981') : '#6b7280';
+function droneIcon(selected: boolean, status?: string, name?: string): L.DivIcon {
+  const isOnline  = status === 'online' || !status;
+  const isStandby = status === 'standby';
+  const color = isOnline
+    ? (selected ? '#a78bfa' : '#8b5cf6')
+    : isStandby
+    ? '#f59e0b'
+    : '#6b7280';
   const size = selected ? 48 : 36;
-  const s = size / 48; // scale factor
+  const s = size / 48;
   const armLen = 14 * s;
   const motorR = 5.5 * s;
   const hubR = 5 * s;
   const cx = size / 2;
   const cy = size / 2;
 
-  const glowR = selected ? cx * 1.15 : cx * 0.92;
-  const glowOpacity = selected ? '0.10' : '0.05';
+  const glowR = selected ? cx * 1.2 : cx * 0.95;
+  const glowOpacity = selected ? '0.20' : isOnline ? '0.12' : isStandby ? '0.10' : '0.04';
 
   const motors = [[-1, -1], [1, -1], [-1, 1], [1, 1]];
 
@@ -64,21 +69,32 @@ function droneIcon(selected: boolean, status?: string): L.DivIcon {
       <circle cx="${mx}" cy="${my}" r="${1.8 * s}" fill="${color}" fill-opacity="0.55"/>`;
   }).join('');
 
-  const selectionRing = selected
-    ? `<circle cx="${cx}" cy="${cy}" r="${cx * 0.88}" fill="none" stroke="${color}" stroke-width="${0.8 * s}" stroke-dasharray="${4 * s} ${2.5 * s}" stroke-opacity="0.4"/>`
+  const ring = selected
+    ? `<circle cx="${cx}" cy="${cy}" r="${cx * 0.88}" fill="none" stroke="${color}" stroke-width="${0.8 * s}" stroke-dasharray="${4 * s} ${2.5 * s}" stroke-opacity="0.5"/>`
+    : (!isOnline && !isStandby)
+    ? `<circle cx="${cx}" cy="${cy}" r="${cx * 0.92}" fill="none" stroke="${color}" stroke-width="${0.8 * s}" stroke-dasharray="3 3" stroke-opacity="0.5"/>`
+    : '';
+
+  const safeName = name ? name.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
+  const nameBg = 'rgba(10,12,20,0.65)';
+  const nameLabel = safeName
+    ? `<div style="position:absolute;bottom:${size + 3}px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:9px;font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-weight:600;color:#fff;background:${nameBg};padding:1px 5px;border-radius:3px;pointer-events:none;letter-spacing:0.2px;">${safeName}</div>`
     : '';
 
   return L.divIcon({
     className: '',
-    html: `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="${cx}" cy="${cy}" r="${glowR}" fill="${color}" fill-opacity="${glowOpacity}"/>
-      ${selectionRing}
-      ${motorsSvg}
-      <rect x="${cx - hubR}" y="${cy - hubR}" width="${hubR * 2}" height="${hubR * 2}" rx="${2 * s}" fill="${color}" stroke="rgba(255,255,255,0.92)" stroke-width="${1.1 * s}"/>
-      <circle cx="${cx}" cy="${cy + 0.4 * s}" r="${2 * s}" fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.42)" stroke-width="${0.5 * s}"/>
-      <circle cx="${cx}" cy="${cy + 0.4 * s}" r="${0.9 * s}" fill="${color}" fill-opacity="0.82"/>
-      <polygon points="${cx},${cy - 7 * s} ${cx + 1.8 * s},${cy - 4.5 * s} ${cx - 1.8 * s},${cy - 4.5 * s}" fill="white" fill-opacity="0.88"/>
-    </svg>`,
+    html: `<div style="position:relative;width:${size}px;height:${size}px;">
+      ${nameLabel}
+      <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="${cx}" cy="${cy}" r="${glowR}" fill="${color}" fill-opacity="${glowOpacity}"/>
+        ${ring}
+        ${motorsSvg}
+        <rect x="${cx - hubR}" y="${cy - hubR}" width="${hubR * 2}" height="${hubR * 2}" rx="${2 * s}" fill="${color}" stroke="rgba(255,255,255,0.92)" stroke-width="${1.1 * s}"/>
+        <circle cx="${cx}" cy="${cy + 0.4 * s}" r="${2 * s}" fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.42)" stroke-width="${0.5 * s}"/>
+        <circle cx="${cx}" cy="${cy + 0.4 * s}" r="${0.9 * s}" fill="${color}" fill-opacity="0.82"/>
+        <polygon points="${cx},${cy - 7 * s} ${cx + 1.8 * s},${cy - 4.5 * s} ${cx - 1.8 * s},${cy - 4.5 * s}" fill="white" fill-opacity="0.88"/>
+      </svg>
+    </div>`,
     iconSize: [size, size],
     iconAnchor: [cx, cy],
   });
@@ -113,25 +129,77 @@ interface AirspaceZone {
   color: string;
 }
 
-const AIRSPACE_ZONES: AirspaceZone[] = [
-  // Class B — major airports (blue, ~30 nm radius)
-  { id: 'FCO-B', name: 'Rome FCO',     lat: 41.7999, lon: 12.2462, radiusM: 55560, class: 'B', color: '#3b82f6' },
-  { id: 'MXP-B', name: 'Milan MXP',    lat: 45.6306, lon:  8.7281, radiusM: 55560, class: 'B', color: '#3b82f6' },
-  { id: 'VCE-B', name: 'Venice VCE',   lat: 45.5053, lon: 12.3519, radiusM: 37040, class: 'B', color: '#3b82f6' },
-  { id: 'NAP-B', name: 'Naples NAP',   lat: 40.8860, lon: 14.2908, radiusM: 37040, class: 'B', color: '#3b82f6' },
-  // Class C — secondary airports (purple, ~15 nm)
-  { id: 'FCO-C', name: 'Rome TCA',     lat: 41.7999, lon: 12.2462, radiusM: 27780, class: 'C', color: '#a855f7' },
-  { id: 'MXP-C', name: 'Milan TCA',    lat: 45.6306, lon:  8.7281, radiusM: 27780, class: 'C', color: '#a855f7' },
-  { id: 'BLQ-C', name: 'Bologna BLQ',  lat: 44.5354, lon: 11.2888, radiusM: 18520, class: 'C', color: '#a855f7' },
-  { id: 'TRN-C', name: 'Turin TRN',    lat: 45.2009, lon:  7.6494, radiusM: 18520, class: 'C', color: '#a855f7' },
-  // Class D — smaller airports (cyan, ~5 nm)
-  { id: 'FLR-D', name: 'Florence FLR', lat: 43.8099, lon: 11.2051, radiusM:  9260, class: 'D', color: '#06b6d4' },
-  { id: 'CTA-D', name: 'Catania CTA',  lat: 37.4668, lon: 15.0664, radiusM:  9260, class: 'D', color: '#06b6d4' },
-  { id: 'PMO-D', name: 'Palermo PMO',  lat: 38.1799, lon: 13.0991, radiusM:  9260, class: 'D', color: '#06b6d4' },
-  { id: 'BRI-D', name: 'Bari BRI',     lat: 41.1389, lon: 16.7606, radiusM:  9260, class: 'D', color: '#06b6d4' },
-  // Class A — high-altitude controlled airspace above Italy (red, wide polygon approximated as large circle)
-  { id: 'ITA-A', name: 'Italy Class A', lat: 43.0, lon: 12.5, radiusM: 370400, class: 'A', color: '#ef4444' },
-];
+interface OverpassElement {
+  type: 'node' | 'way' | 'relation';
+  id: number;
+  lat?: number;
+  lon?: number;
+  center?: { lat: number; lon: number };
+  tags?: Record<string, string>;
+}
+
+function haversineM(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371000;
+  const φ1 = lat1 * Math.PI / 180, φ2 = lat2 * Math.PI / 180;
+  const Δφ = (lat2 - lat1) * Math.PI / 180;
+  const Δλ = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(Δφ / 2) ** 2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+async function fetchAirspaceForRegion(lat: number, lon: number, signal?: AbortSignal): Promise<AirspaceZone[]> {
+  const coord = `${lat.toFixed(4)},${lon.toFixed(4)}`;
+  const r = 400000;
+  const q = [
+    '[out:json][timeout:25];',
+    '(',
+    `node["aeroway"="aerodrome"]["iata"](around:${r},${coord});`,
+    `node["aeroway"="aerodrome"]["icao"](around:${r},${coord});`,
+    `way["aeroway"="aerodrome"]["iata"](around:${r},${coord});`,
+    `way["aeroway"="aerodrome"]["icao"](around:${r},${coord});`,
+    `relation["aeroway"="aerodrome"]["iata"](around:${r},${coord});`,
+    `relation["aeroway"="aerodrome"]["icao"](around:${r},${coord});`,
+    ');out center tags;',
+  ].join('\n');
+
+  const res = await fetch('https://overpass-api.de/api/interpreter', { method: 'POST', body: q, signal });
+  if (!res.ok) throw new Error('Overpass API error');
+  const data = await res.json();
+
+  const zones: AirspaceZone[] = [];
+  for (const el of data.elements as OverpassElement[]) {
+    const elLat = el.lat ?? el.center?.lat;
+    const elLon = el.lon ?? el.center?.lon;
+    if (!elLat || !elLon) continue;
+
+    const tags = el.tags ?? {};
+    const iata = tags.iata;
+    const icao = tags.icao;
+    if (!iata && !icao) continue;
+
+    const name = tags.name ?? tags['name:en'] ?? iata ?? icao ?? 'Airport';
+    const aeroType = tags['aerodrome:type'];
+    const size = tags['aerodrome:size'];
+
+    let cls: 'B' | 'C' | 'D';
+    let radiusM: number;
+    let color: string;
+
+    if (iata) {
+      cls = 'B';
+      radiusM = (aeroType === 'international' || !aeroType) ? 55560 : 37040;
+      color = '#3b82f6';
+    } else if (aeroType === 'regional' || aeroType === 'domestic' || size === 'large' || size === 'medium') {
+      cls = 'C'; radiusM = 18520; color = '#a855f7';
+    } else {
+      cls = 'D'; radiusM = 9260; color = '#06b6d4';
+    }
+
+    zones.push({ id: (iata ?? icao)!, name, lat: elLat, lon: elLon, radiusM, class: cls, color });
+  }
+
+  return zones.slice(0, 50);
+}
 
 type WeatherLayerKey = 'wind' | 'temp' | 'clouds' | 'precip' | 'pressure';
 const WEATHER_KEYS: WeatherLayerKey[] = ['wind', 'temp', 'clouds', 'precip', 'pressure'];
@@ -139,6 +207,10 @@ const WEATHER_KEYS: WeatherLayerKey[] = ['wind', 'temp', 'clouds', 'precip', 'pr
 export default function DroneATCMap({
   drones, aircraft, selectedDroneId, layers, onDroneClick, isDark, owmApiKey, onBoundsChange,
 }: DroneATCMapProps) {
+  const [airspaceZones, setAirspaceZones] = useState<AirspaceZone[]>([]);
+  const lastAirspaceFetchRef = useRef<{ lat: number; lon: number } | null>(null);
+  const airspaceFetchAbortRef = useRef<AbortController | null>(null);
+
   const mapRef            = useRef<L.Map | null>(null);
   const containerRef      = useRef<HTMLDivElement>(null);
   const tileLayerRef      = useRef<L.TileLayer | null>(null);
@@ -150,8 +222,12 @@ export default function DroneATCMap({
   const flightMarkersRef  = useRef<Record<string, L.Marker>>({});
   const windCanvasRef     = useRef<HTMLCanvasElement | null>(null);
   const windAnimRef       = useRef<number>(0);
+  const windParamsRef     = useRef<{ dir: number; speed: number }>({ dir: 270, speed: 5 });
+  const cloudCanvasRef    = useRef<HTMLCanvasElement | null>(null);
+  const cloudAnimRef      = useRef<number>(0);
+  const precipCanvasRef   = useRef<HTMLCanvasElement | null>(null);
+  const precipAnimRef     = useRef<number>(0);
 
-  // Windy-style particle animation
   const startWindAnimation = useCallback(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -170,45 +246,80 @@ export default function DroneATCMap({
     if (!ctx) return;
     const W = canvas.width, H = canvas.height;
 
-    const particles = Array.from({ length: 320 }, () => ({
-      x: Math.random() * W,
-      y: Math.random() * H,
-      vx: -(0.55 + Math.random() * 1.1),
-      vy: (Math.random() - 0.5) * 0.5,
-      age: Math.random() * 120,
-      life: 90 + Math.random() * 110,
-    }));
+    const { dir, speed } = windParamsRef.current;
+    const rad = (dir * Math.PI) / 180;
+    const px  = Math.max(speed * 1.1, 2.5); // pixels per frame
+    const baseVx = -Math.sin(rad) * px;
+    const baseVy =  Math.cos(rad) * px;
+    const variance = px * 0.22;
+    const TAIL = 12; // tail length in velocity-steps
+
+    const spawnParticle = (randomAge: boolean) => {
+      const absVx = Math.abs(baseVx);
+      const absVy = Math.abs(baseVy);
+      const total = absVx + absVy + 0.001;
+      let x: number, y: number;
+
+      if (Math.random() * total < absVx) {
+        x = baseVx > 0 ? -(10 + Math.random() * 20) : W + 10 + Math.random() * 20;
+        y = Math.random() * H;
+      } else {
+        x = Math.random() * W;
+        y = baseVy > 0 ? -(10 + Math.random() * 20) : H + 10 + Math.random() * 20;
+      }
+
+      const life = 40 + Math.random() * 60;
+      return {
+        x, y,
+        vx: baseVx + (Math.random() - 0.5) * variance,
+        vy: baseVy + (Math.random() - 0.5) * variance,
+        age: randomAge ? Math.random() * life : 0,
+        life,
+      };
+    };
+
+    const particles = Array.from({ length: 260 }, () => spawnParticle(true));
 
     const draw = () => {
       ctx.clearRect(0, 0, W, H);
+      ctx.lineCap = 'round';
+
       for (const p of particles) {
-        const nx = p.x * 0.005;
-        const ny = p.y * 0.005;
-        const curl = Math.sin(nx * 2.1 + 0.2) * Math.cos(ny * 1.8 + 0.3) * 0.45;
-        p.x += p.vx + curl * 0.35;
-        p.y += p.vy + curl * 0.2;
+        p.x += p.vx;
+        p.y += p.vy;
         p.age++;
 
         const t = p.age / p.life;
-        const alpha = t < 0.15 ? t / 0.15 : t > 0.75 ? (1 - t) / 0.25 : 1;
+        const alpha = t < 0.12 ? t / 0.12 : t > 0.70 ? (1 - t) / 0.30 : 1;
+        if (alpha <= 0.01) continue;
+
+        // Tail: gradient line from transparent at back to bright at head
+        const tailX = p.x - p.vx * TAIL;
+        const tailY = p.y - p.vy * TAIL;
+        const grad = ctx.createLinearGradient(tailX, tailY, p.x, p.y);
+        grad.addColorStop(0,   'rgba(100,190,255,0)');
+        grad.addColorStop(0.5, `rgba(180,230,255,${alpha * 0.3})`);
+        grad.addColorStop(1,   `rgba(255,255,255,${alpha * 0.8})`);
 
         ctx.beginPath();
-        ctx.moveTo(p.x, p.y);
-        ctx.lineTo(p.x - p.vx * 7, p.y - p.vy * 7);
-        ctx.strokeStyle = `rgba(147,197,253,${alpha * 0.5})`;
-        ctx.lineWidth = 1;
+        ctx.moveTo(tailX, tailY);
+        ctx.lineTo(p.x, p.y);
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = 1.8;
         ctx.stroke();
 
+        // Bright glowing head
+        const grd = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 3.5);
+        grd.addColorStop(0,   `rgba(255,255,255,${alpha})`);
+        grd.addColorStop(0.45, `rgba(200,240,255,${alpha * 0.55})`);
+        grd.addColorStop(1,   'rgba(140,210,255,0)');
         ctx.beginPath();
-        ctx.arc(p.x, p.y, 1, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(147,197,253,${alpha * 0.85})`;
+        ctx.arc(p.x, p.y, 3.5, 0, Math.PI * 2);
+        ctx.fillStyle = grd;
         ctx.fill();
 
-        if (p.age >= p.life || p.x < -30 || p.x > W + 10 || p.y < -10 || p.y > H + 10) {
-          p.x = W + Math.random() * 30;
-          p.y = Math.random() * H;
-          p.age = 0;
-          p.life = 90 + Math.random() * 110;
+        if (p.age >= p.life || p.x < -70 || p.x > W + 70 || p.y < -70 || p.y > H + 70) {
+          Object.assign(p, spawnParticle(false));
         }
       }
       windAnimRef.current = requestAnimationFrame(draw);
@@ -225,11 +336,142 @@ export default function DroneATCMap({
     }
   }, []);
 
+  // Cloud drift animation
+  const startCloudAnimation = useCallback(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    if (!cloudCanvasRef.current) {
+      const canvas = document.createElement('canvas');
+      canvas.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:340;';
+      container.appendChild(canvas);
+      cloudCanvasRef.current = canvas;
+    }
+
+    const canvas = cloudCanvasRef.current;
+    canvas.width  = container.offsetWidth;
+    canvas.height = container.offsetHeight;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const W = canvas.width, H = canvas.height;
+
+    // Cloud puff: a cluster of overlapping circles
+    const clouds = Array.from({ length: 18 }, () => ({
+      x: Math.random() * W,
+      y: 60 + Math.random() * (H * 0.55),
+      r: 28 + Math.random() * 38,
+      speed: 0.18 + Math.random() * 0.25,
+      alpha: 0.10 + Math.random() * 0.13,
+      puffs: Array.from({ length: 4 + Math.floor(Math.random() * 3) }, (_, i) => ({
+        dx: (i - 2) * 18 + (Math.random() - 0.5) * 10,
+        dy: (Math.random() - 0.5) * 14,
+        rs: 0.7 + Math.random() * 0.55,
+      })),
+    }));
+
+    const draw = () => {
+      ctx.clearRect(0, 0, W, H);
+      for (const c of clouds) {
+        c.x += c.speed;
+        if (c.x - c.r * 3 > W) { c.x = -c.r * 3; c.y = 60 + Math.random() * (H * 0.55); }
+
+        ctx.save();
+        ctx.globalAlpha = c.alpha;
+        for (const p of c.puffs) {
+          const grad = ctx.createRadialGradient(
+            c.x + p.dx, c.y + p.dy, 0,
+            c.x + p.dx, c.y + p.dy, c.r * p.rs,
+          );
+          grad.addColorStop(0, 'rgba(220,230,255,0.95)');
+          grad.addColorStop(0.6, 'rgba(200,215,255,0.5)');
+          grad.addColorStop(1, 'rgba(180,200,255,0)');
+          ctx.beginPath();
+          ctx.arc(c.x + p.dx, c.y + p.dy, c.r * p.rs, 0, Math.PI * 2);
+          ctx.fillStyle = grad;
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+      cloudAnimRef.current = requestAnimationFrame(draw);
+    };
+    cloudAnimRef.current = requestAnimationFrame(draw);
+  }, []);
+
+  const stopCloudAnimation = useCallback(() => {
+    cancelAnimationFrame(cloudAnimRef.current);
+    const canvas = cloudCanvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      ctx?.clearRect(0, 0, canvas.width, canvas.height);
+    }
+  }, []);
+
+  // Rain / precip animation
+  const startPrecipAnimation = useCallback(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    if (!precipCanvasRef.current) {
+      const canvas = document.createElement('canvas');
+      canvas.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:345;';
+      container.appendChild(canvas);
+      precipCanvasRef.current = canvas;
+    }
+
+    const canvas = precipCanvasRef.current;
+    canvas.width  = container.offsetWidth;
+    canvas.height = container.offsetHeight;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const W = canvas.width, H = canvas.height;
+
+    const drops = Array.from({ length: 260 }, () => ({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      len: 8 + Math.random() * 14,
+      speed: 4.5 + Math.random() * 4,
+      alpha: 0.18 + Math.random() * 0.28,
+    }));
+
+    const draw = () => {
+      ctx.clearRect(0, 0, W, H);
+      ctx.lineWidth = 1;
+      for (const d of drops) {
+        d.y += d.speed;
+        d.x -= d.speed * 0.18; // slight diagonal
+        if (d.y > H + d.len) { d.y = -d.len; d.x = Math.random() * W; }
+        if (d.x < -10) { d.x = W + Math.random() * 20; }
+
+        const grad = ctx.createLinearGradient(d.x, d.y, d.x - d.len * 0.18, d.y + d.len);
+        grad.addColorStop(0, `rgba(147,210,255,0)`);
+        grad.addColorStop(0.4, `rgba(147,210,255,${d.alpha})`);
+        grad.addColorStop(1, `rgba(100,180,255,${d.alpha * 0.6})`);
+
+        ctx.beginPath();
+        ctx.moveTo(d.x, d.y);
+        ctx.lineTo(d.x - d.len * 0.18, d.y + d.len);
+        ctx.strokeStyle = grad;
+        ctx.stroke();
+      }
+      precipAnimRef.current = requestAnimationFrame(draw);
+    };
+    precipAnimRef.current = requestAnimationFrame(draw);
+  }, []);
+
+  const stopPrecipAnimation = useCallback(() => {
+    cancelAnimationFrame(precipAnimRef.current);
+    const canvas = precipCanvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      ctx?.clearRect(0, 0, canvas.width, canvas.height);
+    }
+  }, []);
+
   // Init map
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
-    const map = L.map(containerRef.current, { center: [44, 12], zoom: 6, zoomControl: true });
+    const map = L.map(containerRef.current, { center: [20, 0], zoom: 3, zoomControl: true });
 
     // Custom pane so drones always render above aircraft
     const dronePane = map.createPane('dronePane');
@@ -259,7 +501,11 @@ export default function DroneATCMap({
 
     return () => {
       cancelAnimationFrame(windAnimRef.current);
-      if (windCanvasRef.current) { windCanvasRef.current.remove(); windCanvasRef.current = null; }
+      cancelAnimationFrame(cloudAnimRef.current);
+      cancelAnimationFrame(precipAnimRef.current);
+      if (windCanvasRef.current)   { windCanvasRef.current.remove();   windCanvasRef.current   = null; }
+      if (cloudCanvasRef.current)  { cloudCanvasRef.current.remove();  cloudCanvasRef.current  = null; }
+      if (precipCanvasRef.current) { precipCanvasRef.current.remove(); precipCanvasRef.current = null; }
       map.remove();
       mapRef.current          = null;
       droneLayerRef.current   = null;
@@ -296,12 +542,69 @@ export default function DroneATCMap({
     });
   }, [layers.wind, layers.temp, layers.clouds, layers.precip, layers.pressure, owmApiKey]);
 
-  // Wind particle animation (independent of OWM key)
   useEffect(() => {
-    if (layers.wind) startWindAnimation();
-    else stopWindAnimation();
-    return () => stopWindAnimation();
+    if (!layers.wind) { stopWindAnimation(); return; }
+
+    let cancelled = false;
+    const fetchAndStart = async () => {
+      try {
+        const res = await fetch(
+          'https://api.open-meteo.com/v1/forecast?latitude=44&longitude=12&current=wind_speed_10m,wind_direction_10m&wind_speed_unit=ms',
+        );
+        if (!cancelled && res.ok) {
+          const json = await res.json();
+          const cur = json?.current;
+          if (cur?.wind_direction_10m !== undefined) {
+            windParamsRef.current = {
+              dir:   cur.wind_direction_10m as number,
+              speed: (cur.wind_speed_10m as number) ?? 5,
+            };
+          }
+        }
+      } catch { 
+        console.log("Failed to fetch wind data, using defaults");
+      }
+      if (!cancelled) startWindAnimation();
+    };
+
+    fetchAndStart();
+    return () => { cancelled = true; stopWindAnimation(); };
   }, [layers.wind, startWindAnimation, stopWindAnimation]);
+
+  // Cloud drift animation
+  useEffect(() => {
+    if (layers.clouds) startCloudAnimation();
+    else stopCloudAnimation();
+    return () => stopCloudAnimation();
+  }, [layers.clouds, startCloudAnimation, stopCloudAnimation]);
+
+  // Rain / precip animation
+  useEffect(() => {
+    if (layers.precip) startPrecipAnimation();
+    else stopPrecipAnimation();
+    return () => stopPrecipAnimation();
+  }, [layers.precip, startPrecipAnimation, stopPrecipAnimation]);
+
+  // Fetch airspace zones when drone positions are known
+  useEffect(() => {
+    const droneList = Object.values(drones);
+    if (droneList.length === 0) return;
+
+    const centerLat = droneList.reduce((s, d) => s + d.latitude, 0) / droneList.length;
+    const centerLon = droneList.reduce((s, d) => s + d.longitude, 0) / droneList.length;
+
+    const last = lastAirspaceFetchRef.current;
+    if (last && haversineM(last.lat, last.lon, centerLat, centerLon) < 150_000) return;
+
+    lastAirspaceFetchRef.current = { lat: centerLat, lon: centerLon };
+    airspaceFetchAbortRef.current?.abort();
+    const controller = new AbortController();
+    airspaceFetchAbortRef.current = controller;
+
+    fetchAirspaceForRegion(centerLat, centerLon, controller.signal)
+      .then(zones => { if (!controller.signal.aborted) setAirspaceZones(zones); })
+      .catch(() => {});
+  }, [drones]);
 
   // Airspace circle overlays
   useEffect(() => {
@@ -309,7 +612,7 @@ export default function DroneATCMap({
     if (!layer) return;
     layer.clearLayers();
 
-    AIRSPACE_ZONES.forEach(zone => {
+    airspaceZones.forEach(zone => {
       const key = `airspace${zone.class}` as keyof LayerVisibility;
       if (!(layers[key] as boolean)) return;
 
@@ -318,15 +621,15 @@ export default function DroneATCMap({
         color: zone.color,
         fillColor: zone.color,
         fillOpacity: 0.05,
-        weight: zone.class === 'A' ? 1 : 1.5,
-        opacity: zone.class === 'A' ? 0.4 : 0.7,
-        dashArray: zone.class === 'A' ? '8 5' : zone.class === 'D' ? '4 4' : undefined,
+        weight: 1.5,
+        opacity: 0.7,
+        dashArray: zone.class === 'D' ? '4 4' : undefined,
         interactive: true,
       })
         .bindTooltip(`<b>Class ${zone.class}</b> &mdash; ${zone.name}`, { permanent: false, direction: 'center' })
         .addTo(layer);
     });
-  }, [layers.airspaceA, layers.airspaceB, layers.airspaceC, layers.airspaceD]);
+  }, [airspaceZones, layers.airspaceA, layers.airspaceB, layers.airspaceC, layers.airspaceD]);
 
   // Drone markers — always in custom top pane
   const updateDroneMarkers = useCallback(() => {
@@ -340,12 +643,12 @@ export default function DroneATCMap({
     Object.values(drones).forEach((d: TelemetryData) => {
       seen.add(d.drone_id);
       const selected = d.drone_id === selectedDroneId;
-      const icon = droneIcon(selected, d.status);
+      const icon = droneIcon(selected, d.status, d.name ?? d.drone_id);
       if (existing[d.drone_id]) {
         existing[d.drone_id].setLatLng([d.latitude, d.longitude]).setIcon(icon);
       } else {
         const marker = L.marker([d.latitude, d.longitude], { icon, pane: 'dronePane' })
-          .bindTooltip(`${d.name ?? d.drone_id} · ${d.battery_percentage}% · ${Math.round(d.altitude)}m`, {
+          .bindTooltip(`${Math.round(d.battery_percentage)}% batt · ${Math.round(d.altitude)}m`, {
             permanent: false, direction: 'top',
           })
           .on('click', () => onDroneClick(d.drone_id));
@@ -403,7 +706,9 @@ export default function DroneATCMap({
   }, [selectedDroneId]);
 
   return (
-<div className="relative w-full h-full">
+<div className="relative w-full h-full" id="drone-atc-map-root">
+  {/* Push Leaflet zoom control down so it clears the flight-count badge */}
+  <style>{`#drone-atc-map-root .leaflet-top.leaflet-left { margin-top: 44px; }`}</style>
   <div ref={containerRef} className="w-full h-full z-0" />
   
   <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-[1000] pointer-events-auto select-none group">

@@ -1,7 +1,7 @@
 'use client';
 
 import { Skeleton } from '@/components/ui/skeleton';
-import { FiArrowUp, FiWifi, FiZap } from 'react-icons/fi';
+import { FiArrowUp, FiNavigation, FiWifi, FiZap } from 'react-icons/fi';
 import { GiDeliveryDrone } from 'react-icons/gi';
 import type { DroneMap, TelemetryData } from './useDroneATCSocket';
 
@@ -13,27 +13,61 @@ interface DroneListProps {
   isLoading?: boolean;
 }
 
+function StatusBadge({ status, isDark }: { status?: string; isDark: boolean }) {
+  const online  = status === 'online' || !status;
+  const standby = status === 'standby';
+
+  if (online) return (
+    <span className={`inline-flex items-center gap-1 text-[9px] font-bold tracking-wide px-1.5 py-0.5 rounded-full ${
+      isDark ? 'bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20' : 'bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200'
+    }`}>
+      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+      LIVE
+    </span>
+  );
+  if (standby) return (
+    <span className={`inline-flex items-center gap-1 text-[9px] font-bold tracking-wide px-1.5 py-0.5 rounded-full ${
+      isDark ? 'bg-amber-500/10 text-amber-400 ring-1 ring-amber-500/20' : 'bg-amber-50 text-amber-600 ring-1 ring-amber-200'
+    }`}>
+      <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+      STANDBY
+    </span>
+  );
+  return (
+    <span className={`inline-flex items-center gap-1 text-[9px] font-bold tracking-wide px-1.5 py-0.5 rounded-full ${
+      isDark ? 'bg-red-500/10 text-red-400 ring-1 ring-red-500/20' : 'bg-red-50 text-red-500 ring-1 ring-red-200'
+    }`}>
+      <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
+      OFFLINE
+    </span>
+  );
+}
+
 function BatteryBar({ pct, isDark }: { pct: number; isDark: boolean }) {
   const color = pct > 50 ? 'bg-emerald-500' : pct > 20 ? 'bg-amber-500' : 'bg-red-500';
-  const displayPct = Math.round(pct);
   return (
     <div className="flex items-center gap-1.5 w-full">
       <div className={`flex-1 h-1 rounded-full overflow-hidden ${isDark ? 'bg-slate-700/60' : 'bg-slate-200'}`}>
-        <div className={`h-full rounded-full transition-all ${color}`} style={{ width: `${pct}%` }} />
+        <div className={`h-full rounded-full transition-all duration-300 ${color}`} style={{ width: `${pct}%` }} />
       </div>
-      <span className={`text-[10px] shrink-0 font-mono text-right ${isDark ? 'text-slate-500' : 'text-slate-400'} ${displayPct === 100 ? 'w-7' : 'w-5'}`}>
-        {displayPct}%
+      <span className={`text-[10px] shrink-0 font-mono w-7 text-right ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+        {Math.round(pct)}%
       </span>
     </div>
   );
 }
 
-function StatusDot({ status }: { status?: string }) {
-  const online  = status === 'online' || !status;
-  const standby = status === 'standby';
-  if (online)  return <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0 shadow-[0_0_5px_rgba(52,211,153,0.8)]" />;
-  if (standby) return <span className="w-2 h-2 rounded-full bg-violet-400 shrink-0" />;
-  return <span className="w-2 h-2 rounded-full bg-slate-500 shrink-0" />;
+function MetricCell({ icon, value, isDark }: { icon: React.ReactNode; value: string; isDark: boolean }) {
+  return (
+    <div className={`flex flex-col items-center justify-center gap-0.5 py-1.5 px-1 rounded-lg ${
+      isDark ? 'bg-slate-800/50' : 'bg-slate-50'
+    }`}>
+      <span className={`${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{icon}</span>
+      <span className={`text-[11px] font-semibold font-mono leading-none ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
+        {value}
+      </span>
+    </div>
+  );
 }
 
 function DroneCardSkeleton({ isDark }: { isDark: boolean }) {
@@ -45,17 +79,18 @@ function DroneCardSkeleton({ isDark }: { isDark: boolean }) {
         <div className="flex items-center gap-2">
           <Skeleton className={`w-8 h-8 rounded-lg ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
           <div>
-            <Skeleton className={`h-3.5 w-20 mb-1 ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
-            <Skeleton className={`h-2.5 w-12 ${isDark ? 'bg-slate-700/60' : 'bg-slate-100'}`} />
+            <Skeleton className={`h-3.5 w-24 mb-1 ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
+            <Skeleton className={`h-2.5 w-14 ${isDark ? 'bg-slate-700/60' : 'bg-slate-100'}`} />
           </div>
         </div>
-        <Skeleton className={`h-4 w-14 rounded-full ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
+        <Skeleton className={`h-4 w-12 rounded-full ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
       </div>
-      <div className="grid grid-cols-3 gap-2 mt-2">
-        <Skeleton className={`h-8 rounded ${isDark ? 'bg-slate-700/40' : 'bg-slate-100'}`} />
-        <Skeleton className={`h-8 rounded ${isDark ? 'bg-slate-700/40' : 'bg-slate-100'}`} />
-        <Skeleton className={`h-8 rounded ${isDark ? 'bg-slate-700/40' : 'bg-slate-100'}`} />
+      <div className="grid grid-cols-4 gap-1.5 mt-2">
+        {[1,2,3,4].map(i => (
+          <Skeleton key={i} className={`h-10 rounded-lg ${isDark ? 'bg-slate-700/40' : 'bg-slate-100'}`} />
+        ))}
       </div>
+      <Skeleton className={`h-1 w-full mt-2 rounded-full ${isDark ? 'bg-slate-700/40' : 'bg-slate-100'}`} />
     </div>
   );
 }
@@ -96,29 +131,36 @@ export default function DroneList({ drones, selectedDroneId, onSelect, isDark, i
   }
 
   return (
-    <div className="flex flex-col gap-2.5">
+    <div className="flex flex-col gap-2">
       {droneList.map((drone: TelemetryData) => {
         const isSelected = drone.drone_id === selectedDroneId;
         const online = drone.status === 'online' || !drone.status;
-        const borderLeftColor = isSelected
+        const standby = drone.status === 'standby';
+
+        const borderColor = isSelected
           ? 'border-l-violet-500'
-          : online ? 'border-l-emerald-500' : 'border-l-slate-400/40';
+          : online  ? 'border-l-emerald-500'
+          : standby ? 'border-l-amber-400'
+          : 'border-l-red-500';
+
+        const cardBg = isSelected
+          ? isDark
+            ? 'bg-violet-900/15 border border-l-0 border-violet-500/30 shadow-sm shadow-violet-900/20'
+            : 'bg-violet-50/80 border border-l-0 border-violet-200 shadow-sm'
+          : isDark
+            ? 'bg-slate-800/30 border border-l-0 border-slate-700/40 hover:bg-slate-800/50 hover:border-slate-600/50'
+            : 'bg-white border border-l-0 border-slate-200 hover:bg-slate-50 hover:border-slate-300';
+
+        const speedKts = drone.velocity != null ? Math.round(drone.velocity * 1.944) : null;
 
         return (
           <button
             key={drone.drone_id}
             onClick={() => onSelect(drone.drone_id)}
-            className={`w-full text-left p-3 rounded-xl border-l-[3px] transition-all duration-150 ${borderLeftColor} ${
-              isSelected
-                ? isDark
-                  ? 'bg-violet-900/15 border border-l-0 border-violet-500/30 shadow-sm shadow-violet-900/20'
-                  : 'bg-violet-50/80 border border-l-0 border-violet-200 shadow-sm'
-                : isDark
-                  ? 'bg-slate-800/30 border border-l-0 border-slate-700/40 hover:bg-slate-800/50 hover:border-slate-600/50'
-                  : 'bg-white border border-l-0 border-slate-200 hover:bg-slate-50 hover:border-slate-300'
-            }`}
+            className={`w-full text-left p-3 rounded-xl border-l-[3px] transition-all duration-150 ${borderColor} ${cardBg}`}
           >
-            <div className="flex items-center justify-between mb-2">
+            {/* Header row */}
+            <div className="flex items-start justify-between gap-2 mb-2.5">
               <div className="flex items-center gap-2 min-w-0">
                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
                   isSelected
@@ -130,46 +172,54 @@ export default function DroneList({ drones, selectedDroneId, onSelect, isDark, i
                   }`} />
                 </div>
                 <div className="min-w-0">
-                  <span className={`text-sm font-semibold truncate block ${
+                  <span className={`text-[12px] font-semibold truncate block leading-tight ${
                     isSelected
                       ? isDark ? 'text-violet-200' : 'text-violet-700'
-                      : isDark ? 'text-slate-200' : 'text-slate-800'
+                      : isDark ? 'text-slate-100' : 'text-slate-800'
                   }`}>
                     {drone.name ?? drone.drone_id}
                   </span>
-                  {drone.model && (
-                    <span className={`text-[10px] truncate block ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                  {drone.model ? (
+                    <span className={`text-[10px] truncate block leading-tight mt-0.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                       {drone.model}
+                    </span>
+                  ) : (
+                    <span className={`text-[9px] font-mono truncate block leading-tight mt-0.5 ${isDark ? 'text-slate-600' : 'text-slate-300'}`}>
+                      {drone.drone_id}
                     </span>
                   )}
                 </div>
               </div>
-              <StatusDot status={drone.status} />
+              <StatusBadge status={drone.status} isDark={isDark} />
             </div>
 
-            <div className="grid grid-cols-3 gap-2 mt-1">
-              <div className="min-w-0 overflow-hidden">
-                <FiArrowUp className={`w-3 h-3 mb-0.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
-                <span className={`text-xs font-semibold font-mono block truncate ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                  {Math.round(drone.altitude)}m
-                </span>
-              </div>
-              <div className="min-w-0 overflow-hidden">
-                <FiZap className={`w-3 h-3 mb-0.5 ${
+            {/* Metrics grid */}
+            <div className="grid grid-cols-4 gap-1.5">
+              <MetricCell
+                icon={<FiArrowUp className="w-2.5 h-2.5" />}
+                value={`${Math.round(drone.altitude)}m`}
+                isDark={isDark}
+              />
+              <MetricCell
+                icon={<FiNavigation className="w-2.5 h-2.5" />}
+                value={speedKts != null ? `${speedKts}kt` : '—'}
+                isDark={isDark}
+              />
+              <MetricCell
+                icon={<FiZap className={`w-2.5 h-2.5 ${
                   drone.battery_percentage > 50 ? 'text-emerald-500' : drone.battery_percentage > 20 ? 'text-amber-500' : 'text-red-500'
-                }`} />
-                <span className={`text-xs font-semibold font-mono block truncate ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                  {Math.round(drone.battery_percentage)}%
-                </span>
-              </div>
-              <div className="min-w-0 overflow-hidden">
-                <FiWifi className={`w-3 h-3 mb-0.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
-                <span className={`text-xs font-semibold font-mono block truncate ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                  {drone.signal_strength != null ? `${Math.round(drone.signal_strength)}%` : '—'}
-                </span>
-              </div>
+                }`} />}
+                value={`${Math.round(drone.battery_percentage)}%`}
+                isDark={isDark}
+              />
+              <MetricCell
+                icon={<FiWifi className="w-2.5 h-2.5" />}
+                value={drone.signal_strength != null ? `${Math.round(drone.signal_strength)}%` : '—'}
+                isDark={isDark}
+              />
             </div>
 
+            {/* Battery bar */}
             <div className="mt-2">
               <BatteryBar pct={drone.battery_percentage} isDark={isDark} />
             </div>

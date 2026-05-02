@@ -58,12 +58,13 @@ export function useDroneATCSocket(): UseDroneATCSocketReturn {
         return;
       }
 
-      const { wsUrl, topic } = data as { wsUrl: string; topic: string };
+      const { wsUrl, topic, token } = data as { wsUrl: string; topic: string; token: string };
 
       const socket = io(wsUrl, {
         path: '/socket.io/',
         transports: ['websocket'],
         reconnection: false,
+        auth: { token },
       });
 
       socketRef.current = socket;

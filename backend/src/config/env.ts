@@ -1,4 +1,11 @@
 import "server-only";
+import fs from "fs";
+import path from "path";
+
+const flytrelayPublicKey = fs.readFileSync(
+  path.join(process.cwd(), "backend/src/config/keys/flytrelay-public.pem"),
+  "utf-8"
+);
 
 export const env = {
   SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
@@ -12,6 +19,6 @@ export const env = {
   FLYTBASE_TOKEN_ENCRYPTION_KEY: process.env.FLYTBASE_TOKEN_ENCRYPTION_KEY,
   FLYTBASE_URL: process.env.FLYTBASE_URL,
   READI_DRONE_PRIVATE_KEY: process.env.READI_DRONE_PRIVATE_KEY,
-  FLYTRELAY_PUBLIC_KEY: process.env.FLYTRELAY_PUBLIC_KEY,
+  FLYTRELAY_PUBLIC_KEY: flytrelayPublicKey,
   FLYTRELAY_BASE_URL: process.env.FLYTRELAY_BASE_URL,
 };

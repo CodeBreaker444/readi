@@ -1,8 +1,8 @@
 'use client';
 
 import {
-  AlertCircle, ChevronDown, ChevronRight,
-  Cloud, Droplets, Gauge, Layers, Plane, Thermometer, Wind,
+  ChevronDown, ChevronRight,
+  Cloud, Droplets, Gauge, Layers, Plane, Thermometer, Wind
 } from 'lucide-react';
 import { useState } from 'react';
 import { TbDrone } from 'react-icons/tb';
@@ -182,8 +182,6 @@ export default function LayerControlPanel({ layers, onToggle, isDark, droneCount
 
   return (
     <div className={`absolute top-3 right-3 z-[450] w-56 rounded-2xl overflow-hidden ${glass}`}>
-
-      {/* ── Header ── */}
       <div className={`flex items-center justify-between px-3 py-2.5 ${isDark ? 'border-b border-slate-700/60' : 'border-b border-slate-100'}`}>
         <div className="flex items-center gap-2">
           <div className={`w-6 h-6 rounded-lg flex items-center justify-center ${isDark ? 'bg-violet-500/15' : 'bg-violet-50'}`}>
@@ -206,7 +204,6 @@ export default function LayerControlPanel({ layers, onToggle, isDark, droneCount
 
       <div className="py-1.5 space-y-0.5">
 
-        {/* ── Traffic ── */}
         <Section label="Traffic" open={open.traffic} onToggle={() => toggle('traffic')} isDark={isDark} />
         {open.traffic && (
           <div className="pb-1">
@@ -261,14 +258,6 @@ export default function LayerControlPanel({ layers, onToggle, isDark, droneCount
         <Section label="Weather" open={open.weather} onToggle={() => toggle('weather')} isDark={isDark} />
         {open.weather && (
           <div className="pb-1">
-            {!hasOwmKey && (
-              <div className={`mx-3 mb-1.5 flex items-start gap-1.5 px-2 py-1.5 rounded-lg text-[10px] ${
-                isDark ? 'bg-amber-900/20 border border-amber-700/30 text-amber-400' : 'bg-amber-50 border border-amber-200 text-amber-700'
-              }`}>
-                <AlertCircle className="w-3 h-3 mt-px shrink-0" />
-                <span>Set <span className="font-mono font-bold">NEXT_PUBLIC_OWM_API_KEY</span> to enable weather layers.</span>
-              </div>
-            )}
             <ToggleRow icon={<Wind className="w-full h-full" />}        label="Wind"        sublabel="Animated flow"     active={layers.wind}     onToggle={() => onToggle('wind')}                   accentColor="#3b82f6" isDark={isDark} />
             <ToggleRow icon={<Thermometer className="w-full h-full" />} label="Temperature" sublabel="Surface °C"        active={layers.temp}     onToggle={() => onToggle('temp')}     disabled={!hasOwmKey} accentColor="#ef4444" isDark={isDark} />
             <ToggleRow icon={<Cloud className="w-full h-full" />}       label="Clouds"      sublabel="Cloud cover %"     active={layers.clouds}   onToggle={() => onToggle('clouds')}   disabled={!hasOwmKey} accentColor="#94a3b8" isDark={isDark} />
