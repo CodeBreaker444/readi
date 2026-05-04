@@ -220,121 +220,10 @@ export default function DroneATCMap({
   const weatherRefs       = useRef<Partial<Record<WeatherLayerKey, L.TileLayer>>>({});
   const droneMarkersRef   = useRef<Record<string, L.Marker>>({});
   const flightMarkersRef  = useRef<Record<string, L.Marker>>({});
-  const windCanvasRef     = useRef<HTMLCanvasElement | null>(null);
-  const windAnimRef       = useRef<number>(0);
-  const windParamsRef     = useRef<{ dir: number; speed: number }>({ dir: 270, speed: 5 });
   const cloudCanvasRef    = useRef<HTMLCanvasElement | null>(null);
   const cloudAnimRef      = useRef<number>(0);
   const precipCanvasRef   = useRef<HTMLCanvasElement | null>(null);
   const precipAnimRef     = useRef<number>(0);
-
-  const startWindAnimation = useCallback(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    if (!windCanvasRef.current) {
-      const canvas = document.createElement('canvas');
-      canvas.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:350;';
-      container.appendChild(canvas);
-      windCanvasRef.current = canvas;
-    }
-
-    const canvas = windCanvasRef.current;
-    canvas.width  = container.offsetWidth;
-    canvas.height = container.offsetHeight;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    const W = canvas.width, H = canvas.height;
-
-    const { dir, speed } = windParamsRef.current;
-    const rad = (dir * Math.PI) / 180;
-    const px  = Math.max(speed * 1.1, 2.5); // pixels per frame
-    const baseVx = -Math.sin(rad) * px;
-    const baseVy =  Math.cos(rad) * px;
-    const variance = px * 0.22;
-    const TAIL = 12; // tail length in velocity-steps
-
-    const spawnParticle = (randomAge: boolean) => {
-      const absVx = Math.abs(baseVx);
-      const absVy = Math.abs(baseVy);
-      const total = absVx + absVy + 0.001;
-      let x: number, y: number;
-
-      if (Math.random() * total < absVx) {
-        x = baseVx > 0 ? -(10 + Math.random() * 20) : W + 10 + Math.random() * 20;
-        y = Math.random() * H;
-      } else {
-        x = Math.random() * W;
-        y = baseVy > 0 ? -(10 + Math.random() * 20) : H + 10 + Math.random() * 20;
-      }
-
-      const life = 40 + Math.random() * 60;
-      return {
-        x, y,
-        vx: baseVx + (Math.random() - 0.5) * variance,
-        vy: baseVy + (Math.random() - 0.5) * variance,
-        age: randomAge ? Math.random() * life : 0,
-        life,
-      };
-    };
-
-    const particles = Array.from({ length: 260 }, () => spawnParticle(true));
-
-    const draw = () => {
-      ctx.clearRect(0, 0, W, H);
-      ctx.lineCap = 'round';
-
-      for (const p of particles) {
-        p.x += p.vx;
-        p.y += p.vy;
-        p.age++;
-
-        const t = p.age / p.life;
-        const alpha = t < 0.12 ? t / 0.12 : t > 0.70 ? (1 - t) / 0.30 : 1;
-        if (alpha <= 0.01) continue;
-
-        // Tail: gradient line from transparent at back to bright at head
-        const tailX = p.x - p.vx * TAIL;
-        const tailY = p.y - p.vy * TAIL;
-        const grad = ctx.createLinearGradient(tailX, tailY, p.x, p.y);
-        grad.addColorStop(0,   'rgba(100,190,255,0)');
-        grad.addColorStop(0.5, `rgba(180,230,255,${alpha * 0.3})`);
-        grad.addColorStop(1,   `rgba(255,255,255,${alpha * 0.8})`);
-
-        ctx.beginPath();
-        ctx.moveTo(tailX, tailY);
-        ctx.lineTo(p.x, p.y);
-        ctx.strokeStyle = grad;
-        ctx.lineWidth = 1.8;
-        ctx.stroke();
-
-        // Bright glowing head
-        const grd = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 3.5);
-        grd.addColorStop(0,   `rgba(255,255,255,${alpha})`);
-        grd.addColorStop(0.45, `rgba(200,240,255,${alpha * 0.55})`);
-        grd.addColorStop(1,   'rgba(140,210,255,0)');
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, 3.5, 0, Math.PI * 2);
-        ctx.fillStyle = grd;
-        ctx.fill();
-
-        if (p.age >= p.life || p.x < -70 || p.x > W + 70 || p.y < -70 || p.y > H + 70) {
-          Object.assign(p, spawnParticle(false));
-        }
-      }
-      windAnimRef.current = requestAnimationFrame(draw);
-    };
-    windAnimRef.current = requestAnimationFrame(draw);
-  }, []);
-
-  const stopWindAnimation = useCallback(() => {
-    cancelAnimationFrame(windAnimRef.current);
-    const canvas = windCanvasRef.current;
-    if (canvas) {
-      const ctx = canvas.getContext('2d');
-      ctx?.clearRect(0, 0, canvas.width, canvas.height);
-    }
-  }, []);
 
   // Cloud drift animation
   const startCloudAnimation = useCallback(() => {
@@ -500,10 +389,8 @@ export default function DroneATCMap({
     emitBounds();
 
     return () => {
-      cancelAnimationFrame(windAnimRef.current);
       cancelAnimationFrame(cloudAnimRef.current);
       cancelAnimationFrame(precipAnimRef.current);
-      if (windCanvasRef.current)   { windCanvasRef.current.remove();   windCanvasRef.current   = null; }
       if (cloudCanvasRef.current)  { cloudCanvasRef.current.remove();  cloudCanvasRef.current  = null; }
       if (precipCanvasRef.current) { precipCanvasRef.current.remove(); precipCanvasRef.current = null; }
       map.remove();
@@ -541,35 +428,6 @@ export default function DroneATCMap({
       }
     });
   }, [layers.wind, layers.temp, layers.clouds, layers.precip, layers.pressure, owmApiKey]);
-
-  useEffect(() => {
-    if (!layers.wind) { stopWindAnimation(); return; }
-
-    let cancelled = false;
-    const fetchAndStart = async () => {
-      try {
-        const res = await fetch(
-          'https://api.open-meteo.com/v1/forecast?latitude=44&longitude=12&current=wind_speed_10m,wind_direction_10m&wind_speed_unit=ms',
-        );
-        if (!cancelled && res.ok) {
-          const json = await res.json();
-          const cur = json?.current;
-          if (cur?.wind_direction_10m !== undefined) {
-            windParamsRef.current = {
-              dir:   cur.wind_direction_10m as number,
-              speed: (cur.wind_speed_10m as number) ?? 5,
-            };
-          }
-        }
-      } catch { 
-        console.log("Failed to fetch wind data, using defaults");
-      }
-      if (!cancelled) startWindAnimation();
-    };
-
-    fetchAndStart();
-    return () => { cancelled = true; stopWindAnimation(); };
-  }, [layers.wind, startWindAnimation, stopWindAnimation]);
 
   // Cloud drift animation
   useEffect(() => {

@@ -3,6 +3,7 @@
 import type { AircraftState } from '@/app/api/drone-atc/flights/route';
 import DroneList from '@/components/drone-atc/DroneList';
 import LayerControlPanel, { type LayerVisibility } from '@/components/drone-atc/LayerControlPanel';
+import WindParticleOverlay from '@/components/drone-atc/WindParticleOverlay';
 import LiveFeedPanel from '@/components/drone-atc/LiveFeedPanel';
 import { useDroneATCSocket } from '@/components/drone-atc/useDroneATCSocket';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -62,6 +63,7 @@ export default function DroneATCPage() {
   });
 
   const [syncState, setSyncState] = useState<'idle' | 'loading' | 'ok' | 'error'>('idle');
+  const [windData, setWindData] = useState<{ dir: number; speed: number }>({ dir: 270, speed: 5 });
 
   const boundsRef = useRef<{ latMin: number; lonMin: number; latMax: number; lonMax: number } | null>(null);
   const flightTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -125,6 +127,23 @@ export default function DroneATCPage() {
   const handleBoundsChange = useCallback((bounds: { latMin: number; lonMin: number; latMax: number; lonMax: number }) => {
     boundsRef.current = bounds;
   }, []);
+
+  useEffect(() => {
+    if (!layers.wind) return;
+    let cancelled = false;
+    const bounds = boundsRef.current;
+    const lat = bounds ? ((bounds.latMin + bounds.latMax) / 2).toFixed(4) : '20';
+    const lon = bounds ? ((bounds.lonMin + bounds.lonMax) / 2).toFixed(4) : '0';
+    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=wind_speed_10m,wind_direction_10m&wind_speed_unit=ms`)
+      .then(r => r.ok ? r.json() : null)
+      .then(json => {
+        if (cancelled || !json?.current) return;
+        const { wind_direction_10m: dir, wind_speed_10m: speed } = json.current;
+        if (dir !== undefined) setWindData({ dir, speed: speed ?? 5 });
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [layers.wind]);
 
   const droneList = Object.values(drones);
   const selectedDrone = selectedDroneId ? drones[selectedDroneId] ?? null : null;
@@ -245,6 +264,8 @@ export default function DroneATCPage() {
               onBoundsChange={handleBoundsChange}
             />
           </div>
+
+          {layers.wind && <WindParticleOverlay windDir={windData.dir} windSpeed={windData.speed} />}
 
           <LayerControlPanel
             layers={layers}
