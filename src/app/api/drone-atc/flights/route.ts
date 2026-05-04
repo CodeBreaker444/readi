@@ -1,3 +1,4 @@
+import { env } from '@/backend/config/env';
 import { requireAuth } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -33,12 +34,25 @@ export async function GET(req: NextRequest) {
   url.searchParams.set('lamax', latMax);
   url.searchParams.set('lomax', lonMax);
 
-  const res = await fetch(url.toString(), {
-    next: { revalidate: 10 },
-    headers: { 'Accept': 'application/json' },
-  });
+  const headers: Record<string, string> = { 'Accept': 'application/json' };
+  if (env.OPENSKY_USERNAME && env.OPENSKY_PASSWORD) {
+    const credentials = Buffer.from(`${env.OPENSKY_USERNAME}:${env.OPENSKY_PASSWORD}`).toString('base64');
+    headers['Authorization'] = `Basic ${credentials}`;
+  }
+
+  let res: Response;
+  try {
+    res = await fetch(url.toString(), {
+      next: { revalidate: 10 },
+      headers,
+    });
+  } catch (err) {
+    console.error('[drone-atc/flights] OpenSky fetch error:', err);
+    return NextResponse.json({ aircraft: [] });
+  }
 
   if (!res.ok) {
+    console.warn('[drone-atc/flights] OpenSky non-OK:', res.status);
     return NextResponse.json({ aircraft: [] });
   }
 

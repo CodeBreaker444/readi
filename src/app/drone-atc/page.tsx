@@ -159,14 +159,12 @@ export default function DroneATCPage() {
             <button
               onClick={handleUpdateDrones}
               disabled={syncState === 'loading'}
-              className={`flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1 rounded-lg transition-colors disabled:opacity-60 ${
+              className={`flex cursor-pointer items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1 rounded-lg transition-colors disabled:opacity-60 ${
                 syncState === 'ok'
                   ? 'bg-emerald-600/90 text-white'
                   : syncState === 'error'
                   ? 'bg-red-600/90 text-white'
-                  : isDark
-                  ? 'bg-slate-700/70 text-slate-200 hover:bg-slate-600/80 ring-1 ring-slate-600/40'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200 ring-1 ring-slate-200'
+                  : 'bg-violet-700 text-white hover:bg-violet-600/80 ring-1 ring-violet-600/40'
               }`}
             >
               {syncState === 'loading' ? (
