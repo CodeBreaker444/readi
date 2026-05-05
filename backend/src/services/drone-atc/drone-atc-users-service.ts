@@ -78,6 +78,7 @@ export async function getUsersWithDroneAtc(): Promise<DroneAtcUser[]> {
 
   const compsByTool = new Map<number, DroneAtcComponent[]>();
   for (const c of components) {
+    if (!c.dcc_drone_id && !c.serial_number) continue;
     const list = compsByTool.get(c.fk_tool_id) ?? [];
     list.push({
       componentId: c.component_id,
