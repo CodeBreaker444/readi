@@ -40,15 +40,21 @@ export async function GET(req: NextRequest) {
     headers['Authorization'] = `Basic ${credentials}`;
   }
 
+  const abort = new AbortController();
+  const timer = setTimeout(() => abort.abort(), 5000);
+
   let res: Response;
   try {
     res = await fetch(url.toString(), {
       next: { revalidate: 10 },
       headers,
+      signal: abort.signal,
     });
   } catch (err) {
     console.error('[drone-atc/flights] OpenSky fetch error:', err);
     return NextResponse.json({ aircraft: [] });
+  } finally {
+    clearTimeout(timer);
   }
 
   if (!res.ok) {
