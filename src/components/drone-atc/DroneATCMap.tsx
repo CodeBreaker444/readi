@@ -19,7 +19,7 @@ interface DroneATCMapProps {
 }
 
 const TILE_LIGHT = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
-const TILE_DARK  = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+const TILE_DARK = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
 
 const OWM_LAYERS: Record<string, string> = {
   wind: 'wind', temp: 'temp', clouds: 'clouds', precip: 'precipitation', pressure: 'pressure',
@@ -34,19 +34,19 @@ function owmTileUrl(layer: string, apiKey: string) {
 
 function altColor(alt: number | null): string {
   if (alt === null || alt < 0) return '#94a3b8';
-  if (alt < 1000)  return '#ef4444';
-  if (alt < 5000)  return '#fb923c';
+  if (alt < 1000) return '#ef4444';
+  if (alt < 5000) return '#fb923c';
   if (alt < 10000) return '#f59e0b';
   return '#34d399';
 }
 function droneIcon(selected: boolean, status?: string, name?: string): L.DivIcon {
-  const isOnline  = status === 'online' || !status;
+  const isOnline = status === 'online' || !status;
   const isStandby = status === 'standby';
   const color = isOnline
     ? (selected ? '#a78bfa' : '#8b5cf6')
     : isStandby
-    ? '#f59e0b'
-    : '#6b7280';
+      ? '#f59e0b'
+      : '#6b7280';
   const size = selected ? 48 : 36;
   const s = size / 48;
   const armLen = 14 * s;
@@ -72,8 +72,8 @@ function droneIcon(selected: boolean, status?: string, name?: string): L.DivIcon
   const ring = selected
     ? `<circle cx="${cx}" cy="${cy}" r="${cx * 0.88}" fill="none" stroke="${color}" stroke-width="${0.8 * s}" stroke-dasharray="${4 * s} ${2.5 * s}" stroke-opacity="0.5"/>`
     : (!isOnline && !isStandby)
-    ? `<circle cx="${cx}" cy="${cy}" r="${cx * 0.92}" fill="none" stroke="${color}" stroke-width="${0.8 * s}" stroke-dasharray="3 3" stroke-opacity="0.5"/>`
-    : '';
+      ? `<circle cx="${cx}" cy="${cy}" r="${cx * 0.92}" fill="none" stroke="${color}" stroke-width="${0.8 * s}" stroke-dasharray="3 3" stroke-opacity="0.5"/>`
+      : '';
 
   const safeName = name ? name.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
   const nameBg = 'rgba(10,12,20,0.65)';
@@ -107,15 +107,20 @@ function aircraftIcon(heading?: number | null, altitude?: number | null): L.DivI
 
   return L.divIcon({
     className: '',
-    html: `<div style="width:28px;height:28px;transform:rotate(${deg}deg);display:flex;align-items:center;justify-content:center;">
-      <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M14 2 L16.8 9.5 L25 12 L25 14.5 L16.8 13 L17.5 22 L20 23.5 L20 25 L14 23.5 L8 25 L8 23.5 L10.5 22 L11.2 13 L3 14.5 L3 12 L11.2 9.5 Z"
-          fill="${color}" stroke="rgba(255,255,255,0.85)" stroke-width="0.7" stroke-linejoin="round"/>
-        <ellipse cx="14" cy="5.5" rx="0.9" ry="1.6" fill="rgba(255,255,255,0.3)"/>
+    html: `<div style="width:32px;height:32px;transform:rotate(${deg}deg);display:flex;align-items:center;justify-content:center;">
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Fuselage -->
+        <path d="M16 1 Q17.2 4 17.2 8 L17.2 11.5 L27 16.5 L27 18 L17.2 15.5 L17.2 24.5 L20.5 27 L20.5 28.5 L16 27 L11.5 28.5 L11.5 27 L14.8 24.5 L14.8 15.5 L5 18 L5 16.5 L14.8 11.5 L14.8 8 Q14.8 4 16 1Z"
+          fill="${color}" stroke="rgba(0,0,0,0.4)" stroke-width="0.5" stroke-linejoin="round"/>
+        <!-- Cockpit glass -->
+        <ellipse cx="16" cy="5" rx="0.7" ry="2" fill="rgba(255,255,255,0.35)"/>
+        <!-- Wing highlight -->
+        <line x1="14.8" y1="13" x2="5.5" y2="17" stroke="rgba(255,255,255,0.15)" stroke-width="0.8"/>
+        <line x1="17.2" y1="13" x2="26.5" y2="17" stroke="rgba(255,255,255,0.15)" stroke-width="0.8"/>
       </svg>
     </div>`,
-    iconSize: [28, 28],
-    iconAnchor: [14, 14],
+    iconSize: [32, 32],
+    iconAnchor: [16, 16],
   });
 }
 
@@ -211,19 +216,19 @@ export default function DroneATCMap({
   const lastAirspaceFetchRef = useRef<{ lat: number; lon: number } | null>(null);
   const airspaceFetchAbortRef = useRef<AbortController | null>(null);
 
-  const mapRef            = useRef<L.Map | null>(null);
-  const containerRef      = useRef<HTMLDivElement>(null);
-  const tileLayerRef      = useRef<L.TileLayer | null>(null);
-  const droneLayerRef     = useRef<L.LayerGroup | null>(null);
-  const flightLayerRef    = useRef<L.LayerGroup | null>(null);
-  const airspaceLayerRef  = useRef<L.LayerGroup | null>(null);
-  const weatherRefs       = useRef<Partial<Record<WeatherLayerKey, L.TileLayer>>>({});
-  const droneMarkersRef   = useRef<Record<string, L.Marker>>({});
-  const flightMarkersRef  = useRef<Record<string, L.Marker>>({});
-  const cloudCanvasRef    = useRef<HTMLCanvasElement | null>(null);
-  const cloudAnimRef      = useRef<number>(0);
-  const precipCanvasRef   = useRef<HTMLCanvasElement | null>(null);
-  const precipAnimRef     = useRef<number>(0);
+  const mapRef = useRef<L.Map | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const tileLayerRef = useRef<L.TileLayer | null>(null);
+  const droneLayerRef = useRef<L.LayerGroup | null>(null);
+  const flightLayerRef = useRef<L.LayerGroup | null>(null);
+  const airspaceLayerRef = useRef<L.LayerGroup | null>(null);
+  const weatherRefs = useRef<Partial<Record<WeatherLayerKey, L.TileLayer>>>({});
+  const droneMarkersRef = useRef<Record<string, L.Marker>>({});
+  const flightMarkersRef = useRef<Record<string, L.Marker>>({});
+  const cloudCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const cloudAnimRef = useRef<number>(0);
+  const precipCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const precipAnimRef = useRef<number>(0);
 
   // Cloud drift animation
   const startCloudAnimation = useCallback(() => {
@@ -238,7 +243,7 @@ export default function DroneATCMap({
     }
 
     const canvas = cloudCanvasRef.current;
-    canvas.width  = container.offsetWidth;
+    canvas.width = container.offsetWidth;
     canvas.height = container.offsetHeight;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -308,7 +313,7 @@ export default function DroneATCMap({
     }
 
     const canvas = precipCanvasRef.current;
-    canvas.width  = container.offsetWidth;
+    canvas.width = container.offsetWidth;
     canvas.height = container.offsetHeight;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -371,13 +376,13 @@ export default function DroneATCMap({
     }).addTo(map);
 
     const airspaceLayer = L.layerGroup().addTo(map);
-    const flightLayer   = L.layerGroup().addTo(map);
-    const droneLayer    = L.layerGroup().addTo(map);
+    const flightLayer = L.layerGroup().addTo(map);
+    const droneLayer = L.layerGroup().addTo(map);
 
-    mapRef.current          = map;
-    tileLayerRef.current    = tile;
-    droneLayerRef.current   = droneLayer;
-    flightLayerRef.current  = flightLayer;
+    mapRef.current = map;
+    tileLayerRef.current = tile;
+    droneLayerRef.current = droneLayer;
+    flightLayerRef.current = flightLayer;
     airspaceLayerRef.current = airspaceLayer;
 
     const emitBounds = () => {
@@ -391,14 +396,14 @@ export default function DroneATCMap({
     return () => {
       cancelAnimationFrame(cloudAnimRef.current);
       cancelAnimationFrame(precipAnimRef.current);
-      if (cloudCanvasRef.current)  { cloudCanvasRef.current.remove();  cloudCanvasRef.current  = null; }
+      if (cloudCanvasRef.current) { cloudCanvasRef.current.remove(); cloudCanvasRef.current = null; }
       if (precipCanvasRef.current) { precipCanvasRef.current.remove(); precipCanvasRef.current = null; }
       map.remove();
-      mapRef.current          = null;
-      droneLayerRef.current   = null;
-      flightLayerRef.current  = null;
+      mapRef.current = null;
+      droneLayerRef.current = null;
+      flightLayerRef.current = null;
       airspaceLayerRef.current = null;
-      droneMarkersRef.current  = {};
+      droneMarkersRef.current = {};
       flightMarkersRef.current = {};
     };
   }, []);
@@ -461,7 +466,7 @@ export default function DroneATCMap({
 
     fetchAirspaceForRegion(centerLat, centerLon, controller.signal)
       .then(zones => { if (!controller.signal.aborted) setAirspaceZones(zones); })
-      .catch(() => {});
+      .catch(() => { });
   }, [drones]);
 
   // Airspace circle overlays
@@ -564,28 +569,28 @@ export default function DroneATCMap({
   }, [selectedDroneId]);
 
   return (
-<div className="relative w-full h-full" id="drone-atc-map-root">
-  {/* Push Leaflet zoom control down so it clears the flight-count badge */}
-  <style>{`#drone-atc-map-root .leaflet-top.leaflet-left { margin-top: 44px; }`}</style>
-  <div ref={containerRef} className="w-full h-full z-0" />
-  
-  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-[1000] pointer-events-auto select-none group">
-    <div className="text-[10px] font-medium tracking-wide px-2 py-0.5 rounded bg-black/40 backdrop-blur-sm text-white/60 flex items-center whitespace-nowrap transition-all">
-      <span>Powered by&nbsp;</span>
-      
-      <div className="flex items-center font-semibold text-white/80 transition-all duration-500">
-        <span>P</span>
-        <span className="max-w-0 overflow-hidden opacity-0 group-hover:max-w-[50px] group-hover:opacity-100 transition-all duration-500 ease-in-out">eriodical&nbsp;</span>
-        
-        <span className="ml-0">D</span>
-        <span className="max-w-0 overflow-hidden opacity-0 group-hover:max-w-[30px] group-hover:opacity-100 transition-all duration-500 ease-in-out">ata&nbsp;</span>
-        
-        <span className="ml-0">F</span>
-        <span className="max-w-0 overflow-hidden opacity-0 group-hover:max-w-[40px] group-hover:opacity-100 transition-all duration-500 ease-in-out">usion</span>
+    <div className="relative w-full h-full" id="drone-atc-map-root">
+      {/* Push Leaflet zoom control down so it clears the flight-count badge */}
+      <style>{`#drone-atc-map-root .leaflet-top.leaflet-left { margin-top: 44px; }`}</style>
+      <div ref={containerRef} className="w-full h-full z-0" />
+
+      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-[1000] pointer-events-auto select-none group">
+        <div className="text-[10px] font-medium tracking-wide px-2 py-0.5 rounded bg-black/40 backdrop-blur-sm text-white/60 flex items-center whitespace-nowrap transition-all">
+          <span>Powered by&nbsp;</span>
+
+          <div className="flex items-center font-semibold text-white/80 transition-all duration-500">
+            <span>P</span>
+            <span className="max-w-0 overflow-hidden opacity-0 group-hover:max-w-[50px] group-hover:opacity-100 transition-all duration-500 ease-in-out">eriodical&nbsp;</span>
+
+            <span className="ml-0">D</span>
+            <span className="max-w-0 overflow-hidden opacity-0 group-hover:max-w-[30px] group-hover:opacity-100 transition-all duration-500 ease-in-out">ata&nbsp;</span>
+
+            <span className="ml-0">F</span>
+            <span className="max-w-0 overflow-hidden opacity-0 group-hover:max-w-[40px] group-hover:opacity-100 transition-all duration-500 ease-in-out">usion</span>
+          </div>
+          <span>&nbsp;Engine</span>
+        </div>
       </div>
-      <span>&nbsp;Engine</span>
     </div>
-  </div>
-</div>
   );
 }

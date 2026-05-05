@@ -1,4 +1,3 @@
-import { env } from '@/backend/config/env';
 import { requireAuth } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -28,54 +27,61 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Bounding box params required' }, { status: 400 });
   }
 
-  const url = new URL('https://opensky-network.org/api/states/all');
-  url.searchParams.set('lamin', latMin);
-  url.searchParams.set('lomin', lonMin);
-  url.searchParams.set('lamax', latMax);
-  url.searchParams.set('lomax', lonMax);
+  const centerLat = (parseFloat(latMin) + parseFloat(latMax)) / 2;
+  const centerLon = (parseFloat(lonMin) + parseFloat(lonMax)) / 2;
+  const latRadiusNm = ((parseFloat(latMax) - parseFloat(latMin)) / 2) * 60;
+  const lonRadiusNm =
+    ((parseFloat(lonMax) - parseFloat(lonMin)) / 2) *
+    60 *
+    Math.cos((centerLat * Math.PI) / 180);
+  const radiusNm = Math.min(Math.max(latRadiusNm, lonRadiusNm), 250);
 
-  const headers: Record<string, string> = { 'Accept': 'application/json' };
-  if (env.OPENSKY_USERNAME && env.OPENSKY_PASSWORD) {
-    const credentials = Buffer.from(`${env.OPENSKY_USERNAME}:${env.OPENSKY_PASSWORD}`).toString('base64');
-    headers['Authorization'] = `Basic ${credentials}`;
-  }
+  const url = `https://api.airplanes.live/v2/point/${centerLat.toFixed(4)}/${centerLon.toFixed(4)}/${Math.ceil(radiusNm)}`;
 
   const abort = new AbortController();
-  const timer = setTimeout(() => abort.abort(), 5000);
+  const timer = setTimeout(() => abort.abort(), 8000);
 
   let res: Response;
   try {
-    res = await fetch(url.toString(), {
+    res = await fetch(url, {
       next: { revalidate: 10 },
-      headers,
+      headers: { Accept: 'application/json' },
       signal: abort.signal,
     });
   } catch (err) {
-    console.error('[drone-atc/flights] OpenSky fetch error:', err);
+    console.error('[drone-atc/flights] airplanes.live fetch error:', err);
     return NextResponse.json({ aircraft: [] });
   } finally {
     clearTimeout(timer);
   }
 
   if (!res.ok) {
-    console.warn('[drone-atc/flights] OpenSky non-OK:', res.status);
+    console.warn('[drone-atc/flights] airplanes.live non-OK:', res.status);
     return NextResponse.json({ aircraft: [] });
   }
 
   const data = await res.json();
-  const states: AircraftState[] = (data.states ?? [])
-    .filter((s: unknown[]) => s[5] != null && s[6] != null)
-    .map((s: unknown[]) => ({
-      icao24: s[0] as string,
-      callsign: ((s[1] as string) ?? '').trim(),
-      originCountry: s[2] as string,
-      longitude: s[5] as number,
-      latitude: s[6] as number,
-      altitude: s[7] as number | null,
-      onGround: s[8] as boolean,
-      velocity: s[9] as number | null,
-      heading: s[10] as number | null,
-    }));
 
-  return NextResponse.json({ aircraft: states, timestamp: data.time });
+  const states: AircraftState[] = (data.ac ?? [])
+    .filter((a: Record<string, unknown>) => a.lat != null && a.lon != null)
+    .map((a: Record<string, unknown>) => {
+      const altBaro = a.alt_baro;
+      const onGround = altBaro === 'ground';
+      const altMeters =
+        !onGround && altBaro != null ? Math.round(Number(altBaro) * 0.3048) : null;
+
+      return {
+        icao24: String(a.hex ?? '').toLowerCase(),
+        callsign: String(a.flight ?? '').trim(),
+        originCountry: String(a.r ?? ''),
+        latitude: a.lat as number,
+        longitude: a.lon as number,
+        altitude: altMeters,
+        onGround,
+        velocity: a.gs != null ? Math.round(Number(a.gs) * 0.5144) : null,
+        heading: (a.track as number | null) ?? null,
+      };
+    });
+
+  return NextResponse.json({ aircraft: states, timestamp: data.now });
 }

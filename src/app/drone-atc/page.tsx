@@ -8,10 +8,12 @@ import LiveFeedPanel from '@/components/drone-atc/LiveFeedPanel';
 import { useDroneATCSocket } from '@/components/drone-atc/useDroneATCSocket';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTheme } from '@/components/useTheme';
+import { ChevronRight } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FiAlertTriangle, FiCheck, FiRefreshCw } from 'react-icons/fi';
+import { GiDeliveryDrone } from 'react-icons/gi';
 import { MdFlight, MdRefresh } from 'react-icons/md';
 
 const DroneATCMap = dynamic(() => import('@/components/drone-atc/DroneATCMap'), {
@@ -41,7 +43,7 @@ function StatusBadge({ status, count, isDark }: { status: string; count: number;
   return (
     <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-wide px-3 py-1 rounded-full ${styles[status] ?? styles.idle}`}>
       <span className={`w-1.5 h-1.5 rounded-full ${dotStyle[status] ?? dotStyle.idle}`} />
-      {label[status] ?? status}
+      <span className="hidden sm:inline">{label[status] ?? status}</span>
       {status === 'connected' && count > 0 && <span className="ml-0.5 opacity-60">· {count}</span>}
     </span>
   );
@@ -56,6 +58,7 @@ export default function DroneATCPage() {
 
   const [selectedDroneId, setSelectedDroneId] = useState<string | null>(null);
   const [aircraft, setAircraft] = useState<AircraftState[]>([]);
+  const [showFleet, setShowFleet] = useState(false);
   const [layers, setLayers] = useState<LayerVisibility>({
     drones: true, flights: true,
     airspaceA: false, airspaceB: true, airspaceC: true, airspaceD: false,
@@ -88,7 +91,6 @@ export default function DroneATCPage() {
     setLayers(prev => ({ ...prev, [key]: !prev[key] }));
   }, []);
 
-  // Auto-select first drone
   useEffect(() => {
     const ids = Object.keys(drones);
     if (ids.length > 0 && !hasAutoSelected.current) {
@@ -107,13 +109,10 @@ export default function DroneATCPage() {
       const res = await fetch(`/api/drone-atc/flights?latMin=${latMin}&lonMin=${lonMin}&latMax=${latMax}&lonMax=${lonMax}`);
       if (res.ok) {
         const data = await res.json();
-        console.log('data:',data);
-        
         setAircraft(data.aircraft ?? []);
       }
     } catch {
       console.log('Failed to fetch flights');
-
     }
   }, []);
 
@@ -153,32 +152,35 @@ export default function DroneATCPage() {
     ? 'bg-slate-900/80 border border-slate-700/50 rounded-2xl backdrop-blur-sm'
     : 'bg-white/90 border border-slate-300 rounded-2xl shadow-sm backdrop-blur-sm';
 
+  const glassPanel = isDark
+    ? 'bg-slate-900/95 border border-slate-700/60 shadow-2xl shadow-black/40 backdrop-blur-xl'
+    : 'bg-white/97 border border-slate-200/80 shadow-xl shadow-slate-200/60 backdrop-blur-xl';
+
   return (
     <div className={`flex flex-col h-full overflow-hidden ${isDark ? 'bg-slate-950' : 'bg-slate-100'}`}>
 
       <header className={`shrink-0 z-20 transition-colors ${isDark
           ? 'bg-slate-900/90 backdrop-blur-lg border-b border-slate-700/50'
           : 'bg-white/90 backdrop-blur-lg border-b border-slate-300 shadow-[0_1px_2px_rgba(0,0,0,0.04)]'
-        } px-4 py-4`}>
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
+        } px-3 sm:px-4 py-3 sm:py-4`}>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <div className="w-1 h-7 rounded-full bg-violet-600 shrink-0" />
-
-            <div className="flex flex-col">
+            <div className="flex flex-col min-w-0">
               <span className={`font-semibold text-sm tracking-tight leading-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
                 Drone ATC
               </span>
-              <span className={`text-[10px] leading-tight ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+              <span className={`text-[10px] leading-tight hidden sm:block ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                 Air Traffic Control
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <button
               onClick={handleUpdateDrones}
               disabled={syncState === 'loading'}
-              className={`flex cursor-pointer items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1 rounded-lg transition-colors disabled:opacity-60 ${
+              className={`flex cursor-pointer items-center gap-1.5 text-[10px] font-semibold px-2 sm:px-2.5 py-1 rounded-lg transition-colors disabled:opacity-60 ${
                 syncState === 'ok'
                   ? 'bg-emerald-600/90 text-white'
                   : syncState === 'error'
@@ -193,17 +195,23 @@ export default function DroneATCPage() {
               ) : (
                 <FiRefreshCw className="w-3 h-3" />
               )}
-              {syncState === 'loading' ? 'Updating…' : syncState === 'ok' ? 'Updated' : syncState === 'error' ? 'Failed' : 'Update Drones To FlytRelay'}
+              <span className="hidden sm:inline">
+                {syncState === 'loading' ? 'Updating…' : syncState === 'ok' ? 'Updated' : syncState === 'error' ? 'Failed' : 'Update Drones To FlytRelay'}
+              </span>
+              <span className="sm:hidden">
+                {syncState === 'loading' ? '…' : syncState === 'ok' ? 'Done' : syncState === 'error' ? 'Err' : 'Sync'}
+              </span>
             </button>
 
             <StatusBadge status={status} count={droneList.length} isDark={isDark} />
+
             {status === 'error' && (
               <button
                 onClick={reconnect}
                 className="flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-lg bg-red-600 text-white hover:bg-red-500 transition-colors"
               >
                 <MdRefresh className="w-3 h-3" />
-                Retry
+                <span className="hidden sm:inline">Retry</span>
               </button>
             )}
           </div>
@@ -211,19 +219,20 @@ export default function DroneATCPage() {
       </header>
 
       {status === 'no_flytbase_key' && (
-        <div className={`shrink-0 mx-4 mt-3 px-4 py-2.5 rounded-xl text-xs flex items-center gap-2 ring-1 ${isDark ? 'bg-amber-900/15 ring-amber-700/30 text-amber-300' : 'bg-amber-50 ring-amber-200 text-amber-700'
+        <div className={`shrink-0 mx-3 sm:mx-4 mt-3 px-3 sm:px-4 py-2.5 rounded-xl text-xs flex items-center gap-2 ring-1 ${isDark ? 'bg-amber-900/15 ring-amber-700/30 text-amber-300' : 'bg-amber-50 ring-amber-200 text-amber-700'
           }`}>
           <FiAlertTriangle className="w-4 h-4 shrink-0" />
           <span>No FlytBase API key configured.</span>
           <Link href="/flytbase" className={`underline font-semibold ${isDark ? 'text-amber-200 hover:text-amber-100' : 'text-amber-800 hover:text-amber-900'}`}>
-            Configure now →
+            Configure →
           </Link>
         </div>
       )}
 
       <div className="flex flex-1 gap-2 p-2 overflow-hidden">
 
-        <aside className={`w-64 shrink-0 flex flex-col overflow-hidden ${panelClass}`}>
+        {/* Fleet sidebar — desktop only */}
+        <aside className={`hidden md:flex w-64 shrink-0 flex-col overflow-hidden ${panelClass}`}>
           <div className={`px-3 py-2 border-b shrink-0 ${isDark ? 'border-slate-700/50' : 'border-slate-200'}`}>
             <div className="flex items-center justify-between">
               <span className={`text-[10px] font-bold uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
@@ -238,7 +247,6 @@ export default function DroneATCPage() {
               </div>
             </div>
           </div>
-
           <div className="flex-1 overflow-y-auto p-2" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
             <style jsx>{`div::-webkit-scrollbar { display: none; }`}</style>
             <DroneList
@@ -276,10 +284,81 @@ export default function DroneATCPage() {
             hasOwmKey={!!OWM_API_KEY}
           />
 
+          {/* Flight count badge — shifts right on mobile so it doesn't overlap the fleet button */}
           {layers.flights && (
-            <div className="absolute top-2 left-2 bg-amber-500/90 backdrop-blur-sm text-white text-[10px] font-semibold px-2 py-1 rounded-lg shadow z-50 flex items-center gap-1 ring-1 ring-amber-400/30">
+            <div className={`absolute top-2 z-50 bg-amber-500/90 backdrop-blur-sm text-white text-[10px] font-semibold px-2 py-1 rounded-lg shadow flex items-center gap-1 ring-1 ring-amber-400/30 transition-all ${
+              showFleet ? 'left-2' : 'left-18 md:left-2'
+            }`}>
               <MdFlight className="w-3 h-3" />
               {aircraft.length}
+            </div>
+          )}
+
+          {/* Mobile fleet toggle — collapsed button (mobile only) */}
+          {!showFleet && (
+            <div className="md:hidden absolute top-3 left-3 z-450">
+              <button
+                type="button"
+                onClick={() => setShowFleet(true)}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl transition-all ${glassPanel} ${
+                  isDark ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <GiDeliveryDrone className="w-3.5 h-3.5" />
+                <span className="text-[10px] font-semibold">Fleet</span>
+                {isLoading
+                  ? <div className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" />
+                  : droneList.length > 0 && (
+                    <span className={`text-[9px] font-bold px-1 py-0.5 rounded-full ${isDark ? 'bg-violet-600/20 text-violet-400' : 'bg-violet-100 text-violet-600'}`}>
+                      {droneList.length}
+                    </span>
+                  )
+                }
+              </button>
+            </div>
+          )}
+
+          {/* Mobile fleet panel — expanded (mobile only) */}
+          {showFleet && (
+            <div className={`md:hidden absolute top-3 left-3 z-450 w-56 rounded-2xl overflow-hidden ${glassPanel}`}>
+              <div className={`flex items-center justify-between px-3 py-2.5 ${isDark ? 'border-b border-slate-700/60' : 'border-b border-slate-100'}`}>
+                <div className="flex items-center gap-2">
+                  <div className={`w-6 h-6 rounded-lg flex items-center justify-center ${isDark ? 'bg-violet-500/15' : 'bg-violet-50'}`}>
+                    <GiDeliveryDrone className={`w-3.5 h-3.5 ${isDark ? 'text-violet-400' : 'text-violet-600'}`} />
+                  </div>
+                  <span className={`text-xs font-bold tracking-wide ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
+                    Fleet
+                  </span>
+                  <div className={`min-w-4 h-4 px-1 rounded flex items-center justify-center ${isDark ? 'bg-violet-600/10 ring-1 ring-violet-500/20' : 'bg-violet-50 ring-1 ring-violet-200'}`}>
+                    {isLoading
+                      ? <div className="w-1 h-1 rounded-full bg-violet-500 animate-pulse" />
+                      : <span className={`text-[9px] font-bold ${isDark ? 'text-violet-400' : 'text-violet-600'}`}>{droneList.length}</span>
+                    }
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowFleet(false)}
+                  className={`w-5 h-5 rounded-md flex items-center justify-center transition-colors ${
+                    isDark ? 'text-slate-500 hover:text-slate-300 hover:bg-slate-700/60' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  <ChevronRight className="w-3 h-3" />
+                </button>
+              </div>
+
+              <div
+                className="overflow-y-auto p-2"
+                style={{ maxHeight: '60vh', scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              >
+                <DroneList
+                  drones={drones}
+                  selectedDroneId={selectedDroneId}
+                  onSelect={(id) => { setSelectedDroneId(id); setShowFleet(false); }}
+                  isDark={isDark}
+                  isLoading={isLoading}
+                />
+              </div>
             </div>
           )}
 
