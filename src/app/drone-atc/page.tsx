@@ -204,6 +204,7 @@ export default function DroneATCPage() {
             </button>
 
             <StatusBadge status={status} count={droneList.length} isDark={isDark} />
+            
 
             {status === 'error' && (
               <button

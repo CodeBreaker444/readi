@@ -199,6 +199,13 @@ export default function DroneList({ drones, selectedDroneId, onSelect, isDark, i
               </div>
               <div className="flex flex-col items-end gap-1">
                 <StatusBadge status={drone.status} isDark={isDark} />
+                {noGps && (
+                  <span className={`inline-flex items-center gap-1 text-[9px] font-bold tracking-wide px-1.5 py-0.5 rounded-full ${
+                    isDark ? 'bg-slate-700/60 text-slate-400 ring-1 ring-slate-600/30' : 'bg-slate-100 text-slate-400 ring-1 ring-slate-200'
+                  }`}>
+                    NO GPS
+                  </span>
+                )}
               </div>
             </div>
 

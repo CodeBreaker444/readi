@@ -143,27 +143,21 @@ interface OverpassElement {
   tags?: Record<string, string>;
 }
 
-function haversineM(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371000;
-  const φ1 = lat1 * Math.PI / 180, φ2 = lat2 * Math.PI / 180;
-  const Δφ = (lat2 - lat1) * Math.PI / 180;
-  const Δλ = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(Δφ / 2) ** 2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
 
-async function fetchAirspaceForRegion(lat: number, lon: number, signal?: AbortSignal): Promise<AirspaceZone[]> {
-  const coord = `${lat.toFixed(4)},${lon.toFixed(4)}`;
-  const r = 400000;
+async function fetchAirspaceForRegion(
+  south: number, west: number, north: number, east: number,
+  signal?: AbortSignal,
+): Promise<AirspaceZone[]> {
+  const bbox = `${south.toFixed(4)},${west.toFixed(4)},${north.toFixed(4)},${east.toFixed(4)}`;
   const q = [
     '[out:json][timeout:25];',
     '(',
-    `node["aeroway"="aerodrome"]["iata"](around:${r},${coord});`,
-    `node["aeroway"="aerodrome"]["icao"](around:${r},${coord});`,
-    `way["aeroway"="aerodrome"]["iata"](around:${r},${coord});`,
-    `way["aeroway"="aerodrome"]["icao"](around:${r},${coord});`,
-    `relation["aeroway"="aerodrome"]["iata"](around:${r},${coord});`,
-    `relation["aeroway"="aerodrome"]["icao"](around:${r},${coord});`,
+    `node["aeroway"="aerodrome"]["iata"](${bbox});`,
+    `node["aeroway"="aerodrome"]["icao"](${bbox});`,
+    `way["aeroway"="aerodrome"]["iata"](${bbox});`,
+    `way["aeroway"="aerodrome"]["icao"](${bbox});`,
+    `relation["aeroway"="aerodrome"]["iata"](${bbox});`,
+    `relation["aeroway"="aerodrome"]["icao"](${bbox});`,
     ');out center tags;',
   ].join('\n');
 
@@ -218,7 +212,7 @@ export default function DroneATCMap({
   drones, aircraft, selectedDroneId, layers, onDroneClick, isDark, owmApiKey, onBoundsChange,
 }: DroneATCMapProps) {
   const [airspaceZones, setAirspaceZones] = useState<AirspaceZone[]>([]);
-  const lastAirspaceFetchRef = useRef<{ lat: number; lon: number } | null>(null);
+  const lastAirspaceFetchRef = useRef<L.LatLngBounds | null>(null);
   const airspaceFetchAbortRef = useRef<AbortController | null>(null);
 
   const mapRef = useRef<L.Map | null>(null);
@@ -366,6 +360,30 @@ export default function DroneATCMap({
     }
   }, []);
 
+  const doFetchAirspace = useCallback(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (map.getZoom() < 5) return;
+    const bounds = map.getBounds();
+    const last = lastAirspaceFetchRef.current;
+    if (last && last.pad(-0.15).contains(bounds)) return;
+    const padded = bounds.pad(0.4);
+    lastAirspaceFetchRef.current = padded;
+    airspaceFetchAbortRef.current?.abort();
+    const ctrl = new AbortController();
+    airspaceFetchAbortRef.current = ctrl;
+    fetchAirspaceForRegion(padded.getSouth(), padded.getWest(), padded.getNorth(), padded.getEast(), ctrl.signal)
+      .then(zones => {
+        if (ctrl.signal.aborted) return;
+        setAirspaceZones(prev => {
+          const byId = new Map(prev.map(z => [z.id, z]));
+          zones.forEach(z => byId.set(z.id, z));
+          return Array.from(byId.values());
+        });
+      })
+      .catch(() => {});
+  }, []);
+
   // Init map
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -398,18 +416,6 @@ export default function DroneATCMap({
     map.on('zoomend', emitBounds);
     emitBounds();
 
-    const doFetchAirspace = () => {
-      const center = map.getCenter();
-      const last = lastAirspaceFetchRef.current;
-      if (last && haversineM(last.lat, last.lon, center.lat, center.lng) < 150_000) return;
-      lastAirspaceFetchRef.current = { lat: center.lat, lon: center.lng };
-      airspaceFetchAbortRef.current?.abort();
-      const ctrl = new AbortController();
-      airspaceFetchAbortRef.current = ctrl;
-      fetchAirspaceForRegion(center.lat, center.lng, ctrl.signal)
-        .then(zones => { if (!ctrl.signal.aborted) setAirspaceZones(zones); })
-        .catch(() => {});
-    };
     map.on('moveend', doFetchAirspace);
     map.on('zoomend', doFetchAirspace);
     doFetchAirspace();
@@ -468,6 +474,13 @@ export default function DroneATCMap({
     else stopPrecipAnimation();
     return () => stopPrecipAnimation();
   }, [layers.precip, startPrecipAnimation, stopPrecipAnimation]);
+
+  // Trigger airspace fetch whenever any airspace layer is toggled on
+  useEffect(() => {
+    if (layers.airspaceA || layers.airspaceB || layers.airspaceC || layers.airspaceD) {
+      doFetchAirspace();
+    }
+  }, [layers.airspaceA, layers.airspaceB, layers.airspaceC, layers.airspaceD, doFetchAirspace]);
 
   // Airspace circle overlays
   useEffect(() => {
