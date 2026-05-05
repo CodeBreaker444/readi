@@ -43,7 +43,7 @@ function Toggle({ on, onChange, disabled, isDark }: { on: boolean; onChange: () 
       } ${on && !disabled ? 'bg-violet-500' : isDark ? 'bg-slate-700' : 'bg-slate-300'}`}
     >
       <span className={`absolute top-0.5 w-3.5 h-3.5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
-        on && !disabled ? 'translate-x-4.5' : 'translate-x-0.5'
+        on && !disabled ? 'translate-x-4' : 'translate-x-0.5'
       }`} />
     </button>
   );
@@ -220,7 +220,7 @@ export default function LayerControlPanel({ layers, onToggle, isDark, droneCount
             <ToggleRow
               icon={<Plane className="w-full h-full" />}
               label="Aircraft"
-              sublabel="OpenSky Network"
+              sublabel="airplanes.live"
               count={aircraftCount}
               active={layers.flights}
               onToggle={() => onToggle('flights')}

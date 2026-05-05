@@ -78,6 +78,8 @@ export function useDroneATCSocket(): UseDroneATCSocketReturn {
 
       socket.on('telemetry', (payload: { droneId: string; data: TelemetryData; timestamp: number }) => {
         const telemetry = payload.data ?? (payload as unknown as TelemetryData);
+        console.log('drones:',telemetry);
+        
         const id = telemetry.drone_id ?? payload.droneId;
         setDrones((prev) => ({ ...prev, [id]: { ...telemetry, drone_id: id } }));
       });

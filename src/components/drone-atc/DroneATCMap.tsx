@@ -167,7 +167,12 @@ async function fetchAirspaceForRegion(lat: number, lon: number, signal?: AbortSi
     ');out center tags;',
   ].join('\n');
 
-  const res = await fetch('https://overpass-api.de/api/interpreter', { method: 'POST', body: q, signal });
+  const res = await fetch('https://overpass-api.de/api/interpreter', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `data=${encodeURIComponent(q)}`,
+    signal,
+  });
   if (!res.ok) throw new Error('Overpass API error');
   const data = await res.json();
 
@@ -393,6 +398,22 @@ export default function DroneATCMap({
     map.on('zoomend', emitBounds);
     emitBounds();
 
+    const doFetchAirspace = () => {
+      const center = map.getCenter();
+      const last = lastAirspaceFetchRef.current;
+      if (last && haversineM(last.lat, last.lon, center.lat, center.lng) < 150_000) return;
+      lastAirspaceFetchRef.current = { lat: center.lat, lon: center.lng };
+      airspaceFetchAbortRef.current?.abort();
+      const ctrl = new AbortController();
+      airspaceFetchAbortRef.current = ctrl;
+      fetchAirspaceForRegion(center.lat, center.lng, ctrl.signal)
+        .then(zones => { if (!ctrl.signal.aborted) setAirspaceZones(zones); })
+        .catch(() => {});
+    };
+    map.on('moveend', doFetchAirspace);
+    map.on('zoomend', doFetchAirspace);
+    doFetchAirspace();
+
     return () => {
       cancelAnimationFrame(cloudAnimRef.current);
       cancelAnimationFrame(precipAnimRef.current);
@@ -448,27 +469,6 @@ export default function DroneATCMap({
     return () => stopPrecipAnimation();
   }, [layers.precip, startPrecipAnimation, stopPrecipAnimation]);
 
-  // Fetch airspace zones when drone positions are known
-  useEffect(() => {
-    const droneList = Object.values(drones);
-    if (droneList.length === 0) return;
-
-    const centerLat = droneList.reduce((s, d) => s + d.latitude, 0) / droneList.length;
-    const centerLon = droneList.reduce((s, d) => s + d.longitude, 0) / droneList.length;
-
-    const last = lastAirspaceFetchRef.current;
-    if (last && haversineM(last.lat, last.lon, centerLat, centerLon) < 150_000) return;
-
-    lastAirspaceFetchRef.current = { lat: centerLat, lon: centerLon };
-    airspaceFetchAbortRef.current?.abort();
-    const controller = new AbortController();
-    airspaceFetchAbortRef.current = controller;
-
-    fetchAirspaceForRegion(centerLat, centerLon, controller.signal)
-      .then(zones => { if (!controller.signal.aborted) setAirspaceZones(zones); })
-      .catch(() => { });
-  }, [drones]);
-
   // Airspace circle overlays
   useEffect(() => {
     const layer = airspaceLayerRef.current;
@@ -494,7 +494,6 @@ export default function DroneATCMap({
     });
   }, [airspaceZones, layers.airspaceA, layers.airspaceB, layers.airspaceC, layers.airspaceD]);
 
-  // Drone markers — always in custom top pane
   const updateDroneMarkers = useCallback(() => {
     const layer = droneLayerRef.current;
     if (!layer) return;
@@ -504,6 +503,7 @@ export default function DroneATCMap({
     const seen = new Set<string>();
 
     Object.values(drones).forEach((d: TelemetryData) => {
+      if (!d.latitude && !d.longitude) return;
       seen.add(d.drone_id);
       const selected = d.drone_id === selectedDroneId;
       const icon = droneIcon(selected, d.status, d.name ?? d.drone_id);
@@ -564,6 +564,7 @@ export default function DroneATCMap({
   useEffect(() => {
     if (selectedDroneId && drones[selectedDroneId] && mapRef.current) {
       const d = drones[selectedDroneId];
+      if (!d.latitude && !d.longitude) return;
       mapRef.current.flyTo([d.latitude, d.longitude], 14, { duration: 1.2 });
     }
   }, [selectedDroneId]);

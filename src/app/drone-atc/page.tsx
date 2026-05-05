@@ -3,9 +3,9 @@
 import type { AircraftState } from '@/app/api/drone-atc/flights/route';
 import DroneList from '@/components/drone-atc/DroneList';
 import LayerControlPanel, { type LayerVisibility } from '@/components/drone-atc/LayerControlPanel';
-import WindParticleOverlay from '@/components/drone-atc/WindParticleOverlay';
 import LiveFeedPanel from '@/components/drone-atc/LiveFeedPanel';
 import { useDroneATCSocket } from '@/components/drone-atc/useDroneATCSocket';
+import WindParticleOverlay from '@/components/drone-atc/WindParticleOverlay';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTheme } from '@/components/useTheme';
 import { ChevronRight } from 'lucide-react';
@@ -199,7 +199,7 @@ export default function DroneATCPage() {
                 {syncState === 'loading' ? 'Updating…' : syncState === 'ok' ? 'Updated' : syncState === 'error' ? 'Failed' : 'Update Drones To FlytRelay'}
               </span>
               <span className="sm:hidden">
-                {syncState === 'loading' ? '…' : syncState === 'ok' ? 'Done' : syncState === 'error' ? 'Err' : 'Sync'}
+                {syncState === 'loading' ? '…' : syncState === 'ok' ? 'Done' : syncState === 'error' ? 'Err' : 'Sync Drones To FlytRelay'}
               </span>
             </button>
 
@@ -231,7 +231,6 @@ export default function DroneATCPage() {
 
       <div className="flex flex-1 gap-2 p-2 overflow-hidden">
 
-        {/* Fleet sidebar — desktop only */}
         <aside className={`hidden md:flex w-64 shrink-0 flex-col overflow-hidden ${panelClass}`}>
           <div className={`px-3 py-2 border-b shrink-0 ${isDark ? 'border-slate-700/50' : 'border-slate-200'}`}>
             <div className="flex items-center justify-between">
@@ -284,7 +283,6 @@ export default function DroneATCPage() {
             hasOwmKey={!!OWM_API_KEY}
           />
 
-          {/* Flight count badge — shifts right on mobile so it doesn't overlap the fleet button */}
           {layers.flights && (
             <div className={`absolute top-2 z-50 bg-amber-500/90 backdrop-blur-sm text-white text-[10px] font-semibold px-2 py-1 rounded-lg shadow flex items-center gap-1 ring-1 ring-amber-400/30 transition-all ${
               showFleet ? 'left-2' : 'left-18 md:left-2'
@@ -294,7 +292,6 @@ export default function DroneATCPage() {
             </div>
           )}
 
-          {/* Mobile fleet toggle — collapsed button (mobile only) */}
           {!showFleet && (
             <div className="md:hidden absolute top-3 left-3 z-450">
               <button
@@ -318,7 +315,6 @@ export default function DroneATCPage() {
             </div>
           )}
 
-          {/* Mobile fleet panel — expanded (mobile only) */}
           {showFleet && (
             <div className={`md:hidden absolute top-3 left-3 z-450 w-56 rounded-2xl overflow-hidden ${glassPanel}`}>
               <div className={`flex items-center justify-between px-3 py-2.5 ${isDark ? 'border-b border-slate-700/60' : 'border-b border-slate-100'}`}>

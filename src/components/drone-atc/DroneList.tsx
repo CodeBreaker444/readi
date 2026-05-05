@@ -136,9 +136,11 @@ export default function DroneList({ drones, selectedDroneId, onSelect, isDark, i
         const isSelected = drone.drone_id === selectedDroneId;
         const online = drone.status === 'online' || !drone.status;
         const standby = drone.status === 'standby';
+        const noGps = !drone.latitude && !drone.longitude;
 
         const borderColor = isSelected
           ? 'border-l-violet-500'
+          : noGps    ? 'border-l-slate-400/40'
           : online  ? 'border-l-emerald-500'
           : standby ? 'border-l-amber-400'
           : 'border-l-slate-500';
@@ -147,6 +149,10 @@ export default function DroneList({ drones, selectedDroneId, onSelect, isDark, i
           ? isDark
             ? 'bg-violet-900/15 border border-l-0 border-violet-500/30 shadow-sm shadow-violet-900/20'
             : 'bg-violet-50/80 border border-l-0 border-violet-200 shadow-sm'
+          : noGps
+            ? isDark
+              ? 'bg-slate-800/20 border border-l-0 border-slate-700/30 opacity-50'
+              : 'bg-slate-50/60 border border-l-0 border-slate-200/60 opacity-50'
           : isDark
             ? 'bg-slate-800/30 border border-l-0 border-slate-700/40 hover:bg-slate-800/50 hover:border-slate-600/50'
             : 'bg-white border border-l-0 border-slate-200 hover:bg-slate-50 hover:border-slate-300';
@@ -156,8 +162,9 @@ export default function DroneList({ drones, selectedDroneId, onSelect, isDark, i
         return (
           <button
             key={drone.drone_id}
-            onClick={() => onSelect(drone.drone_id)}
-            className={`w-full text-left p-3 rounded-xl border-l-[3px] transition-all duration-150 ${borderColor} ${cardBg}`}
+            onClick={noGps ? undefined : () => onSelect(drone.drone_id)}
+            disabled={noGps}
+            className={`w-full text-left p-3 rounded-xl border-l-[3px] transition-all duration-150 ${noGps ? 'cursor-default pointer-events-none' : 'cursor-pointer'} ${borderColor} ${cardBg}`}
           >
             {/* Header row */}
             <div className="flex items-start justify-between gap-2 mb-2.5">
@@ -190,7 +197,9 @@ export default function DroneList({ drones, selectedDroneId, onSelect, isDark, i
                   )}
                 </div>
               </div>
-              <StatusBadge status={drone.status} isDark={isDark} />
+              <div className="flex flex-col items-end gap-1">
+                <StatusBadge status={drone.status} isDark={isDark} />
+              </div>
             </div>
 
             {/* Metrics grid */}
