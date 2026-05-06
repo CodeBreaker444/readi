@@ -134,17 +134,8 @@ interface AirspaceZone {
   lat: number;
   lon: number;
   radiusM: number;
-  class: 'A' | 'B' | 'C' | 'D';
+  class: 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G';
   color: string;
-}
-
-interface OverpassElement {
-  type: 'node' | 'way' | 'relation';
-  id: number;
-  lat?: number;
-  lon?: number;
-  center?: { lat: number; lon: number };
-  tags?: Record<string, string>;
 }
 
 
@@ -152,61 +143,50 @@ async function fetchAirspaceForRegion(
   south: number, west: number, north: number, east: number,
   signal?: AbortSignal,
 ): Promise<AirspaceZone[]> {
-  const bbox = `${south.toFixed(4)},${west.toFixed(4)},${north.toFixed(4)},${east.toFixed(4)}`;
-  const q = [
-    '[out:json][timeout:25];',
-    '(',
-    `node["aeroway"="aerodrome"]["iata"](${bbox});`,
-    `node["aeroway"="aerodrome"]["icao"](${bbox});`,
-    `way["aeroway"="aerodrome"]["iata"](${bbox});`,
-    `way["aeroway"="aerodrome"]["icao"](${bbox});`,
-    `relation["aeroway"="aerodrome"]["iata"](${bbox});`,
-    `relation["aeroway"="aerodrome"]["icao"](${bbox});`,
-    ');out center tags;',
-  ].join('\n');
+  try {
+    const params = new URLSearchParams({
+      south: south.toFixed(4),
+      west: west.toFixed(4),
+      north: north.toFixed(4),
+      east: east.toFixed(4),
+    });
 
-  const res = await fetch('https://overpass-api.de/api/interpreter', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: `data=${encodeURIComponent(q)}`,
-    signal,
-  });
-  if (!res.ok) throw new Error('Overpass API error');
-  const data = await res.json();
+    const res = await fetch(`/api/drone-atc/airspace?${params}`, {
+      signal,
+      headers: { Accept: 'application/json' },
+    });
 
-  const zones: AirspaceZone[] = [];
-  for (const el of data.elements as OverpassElement[]) {
-    const elLat = el.lat ?? el.center?.lat;
-    const elLon = el.lon ?? el.center?.lon;
-    if (!elLat || !elLon) continue;
-
-    const tags = el.tags ?? {};
-    const iata = tags.iata;
-    const icao = tags.icao;
-    if (!iata && !icao) continue;
-
-    const name = tags.name ?? tags['name:en'] ?? iata ?? icao ?? 'Airport';
-    const aeroType = tags['aerodrome:type'];
-    const size = tags['aerodrome:size'];
-
-    let cls: 'B' | 'C' | 'D';
-    let radiusM: number;
-    let color: string;
-
-    if (iata) {
-      cls = 'B';
-      radiusM = (aeroType === 'international' || !aeroType) ? 55560 : 37040;
-      color = '#3b82f6';
-    } else if (aeroType === 'regional' || aeroType === 'domestic' || size === 'large' || size === 'medium') {
-      cls = 'C'; radiusM = 18520; color = '#a855f7';
-    } else {
-      cls = 'D'; radiusM = 9260; color = '#06b6d4';
+    if (!res.ok) {
+      console.warn('[DroneATCMap] Airspace API error:', res.status);
+      return [];
     }
 
-    zones.push({ id: (iata ?? icao)!, name, lat: elLat, lon: elLon, radiusM, class: cls, color });
-  }
+    const data = await res.json();
+    const zones: AirspaceZone[] = (data.airspace ?? []).map((zone: any) => ({
+      id: zone.id,
+      name: zone.name,
+      lat: zone.lat,
+      lon: zone.lon,
+      radiusM: zone.radiusM,
+      class: zone.class,
+      color: getAirspaceColor(zone.class),
+    }));
 
-  return zones.slice(0, 50);
+    return zones;
+  } catch (err) {
+    console.error('[DroneATCMap] Failed to fetch airspace:', err);
+    return [];
+  }
+}
+
+function getAirspaceColor(cls: string): string {
+  const colors: Record<string, string> = {
+    A: '#dc2626', // Red - Most restricted
+    B: '#3b82f6', // Blue
+    C: '#a855f7', // Purple
+    D: '#06b6d4', // Cyan
+  };
+  return colors[cls] ?? '#6b7280';
 }
 
 type WeatherLayerKey = 'wind' | 'temp' | 'clouds' | 'precip' | 'pressure';

@@ -6,8 +6,8 @@ import {
   Cloud, Droplets, Gauge, Layers, Plane, Thermometer, Wind
 } from 'lucide-react';
 import { useState } from 'react';
-import { TbDrone } from 'react-icons/tb';
 import { useTranslation } from 'react-i18next';
+import { TbDrone } from 'react-icons/tb';
 
 export interface LayerVisibility {
   drones: boolean;
