@@ -32,6 +32,7 @@ import {
 import axios from 'axios';
 import { Award, BookOpen, CheckCircle2, Clock, Filter, GraduationCap, Plus, RefreshCw, ShieldCheck, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 interface UserOption {
@@ -51,10 +52,6 @@ interface CurriculumRecord {
   status: 'VALID' | 'EXPIRED' | null;
 }
 
-const CERT_LABELS: Record<string, string> = {
-  PARTICIPATION: 'Participation',
-  QUALIFICATION: 'Qualification',
-};
 
 function fmtCurrDate(val: string | null) {
   if (!val) return '—';
@@ -85,15 +82,12 @@ const EMPTY_FORM: FormState = {
   expiry_date: '',
 };
 
-const CERTIFICATE_TYPES = [
-  { value: 'PARTICIPATION', label: 'Certificate of Participation' },
-  { value: 'QUALIFICATION', label: 'Qualification (Exam Passing)' },
-] as const;
 
 const TRAINING_TYPES = ['INITIAL', 'RECURRENT', 'EMERGENCY', 'SIMULATOR', 'OTHER'] as const;
 
 
 export default function TrainingCoursesPage() {
+  const { t } = useTranslation();
   const { isDark } = useTheme();
 
   const [records, setRecords] = useState<FlatTrainingRecord[]>([]);
@@ -153,8 +147,8 @@ export default function TrainingCoursesPage() {
   }, [records, q, filterStatus]);
 
   const columns = useMemo(
-    () => getTrainingCoursesColumns(isDark, openEdit, (r) => setDeleteTarget(r), openView),
-    [isDark]
+    () => getTrainingCoursesColumns(isDark, openEdit, (r) => setDeleteTarget(r), openView, t),
+    [isDark, t]
   );
 
   const table = useReactTable({
@@ -264,14 +258,14 @@ export default function TrainingCoursesPage() {
       const res = await axios.post('/api/training/recompute', { period });
       if (res.data.code === 1) {
         const { period_end, total, valid, expired, pending } = res.data;
-        const msg = `${total} total · ${valid} valid · ${expired} expired · ${pending} pending${period_end ? ` (${period_end})` : ''}`;
-        toast.success(msg)
+        const key = period_end ? 'training.courses.recomputeSuccessWithPeriod' : 'training.courses.recomputeSuccess';
+        toast.success(t(key, { total, valid, expired, pending, periodEnd: period_end }));
       } else {
-        toast.error(res.data.error || 'Recompute failed');
+        toast.error(res.data.error || t('training.courses.recomputeFailed'));
       }
     } catch (err: any) {
       console.error('Failed to recompute KPI', err);
-      toast.error(err?.response?.data?.error || 'Network error');
+      toast.error(err?.response?.data?.error || t('training.courses.networkError'));
     } finally {
       setRecomputing(false);
     }
@@ -315,8 +309,8 @@ export default function TrainingCoursesPage() {
           <div className="flex items-center gap-3.5">
             <div className="w-1 h-6 rounded-full bg-violet-600" />
             <div>
-              <h1 className={`text-[15px] font-semibold tracking-[-0.01em] ${textPrimary}`}>Training Courses</h1>
-              <p className={`text-[11px] mt-0.5 ${textMuted}`}>Manage per-user training records and certifications</p>
+              <h1 className={`text-[15px] font-semibold tracking-[-0.01em] ${textPrimary}`}>{t('training.courses.pageTitle')}</h1>
+              <p className={`text-[11px] mt-0.5 ${textMuted}`}>{t('training.courses.pageSubtitle')}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -327,7 +321,7 @@ export default function TrainingCoursesPage() {
               className={`h-8 gap-1.5 text-xs ${filterOpen ? 'bg-violet-600/10 border-violet-500/30 text-violet-400' : btnOutline}`}
             >
               <Filter size={13} strokeWidth={2.5} />
-              Filter
+              {t('training.courses.filter')}
             </Button>
             <Button
               variant="outline"
@@ -346,12 +340,12 @@ export default function TrainingCoursesPage() {
               className={`h-8 gap-1.5 text-xs ${btnOutline}`}
             >
               <ShieldCheck size={13} strokeWidth={2.5} className={recomputing ? 'animate-spin' : ''} />
-              {recomputing ? 'Updating…' : 'Recompute KPI'}
+              {recomputing ? t('training.courses.updating') : t('training.courses.recomputeKpi')}
             </Button>
 
             <Button size="sm" onClick={openCreate} className="h-8 gap-1.5 text-xs bg-violet-600 hover:bg-violet-700 text-white">
               <Plus size={14} strokeWidth={2.5} />
-              New
+              {t('training.courses.new')}
             </Button>
           </div>
         </div>
@@ -364,7 +358,7 @@ export default function TrainingCoursesPage() {
             <Input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Search by user, course or session…"
+              placeholder={t('training.courses.searchPlaceholder')}
               className={`h-8 flex-1 min-w-48 text-xs ${inputCls}`}
             />
             <Select value={filterStatus || 'all'} onValueChange={(v) => setFilterStatus(v === 'all' ? '' : v)}>
@@ -372,9 +366,9 @@ export default function TrainingCoursesPage() {
                 <SelectValue placeholder="All Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="VALID">Valid</SelectItem>
-                <SelectItem value="EXPIRED">Expired</SelectItem>
+                <SelectItem value="all">{t('training.courses.allStatus')}</SelectItem>
+                <SelectItem value="VALID">{t('training.courses.valid')}</SelectItem>
+                <SelectItem value="EXPIRED">{t('training.courses.expired')}</SelectItem>
               </SelectContent>
             </Select>
             {(q || filterStatus) && (
@@ -384,7 +378,7 @@ export default function TrainingCoursesPage() {
                 onClick={() => { setQ(''); setFilterStatus(''); }}
                 className="h-8 gap-1 text-xs text-red-400 hover:bg-red-500/10 hover:text-red-400"
               >
-                <X size={13} /> Clear
+                <X size={13} /> {t('training.courses.clear')}
               </Button>
             )}
           </div>
@@ -393,9 +387,9 @@ export default function TrainingCoursesPage() {
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4">
           {([
-            { label: 'Total Records', value: stats.total, icon: BookOpen, color: 'text-violet-400' },
-            { label: 'Valid', value: stats.valid, icon: Award, color: 'text-green-400' },
-            { label: 'Expired', value: stats.expired, icon: ShieldCheck, color: 'text-red-400' },
+            { label: t('training.courses.totalRecords'), value: stats.total, icon: BookOpen, color: 'text-violet-400' },
+            { label: t('training.courses.valid'), value: stats.valid, icon: Award, color: 'text-green-400' },
+            { label: t('training.courses.expired'), value: stats.expired, icon: ShieldCheck, color: 'text-red-400' },
           ] as const).map(({ label, value, icon: Icon, color }) => (
             <div key={label} className={`rounded-xl border p-4 ${cardBg}`}>
               <div className="flex items-center justify-between mb-2">
@@ -410,8 +404,8 @@ export default function TrainingCoursesPage() {
         {/* Table */}
         <div className={`rounded-xl border overflow-hidden ${cardBg}`}>
           <div className={`px-5 py-4 border-b ${borderMuted}`}>
-            <h2 className={`text-sm font-semibold ${textPrimary}`}>Training Records</h2>
-            <p className={`text-[11px] mt-0.5 ${textMuted}`}>{filtered.length} record{filtered.length !== 1 ? 's' : ''}</p>
+            <h2 className={`text-sm font-semibold ${textPrimary}`}>{t('training.courses.trainingRecords')}</h2>
+            <p className={`text-[11px] mt-0.5 ${textMuted}`}>{t('training.courses.record', { count: filtered.length })}</p>
           </div>
 
           <div className="overflow-x-auto">
@@ -447,7 +441,7 @@ export default function TrainingCoursesPage() {
                   <TableRow>
                     <TableCell colSpan={columns.length} className="py-20 text-center">
                       <BookOpen size={32} className={`mx-auto mb-3 ${isDark ? 'text-gray-700' : 'text-gray-300'}`} />
-                      <p className={`text-sm ${textMuted}`}>No training records found.</p>
+                      <p className={`text-sm ${textMuted}`}>{t('training.courses.noRecords')}</p>
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -479,7 +473,7 @@ export default function TrainingCoursesPage() {
 
             <div className={`flex items-center justify-between px-6 py-4 border-b ${borderMuted}`}>
               <h2 className={`text-sm font-semibold ${textPrimary}`}>
-                {form.attendance_id ? 'Edit Training Record' : 'New Training Record'}
+                {form.attendance_id ? t('training.courses.editRecord') : t('training.courses.newRecord')}
               </h2>
               <Button variant="ghost" size="icon" onClick={() => setModalOpen(false)} className={`h-7 w-7 ${isDark ? 'text-gray-400 hover:bg-white/8' : 'text-gray-400 hover:bg-gray-100'}`}>
                 <X size={15} />
@@ -490,7 +484,7 @@ export default function TrainingCoursesPage() {
 
               {form.attendance_id ? (
                 <div>
-                  <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>User</label>
+                  <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>{t('training.courses.user')}</label>
                   <p className={`text-xs px-3 py-2 rounded-lg border ${isDark ? 'border-white/8 text-gray-300' : 'border-gray-200 text-gray-700'}`}>
                     {users.find((u) => u.user_id === form.user_ids[0])?.full_name ?? `User #${form.user_ids[0]}`}
                   </p>
@@ -498,17 +492,17 @@ export default function TrainingCoursesPage() {
               ) : (
                 <div>
                   <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>
-                    Users <span className={`normal-case font-normal ${textMuted}`}>({form.user_ids.length} selected)</span>
+                    {t('training.courses.users')} <span className={`normal-case font-normal ${textMuted}`}>({t('training.courses.selected', { count: form.user_ids.length })})</span>
                   </label>
                   <Input
                     value={userSearch}
                     onChange={(e) => setUserSearch(e.target.value)}
-                    placeholder="Search users…"
+                    placeholder={t('training.courses.searchUsers')}
                     className={`h-8 text-xs mb-2 ${inputCls}`}
                   />
                   <div className={`rounded-lg border overflow-y-auto max-h-36 ${isDark ? 'border-white/8 bg-white/2' : 'border-gray-200 bg-gray-50'}`}>
                     {visibleUsers.length === 0 ? (
-                      <p className={`text-[11px] px-3 py-2 ${textMuted}`}>No users found</p>
+                      <p className={`text-[11px] px-3 py-2 ${textMuted}`}>{t('training.courses.noUsersFound')}</p>
                     ) : (
                       visibleUsers.map((u) => {
                         const checked = form.user_ids.includes(u.user_id);
@@ -536,57 +530,56 @@ export default function TrainingCoursesPage() {
               )}
 
               <div>
-                <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>Course Name *</label>
+                <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>{t('training.courses.courseName')} *</label>
                 <Input
                   value={form.training_name}
                   onChange={(e) => setForm((f) => ({ ...f, training_name: e.target.value }))}
-                  placeholder="e.g. Drone Safety Fundamentals"
+                  placeholder={t('training.courses.courseNamePlaceholder')}
                   className={`h-9 text-xs ${inputCls}`}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>Type</label>
+                  <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>{t('training.courses.type')}</label>
                   <Select value={form.training_type || 'none'} onValueChange={(v) => setForm((f) => ({ ...f, training_type: v === 'none' ? '' : v }))}>
                     <SelectTrigger className={`h-9 text-xs ${isDark ? 'bg-white/4 border-white/8 text-white' : 'bg-gray-50 border-gray-200'}`}>
-                      <SelectValue placeholder="— None —" />
+                      <SelectValue placeholder={t('training.courses.none')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">— None —</SelectItem>
+                      <SelectItem value="none">{t('training.courses.none')}</SelectItem>
                       {TRAINING_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>Session</label>
+                  <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>{t('training.courses.session')}</label>
                   <Input
                     value={form.session_code}
                     onChange={(e) => setForm((f) => ({ ...f, session_code: e.target.value }))}
-                    placeholder="e.g. FB-Intro-2025-10-A"
+                    placeholder={t('training.courses.sessionPlaceholder')}
                     className={`h-9 text-xs font-mono ${inputCls}`}
                   />
                 </div>
               </div>
 
               <div>
-                <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>Certificate Type</label>
+                <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>{t('training.courses.certificateType')}</label>
                 <Select value={form.certificate_type || 'none'} onValueChange={(v) => setForm((f) => ({ ...f, certificate_type: v === 'none' ? '' : v }))}>
                   <SelectTrigger className={`h-9 text-xs ${isDark ? 'bg-white/4 border-white/8 text-white' : 'bg-gray-50 border-gray-200'}`}>
-                    <SelectValue placeholder="— None —" />
+                    <SelectValue placeholder={t('training.courses.none')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">— None —</SelectItem>
-                    {CERTIFICATE_TYPES.map((ct) => (
-                      <SelectItem key={ct.value} value={ct.value}>{ct.label}</SelectItem>
-                    ))}
+                    <SelectItem value="none">{t('training.courses.none')}</SelectItem>
+                    <SelectItem value="PARTICIPATION">{t('training.courses.certParticipation')}</SelectItem>
+                    <SelectItem value="QUALIFICATION">{t('training.courses.certQualification')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>Completion Date</label>
+                  <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>{t('training.courses.completionDate')}</label>
                   <Input
                     type="date"
                     value={form.completion_date}
@@ -595,7 +588,7 @@ export default function TrainingCoursesPage() {
                   />
                 </div>
                 <div>
-                  <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>Expiry Date</label>
+                  <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>{t('training.courses.expiryDate')}</label>
                   <Input
                     type="date"
                     value={form.expiry_date}
@@ -608,7 +601,7 @@ export default function TrainingCoursesPage() {
 
             <div className={`flex justify-end gap-2 px-6 py-4 border-t ${borderMuted}`}>
               <Button variant="outline" size="sm" onClick={() => setModalOpen(false)} className={`h-8 text-xs ${isDark ? 'border-white/8 hover:bg-white/5 text-gray-300' : ''}`}>
-                Cancel
+                {t('training.courses.cancel')}
               </Button>
               <Button
                 size="sm"
@@ -616,7 +609,7 @@ export default function TrainingCoursesPage() {
                 disabled={saving || !form.training_name.trim() || (!form.attendance_id && form.user_ids.length === 0)}
                 className="h-8 text-xs bg-violet-600 hover:bg-violet-700 text-white"
               >
-                {saving ? 'Saving…' : form.attendance_id ? 'Update' : 'Create'}
+                {saving ? t('training.courses.saving') : form.attendance_id ? t('training.courses.update') : t('training.courses.create')}
               </Button>
             </div>
           </div>
@@ -632,7 +625,7 @@ export default function TrainingCoursesPage() {
               <div className="flex items-center gap-2.5">
                 <GraduationCap size={16} className="text-violet-400" />
                 <div>
-                  <h2 className={`text-sm font-semibold ${textPrimary}`}>Training Curriculum</h2>
+                  <h2 className={`text-sm font-semibold ${textPrimary}`}>{t('training.courses.curriculum')}</h2>
                   <p className={`text-[11px] mt-0.5 ${textMuted}`}>{viewTarget.user_name ?? `User #${viewTarget.fk_user_id}`}</p>
                 </div>
               </div>
@@ -651,7 +644,7 @@ export default function TrainingCoursesPage() {
               ) : viewCurriculum.length === 0 ? (
                 <div className="text-center py-12">
                   <GraduationCap size={32} className={`mx-auto mb-3 ${isDark ? 'text-gray-700' : 'text-gray-300'}`} />
-                  <p className={`text-sm ${textMuted}`}>No training records found for this user.</p>
+                  <p className={`text-sm ${textMuted}`}>{t('training.courses.noUserRecords')}</p>
                 </div>
               ) : (
                 <>
@@ -659,13 +652,13 @@ export default function TrainingCoursesPage() {
                     <div>
                       <div className="flex items-center gap-1.5 mb-2">
                         <CheckCircle2 size={13} className="text-emerald-500" />
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-500">Active</p>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-500">{t('training.courses.active')}</p>
                       </div>
                       <div className={`rounded-xl border overflow-hidden ${isDark ? 'border-white/6' : 'border-gray-200'}`}>
                         <Table>
                           <TableHeader>
                             <TableRow className={`${isDark ? 'bg-white/2 border-white/6' : 'bg-gray-50/50 border-gray-100'}`}>
-                              {['Course', 'Certificate', 'Completion', 'Expiry', 'Status'].map((h) => (
+                              {[t('training.courses.columnCourse'), t('training.courses.columnCertificate'), t('training.courses.columnCompletion'), t('training.courses.columnExpiry'), t('training.courses.columnStatus')].map((h) => (
                                 <TableHead key={h} className={`text-[10px] font-bold uppercase tracking-wider ${textMuted}`}>{h}</TableHead>
                               ))}
                             </TableRow>
@@ -680,14 +673,14 @@ export default function TrainingCoursesPage() {
                                 <TableCell>
                                   {r.certificate_type ? (
                                     <Badge variant="outline" className={`text-[10px] font-bold ${r.certificate_type === 'QUALIFICATION' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : 'bg-teal-500/10 text-teal-500 border-teal-500/20'}`}>
-                                      {CERT_LABELS[r.certificate_type] ?? r.certificate_type}
+                                      {r.certificate_type === 'PARTICIPATION' ? t('training.courses.participation') : r.certificate_type === 'QUALIFICATION' ? t('training.courses.qualification') : r.certificate_type}
                                     </Badge>
                                   ) : <span className={`text-[11px] ${isDark ? 'text-gray-600' : 'text-gray-300'}`}>—</span>}
                                 </TableCell>
                                 <TableCell className={`text-xs ${textMuted}`}>{fmtCurrDate(r.completion_date)}</TableCell>
                                 <TableCell className={`text-xs ${textMuted}`}>{fmtCurrDate(r.expiry_date)}</TableCell>
                                 <TableCell>
-                                  <Badge variant="outline" className="text-[10px] font-bold bg-green-500/10 text-green-500 border-green-500/20">VALID</Badge>
+                                  <Badge variant="outline" className="text-[10px] font-bold bg-green-500/10 text-green-500 border-green-500/20">{t('training.courses.statusValid')}</Badge>
                                 </TableCell>
                               </TableRow>
                             ))}
@@ -701,13 +694,13 @@ export default function TrainingCoursesPage() {
                     <div>
                       <div className="flex items-center gap-1.5 mb-2">
                         <Clock size={13} className={textMuted} />
-                        <p className={`text-[10px] font-bold uppercase tracking-wider ${textMuted}`}>History</p>
+                        <p className={`text-[10px] font-bold uppercase tracking-wider ${textMuted}`}>{t('training.courses.history')}</p>
                       </div>
                       <div className={`rounded-xl border overflow-hidden opacity-60 ${isDark ? 'border-white/6' : 'border-gray-200'}`}>
                         <Table>
                           <TableHeader>
                             <TableRow className={`${isDark ? 'bg-white/2 border-white/6' : 'bg-gray-50/50 border-gray-100'}`}>
-                              {['Course', 'Certificate', 'Completion', 'Expiry', 'Status'].map((h) => (
+                              {[t('training.courses.columnCourse'), t('training.courses.columnCertificate'), t('training.courses.columnCompletion'), t('training.courses.columnExpiry'), t('training.courses.columnStatus')].map((h) => (
                                 <TableHead key={h} className={`text-[10px] font-bold uppercase tracking-wider ${textMuted}`}>{h}</TableHead>
                               ))}
                             </TableRow>
@@ -722,14 +715,14 @@ export default function TrainingCoursesPage() {
                                 <TableCell>
                                   {r.certificate_type ? (
                                     <Badge variant="outline" className={`text-[10px] font-bold ${r.certificate_type === 'QUALIFICATION' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : 'bg-teal-500/10 text-teal-500 border-teal-500/20'}`}>
-                                      {CERT_LABELS[r.certificate_type] ?? r.certificate_type}
+                                      {r.certificate_type === 'PARTICIPATION' ? t('training.courses.participation') : r.certificate_type === 'QUALIFICATION' ? t('training.courses.qualification') : r.certificate_type}
                                     </Badge>
                                   ) : <span className={`text-[11px] ${isDark ? 'text-gray-600' : 'text-gray-300'}`}>—</span>}
                                 </TableCell>
                                 <TableCell className={`text-xs ${textMuted}`}>{fmtCurrDate(r.completion_date)}</TableCell>
                                 <TableCell className="text-xs text-red-400 font-medium">{fmtCurrDate(r.expiry_date)}</TableCell>
                                 <TableCell>
-                                  <Badge variant="outline" className="text-[10px] font-bold bg-red-500/10 text-red-500 border-red-500/20">EXPIRED</Badge>
+                                  <Badge variant="outline" className="text-[10px] font-bold bg-red-500/10 text-red-500 border-red-500/20">{t('training.courses.statusExpired')}</Badge>
                                 </TableCell>
                               </TableRow>
                             ))}
@@ -744,7 +737,7 @@ export default function TrainingCoursesPage() {
 
             <div className={`flex justify-end px-6 py-4 border-t ${borderMuted}`}>
               <Button variant="outline" size="sm" onClick={() => setViewTarget(null)} className={`h-8 text-xs ${isDark ? 'border-white/8 hover:bg-white/5 text-gray-300' : ''}`}>
-                Close
+                {t('training.close')}
               </Button>
             </div>
           </div>
@@ -758,18 +751,17 @@ export default function TrainingCoursesPage() {
               <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center mb-4">
                 <BookOpen size={18} className="text-red-400" />
               </div>
-              <h3 className={`text-sm font-semibold mb-1 ${textPrimary}`}>Delete Record</h3>
+              <h3 className={`text-sm font-semibold mb-1 ${textPrimary}`}>{t('training.courses.deleteRecord')}</h3>
               <p className={`text-xs ${textMuted}`}>
-                Remove <span className="font-semibold">{deleteTarget.user_name ?? 'this user'}</span>'s record for{' '}
-                <span className="font-semibold">{deleteTarget.training_name}</span>? This cannot be undone.
+                {t('training.courses.deleteMessage', { userName: deleteTarget.user_name ?? t('training.courses.thisUser'), trainingName: deleteTarget.training_name })}
               </p>
             </div>
             <div className={`flex justify-end gap-2 px-6 py-4 border-t ${borderMuted}`}>
               <Button variant="outline" size="sm" onClick={() => setDeleteTarget(null)} className={`h-8 text-xs ${isDark ? 'border-white/8 hover:bg-white/5 text-gray-300' : ''}`}>
-                Cancel
+                {t('training.courses.cancel')}
               </Button>
               <Button size="sm" onClick={handleDelete} className="h-8 text-xs bg-red-600 hover:bg-red-700 text-white">
-                Delete
+                {t('training.courses.deleteRecord')}
               </Button>
             </div>
           </div>
