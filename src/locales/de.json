@@ -1,4 +1,4 @@
-{
+﻿{
   "common": {
     "save": "Speichern",
     "cancel": "Abbrechen",
@@ -2554,6 +2554,70 @@
       "loadError": "Notfallreaktionspläne konnten nicht geladen werden",
       "created": "Notfallreaktionsplan erfolgreich erstellt",
       "saveFailed": "Plan konnte nicht gespeichert werden"
+    }
+  }
+,
+  "droneAtc": {
+    "title": "Drone ATC",
+    "subtitle": "Luftverkehrskontrolle",
+    "sync": {
+      "updating": "Aktualisierung…",
+      "updated": "Aktualisiert",
+      "failed": "Fehlgeschlagen",
+      "updateDrones": "Drohnen auf FlytRelay aktualisieren",
+      "syncDrones": "Drohnen mit FlytRelay synchronisieren",
+      "updatingShort": "…",
+      "updatedShort": "Fertig",
+      "failedShort": "Err"
+    },
+    "status": {
+      "live": "Live",
+      "connecting": "Verbinde…",
+      "error": "Fehler",
+      "initialising": "Initialisierung…",
+      "noApiKey": "Kein API-Schlüssel"
+    },
+    "noFlytbaseKey": "Kein FlytBase API-Schlüssel konfiguriert.",
+    "configure": "Konfigurieren →",
+    "retry": "Wiederholen",
+    "fleetManagement": "Flottenmanagement",
+    "fleet": "Flotte",
+    "droneList": {
+      "live": "LIVE",
+      "standby": "STANDBY",
+      "offline": "OFFLINE",
+      "noGps": "KEIN GPS",
+      "noActiveDrones": "Keine aktiven Drohnen",
+      "scanningAirspace": "Luftraum wird gescannt"
+    },
+    "layers": {
+      "layers": "Ebenen",
+      "mapLayers": "Kartenebenen",
+      "traffic": "Verkehr",
+      "drones": "Drohnen",
+      "liveFleetTelemetry": "Live-Flotten-Telemetrie",
+      "aircraft": "Flugzeuge",
+      "airspace": "Luftraum",
+      "weather": "Wetter",
+      "wind": "Wind",
+      "animatedFlow": "Animierter Fluss",
+      "temperature": "Temperatur",
+      "surfaceCelsius": "Oberfläche °C",
+      "clouds": "Wolken",
+      "cloudCover": "Wolkenbedeckung %",
+      "precip": "Niederschlag",
+      "rainSnow": "Regen & Schnee mm/h",
+      "pressure": "Luftdruck",
+      "atmosphericHpa": "Atmosphärisch hPa",
+      "classMeta": {
+        "A": { "label": "Klasse A", "desc": "FL180+" },
+        "B": { "label": "Klasse B", "desc": "Oberfläche–10.000 ft" },
+        "C": { "label": "Klasse C", "desc": "Oberfläche–4.000 ft" },
+        "D": { "label": "Klasse D", "desc": "Oberfläche–2.500 ft" }
+      }
+    },
+    "connection": {
+      "failed": "Verbindung fehlgeschlagen"
     }
   }
 }

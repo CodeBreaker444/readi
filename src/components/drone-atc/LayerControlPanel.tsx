@@ -1,11 +1,13 @@
 'use client';
 
+import '@/lib/i18n/config';
 import {
   ChevronDown, ChevronRight,
   Cloud, Droplets, Gauge, Layers, Plane, Thermometer, Wind
 } from 'lucide-react';
 import { useState } from 'react';
 import { TbDrone } from 'react-icons/tb';
+import { useTranslation } from 'react-i18next';
 
 export interface LayerVisibility {
   drones: boolean;
@@ -114,19 +116,19 @@ function ToggleRow({
   );
 }
 
-const CLASS_META: Record<string, { color: string; label: string; desc: string }> = {
-  A: { color: '#ef4444', label: 'Class A', desc: 'FL180+' },
-  B: { color: '#3b82f6', label: 'Class B', desc: 'Surface–10,000 ft' },
-  C: { color: '#a855f7', label: 'Class C', desc: 'Surface–4,000 ft' },
-  D: { color: '#06b6d4', label: 'Class D', desc: 'Surface–2,500 ft' },
+const CLASS_COLORS: Record<string, string> = {
+  A: '#ef4444',
+  B: '#3b82f6',
+  C: '#a855f7',
+  D: '#06b6d4',
 };
 
 function ClassBadge({ cls }: { cls: string }) {
-  const m = CLASS_META[cls];
+  const color = CLASS_COLORS[cls];
   return (
     <span
       className="inline-flex items-center justify-center w-4.5 h-3.5 rounded text-[8px] font-black shrink-0"
-      style={{ backgroundColor: m.color + '22', border: `1px solid ${m.color}55`, color: m.color }}
+      style={{ backgroundColor: color + '22', border: `1px solid ${color}55`, color }}
     >
       {cls}
     </span>
@@ -155,6 +157,7 @@ function Divider({ isDark }: { isDark: boolean }) {
 }
 
 export default function LayerControlPanel({ layers, onToggle, isDark, droneCount, aircraftCount, hasOwmKey }: Props) {
+  const { t } = useTranslation();
   const [collapsed, setCollapsed] = useState<boolean>(false);
   const [open, setOpen] = useState({ traffic: true, airspace: true, weather: false });
   const toggle = (s: keyof typeof open) => setOpen(p => ({ ...p, [s]: !p[s] }));
@@ -174,7 +177,7 @@ export default function LayerControlPanel({ layers, onToggle, isDark, droneCount
           }`}
         >
           <Layers className="w-3.5 h-3.5" />
-          <span className="text-[10px] font-semibold">Layers</span>
+          <span className="text-[10px] font-semibold">{t('droneAtc.layers.layers')}</span>
         </button>
       </div>
     );
@@ -188,7 +191,7 @@ export default function LayerControlPanel({ layers, onToggle, isDark, droneCount
             <Layers className={`w-3.5 h-3.5 ${isDark ? 'text-violet-400' : 'text-violet-600'}`} />
           </div>
           <span className={`text-xs font-bold tracking-wide ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
-            Map Layers
+            {t('droneAtc.layers.mapLayers')}
           </span>
         </div>
         <button
@@ -204,13 +207,13 @@ export default function LayerControlPanel({ layers, onToggle, isDark, droneCount
 
       <div className="py-1.5 space-y-0.5">
 
-        <Section label="Traffic" open={open.traffic} onToggle={() => toggle('traffic')} isDark={isDark} />
+        <Section label={t('droneAtc.layers.traffic')} open={open.traffic} onToggle={() => toggle('traffic')} isDark={isDark} />
         {open.traffic && (
           <div className="pb-1">
             <ToggleRow
               icon={<TbDrone className="w-full h-full" />}
-              label="Drones"
-              sublabel="Live fleet telemetry"
+              label={t('droneAtc.layers.drones')}
+              sublabel={t('droneAtc.layers.liveFleetTelemetry')}
               count={droneCount}
               active={layers.drones}
               onToggle={() => onToggle('drones')}
@@ -219,7 +222,7 @@ export default function LayerControlPanel({ layers, onToggle, isDark, droneCount
             />
             <ToggleRow
               icon={<Plane className="w-full h-full" />}
-              label="Aircraft"
+              label={t('droneAtc.layers.aircraft')}
               sublabel="airplanes.live"
               count={aircraftCount}
               active={layers.flights}
@@ -232,37 +235,34 @@ export default function LayerControlPanel({ layers, onToggle, isDark, droneCount
 
         <Divider isDark={isDark} />
 
-        <Section label="Airspace" open={open.airspace} onToggle={() => toggle('airspace')} isDark={isDark} />
+        <Section label={t('droneAtc.layers.airspace')} open={open.airspace} onToggle={() => toggle('airspace')} isDark={isDark} />
         {open.airspace && (
           <div className="pb-1">
-            {(['A', 'B', 'C', 'D'] as const).map(cls => {
-              const m = CLASS_META[cls];
-              return (
-                <ToggleRow
-                  key={cls}
-                  icon={<ClassBadge cls={cls} />}
-                  label={m.label}
-                  sublabel={m.desc}
-                  active={layers[`airspace${cls}` as keyof LayerVisibility] as boolean}
-                  onToggle={() => onToggle(`airspace${cls}` as keyof LayerVisibility)}
-                  accentColor={m.color}
-                  isDark={isDark}
-                />
-              );
-            })}
+            {(['A', 'B', 'C', 'D'] as const).map(cls => (
+              <ToggleRow
+                key={cls}
+                icon={<ClassBadge cls={cls} />}
+                label={t(`droneAtc.layers.classMeta.${cls}.label`)}
+                sublabel={t(`droneAtc.layers.classMeta.${cls}.desc`)}
+                active={layers[`airspace${cls}` as keyof LayerVisibility] as boolean}
+                onToggle={() => onToggle(`airspace${cls}` as keyof LayerVisibility)}
+                accentColor={CLASS_COLORS[cls]}
+                isDark={isDark}
+              />
+            ))}
           </div>
         )}
 
         <Divider isDark={isDark} />
 
-        <Section label="Weather" open={open.weather} onToggle={() => toggle('weather')} isDark={isDark} />
+        <Section label={t('droneAtc.layers.weather')} open={open.weather} onToggle={() => toggle('weather')} isDark={isDark} />
         {open.weather && (
           <div className="pb-1">
-            <ToggleRow icon={<Wind className="w-full h-full" />}        label="Wind"        sublabel="Animated flow"     active={layers.wind}     onToggle={() => onToggle('wind')}                   accentColor="#3b82f6" isDark={isDark} />
-            <ToggleRow icon={<Thermometer className="w-full h-full" />} label="Temperature" sublabel="Surface °C"        active={layers.temp}     onToggle={() => onToggle('temp')}     disabled={!hasOwmKey} accentColor="#ef4444" isDark={isDark} />
-            <ToggleRow icon={<Cloud className="w-full h-full" />}       label="Clouds"      sublabel="Cloud cover %"     active={layers.clouds}   onToggle={() => onToggle('clouds')}   disabled={!hasOwmKey} accentColor="#94a3b8" isDark={isDark} />
-            <ToggleRow icon={<Droplets className="w-full h-full" />}    label="Precip"      sublabel="Rain & snow mm/h"  active={layers.precip}   onToggle={() => onToggle('precip')}   disabled={!hasOwmKey} accentColor="#06b6d4" isDark={isDark} />
-            <ToggleRow icon={<Gauge className="w-full h-full" />}       label="Pressure"    sublabel="Atmospheric hPa"   active={layers.pressure} onToggle={() => onToggle('pressure')} disabled={!hasOwmKey} accentColor="#a855f7" isDark={isDark} />
+            <ToggleRow icon={<Wind className="w-full h-full" />}        label={t('droneAtc.layers.wind')}        sublabel={t('droneAtc.layers.animatedFlow')}  active={layers.wind}     onToggle={() => onToggle('wind')}                   accentColor="#3b82f6" isDark={isDark} />
+            <ToggleRow icon={<Thermometer className="w-full h-full" />} label={t('droneAtc.layers.temperature')} sublabel={t('droneAtc.layers.surfaceCelsius')} active={layers.temp}     onToggle={() => onToggle('temp')}     disabled={!hasOwmKey} accentColor="#ef4444" isDark={isDark} />
+            <ToggleRow icon={<Cloud className="w-full h-full" />}       label={t('droneAtc.layers.clouds')}      sublabel={t('droneAtc.layers.cloudCover')}     active={layers.clouds}   onToggle={() => onToggle('clouds')}   disabled={!hasOwmKey} accentColor="#94a3b8" isDark={isDark} />
+            <ToggleRow icon={<Droplets className="w-full h-full" />}    label={t('droneAtc.layers.precip')}      sublabel={t('droneAtc.layers.rainSnow')}       active={layers.precip}   onToggle={() => onToggle('precip')}   disabled={!hasOwmKey} accentColor="#06b6d4" isDark={isDark} />
+            <ToggleRow icon={<Gauge className="w-full h-full" />}       label={t('droneAtc.layers.pressure')}    sublabel={t('droneAtc.layers.atmosphericHpa')} active={layers.pressure} onToggle={() => onToggle('pressure')} disabled={!hasOwmKey} accentColor="#a855f7" isDark={isDark} />
           </div>
         )}
       </div>

@@ -2559,5 +2559,68 @@
       "created": "Piano di risposta alle emergenze creato con successo",
       "saveFailed": "Impossibile salvare il piano"
     }
+  },
+  "droneAtc": {
+    "title": "Drone ATC",
+    "subtitle": "Controllo del Traffico Aereo",
+    "sync": {
+      "updating": "Aggiornamento…",
+      "updated": "Aggiornato",
+      "failed": "Fallito",
+      "updateDrones": "Aggiorna Droni su FlytRelay",
+      "syncDrones": "Sincronizza Droni su FlytRelay",
+      "updatingShort": "…",
+      "updatedShort": "Fatto",
+      "failedShort": "Err"
+    },
+    "status": {
+      "live": "Live",
+      "connecting": "Connessione…",
+      "error": "Errore",
+      "initialising": "Inizializzazione…",
+      "noApiKey": "Nessuna Chiave API"
+    },
+    "noFlytbaseKey": "Nessuna chiave API FlytBase configurata.",
+    "configure": "Configura →",
+    "retry": "Riprova",
+    "fleetManagement": "Gestione Flotta",
+    "fleet": "Flotta",
+    "droneList": {
+      "live": "LIVE",
+      "standby": "STANDBY",
+      "offline": "OFFLINE",
+      "noGps": "NO GPS",
+      "noActiveDrones": "Nessun Drone Attivo",
+      "scanningAirspace": "Scansione spazio aereo"
+    },
+    "layers": {
+      "layers": "Livelli",
+      "mapLayers": "Livelli Mappa",
+      "traffic": "Traffico",
+      "drones": "Droni",
+      "liveFleetTelemetry": "Telemetria flotta live",
+      "aircraft": "Aerei",
+      "airspace": "Spazio Aereo",
+      "weather": "Meteo",
+      "wind": "Vento",
+      "animatedFlow": "Flusso animato",
+      "temperature": "Temperatura",
+      "surfaceCelsius": "Superficie °C",
+      "clouds": "Nuvole",
+      "cloudCover": "Copertura nuvolosa %",
+      "precip": "Precipitazioni",
+      "rainSnow": "Pioggia & neve mm/h",
+      "pressure": "Pressione",
+      "atmosphericHpa": "Atmosferica hPa",
+      "classMeta": {
+        "A": { "label": "Classe A", "desc": "FL180+" },
+        "B": { "label": "Classe B", "desc": "Superficie–10.000 ft" },
+        "C": { "label": "Classe C", "desc": "Superficie–4.000 ft" },
+        "D": { "label": "Classe D", "desc": "Superficie–2.500 ft" }
+      }
+    },
+    "connection": {
+      "failed": "Connessione fallita"
+    }
   }
 }

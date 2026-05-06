@@ -1,6 +1,8 @@
 import { requireAuth } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
+const ITALY_BOUNDS = { latMin: 36.0, lonMin: 6.5, latMax: 47.5, lonMax: 18.5 } as const;
+
 export interface AircraftState {
   icao24: string;
   callsign: string;
@@ -63,7 +65,11 @@ export async function GET(req: NextRequest) {
   const data = await res.json();
 
   const states: AircraftState[] = (data.ac ?? [])
-    .filter((a: Record<string, unknown>) => a.lat != null && a.lon != null)
+    .filter((a: Record<string, unknown>) =>
+      a.lat != null && a.lon != null &&
+      (a.lat as number) >= ITALY_BOUNDS.latMin && (a.lat as number) <= ITALY_BOUNDS.latMax &&
+      (a.lon as number) >= ITALY_BOUNDS.lonMin && (a.lon as number) <= ITALY_BOUNDS.lonMax
+    )
     .map((a: Record<string, unknown>) => {
       const altBaro = a.alt_baro;
       const onGround = altBaro === 'ground';

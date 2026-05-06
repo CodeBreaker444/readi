@@ -1,8 +1,10 @@
 'use client';
 
 import { Skeleton } from '@/components/ui/skeleton';
+import '@/lib/i18n/config';
 import { FiArrowUp, FiNavigation, FiWifi, FiZap } from 'react-icons/fi';
 import { GiDeliveryDrone } from 'react-icons/gi';
+import { useTranslation } from 'react-i18next';
 import type { DroneMap, TelemetryData } from './useDroneATCSocket';
 
 interface DroneListProps {
@@ -14,6 +16,7 @@ interface DroneListProps {
 }
 
 function StatusBadge({ status, isDark }: { status?: string; isDark: boolean }) {
+  const { t } = useTranslation();
   const online  = status === 'online' || !status;
   const standby = status === 'standby';
 
@@ -22,7 +25,7 @@ function StatusBadge({ status, isDark }: { status?: string; isDark: boolean }) {
       isDark ? 'bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20' : 'bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200'
     }`}>
       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-      LIVE
+      {t('droneAtc.droneList.live')}
     </span>
   );
   if (standby) return (
@@ -30,7 +33,7 @@ function StatusBadge({ status, isDark }: { status?: string; isDark: boolean }) {
       isDark ? 'bg-amber-500/10 text-amber-400 ring-1 ring-amber-500/20' : 'bg-amber-50 text-amber-600 ring-1 ring-amber-200'
     }`}>
       <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-      STANDBY
+      {t('droneAtc.droneList.standby')}
     </span>
   );
   return (
@@ -38,7 +41,7 @@ function StatusBadge({ status, isDark }: { status?: string; isDark: boolean }) {
       isDark ? 'bg-slate-700/40 text-slate-400 ring-1 ring-slate-600/30' : 'bg-slate-100 text-slate-400 ring-1 ring-slate-200'
     }`}>
       <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-      OFFLINE
+      {t('droneAtc.droneList.offline')}
     </span>
   );
 }
@@ -96,6 +99,7 @@ function DroneCardSkeleton({ isDark }: { isDark: boolean }) {
 }
 
 export default function DroneList({ drones, selectedDroneId, onSelect, isDark, isLoading }: DroneListProps) {
+  const { t } = useTranslation();
   const droneList = Object.values(drones);
 
   if (isLoading && droneList.length === 0) {
@@ -118,8 +122,8 @@ export default function DroneList({ drones, selectedDroneId, onSelect, isDark, i
           <div className="absolute inset-0 rounded-full border border-violet-500/20 animate-ping" />
         </div>
         <div className="text-center">
-          <p className={`text-sm font-semibold ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>No Active Drones</p>
-          <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Scanning airspace</p>
+          <p className={`text-sm font-semibold ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{t('droneAtc.droneList.noActiveDrones')}</p>
+          <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t('droneAtc.droneList.scanningAirspace')}</p>
         </div>
         <div className="flex gap-1.5">
           {[0, 1, 2].map(i => (
@@ -203,7 +207,7 @@ export default function DroneList({ drones, selectedDroneId, onSelect, isDark, i
                   <span className={`inline-flex items-center gap-1 text-[9px] font-bold tracking-wide px-1.5 py-0.5 rounded-full ${
                     isDark ? 'bg-slate-700/60 text-slate-400 ring-1 ring-slate-600/30' : 'bg-slate-100 text-slate-400 ring-1 ring-slate-200'
                   }`}>
-                    NO GPS
+                    {t('droneAtc.droneList.noGps')}
                   </span>
                 )}
               </div>

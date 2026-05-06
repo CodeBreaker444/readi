@@ -21,6 +21,10 @@ interface DroneATCMapProps {
 const TILE_LIGHT = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
 const TILE_DARK = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
 
+const ITALY_BOUNDS = { south: 36.0, west: 6.5, north: 47.5, east: 18.5 } as const;
+const ITALY_CENTER: [number, number] = [41.9, 12.5];
+const ITALY_ZOOM = 6;
+
 const OWM_LAYERS: Record<string, string> = {
   wind: 'wind', temp: 'temp', clouds: 'clouds', precip: 'precipitation', pressure: 'pressure',
 };
@@ -372,7 +376,11 @@ export default function DroneATCMap({
     airspaceFetchAbortRef.current?.abort();
     const ctrl = new AbortController();
     airspaceFetchAbortRef.current = ctrl;
-    fetchAirspaceForRegion(padded.getSouth(), padded.getWest(), padded.getNorth(), padded.getEast(), ctrl.signal)
+    const s = Math.max(padded.getSouth(), ITALY_BOUNDS.south);
+    const w = Math.max(padded.getWest(), ITALY_BOUNDS.west);
+    const n = Math.min(padded.getNorth(), ITALY_BOUNDS.north);
+    const e = Math.min(padded.getEast(), ITALY_BOUNDS.east);
+    fetchAirspaceForRegion(s, w, n, e, ctrl.signal)
       .then(zones => {
         if (ctrl.signal.aborted) return;
         setAirspaceZones(prev => {
@@ -388,7 +396,13 @@ export default function DroneATCMap({
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
-    const map = L.map(containerRef.current, { center: [20, 0], zoom: 3, zoomControl: true });
+    const map = L.map(containerRef.current, {
+      center: ITALY_CENTER,
+      zoom: ITALY_ZOOM,
+      zoomControl: true,
+      maxBounds: [[ITALY_BOUNDS.south - 1, ITALY_BOUNDS.west - 1], [ITALY_BOUNDS.north + 1, ITALY_BOUNDS.east + 1]],
+      maxBoundsViscosity: 0.85,
+    });
 
     // Custom pane so drones always render above aircraft
     const dronePane = map.createPane('dronePane');

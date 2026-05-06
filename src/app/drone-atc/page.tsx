@@ -8,10 +8,12 @@ import { useDroneATCSocket } from '@/components/drone-atc/useDroneATCSocket';
 import WindParticleOverlay from '@/components/drone-atc/WindParticleOverlay';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTheme } from '@/components/useTheme';
+import '@/lib/i18n/config';
 import { ChevronRight } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FiAlertTriangle, FiCheck, FiRefreshCw } from 'react-icons/fi';
 import { GiDeliveryDrone } from 'react-icons/gi';
 import { MdFlight, MdRefresh } from 'react-icons/md';
@@ -23,9 +25,11 @@ const DroneATCMap = dynamic(() => import('@/components/drone-atc/DroneATCMap'), 
 
 const FLIGHT_REFRESH_MS = 12000;
 const OWM_API_KEY = process.env.NEXT_PUBLIC_OWM_API_KEY ?? '';
+const ITALY_BOUNDS = { latMin: 36.0, lonMin: 6.5, latMax: 47.5, lonMax: 18.5 } as const;
 
 
 function StatusBadge({ status, count, isDark }: { status: string; count: number; isDark: boolean }) {
+  const { t } = useTranslation();
   const styles: Record<string, string> = {
     connected: isDark ? 'bg-emerald-500/10 text-emerald-300 ring-1 ring-emerald-500/20' : 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200',
     connecting: isDark ? 'bg-amber-500/10 text-amber-300 ring-1 ring-amber-500/20' : 'bg-amber-50 text-amber-700 ring-1 ring-amber-200',
@@ -34,7 +38,11 @@ function StatusBadge({ status, count, isDark }: { status: string; count: number;
     no_flytbase_key: isDark ? 'bg-slate-700/40 text-slate-400 ring-1 ring-slate-600/20' : 'bg-slate-100 text-slate-500 ring-1 ring-slate-200',
   };
   const label: Record<string, string> = {
-    connected: 'Live', connecting: 'Connecting…', error: 'Error', idle: 'Initialising…', no_flytbase_key: 'No API Key',
+    connected: t('droneAtc.status.live'),
+    connecting: t('droneAtc.status.connecting'),
+    error: t('droneAtc.status.error'),
+    idle: t('droneAtc.status.initialising'),
+    no_flytbase_key: t('droneAtc.status.noApiKey'),
   };
   const dotStyle: Record<string, string> = {
     connected: 'bg-emerald-400', connecting: 'bg-amber-400 animate-pulse',
@@ -51,6 +59,7 @@ function StatusBadge({ status, count, isDark }: { status: string; count: number;
 
 export default function DroneATCPage() {
   const { isDark } = useTheme();
+  const { t } = useTranslation();
   const { drones: liveDrones, status, errorMessage, reconnect } = useDroneATCSocket();
   const drones = Object.fromEntries(
     Object.entries(liveDrones).filter(([, d]) => d.device_type === 'Drone')
@@ -103,8 +112,11 @@ export default function DroneATCPage() {
   }, [drones, selectedDroneId]);
 
   const fetchFlights = useCallback(async () => {
-    const bounds = boundsRef.current;
-    const { latMin, lonMin, latMax, lonMax } = bounds ?? { latMin: 10, lonMin: -10, latMax: 30, lonMax: 10 };
+    const bounds = boundsRef.current ?? ITALY_BOUNDS;
+    const latMin = Math.max(bounds.latMin, ITALY_BOUNDS.latMin);
+    const lonMin = Math.max(bounds.lonMin, ITALY_BOUNDS.lonMin);
+    const latMax = Math.min(bounds.latMax, ITALY_BOUNDS.latMax);
+    const lonMax = Math.min(bounds.lonMax, ITALY_BOUNDS.lonMax);
     try {
       const res = await fetch(`/api/drone-atc/flights?latMin=${latMin}&lonMin=${lonMin}&latMax=${latMax}&lonMax=${lonMax}`);
       if (res.ok) {
@@ -168,10 +180,10 @@ export default function DroneATCPage() {
             <div className="w-1 h-7 rounded-full bg-violet-600 shrink-0" />
             <div className="flex flex-col min-w-0">
               <span className={`font-semibold text-sm tracking-tight leading-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                Drone ATC
+                {t('droneAtc.title')}
               </span>
               <span className={`text-[10px] leading-tight hidden sm:block ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                Air Traffic Control
+                {t('droneAtc.subtitle')}
               </span>
             </div>
           </div>
@@ -196,15 +208,26 @@ export default function DroneATCPage() {
                 <FiRefreshCw className="w-3 h-3" />
               )}
               <span className="hidden sm:inline">
-                {syncState === 'loading' ? 'Updating…' : syncState === 'ok' ? 'Updated' : syncState === 'error' ? 'Failed' : 'Update Drones To FlytRelay'}
+                {syncState === 'loading'
+                  ? t('droneAtc.sync.updating')
+                  : syncState === 'ok'
+                  ? t('droneAtc.sync.updated')
+                  : syncState === 'error'
+                  ? t('droneAtc.sync.failed')
+                  : t('droneAtc.sync.updateDrones')}
               </span>
               <span className="sm:hidden">
-                {syncState === 'loading' ? '…' : syncState === 'ok' ? 'Done' : syncState === 'error' ? 'Err' : 'Sync Drones To FlytRelay'}
+                {syncState === 'loading'
+                  ? t('droneAtc.sync.updatingShort')
+                  : syncState === 'ok'
+                  ? t('droneAtc.sync.updatedShort')
+                  : syncState === 'error'
+                  ? t('droneAtc.sync.failedShort')
+                  : t('droneAtc.sync.syncDrones')}
               </span>
             </button>
 
             <StatusBadge status={status} count={droneList.length} isDark={isDark} />
-            
 
             {status === 'error' && (
               <button
@@ -212,9 +235,10 @@ export default function DroneATCPage() {
                 className="flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-lg bg-red-600 text-white hover:bg-red-500 transition-colors"
               >
                 <MdRefresh className="w-3 h-3" />
-                <span className="hidden sm:inline">Retry</span>
+                <span className="hidden sm:inline">{t('droneAtc.retry')}</span>
               </button>
             )}
+
           </div>
         </div>
       </header>
@@ -223,9 +247,9 @@ export default function DroneATCPage() {
         <div className={`shrink-0 mx-3 sm:mx-4 mt-3 px-3 sm:px-4 py-2.5 rounded-xl text-xs flex items-center gap-2 ring-1 ${isDark ? 'bg-amber-900/15 ring-amber-700/30 text-amber-300' : 'bg-amber-50 ring-amber-200 text-amber-700'
           }`}>
           <FiAlertTriangle className="w-4 h-4 shrink-0" />
-          <span>No FlytBase API key configured.</span>
+          <span>{t('droneAtc.noFlytbaseKey')}</span>
           <Link href="/flytbase" className={`underline font-semibold ${isDark ? 'text-amber-200 hover:text-amber-100' : 'text-amber-800 hover:text-amber-900'}`}>
-            Configure →
+            {t('droneAtc.configure')}
           </Link>
         </div>
       )}
@@ -236,7 +260,7 @@ export default function DroneATCPage() {
           <div className={`px-3 py-2 border-b shrink-0 ${isDark ? 'border-slate-700/50' : 'border-slate-200'}`}>
             <div className="flex items-center justify-between">
               <span className={`text-[10px] font-bold uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                Fleet Management
+                {t('droneAtc.fleetManagement')}
               </span>
               <div className={`min-w-5 h-5 px-1.5 rounded flex items-center justify-center ${isDark ? 'bg-violet-600/10 ring-1 ring-violet-500/20' : 'bg-violet-50 ring-1 ring-violet-200'
                 }`}>
@@ -303,7 +327,7 @@ export default function DroneATCPage() {
                 }`}
               >
                 <GiDeliveryDrone className="w-3.5 h-3.5" />
-                <span className="text-[10px] font-semibold">Fleet</span>
+                <span className="text-[10px] font-semibold">{t('droneAtc.fleet')}</span>
                 {isLoading
                   ? <div className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" />
                   : droneList.length > 0 && (
@@ -324,7 +348,7 @@ export default function DroneATCPage() {
                     <GiDeliveryDrone className={`w-3.5 h-3.5 ${isDark ? 'text-violet-400' : 'text-violet-600'}`} />
                   </div>
                   <span className={`text-xs font-bold tracking-wide ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
-                    Fleet
+                    {t('droneAtc.fleet')}
                   </span>
                   <div className={`min-w-4 h-4 px-1 rounded flex items-center justify-center ${isDark ? 'bg-violet-600/10 ring-1 ring-violet-500/20' : 'bg-violet-50 ring-1 ring-violet-200'}`}>
                     {isLoading
