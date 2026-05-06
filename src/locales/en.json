@@ -2628,5 +2628,86 @@
       "created": "Emergency response plan created successfully",
       "saveFailed": "Failed to save the plan"
     }
+  },
+  "auditLogs": {
+    "title": "Audit Logs",
+    "subtitle": "Track and monitor system-wide activity",
+    "eventRecordsTab": "Event Records",
+    "secureTransactionsTab": "Secure Transactions",
+    "refresh": "Refresh",
+    "allCompanies": "All Companies",
+    "allUsers": "All Users",
+    "allEvents": "All Events",
+    "allSections": "All Sections",
+    "searchPlaceholder": "Search description, user, section…",
+    "clear": "Clear",
+    "eventRecordsTitle": "Event Records",
+    "eventRecordsSubtitle": "Detailed chronological log of platform interactions",
+    "noLogs": "No activity logs found matching your criteria.",
+    "system": "System",
+    "dcc": {
+      "title": "DCC Error Details",
+      "endpoint": "Endpoint",
+      "outcome": "Outcome",
+      "message": "Message",
+      "httpStatus": "HTTP Status",
+      "responseBody": "Response Body"
+    },
+    "columns": {
+      "time": "Time",
+      "event": "Event",
+      "section": "Section",
+      "description": "Description",
+      "user": "User",
+      "role": "Role",
+      "company": "Company"
+    },
+    "exportHeaders": {
+      "date": "Date",
+      "event": "Event",
+      "section": "Section",
+      "description": "Description",
+      "user": "User",
+      "email": "Email",
+      "role": "Role"
+    },
+    "transactions": {
+      "noRecords": "No authorized transactions recorded yet.",
+      "noRecordsHint": "Transactions will appear here after users authorize actions with their PIN.",
+      "title": "Secure Transaction Records",
+      "subtitle": "Cryptographically signed authorization events — verifiable with RSA public keys",
+      "colDateTime": "Date / Time",
+      "colAction": "Action",
+      "colEntity": "Entity",
+      "colAuthorizedBy": "Authorized by",
+      "colIntegrity": "Integrity",
+      "verify": "Verify",
+      "checking": "Checking…",
+      "valid": "Valid",
+      "tampered": "Tampered",
+      "unknown": "Unknown",
+      "actionDetails": "Action Details",
+      "cryptoRecord": "Cryptographic Record",
+      "transactionId": "Transaction ID",
+      "jwtLabel": "JWT (RS256)",
+      "publicKey": "Public Key",
+      "infoBannerPre": "Transaction signatures are verified client-side using each user's RSA-2048 public key. A",
+      "infoBannerPost": "result proves the JWT was signed by the private key of the recorded user and has not been modified. The private key is never transmitted to the server.",
+      "actions": {
+        "mission_start": "Mission Start",
+        "mission_complete": "Mission Complete",
+        "mission_revert": "Mission Revert",
+        "component_detach": "Component Detach",
+        "drone_put_in_operation": "Drone → Operational",
+        "evaluation_done": "Evaluation Done",
+        "evaluation_review": "Evaluation Review",
+        "planning_create": "Planning Created"
+      }
+    }
+  },
+  "export": {
+    "export": "Export",
+    "exporting": "Exporting…",
+    "downloadAs": "Download as"
   }
 }

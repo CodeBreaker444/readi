@@ -2621,5 +2621,86 @@
       "created": "Piano di risposta alle emergenze creato con successo",
       "saveFailed": "Impossibile salvare il piano"
     }
+  },
+  "auditLogs": {
+    "title": "Registro Audit",
+    "subtitle": "Monitora l'attività dell'intero sistema",
+    "eventRecordsTab": "Registri eventi",
+    "secureTransactionsTab": "Transazioni sicure",
+    "refresh": "Aggiorna",
+    "allCompanies": "Tutte le aziende",
+    "allUsers": "Tutti gli utenti",
+    "allEvents": "Tutti gli eventi",
+    "allSections": "Tutte le sezioni",
+    "searchPlaceholder": "Cerca descrizione, utente, sezione…",
+    "clear": "Cancella",
+    "eventRecordsTitle": "Registri eventi",
+    "eventRecordsSubtitle": "Registro cronologico dettagliato delle interazioni sulla piattaforma",
+    "noLogs": "Nessun registro attività trovato con i criteri selezionati.",
+    "system": "Sistema",
+    "dcc": {
+      "title": "Dettagli errore DCC",
+      "endpoint": "Endpoint",
+      "outcome": "Risultato",
+      "message": "Messaggio",
+      "httpStatus": "Stato HTTP",
+      "responseBody": "Corpo risposta"
+    },
+    "columns": {
+      "time": "Ora",
+      "event": "Evento",
+      "section": "Sezione",
+      "description": "Descrizione",
+      "user": "Utente",
+      "role": "Ruolo",
+      "company": "Azienda"
+    },
+    "exportHeaders": {
+      "date": "Data",
+      "event": "Evento",
+      "section": "Sezione",
+      "description": "Descrizione",
+      "user": "Utente",
+      "email": "Email",
+      "role": "Ruolo"
+    },
+    "transactions": {
+      "noRecords": "Nessuna transazione autorizzata registrata.",
+      "noRecordsHint": "Le transazioni appariranno qui dopo che gli utenti autorizzano azioni con il loro PIN.",
+      "title": "Registri transazioni sicure",
+      "subtitle": "Eventi di autorizzazione firmati crittograficamente — verificabili con chiavi pubbliche RSA",
+      "colDateTime": "Data / Ora",
+      "colAction": "Azione",
+      "colEntity": "Entità",
+      "colAuthorizedBy": "Autorizzato da",
+      "colIntegrity": "Integrità",
+      "verify": "Verifica",
+      "checking": "Verifica…",
+      "valid": "Valida",
+      "tampered": "Manomessa",
+      "unknown": "Sconosciuto",
+      "actionDetails": "Dettagli azione",
+      "cryptoRecord": "Registro crittografico",
+      "transactionId": "ID transazione",
+      "jwtLabel": "JWT (RS256)",
+      "publicKey": "Chiave pubblica",
+      "infoBannerPre": "Le firme delle transazioni vengono verificate lato client usando la chiave RSA-2048 di ogni utente. Un risultato",
+      "infoBannerPost": "conferma che il JWT è stato firmato dalla chiave privata dell'utente registrato e non è stato modificato. La chiave privata non viene mai trasmessa al server.",
+      "actions": {
+        "mission_start": "Inizio missione",
+        "mission_complete": "Missione completata",
+        "mission_revert": "Ripristino missione",
+        "component_detach": "Distacco componente",
+        "drone_put_in_operation": "Drone → Operativo",
+        "evaluation_done": "Valutazione eseguita",
+        "evaluation_review": "Revisione valutazione",
+        "planning_create": "Pianificazione creata"
+      }
+    }
+  },
+  "export": {
+    "export": "Esporta",
+    "exporting": "Esportazione…",
+    "downloadAs": "Scarica come"
   }
 }
