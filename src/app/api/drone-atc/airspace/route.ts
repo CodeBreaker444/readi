@@ -1,10 +1,7 @@
 import { requireAuth } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
-/**
- * Real-world airspace data for Italy (CTR - Control Zones and TMA - Terminal Control Areas)
- * Based on ICAO Annex 11 and EUROCONTROL standards
- */
+ 
 interface AirspaceZone {
   id: string;
   name: string;
@@ -17,18 +14,8 @@ interface AirspaceZone {
   upperFt: number;
 }
 
-/**
- * Italian airspace control zones and terminal areas
- * Data reflects real ICAO designations from ENAV (Ente Nazionale Assistenza al Volo)
- * 
- * Airspace Classes (ICAO Annex 11):
- * - Class A: IFR only, no VFR, highest control
- * - Class B: IFR & VFR, ATC separation provided
- * - Class C: IFR & VFR, separation to IFR aircraft and between aircraft
- * - Class D: IFR & VFR, separation to IFR aircraft only, VFR gets traffic info
- */
+ 
 const ITALIAN_AIRSPACE: AirspaceZone[] = [
-  // Major Class B TMAs (Instrument Flight Rules controlled, highest traffic)
   {
     id: 'LIRA_TMA',
     name: 'Roma Fiumicino TMA (Class B)',
@@ -62,7 +49,6 @@ const ITALIAN_AIRSPACE: AirspaceZone[] = [
     lowerFt: 1000,
     upperFt: 24500,
   },
-  // Major airport control zones (Class D - most common around airports)
   {
     id: 'LIRF_CTR',
     name: 'Roma Fiumicino CTR (Class D)',
@@ -195,7 +181,6 @@ const ITALIAN_AIRSPACE: AirspaceZone[] = [
     lowerFt: 0,
     upperFt: 600,
   },
-  // Extended Class C areas (controlled airspace, moderate restrictions)
   {
     id: 'LIRF_APPR',
     name: 'Roma Approach Sector (Class C)',
@@ -246,7 +231,7 @@ export async function GET(req: NextRequest) {
   try {
     // Filter airspace zones by bounding box with buffer
     const filtered = ITALIAN_AIRSPACE.filter(zone => {
-      const latMin = zone.lat - zone.radiusM / 111320; // 1 degree ≈ 111km
+      const latMin = zone.lat - zone.radiusM / 111320; 
       const latMax = zone.lat + zone.radiusM / 111320;
       const lonMin = zone.lon - (zone.radiusM / 111320) / Math.cos((zone.lat * Math.PI) / 180);
       const lonMax = zone.lon + (zone.radiusM / 111320) / Math.cos((zone.lat * Math.PI) / 180);
@@ -254,7 +239,7 @@ export async function GET(req: NextRequest) {
       return latMin < north && latMax > south && lonMin < east && lonMax > west;
     });
 
-    // Add cache headers - airspace data changes infrequently
+    // Add cache headers for airspace data changes infrequently
     return NextResponse.json(
       { airspace: filtered, timestamp: new Date().toISOString() },
       {
