@@ -5,13 +5,13 @@ import DroneList from '@/components/drone-atc/DroneList';
 import LayerControlPanel, { type LayerVisibility } from '@/components/drone-atc/LayerControlPanel';
 import LiveFeedPanel from '@/components/drone-atc/LiveFeedPanel';
 import { useDroneATCSocket } from '@/components/drone-atc/useDroneATCSocket';
-import WindParticleOverlay from '@/components/drone-atc/WindParticleOverlay';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTheme } from '@/components/useTheme';
 import '@/lib/i18n/config';
 import { ChevronRight, Maximize2, Minimize2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
+import WindGridOverlay, { type MapBounds } from '@/components/drone-atc/WindGridOverlay';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FiAlertTriangle, FiCheck, FiRefreshCw } from 'react-icons/fi';
@@ -76,9 +76,9 @@ export default function DroneATCPage() {
 
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [syncState, setSyncState] = useState<'idle' | 'loading' | 'ok' | 'error'>('idle');
-  const [windData, setWindData] = useState<{ dir: number; speed: number }>({ dir: 270, speed: 5 });
-
-  const boundsRef = useRef<{ latMin: number; lonMin: number; latMax: number; lonMax: number } | null>(null);
+  const boundsRef = useRef<MapBounds | null>(null);
+  const [windFetchTrigger, setWindFetchTrigger] = useState(0);
+  const windTriggerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!isFullscreen) return;
@@ -143,25 +143,16 @@ export default function DroneATCPage() {
     return () => { if (flightTimerRef.current) clearInterval(flightTimerRef.current); };
   }, [layers.flights, fetchFlights]);
 
-  const handleBoundsChange = useCallback((bounds: { latMin: number; lonMin: number; latMax: number; lonMax: number }) => {
+  const getBounds = useCallback((): MapBounds | null => boundsRef.current, []);
+
+  const handleBoundsChange = useCallback((bounds: MapBounds) => {
     boundsRef.current = bounds;
+    if (windTriggerTimerRef.current) clearTimeout(windTriggerTimerRef.current);
+    windTriggerTimerRef.current = setTimeout(() => setWindFetchTrigger(t => t + 1), 500);
   }, []);
 
   useEffect(() => {
-    if (!layers.wind) return;
-    let cancelled = false;
-    const bounds = boundsRef.current;
-    const lat = bounds ? ((bounds.latMin + bounds.latMax) / 2).toFixed(4) : '20';
-    const lon = bounds ? ((bounds.lonMin + bounds.lonMax) / 2).toFixed(4) : '0';
-    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=wind_speed_10m,wind_direction_10m&wind_speed_unit=ms`)
-      .then(r => r.ok ? r.json() : null)
-      .then(json => {
-        if (cancelled || !json?.current) return;
-        const { wind_direction_10m: dir, wind_speed_10m: speed } = json.current;
-        if (dir !== undefined) setWindData({ dir, speed: speed ?? 5 });
-      })
-      .catch(() => {});
-    return () => { cancelled = true; };
+    if (layers.wind) setWindFetchTrigger(t => t + 1);
   }, [layers.wind]);
 
   const droneList = Object.values(drones);
@@ -303,9 +294,10 @@ export default function DroneATCPage() {
               owmApiKey={OWM_API_KEY}
               onBoundsChange={handleBoundsChange}
             />
+            {layers.wind && (
+              <WindGridOverlay getBounds={getBounds} fetchTrigger={windFetchTrigger} />
+            )}
           </div>
-
-          {layers.wind && <WindParticleOverlay windDir={windData.dir} windSpeed={windData.speed} />}
 
           <LayerControlPanel
             layers={layers}

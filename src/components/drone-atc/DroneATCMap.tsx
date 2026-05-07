@@ -423,7 +423,7 @@ export default function DroneATCMap({
       observer.disconnect();
       cancelAnimationFrame(cloudAnimRef.current);
       cancelAnimationFrame(precipAnimRef.current);
-      if (cloudCanvasRef.current) { cloudCanvasRef.current.remove(); cloudCanvasRef.current = null; }
+      if (cloudCanvasRef.current)  { cloudCanvasRef.current.remove();  cloudCanvasRef.current  = null; }
       if (precipCanvasRef.current) { precipCanvasRef.current.remove(); precipCanvasRef.current = null; }
       map.remove();
       mapRef.current = null;
@@ -445,6 +445,7 @@ export default function DroneATCMap({
     const map = mapRef.current;
     if (!map) return;
     WEATHER_KEYS.forEach((key) => {
+      if (key === 'wind') return; // handled by particle canvas, not OWM tile
       const visible = layers[key];
       const existing = weatherRefs.current[key];
       if (visible && owmApiKey) {
