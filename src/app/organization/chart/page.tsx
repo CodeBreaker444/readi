@@ -6,10 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTheme } from "@/components/useTheme";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { MdErrorOutline, MdOutlineAccountTree, MdRefresh } from "react-icons/md";
 import { toast } from "sonner";
 
 export default function OrganizationPage() {
+  const { t } = useTranslation();
   const { isDark } = useTheme();
   const [treeData, setTreeData] = useState<OrgNode | null>(null);
   const [loading, setLoading] = useState(true);
@@ -25,13 +27,13 @@ export default function OrganizationPage() {
           throw new Error(body.error ?? `HTTP ${res.status}`);
         }
         const json = await res.json();
-        if (json.message !== "success") throw new Error(json.error ?? "Unexpected response");
+        if (json.code !== 1 || !json.data) throw new Error(json.error ?? "Unexpected response");
         if (!cancelled) {
           setTreeData(json.data as OrgNode);
           setErrMsg(null);
         }
       } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : "Network error";
+        const msg = err instanceof Error ? err.message : t('organization.chart.failedToLoad');
         if (!cancelled) { setErrMsg(msg); toast.error(msg); }
       } finally {
         if (!cancelled) setLoading(false);
@@ -54,19 +56,19 @@ export default function OrganizationPage() {
 
             <div>
               <h1 className={`font-semibold text-base tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>
-                Organization Chart
+                {t('organization.chart.title')}
               </h1>
               <p className={`text-xs ${isDark ? "text-slate-500" : "text-slate-400"}`}>
-                AIView Group · Accountability structure & reporting lines
+                {t('organization.chart.subtitle')}
               </p>
             </div>
           </div>
 
           {treeData && (
             <div className="hidden sm:flex items-center gap-2">
-              <StatPill label={`${countVisible(treeData)} Members`} isDark={isDark} />
-              <StatPill label={`${countDepth(treeData)} Levels`} color="cyan" isDark={isDark} />
-              <StatPill label="Active" color="green" pulse isDark={isDark} />
+              <StatPill label={`${countVisible(treeData)} ${t('organization.chart.members')}`} isDark={isDark} />
+              <StatPill label={`${countDepth(treeData)} ${t('organization.chart.levels')}`} color="cyan" isDark={isDark} />
+              <StatPill label={t('organization.chart.active')} color="green" pulse isDark={isDark} />
             </div>
           )}
         </div>
@@ -82,7 +84,7 @@ export default function OrganizationPage() {
               <MdOutlineAccountTree size={18} />
             </div>
             <div>
-              <p className={`text-sm font-bold tracking-tight ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>Reporting Structure</p>
+              <p className={`text-sm font-bold tracking-tight ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>{t('organization.chart.reportingStructure')}</p>
             </div>
           </div>
 
@@ -109,11 +111,11 @@ export default function OrganizationPage() {
               <div className={`p-3 rounded-2xl border ${isDark ? 'bg-red-500/10 border-red-500/30' : 'bg-red-50 border-red-100'}`}>
                 <MdErrorOutline size={32} className="text-red-500" />
               </div>
-              <p className="text-sm font-bold text-red-500">Failed to load chart</p>
+              <p className="text-sm font-bold text-red-500">{t('organization.chart.failedToLoad')}</p>
               <pre className={`text-[10px] font-mono p-4 rounded-lg max-w-lg border ${isDark ? 'bg-red-500/5 border-red-500/20 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-500'
                 }`}>{errMsg}</pre>
               <Button onClick={() => window.location.reload()} className="mt-2 bg-indigo-600 hover:bg-indigo-700 text-white flex gap-2">
-                <MdRefresh size={18} /> Retry
+                <MdRefresh size={18} /> {t('organization.chart.retry')}
               </Button>
             </div>
           ) : (

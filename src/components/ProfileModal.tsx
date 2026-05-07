@@ -155,6 +155,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     profile: '',
     type: '',
     signature: '',
+    easaOperatorCode: '',
   });
   const [curriculum, setCurriculum] = useState<TrainingCurriculumRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -195,6 +196,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           profile: '',
           type: data.user.user_type || '',
           signature: data.user.users_profile?.user_signature || '',
+          easaOperatorCode: data.user.easa_operator_code || '',
         });
         if (data.user.avatar_url) {
           setCurrentAvatarUrl(data.user.avatar_url);
@@ -260,6 +262,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     formDataToSend.append('email', formData.email);
     formDataToSend.append('phone', formData.phone);
     formDataToSend.append('timezone', formData.timezone);
+    formDataToSend.append('easa_operator_code', formData.easaOperatorCode);
 
     if (avatar) {
       formDataToSend.append('avatar', avatar);
@@ -309,6 +312,40 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
         <div className="p-4 sm:p-6 space-y-6">
           <Card>
             <CardContent className="p-4 sm:p-6">
+              {loading ? (
+                <div className="flex flex-col md:flex-row gap-6 md:gap-8">
+                  <div className="flex flex-row md:flex-col items-center gap-4 md:gap-3 md:pt-2 shrink-0">
+                    <Skeleton className="w-20 h-20 md:w-24 md:h-24 rounded-full" />
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-28" />
+                      <Skeleton className="h-3 w-36" />
+                    </div>
+                  </div>
+
+                  <Separator className="md:hidden" />
+                  <Separator orientation="vertical" className="hidden md:block h-auto" />
+
+                  <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-5 gap-y-4">
+                    {[1, 2, 3, 4, 5, 6].map((n) => (
+                      <div key={n} className="space-y-1.5">
+                        <Skeleton className="h-4 w-20" />
+                        <Skeleton className="h-9 w-full" />
+                      </div>
+                    ))}
+                    <div className="space-y-1.5 sm:col-span-2">
+                      <Skeleton className="h-4 w-20" />
+                      <Skeleton className="h-9 w-full" />
+                    </div>
+                    <div className="space-y-1.5 sm:col-span-2 lg:col-span-1">
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-9 w-full" />
+                    </div>
+                    <div className="flex items-end sm:col-span-2 lg:col-span-1">
+                      <Skeleton className="h-9 w-full" />
+                    </div>
+                  </div>
+                </div>
+              ) : (
               <div className="flex flex-col md:flex-row gap-6 md:gap-8">
                 <div className="flex flex-row md:flex-col items-center gap-4 md:gap-3 md:pt-2 shrink-0">
                   <div className="relative group shrink-0">
@@ -466,7 +503,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                     </Select>
                   </div>
 
-                  <div className="space-y-1.5 sm:col-span-2 lg:col-span-3">
+                  <div className="space-y-1.5 sm:col-span-2">
                     <Label htmlFor="signature">{t('profile.fields.signature')}</Label>
                     <Input
                       id="signature"
@@ -474,6 +511,17 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                       value={formData.signature}
                       onChange={handleInputChange}
                       placeholder={t('profile.placeholders.signature')}
+                    />
+                  </div>
+
+                  <div className="space-y-1.5 sm:col-span-2 lg:col-span-1">
+                    <Label htmlFor="easaOperatorCode">{t('profile.fields.easaOperatorCode')}</Label>
+                    <Input
+                      id="easaOperatorCode"
+                      name="easaOperatorCode"
+                      value={formData.easaOperatorCode}
+                      onChange={handleInputChange}
+                      placeholder={t('profile.placeholders.easaOperatorCode')}
                     />
                   </div>
 
@@ -489,6 +537,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                   </div>
                 </div>
               </div>
+              )}
             </CardContent>
           </Card>
 

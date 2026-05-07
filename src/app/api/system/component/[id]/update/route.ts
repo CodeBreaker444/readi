@@ -9,6 +9,7 @@ import { z } from 'zod';
 const schema = z.object({
   fk_tool_id: z.number().positive(),
   component_type: z.string().min(1),
+  component_name: z.string().optional().nullable(),
   component_category: z.string().optional().nullable(),
   component_code: z.string().optional().nullable(),
   component_desc: z.string().optional().nullable(),
@@ -22,12 +23,14 @@ const schema = z.object({
   cc_platform: z.string().optional().nullable(),
   gcs_type: z.string().optional().nullable(),
   dcc_drone_id: z.string().uuid().optional().nullable(),
+  drone_registration_code: z.string().optional().nullable(),
   maintenance_cycle: z.string().optional().nullable(),
   maintenance_cycle_hour: z.number().optional().nullable(),
   maintenance_cycle_day: z.number().optional().nullable(),
   maintenance_cycle_flight: z.number().optional().nullable(),
   battery_cycle_ratio: z.number().min(0).max(1).optional().nullable(),
   fk_parent_component_id: z.number().positive().optional().nullable(),
+  system_detached: z.boolean().optional(),
 });
 
 export async function POST(

@@ -12,6 +12,7 @@ export interface DroneAtcComponent {
   serialNumber: string | null;
   componentStatus: string;
   dccDroneId: string | null;
+  droneRegistrationCode: string | null;
 }
 
 export interface DroneAtcSystem {
@@ -67,7 +68,7 @@ export async function getUsersWithDroneAtc(): Promise<DroneAtcUser[]> {
     const { data: comps, error: compsError } = await supabase
       .from('tool_component')
       .select(
-        'component_id, fk_tool_id, component_code, component_name, component_type, serial_number, component_metadata, dcc_drone_id',
+        'component_id, fk_tool_id, component_code, component_name, component_type, serial_number, component_metadata, dcc_drone_id, drone_registration_code',
       )
       .in('fk_tool_id', toolIds)
       .eq('component_active', 'Y');
@@ -88,6 +89,7 @@ export async function getUsersWithDroneAtc(): Promise<DroneAtcUser[]> {
       serialNumber: c.serial_number ?? null,
       componentStatus: c.component_metadata?.component_status ?? 'OPERATIONAL',
       dccDroneId: c.dcc_drone_id ?? null,
+      droneRegistrationCode: c.drone_registration_code ?? null,
     });
     compsByTool.set(c.fk_tool_id, list);
   }

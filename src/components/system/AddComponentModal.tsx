@@ -30,6 +30,7 @@ const INITIAL_FORM = {
   cc_platform: '',
   gcs_type: '',
   dcc_drone_id: '',
+  drone_registration_code: '',
   component_activation_date: '',
   component_purchase_date: '',
   component_vendor: '',
@@ -211,6 +212,7 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
         cc_platform: formData.cc_platform || null,
         gcs_type: formData.gcs_type || null,
         dcc_drone_id: formData.dcc_drone_id || null,
+        drone_registration_code: formData.drone_registration_code || null,
         component_activation_date: formData.component_activation_date || null,
         component_purchase_date: formData.component_purchase_date || null,
         component_vendor: formData.component_vendor || null,
@@ -398,12 +400,20 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="col-span-1 sm:col-span-6">
+                <div className="col-span-1 sm:col-span-3">
                   <Label className="pb-2">DCC Drone ID (UUID)</Label>
                   <Input
                     value={formData.dcc_drone_id}
                     onChange={(e) => handleChange('dcc_drone_id', e.target.value)}
                     placeholder="e.g. e47c7fa4-f6c7-4bc2-9d55-84ad69bf2a95"
+                  />
+                </div>
+                <div className="col-span-1 sm:col-span-3">
+                  <Label className="pb-2">Drone Registration Code <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                  <Input
+                    value={formData.drone_registration_code}
+                    onChange={(e) => handleChange('drone_registration_code', e.target.value)}
+                    placeholder="e.g. UAS-2024-001"
                   />
                 </div>
               </div>

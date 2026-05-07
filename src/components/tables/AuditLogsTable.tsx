@@ -50,11 +50,14 @@ export const ENTITY_TYPES = [
   'spi_kpi', 'company', 'dcc_bug_report',
 ];
 
-export const getAuditLogsColumns = (isSuperAdmin: boolean, owners: Owner[], timezone?: string): ColumnDef<AuditLog>[] => {
+type TFunction = (key: string) => string;
+
+export const getAuditLogsColumns = (isSuperAdmin: boolean, owners: Owner[], timezone?: string, t?: TFunction): ColumnDef<AuditLog>[] => {
+  const tr = (key: string, fallback: string) => t ? t(`auditLogs.columns.${key}`) : fallback;
   const columns: ColumnDef<AuditLog>[] = [
     {
       accessorKey: 'created_at',
-      header: 'Time',
+      header: () => tr('time', 'Time'),
       size: 160,
       cell: ({ getValue }) => {
         const date = getValue<string>();
@@ -68,32 +71,32 @@ export const getAuditLogsColumns = (isSuperAdmin: boolean, owners: Owner[], time
     },
     {
       accessorKey: 'event_type',
-      header: 'Event',
+      header: () => tr('event', 'Event'),
       size: 96,
     },
     {
       accessorKey: 'entity_type',
-      header: 'Section',
+      header: () => tr('section', 'Section'),
       size: 128,
       cell: ({ getValue }) => getValue<string>().replace(/_/g, ' '),
     },
     {
       accessorKey: 'description',
-      header: 'Description',
+      header: () => tr('description', 'Description'),
     },
     {
       id: 'user',
-      header: 'User',
+      header: () => tr('user', 'User'),
       size: 160,
-      accessorFn: (row) => row.user_name ?? 'System',
+      accessorFn: (row) => row.user_name ?? (t ? t('auditLogs.system') : 'System'),
       cell: ({ row }) => ({
-        name: row.original.user_name ?? 'System',
+        name: row.original.user_name ?? (t ? t('auditLogs.system') : 'System'),
         email: row.original.user_email ?? '',
       }),
     },
     {
       accessorKey: 'user_role',
-      header: 'Role',
+      header: () => tr('role', 'Role'),
       size: 96,
     },
   ];
@@ -101,7 +104,7 @@ export const getAuditLogsColumns = (isSuperAdmin: boolean, owners: Owner[], time
   if (isSuperAdmin) {
     columns.push({
       id: 'company',
-      header: 'Company',
+      header: () => tr('company', 'Company'),
       size: 112,
       accessorFn: (row) =>
         owners.find((o) => o.owner_id === row.owner_id)?.owner_name ?? String(row.owner_id),

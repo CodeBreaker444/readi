@@ -13,6 +13,7 @@ export interface ProfileData {
   phone: string;
   user_timezone: string;
   user_type: string;
+  easa_operator_code: string | null;
   avatar_url: string | null;
   users_profile: {
     user_signature: string | null;
@@ -31,6 +32,7 @@ export interface UpdateProfileParams {
   email: string;
   phone: string;
   timezone: string;
+  easa_operator_code?: string;
 }
 
 export async function getProfile(userId: number): Promise<ProfileData> {
@@ -45,6 +47,7 @@ export async function getProfile(userId: number): Promise<ProfileData> {
       phone,
       user_timezone,
       user_type,
+      easa_operator_code,
       users_profile!fk_user_id (
         profile_picture,
         user_signature,
@@ -87,6 +90,7 @@ export async function getProfile(userId: number): Promise<ProfileData> {
     phone: data.phone ?? '',
     user_timezone: data.user_timezone ?? 'IST',
     user_type: data.user_type ?? '',
+    easa_operator_code: (data as any).easa_operator_code ?? null,
     avatar_url: avatarUrl,
     users_profile: profile
       ? {
@@ -123,6 +127,9 @@ export async function updateProfile(
       email: params.email,
       phone: params.phone,
       user_timezone: params.timezone,
+      ...(params.easa_operator_code !== undefined && {
+        easa_operator_code: params.easa_operator_code || null,
+      }),
     })
     .eq('user_id', userId);
 

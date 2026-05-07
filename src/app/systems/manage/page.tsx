@@ -318,6 +318,12 @@ export default function DroneToolPage() {
         return map;
     }, [toolData]);
 
+    const modelMap = useMemo(() => {
+        const map: Record<number, string> = {};
+        models.forEach((m: any) => { map[m.tool_model_id] = `${m.factory_type} ${m.factory_model}`; });
+        return map;
+    }, [models]);
+
 const modelColumns = useMemo(
         () => getModelColumns({
             isDark,
@@ -331,12 +337,13 @@ const modelColumns = useMemo(
         () => getComponentColumns({
             isDark,
             toolCodeMap,
+            modelMap,
             onView: handleViewComponent,
             onEdit: handleEditComponentDirect,
             onDelete: handleDeleteComponent,
             onLog: handleLogComponent,
         }),
-        [isDark, toolCodeMap]
+        [isDark, toolCodeMap, modelMap]
     );
 
     const standaloneComponents = useMemo(
@@ -445,6 +452,7 @@ const modelColumns = useMemo(
                             <SystemComponentsTable
                                 systems={toolData}
                                 components={componentData}
+                                modelMap={modelMap}
                                 loading={loading || loadingComponents}
                                 onViewSystem={handleView}
                                 onEditSystem={handleEditSystem}

@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useTheme } from '@/components/useTheme';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FaFileCsv, FaFileExcel, FaFilePdf } from 'react-icons/fa';
 import { HiDownload } from 'react-icons/hi';
 
@@ -128,6 +129,7 @@ async function exportPdf(
 }
 
 export default function ExportButtons({ filename, headers, rows }: ExportButtonsProps) {
+  const { t } = useTranslation();
   const { isDark } = useTheme();
   const [loading, setLoading] = useState<Format | null>(null);
 
@@ -158,7 +160,7 @@ export default function ExportButtons({ filename, headers, rows }: ExportButtons
             }`}
         >
           <HiDownload className="w-3.5 h-3.5" />
-          {loading ? 'Exporting…' : 'Export'}
+          {loading ? t('export.exporting') : t('export.export')}
         </button>
       </DropdownMenuTrigger>
 
@@ -169,7 +171,7 @@ export default function ExportButtons({ filename, headers, rows }: ExportButtons
         <DropdownMenuLabel
           className={`text-[10px] uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}
         >
-          Download as
+          {t('export.downloadAs')}
         </DropdownMenuLabel>
         <DropdownMenuSeparator className={isDark ? 'bg-slate-700' : ''} />
 
