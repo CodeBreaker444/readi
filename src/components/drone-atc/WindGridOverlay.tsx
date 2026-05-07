@@ -12,9 +12,11 @@ interface WindCell {
   windDir: number; windSpeed: number;
 }
 
-interface WParticle { rx: number; ry: number; age: number; life: number; }
+interface WParticle { lanePos: number; phase: number; }
 
-const PPC = 50;
+const PPC    = 100;
+const TRAVEL = 0.40;  // visible journey = 40% of dominant cell dimension
+const CYCLE  = 0.58;  // full cycle = travel + invisible recovery gap
 
 function gridDims(b: MapBounds): { rows: number; cols: number } {
   const span = Math.max(b.latMax - b.latMin, b.lonMax - b.lonMin);
@@ -28,30 +30,24 @@ function gridDims(b: MapBounds): { rows: number; cols: number } {
 const toMerc = (lat: number) =>
   Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360));
 
-function geo2px(
-  lat: number, lon: number,
-  b: MapBounds, W: number, H: number,
-): [number, number] {
-  const x   = ((lon - b.lonMin) / (b.lonMax - b.lonMin)) * W;
-  const mN  = toMerc(b.latMax);
-  const mS  = toMerc(b.latMin);
-  const y   = ((mN - toMerc(lat)) / (mN - mS)) * H;
+function geo2px(lat: number, lon: number, b: MapBounds, W: number, H: number): [number, number] {
+  const x  = ((lon - b.lonMin) / (b.lonMax - b.lonMin)) * W;
+  const mN = toMerc(b.latMax), mS = toMerc(b.latMin);
+  const y  = ((mN - toMerc(lat)) / (mN - mS)) * H;
   return [x, y];
 }
 
-function mkParticle(vxPx: number, vyPx: number, init: boolean): WParticle {
-  const life = 50 + Math.random() * 60;
-  if (init) return { rx: Math.random(), ry: Math.random(), age: Math.random() * life, life };
-  const ax = Math.abs(vxPx), ay = Math.abs(vyPx), tot = ax + ay + 0.001;
-  let rx: number, ry: number;
-  if (Math.random() * tot < ax) { rx = vxPx > 0 ? -0.05 : 1.05; ry = Math.random(); }
-  else                           { rx = Math.random(); ry = vyPx > 0 ? -0.05 : 1.05; }
-  return { rx, ry, age: 0, life };
+// Evenly distribute particles across the cycle so they never all reset together.
+function mkParticles(total: number): WParticle[] {
+  return Array.from({ length: total }, (_, i) => ({
+    lanePos: i / total,
+    phase:   (i / total) * CYCLE,
+  }));
 }
 
 interface Props {
   getBounds: () => MapBounds | null;
-  fetchTrigger: number;  
+  fetchTrigger: number;
 }
 
 export default function WindGridOverlay({ getBounds, fetchTrigger }: Props) {
@@ -88,10 +84,7 @@ export default function WindGridOverlay({ getBounds, fetchTrigger }: Props) {
 
     Promise.allSettled(
       defs.map(d =>
-        fetch(
-          `/api/drone-atc/weather?lat=${d.lat.toFixed(4)}&lon=${d.lon.toFixed(4)}`,
-          { signal: ctrl.signal },
-        )
+        fetch(`/api/drone-atc/weather?lat=${d.lat.toFixed(4)}&lon=${d.lon.toFixed(4)}`, { signal: ctrl.signal })
           .then(r => r.ok ? r.json() : null)
           .then(json => ({
             gLatMin: d.gLatMin, gLatMax: d.gLatMax,
@@ -110,9 +103,7 @@ export default function WindGridOverlay({ getBounds, fetchTrigger }: Props) {
               windDir: 270, windSpeed: 4 },
       );
       cellsRef.current     = cells;
-      particlesRef.current = cells.map(() =>
-        Array.from({ length: PPC }, () => mkParticle(0, 1, true)),
-      );
+      particlesRef.current = cells.map(() => mkParticles(PPC));
     }).catch(() => {});
 
     return () => ctrl.abort();
@@ -126,7 +117,6 @@ export default function WindGridOverlay({ getBounds, fetchTrigger }: Props) {
       const ctx = canvas.getContext('2d');
       if (!ctx) { animRef.current = requestAnimationFrame(draw); return; }
 
-      // Sync canvas pixel buffer to CSS layout size
       const W = canvas.offsetWidth  || 800;
       const H = canvas.offsetHeight || 600;
       if (canvas.width !== W || canvas.height !== H) {
@@ -149,58 +139,71 @@ export default function WindGridOverlay({ getBounds, fetchTrigger }: Props) {
 
           const [tlX, tlY] = geo2px(cell.gLatMax, cell.gLonMin, bounds, W, H);
           const [brX, brY] = geo2px(cell.gLatMin, cell.gLonMax, bounds, W, H);
-          const cw = brX - tlX;
-          const ch = brY - tlY;
+          const cw = brX - tlX, ch = brY - tlY;
           if (cw <= 0 || ch <= 0) continue;
 
-          const rad  = (cell.windDir * Math.PI) / 180;
-          const spd  = Math.max(cell.windSpeed * 1.1, 2.5);
-          const vxPx = -Math.sin(rad) * spd;
-          const vyPx =  Math.cos(rad) * spd;
-          const drx  = vxPx / cw;
-          const dry  = vyPx / ch;
+          const rad    = (cell.windDir * Math.PI) / 180;
+          const spd    = Math.max(cell.windSpeed * 1.1, 2.5);
+          const vxPx   = -Math.sin(rad) * spd;
+          const vyPx   =  Math.cos(rad) * spd;
+          const drx    = vxPx / cw;
+          const dry    = vyPx / ch;
+          const drMax  = Math.max(Math.abs(drx), Math.abs(dry));
+          if (drMax < 1e-5) continue;
+
+          // Dominant component decides which cell edge particles enter from
+          const horizEntry = Math.abs(vxPx) >= Math.abs(vyPx);
 
           for (const p of ps) {
-            p.rx  += drx;
-            p.ry  += dry;
-            p.age++;
+            // Advance phase; wrap at CYCLE to restart from fixed entry point
+            p.phase += drMax;
+            if (p.phase >= CYCLE) p.phase -= CYCLE;
 
-            if (
-              p.age >= p.life ||
-              p.rx < -0.12 || p.rx > 1.12 ||
-              p.ry < -0.12 || p.ry > 1.12
-            ) {
-              const n = mkParticle(vxPx, vyPx, false);
-              p.rx = n.rx; p.ry = n.ry; p.age = 0; p.life = n.life;
-              continue;
-            }
+            // Only draw while in the visible travel portion [0, TRAVEL)
+            if (p.phase >= TRAVEL) continue;
 
-            const t     = p.age / p.life;
-            const alpha = t < 0.12 ? t / 0.12 : t > 0.70 ? (1 - t) / 0.30 : 1;
+            const progress = p.phase / TRAVEL;           // 0 → 1 over the journey
+            const alpha    = progress < 0.12 ? progress / 0.12
+                           : progress > 0.78 ? (1 - progress) / 0.22
+                           : 1;
             if (alpha <= 0.01) continue;
 
-            const sx = tlX + p.rx * cw;
-            const sy = tlY + p.ry * ch;
-            const tx = sx - vxPx * 12;
-            const ty = sy - vyPx * 12;
+            // Fixed entry position on the cell boundary
+            let startRx: number, startRy: number;
+            if (horizEntry) {
+              startRx = vxPx >= 0 ? 0 : 1;   // left edge for eastward, right for westward
+              startRy = p.lanePos;
+            } else {
+              startRx = p.lanePos;
+              startRy = vyPx >= 0 ? 0 : 1;   // top edge for southward, bottom for northward
+            }
+
+            // Current position: advance from entry by phase / drMax frames of travel
+            const rx = startRx + (drx / drMax) * p.phase;
+            const ry = startRy + (dry / drMax) * p.phase;
+
+            const sx = tlX + rx * cw;
+            const sy = tlY + ry * ch;
+            const tx = sx - vxPx * 8;         // short trail, 8× velocity
+            const ty = sy - vyPx * 8;
 
             const lg = ctx.createLinearGradient(tx, ty, sx, sy);
             lg.addColorStop(0,   'rgba(100,190,255,0)');
             lg.addColorStop(0.5, `rgba(180,230,255,${alpha * 0.3})`);
-            lg.addColorStop(1,   `rgba(255,255,255,${alpha * 0.8})`);
+            lg.addColorStop(1,   `rgba(255,255,255,${alpha * 0.85})`);
             ctx.beginPath();
             ctx.moveTo(tx, ty);
             ctx.lineTo(sx, sy);
             ctx.strokeStyle = lg;
-            ctx.lineWidth   = 1.8;
+            ctx.lineWidth   = 1.6;
             ctx.stroke();
 
-            const rg = ctx.createRadialGradient(sx, sy, 0, sx, sy, 3.5);
+            const rg = ctx.createRadialGradient(sx, sy, 0, sx, sy, 3);
             rg.addColorStop(0,    `rgba(255,255,255,${alpha})`);
-            rg.addColorStop(0.45, `rgba(200,240,255,${alpha * 0.55})`);
+            rg.addColorStop(0.45, `rgba(200,240,255,${alpha * 0.5})`);
             rg.addColorStop(1,    'rgba(140,210,255,0)');
             ctx.beginPath();
-            ctx.arc(sx, sy, 3.5, 0, Math.PI * 2);
+            ctx.arc(sx, sy, 3, 0, Math.PI * 2);
             ctx.fillStyle = rg;
             ctx.fill();
           }
@@ -213,7 +216,7 @@ export default function WindGridOverlay({ getBounds, fetchTrigger }: Props) {
     cancelAnimationFrame(animRef.current);
     animRef.current = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(animRef.current);
-  }, []);  
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <canvas
