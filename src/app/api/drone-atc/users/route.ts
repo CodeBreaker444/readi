@@ -46,7 +46,7 @@ export async function PATCH() {
     }
 
     const users = await getUsersWithDroneAtc();
-    const result = await updateFlytrelayUsers(String(userId), creds.token, users);
+    const result = await updateFlytrelayUsers(String(userId), creds.token, creds.orgId, users);
 
     return NextResponse.json({ ok: true, synced: result.synced });
   } catch (err) {

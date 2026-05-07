@@ -10,12 +10,12 @@ export interface ReadiDronePayload {
   exp?: number;
 }
 
-export function signReadiDroneJwt(userId: string, flytbaseKey: string): string {
+export function signReadiDroneJwt(userId: string, flytbaseKey: string, orgId: string): string {
   if (!env.READI_DRONE_PRIVATE_KEY) {
     throw new Error('READI_DRONE_PRIVATE_KEY is not configured');
   }
   return jwt.sign(
-    { userId, flytbaseKey },
+    { userId, flytbaseKey, orgId },
     env.READI_DRONE_PRIVATE_KEY,
     {
       algorithm: 'RS256',

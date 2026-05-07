@@ -17,7 +17,7 @@ export async function POST() {
       return NextResponse.json({ hasFlytbaseKey: false }, { status: 404 });
     }
 
-    const connection = await connectToFlytrelay(String(userId), creds.token);
+    const connection = await connectToFlytrelay(String(userId), creds.token, creds.orgId);
 
     return NextResponse.json({
       hasFlytbaseKey: true,
