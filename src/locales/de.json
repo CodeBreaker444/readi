@@ -2793,6 +2793,8 @@
       "jsonMatrixSchema": "JSON-Matrix-Schema",
       "initializeProtocol": "Protokoll initialisieren",
       "prettify": "Formatieren",
+      "noProtocolsFound": "Keine Protokolle gefunden",
+      "initializeFirst": "Initialisiere ein neues Protokoll, um zu starten",
       "toasts": {
         "loadFailed": "Kommunikation konnte nicht geladen werden",
         "added": "Kommunikation erfolgreich hinzugefügt.",

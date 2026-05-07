@@ -2804,6 +2804,8 @@
       "jsonMatrixSchema": "JSON Matrix Schema",
       "initializeProtocol": "Initialize Protocol",
       "prettify": "Prettify",
+      "noProtocolsFound": "No protocols found",
+      "initializeFirst": "Initialize a new protocol to get started",
       "toasts": {
         "loadFailed": "Failed to load communications",
         "added": "Communication added successfully.",

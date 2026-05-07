@@ -11,6 +11,7 @@ import type { Checklist } from '@/config/types/checklist';
 import { flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, useReactTable } from '@tanstack/react-table';
 import axios from 'axios';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   HiPlus,
   HiRefresh,
@@ -35,6 +36,7 @@ const emptyForm: FormData = {
 }
 
 export default function ChecklistPage() {
+  const { t } = useTranslation();
   const { isDark } = useTheme();
   const [checklists, setChecklists] = useState<Checklist[]>([])
   const [loading, setLoading] = useState(true)
@@ -53,7 +55,7 @@ export default function ChecklistPage() {
 
       setChecklists(res.data.result.data ?? [])
     } catch (error) {
-      toast.error('Failed to load checklists')
+      toast.error(t('organization.checklist.toasts.loadFailed'))
       setChecklists([])
     } finally {
       setLoading(false)
@@ -68,7 +70,7 @@ export default function ChecklistPage() {
     (item) => setPreviewItem(item),
     (item) => {
       if (item.checklist_active === 'Y') {
-        toast.error('Cannot delete an active checklist. Set it to Inactive first.');
+        toast.error(t('organization.checklist.toasts.deleteActiveFailed'));
         return;
       }
       setConfirmDelete(item);
@@ -90,8 +92,8 @@ export default function ChecklistPage() {
     setSubmitting(true)
     try {
       const res = await axios.post('/api/organization/checklist', form)
-      if (res.status === 201) { setAddOpen(false); load(); toast.success('Checklist created') }
-    } catch { toast.error('Creation failed') }
+      if (res.status === 201) { setAddOpen(false); load(); toast.success(t('organization.checklist.toasts.created')) }
+    } catch { toast.error(t('organization.checklist.toasts.createFailed')) }
     setSubmitting(false)
   }
 
@@ -100,8 +102,8 @@ export default function ChecklistPage() {
     setSubmitting(true)
     try {
       const res = await axios.put(`/api/organization/checklist/${editItem.checklist_id}`, form)
-      if (res.status === 200) { setEditItem(null); load(); toast.success('Checklist updated') }
-    } catch { toast.error('Update failed') }
+      if (res.status === 200) { setEditItem(null); load(); toast.success(t('organization.checklist.toasts.updated')) }
+    } catch { toast.error(t('organization.checklist.toasts.updateFailed')) }
     setSubmitting(false)
   }
 
@@ -110,8 +112,8 @@ export default function ChecklistPage() {
     setSubmitting(true)
     try {
       const res = await axios.delete(`/api/organization/checklist/${confirmDelete.checklist_id}`)
-      if (res.status === 200) { setConfirmDelete(null); load(); toast.success('Checklist deleted') }
-    } catch { toast.error('Deletion failed') }
+      if (res.status === 200) { setConfirmDelete(null); load(); toast.success(t('organization.checklist.toasts.deleted')) }
+    } catch { toast.error(t('organization.checklist.toasts.deleteFailed')) }
     setSubmitting(false)
   }
 
@@ -144,10 +146,10 @@ export default function ChecklistPage() {
               <div className="w-1 h-6 rounded-full bg-violet-600" />
               <div>
                 <h1 className={`font-semibold text-base tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>
-                  Checklists
+                  {t('organization.checklist.title')}
                 </h1>
                 <p className={`text-xs ${isDark ? "text-slate-500" : "text-slate-400"}`}>
-                  Manage and organize your operational checklist items
+                  {t('organization.checklist.subtitle')}
                 </p>
               </div>
             </div>
@@ -164,7 +166,7 @@ export default function ChecklistPage() {
                   }`}
               >
                 <HiRefresh className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
-                Refresh
+                {t('organization.checklist.refresh')}
               </Button>
 
               <Button
@@ -173,7 +175,7 @@ export default function ChecklistPage() {
                 className="h-8 gap-1.5 text-xs bg-violet-600 hover:bg-violet-500 text-white border-none shadow-sm shadow-violet-500/20"
               >
                 <HiPlus className="h-3.5 w-3.5" />
-                Add Checklist
+                {t('organization.checklist.addChecklist')}
               </Button>
             </div>
           </div>
@@ -184,7 +186,7 @@ export default function ChecklistPage() {
           <input
             value={globalFilter ?? ''}
             onChange={e => setGlobalFilter(e.target.value)}
-            placeholder="Search all columns..."
+            placeholder={t('organization.checklist.searchPlaceholder')}
             className={`w-full h-10 pl-9 pr-4 rounded-lg border text-sm outline-none focus:ring-2 focus:ring-blue-500/20 ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`}
           />
         </div>
@@ -215,7 +217,7 @@ export default function ChecklistPage() {
                     </tr>
                   ))
                 ) : table.getRowModel().rows.length === 0 ? (
-                  <tr><td colSpan={columns.length} className="py-20 text-center text-slate-500 italic">No results found.</td></tr>
+                  <tr><td colSpan={columns.length} className="py-20 text-center text-slate-500 italic">{t('organization.checklist.noResults')}</td></tr>
                 ) : table.getRowModel().rows.map(row => (
                   <tr key={row.id} className={`transition-colors ${isDark ? 'hover:bg-slate-800/40' : 'hover:bg-slate-50'}`}>
                     {row.getVisibleCells().map(cell => (
@@ -233,12 +235,12 @@ export default function ChecklistPage() {
         <TablePagination table={table} />
       </div>
 
-      <Modal open={addOpen} title="Add Checklist" onClose={() => setAddOpen(false)} isDark={isDark}>
-        <ChecklistForm initial={emptyForm} onSubmit={handleCreate} loading={submitting} submitLabel="Create Checklist" isDark={isDark} />
+      <Modal open={addOpen} title={t('organization.checklist.modalAddTitle')} onClose={() => setAddOpen(false)} isDark={isDark}>
+        <ChecklistForm initial={emptyForm} onSubmit={handleCreate} loading={submitting} submitLabel={t('organization.checklist.createChecklist')} isDark={isDark} />
       </Modal>
 
       <Modal open={!!editItem} title={`Edit — ${editItem?.checklist_code}`} onClose={() => setEditItem(null)} isDark={isDark}>
-        <ChecklistForm initial={editInitial} onSubmit={handleUpdate} loading={submitting} submitLabel="Save Changes" isDark={isDark} />
+        <ChecklistForm initial={editInitial} onSubmit={handleUpdate} loading={submitting} submitLabel={t('organization.common.saveChanges')} isDark={isDark} />
       </Modal>
 
       <Modal open={!!previewItem} title={`Preview — ${previewItem?.checklist_code}`} onClose={() => setPreviewItem(null)} isDark={isDark}>
@@ -254,23 +256,23 @@ export default function ChecklistPage() {
         )}
       </Modal>
 
-      <Modal open={!!confirmDelete} title="Delete Checklist" onClose={() => setConfirmDelete(null)} isDark={isDark}>
+      <Modal open={!!confirmDelete} title={t('organization.checklist.modalDeleteTitle')} onClose={() => setConfirmDelete(null)} isDark={isDark}>
         <p className={`text-sm leading-relaxed mb-6 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-          Permanently delete <span className={`font-semibold font-mono ${isDark ? 'text-white' : 'text-slate-900'}`}>{confirmDelete?.checklist_code}</span>? This cannot be undone.
+          {t('organization.checklist.deleteConfirm', { code: confirmDelete?.checklist_code })}
         </p>
         <div className="flex gap-3 justify-end">
           <button
             onClick={() => setConfirmDelete(null)}
             className={`px-4 py-2 rounded-lg border text-sm transition-colors ${isDark ? 'border-slate-700 text-slate-400 hover:bg-slate-800' : 'border-slate-200 text-slate-500 hover:bg-slate-50'}`}
           >
-            Cancel
+            {t('organization.common.cancel')}
           </button>
           <button
             onClick={handleDelete}
             disabled={submitting}
             className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-medium transition-colors disabled:opacity-50"
           >
-            {submitting ? 'Deleting…' : 'Delete'}
+            {submitting ? t('organization.common.deleting') : t('organization.common.delete')}
           </button>
         </div>
       </Modal>

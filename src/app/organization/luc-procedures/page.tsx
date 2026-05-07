@@ -12,6 +12,7 @@ import {
 import axios from 'axios';
 import { ChevronDown, ChevronsUpDown, ChevronUp, Plus, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { getLucProcedureColumns } from '@/components/organization/LcuProcedureColumn';
@@ -42,18 +43,6 @@ import type {
   LucProcedureStatus,
 } from '@/config/types/lcuProcedures';
 
-const STATUS_FILTER_OPTIONS: { value: LucProcedureStatus | 'ALL'; label: string }[] = [
-  { value: 'ALL',        label: 'All Statuses' },
-  { value: 'EVALUATION', label: 'Evaluation'   },
-  { value: 'PLANNING',   label: 'Planning'     },
-  { value: 'MISSION',    label: 'Mission'      },
-];
-
-const ACTIVE_FILTER_OPTIONS = [
-  { value: 'ALL', label: 'All'      },
-  { value: 'Y',   label: 'Active'   },
-  { value: 'N',   label: 'Inactive' },
-];
 
 function StatCard({
   label, value, colorClass, bgClass, darkBgClass, darkColorClass, isDark,
@@ -82,7 +71,21 @@ function SortIcon({ direction }: { direction: 'asc' | 'desc' | false }) {
 }
 
 export default function LucProceduresPage() {
+  const { t } = useTranslation();
   const { isDark } = useTheme();
+
+  const STATUS_FILTER_OPTIONS: { value: LucProcedureStatus | 'ALL'; label: string }[] = [
+    { value: 'ALL',        label: t('organization.lucProcedures.allStatuses') },
+    { value: 'EVALUATION', label: t('organization.lucProcedures.statusOptions.evaluation') },
+    { value: 'PLANNING',   label: t('organization.lucProcedures.statusOptions.planning') },
+    { value: 'MISSION',    label: t('organization.lucProcedures.statusOptions.mission') },
+  ];
+
+  const ACTIVE_FILTER_OPTIONS = [
+    { value: 'ALL', label: t('organization.lucProcedures.allActive') },
+    { value: 'Y',   label: t('organization.lucProcedures.activeOptions.active') },
+    { value: 'N',   label: t('organization.lucProcedures.activeOptions.inactive') },
+  ];
   const [procedures,   setProcedures]   = useState<LucProcedure[]>([]);
   const [loading,      setLoading]      = useState(true);
   const [saving,       setSaving]       = useState(false);
@@ -99,7 +102,7 @@ export default function LucProceduresPage() {
       const res = await axios.get('/api/organization/luc-procedures');
       setProcedures(res.data.data ?? []);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to load procedures');
+      toast.error(err instanceof Error ? err.message : t('organization.lucProcedures.toasts.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -111,11 +114,11 @@ export default function LucProceduresPage() {
     try {
       setSaving(true);
       await axios.post('/api/organization/luc-procedures', data);
-      toast.success('Procedure created successfully');
+      toast.success(t('organization.lucProcedures.toasts.created'));
       setShowCreate(false);
       loadProcedures();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Create failed');
+      toast.error(err instanceof Error ? err.message : t('organization.lucProcedures.toasts.createFailed'));
     } finally { setSaving(false); }
   };
 
@@ -124,11 +127,11 @@ export default function LucProceduresPage() {
     try {
       setSaving(true);
       await axios.put(`/api/organization/luc-procedures/${editTarget.procedure_id}`, data);
-      toast.success('Procedure updated successfully');
+      toast.success(t('organization.lucProcedures.toasts.updated'));
       setEditTarget(null);
       loadProcedures();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Update failed');
+      toast.error(err instanceof Error ? err.message : t('organization.lucProcedures.toasts.updateFailed'));
     } finally { setSaving(false); }
   };
 
@@ -136,17 +139,17 @@ export default function LucProceduresPage() {
     if (!deleteTarget) return;
     try {
       await axios.delete(`/api/organization/luc-procedures/${deleteTarget.procedure_id}`);
-      toast.success('Procedure deleted');
+      toast.success(t('organization.lucProcedures.toasts.deleted'));
       setDeleteTarget(null);
       loadProcedures();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Delete failed');
+      toast.error(err instanceof Error ? err.message : t('organization.lucProcedures.toasts.deleteFailed'));
     }
   };
 
   const handleDeleteClick = useCallback((proc: LucProcedure) => {
     if (proc.procedure_active === 'Y') {
-      toast.error('Cannot delete an active procedure. Set it to Inactive first.');
+      toast.error(t('organization.lucProcedures.toasts.deleteActiveFailed'));
       return;
     }
     setDeleteTarget(proc);
@@ -217,10 +220,10 @@ export default function LucProceduresPage() {
             <div className="w-1 h-6 rounded-full bg-violet-600" />
             <div>
               <h1 className={`font-semibold text-base tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                Procedures
+                {t('organization.lucProcedures.title')}
               </h1>
               <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                Manage light UAS operator certificate procedures
+                {t('organization.lucProcedures.subtitle')}
               </p>
             </div>
           </div>
@@ -238,7 +241,7 @@ export default function LucProceduresPage() {
                 }`}
             >
               <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
-              Refresh
+              {t('organization.lucProcedures.refresh')}
             </Button>
             <Button
               size="sm"
@@ -246,26 +249,26 @@ export default function LucProceduresPage() {
               className="h-8 gap-1.5 text-xs bg-violet-600 hover:bg-violet-500 text-white border-none shadow-sm shadow-violet-500/20"
             >
               <Plus className="h-3.5 w-3.5" />
-              Add Procedure
+              {t('organization.lucProcedures.addProcedure')}
             </Button>
           </div>
         </div>
         </div>
         <div className='relative mb-4 mx-3'> 
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
-          <StatCard label="Total"      value={stats.total}      isDark={isDark}
+          <StatCard label={t('organization.lucProcedures.statCards.total')}      value={stats.total}      isDark={isDark}
             colorClass="text-slate-700"   bgClass="bg-white"
             darkColorClass="text-slate-200" darkBgClass="bg-slate-800/80" />
-          <StatCard label="Active"     value={stats.active}     isDark={isDark}
+          <StatCard label={t('organization.lucProcedures.statCards.active')}     value={stats.active}     isDark={isDark}
             colorClass="text-emerald-700" bgClass="bg-emerald-50"
             darkColorClass="text-emerald-400" darkBgClass="bg-emerald-500/10" />
-          <StatCard label="Evaluation" value={stats.evaluation} isDark={isDark}
+          <StatCard label={t('organization.lucProcedures.statCards.evaluation')} value={stats.evaluation} isDark={isDark}
             colorClass="text-violet-700"  bgClass="bg-violet-50"
             darkColorClass="text-violet-400" darkBgClass="bg-violet-500/10" />
-          <StatCard label="Planning"   value={stats.planning}   isDark={isDark}
+          <StatCard label={t('organization.lucProcedures.statCards.planning')}   value={stats.planning}   isDark={isDark}
             colorClass="text-sky-700"     bgClass="bg-sky-50"
             darkColorClass="text-sky-400" darkBgClass="bg-sky-500/10" />
-          <StatCard label="Mission"    value={stats.mission}    isDark={isDark}
+          <StatCard label={t('organization.lucProcedures.statCards.mission')}    value={stats.mission}    isDark={isDark}
             colorClass="text-amber-700"   bgClass="bg-amber-50"
             darkColorClass="text-amber-400" darkBgClass="bg-amber-500/10" />
         </div>
@@ -280,7 +283,7 @@ export default function LucProceduresPage() {
                 d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             <Input
-              placeholder="Search by code, name or description…"
+              placeholder={t('organization.lucProcedures.searchPlaceholder')}
               value={globalFilter}
               onChange={e => setGlobalFilter(e.target.value)}
               className={`pl-9 h-9 text-sm ${inputCls}`}
@@ -374,12 +377,12 @@ export default function LucProceduresPage() {
                         </svg>
                       </div>
                       <p className={`text-sm font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                        No procedures found
+                        {t('organization.lucProcedures.emptyState.noProcedures')}
                       </p>
                       <p className={`text-xs ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>
                         {globalFilter || columnFilters.length > 0
-                          ? 'Try adjusting your filters'
-                          : 'Add your first Procedure to get started'}
+                          ? t('organization.lucProcedures.emptyState.adjustFilters')
+                          : t('organization.lucProcedures.emptyState.addFirst')}
                       </p>
                     </div>
                   </TableCell>

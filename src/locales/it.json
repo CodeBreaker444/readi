@@ -2797,6 +2797,8 @@
       "jsonMatrixSchema": "Schema matrice JSON",
       "initializeProtocol": "Inizializza protocollo",
       "prettify": "Formatta (Prettify)",
+      "noProtocolsFound": "Nessun protocollo trovato",
+      "initializeFirst": "Inizializza un nuovo protocollo per iniziare",
       "toasts": {
         "loadFailed": "Caricamento comunicazioni fallito",
         "added": "Comunicazione aggiunta con successo.",

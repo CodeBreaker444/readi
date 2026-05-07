@@ -1,10 +1,15 @@
 'use client';
 
-import '@/lib/i18n/config';
+import i18n, { getStoredLanguage } from '@/lib/i18n/config';
+import { useEffect } from 'react';
 
 export function I18nProvider({ children }: { children: React.ReactNode }) {
-  // i18next is initialized by importing the config above.
-  // This component exists purely to ensure the config import runs
-  // on the client before any child renders.
+  useEffect(() => {
+    const lang = getStoredLanguage();
+    if (lang !== i18n.language) {
+      i18n.changeLanguage(lang);
+    }
+  }, []);
+
   return <>{children}</>;
 }
