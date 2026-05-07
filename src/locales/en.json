@@ -305,7 +305,8 @@
       "timezone": "Timezone",
       "department": "Department",
       "type": "Type",
-      "signature": "Signature"
+      "signature": "Signature",
+      "easaOperatorCode": "EASA Operator Code"
     },
     "placeholders": {
       "fullName": "Enter full name",
@@ -314,7 +315,8 @@
       "timezone": "Select timezone",
       "department": "Enter department",
       "type": "Select type",
-      "signature": "Enter signature"
+      "signature": "Enter signature",
+      "easaOperatorCode": "Enter EASA operator code"
     },
     "types": {
       "admin": "Admin",

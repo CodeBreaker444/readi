@@ -305,7 +305,8 @@
       "timezone": "Zeitzone",
       "department": "Abteilung",
       "type": "Typ",
-      "signature": "Signatur"
+      "signature": "Signatur",
+      "easaOperatorCode": "EASA-Betreibercode"
     },
     "placeholders": {
       "fullName": "Vollstandigen Namen eingeben",
@@ -314,7 +315,8 @@
       "timezone": "Zeitzone auswahlen",
       "department": "Abteilung eingeben",
       "type": "Typ auswahlen",
-      "signature": "Signatur eingeben"
+      "signature": "Signatur eingeben",
+      "easaOperatorCode": "EASA-Betreibercode eingeben"
     },
     "types": {
       "admin": "Admin",

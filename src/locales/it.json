@@ -305,7 +305,8 @@
       "timezone": "Fuso orario",
       "department": "Dipartimento",
       "type": "Tipo",
-      "signature": "Firma"
+      "signature": "Firma",
+      "easaOperatorCode": "Codice Operatore EASA"
     },
     "placeholders": {
       "fullName": "Inserisci nome completo",
@@ -314,7 +315,8 @@
       "timezone": "Seleziona fuso orario",
       "department": "Inserisci dipartimento",
       "type": "Seleziona tipo",
-      "signature": "Inserisci firma"
+      "signature": "Inserisci firma",
+      "easaOperatorCode": "Inserisci codice operatore EASA"
     },
     "types": {
       "admin": "Admin",
