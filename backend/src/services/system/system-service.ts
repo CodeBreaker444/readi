@@ -544,7 +544,8 @@ export async function getComponentList(ownerId: number, toolId?: number) {
     current_maintenance_days,
     current_maintenance_flights,
     last_maintenance_date,
-    dcc_drone_id
+    dcc_drone_id,
+    drone_registration_code
   `;
 
   // only attached, non-detached components for that system
@@ -619,6 +620,7 @@ function buildComponentListResult(data: any[]) {
       current_maintenance_flights: Number(item.current_maintenance_flights) || 0,
       last_maintenance_date: item.last_maintenance_date || null,
       dcc_drone_id: item.dcc_drone_id ?? null,
+      drone_registration_code: item.drone_registration_code ?? null,
     })),
   };
 }
@@ -691,6 +693,7 @@ export async function addComponent(componentData: any) {
       maintenance_cycle_day: finalDay ?? null,
       maintenance_cycle_flight: finalFlight ?? null,
       dcc_drone_id: componentData.dcc_drone_id || null,
+      drone_registration_code: componentData.drone_registration_code || null,
       component_metadata: {
         cc_platform: componentData.cc_platform || null,
         gcs_type: componentData.gcs_type || null,
@@ -757,6 +760,7 @@ export async function updateComponent(componentId: number, componentData: any) {
       serial_number: normalizedSerial || null,
       installation_date: componentData.component_activation_date || null,
       dcc_drone_id: componentData.dcc_drone_id ?? null,
+      drone_registration_code: componentData.drone_registration_code || null,
       maintenance_cycle: componentData.maintenance_cycle || null,
       maintenance_cycle_hour: componentData.maintenance_cycle_hour ?? null,
       maintenance_cycle_day: componentData.maintenance_cycle_day ?? null,

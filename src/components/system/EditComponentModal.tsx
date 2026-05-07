@@ -79,6 +79,7 @@ const EMPTY_FORM = {
   cc_platform: '',
   gcs_type: '',
   dcc_drone_id: '',
+  drone_registration_code: '',
   component_activation_date: '',
   component_purchase_date: '',
   component_vendor: '',
@@ -159,6 +160,7 @@ export default function EditComponentModal({
       cc_platform: comp.cc_platform || '',
       gcs_type: comp.gcs_type || '',
       dcc_drone_id: comp.dcc_drone_id || '',
+      drone_registration_code: comp.drone_registration_code || '',
       component_activation_date: comp.component_activation_date?.split('T')[0] || '',
       component_purchase_date: comp.component_purchase_date?.split('T')[0] || '',
       component_vendor: comp.component_vendor || '',
@@ -315,6 +317,7 @@ export default function EditComponentModal({
         cc_platform: formData.cc_platform || null,
         gcs_type: formData.gcs_type || null,
         dcc_drone_id: formData.dcc_drone_id || null,
+        drone_registration_code: formData.drone_registration_code || null,
         component_activation_date: formData.component_activation_date || null,
         component_purchase_date: formData.component_purchase_date || null,
         component_vendor: formData.component_vendor || null,
@@ -547,13 +550,22 @@ export default function EditComponentModal({
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="col-span-1 sm:col-span-6">
+                    <div className="col-span-1 sm:col-span-3">
                       <Label className={labelCls}>DCC Drone ID (UUID)</Label>
                       <Input
                         className={inputCls}
                         value={formData.dcc_drone_id}
                         onChange={e => handleChange('dcc_drone_id', e.target.value)}
                         placeholder="e.g. e47c7fa4-f6c7-4bc2-9d55-84ad69bf2a95"
+                      />
+                    </div>
+                    <div className="col-span-1 sm:col-span-3">
+                      <Label className={labelCls}>Drone Registration Code <span className="font-normal opacity-60">(optional)</span></Label>
+                      <Input
+                        className={inputCls}
+                        value={formData.drone_registration_code}
+                        onChange={e => handleChange('drone_registration_code', e.target.value)}
+                        placeholder="e.g. UAS-2024-001"
                       />
                     </div>
                   </div>
