@@ -26,6 +26,8 @@ function formatDistance(meters: number): string {
 interface ComponentRow {
   tool_component_id: number;
   fk_tool_id: number | null;
+  fk_tool_model_id?: number | null;
+  system_detached?: boolean;
   fk_parent_component_id?: number | null;
   component_type?: string | null;
   component_desc?: string | null;
@@ -42,9 +44,11 @@ interface ComponentRow {
 interface SystemComponentsTableProps {
   systems: DroneToolData[];
   components: ComponentRow[];
+  modelMap?: Record<number, string>;
   loading?: boolean;
   onViewSystem: (toolId: number) => void;
   onEditSystem: (tool: DroneToolData) => void;
+  onDuplicateSystem: (tool: DroneToolData) => void;
   onDeleteSystem: (toolId: number) => void;
   onViewFiles: (tool: DroneToolData) => void;
   onViewComponent: (row: ComponentRow) => void;
@@ -69,9 +73,11 @@ function StatusPill({ status }: { status?: string | null }) {
 export default function SystemComponentsTable({
   systems,
   components,
+  modelMap = {},
   loading = false,
   onViewSystem,
   onEditSystem,
+  onDuplicateSystem,
   onDeleteSystem,
   onViewFiles,
   onViewComponent,
@@ -89,9 +95,18 @@ export default function SystemComponentsTable({
   const componentsBySystem = useMemo(() => {
     const map: Record<number, ComponentRow[]> = {};
     components.forEach((c) => {
-      if (!c.fk_tool_id) return;
+      if (!c.fk_tool_id || c.system_detached) return;
       if (!map[c.fk_tool_id]) map[c.fk_tool_id] = [];
       map[c.fk_tool_id].push(c);
+    });
+    return map;
+  }, [components]);
+
+  const componentCountBySystem = useMemo(() => {
+    const map: Record<number, number> = {};
+    components.forEach((c) => {
+      if (!c.fk_tool_id || c.system_detached) return;
+      map[c.fk_tool_id] = (map[c.fk_tool_id] ?? 0) + 1;
     });
     return map;
   }, [components]);
@@ -169,7 +184,7 @@ export default function SystemComponentsTable({
           <table className="w-full text-sm">
             <thead>
               <tr className={`border-b ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-                {['System / Component', 'Client / Serial', 'Status', 'Actions'].map((h) => (
+                {['System / Component', 'Client / Serial', 'Model', 'Status', 'Actions'].map((h) => (
                   <th key={h} className={`px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                     {h}
                   </th>
@@ -183,16 +198,18 @@ export default function SystemComponentsTable({
                     <td className="px-3 py-3"><Skeleton className="h-8 w-full" /></td>
                     <td className="px-3 py-3"><Skeleton className="h-8 w-full" /></td>
                     <td className="px-3 py-3"><Skeleton className="h-8 w-24" /></td>
+                    <td className="px-3 py-3"><Skeleton className="h-8 w-24" /></td>
                     <td className="px-3 py-3"><Skeleton className="h-8 w-full" /></td>
                   </tr>
                 ))
               ) : pagedSystems.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="h-24 text-center text-slate-400">No results.</td>
+                  <td colSpan={5} className="h-24 text-center text-slate-400">No results.</td>
                 </tr>
               ) : (
                 pagedSystems.map((system) => {
                   const systemComps = componentsBySystem[system.tool_id] ?? [];
+                  const totalComponentCount = componentCountBySystem[system.tool_id] ?? 0;
                   const hierarchyRows = getHierarchy(systemComps);
                   const parentIds = new Set(
                     systemComps
@@ -211,7 +228,7 @@ export default function SystemComponentsTable({
                             <ChevronRight className={`h-4 w-4 mt-0.5 transition-transform ${isOpen ? 'rotate-90' : ''}`} />
                             <div>
                               <p className={`font-semibold ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>{system.tool_code}</p>
-                              <p className="text-xs text-slate-400">{systemComps.length} component{systemComps.length === 1 ? '' : 's'}</p>
+                              <p className="text-xs text-slate-400">{totalComponentCount} component{totalComponentCount === 1 ? '' : 's'}</p>
                               {system.tool_desc ? <p className="text-xs text-slate-400">{system.tool_desc}</p> : null}
                             </div>
                           </div>
@@ -226,6 +243,7 @@ export default function SystemComponentsTable({
                             </div>
                           )}
                         </td>
+                        <td className="px-3 py-3" />
                         <td className="px-3 py-3">
                           <StatusPill status={system.tool_status} />
                         </td>
@@ -233,6 +251,7 @@ export default function SystemComponentsTable({
                           <div className="flex flex-wrap gap-2">
                             <Button size="sm" variant="outline" onClick={() => onViewSystem(system.tool_id)}>View</Button>
                             <Button size="sm" variant="outline" onClick={() => onEditSystem(system)}>Edit</Button>
+                            <Button size="sm" variant="outline" onClick={() => onDuplicateSystem(system)}>Duplicate</Button>
                             <Button size="sm" variant="outline" onClick={() => onViewFiles(system)}>Files</Button>
                             <Button size="sm" variant="outline" onClick={() => onOpenRelations(system.tool_id, system.tool_code)} className="gap-1">
                               <GitBranch size={13} /> Relations
@@ -263,6 +282,11 @@ export default function SystemComponentsTable({
                                 </div>
                               </td>
                               <td className={`px-3 py-2.5 text-xs font-mono ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{comp.component_sn || '—'}</td>
+                              <td className={`px-3 py-2.5 text-xs ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                                {comp.fk_tool_model_id && modelMap[comp.fk_tool_model_id]
+                                  ? modelMap[comp.fk_tool_model_id]
+                                  : <span className="text-slate-400">—</span>}
+                              </td>
                               <td className="px-3 py-2.5"><StatusPill status={comp.component_status} /></td>
                               <td className="px-3 py-2.5">
                                 <div className="flex flex-wrap gap-2">
@@ -290,7 +314,7 @@ export default function SystemComponentsTable({
                           ))
                         ) : (
                           <tr className={`border-t ${isDark ? 'border-slate-700 bg-slate-800/30' : 'border-slate-100 bg-slate-50/70'}`}>
-                            <td colSpan={4} className="px-10 py-3 text-xs text-slate-400">No components attached to this system.</td>
+                            <td colSpan={5} className="px-10 py-3 text-xs text-slate-400">No components attached to this system.</td>
                           </tr>
                         ))}
                     </Fragment>

@@ -11,10 +11,11 @@ import EditComponentModal from '@/components/system/EditComponentModal';
 import EditModelModal from '@/components/system/EditModelModal';
 import EditSystemModal from '@/components/system/EditSystemModal';
 import { FilesDownloadModal, SystemFile } from '@/components/system/FilesDownloadModal';
+import DuplicateSystemModal from '@/components/system/DuplicateSystemModal';
 import SystemComponentsTable from '@/components/system/SystemComponentsTable';
 import ViewComponentModal from '@/components/system/ViewComponentModal';
 import ViewToolModal from '@/components/system/ViewToolModal';
-import { DroneToolData, getModelColumns } from '@/components/tables/SystemColumn';
+import { DroneToolData, getComponentColumns, getModelColumns } from '@/components/tables/SystemColumn';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -30,7 +31,7 @@ import { AlertTriangle, Loader2, Plus, RefreshCw } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
-type ActiveTab = 'system' | 'model' | 'maintenance';
+type ActiveTab = 'system' | 'model' | 'component';
 
 interface DeleteConfirm {
     open: boolean;
@@ -60,9 +61,11 @@ export default function DroneToolPage() {
     const [showFlightLogs, setShowFlightLogs] = useState<boolean>(false);
     const [flightLogsComponent, setFlightLogsComponent] = useState<any | null>(null);
     const [showEditSystem, setShowEditSystem] = useState<boolean>(false);
+    const [showDuplicateSystem, setShowDuplicateSystem] = useState<boolean>(false);
     const [showEditModel, setShowEditModel] = useState<boolean>(false);
     const [showEditComponent, setShowEditComponent] = useState<boolean>(false);
     const [selectedToolId, setSelectedToolId] = useState<number | null>(null);
+    const [duplicateSourceSystemId, setDuplicateSourceSystemId] = useState<number | null>(null);
     const [directModelId, setDirectModelId] = useState<number | null>(null);
     const [directComponentId, setDirectComponentId] = useState<number | null>(null);
 
@@ -172,6 +175,10 @@ export default function DroneToolPage() {
     const handleLogComponent = (row: any) => { setLogComponent(row); setShowComponentLog(true); };
     const handleFlightLogsComponent = (row: any) => { setFlightLogsComponent(row); setShowFlightLogs(true); };
     const handleEditSystem = (tool: DroneToolData) => { setSelectedToolId(tool.tool_id); setShowEditSystem(true); };
+    const handleDuplicateSystem = (tool: DroneToolData) => {
+        setDuplicateSourceSystemId(tool.tool_id);
+        setShowDuplicateSystem(true);
+    };
 
     const handleDelete = async (toolId: number) => {
         const tool = toolData.find(t => t.tool_id === toolId);
@@ -311,18 +318,43 @@ export default function DroneToolPage() {
         return map;
     }, [toolData]);
 
+    const modelMap = useMemo(() => {
+        const map: Record<number, string> = {};
+        models.forEach((m: any) => { map[m.tool_model_id] = `${m.factory_type} ${m.factory_model}`; });
+        return map;
+    }, [models]);
+
 const modelColumns = useMemo(
-        () => getModelColumns({ 
-            isDark, 
-            onEdit: handleEditModelDirect, 
-            onDelete: handleDeleteModel 
+        () => getModelColumns({
+            isDark,
+            onEdit: handleEditModelDirect,
+            onDelete: handleDeleteModel
         }),
         [isDark]
+    );
+
+    const componentColumns = useMemo(
+        () => getComponentColumns({
+            isDark,
+            toolCodeMap,
+            modelMap,
+            onView: handleViewComponent,
+            onEdit: handleEditComponentDirect,
+            onDelete: handleDeleteComponent,
+            onLog: handleLogComponent,
+        }),
+        [isDark, toolCodeMap, modelMap]
+    );
+
+    const standaloneComponents = useMemo(
+        () => componentData.filter((c: any) => !c.fk_tool_id || c.system_detached),
+        [componentData]
     );
 
     const tabConfig: { key: ActiveTab; label: string }[] = [
         { key: 'system', label: 'Systems' },
         { key: 'model', label: 'Models' },
+        { key: 'component', label: 'Warehouse' },
     ];
 
     return (
@@ -401,7 +433,7 @@ const modelColumns = useMemo(
                         <button
                             key={key}
                             onClick={() => setActiveTab(key)}
-                            className={`px-5 py-1.5 rounded-md text-sm font-medium transition-all ${
+                            className={`px-5 cursor-pointer py-1.5 rounded-md text-sm font-medium transition-all ${
                                 activeTab === key
                                     ? isDark
                                         ? 'bg-violet-600 text-white shadow-sm'
@@ -420,9 +452,11 @@ const modelColumns = useMemo(
                             <SystemComponentsTable
                                 systems={toolData}
                                 components={componentData}
+                                modelMap={modelMap}
                                 loading={loading || loadingComponents}
                                 onViewSystem={handleView}
                                 onEditSystem={handleEditSystem}
+                                onDuplicateSystem={handleDuplicateSystem}
                                 onDeleteSystem={handleDelete}
                                 onViewFiles={handleViewFiles}
                                 onViewComponent={handleViewComponent}
@@ -439,6 +473,9 @@ const modelColumns = useMemo(
                         )}
                         {activeTab === 'model' && (
                             <DataTable columns={modelColumns} data={models} loading={loadingModels} exportFilename="models" />
+                        )}
+                        {activeTab === 'component' && (
+                            <DataTable columns={componentColumns} data={standaloneComponents} loading={loadingComponents} exportFilename="components" />
                         )}
                     </CardContent>
                 </Card>
@@ -496,6 +533,19 @@ const modelColumns = useMemo(
                     onSuccess={() => { setShowEditSystem(false); setSelectedToolId(null); fetchToolData(); }}
                     clients={clients} models={models} />
             )}
+
+            <DuplicateSystemModal
+                open={showDuplicateSystem}
+                sourceSystemId={duplicateSourceSystemId}
+                clients={clients}
+                onClose={() => { setShowDuplicateSystem(false); setDuplicateSourceSystemId(null); }}
+                onSuccess={() => {
+                    setShowDuplicateSystem(false);
+                    setDuplicateSourceSystemId(null);
+                    fetchToolData();
+                    fetchAllComponents();
+                }}
+            />
 
             {showEditModel && (
                 <EditModelModal open={showEditModel} toolId={selectedToolId}

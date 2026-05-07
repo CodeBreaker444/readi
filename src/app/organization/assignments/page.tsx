@@ -3,8 +3,8 @@
 import { AssignmentForm, AssignmentModal } from '@/components/organization/AssignmentUi'
 import { getAssignmentColumns } from '@/components/tables/AssignmentColumn'
 import { TablePagination } from '@/components/tables/Pagination'
-import { Button } from '@/components/ui/button'
 import { useTimezone } from '@/components/TimezoneProvider'
+import { Button } from '@/components/ui/button'
 import { useTheme } from '@/components/useTheme'
 import {
   flexRender,
@@ -15,6 +15,7 @@ import {
 } from '@tanstack/react-table'
 import axios from 'axios'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useTranslation } from "react-i18next"
 import { HiPlus, HiRefresh, HiSearch } from 'react-icons/hi'
 import { toast } from 'sonner'
 
@@ -33,7 +34,9 @@ const emptyForm: FormData = {
   assignment_desc: '',
   assignment_json: '',
 }
+
 export default function AssignmentPage() {
+  const { t } = useTranslation();
   const { isDark } = useTheme()
   const { timezone } = useTimezone()
   const [assignments, setAssignments] = useState<any[]>([])
@@ -52,12 +55,12 @@ export default function AssignmentPage() {
       const res = await axios.get('/api/organization/assignment')
       setAssignments(res.data.data ?? [])
     } catch {
-      toast.error('Failed to load assignments')
+      toast.error(t('organization.assignments.toasts.loadFailed'))
       setAssignments([])
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => { load() }, [load])
 
@@ -67,13 +70,14 @@ export default function AssignmentPage() {
     (item) => setPreviewItem(item),
     (item) => {
       if (item.assignment_active === 'Y') {
-        toast.error('Cannot delete an active assignment. Set it to Inactive first.');
+        toast.error(t('organization.assignments.toasts.deleteActiveFailed'));
         return;
       }
       setConfirmDelete(item);
     },
+    t,
     timezone,
-  ), [isDark, timezone])
+  ), [isDark, timezone, t])
 
   const table = useReactTable({
     data: assignments,
@@ -98,13 +102,13 @@ export default function AssignmentPage() {
         if (newItem) {
           setAssignments((prev) => [newItem, ...prev])
           setAddOpen(false)
-          toast.success('Assignment created')
+          toast.success(t('organization.assignments.toasts.created'))
         } else {
           load()
         }
       }
     } catch (err: any) {
-      const msg = err.response?.data?.message ?? 'Creation failed'
+      const msg = err.response?.data?.message ?? t('organization.assignments.toasts.createFailed')
       toast.error(msg)
     } finally {
       setSubmitting(false)
@@ -120,9 +124,9 @@ export default function AssignmentPage() {
         const updated = res.data?.data ?? res.data?.result?.data ?? { ...editItem, ...form }
         setAssignments(prev => prev.map(item => item.assignment_id === editItem.assignment_id ? updated : item))
         setEditItem(null)
-        toast.success('Assignment updated')
+        toast.success(t('organization.assignments.toasts.updated'))
       }
-    } catch { toast.error('Update failed') }
+    } catch { toast.error(t('organization.assignments.toasts.updateFailed')) }
     setSubmitting(false)
   }
 
@@ -134,9 +138,9 @@ export default function AssignmentPage() {
       if (res.status === 200) {
         setAssignments(prev => prev.filter(a => a.assignment_id !== confirmDelete.assignment_id))
         setConfirmDelete(null)
-        toast.success('Assignment deleted')
+        toast.success(t('organization.assignments.toasts.deleted'))
       }
-    } catch { toast.error('Deletion failed') }
+    } catch { toast.error(t('organization.assignments.toasts.deleteFailed')) }
     setSubmitting(false)
   }
 
@@ -164,10 +168,10 @@ export default function AssignmentPage() {
               <div className="w-1 h-6 rounded-full bg-violet-600" />
               <div>
                 <h1 className={`font-semibold text-base tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>
-                  Assignments
+                  {t('organization.assignments.title')}
                 </h1>
                 <p className={`text-xs ${isDark ? "text-slate-500" : "text-slate-400"}`}>
-                  Assign personnel and resources to operational tasks
+                  {t('organization.assignments.subtitle')}
                 </p>
               </div>
             </div>
@@ -184,7 +188,7 @@ export default function AssignmentPage() {
                   }`}
               >
                 <HiRefresh className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
-                Sync
+                {t('organization.assignments.sync')}
               </Button>
 
               <Button
@@ -193,7 +197,7 @@ export default function AssignmentPage() {
                 className="h-8 gap-1.5 text-xs bg-violet-600 hover:bg-violet-500 text-white border-none shadow-sm shadow-violet-500/20"
               >
                 <HiPlus className="h-3.5 w-3.5" />
-                Add Assignment
+                {t('organization.assignments.addAssignment')}
               </Button>
             </div>
           </div>
@@ -204,7 +208,7 @@ export default function AssignmentPage() {
           <input
             value={globalFilter ?? ''}
             onChange={e => setGlobalFilter(e.target.value)}
-            placeholder="Search assignments..."
+            placeholder={t('organization.assignments.searchPlaceholder')}
             className={`w-full h-10 pl-9 rounded-lg border outline-none focus:ring-2 focus:ring-blue-500/20 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}
           />
         </div>
@@ -267,8 +271,12 @@ export default function AssignmentPage() {
                           </svg>
                         </div>
                         <div>
-                          <p className={`text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>No results found</p>
-                          <p className={`text-xs mt-0.5 ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>Try adjusting your filters or search</p>
+                          <p className={`text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                            {t('organization.common.noResultsFound')}
+                          </p>
+                          <p className={`text-xs mt-0.5 ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>
+                            {t('organization.common.tryAdjustingFilters')}
+                          </p>
                         </div>
                       </div>
                     </td>
@@ -284,19 +292,19 @@ export default function AssignmentPage() {
       </div>
 
 
-      <AssignmentModal open={addOpen} title="Add Assignment" onClose={() => setAddOpen(false)} isDark={isDark}>
+      <AssignmentModal open={addOpen} title={t('organization.assignments.modalAddTitle')} onClose={() => setAddOpen(false)} isDark={isDark}>
         <AssignmentForm
           initial={emptyForm}
           onSubmit={handleCreate}
           loading={submitting}
-          submitLabel="Create Assignment"
+          submitLabel={t('organization.assignments.createAssignment')}
           isDark={isDark}
         />
       </AssignmentModal>
 
       <AssignmentModal
         open={!!editItem}
-        title={`Edit — ${editItem?.assignment_code}`}
+        title={`${t('organization.common.status')} — ${editItem?.assignment_code}`}
         onClose={() => setEditItem(null)}
         isDark={isDark}
       >
@@ -304,14 +312,14 @@ export default function AssignmentPage() {
           initial={editInitial}
           onSubmit={handleUpdate}
           loading={submitting}
-          submitLabel="Save Changes"
+          submitLabel={t('organization.common.saveChanges')}
           isDark={isDark}
         />
       </AssignmentModal>
 
       <AssignmentModal
         open={!!previewItem}
-        title={`JSON Schema — ${previewItem?.assignment_code}`}
+        title={`${t('organization.assignments.jsonSchemaTitle')} — ${previewItem?.assignment_code}`}
         onClose={() => setPreviewItem(null)}
         isDark={isDark}
       >
@@ -327,16 +335,12 @@ export default function AssignmentPage() {
 
       <AssignmentModal
         open={!!confirmDelete}
-        title="Delete Assignment"
+        title={t('organization.assignments.modalDeleteTitle')}
         onClose={() => setConfirmDelete(null)}
         isDark={isDark}
       >
         <p className={`text-sm leading-relaxed mb-6 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-          Permanently delete{' '}
-          <span className={`font-semibold font-mono ${isDark ? 'text-white' : 'text-slate-900'}`}>
-            {confirmDelete?.assignment_code}
-          </span>
-          ? This cannot be undone.
+          {t('organization.assignments.deleteConfirm', { code: confirmDelete?.assignment_code })}
         </p>
         <div className="flex gap-3 justify-end">
           <button
@@ -346,14 +350,14 @@ export default function AssignmentPage() {
               : 'border-slate-200 text-slate-500 hover:bg-slate-50'
               }`}
           >
-            Cancel
+            {t('organization.common.cancel')}
           </button>
           <button
             onClick={handleDelete}
             disabled={submitting}
             className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-medium transition-colors disabled:opacity-50"
           >
-            {submitting ? 'Deleting…' : 'Delete'}
+            {submitting ? t('organization.common.deleting') : t('organization.common.delete')}
           </button>
         </div>
       </AssignmentModal>

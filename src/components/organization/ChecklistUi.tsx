@@ -1,5 +1,6 @@
 import { AlertCircle, CheckCircle2, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Badge as ShadBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -65,6 +66,7 @@ export function Modal({
 
  
 export function Badge({ active }: { active: string | null }) {
+  const { t } = useTranslation();
   const isActive = active === "Y";
   return (
     <ShadBadge
@@ -80,7 +82,7 @@ export function Badge({ active }: { active: string | null }) {
       <span
         className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isActive ? "bg-emerald-500 animate-pulse" : "bg-gray-400"}`}
       />
-      {isActive ? "Active" : "Inactive"}
+      {isActive ? t('organization.common.active') : t('organization.common.inactive')}
     </ShadBadge>
   );
 }
@@ -106,6 +108,7 @@ export function ChecklistForm({
   submitLabel: string;
   isDark: boolean;
 }) {
+  const { t } = useTranslation();
   const [form, setForm] = useState<FormData>(initial);
   const [jsonError, setJsonError] = useState<string | null>(null);
   const [jsonValid, setJsonValid] = useState(false);
@@ -132,7 +135,7 @@ export function ChecklistForm({
     try {
       const parsed = JSON.parse(jsonString);
       if (typeof parsed !== "object" || Array.isArray(parsed))
-        return { valid: false, error: "JSON must be an object" };
+        return { valid: false, error: t('organization.checklist.jsonMustBeObject') };
       return { valid: true, error: null };
     } catch (e) {
       return { valid: false, error: (e as Error).message };
@@ -142,10 +145,10 @@ export function ChecklistForm({
   const handleJsonCheck = () => {
     const { valid, error } = validateJsonSchema(form.checklist_json);
     if (valid) {
-      setJsonError("Valid JSON Schema");
+      setJsonError(t('organization.checklist.validJsonSchema'));
       setJsonValid(true);
     } else {
-      setJsonError(error ?? "Invalid JSON Format");
+      setJsonError(error ?? t('organization.checklist.invalidJsonFormat'));
       setJsonValid(false);
     }
   };
@@ -177,7 +180,7 @@ export function ChecklistForm({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="space-y-1.5">
           <Label className={labelClass}>
-            Protocol Code <span className="text-red-500">*</span>
+            {t('organization.checklist.protocolCode')} <span className="text-red-500">*</span>
           </Label>
           <Input
             className={inputClass}
@@ -189,7 +192,7 @@ export function ChecklistForm({
         </div>
 
         <div className="space-y-1.5">
-          <Label className={labelClass}>Version</Label>
+          <Label className={labelClass}>{t('organization.common.version')}</Label>
           <Input
             className={inputClass}
             value={form.checklist_ver}
@@ -199,7 +202,7 @@ export function ChecklistForm({
         </div>
 
         <div className="space-y-1.5">
-          <Label className={labelClass}>Status</Label>
+          <Label className={labelClass}>{t('organization.common.status')}</Label>
           <Select
             value={form.checklist_active}
             onValueChange={(v) =>
@@ -207,7 +210,7 @@ export function ChecklistForm({
             }
           >
             <SelectTrigger className={`cursor-pointer ${inputClass}`}>
-              <SelectValue placeholder="Select status" />
+              <SelectValue placeholder={t('organization.common.selectStatus')} />
             </SelectTrigger>
             <SelectContent
               className={
@@ -219,13 +222,13 @@ export function ChecklistForm({
               <SelectItem value="Y" className="cursor-pointer">
                 <span className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  Active
+                  {t('organization.common.active')}
                 </span>
               </SelectItem>
               <SelectItem value="N" className="cursor-pointer">
                 <span className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
-                  Inactive
+                  {t('organization.common.inactive')}
                 </span>
               </SelectItem>
             </SelectContent>
@@ -235,7 +238,7 @@ export function ChecklistForm({
 
       <div className="space-y-1.5">
         <Label className={labelClass}>
-          Description <span className="text-red-500">*</span>
+          {t('organization.common.description')} <span className="text-red-500">*</span>
         </Label>
         <Input
           className={inputClass}
@@ -250,7 +253,7 @@ export function ChecklistForm({
 
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">
-          <Label className={labelClass}>JSON Schema (SurveyJS)</Label>
+          <Label className={labelClass}>{t('organization.checklist.jsonSchemaSurveyJS')}</Label>
           <Button
             type="button"
             variant="outline"
@@ -263,7 +266,7 @@ export function ChecklistForm({
             }`}
           >
             <ShieldCheck size={12} />
-            Validate JSON
+            {t('organization.checklist.validateJson')}
           </Button>
         </div>
 
@@ -361,11 +364,9 @@ export function ChecklistForm({
                   d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
                 />
               </svg>
-              Processing...
+              {t('organization.common.processing')}
             </>
-          ) : (
-            submitLabel
-          )}
+          ) : submitLabel}
         </Button>
       </div>
     </form>

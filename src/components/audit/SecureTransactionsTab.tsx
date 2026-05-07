@@ -15,6 +15,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface TransactionSign {
   id: string;
@@ -31,16 +32,6 @@ interface TransactionSign {
 
 type VerifyStatus = 'idle' | 'loading' | 'valid' | 'invalid';
 
-const ACTION_LABELS: Record<string, string> = {
-  mission_start: 'Mission Start',
-  mission_complete: 'Mission Complete',
-  mission_revert: 'Mission Revert',
-  component_detach: 'Component Detach',
-  drone_put_in_operation: 'Drone → Operational',
-  evaluation_done: 'Evaluation Done',
-  evaluation_review: 'Evaluation Review',
-  planning_create: 'Planning Created',
-};
 
 const ACTION_COLORS: Record<string, { dark: string; light: string }> = {
   mission_start: { dark: 'bg-blue-500/10 text-blue-400 border-blue-500/30', light: 'bg-blue-50 text-blue-700 border-blue-200' },
@@ -58,6 +49,7 @@ interface Props {
 }
 
 export function SecureTransactionsTab({ isDark }: Props) {
+  const { t } = useTranslation();
   const [signs, setSigns] = useState<TransactionSign[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -131,10 +123,10 @@ export function SecureTransactionsTab({ isDark }: Props) {
       <div className="flex flex-col items-center justify-center py-20 gap-3">
         <ShieldCheck className={cn('h-10 w-10', isDark ? 'text-slate-600' : 'text-slate-300')} />
         <p className={cn('text-sm', isDark ? 'text-slate-500' : 'text-slate-400')}>
-          No authorized transactions recorded yet.
+          {t('auditLogs.transactions.noRecords')}
         </p>
         <p className={cn('text-xs', isDark ? 'text-slate-600' : 'text-slate-500')}>
-          Transactions will appear here after users authorize actions with their PIN.
+          {t('auditLogs.transactions.noRecordsHint')}
         </p>
       </div>
     );
@@ -145,16 +137,16 @@ export function SecureTransactionsTab({ isDark }: Props) {
       <div className={cn('rounded-xl border overflow-hidden', isDark ? 'bg-[#0f1320] border-white/[0.06]' : 'bg-white border-gray-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.04)]')}>
         <div className={cn('px-5 py-4 border-b flex items-center justify-between', isDark ? 'border-white/[0.06]' : 'border-gray-100')}>
           <div>
-            <h2 className={cn('text-sm font-semibold', isDark ? 'text-white' : 'text-gray-900')}>Secure Transaction Records</h2>
+            <h2 className={cn('text-sm font-semibold', isDark ? 'text-white' : 'text-gray-900')}>{t('auditLogs.transactions.title')}</h2>
             <p className={cn('text-[11px] mt-0.5', isDark ? 'text-gray-500' : 'text-gray-400')}>
-              Cryptographically signed authorization events — verifiable with RSA public keys
+              {t('auditLogs.transactions.subtitle')}
             </p>
           </div>
           <button
             onClick={fetchSigns}
             className={cn('flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs transition-colors', isDark ? 'border-white/[0.1] text-white hover:bg-white/[0.05]' : 'border-gray-200 hover:bg-gray-50')}
           >
-            <RefreshCw size={12} /> Refresh
+            <RefreshCw size={12} /> {t('auditLogs.refresh')}
           </button>
         </div>
 
@@ -163,11 +155,11 @@ export function SecureTransactionsTab({ isDark }: Props) {
             <thead>
               <tr className={cn('text-[10px] font-bold uppercase tracking-wider', isDark ? 'border-b border-white/[0.06] bg-white/[0.02] text-slate-500' : 'border-b border-gray-100 bg-gray-50/50 text-gray-500')}>
                 <th className="px-4 py-2.5 text-left w-8" />
-                <th className="px-4 py-2.5 text-left">Date / Time</th>
-                <th className="px-4 py-2.5 text-left">Action</th>
-                <th className="px-4 py-2.5 text-left">Entity</th>
-                <th className="px-4 py-2.5 text-left">Authorized by</th>
-                <th className="px-4 py-2.5 text-left">Integrity</th>
+                <th className="px-4 py-2.5 text-left">{t('auditLogs.transactions.colDateTime')}</th>
+                <th className="px-4 py-2.5 text-left">{t('auditLogs.transactions.colAction')}</th>
+                <th className="px-4 py-2.5 text-left">{t('auditLogs.transactions.colEntity')}</th>
+                <th className="px-4 py-2.5 text-left">{t('auditLogs.transactions.colAuthorizedBy')}</th>
+                <th className="px-4 py-2.5 text-left">{t('auditLogs.transactions.colIntegrity')}</th>
               </tr>
             </thead>
             <tbody>
@@ -205,7 +197,7 @@ export function SecureTransactionsTab({ isDark }: Props) {
                             ? (isDark ? actionColor.dark : actionColor.light)
                             : (isDark ? 'bg-slate-700 text-slate-300 border-slate-600' : 'bg-slate-100 text-slate-600 border-slate-200')
                         )}>
-                          {ACTION_LABELS[sign.action_type] ?? sign.action_type.replace(/_/g, ' ')}
+                          {t(`auditLogs.transactions.actions.${sign.action_type}`, sign.action_type.replace(/_/g, ' '))}
                         </span>
                       </td>
                       <td className={cn(cell, isDark ? 'text-slate-400' : 'text-slate-600')}>
@@ -216,7 +208,7 @@ export function SecureTransactionsTab({ isDark }: Props) {
                       </td>
                       <td className={cell}>
                         <span className={cn('font-medium', isDark ? 'text-slate-300' : 'text-slate-700')}>
-                          {sign.user_name ?? 'Unknown'}
+                          {sign.user_name ?? t('auditLogs.transactions.unknown')}
                         </span>
                       </td>
                       <td className={cell} onClick={e => e.stopPropagation()}>
@@ -228,22 +220,22 @@ export function SecureTransactionsTab({ isDark }: Props) {
                               isDark ? 'border-violet-500/30 text-violet-400 hover:bg-violet-500/10' : 'border-violet-300 text-violet-600 hover:bg-violet-50'
                             )}
                           >
-                            <ShieldCheck className="h-3 w-3" /> Verify
+                            <ShieldCheck className="h-3 w-3" /> {t('auditLogs.transactions.verify')}
                           </button>
                         )}
                         {verifyStatus === 'loading' && (
                           <span className={cn('flex items-center gap-1 text-[10px]', isDark ? 'text-slate-500' : 'text-slate-400')}>
-                            <RefreshCw className="h-3 w-3 animate-spin" /> Checking…
+                            <RefreshCw className="h-3 w-3 animate-spin" /> {t('auditLogs.transactions.checking')}
                           </span>
                         )}
                         {verifyStatus === 'valid' && (
                           <span className={cn('flex items-center gap-1 text-[10px] font-semibold', isDark ? 'text-emerald-400' : 'text-emerald-600')}>
-                            <CheckCircle2 className="h-3.5 w-3.5" /> Valid
+                            <CheckCircle2 className="h-3.5 w-3.5" /> {t('auditLogs.transactions.valid')}
                           </span>
                         )}
                         {verifyStatus === 'invalid' && (
                           <span className={cn('flex items-center gap-1 text-[10px] font-semibold', isDark ? 'text-red-400' : 'text-red-600')}>
-                            <XCircle className="h-3.5 w-3.5" /> Tampered
+                            <XCircle className="h-3.5 w-3.5" /> {t('auditLogs.transactions.tampered')}
                           </span>
                         )}
                       </td>
@@ -256,7 +248,7 @@ export function SecureTransactionsTab({ isDark }: Props) {
                             {/* Payload Preview */}
                             {sign.payload_preview && (
                               <div>
-                                <p className={cn('text-[10px] font-bold uppercase tracking-wider mb-1.5', isDark ? 'text-slate-500' : 'text-slate-400')}>Action Details</p>
+                                <p className={cn('text-[10px] font-bold uppercase tracking-wider mb-1.5', isDark ? 'text-slate-500' : 'text-slate-400')}>{t('auditLogs.transactions.actionDetails')}</p>
                                 <div className="space-y-1">
                                   {Object.entries(sign.payload_preview).map(([k, v]) => (
                                     <div key={k} className="flex gap-2">
@@ -274,20 +266,20 @@ export function SecureTransactionsTab({ isDark }: Props) {
 
                             {/* JWT + Public Key Fingerprint */}
                             <div>
-                              <p className={cn('text-[10px] font-bold uppercase tracking-wider mb-1.5', isDark ? 'text-slate-500' : 'text-slate-400')}>Cryptographic Record</p>
+                              <p className={cn('text-[10px] font-bold uppercase tracking-wider mb-1.5', isDark ? 'text-slate-500' : 'text-slate-400')}>{t('auditLogs.transactions.cryptoRecord')}</p>
                               <div className="space-y-1">
                                 <div>
-                                  <span className={cn('font-medium', isDark ? 'text-slate-400' : 'text-slate-500')}>Transaction ID </span>
+                                  <span className={cn('font-medium', isDark ? 'text-slate-400' : 'text-slate-500')}>{t('auditLogs.transactions.transactionId')} </span>
                                   <span className={cn('font-mono', isDark ? 'text-slate-400' : 'text-slate-500')}>{sign.id.slice(0, 8)}…</span>
                                 </div>
                                 <div>
-                                  <span className={cn('font-medium', isDark ? 'text-slate-400' : 'text-slate-500')}>JWT (RS256) </span>
+                                  <span className={cn('font-medium', isDark ? 'text-slate-400' : 'text-slate-500')}>{t('auditLogs.transactions.jwtLabel')} </span>
                                   <span className={cn('font-mono break-all', isDark ? 'text-slate-500' : 'text-slate-400')}>
                                     {sign.jwt_token.slice(0, 48)}…
                                   </span>
                                 </div>
                                 <div>
-                                  <span className={cn('font-medium', isDark ? 'text-slate-400' : 'text-slate-500')}>Public Key </span>
+                                  <span className={cn('font-medium', isDark ? 'text-slate-400' : 'text-slate-500')}>{t('auditLogs.transactions.publicKey')} </span>
                                   <span className={cn('font-mono break-all', isDark ? 'text-slate-500' : 'text-slate-400')}>
                                     {sign.public_key_snapshot.slice(0, 48)}…
                                   </span>
@@ -311,9 +303,7 @@ export function SecureTransactionsTab({ isDark }: Props) {
       <div className={cn('mt-3 flex items-center gap-2 rounded-lg border px-4 py-2.5 text-xs', isDark ? 'bg-violet-500/5 border-violet-500/20 text-violet-400' : 'bg-violet-50 border-violet-200 text-violet-700')}>
         <ShieldAlert className="h-3.5 w-3.5 shrink-0" />
         <span>
-          Transaction signatures are verified client-side using each user's RSA-2048 public key.
-          A <strong>Valid</strong> result proves the JWT was signed by the private key of the recorded user and has not been modified.
-          The private key is never transmitted to the server.
+          {t('auditLogs.transactions.infoBannerPre')} <strong>{t('auditLogs.transactions.valid')}</strong> {t('auditLogs.transactions.infoBannerPost')}
         </span>
       </div>
     </div>

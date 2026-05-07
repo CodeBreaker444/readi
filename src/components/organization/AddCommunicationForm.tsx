@@ -10,6 +10,7 @@ import { AddCommunicationInput } from "@/config/types/communication";
 import axios from "axios";
 import { Braces, Loader2, Plus } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -38,6 +39,7 @@ const INITIAL_FORM: Omit<AddCommunicationInput, "o_id"> = {
 };
 
 export function AddCommunicationForm({ onSuccess, isDark }: AddCommunicationFormProps) {
+  const { t } = useTranslation();
   const [form, setForm] = useState(INITIAL_FORM);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -47,13 +49,13 @@ export function AddCommunicationForm({ onSuccess, isDark }: AddCommunicationForm
     try {
       const res = await axios.post("/api/organization/communication/add", form);
       if (res.status === 201) {
-        toast.success("Communication protocol deployed");
+        toast.success(t('organization.communication.toasts.deployed'));
         onSuccess(res.data.data);
         setForm(INITIAL_FORM);
       }
     } catch (err: any) {
       const message =
-        err?.response?.data?.message ?? "Deployment failed. Check matrix configuration.";
+        err?.response?.data?.message ?? t('organization.communication.toasts.deployFailed');
       toast.error(message);
     } finally {
       setIsSubmitting(false);
@@ -64,9 +66,9 @@ export function AddCommunicationForm({ onSuccess, isDark }: AddCommunicationForm
     try {
       const obj = JSON.parse(form.communication_json || "{}");
       setForm((prev) => ({ ...prev, communication_json: JSON.stringify(obj, null, 2) }));
-      toast.success("JSON Prettified");
+      toast.success(t('organization.communication.toasts.jsonPrettified'));
     } catch {
-      toast.error("Invalid JSON format");
+      toast.error(t('organization.communication.toasts.invalidJson'));
     }
   };
 
@@ -92,7 +94,7 @@ export function AddCommunicationForm({ onSuccess, isDark }: AddCommunicationForm
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="space-y-1.5">
           <Label htmlFor="code" className={labelClass}>
-            Protocol Code <span className="text-red-500">*</span>
+            {t('organization.communication.protocolCode')} <span className="text-red-500">*</span>
           </Label>
           <Input
             id="code"
@@ -104,7 +106,7 @@ export function AddCommunicationForm({ onSuccess, isDark }: AddCommunicationForm
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="ver" className={labelClass}>Version</Label>
+          <Label htmlFor="ver" className={labelClass}>{t('organization.common.version')}</Label>
           <Input
             id="ver"
             className={inputClass}
@@ -114,7 +116,7 @@ export function AddCommunicationForm({ onSuccess, isDark }: AddCommunicationForm
           />
         </div>
         <div className="space-y-1.5">
-          <Label className={labelClass}>Status</Label>
+          <Label className={labelClass}>{t('organization.common.status')}</Label>
           <Select
             value={form.communication_active}
             onValueChange={(val: "Y" | "N") =>
@@ -122,7 +124,7 @@ export function AddCommunicationForm({ onSuccess, isDark }: AddCommunicationForm
             }
           >
             <SelectTrigger className={selectClass}>
-              <SelectValue placeholder="Select Status" />
+              <SelectValue placeholder={t('organization.common.selectStatus')} />
             </SelectTrigger>
             <SelectContent
               className={isDark ? "bg-gray-800 border-gray-700 text-gray-100" : ""}
@@ -130,13 +132,13 @@ export function AddCommunicationForm({ onSuccess, isDark }: AddCommunicationForm
               <SelectItem value="Y" className="cursor-pointer">
                 <span className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  Active
+                  {t('organization.common.active')}
                 </span>
               </SelectItem>
               <SelectItem value="N" className="cursor-pointer">
                 <span className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
-                  Inactive
+                  {t('organization.common.inactive')}
                 </span>
               </SelectItem>
             </SelectContent>
@@ -147,7 +149,7 @@ export function AddCommunicationForm({ onSuccess, isDark }: AddCommunicationForm
       {/* Description */}
       <div className="space-y-1.5">
         <Label htmlFor="desc" className={labelClass}>
-          Description <span className="text-red-500">*</span>
+          {t('organization.common.description')} <span className="text-red-500">*</span>
         </Label>
         <Input
           id="desc"
@@ -164,7 +166,7 @@ export function AddCommunicationForm({ onSuccess, isDark }: AddCommunicationForm
       {/* JSON Schema */}
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">
-          <Label htmlFor="json" className={labelClass}>JSON Matrix Schema</Label>
+          <Label htmlFor="json" className={labelClass}>{t('organization.communication.jsonMatrixSchema')}</Label>
           <Button
             type="button"
             variant="outline"
@@ -177,7 +179,7 @@ export function AddCommunicationForm({ onSuccess, isDark }: AddCommunicationForm
             }`}
           >
             <Braces size={12} />
-            Prettify
+            {t('organization.communication.prettify')}
           </Button>
         </div>
 
@@ -234,12 +236,12 @@ export function AddCommunicationForm({ onSuccess, isDark }: AddCommunicationForm
           {isSubmitting ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              Processing...
+              {t('organization.common.processing')}
             </>
           ) : (
             <>
               <Plus size={16} />
-              Initialize Protocol
+              {t('organization.communication.initializeProtocol')}
             </>
           )}
         </Button>
@@ -259,6 +261,7 @@ export function CommunicationModal({
   isDark: boolean;
   children: React.ReactNode;
 }) {
+  const { t } = useTranslation();
   return (
     <Dialog open={open} onOpenChange={(val) => !val && onClose()}>
       <DialogContent
@@ -280,7 +283,7 @@ export function CommunicationModal({
                 isDark ? "text-gray-100" : "text-gray-900"
               }`}
             >
-              Initialize Protocol Matrix
+              {t('organization.communication.addModalTitle')}
             </DialogTitle>
           </div>
           

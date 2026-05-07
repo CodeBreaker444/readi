@@ -10,6 +10,7 @@ import { Communication } from "@/config/types/communication";
 import axios from "axios";
 import { Braces, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { HiPencil } from "react-icons/hi";
 import { toast } from "sonner";
 import { Button } from "../ui/button";
@@ -47,6 +48,7 @@ export function EditCommunicationModal({
   communication,
   isDark,
 }: EditCommunicationModalProps) {
+  const { t } = useTranslation();
   const [form, setForm] = useState<EditForm>({
     communication_code: "",
     communication_desc: "",
@@ -85,16 +87,16 @@ export function EditCommunicationModal({
       });
 
       if (res.data.code === 1) {
-        toast.success("Protocol updated successfully.");
-        
-        const updatedItem = res.data.data; 
-        onSuccess(updatedItem || { ...communication, ...form }); 
+        toast.success(t('organization.communication.toasts.protocolUpdated'));
+
+        const updatedItem = res.data.data;
+        onSuccess(updatedItem || { ...communication, ...form });
         onClose();
       } else {
-        toast.error(res.data.message ?? "Update failed.");
+        toast.error(res.data.message ?? t('organization.communication.toasts.updateFailed'));
       }
     } catch (err: any) {
-      const message = err?.response?.data?.message ?? "Network error. Please try again.";
+      const message = err?.response?.data?.message ?? t('organization.communication.toasts.networkError');
       toast.error(message);
     } finally {
       setIsSubmitting(false);
@@ -105,9 +107,9 @@ export function EditCommunicationModal({
     try {
       const obj = JSON.parse(form.communication_json || "{}");
       setForm((prev) => ({ ...prev, communication_json: JSON.stringify(obj, null, 2) }));
-      toast.success("JSON prettified.");
+      toast.success(t('organization.communication.toasts.jsonPrettified'));
     } catch {
-      toast.error("Invalid JSON format.");
+      toast.error(t('organization.communication.toasts.invalidJson'));
     }
   };
 
@@ -133,7 +135,7 @@ export function EditCommunicationModal({
             }`}
           >
             <HiPencil className="text-blue-500" />
-            Edit Protocol
+            {t('organization.communication.editModalTitle')}
             {communication && (
               <span className="font-mono text-sm text-blue-400 ml-1">
                 #{communication.communication_id}
@@ -146,7 +148,7 @@ export function EditCommunicationModal({
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="edit_code" className={labelClass}>Protocol Code</Label>
+                <Label htmlFor="edit_code" className={labelClass}>{t('organization.communication.protocolCode')}</Label>
                 <Input
                   id="edit_code"
                   value={form.communication_code}
@@ -156,7 +158,7 @@ export function EditCommunicationModal({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit_ver" className={labelClass}>Version</Label>
+                <Label htmlFor="edit_ver" className={labelClass}>{t('organization.common.version')}</Label>
                 <Input
                   id="edit_ver"
                   value={form.communication_ver}
@@ -165,7 +167,7 @@ export function EditCommunicationModal({
                 />
               </div>
               <div className="space-y-2">
-                <Label className={labelClass}>Status</Label>
+                <Label className={labelClass}>{t('organization.common.status')}</Label>
                 <Select
                   value={form.communication_active}
                   onValueChange={(val: "Y" | "N") =>
@@ -173,18 +175,18 @@ export function EditCommunicationModal({
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select Status" />
+                    <SelectValue placeholder={t('organization.common.selectStatus')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Y">Active (Y)</SelectItem>
-                    <SelectItem value="N">Inactive (N)</SelectItem>
+                    <SelectItem value="Y">{t('organization.common.active')}</SelectItem>
+                    <SelectItem value="N">{t('organization.common.inactive')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="edit_desc" className={labelClass}>Description</Label>
+              <Label htmlFor="edit_desc" className={labelClass}>{t('organization.common.description')}</Label>
               <Input
                 id="edit_desc"
                 value={form.communication_desc}
@@ -196,7 +198,7 @@ export function EditCommunicationModal({
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="edit_json" className={labelClass}>JSON Matrix Schema</Label>
+                <Label htmlFor="edit_json" className={labelClass}>{t('organization.communication.jsonMatrixSchema')}</Label>
                 <Button
                   type="button"
                   variant="ghost"
@@ -205,7 +207,7 @@ export function EditCommunicationModal({
                   className="h-6 px-2 text-[10px] text-blue-500 hover:text-blue-600 hover:bg-blue-500/10"
                 >
                   <Braces className="mr-1 h-3 w-3" />
-                  Prettify
+                  {t('organization.communication.prettify')}
                 </Button>
               </div>
               <Textarea
@@ -225,7 +227,7 @@ export function EditCommunicationModal({
                 onClick={onClose}
                 className={`${isDark ? "text-slate-400 hover:text-slate-200" : "text-slate-500"}`}
               >
-                Cancel
+                {t('organization.common.cancel')}
               </Button>
               <Button
                 type="submit"
@@ -235,12 +237,12 @@ export function EditCommunicationModal({
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Saving...
+                    {t('organization.common.saving')}
                   </>
                 ) : (
                   <>
                     <HiPencil className="mr-2" />
-                    Save Changes
+                    {t('organization.common.saveChanges')}
                   </>
                 )}
               </Button>

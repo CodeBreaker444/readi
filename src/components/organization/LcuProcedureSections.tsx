@@ -22,6 +22,7 @@ import { useTheme } from '@/components/useTheme';
 import { CreateLucProcedurePayload, LucProcedure, LucProcedureStatus } from '@/config/types/lcuProcedures';
 import { AlertTriangle, Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 const STATUSES: { value: LucProcedureStatus; label: string }[] = [

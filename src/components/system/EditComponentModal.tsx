@@ -69,7 +69,7 @@ interface EditComponentModalProps {
 }
 
 const EMPTY_FORM = {
-  fk_tool_id: '',
+  fk_tool_id: '_none',
   component_type: '',
   component_name: '',
   component_code: '',
@@ -89,7 +89,7 @@ const EMPTY_FORM = {
   maintenance_cycle_day: '',
   maintenance_cycle_flight: '',
   battery_cycle_ratio: '',
-  fk_parent_component_id: '',
+  fk_parent_component_id: '_none',
 };
 interface ComponentType {
   type_id: number;
@@ -106,6 +106,7 @@ export default function EditComponentModal({
   const [selectedComponentId, setSelectedComponentId] = useState<string>('');
   const [showManageTypes, setShowManageTypes] = useState(false);
   const [loadingParent, setLoadingParent] = useState(false);
+  const [originalFkToolId, setOriginalFkToolId] = useState<number | null>(null);
 
     const [formData, setFormData] = useState(EMPTY_FORM);
 
@@ -141,12 +142,14 @@ export default function EditComponentModal({
       setComponents([]);
       setSelectedComponentId('');
       setFormData(EMPTY_FORM);
+      setOriginalFkToolId(null);
     }
   }, [open, toolId, initialComponentId]);
 
   const populateForm = (comp: any) => {
+    setOriginalFkToolId(comp.fk_tool_id ?? null);
     setFormData({
-      fk_tool_id: String(comp.fk_tool_id || ''),
+      fk_tool_id: (comp.system_detached || !comp.fk_tool_id) ? '_none' : String(comp.fk_tool_id),
       component_type: comp.component_type || '',
       component_name: comp.component_name || '',
       component_code: comp.component_code || '',
@@ -166,7 +169,7 @@ export default function EditComponentModal({
       maintenance_cycle_day: comp.maintenance_cycle_day != null && comp.maintenance_cycle_day !== '' ? String(comp.maintenance_cycle_day) : '',
       maintenance_cycle_flight: comp.maintenance_cycle_flight != null && comp.maintenance_cycle_flight !== '' ? String(comp.maintenance_cycle_flight) : '',
       battery_cycle_ratio: comp.battery_cycle_ratio != null ? String(comp.battery_cycle_ratio) : '',
-      fk_parent_component_id: comp.fk_parent_component_id ? String(comp.fk_parent_component_id) : '',
+      fk_parent_component_id: comp.fk_parent_component_id ? String(comp.fk_parent_component_id) : '_none',
     });
   };
 
@@ -269,8 +272,8 @@ export default function EditComponentModal({
 
   const handleSystemChange = async (v: string) => {
     handleChange('fk_tool_id', v);
-    handleChange('fk_parent_component_id', '');
-    if (!v) return;
+    handleChange('fk_parent_component_id', '_none');
+    if (!v || v === '_none') return;
     setLoadingParent(true);
     try {
       const res = await fetch('/api/system/component/list', {
@@ -297,8 +300,12 @@ export default function EditComponentModal({
     if (!selectedComponentId) { toast.error('Please select a component'); return; }
     setLoading(true);
     try {
+      const isDetached = formData.fk_tool_id === '_none';
       const payload = {
-        fk_tool_id: Number(formData.fk_tool_id),
+        fk_tool_id: !isDetached
+          ? Number(formData.fk_tool_id)
+          : (originalFkToolId ?? Number(formData.fk_tool_id)),
+        system_detached: isDetached,
         component_type: formData.component_type,
         component_name: formData.component_name || null,
         component_code: formData.component_code || null,
@@ -318,7 +325,7 @@ export default function EditComponentModal({
         maintenance_cycle_day: formData.maintenance_cycle_day ? Number(formData.maintenance_cycle_day) : null,
         maintenance_cycle_flight: formData.maintenance_cycle_flight ? Number(formData.maintenance_cycle_flight) : null,
         battery_cycle_ratio: formData.battery_cycle_ratio ? Number(formData.battery_cycle_ratio) : null,
-        fk_parent_component_id: formData.fk_parent_component_id ? Number(formData.fk_parent_component_id) : null,
+        fk_parent_component_id: formData.fk_parent_component_id && formData.fk_parent_component_id !== '_none' ? Number(formData.fk_parent_component_id) : null,
       };
 
       const res = await fetch(`/api/system/component/${selectedComponentId}/update`, {
@@ -385,7 +392,7 @@ export default function EditComponentModal({
               <Skeleton className={`h-10 w-32 ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
             </div>
           </div>
-        ) : components.length === 0 ? (
+        ) : components.length === 0 && !selectedComponentId ? (
           <div className="py-8 text-center text-sm text-gray-400">
             No components found for this system.
             <div className="mt-4">
@@ -402,12 +409,13 @@ export default function EditComponentModal({
                     <Select value={formData.fk_tool_id} onValueChange={handleSystemChange}>
                       <SelectTrigger className={`w-full truncate ${selectTriggerCls}`}>
                         <SelectValue placeholder="Select System">
-                          {formData.fk_tool_id
+                          {formData.fk_tool_id && formData.fk_tool_id !== '_none'
                             ? (() => { const t = tools.find((x: any) => String(x.tool_id) === formData.fk_tool_id); return t ? <span className="block w-full truncate text-left">{t.tool_code}</span> : null; })()
-                            : null}
+                            : formData.fk_tool_id === '_none' ? <span className={`italic ${isDark ? 'text-slate-400' : 'text-muted-foreground'}`}>None</span> : null}
                         </SelectValue>
                       </SelectTrigger>
                       <SelectContent className={`z-50 max-h-60 overflow-y-auto ${selectContentCls}`}>
+                        <SelectItem value="_none"><span className={`italic ${isDark ? 'text-slate-400' : 'text-muted-foreground'}`}>None</span></SelectItem>
                         {tools.map((tool: any) => (
                           <SelectItem key={tool.tool_id} value={tool.tool_id.toString()}>
                             <SystemOptionLabel tool={tool} />
@@ -422,12 +430,12 @@ export default function EditComponentModal({
                     <Label className={labelCls}>Parent Component <span className="font-normal opacity-60">(optional)</span></Label>
                     <Select
                       value={formData.fk_parent_component_id}
-                      onValueChange={(v) => handleChange('fk_parent_component_id', v === '_none' ? '' : v)}
+                      onValueChange={(v) => handleChange('fk_parent_component_id', v)}
                       disabled={loadingParent}
                     >
                       <SelectTrigger className={`w-full truncate ${selectTriggerCls}`}>
                         <SelectValue placeholder="None (top-level)">
-                          {formData.fk_parent_component_id
+                          {formData.fk_parent_component_id && formData.fk_parent_component_id !== '_none'
                             ? (() => {
                                 const p = components.find((c: any) => String(c.tool_component_id) === formData.fk_parent_component_id);
                                 return p ? <span className="block w-full truncate text-left">{p.component_code || p.component_name || `#${p.tool_component_id}`}</span> : null;
@@ -438,7 +446,11 @@ export default function EditComponentModal({
                       <SelectContent className={`z-50 max-h-60 overflow-y-auto ${selectContentCls}`}>
                         <SelectItem value="_none"><span className={`italic ${isDark ? 'text-slate-400' : 'text-muted-foreground'}`}>None (top-level)</span></SelectItem>
                         {components
-                          .filter((c: any) => String(c.tool_component_id) !== selectedComponentId)
+                          .filter((c: any) =>
+                            String(c.tool_component_id) !== selectedComponentId &&
+                            String(c.fk_tool_id) === formData.fk_tool_id &&
+                            c.component_status !== 'DECOMMISSIONED'
+                          )
                           .map((c: any) => (
                           <SelectItem key={c.tool_component_id} value={String(c.tool_component_id)}>
                             <div className="flex flex-col gap-0.5 leading-tight">

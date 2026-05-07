@@ -75,7 +75,6 @@ export async function getOwners(): Promise<OwnerWithAdmin[]> {
     const { data: owners, error } = await supabase
         .from('owner')
         .select('owner_id, owner_code, owner_name, owner_legal_name, owner_type, owner_address, owner_city, owner_state, owner_postal_code, owner_phone, owner_email, owner_website, owner_active, tax_id, registration_number, license_number, license_expiry, created_at')
-        .eq('owner_active', 'Y')
         .order('created_at', { ascending: false });
     if (error) throw new Error(error.message);
 

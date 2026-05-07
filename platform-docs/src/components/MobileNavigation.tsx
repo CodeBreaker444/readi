@@ -67,7 +67,7 @@ export function MobileNavigation() {
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="relative"
+        className="relative cursor-pointer"
         aria-label="Open navigation"
       >
         <MenuIcon className="h-6 w-6 stroke-slate-500" />
@@ -87,6 +87,7 @@ export function MobileNavigation() {
               type="button"
               onClick={() => close()}
               aria-label="Close navigation"
+              className='cursor-pointer'
             >
               <CloseIcon className="h-6 w-6 stroke-slate-500" />
             </button>

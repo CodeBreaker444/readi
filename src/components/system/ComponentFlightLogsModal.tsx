@@ -103,16 +103,15 @@ export function ComponentFlightLogsModal({ open, onClose, componentId, component
 
   const selectedFlight = selected?.flytbase_flight_id
     ? {
-        flight_id: selected.flytbase_flight_id,
-        flight_name: selected.mission_code ?? selected.original_filename,
-        start_time: selected.actual_start ? new Date(selected.actual_start).getTime() : undefined,
-        end_time: selected.actual_end ? new Date(selected.actual_end).getTime() : undefined,
-        duration: selected.flight_duration != null ? selected.flight_duration * 60 : undefined,
-        distance: selected.distance_flown ?? undefined,
-      }
+      flight_id: selected.flytbase_flight_id,
+      flight_name: selected.mission_code ?? selected.original_filename,
+      start_time: selected.actual_start ? new Date(selected.actual_start).getTime() : undefined,
+      end_time: selected.actual_end ? new Date(selected.actual_end).getTime() : undefined,
+      duration: selected.flight_duration != null ? selected.flight_duration * 60 : undefined,
+      distance: selected.distance_flown ?? undefined,
+    }
     : null;
 
-  /* ── Shared empty / manual / preview render ── */
   const PreviewContent = (
     <>
       {!selected && (
@@ -233,15 +232,14 @@ export function ComponentFlightLogsModal({ open, onClose, componentId, component
                     </div>
                   </div>
                   <span
-                    className={`shrink-0 mt-0.5 text-[10px] px-2 py-0.5 rounded-full font-semibold ${
-                      log.log_source === 'flytbase'
+                    className={`shrink-0 mt-0.5 text-[10px] px-2 py-0.5 rounded-full font-semibold ${log.log_source === 'flytbase'
                         ? isDark
                           ? 'bg-violet-900/50 text-violet-300'
                           : 'bg-violet-100 text-violet-700'
                         : isDark
-                        ? 'bg-slate-700 text-slate-400'
-                        : 'bg-slate-100 text-slate-600'
-                    }`}
+                          ? 'bg-slate-700 text-slate-400'
+                          : 'bg-slate-100 text-slate-600'
+                      }`}
                   >
                     {log.log_source === 'flytbase' ? 'FlytBase' : 'Manual'}
                   </span>
@@ -258,7 +256,6 @@ export function ComponentFlightLogsModal({ open, onClose, componentId, component
       <DialogContent
         className={`w-full max-w-[95vw] xl:max-w-[90vw] 2xl:max-w-[85vw] h-[92vh] flex flex-col overflow-hidden p-0 ${isDark ? `${bg} border-slate-700` : bg}`}
       >
-        {/* Header */}
         <DialogHeader className={`px-5 sm:px-7 pt-5 pb-4 border-b shrink-0 ${headerBorder} ${isDark ? bg : 'bg-white'}`}>
           <div className="flex items-center gap-3 mr-8">
             <div className="w-1 h-6 rounded-full bg-violet-600 shrink-0" />
@@ -272,19 +269,15 @@ export function ComponentFlightLogsModal({ open, onClose, componentId, component
         </DialogHeader>
 
         <div className={`flex-1 min-h-0 flex flex-col overflow-hidden ${bg}`}>
-          {/* ── Desktop: side-by-side ── */}
           <div className="hidden md:flex flex-1 min-h-0 gap-5 p-5">
-            {/* Sidebar — fixed width, shrinkable */}
             <div className="w-72 lg:w-80 shrink-0 flex flex-col min-h-0">
               {LogList}
             </div>
-            {/* Preview — takes all remaining space */}
             <div className="flex-1 min-w-0 min-h-0 overflow-y-auto">
               {PreviewContent}
             </div>
           </div>
 
-          {/* ── Mobile: toggle list / preview ── */}
           <div className="flex md:hidden flex-col flex-1 min-h-0 p-4">
             {mobileView === 'list' ? (
               LogList

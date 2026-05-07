@@ -15,6 +15,7 @@ export interface MaintenanceComponent {
   description?: string | null;
   serial_number: string | null;
   last_maintenance: string | null;
+  activation_date: string | null;
   total_hours: number;
   total_flights: number;
   total_days: number;
@@ -29,10 +30,11 @@ export interface MaintenanceDrone {
   serial_number: string;
   description: string | null;
   last_maintenance: string | null;
+  activation_date: string | null;
   total_hours: number;
   total_flights: number;
   status: MaintenanceStatus;
-  trigger: (string | null)[];    
+  trigger: (string | null)[];
   model: MaintenanceModel;
   components: MaintenanceComponent[];
 }

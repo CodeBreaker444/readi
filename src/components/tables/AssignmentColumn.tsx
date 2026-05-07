@@ -1,17 +1,18 @@
-import { Assignment } from '@/backend/services/organization/assignment-service'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { ColumnDef } from '@tanstack/react-table'
-import { ArrowUpDown, Pencil, Play, Trash2 } from 'lucide-react'
-import { formatDateInTz } from '@/lib/utils'
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { formatDateInTz } from '@/lib/utils';
+import { ColumnDef } from '@tanstack/react-table';
+import { TFunction } from 'i18next';
+import { ArrowUpDown, Pencil, Play, Trash2 } from 'lucide-react';
 
 export const getAssignmentColumns = (
   isDark: boolean,
-  onEdit: (item: Assignment) => void,
-  onPreview: (item: Assignment) => void,
-  onDelete: (item: Assignment) => void,
+  onEdit: (item: any) => void,
+  onPreview: (item: any) => void,
+  onDelete: (item: any) => void,
+  t: TFunction,  
   timezone?: string,
-): ColumnDef<Assignment>[] => [
+): ColumnDef<any>[] => [
   {
     id: 'index',
     header: '#',
@@ -31,7 +32,7 @@ export const getAssignmentColumns = (
         className="-ml-3 h-8 text-black hover:text-slate-800 dark:text-slate-200"
         onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
       >
-        Code
+        {t('organization.common.code')}
         <ArrowUpDown className="ml-1.5 h-3 w-3" />
       </Button>
     ),
@@ -44,7 +45,7 @@ export const getAssignmentColumns = (
   },
   {
     accessorKey: 'assignment_desc',
-    header: 'Description',
+    header: t('organization.common.description'),
     cell: ({ row }) => (
       <span className="text-xs text-slate-700 dark:text-slate-200 line-clamp-2 max-w-[220px] block">
         {row.original.assignment_desc || '—'}
@@ -54,7 +55,7 @@ export const getAssignmentColumns = (
   },
   {
     accessorKey: 'assignment_ver',
-    header: 'Version',
+    header: t('organization.common.version'),
     cell: ({ row }) => (
       <span className="font-mono text-xs text-slate-500 dark:text-slate-400 italic">
         v{row.original.assignment_ver ?? '1.0'}
@@ -64,7 +65,7 @@ export const getAssignmentColumns = (
   },
   {
     accessorKey: 'assignment_active',
-    header: 'Status',
+    header: t('organization.common.status'),
     cell: ({ row }) => {
       const isActive = row.original.assignment_active === 'Y'
       return (
@@ -77,7 +78,7 @@ export const getAssignmentColumns = (
           }`}
         >
           <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isActive ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
-          {isActive ? 'Active' : 'Inactive'}
+          {isActive ? t('organization.common.active') : t('organization.common.inactive')}
         </Badge>
       )
     },
@@ -92,7 +93,7 @@ export const getAssignmentColumns = (
         className="-ml-3 h-8 text-black hover:text-slate-800 dark:text-slate-200"
         onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
       >
-        Last Updated
+        {t('organization.common.status') === 'Status' ? 'Last Updated' : 'Ultimo aggiornamento'}
         <ArrowUpDown className="ml-1.5 h-3 w-3" />
       </Button>
     ),
@@ -116,7 +117,7 @@ export const getAssignmentColumns = (
           <button
             onClick={() => onEdit(a)}
             className="cursor-pointer p-1.5 rounded-lg transition-colors text-blue-600 hover:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/15"
-            title="Edit"
+            title={t('organization.common.saveChanges')}
           >
             <Pencil size={14} />
           </button>
@@ -130,7 +131,7 @@ export const getAssignmentColumns = (
           <button
             onClick={() => onDelete(a)}
             className="cursor-pointer p-1.5 rounded-lg transition-colors text-rose-600 hover:bg-rose-500/10 dark:text-rose-400 dark:hover:bg-rose-500/15"
-            title="Delete"
+            title={t('organization.common.delete')}
           >
             <Trash2 size={14} />
           </button>

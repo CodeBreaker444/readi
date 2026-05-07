@@ -19,10 +19,7 @@ const CERT_TYPE_STYLES: Record<string, string> = {
   QUALIFICATION: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
 };
 
-const CERT_TYPE_LABELS: Record<string, string> = {
-  PARTICIPATION: 'Participation',
-  QUALIFICATION: 'Qualification',
-};
+type TFunction = (key: string) => string;
 
 function fmtDate(val: string | null) {
   if (!val) return '—';
@@ -35,15 +32,17 @@ export function getTrainingCoursesColumns(
   isDark: boolean,
   onEdit: (record: FlatTrainingRecord) => void,
   onDelete: (record: FlatTrainingRecord) => void,
-  onView?: (record: FlatTrainingRecord) => void
+  onView?: (record: FlatTrainingRecord) => void,
+  t?: TFunction
 ): ColumnDef<FlatTrainingRecord>[] {
   const muted = isDark ? 'text-gray-400' : 'text-gray-600';
   const dimmed = isDark ? 'text-gray-600' : 'text-gray-300';
+  const tr = (key: string, fallback: string) => t ? t(`training.courses.${key}`) : fallback;
 
   return [
     {
       accessorKey: 'user_name',
-      header: 'User',
+      header: () => tr('columnUser', 'User'),
       cell: ({ row }) => (
         <div className="min-w-30">
           <p className={`text-xs font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
@@ -57,7 +56,7 @@ export function getTrainingCoursesColumns(
     },
     {
       accessorKey: 'training_name',
-      header: 'Course',
+      header: () => tr('columnCourse', 'Course'),
       cell: ({ getValue }) => (
         <span className={`text-xs font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
           {(getValue() as string) || '—'}
@@ -66,7 +65,7 @@ export function getTrainingCoursesColumns(
     },
     {
       accessorKey: 'training_type',
-      header: 'Type',
+      header: () => tr('columnType', 'Type'),
       size: 110,
       cell: ({ getValue }) => {
         const type = getValue() as string | null;
@@ -80,21 +79,22 @@ export function getTrainingCoursesColumns(
     },
     {
       accessorKey: 'certificate_type',
-      header: 'Certificate',
+      header: () => tr('columnCertificate', 'Certificate'),
       size: 140,
       cell: ({ getValue }) => {
         const ct = getValue() as string | null;
         if (!ct) return <span className={`text-[11px] ${dimmed}`}>—</span>;
+        const certLabel = ct === 'PARTICIPATION' ? tr('participation', 'Participation') : ct === 'QUALIFICATION' ? tr('qualification', 'Qualification') : ct;
         return (
           <Badge variant="outline" className={`text-[10px] font-bold tracking-tight ${CERT_TYPE_STYLES[ct] ?? 'bg-slate-500/10 text-slate-500 border-slate-500/20'}`}>
-            {CERT_TYPE_LABELS[ct] ?? ct}
+            {certLabel}
           </Badge>
         );
       },
     },
     {
       accessorKey: 'session_code',
-      header: 'Session',
+      header: () => tr('columnSession', 'Session'),
       cell: ({ getValue }) => (
         <span className={`text-xs font-mono ${muted}`}>
           {(getValue() as string | null) ?? '—'}
@@ -103,7 +103,7 @@ export function getTrainingCoursesColumns(
     },
     {
       accessorKey: 'completion_date',
-      header: 'Completion Date',
+      header: () => tr('columnCompletion', 'Completion Date'),
       size: 130,
       cell: ({ getValue }) => (
         <span className={`text-xs ${muted}`}>{fmtDate(getValue() as string | null)}</span>
@@ -111,7 +111,7 @@ export function getTrainingCoursesColumns(
     },
     {
       accessorKey: 'expiry_date',
-      header: 'Expiry Date',
+      header: () => tr('columnExpiry', 'Expiry Date'),
       size: 115,
       cell: ({ getValue }) => (
         <span className={`text-xs ${muted}`}>{fmtDate(getValue() as string | null)}</span>
@@ -119,7 +119,7 @@ export function getTrainingCoursesColumns(
     },
     {
       accessorKey: 'status',
-      header: 'Status',
+      header: () => tr('columnStatus', 'Status'),
       size: 85,
       cell: ({ getValue }) => {
         const s = getValue() as 'VALID' | 'EXPIRED' | null;

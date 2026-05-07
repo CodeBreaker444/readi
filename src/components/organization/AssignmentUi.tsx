@@ -18,6 +18,7 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { Loader2 } from "lucide-react"
 import { useEffect, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 
 export type FormData = {
@@ -78,6 +79,7 @@ export function AssignmentForm({
   submitLabel: string
   isDark: boolean
 }) {
+  const { t } = useTranslation();
   const [form, setForm] = useState<FormData>(initial)
   const [jsonError, setJsonError] = useState("")
 
@@ -91,13 +93,13 @@ export function AssignmentForm({
   const validateJson = (val: string) => {
     if (!val.trim()) { setJsonError(""); return }
     try { JSON.parse(val); setJsonError("") } 
-    catch { setJsonError("Invalid JSON format") }
+    catch { setJsonError(t('organization.common.invalidJsonFormat')) }
   }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (form.assignment_json && jsonError) {
-      toast.error("Please fix JSON syntax errors")
+      toast.error(t('organization.assignments.invalidJsonError'))
       return
     }
     onSubmit(form)
@@ -107,7 +109,7 @@ export function AssignmentForm({
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="grid grid-cols-3 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="code">Code *</Label>
+          <Label htmlFor="code">{t('organization.common.code')} *</Label>
           <Input
             id="code"
             required
@@ -117,7 +119,7 @@ export function AssignmentForm({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="ver">Version</Label>
+          <Label htmlFor="ver">{t('organization.common.version')}</Label>
           <Input
             id="ver"
             value={form.assignment_ver}
@@ -126,24 +128,24 @@ export function AssignmentForm({
           />
         </div>
         <div className="space-y-2">
-          <Label>Active</Label>
+          <Label>{t('organization.common.status')}</Label>
           <Select 
             value={form.assignment_active} 
             onValueChange={(val: 'Y' | 'N') => set("assignment_active", val)}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Status" />
+              <SelectValue placeholder={t('organization.common.selectStatus')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Y">Yes</SelectItem>
-              <SelectItem value="N">No</SelectItem>
+              <SelectItem value="Y">{t('organization.common.yes')}</SelectItem>
+              <SelectItem value="N">{t('organization.common.no')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="desc">Description *</Label>
+        <Label htmlFor="desc">{t('organization.common.description')} *</Label>
         <Input
           id="desc"
           required
@@ -155,7 +157,7 @@ export function AssignmentForm({
 
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <Label htmlFor="json">JSON Schema</Label>
+          <Label htmlFor="json">{t('organization.assignments.jsonSchema')}</Label>
           {jsonError && (
             <span className="text-[10px] font-medium text-destructive animate-pulse">{jsonError}</span>
           )}
@@ -182,7 +184,7 @@ export function AssignmentForm({
           {loading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Saving...
+              {t('organization.common.saving')}
             </>
           ) : (
             submitLabel

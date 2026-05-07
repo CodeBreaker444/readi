@@ -23,12 +23,6 @@ interface TrainingCalendarEvent {
   completion_status: string | null;
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  COMPLETED: 'Completed',
-  IN_PROGRESS: 'In Progress',
-  FAILED: 'Failed',
-  ABSENT: 'Absent',
-};
 
 export default function TrainingCalendarPage() {
   const { t } = useTranslation();
@@ -204,7 +198,7 @@ export default function TrainingCalendarPage() {
                       backgroundColor: `${selectedEvent.color}18`,
                     }}
                   >
-                    {STATUS_LABELS[selectedEvent.completion_status ?? ''] ?? selectedEvent.completion_status ?? '—'}
+                    {selectedEvent.completion_status ? t(`training.statuses.${selectedEvent.completion_status}`, selectedEvent.completion_status) : '—'}
                   </span>
                 </div>
               </div>

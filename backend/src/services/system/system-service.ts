@@ -383,23 +383,25 @@ export async function deleteComponent(ownerId: number, componentId: number, forc
 
   if (compError || !comp) throw new Error('Component not found');
 
-  const { data: tool } = await supabase
-    .from('tool')
-    .select('tool_id, tool_code')
-    .eq('tool_id', comp.fk_tool_id)
-    .eq('fk_owner_id', ownerId)
-    .maybeSingle();
+  if (comp.fk_tool_id !== null) {
+    const { data: tool } = await supabase
+      .from('tool')
+      .select('tool_id, tool_code')
+      .eq('tool_id', comp.fk_tool_id)
+      .eq('fk_owner_id', ownerId)
+      .maybeSingle();
 
-  if (!tool) throw new Error('Component not found or unauthorized');
+    if (!tool) throw new Error('Component not found or unauthorized');
 
-  const isDetached = comp.component_metadata?.system_detached === true;
+    const isDetached = comp.component_metadata?.system_detached === true;
 
-  if (!force && !isDetached) {
-    return {
-      code: 2,
-      message: `Component is attached to system "${tool.tool_code}". Detach it from the system before deleting.`,
-      system_code: tool.tool_code,
-    };
+    if (!force && !isDetached) {
+      return {
+        code: 2,
+        message: `Component is attached to system "${tool.tool_code}". Detach it from the system before deleting.`,
+        system_code: tool.tool_code,
+      };
+    }
   }
 
   const { error } = await supabase
@@ -545,30 +547,49 @@ export async function getComponentList(ownerId: number, toolId?: number) {
     dcc_drone_id
   `;
 
-  if (toolIds.length === 0) {
-    return { code: 1, message: 'Success', dataRows: 0, data: [] };
+  // only attached, non-detached components for that system
+  if (toolId && toolId !== 0) {
+    if (toolIds.length === 0) {
+      return { code: 1, message: 'Success', dataRows: 0, data: [] };
+    }
+    const { data: rawData, error } = await supabase
+      .from('tool_component')
+      .select(selectFields)
+      .in('fk_tool_id', toolIds)
+      .eq('component_active', 'Y')
+      .order('component_id', { ascending: false });
+    if (error) throw error;
+    const data = (rawData || []).filter(item => item.component_metadata?.system_detached !== true);
+    return buildComponentListResult(data);
   }
 
-  const { data: rawData, error } = await supabase
+  // components attached to owner's tools + standalone (fk_tool_id IS NULL)
+  let compQuery = supabase
     .from('tool_component')
     .select(selectFields)
-    .in('fk_tool_id', toolIds)
-    .eq('component_active', 'Y')
-    .order('component_id', { ascending: false });
+    .eq('component_active', 'Y');
 
+  if (toolIds.length > 0) {
+    compQuery = (compQuery as any).or(`fk_tool_id.in.(${toolIds.join(',')}),fk_tool_id.is.null`);
+  } else {
+    compQuery = (compQuery as any).is('fk_tool_id', null);
+  }
+
+  const { data: rawData, error } = await compQuery.order('component_id', { ascending: false });
   if (error) throw error;
 
-  const data = (toolId && toolId !== 0)
-    ? (rawData || []).filter(item => item.component_metadata?.system_detached !== true)
-    : (rawData || []);
+  return buildComponentListResult(rawData || []);
+}
 
+function buildComponentListResult(data: any[]) {
   return {
     code: 1,
     message: 'Success',
-    dataRows: data?.length || 0,
-    data: (data || []).map((item) => ({
+    dataRows: data.length,
+    data: data.map((item) => ({
       tool_component_id: item.component_id,
       fk_tool_id: item.fk_tool_id,
+      system_detached: item.component_metadata?.system_detached === true,
       component_type: item.component_type,
       component_code: item.component_code,
       component_name: item.component_name,
@@ -601,7 +622,6 @@ export async function getComponentList(ownerId: number, toolId?: number) {
     })),
   };
 }
-
 
 
 export async function addComponent(componentData: any) {
@@ -716,11 +736,22 @@ export async function updateComponent(componentId: number, componentData: any) {
     await refreshMaintenanceDaysForTool(componentData.fk_tool_id);
   }
 
+  const { data: existing } = await supabase
+    .from('tool_component')
+    .select('component_metadata, fk_tool_id')
+    .eq('component_id', componentId)
+    .single();
+
+  const existingMeta = existing?.component_metadata || {};
+  const { system_detached: _ignored, ...existingMetaWithoutDetached } = existingMeta;
+  const baseMeta = componentData.system_detached ? existingMeta : existingMetaWithoutDetached;
+
   const { data, error } = await supabase
     .from('tool_component')
     .update({
       fk_tool_id: componentData.fk_tool_id,
       component_type: componentData.component_type,
+      component_name: componentData.component_name || null,
       component_code: componentData.component_code || null,
       component_description: componentData.component_desc || null,
       serial_number: normalizedSerial || null,
@@ -731,6 +762,7 @@ export async function updateComponent(componentId: number, componentData: any) {
       maintenance_cycle_day: componentData.maintenance_cycle_day ?? null,
       maintenance_cycle_flight: componentData.maintenance_cycle_flight ?? null,
       component_metadata: {
+        ...baseMeta,
         cc_platform: componentData.cc_platform || null,
         gcs_type: componentData.gcs_type || null,
         component_status: componentData.component_status || 'OPERATIONAL',
