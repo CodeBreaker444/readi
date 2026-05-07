@@ -2705,6 +2705,179 @@
       }
     }
   },
+  "organization": {
+    "common": {
+      "refresh": "Refresh",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "deleting": "Deleting…",
+      "saving": "Saving…",
+      "processing": "Processing...",
+      "noResultsFound": "No results found",
+      "tryAdjustingFilters": "Try adjusting your filters or search",
+      "active": "Active",
+      "inactive": "Inactive",
+      "yes": "Yes",
+      "no": "No",
+      "code": "Code",
+      "version": "Version",
+      "status": "Status",
+      "description": "Description",
+      "name": "Name",
+      "saveChanges": "Save Changes",
+      "invalidJsonFormat": "Invalid JSON format",
+      "cannotBeUndone": "This cannot be undone",
+      "selectStatus": "Select status"
+    },
+    "assignments": {
+      "title": "Assignments",
+      "subtitle": "Assign personnel and resources to operational tasks",
+      "sync": "Sync",
+      "addAssignment": "Add Assignment",
+      "searchPlaceholder": "Search assignments...",
+      "modalAddTitle": "Add Assignment",
+      "modalDeleteTitle": "Delete Assignment",
+      "jsonSchemaTitle": "JSON Schema",
+      "createAssignment": "Create Assignment",
+      "jsonSchema": "JSON Schema",
+      "invalidJsonError": "Please fix JSON syntax errors",
+      "deleteConfirm": "Permanently delete {{code}}? This cannot be undone.",
+      "toasts": {
+        "loadFailed": "Failed to load assignments",
+        "deleteActiveFailed": "Cannot delete an active assignment. Set it to Inactive first.",
+        "created": "Assignment created",
+        "updated": "Assignment updated",
+        "deleted": "Assignment deleted",
+        "deleteFailed": "Deletion failed",
+        "updateFailed": "Update failed",
+        "createFailed": "Creation failed"
+      }
+    },
+    "checklist": {
+      "title": "Checklists",
+      "subtitle": "Manage and organize your operational checklist items",
+      "refresh": "Refresh",
+      "addChecklist": "Add Checklist",
+      "searchPlaceholder": "Search all columns...",
+      "modalAddTitle": "Add Checklist",
+      "modalDeleteTitle": "Delete Checklist",
+      "createChecklist": "Create Checklist",
+      "protocolCode": "Protocol Code",
+      "validateJson": "Validate JSON",
+      "jsonSchemaSurveyJS": "JSON Schema (SurveyJS)",
+      "validJsonSchema": "Valid JSON Schema",
+      "invalidJsonFormat": "Invalid JSON Format",
+      "jsonMustBeObject": "JSON must be an object",
+      "deleteConfirm": "Permanently delete {{code}}? This cannot be undone.",
+      "noResults": "No results found.",
+      "toasts": {
+        "loadFailed": "Failed to load checklists",
+        "deleteActiveFailed": "Cannot delete an active checklist. Set it to Inactive first.",
+        "created": "Checklist created",
+        "updated": "Checklist updated",
+        "deleted": "Checklist deleted",
+        "deleteFailed": "Deletion failed",
+        "updateFailed": "Update failed",
+        "createFailed": "Creation failed"
+      }
+    },
+    "chart": {
+      "title": "Organization Chart",
+      "subtitle": "AIView Group · Accountability structure & reporting lines",
+      "reportingStructure": "Reporting Structure",
+      "members": "Members",
+      "levels": "Levels",
+      "active": "Active",
+      "failedToLoad": "Failed to load chart",
+      "retry": "Retry"
+    },
+    "communication": {
+      "title": "Communication Protocols",
+      "subtitle": "Manage and track drone communication schemas",
+      "refresh": "Refresh",
+      "newCommunication": "New Communication",
+      "operationalProtocols": "Operational Protocols",
+      "nodesOnline": "Nodes Online",
+      "addModalTitle": "Initialize Protocol Matrix",
+      "editModalTitle": "Edit Protocol",
+      "protocolCode": "Protocol Code",
+      "jsonMatrixSchema": "JSON Matrix Schema",
+      "initializeProtocol": "Initialize Protocol",
+      "prettify": "Prettify",
+      "toasts": {
+        "loadFailed": "Failed to load communications",
+        "added": "Communication added successfully.",
+        "updated": "Communication updated successfully.",
+        "deleted": "Communication deleted.",
+        "deployed": "Communication protocol deployed",
+        "jsonPrettified": "JSON Prettified",
+        "invalidJson": "Invalid JSON format",
+        "deployFailed": "Deployment failed. Check matrix configuration.",
+        "protocolUpdated": "Protocol updated successfully.",
+        "updateFailed": "Update failed.",
+        "networkError": "Network error. Please try again.",
+        "deleteFailed": "Failed to delete."
+      }
+    },
+    "lucProcedures": {
+      "title": "Procedures",
+      "subtitle": "Manage light UAS operator certificate procedures",
+      "refresh": "Refresh",
+      "addProcedure": "Add Procedure",
+      "searchPlaceholder": "Search by code, name or description…",
+      "allStatuses": "All Statuses",
+      "allActive": "All",
+      "statCards": {
+        "total": "Total",
+        "active": "Active",
+        "evaluation": "Evaluation",
+        "planning": "Planning",
+        "mission": "Mission"
+      },
+      "statusOptions": {
+        "evaluation": "Evaluation",
+        "planning": "Planning",
+        "mission": "Mission"
+      },
+      "activeOptions": {
+        "active": "Active",
+        "inactive": "Inactive"
+      },
+      "emptyState": {
+        "noProcedures": "No procedures found",
+        "adjustFilters": "Try adjusting your filters",
+        "addFirst": "Add your first Procedure to get started"
+      },
+      "editModal": {
+        "editTitle": "Edit Procedure",
+        "newTitle": "New Procedure",
+        "codePlaceholder": "e.g. LUC-001",
+        "namePlaceholder": "Procedure name",
+        "descriptionPlaceholder": "Brief description of this procedure",
+        "versionPlaceholder": "1.0",
+        "sectorLabel": "Sector",
+        "sectorPlaceholder": "e.g. SOLAR",
+        "procedureSteps": "Procedure Steps (JSON)",
+        "saveProcedure": "Save Procedure"
+      },
+      "deleteModal": {
+        "title": "Delete Procedure",
+        "cannotUndo": "This action cannot be undone",
+        "confirmMessage": "Are you sure you want to delete {{code}}?"
+      },
+      "toasts": {
+        "loadFailed": "Failed to load procedures",
+        "deleteActiveFailed": "Cannot delete an active procedure. Set it to Inactive first.",
+        "created": "Procedure created successfully",
+        "updated": "Procedure updated successfully",
+        "deleted": "Procedure deleted",
+        "createFailed": "Create failed",
+        "updateFailed": "Update failed",
+        "deleteFailed": "Delete failed",
+        "invalidJson": "Invalid JSON for procedure steps"
+      }
+    }
+  },
   "export": {
     "export": "Export",
     "exporting": "Exporting…",

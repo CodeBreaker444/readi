@@ -2694,6 +2694,179 @@
       }
     }
   },
+  "organization": {
+    "common": {
+      "refresh": "Aktualisieren",
+      "cancel": "Abbrechen",
+      "delete": "Löschen",
+      "deleting": "Löschvorgang…",
+      "saving": "Speichervorgang…",
+      "processing": "Verarbeitung...",
+      "noResultsFound": "Keine Ergebnisse gefunden",
+      "tryAdjustingFilters": "Versuchen Sie, die Filter oder die Suche anzupassen",
+      "active": "Aktiv",
+      "inactive": "Inaktiv",
+      "yes": "Ja",
+      "no": "Nein",
+      "code": "Code",
+      "version": "Version",
+      "status": "Status",
+      "description": "Beschreibung",
+      "name": "Name",
+      "saveChanges": "Änderungen speichern",
+      "invalidJsonFormat": "Ungültiges JSON-Format",
+      "cannotBeUndone": "Dies kann nicht rückgängig gemacht werden",
+      "selectStatus": "Status auswählen"
+    },
+    "assignments": {
+      "title": "Zuweisungen",
+      "subtitle": "Personal und Ressourcen operativen Aufgaben zuweisen",
+      "sync": "Synchronisieren",
+      "addAssignment": "Zuweisung hinzufügen",
+      "searchPlaceholder": "Zuweisungen suchen...",
+      "modalAddTitle": "Zuweisung hinzufügen",
+      "modalDeleteTitle": "Zuweisung löschen",
+      "jsonSchemaTitle": "JSON-Schema",
+      "createAssignment": "Zuweisung erstellen",
+      "jsonSchema": "JSON-Schema",
+      "invalidJsonError": "Bitte beheben Sie JSON-Syntaxfehler",
+      "deleteConfirm": "{{code}} endgültig löschen? Dies kann nicht rückgängig gemacht werden.",
+      "toasts": {
+        "loadFailed": "Zuweisungen konnten nicht geladen werden",
+        "deleteActiveFailed": "Eine aktive Zuweisung kann nicht gelöscht werden. Setzen Sie diese zuerst auf Inaktiv.",
+        "created": "Zuweisung erstellt",
+        "updated": "Zuweisung aktualisiert",
+        "deleted": "Zuweisung gelöscht",
+        "deleteFailed": "Löschen fehlgeschlagen",
+        "updateFailed": "Aktualisierung fehlgeschlagen",
+        "createFailed": "Erstellung fehlgeschlagen"
+      }
+    },
+    "checklist": {
+      "title": "Checklisten",
+      "subtitle": "Verwalten und organisieren Sie Ihre operativen Checklisten-Punkte",
+      "refresh": "Aktualisieren",
+      "addChecklist": "Checkliste hinzufügen",
+      "searchPlaceholder": "Alle Spalten durchsuchen...",
+      "modalAddTitle": "Checkliste hinzufügen",
+      "modalDeleteTitle": "Checkliste löschen",
+      "createChecklist": "Checkliste erstellen",
+      "protocolCode": "Protokoll-Code",
+      "validateJson": "JSON validieren",
+      "jsonSchemaSurveyJS": "JSON-Schema (SurveyJS)",
+      "validJsonSchema": "Gültiges JSON-Schema",
+      "invalidJsonFormat": "Ungültiges JSON-Format",
+      "jsonMustBeObject": "JSON muss ein Objekt sein",
+      "deleteConfirm": "{{code}} endgültig löschen? Dies kann nicht rückgängig gemacht werden.",
+      "noResults": "Keine Ergebnisse gefunden.",
+      "toasts": {
+        "loadFailed": "Checklisten konnten nicht geladen werden",
+        "deleteActiveFailed": "Eine aktive Checkliste kann nicht gelöscht werden. Setzen Sie diese zuerst auf Inaktiv.",
+        "created": "Checkliste erstellt",
+        "updated": "Checkliste aktualisiert",
+        "deleted": "Checkliste gelöscht",
+        "deleteFailed": "Löschen fehlgeschlagen",
+        "updateFailed": "Aktualisierung fehlgeschlagen",
+        "createFailed": "Erstellung fehlgeschlagen"
+      }
+    },
+    "chart": {
+      "title": "Organigramm",
+      "subtitle": "AIView Group · Verantwortlichkeitsstruktur & Berichtslinien",
+      "reportingStructure": "Berichtsstruktur",
+      "members": "Mitglieder",
+      "levels": "Ebenen",
+      "active": "Aktiv",
+      "failedToLoad": "Diagramm konnte nicht geladen werden",
+      "retry": "Wiederholen"
+    },
+    "communication": {
+      "title": "Kommunikationsprotokolle",
+      "subtitle": "Drohnen-Kommunikationsschemata verwalten und verfolgen",
+      "refresh": "Aktualisieren",
+      "newCommunication": "Neue Kommunikation",
+      "operationalProtocols": "Operative Protokolle",
+      "nodesOnline": "Knoten Online",
+      "addModalTitle": "Protokoll-Matrix initialisieren",
+      "editModalTitle": "Protokoll bearbeiten",
+      "protocolCode": "Protokoll-Code",
+      "jsonMatrixSchema": "JSON-Matrix-Schema",
+      "initializeProtocol": "Protokoll initialisieren",
+      "prettify": "Formatieren",
+      "toasts": {
+        "loadFailed": "Kommunikation konnte nicht geladen werden",
+        "added": "Kommunikation erfolgreich hinzugefügt.",
+        "updated": "Kommunikation erfolgreich aktualisiert.",
+        "deleted": "Kommunikation gelöscht.",
+        "deployed": "Kommunikationsprotokoll bereitgestellt",
+        "jsonPrettified": "JSON formatiert",
+        "invalidJson": "Ungültiges JSON-Format",
+        "deployFailed": "Bereitstellung fehlgeschlagen. Matrix-Konfiguration prüfen.",
+        "protocolUpdated": "Protokoll erfolgreich aktualisiert.",
+        "updateFailed": "Aktualisierung fehlgeschlagen.",
+        "networkError": "Netzwerkfehler. Bitte versuchen Sie es erneut.",
+        "deleteFailed": "Löschen fehlgeschlagen."
+      }
+    },
+    "lucProcedures": {
+      "title": "Verfahren",
+      "subtitle": "LUC-Verfahren (Light UAS Operator Certificate) verwalten",
+      "refresh": "Aktualisieren",
+      "addProcedure": "Verfahren hinzufügen",
+      "searchPlaceholder": "Nach Code, Name oder Beschreibung suchen…",
+      "allStatuses": "Alle Stati",
+      "allActive": "Alle",
+      "statCards": {
+        "total": "Gesamt",
+        "active": "Aktiv",
+        "evaluation": "Bewertung",
+        "planning": "Planung",
+        "mission": "Mission"
+      },
+      "statusOptions": {
+        "evaluation": "Bewertung",
+        "planning": "Planung",
+        "mission": "Mission"
+      },
+      "activeOptions": {
+        "active": "Aktiv",
+        "inactive": "Inaktiv"
+      },
+      "emptyState": {
+        "noProcedures": "Keine Verfahren gefunden",
+        "adjustFilters": "Versuchen Sie, die Filter anzupassen",
+        "addFirst": "Fügen Sie Ihr erstes Verfahren hinzu, um zu beginnen"
+      },
+      "editModal": {
+        "editTitle": "Verfahren bearbeiten",
+        "newTitle": "Neues Verfahren",
+        "codePlaceholder": "z.B. LUC-001",
+        "namePlaceholder": "Name des Verfahrens",
+        "descriptionPlaceholder": "Kurzbeschreibung dieses Verfahrens",
+        "versionPlaceholder": "1.0",
+        "sectorLabel": "Sektor",
+        "sectorPlaceholder": "z.B. SOLAR",
+        "procedureSteps": "Verfahrensschritte (JSON)",
+        "saveProcedure": "Verfahren speichern"
+      },
+      "deleteModal": {
+        "title": "Verfahren löschen",
+        "cannotUndo": "Diese Aktion kann nicht rückgängig gemacht werden",
+        "confirmMessage": "Sind Sie sicher, dass Sie {{code}} löschen möchten?"
+      },
+      "toasts": {
+        "loadFailed": "Verfahren konnten nicht geladen werden",
+        "deleteActiveFailed": "Ein aktives Verfahren kann nicht gelöscht werden. Setzen Sie es zuerst auf Inaktiv.",
+        "created": "Verfahren erfolgreich erstellt",
+        "updated": "Verfahren erfolgreich aktualisiert",
+        "deleted": "Verfahren gelöscht",
+        "createFailed": "Erstellung fehlgeschlagen",
+        "updateFailed": "Aktualisierung fehlgeschlagen",
+        "deleteFailed": "Löschen fehlgeschlagen",
+        "invalidJson": "Ungültiges JSON für Verfahrensschritte"
+      }
+    }
+  },
   "export": {
     "export": "Exportieren",
     "exporting": "Exportiere…",
