@@ -13,7 +13,7 @@ import { useTheme } from "@/components/useTheme";
 import type { Client, MapFiltersType, ToolsResponse } from "@/config/types/types";
 import { isDock, isValidCoord, matchSearch } from "@/lib/mapUtils";
 import axios from "axios";
-import { Loader2, Plus, RefreshCw } from "lucide-react";
+import { Loader2, Maximize2, Minimize2, Plus, RefreshCw } from "lucide-react";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -56,8 +56,16 @@ export default function DroneToolMapPage() {
   const [showAddTool, setShowAddTool] = useState(false);
   const [showAddModel, setShowAddModel] = useState(false);
   const [showAddComponent, setShowAddComponent] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const droneMapRef = useRef<DroneMapHandle>(null);
+
+  useEffect(() => {
+    if (!isFullscreen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setIsFullscreen(false); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isFullscreen]);
 
   useEffect(() => {
     setFilters(loadSavedFilters());
@@ -231,28 +239,43 @@ export default function DroneToolMapPage() {
             />
           </div>
 
-          <div id="drone-map-container" className={`lg:col-span-8 rounded-xl border shadow-sm p-4
-      ${isDark ? "bg-slate-800 border-slate-700" : "bg-white border-gray-200"}`}>
-            {loading ? (
-              <div className={`flex items-center justify-center ${isDark ? "text-slate-500" : "text-gray-400"}`}
-                style={{ height: MAP_HEIGHT }}>
-                Loading map data…
-              </div>
-            ) : (
-              <Suspense fallback={
+          <div
+            id="drone-map-container"
+            className={isFullscreen
+              ? "fixed inset-0 z-9999"
+              : `lg:col-span-8 rounded-xl border shadow-sm p-4 ${isDark ? "bg-slate-800 border-slate-700" : "bg-white border-gray-200"}`
+            }
+          >
+            <div className="relative w-full h-full">
+              {loading ? (
                 <div className={`flex items-center justify-center ${isDark ? "text-slate-500" : "text-gray-400"}`}
-                  style={{ height: MAP_HEIGHT }}>
-                  Loading map…
+                  style={{ height: isFullscreen ? "100vh" : MAP_HEIGHT }}>
+                  Loading map data…
                 </div>
-              }>
-                <DroneMap
-                  ref={droneMapRef}
-                  tools={filteredTools}
-                  height={MAP_HEIGHT}
-                  onToolClick={handleDetail}
-                />
-              </Suspense>
-            )}
+              ) : (
+                <Suspense fallback={
+                  <div className={`flex items-center justify-center ${isDark ? "text-slate-500" : "text-gray-400"}`}
+                    style={{ height: isFullscreen ? "100vh" : MAP_HEIGHT }}>
+                    Loading map…
+                  </div>
+                }>
+                  <DroneMap
+                    ref={droneMapRef}
+                    tools={filteredTools}
+                    height={isFullscreen ? "100vh" : MAP_HEIGHT}
+                    onToolClick={handleDetail}
+                  />
+                </Suspense>
+              )}
+              <button
+                onClick={() => setIsFullscreen(f => !f)}
+                title={isFullscreen ? "Exit fullscreen" : "Fullscreen map"}
+                className="absolute bottom-9 left-1/2 -translate-x-1/2 z-10 p-2 rounded-full shadow-lg backdrop-blur-sm transition-all hover:scale-105 active:scale-95"
+                style={{ background: "rgba(15,15,25,0.70)", color: "#e2e8f0", border: "1px solid rgba(255,255,255,0.15)" }}
+              >
+                {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+              </button>
+            </div>
           </div>
 
         </section>

@@ -9,7 +9,7 @@ import WindParticleOverlay from '@/components/drone-atc/WindParticleOverlay';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTheme } from '@/components/useTheme';
 import '@/lib/i18n/config';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Maximize2, Minimize2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -74,10 +74,18 @@ export default function DroneATCPage() {
     wind: false, temp: false, clouds: false, precip: false, pressure: false,
   });
 
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [syncState, setSyncState] = useState<'idle' | 'loading' | 'ok' | 'error'>('idle');
   const [windData, setWindData] = useState<{ dir: number; speed: number }>({ dir: 270, speed: 5 });
 
   const boundsRef = useRef<{ latMin: number; lonMin: number; latMax: number; lonMax: number } | null>(null);
+
+  useEffect(() => {
+    if (!isFullscreen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setIsFullscreen(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isFullscreen]);
   const flightTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasAutoSelected = useRef(false);
@@ -283,7 +291,7 @@ export default function DroneATCPage() {
           </div>
         </aside>
 
-        <main className={`flex-1 relative overflow-hidden ${panelClass}`}>
+        <main className={isFullscreen ? 'fixed inset-0 z-9999 overflow-hidden' : `flex-1 relative overflow-hidden ${panelClass}`}>
           <div className="absolute inset-0 rounded-2xl overflow-hidden">
             <DroneATCMap
               drones={drones}
@@ -391,6 +399,15 @@ export default function DroneATCPage() {
           )}
 
           {selectedDrone && <LiveFeedPanel drone={selectedDrone} isDark={isDark} />}
+
+          <button
+            onClick={() => setIsFullscreen(f => !f)}
+            title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen map'}
+            className="absolute bottom-9 left-1/2 -translate-x-1/2 z-1010 p-2 rounded-full shadow-lg backdrop-blur-sm transition-all hover:scale-105 active:scale-95"
+            style={{ background: 'rgba(15,15,25,0.70)', color: '#e2e8f0', border: '1px solid rgba(255,255,255,0.15)' }}
+          >
+            {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+          </button>
         </main>
       </div>
     </div>

@@ -402,6 +402,11 @@ export default function DroneATCMap({
     flightLayerRef.current = flightLayer;
     airspaceLayerRef.current = airspaceLayer;
 
+    const observer = new ResizeObserver(() => {
+      setTimeout(() => map.invalidateSize(), 50);
+    });
+    observer.observe(containerRef.current!);
+
     const emitBounds = () => {
       const b = map.getBounds();
       onBoundsChange?.({ latMin: b.getSouth(), lonMin: b.getWest(), latMax: b.getNorth(), lonMax: b.getEast() });
@@ -415,6 +420,7 @@ export default function DroneATCMap({
     doFetchAirspace();
 
     return () => {
+      observer.disconnect();
       cancelAnimationFrame(cloudAnimRef.current);
       cancelAnimationFrame(precipAnimRef.current);
       if (cloudCanvasRef.current) { cloudCanvasRef.current.remove(); cloudCanvasRef.current = null; }
