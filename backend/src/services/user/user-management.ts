@@ -33,6 +33,7 @@ export interface UserUpdateData {
   is_manager: 'Y' | 'N';
   user_image?: string;
   user_signature?: string;
+  easa_operator_code?: string;
 }
 
 export async function getUserListByOwner(ownerId: number, userProfileId: number, currentUserId: number) {
@@ -56,6 +57,7 @@ export async function getUserListByOwner(ownerId: number, userProfileId: number,
         fk_client_id,
         fk_territorial_unit,
         fk_user_profile_id,
+        easa_operator_code,
         users_profile (
           fk_user_id,
           profile_picture,
@@ -104,6 +106,7 @@ export async function getUserListByOwner(ownerId: number, userProfileId: number,
       profile_image: user.users_profile?.[0]?.profile_picture || '',
       user_image: user.users_profile?.[0]?.profile_picture || '',
       user_signature: user.users_profile?.[0]?.user_signature || '',
+      easa_operator_code: user.easa_operator_code || '',
     }));
 
     return {
@@ -268,6 +271,9 @@ const toIntOrNull = (v: unknown): number | null => {
       fk_territorial_unit: toIntOrNull(userData.fk_territorial_unit),
       fk_client_id: toIntOrNull(userData.fk_client_id),
       updated_at: new Date().toISOString(),
+      ...(userData.easa_operator_code !== undefined && {
+        easa_operator_code: userData.easa_operator_code || null,
+      }),
     };
 
     const { error: userError } = await supabase

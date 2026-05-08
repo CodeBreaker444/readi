@@ -1,0 +1,38 @@
+'use client';
+
+import { useTheme } from '@/components/useTheme';
+import { AlertTriangle, ExternalLink } from 'lucide-react';
+
+export default function EasaGate() {
+  const { isDark } = useTheme();
+
+  return (
+    <div className={`flex flex-col items-center justify-center h-full min-h-screen px-4 ${isDark ? 'bg-slate-950' : 'bg-slate-100'}`}>
+      <div className={`max-w-md w-full border rounded-2xl p-8 shadow-2xl text-center space-y-5 ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`}>
+        <div className="flex justify-center">
+          <div className={`w-14 h-14 rounded-full flex items-center justify-center ring-1 ${isDark ? 'bg-amber-500/10 ring-amber-500/30' : 'bg-amber-50 ring-amber-200'}`}>
+            <AlertTriangle className={`w-7 h-7 ${isDark ? 'text-amber-400' : 'text-amber-500'}`} />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <h2 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+            EASA Operator Code Required
+          </h2>
+          <p className={`text-sm leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+            Your EASA Operator Code must be set before you can access Drone ATC. Please add it to your profile.
+          </p>
+        </div>
+        <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+          Open your profile from the top-right menu and add your EASA Operator Code, or ask your administrator to set it for you.
+        </p>
+        <a
+          href="/dashboard"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold transition-colors"
+        >
+          Go to Dashboard
+          <ExternalLink className="w-3.5 h-3.5" />
+        </a>
+      </div>
+    </div>
+  );
+}

@@ -1,7 +1,9 @@
 import UserManagement from "@/components/superadmin/UserManagement";
 import { getUserSession } from "@/lib/auth/server-session";
+import { redirect } from "next/navigation";
 
 export default async function TeamPersonnelPage() {
   const session = await getUserSession();
-  return <UserManagement session={session!} />;
+  if (!session) redirect('/auth/login');
+  return <UserManagement session={session} />;
 }

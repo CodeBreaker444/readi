@@ -6,6 +6,8 @@ import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
 
+const DRONE_ATC_ROLES = new Set(['SUPERADMIN', 'ADMIN', 'PIC', 'OPM']);
+
 const updateProfileSchema = z.object({
   fullname: z
     .string()
@@ -56,6 +58,13 @@ export async function POST(req: NextRequest) {
       timezone: rawFields.timezone ?? 'Europe/Berlin',
       easa_operator_code: rawFields.easa_operator_code ?? undefined,
     });
+
+    if (DRONE_ATC_ROLES.has(session!.user.role) && !validated.easa_operator_code?.trim()) {
+      return NextResponse.json(
+        { success: false, message: 'EASA Operator Code is required for Drone ATC access' },
+        { status: 422 },
+      );
+    }
 
     const avatarEntry = formData.get('avatar');
     let avatarFile: File | null = null;

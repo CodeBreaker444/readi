@@ -145,6 +145,9 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   const canEditEmail =
     userData?.role === 'ADMIN' || userData?.role === 'SUPERADMIN';
 
+  const DRONE_ATC_ROLES = ['SUPERADMIN', 'ADMIN', 'PIC', 'OPM'] as const;
+  const requiresEasa = DRONE_ATC_ROLES.includes(userData?.role as any);
+
   const [formData, setFormData] = useState({
     fullName: userData?.fullname || '',
     email: userData?.email || '',
@@ -255,6 +258,10 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (requiresEasa && !formData.easaOperatorCode.trim()) {
+      toast.error('EASA Operator Code is required for Drone ATC access');
+      return;
+    }
     setSaving(true);
 
     const formDataToSend = new FormData();
@@ -515,14 +522,21 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                   </div>
 
                   <div className="space-y-1.5 sm:col-span-2 lg:col-span-1">
-                    <Label htmlFor="easaOperatorCode">{t('profile.fields.easaOperatorCode')}</Label>
+                    <Label htmlFor="easaOperatorCode">
+                      {t('profile.fields.easaOperatorCode')}
+                      {requiresEasa && <span className="text-red-500 ml-1">*</span>}
+                    </Label>
                     <Input
                       id="easaOperatorCode"
                       name="easaOperatorCode"
                       value={formData.easaOperatorCode}
                       onChange={handleInputChange}
                       placeholder={t('profile.placeholders.easaOperatorCode')}
+                      className={requiresEasa && !formData.easaOperatorCode ? 'border-amber-400 focus-visible:ring-amber-400' : ''}
                     />
+                    {requiresEasa && !formData.easaOperatorCode && (
+                      <p className="text-xs text-amber-600 dark:text-amber-400">Required for Drone ATC access</p>
+                    )}
                   </div>
 
                   <div className="flex items-end sm:col-span-2 lg:col-span-1">

@@ -220,6 +220,7 @@ export default function UserManagement({ session }: UserManagementProps) {
         active: formData.active,
         is_viewer: formData.is_viewer,
         is_manager: formData.is_manager,
+        easa_operator_code: formData.easa_operator_code,
       });
       const data = res.data;
       if (data.code === 1) {
