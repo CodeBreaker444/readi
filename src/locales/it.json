@@ -295,7 +295,7 @@
     }
   },
   "profile": {
-    "title": "Profilo utente",
+    "title": "Profilo",
     "unknownUser": "Utente sconosciuto",
     "userFallback": "Utente",
     "avatarAlt": "Profilo",
@@ -366,6 +366,28 @@
     "editDescription": "Aggiorna i dettagli della categoria missione.",
     "deleteTitle": "Elimina categoria",
     "deleteDescription": "Sei sicuro di voler eliminare questa categoria missione? Questa azione non puo essere annullata.",
+    "table": {
+      "colCode": "Codice",
+      "colName": "Nome",
+      "colDescription": "Descrizione",
+      "colActions": "Azioni",
+      "emptyTitle": "Nessuna categoria definita",
+      "emptySubtitle": "Crea la tua prima categoria per iniziare",
+      "exportFilename": "Categorie Missione",
+      "noDescription": "Nessuna descrizione"
+    },
+    "form": {
+      "codeLabel": "Codice categoria",
+      "codePlaceholder": "es. COMMERCIAL",
+      "nameLabel": "Nome categoria",
+      "namePlaceholder": "es. Commerciale",
+      "descriptionLabel": "Descrizione",
+      "descriptionPlaceholder": "es. Lavoro per clienti commerciali",
+      "saving": "Salvataggio...",
+      "adding": "Aggiunta...",
+      "saveChanges": "Salva modifiche",
+      "addButton": "Aggiungi categoria"
+    },
     "errors": {
       "fetch": "Impossibile recuperare le categorie",
       "add": "Impossibile aggiungere la categoria",
@@ -390,6 +412,30 @@
     "editDescription": "Aggiorna i dettagli del tipo missione.",
     "deleteTitle": "Elimina tipo missione",
     "deleteDescription": "Sei sicuro di voler eliminare questo tipo missione? Questa azione non puo essere annullata.",
+    "table": {
+      "colName": "Nome",
+      "colCode": "Codice",
+      "colLabel": "Etichetta",
+      "colActions": "Azioni",
+      "emptyTitle": "Nessun tipo definito",
+      "emptySubtitle": "Crea il tuo primo tipo missione per iniziare",
+      "exportFilename": "Tipi Missione"
+    },
+    "form": {
+      "nameLabel": "Nome",
+      "namePlaceholder": "Inserisci nome tipo missione",
+      "descriptionLabel": "Descrizione",
+      "descriptionPlaceholder": "Inserisci descrizione tipo missione",
+      "codeLabel": "Codice",
+      "codePlaceholder": "es. SURV",
+      "labelLabel": "Etichetta",
+      "labelPlaceholder": "Inserisci etichetta tipo missione",
+      "saving": "Salvataggio...",
+      "adding": "Aggiunta...",
+      "saveChanges": "Salva modifiche",
+      "addButton": "Aggiungi tipo missione",
+      "fillAllFields": "Compila tutti i campi"
+    },
     "errors": {
       "fetch": "Impossibile recuperare i tipi missione",
       "add": "Impossibile aggiungere il tipo missione",
@@ -414,6 +460,33 @@
     "editDescription": "Aggiorna i dettagli della fase del flusso di lavoro.",
     "deleteTitle": "Elimina stato",
     "deleteDescription": "Sei sicuro di voler eliminare questo stato missione? Questa azione non puo essere annullata.",
+    "table": {
+      "colCode": "Codice",
+      "colName": "Nome",
+      "colDescription": "Descrizione",
+      "colOrder": "Ordine",
+      "colFinal": "Finale",
+      "colActions": "Azioni",
+      "emptyTitle": "Nessuno stato definito",
+      "emptySubtitle": "Crea il tuo primo stato per tracciare le missioni",
+      "exportFilename": "Stati Missione",
+      "noDescription": "Nessuna descrizione",
+      "finalBadge": "Finale"
+    },
+    "form": {
+      "codeLabel": "Codice",
+      "codePlaceholder": "es. PLANNED",
+      "nameLabel": "Nome",
+      "namePlaceholder": "es. Pianificato",
+      "descriptionLabel": "Descrizione",
+      "descriptionPlaceholder": "es. Missione in fase di pianificazione",
+      "orderLabel": "Ordine",
+      "finalStatusLabel": "Stato finale",
+      "saving": "Salvataggio...",
+      "adding": "Aggiunta...",
+      "saveChanges": "Salva modifiche",
+      "addButton": "Aggiungi stato"
+    },
     "errors": {
       "fetch": "Impossibile recuperare gli stati missione",
       "add": "Impossibile aggiungere lo stato",
@@ -438,6 +511,24 @@
     "editDescription": "Aggiorna i dettagli del tipo di risultato missione.",
     "deleteTitle": "Elimina risultato",
     "deleteDescription": "Sei sicuro di voler eliminare questo risultato missione? Questa azione non puo essere annullata.",
+    "table": {
+      "colCode": "Codice",
+      "colDescription": "Descrizione",
+      "colActions": "Azioni",
+      "emptyTitle": "Nessun risultato definito",
+      "emptySubtitle": "Crea il tuo primo tipo di risultato per iniziare",
+      "exportFilename": "Risultati Missione"
+    },
+    "form": {
+      "codeLabel": "Codice",
+      "codePlaceholder": "es. SUCCESS",
+      "descriptionLabel": "Descrizione",
+      "descriptionPlaceholder": "es. Missione completata con successo",
+      "saving": "Salvataggio...",
+      "adding": "Aggiunta...",
+      "saveChanges": "Salva modifiche",
+      "addButton": "Aggiungi risultato"
+    },
     "errors": {
       "fetch": "Impossibile recuperare i risultati missione",
       "add": "Impossibile aggiungere il risultato",

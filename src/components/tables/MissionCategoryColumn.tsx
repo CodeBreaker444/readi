@@ -14,12 +14,14 @@ interface GetColumnsOptions {
   isDark: boolean;
   onEditClick: (category: MissionCategory) => void;
   onDelete: (id: number) => void;
+  t: (key: string) => string;
 }
 
 export function getMissionCategoryColumns({
   isDark,
   onEditClick,
   onDelete,
+  t,
 }: GetColumnsOptions): ColumnDef<MissionCategory>[] {
   return [
     {
@@ -34,7 +36,7 @@ export function getMissionCategoryColumns({
     },
     {
       accessorKey: 'code',
-      header: () => <span>Code</span>,
+      header: () => <span>{t('missionCategory.table.colCode')}</span>,
       cell: ({ row }) => (
         <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-mono font-semibold tracking-wide ${
           isDark
@@ -47,7 +49,7 @@ export function getMissionCategoryColumns({
     },
     {
       accessorKey: 'name',
-      header: () => <span>Name</span>,
+      header: () => <span>{t('missionCategory.table.colName')}</span>,
       cell: ({ row }) => (
         <span className={`text-[13px] font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
           {row.original.name}
@@ -56,20 +58,20 @@ export function getMissionCategoryColumns({
     },
     {
       accessorKey: 'description',
-      header: () => <span>Description</span>,
+      header: () => <span>{t('missionCategory.table.colDescription')}</span>,
       cell: ({ row }) => (
         <span className={`text-xs truncate max-w-[240px] block leading-relaxed ${
           isDark ? 'text-gray-500' : 'text-gray-400'
         }`}>
           {row.original.description || (
-            <span className={`italic ${isDark ? 'text-gray-700' : 'text-gray-300'}`}>No description</span>
+            <span className={`italic ${isDark ? 'text-gray-700' : 'text-gray-300'}`}>{t('missionCategory.table.noDescription')}</span>
           )}
         </span>
       ),
     },
     {
       id: 'actions',
-      header: () => <div className="flex justify-end">Actions</div>,
+      header: () => <div className="flex justify-end">{t('missionCategory.table.colActions')}</div>,
       cell: ({ row }) => {
         const category = row.original;
         return (
@@ -88,7 +90,7 @@ export function getMissionCategoryColumns({
                     <Pencil size={13} strokeWidth={2} />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="top" className="text-[11px]">Edit</TooltipContent>
+                <TooltipContent side="top" className="text-[11px]">{t('common.edit')}</TooltipContent>
               </Tooltip>
 
               <Tooltip>
@@ -104,7 +106,7 @@ export function getMissionCategoryColumns({
                     <Trash2 size={13} strokeWidth={2} />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="top" className="text-[11px]">Delete</TooltipContent>
+                <TooltipContent side="top" className="text-[11px]">{t('common.delete')}</TooltipContent>
               </Tooltip>
             </div>
           </TooltipProvider>

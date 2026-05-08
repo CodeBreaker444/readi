@@ -295,7 +295,7 @@
     }
   },
   "profile": {
-    "title": "User Profile",
+    "title": "Profile",
     "unknownUser": "Unknown User",
     "userFallback": "User",
     "avatarAlt": "Profile",
@@ -366,6 +366,28 @@
     "editDescription": "Update the mission category details.",
     "deleteTitle": "Delete Category",
     "deleteDescription": "Are you sure you want to delete this mission category? This action cannot be undone.",
+    "table": {
+      "colCode": "Code",
+      "colName": "Name",
+      "colDescription": "Description",
+      "colActions": "Actions",
+      "emptyTitle": "No categories defined yet",
+      "emptySubtitle": "Create your first category to get started",
+      "exportFilename": "Mission Categories",
+      "noDescription": "No description"
+    },
+    "form": {
+      "codeLabel": "Category Code",
+      "codePlaceholder": "e.g., COMMERCIAL",
+      "nameLabel": "Category Name",
+      "namePlaceholder": "e.g., Commercial",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "e.g., Commercial client work",
+      "saving": "Saving...",
+      "adding": "Adding...",
+      "saveChanges": "Save Changes",
+      "addButton": "Add Category"
+    },
     "errors": {
       "fetch": "Failed to fetch categories",
       "add": "Failed to add category",
@@ -390,6 +412,30 @@
     "editDescription": "Update the mission type details.",
     "deleteTitle": "Delete Mission Type",
     "deleteDescription": "Are you sure you want to delete this mission type? This action cannot be undone.",
+    "table": {
+      "colName": "Name",
+      "colCode": "Code",
+      "colLabel": "Label",
+      "colActions": "Actions",
+      "emptyTitle": "No types defined yet",
+      "emptySubtitle": "Create your first mission type to get started",
+      "exportFilename": "Mission Types"
+    },
+    "form": {
+      "nameLabel": "Name",
+      "namePlaceholder": "Enter mission type name",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "Enter mission type description",
+      "codeLabel": "Code",
+      "codePlaceholder": "e.g., SURV",
+      "labelLabel": "Label",
+      "labelPlaceholder": "Enter mission type label",
+      "saving": "Saving...",
+      "adding": "Adding...",
+      "saveChanges": "Save Changes",
+      "addButton": "Add Mission Type",
+      "fillAllFields": "Please fill in all fields"
+    },
     "errors": {
       "fetch": "Failed to fetch mission types",
       "add": "Failed to add mission type",
@@ -414,6 +460,33 @@
     "editDescription": "Update the workflow stage details.",
     "deleteTitle": "Delete Status",
     "deleteDescription": "Are you sure you want to delete this mission status? This action cannot be undone.",
+    "table": {
+      "colCode": "Code",
+      "colName": "Name",
+      "colDescription": "Description",
+      "colOrder": "Order",
+      "colFinal": "Final",
+      "colActions": "Actions",
+      "emptyTitle": "No statuses defined yet",
+      "emptySubtitle": "Create your first status to start tracking missions",
+      "exportFilename": "Mission Statuses",
+      "noDescription": "No description",
+      "finalBadge": "Final"
+    },
+    "form": {
+      "codeLabel": "Code",
+      "codePlaceholder": "e.g., PLANNED",
+      "nameLabel": "Name",
+      "namePlaceholder": "e.g., Planned",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "e.g., Mission is in planning phase",
+      "orderLabel": "Order",
+      "finalStatusLabel": "Final Status",
+      "saving": "Saving...",
+      "adding": "Adding...",
+      "saveChanges": "Save Changes",
+      "addButton": "Add Status"
+    },
     "errors": {
       "fetch": "Failed to fetch mission statuses",
       "add": "Failed to add status",
@@ -438,6 +511,24 @@
     "editDescription": "Update the mission result type details.",
     "deleteTitle": "Delete Result",
     "deleteDescription": "Are you sure you want to delete this mission result? This action cannot be undone.",
+    "table": {
+      "colCode": "Code",
+      "colDescription": "Description",
+      "colActions": "Actions",
+      "emptyTitle": "No results defined yet",
+      "emptySubtitle": "Create your first result type to get started",
+      "exportFilename": "Mission Results"
+    },
+    "form": {
+      "codeLabel": "Code",
+      "codePlaceholder": "e.g., SUCCESS",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "e.g., Mission completed successfully",
+      "saving": "Saving...",
+      "adding": "Adding...",
+      "saveChanges": "Save Changes",
+      "addButton": "Add Result"
+    },
     "errors": {
       "fetch": "Failed to fetch mission results",
       "add": "Failed to add result",

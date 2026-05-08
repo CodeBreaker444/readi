@@ -1,5 +1,6 @@
 'use client';
 
+import { SessionUser } from '@/lib/auth/server-session';
 import { Role } from '@/lib/auth/roles';
 import React, { useEffect, useState } from 'react';
 import { TbLayoutSidebarFilled } from 'react-icons/tb';
@@ -8,9 +9,10 @@ import Sidebar from './Sidebar';
 interface MobileSidebarProps {
   isDark: boolean;
   role: Role | null;
+  userData?: SessionUser | null;
 }
 
-const MobileSidebar: React.FC<MobileSidebarProps> = ({ isDark, role }) => {
+const MobileSidebar: React.FC<MobileSidebarProps> = ({ isDark, role, userData }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
@@ -54,6 +56,7 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({ isDark, role }) => {
             role={role}
             isCollapsed={false}
             onToggleCollapse={() => setIsOpen(false)}
+            userData={userData}
           />
 
         </div>

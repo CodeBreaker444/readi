@@ -14,12 +14,14 @@ interface GetMissionTypeColumnsOptions {
   isDark: boolean;
   onEditClick: (type: MissionType) => void;
   onDelete: (id: number) => void;
+  t: (key: string) => string;
 }
 
 export function getMissionTypeColumns({
   isDark,
   onEditClick,
   onDelete,
+  t,
 }: GetMissionTypeColumnsOptions): ColumnDef<MissionType>[] {
   const headerClass = `text-[11px] font-semibold uppercase tracking-widest ${isDark ? 'text-gray-400' : 'text-gray-400'}`;
 
@@ -36,7 +38,7 @@ export function getMissionTypeColumns({
     },
     {
       accessorKey: 'name',
-      header: () => <span className={headerClass}>Name</span>,
+      header: () => <span className={headerClass}>{t('missionType.table.colName')}</span>,
       cell: ({ row }) => (
         <span className={`text-[13px] font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
           {row.original.name}
@@ -45,7 +47,7 @@ export function getMissionTypeColumns({
     },
     {
       accessorKey: 'code',
-      header: () => <span className={headerClass}>Code</span>,
+      header: () => <span className={headerClass}>{t('missionType.table.colCode')}</span>,
       cell: ({ row }) => (
         <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-mono font-semibold tracking-wide ${
           isDark
@@ -58,7 +60,7 @@ export function getMissionTypeColumns({
     },
     {
       accessorKey: 'label',
-      header: () => <span className={headerClass}>Label</span>,
+      header: () => <span className={headerClass}>{t('missionType.table.colLabel')}</span>,
       cell: ({ row }) => (
         <span className={`text-xs truncate max-w-[240px] block leading-relaxed ${isDark ? 'text-gray-500' : 'text-gray-400'}`} title={row.original.label}>
           {row.original.label || <span className={`italic ${isDark ? 'text-gray-700' : 'text-gray-300'}`}>—</span>}
@@ -67,7 +69,7 @@ export function getMissionTypeColumns({
     },
     {
       id: 'actions',
-      header: () => <div className="flex justify-end">Actions</div>,
+      header: () => <div className="flex justify-end">{t('missionType.table.colActions')}</div>,
       cell: ({ row }) => {
         const type = row.original;
         return (
@@ -86,7 +88,7 @@ export function getMissionTypeColumns({
                     <Pencil size={13} strokeWidth={2} />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="top" className="text-[11px]">Edit</TooltipContent>
+                <TooltipContent side="top" className="text-[11px]">{t('common.edit')}</TooltipContent>
               </Tooltip>
 
               <Tooltip>
@@ -102,7 +104,7 @@ export function getMissionTypeColumns({
                     <Trash2 size={13} strokeWidth={2} />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="top" className="text-[11px]">Delete</TooltipContent>
+                <TooltipContent side="top" className="text-[11px]">{t('common.delete')}</TooltipContent>
               </Tooltip>
             </div>
           </TooltipProvider>

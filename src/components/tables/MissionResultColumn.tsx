@@ -14,12 +14,14 @@ interface GetMissionResultColumnsOptions {
   isDark: boolean;
   onEditClick: (result: MissionResult) => void;
   onDelete: (id: number) => void;
+  t: (key: string) => string;
 }
 
 export function createMissionResultColumns({
   isDark,
   onEditClick,
   onDelete,
+  t,
 }: GetMissionResultColumnsOptions): ColumnDef<MissionResult>[] {
   const headerClass = `text-[11px] font-semibold uppercase tracking-widest ${isDark ? 'text-gray-400' : 'text-gray-400'}`;
 
@@ -36,7 +38,7 @@ export function createMissionResultColumns({
     },
     {
       accessorKey: 'code',
-      header: () => <span className={headerClass}>Code</span>,
+      header: () => <span className={headerClass}>{t('missionResult.table.colCode')}</span>,
       cell: ({ row }) => (
         <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-mono font-semibold tracking-wide ${
           isDark
@@ -49,7 +51,7 @@ export function createMissionResultColumns({
     },
     {
       accessorKey: 'description',
-      header: () => <span className={headerClass}>Description</span>,
+      header: () => <span className={headerClass}>{t('missionResult.table.colDescription')}</span>,
       cell: ({ row }) => (
         <span className={`text-xs truncate max-w-[400px] block leading-relaxed ${isDark ? 'text-gray-500' : 'text-gray-400'}`} title={row.original.description}>
           {row.original.description || <span className={`italic ${isDark ? 'text-gray-700' : 'text-gray-300'}`}>—</span>}
@@ -58,7 +60,7 @@ export function createMissionResultColumns({
     },
     {
       id: 'actions',
-      header: () => <div className="flex justify-end">Actions</div>,
+      header: () => <div className="flex justify-end">{t('missionResult.table.colActions')}</div>,
       cell: ({ row }) => {
         const result = row.original;
         return (
@@ -77,7 +79,7 @@ export function createMissionResultColumns({
                     <Pencil size={13} strokeWidth={2} />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="top" className="text-[11px]">Edit</TooltipContent>
+                <TooltipContent side="top" className="text-[11px]">{t('common.edit')}</TooltipContent>
               </Tooltip>
 
               <Tooltip>
@@ -93,7 +95,7 @@ export function createMissionResultColumns({
                     <Trash2 size={13} strokeWidth={2} />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="top" className="text-[11px]">Delete</TooltipContent>
+                <TooltipContent side="top" className="text-[11px]">{t('common.delete')}</TooltipContent>
               </Tooltip>
             </div>
           </TooltipProvider>
