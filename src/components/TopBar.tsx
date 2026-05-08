@@ -2,7 +2,7 @@
 
 import { Skeleton } from '@/components/ui/skeleton';
 import { SessionUser } from '@/lib/auth/server-session';
-import { AlertTriangle, Check, FileText, Moon, Search, Send, Settings, Sparkles, Sun, UserCog, X } from 'lucide-react';
+import { AlertTriangle, Check, ChevronDown, FileText, Moon, Search, Send, Settings, Sparkles, Sun, User, UserCog, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';

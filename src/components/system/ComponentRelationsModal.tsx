@@ -29,7 +29,6 @@ interface ComponentRow {
   fk_tool_id: number;
 }
 
-/** One-level-only parent-child organiser */
 export default function ComponentRelationsModal({ open, onClose, toolId, toolCode, tools, onSuccess }: Props) {
   const { isDark } = useTheme();
   const { t } = useTranslation();
