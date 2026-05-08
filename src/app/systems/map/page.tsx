@@ -15,6 +15,7 @@ import { isDock, isValidCoord, matchSearch } from "@/lib/mapUtils";
 import axios from "axios";
 import { Loader2, Maximize2, Minimize2, Plus, RefreshCw } from "lucide-react";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 const DroneMap = lazy(() => import("@/components/system/DroneMap"));
@@ -45,6 +46,8 @@ function saveFilters(f: MapFiltersType) {
 
 export default function DroneToolMapPage() {
   const { isDark } = useTheme()
+  const { t } = useTranslation();
+
   const [allTools, setAllTools] = useState<ToolsResponse[]>([]);
   const [models, setModels] = useState([]);
   const [clients, setClients] = useState<Client[]>([]);
@@ -84,10 +87,10 @@ export default function DroneToolMapPage() {
       if (result.code === 1) {
         setAllTools(result.data);
       } else {
-        toast.error(result.message || "Failed to fetch system data");
+        toast.error(t('systems.map.fetchFailed'));
       }
     } catch (error) {
-      toast.error("Error fetching system data");
+      toast.error(t('systems.map.fetchError'));
       console.error(error);
     } finally {
       setLoading(false);
@@ -170,10 +173,10 @@ export default function DroneToolMapPage() {
               <div className="w-1 h-6 shrink-0 rounded-full bg-violet-600" />
               <div>
                 <h1 className={`font-semibold text-base tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>
-                  Drone System Map
+                  {t('systems.map.title')}
                 </h1>
                 <p className={`text-xs ${isDark ? "text-slate-500" : "text-slate-400"}`}>
-                  Installed docks & drone systems overview
+                  {t('systems.map.subtitle')}
                 </p>
               </div>
             </div>
@@ -201,22 +204,22 @@ export default function DroneToolMapPage() {
                 : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`}
             >
               {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-              Reload
+              {t('systems.map.reload')}
             </Button>
 
             <Button size="sm" onClick={() => setShowAddTool(true)}
               className="h-8 gap-1.5 text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white transition-all shadow-sm">
-              <Plus size={14} /><span className="sm:hidden">System</span><span className="hidden sm:inline">Add System</span>
+              <Plus size={14} /><span className="sm:hidden">{t('systems.manage.buttons.system')}</span><span className="hidden sm:inline">{t('systems.manage.buttons.addSystem')}</span>
             </Button>
 
             <Button size="sm" onClick={() => setShowAddModel(true)}
               className="h-8 gap-1.5 text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white transition-all shadow-sm">
-              <Plus size={14} /><span className="sm:hidden">Model</span><span className="hidden sm:inline">Add Model</span>
+              <Plus size={14} /><span className="sm:hidden">{t('systems.manage.buttons.model')}</span><span className="hidden sm:inline">{t('systems.manage.buttons.addModel')}</span>
             </Button>
 
             <Button size="sm" onClick={() => setShowAddComponent(true)}
               className="h-8 gap-1.5 text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white transition-all shadow-sm">
-              <Plus size={14} /><span className="sm:hidden">Component</span><span className="hidden sm:inline">Add Component</span>
+              <Plus size={14} /><span className="sm:hidden">{t('systems.manage.buttons.component')}</span><span className="hidden sm:inline">{t('systems.manage.buttons.addComponent')}</span>
             </Button>
           </div>
         </div>
@@ -239,24 +242,19 @@ export default function DroneToolMapPage() {
             />
           </div>
 
-          <div
-            id="drone-map-container"
-            className={isFullscreen
-              ? "fixed inset-0 z-9999"
-              : `lg:col-span-8 rounded-xl border shadow-sm p-4 ${isDark ? "bg-slate-800 border-slate-700" : "bg-white border-gray-200"}`
-            }
-          >
-            <div className="relative w-full h-full">
-              {loading ? (
-                <div className={`flex items-center justify-center ${isDark ? "text-slate-500" : "text-gray-400"}`}
-                  style={{ height: isFullscreen ? "100vh" : MAP_HEIGHT }}>
-                  Loading map data…
-                </div>
-              ) : (
+          <div id="drone-map-container" className={`lg:col-span-8 rounded-xl border shadow-sm p-4
+      ${isDark ? "bg-slate-800 border-slate-700" : "bg-white border-gray-200"}`}>
+            {loading ? (
+              <div className={`flex items-center justify-center ${isDark ? "text-slate-500" : "text-gray-400"}`}
+                style={{ height: MAP_HEIGHT }}>
+                {t('systems.map.loadingMapData')}
+              </div>
+            ) : (
+              <div className="relative">
                 <Suspense fallback={
                   <div className={`flex items-center justify-center ${isDark ? "text-slate-500" : "text-gray-400"}`}
                     style={{ height: isFullscreen ? "100vh" : MAP_HEIGHT }}>
-                    Loading map…
+                    {t('systems.map.loadingMap')}
                   </div>
                 }>
                   <DroneMap
@@ -266,16 +264,16 @@ export default function DroneToolMapPage() {
                     onToolClick={handleDetail}
                   />
                 </Suspense>
-              )}
-              <button
-                onClick={() => setIsFullscreen(f => !f)}
-                title={isFullscreen ? "Exit fullscreen" : "Fullscreen map"}
-                className="absolute bottom-9 left-1/2 -translate-x-1/2 z-10 p-2 rounded-full shadow-lg backdrop-blur-sm transition-all hover:scale-105 active:scale-95"
-                style={{ background: "rgba(15,15,25,0.70)", color: "#e2e8f0", border: "1px solid rgba(255,255,255,0.15)" }}
-              >
-                {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
-              </button>
-            </div>
+                <button
+                  onClick={() => setIsFullscreen(f => !f)}
+                  title={isFullscreen ? "Exit fullscreen" : "Fullscreen map"}
+                  className="absolute bottom-9 left-1/2 -translate-x-1/2 z-10 p-2 rounded-full shadow-lg backdrop-blur-sm transition-all hover:scale-105 active:scale-95"
+                  style={{ background: "rgba(15,15,25,0.70)", color: "#e2e8f0", border: "1px solid rgba(255,255,255,0.15)" }}
+                >
+                  {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+                </button>
+              </div>
+            )}
           </div>
 
         </section>

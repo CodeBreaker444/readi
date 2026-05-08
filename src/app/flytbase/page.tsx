@@ -1,7 +1,6 @@
 'use client';
 
 import { FlytbaseTokenConfig } from '@/components/flytbase/FlytbaseTokenConfig';
-import { LanguageSelect } from '@/components/LanguageSelect';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/components/useTheme';
 import Link from 'next/link';
@@ -46,7 +45,6 @@ export default function FlytbaseIntegrationPage() {
             </div>
 
             <div className="flex items-center gap-2">
-              <LanguageSelect isDark={isDark} />
               <Link href="/flytbase/flights">
                 <Button
                   variant="outline"

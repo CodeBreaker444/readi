@@ -7,11 +7,11 @@ import { ComponentFlightLogsModal } from '@/components/system/ComponentFlightLog
 import { ComponentLogModal } from '@/components/system/ComponentLogModal';
 import ComponentRelationsModal from '@/components/system/ComponentRelationsModal';
 import DataTable from '@/components/system/DataTable';
+import DuplicateSystemModal from '@/components/system/DuplicateSystemModal';
 import EditComponentModal from '@/components/system/EditComponentModal';
 import EditModelModal from '@/components/system/EditModelModal';
 import EditSystemModal from '@/components/system/EditSystemModal';
 import { FilesDownloadModal, SystemFile } from '@/components/system/FilesDownloadModal';
-import DuplicateSystemModal from '@/components/system/DuplicateSystemModal';
 import SystemComponentsTable from '@/components/system/SystemComponentsTable';
 import ViewComponentModal from '@/components/system/ViewComponentModal';
 import ViewToolModal from '@/components/system/ViewToolModal';
@@ -29,6 +29,7 @@ import { useTheme } from '@/components/useTheme';
 import axios from 'axios';
 import { AlertTriangle, Loader2, Plus, RefreshCw } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 type ActiveTab = 'system' | 'model' | 'component';
@@ -46,6 +47,8 @@ interface DeleteConfirm {
 
 export default function DroneToolPage() {
     const { isDark } = useTheme();
+    const { t } = useTranslation();
+
     const [loading, setLoading] = useState<boolean>(false);
     const [toolData, setToolData] = useState<DroneToolData[]>([]);
     const [activeTab, setActiveTab] = useState<ActiveTab>('system');
@@ -113,10 +116,10 @@ export default function DroneToolPage() {
                 setToolData(result.data);
                 setTools(result.data);
             } else {
-                toast.error(result.message || 'Failed to fetch System data');
+         toast.error(result.message || t('systems.manage.toasts.fetchSystemFailed'));
             }
         } catch {
-            toast.error('Error fetching System data');
+            toast.error(t('systems.manage.toasts.fetchSystemError'));
         } finally {
             setLoading(false);
         }
@@ -139,7 +142,7 @@ export default function DroneToolPage() {
         }
     };
 
-   
+
     const fetchAllComponents = async () => {
         setLoadingComponents(true);
         try {
@@ -161,7 +164,7 @@ export default function DroneToolPage() {
         try {
             const response = await axios.get('/api/client/list');
             if (!response.data.data) {
-                toast.error('Failed to load Clients');
+                toast.error(t('systems.manage.toasts.fetchClientsFailed'));
                 return;
             }
             setClients(response.data.data ?? []);
@@ -187,7 +190,7 @@ export default function DroneToolPage() {
             type: 'system',
             id: toolId,
             name: tool?.tool_code || `#${toolId}`,
-            warning: 'Deleting this system will deactivate it. Attached components will remain and are not deleted.',
+            warning: t('systems.manage.deleteDialog.warningSystem'),
             canDelete: true,
         });
     };
@@ -208,7 +211,7 @@ export default function DroneToolPage() {
             type: 'model',
             id: modelId,
             name: modelName,
-            warning: 'This model will be permanently removed from the platform.',
+            warning: t('systems.manage.deleteDialog.warningModel'),
             canDelete: true,
         });
     };
@@ -225,7 +228,7 @@ export default function DroneToolPage() {
             type: 'component',
             id: componentId,
             name: componentName,
-            warning: 'This component will be permanently removed from the platform.',
+            warning: t('systems.manage.deleteDialog.warningComponent'),
             canDelete: true,
         });
     };
@@ -237,14 +240,14 @@ export default function DroneToolPage() {
             const res = await fetch(`/api/system/component/${deleteConfirm.id}/detach`, { method: 'POST' });
             const result = await res.json();
             if (result.code === 1) {
-                toast.success('Component detached from system');
+                toast.success(t('systems.manage.toasts.componentDetached'));
                 setDeleteConfirm(null);
                 fetchAllComponents();
             } else {
-                toast.error(result.message || 'Failed to detach component');
+                toast.error(result.message || t('systems.manage.toasts.detachFailed'));
             }
         } catch {
-            toast.error('Error detaching component');
+            toast.error(t('systems.manage.toasts.detachError'));
         } finally {
             setDetachingComponent(false);
         }
@@ -258,18 +261,18 @@ export default function DroneToolPage() {
                 const res = await fetch(`/api/system/${deleteConfirm.id}/delete`, { method: 'POST' });
                 const result = await res.json();
                 if (result.code === 1) {
-                    toast.success('System deactivated successfully');
+                    toast.success(t('systems.manage.toasts.systemDeactivated'));
                     setDeleteConfirm(null);
                     fetchToolData();
                 } else {
-                    toast.error(result.message || 'Failed to delete system');
+                    toast.error(result.message || t('systems.manage.toasts.deleteFailed'));
                     setDeleteConfirm(null);
                 }
             } else if (deleteConfirm.type === 'model') {
                 const res = await fetch(`/api/system/model/${deleteConfirm.id}/delete`, { method: 'POST' });
                 const result = await res.json();
                 if (result.code === 1) {
-                    toast.success('Model deleted successfully');
+                    toast.success(t('systems.manage.toasts.modelDeleted'));
                     setDeleteConfirm(null);
                     fetchModels();
                 } else {
@@ -289,7 +292,7 @@ export default function DroneToolPage() {
                 });
                 const result = await res.json();
                 if (result.code === 1) {
-                    toast.success('Component deleted successfully');
+                    toast.success(t('systems.manage.toasts.componentDeleted'));
                     setDeleteConfirm(null);
                     fetchAllComponents();
                 } else if (result.code === 2) {
@@ -300,12 +303,12 @@ export default function DroneToolPage() {
                         attachedSystemCode: result.system_code,
                     } : null);
                 } else {
-                    toast.error(result.message || 'Failed to delete component');
+                    toast.error(result.message || t('systems.manage.toasts.componentDeleteFailed'));
                     setDeleteConfirm(null);
                 }
             }
         } catch {
-            toast.error('Error during delete');
+            toast.error(t('systems.manage.toasts.deleteError'));
             setDeleteConfirm(null);
         } finally {
             setDeleting(false);
@@ -324,7 +327,7 @@ export default function DroneToolPage() {
         return map;
     }, [models]);
 
-const modelColumns = useMemo(
+    const modelColumns = useMemo(
         () => getModelColumns({
             isDark,
             onEdit: handleEditModelDirect,
@@ -352,19 +355,18 @@ const modelColumns = useMemo(
     );
 
     const tabConfig: { key: ActiveTab; label: string }[] = [
-        { key: 'system', label: 'Systems' },
-        { key: 'model', label: 'Models' },
-        { key: 'component', label: 'Warehouse' },
+        { key: 'system', label: t('systems.manage.tabs.system') },
+        { key: 'model', label: t('systems.manage.tabs.model') },
+        { key: 'component', label: t('systems.manage.tabs.component') },
     ];
 
     return (
         <div className="min-h-screen">
             <div
-                className={`top-0 z-10 backdrop-blur-md transition-colors ${
-                    isDark
-                        ? 'bg-slate-900/80 border-b border-slate-800 text-white'
-                        : 'bg-white/80 border-b border-slate-200 text-slate-900 shadow-[0_1px_3px_rgba(0,0,0,0.06)]'
-                } px-3 sm:px-6 py-4`}
+                className={`top-0 z-10 backdrop-blur-md transition-colors ${isDark
+                    ? 'bg-slate-900/80 border-b border-slate-800 text-white'
+                    : 'bg-white/80 border-b border-slate-200 text-slate-900 shadow-[0_1px_3px_rgba(0,0,0,0.06)]'
+                    } px-3 sm:px-6 py-4`}
             >
                 <div className="mx-auto max-w-[1800px] space-y-2 sm:space-y-0 sm:flex sm:items-center sm:justify-between sm:gap-3">
                     <div className="flex items-center justify-between sm:justify-start gap-3">
@@ -372,10 +374,10 @@ const modelColumns = useMemo(
                             <div className="w-1 h-6 shrink-0 rounded-full bg-violet-600" />
                             <div>
                                 <h1 className={`font-semibold text-base tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                                    Drone System List
+                                    {t('systems.manage.title')}
                                 </h1>
                                 <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                                    Manage systems, models, and system components
+                                    {t('systems.manage.subtitle')}
                                 </p>
                             </div>
                         </div>
@@ -384,11 +386,10 @@ const modelColumns = useMemo(
                             size="sm"
                             onClick={() => { fetchToolData(); fetchModels(); fetchAllComponents(); }}
                             disabled={loading}
-                            className={`sm:hidden h-8 gap-1.5 text-xs transition-all ${
-                                isDark
-                                    ? 'border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
-                                    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                            }`}
+                            className={`sm:hidden h-8 gap-1.5 text-xs transition-all ${isDark
+                                ? 'border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
+                                : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                                }`}
                         >
                             {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
                         </Button>
@@ -400,27 +401,26 @@ const modelColumns = useMemo(
                             size="sm"
                             onClick={() => { fetchToolData(); fetchModels(); fetchAllComponents(); }}
                             disabled={loading}
-                            className={`hidden sm:flex h-8 gap-1.5 text-xs transition-all ${
-                                isDark
-                                    ? 'border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
-                                    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                            }`}
+                            className={`hidden sm:flex h-8 gap-1.5 text-xs transition-all ${isDark
+                                ? 'border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
+                                : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                                }`}
                         >
                             {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-                            Refresh
+                            {t('systems.manage.refresh')}
                         </Button>
 
                         <Button size="sm" onClick={() => setShowAddTool(true)}
                             className="h-8 gap-1.5 text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white shadow-sm">
-                            <Plus size={14} /><span className="sm:hidden">System</span><span className="hidden sm:inline">Add System</span>
+                            <Plus size={14} /><span className="sm:hidden">{t('systems.manage.buttons.system')}</span><span className="hidden sm:inline">{t('systems.manage.buttons.addSystem')}</span>
                         </Button>
                         <Button size="sm" onClick={() => setShowAddModel(true)}
                             className="h-8 gap-1.5 text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white shadow-sm">
-                            <Plus size={14} /><span className="sm:hidden">Model</span><span className="hidden sm:inline">Add Model</span>
+                            <Plus size={14} /><span className="sm:hidden">{t('systems.manage.buttons.model')}</span><span className="hidden sm:inline">{t('systems.manage.buttons.addModel')}</span>
                         </Button>
                         <Button size="sm" onClick={() => setShowAddComponent(true)}
                             className="h-8 gap-1.5 text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white shadow-sm">
-                            <Plus size={14} /><span className="sm:hidden">Component</span><span className="hidden sm:inline">Add Component</span>
+                            <Plus size={14} /><span className="sm:hidden">{t('systems.manage.buttons.component')}</span><span className="hidden sm:inline">{t('systems.manage.buttons.addComponent')}</span>
                         </Button>
                     </div>
                 </div>
@@ -429,24 +429,23 @@ const modelColumns = useMemo(
             <div className="p-3 sm:p-6 mx-auto max-w-[1800px]">
                 <Card className={`${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white'}`}>
                     <div className={`flex gap-1  p-1 ml-3 rounded-lg w-fit ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
-                    {tabConfig.map(({ key, label }) => (
-                        <button
-                            key={key}
-                            onClick={() => setActiveTab(key)}
-                            className={`px-5 cursor-pointer py-1.5 rounded-md text-sm font-medium transition-all ${
-                                activeTab === key
+                        {tabConfig.map(({ key, label }) => (
+                            <button
+                                key={key}
+                                onClick={() => setActiveTab(key)}
+                                className={`px-5 cursor-pointer py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === key
                                     ? isDark
                                         ? 'bg-violet-600 text-white shadow-sm'
                                         : 'bg-white text-violet-700 shadow-sm'
                                     : isDark
-                                    ? 'text-slate-400 hover:text-slate-200'
-                                    : 'text-slate-500 hover:text-slate-700'
-                            }`}
-                        >
-                            {label}
-                        </button>
-                    ))}
-                </div>
+                                        ? 'text-slate-400 hover:text-slate-200'
+                                        : 'text-slate-500 hover:text-slate-700'
+                                    }`}
+                            >
+                                {label}
+                            </button>
+                        ))}
+                    </div>
                     <CardContent className="pt-6">
                         {activeTab === 'system' && (
                             <SystemComponentsTable
@@ -579,15 +578,14 @@ const modelColumns = useMemo(
                     <DialogContent className={`max-w-lg ${isDark ? 'bg-slate-800 border-slate-700' : ''}`}>
                         <DialogHeader>
                             <DialogTitle className={`flex items-center gap-2 ${isDark ? 'text-white' : ''}`}>
-                                <AlertTriangle className={`h-5 w-5 ${
-                                    deleteConfirm.canDelete ? 'text-amber-500'
+                                <AlertTriangle className={`h-5 w-5 ${deleteConfirm.canDelete ? 'text-amber-500'
                                     : deleteConfirm.attachedSystemCode ? 'text-amber-500'
-                                    : 'text-red-500'
-                                }`} />
+                                        : 'text-red-500'
+                                    }`} />
                                 {deleteConfirm.canDelete
-                                    ? `Delete ${deleteConfirm.type === 'model' ? 'Model' : deleteConfirm.type === 'component' ? 'Component' : 'System'}`
-                                    : deleteConfirm.attachedSystemCode ? 'Component Attached to System'
-                                    : 'Cannot Delete'}
+                                    ? t(`systems.manage.deleteDialog.delete${deleteConfirm.type.charAt(0).toUpperCase() + deleteConfirm.type.slice(1)}`)
+                                    : deleteConfirm.attachedSystemCode ? t('systems.manage.deleteDialog.attachedToSystem')
+                                        : t('systems.manage.deleteDialog.cannotDelete')}
                             </DialogTitle>
                         </DialogHeader>
 
@@ -595,11 +593,10 @@ const modelColumns = useMemo(
                             <p className={`text-sm ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                                 <span className="font-semibold">{deleteConfirm.name}</span>
                             </p>
-                            <div className={`rounded-lg p-3 text-sm ${
-                                deleteConfirm.canDelete
-                                    ? isDark ? 'bg-amber-950/40 text-amber-300 border border-amber-800/50' : 'bg-amber-50 text-amber-800 border border-amber-200'
-                                    : isDark ? 'bg-red-950/40 text-red-300 border border-red-800/50' : 'bg-red-50 text-red-800 border border-red-200'
-                            }`}>
+                            <div className={`rounded-lg p-3 text-sm ${deleteConfirm.canDelete
+                                ? isDark ? 'bg-amber-950/40 text-amber-300 border border-amber-800/50' : 'bg-amber-50 text-amber-800 border border-amber-200'
+                                : isDark ? 'bg-red-950/40 text-red-300 border border-red-800/50' : 'bg-red-50 text-red-800 border border-red-200'
+                                }`}>
                                 {deleteConfirm.warning}
                             </div>
 
@@ -607,7 +604,7 @@ const modelColumns = useMemo(
                                 <div className="space-y-2">
                                     {deleteConfirm.usedBy.systems.length > 0 && (
                                         <div>
-                                            <p className={`text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Systems using this model:</p>
+                                            <p className={`text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('systems.manage.deleteDialog.systemsUsingModel')}</p>
                                             <div className="flex flex-wrap gap-1">
                                                 {deleteConfirm.usedBy.systems.map((s: any) => (
                                                     <span key={s.id} className={`px-2 py-0.5 rounded text-xs ${isDark ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-700'}`}>
@@ -619,7 +616,7 @@ const modelColumns = useMemo(
                                     )}
                                     {deleteConfirm.usedBy.components.length > 0 && (
                                         <div>
-                                            <p className={`text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Components using this model:</p>
+                                            <p className={`text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('systems.manage.deleteDialog.componentsUsingModel')}</p>
                                             <div className="flex flex-wrap gap-1">
                                                 {deleteConfirm.usedBy.components.map((c: any) => (
                                                     <span key={c.id} className={`px-2 py-0.5 rounded text-xs ${isDark ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-700'}`}>
@@ -635,13 +632,13 @@ const modelColumns = useMemo(
                             {deleteConfirm.type === 'component' && deleteConfirm.attachedSystemCode && (
                                 <div className={`rounded-lg p-3 text-xs space-y-2 ${isDark ? 'bg-slate-700/50 border border-slate-600' : 'bg-slate-50 border border-slate-200'}`}>
                                     <p className={`font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                                        Attached to system:
+                                      {t('systems.manage.deleteDialog.attachedToSystemLabel')}
                                         <span className={`ml-2 px-2 py-0.5 rounded font-semibold ${isDark ? 'bg-violet-900/40 text-violet-300' : 'bg-violet-50 text-violet-700'}`}>
                                             {deleteConfirm.attachedSystemCode}
                                         </span>
                                     </p>
                                     <p className={isDark ? 'text-slate-400' : 'text-slate-500'}>
-                                        Detach the component from this system first, then you can delete it from the platform.
+                                        {t('systems.manage.deleteDialog.detachFirst')}
                                     </p>
                                     <Button
                                         size="sm"
@@ -651,7 +648,7 @@ const modelColumns = useMemo(
                                         className={`mt-1 ${isDark ? 'border-slate-500 text-slate-300 hover:bg-slate-600' : 'border-slate-300 hover:bg-slate-100'}`}
                                     >
                                         {detachingComponent ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
-                                        {detachingComponent ? 'Detaching...' : `Detach from ${deleteConfirm.attachedSystemCode}`}
+                                        {detachingComponent ? t('systems.manage.deleteDialog.detaching') : t('systems.manage.deleteDialog.detachFrom', { code: deleteConfirm.attachedSystemCode })}
                                     </Button>
                                 </div>
                             )}
@@ -660,12 +657,12 @@ const modelColumns = useMemo(
                         <DialogFooter className="gap-2">
                             <Button variant="outline" onClick={() => setDeleteConfirm(null)}
                                 className={isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : ''}>
-                                {deleteConfirm.canDelete ? 'Cancel' : 'Close'}
+                                {deleteConfirm.canDelete ? t('systems.manage.deleteDialog.cancel') : t('systems.manage.deleteDialog.close')}
                             </Button>
                             {deleteConfirm.canDelete && !deleteConfirm.attachedSystemCode && (
                                 <Button variant="destructive" disabled={deleting} onClick={handleConfirmDelete}>
                                     {deleting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
-                                    {deleting ? 'Deleting...' : 'Confirm Delete'}
+                                    {deleting ? t('systems.manage.deleteDialog.deleting') : t('systems.manage.deleteDialog.confirmDelete')}
                                 </Button>
                             )}
                         </DialogFooter>

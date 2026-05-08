@@ -68,27 +68,32 @@ export async function saveFlytbaseConfig(
   userId: number,
   plainToken: string,
   orgId: string,
+  tokenName?: string,
 ): Promise<void> {
   const { error } = await supabase
     .from('users')
     .update({
       flytbase_api_token: plainToken.trim(),
       flytbase_org_id: orgId.trim(),
+      flytbase_token_name: tokenName?.trim() || null,
     })
     .eq('user_id', userId);
 
   if (error) throw new Error(`saveFlytbaseConfig: ${error.message}`);
 }
 
-export async function hasFlytbaseToken(userId: number): Promise<boolean> {
+export async function hasFlytbaseToken(userId: number): Promise<{ exists: boolean; tokenName: string | null }> {
   const { data, error } = await supabase
     .from('users')
-    .select('flytbase_api_token, flytbase_org_id')
+    .select('flytbase_api_token, flytbase_org_id, flytbase_token_name')
     .eq('user_id', userId)
     .single();
 
   if (error) throw new Error(`hasFlytbaseToken: ${error.message}`);
-  return !!(data?.flytbase_api_token && data?.flytbase_org_id);
+  return {
+    exists: !!(data?.flytbase_api_token && data?.flytbase_org_id),
+    tokenName: data?.flytbase_token_name ?? null,
+  };
 }
 
  
@@ -114,7 +119,7 @@ export async function getFlytbaseCredentials(
 export async function removeFlytbaseToken(userId: number): Promise<void> {
   const { error } = await supabase
     .from('users')
-    .update({ flytbase_api_token: null, flytbase_org_id: null })
+    .update({ flytbase_api_token: null, flytbase_org_id: null, flytbase_token_name: null })
     .eq('user_id', userId);
 
   if (error) throw new Error(`removeFlytbaseToken: ${error.message}`);

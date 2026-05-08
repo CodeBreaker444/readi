@@ -49,6 +49,8 @@ export function FlytbaseTokenConfig() {
   const [hasToken, setHasToken] = useState<boolean | null>(null);
   const [tokenInput, setTokenInput] = useState('');
   const [orgIdInput, setOrgIdInput] = useState('');
+  const [tokenNameInput, setTokenNameInput] = useState('');
+  const [savedTokenName, setSavedTokenName] = useState<string | null>(null);
   const [showToken, setShowToken] = useState(false);
   const [step, setStep] = useState<Step>('idle');
   const [verifiedUser, setVerifiedUser] = useState<FlytbaseUserInfo | null>(null);
@@ -58,6 +60,7 @@ export function FlytbaseTokenConfig() {
     try {
       const res = await axios.get('/api/flytbase/token');
       setHasToken(res.data.hasToken ?? false);
+      setSavedTokenName(res.data.tokenName ?? null);
     } catch {
       setHasToken(false);
     }
@@ -103,11 +106,14 @@ export function FlytbaseTokenConfig() {
       await axios.post('/api/flytbase/token', {
         token: tokenInput.trim(),
         orgId: orgIdInput.trim(),
+        tokenName: tokenNameInput.trim() || undefined,
       });
       toast.success(t('flytbase.token.toasts.saveSuccess'));
+      setSavedTokenName(tokenNameInput.trim() || null);
       setHasToken(true);
       setTokenInput('');
       setOrgIdInput('');
+      setTokenNameInput('');
       setVerifiedUser(null);
       setStep('idle');
     } catch (err: any) {
@@ -120,6 +126,7 @@ export function FlytbaseTokenConfig() {
   function handleCancel() {
     setTokenInput('');
     setOrgIdInput('');
+    setTokenNameInput('');
     setVerifiedUser(null);
     setStep('idle');
     if (!hasToken) return;
@@ -229,9 +236,16 @@ export function FlytbaseTokenConfig() {
               }`}
             >
               <HiCheckCircle className="w-4 h-4 shrink-0" />
-              <span className="text-xs">
-                {t('flytbase.token.savedNote')}
-              </span>
+              <div className="flex flex-col gap-0.5">
+                <span className="text-xs">
+                  {t('flytbase.token.savedNote')}
+                </span>
+                {savedTokenName && (
+                  <span className={`text-xs font-medium ${isDark ? 'text-emerald-300' : 'text-emerald-800'}`}>
+                    {savedTokenName}
+                  </span>
+                )}
+              </div>
             </div>
 
             <div className="flex gap-2">
@@ -301,6 +315,27 @@ export function FlytbaseTokenConfig() {
 
         {showForm && !showConfirm && (
           <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label
+                htmlFor="flytbase-name"
+                className={`text-xs font-medium ${textPrimary}`}
+              >
+                {t('flytbase.token.tokenName')}{' '}
+                <span className={`font-normal ${textSecondary}`}>
+                  {t('flytbase.token.optional')}
+                </span>
+              </Label>
+              <Input
+                id="flytbase-name"
+                type="text"
+                placeholder={t('flytbase.token.tokenNamePlaceholder')}
+                value={tokenNameInput}
+                onChange={(e) => setTokenNameInput(e.target.value)}
+                disabled={step === 'verifying'}
+                className={`text-sm ${inputClass}`}
+              />
+            </div>
+
             <div className="space-y-1.5">
               <Label
                 htmlFor="flytbase-token"
