@@ -365,6 +365,28 @@
     "editDescription": "Aktualisieren Sie die Details der Missionskategorie.",
     "deleteTitle": "Kategorie loschen",
     "deleteDescription": "Mochten Sie diese Missionskategorie wirklich loschen? Diese Aktion kann nicht ruckgangig gemacht werden.",
+    "table": {
+      "colCode": "Code",
+      "colName": "Name",
+      "colDescription": "Beschreibung",
+      "colActions": "Aktionen",
+      "emptyTitle": "Keine Kategorien definiert",
+      "emptySubtitle": "Erstellen Sie Ihre erste Kategorie, um zu beginnen",
+      "exportFilename": "Missionskategorien",
+      "noDescription": "Keine Beschreibung"
+    },
+    "form": {
+      "codeLabel": "Kategoriecode",
+      "codePlaceholder": "z.B. COMMERCIAL",
+      "nameLabel": "Kategoriename",
+      "namePlaceholder": "z.B. Commercial",
+      "descriptionLabel": "Beschreibung",
+      "descriptionPlaceholder": "z.B. Kommerzielle Kundenprojekte",
+      "saving": "Speichern...",
+      "adding": "Hinzufugen...",
+      "saveChanges": "Anderungen speichern",
+      "addButton": "Kategorie hinzufugen"
+    },
     "errors": {
       "fetch": "Kategorien konnten nicht geladen werden",
       "add": "Kategorie konnte nicht hinzugefugt werden",
@@ -389,6 +411,30 @@
     "editDescription": "Aktualisieren Sie die Details des Missionstyps.",
     "deleteTitle": "Missionstyp loschen",
     "deleteDescription": "Mochten Sie diesen Missionstyp wirklich loschen? Diese Aktion kann nicht ruckgangig gemacht werden.",
+    "table": {
+      "colName": "Name",
+      "colCode": "Code",
+      "colLabel": "Bezeichnung",
+      "colActions": "Aktionen",
+      "emptyTitle": "Keine Typen definiert",
+      "emptySubtitle": "Erstellen Sie Ihren ersten Missionstyp, um zu beginnen",
+      "exportFilename": "Missionstypen"
+    },
+    "form": {
+      "nameLabel": "Name",
+      "namePlaceholder": "Missionstyp-Name eingeben",
+      "descriptionLabel": "Beschreibung",
+      "descriptionPlaceholder": "Missionstyp-Beschreibung eingeben",
+      "codeLabel": "Code",
+      "codePlaceholder": "z.B. SURV",
+      "labelLabel": "Bezeichnung",
+      "labelPlaceholder": "Missionstyp-Bezeichnung eingeben",
+      "saving": "Speichern...",
+      "adding": "Hinzufugen...",
+      "saveChanges": "Anderungen speichern",
+      "addButton": "Missionstyp hinzufugen",
+      "fillAllFields": "Bitte alle Felder ausfulllen"
+    },
     "errors": {
       "fetch": "Missionstypen konnten nicht geladen werden",
       "add": "Missionstyp konnte nicht hinzugefugt werden",
@@ -413,6 +459,33 @@
     "editDescription": "Aktualisieren Sie die Details der Workflow-Phase.",
     "deleteTitle": "Status loschen",
     "deleteDescription": "Mochten Sie diesen Missionsstatus wirklich loschen? Diese Aktion kann nicht ruckgangig gemacht werden.",
+    "table": {
+      "colCode": "Code",
+      "colName": "Name",
+      "colDescription": "Beschreibung",
+      "colOrder": "Reihenfolge",
+      "colFinal": "Final",
+      "colActions": "Aktionen",
+      "emptyTitle": "Keine Status definiert",
+      "emptySubtitle": "Erstellen Sie Ihren ersten Status zur Missionsverfolgung",
+      "exportFilename": "Missionsstatus",
+      "noDescription": "Keine Beschreibung",
+      "finalBadge": "Final"
+    },
+    "form": {
+      "codeLabel": "Code",
+      "codePlaceholder": "z.B. PLANNED",
+      "nameLabel": "Name",
+      "namePlaceholder": "z.B. Geplant",
+      "descriptionLabel": "Beschreibung",
+      "descriptionPlaceholder": "z.B. Mission befindet sich in der Planungsphase",
+      "orderLabel": "Reihenfolge",
+      "finalStatusLabel": "Endstatus",
+      "saving": "Speichern...",
+      "adding": "Hinzufugen...",
+      "saveChanges": "Anderungen speichern",
+      "addButton": "Status hinzufugen"
+    },
     "errors": {
       "fetch": "Missionsstatus konnten nicht geladen werden",
       "add": "Status konnte nicht hinzugefugt werden",
@@ -437,6 +510,24 @@
     "editDescription": "Aktualisieren Sie die Details des Missionsergebnistyps.",
     "deleteTitle": "Ergebnis loschen",
     "deleteDescription": "Mochten Sie dieses Missionsergebnis wirklich loschen? Diese Aktion kann nicht ruckgangig gemacht werden.",
+    "table": {
+      "colCode": "Code",
+      "colDescription": "Beschreibung",
+      "colActions": "Aktionen",
+      "emptyTitle": "Keine Ergebnisse definiert",
+      "emptySubtitle": "Erstellen Sie Ihren ersten Ergebnistyp, um zu beginnen",
+      "exportFilename": "Missionsergebnisse"
+    },
+    "form": {
+      "codeLabel": "Code",
+      "codePlaceholder": "z.B. SUCCESS",
+      "descriptionLabel": "Beschreibung",
+      "descriptionPlaceholder": "z.B. Mission erfolgreich abgeschlossen",
+      "saving": "Speichern...",
+      "adding": "Hinzufugen...",
+      "saveChanges": "Anderungen speichern",
+      "addButton": "Ergebnis hinzufugen"
+    },
     "errors": {
       "fetch": "Missionsergebnisse konnten nicht geladen werden",
       "add": "Ergebnis konnte nicht hinzugefugt werden",

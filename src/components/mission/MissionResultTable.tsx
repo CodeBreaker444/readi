@@ -19,6 +19,7 @@ import {
 } from '@tanstack/react-table';
 import { CheckCircle2 } from 'lucide-react';
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import ExportButtons from '../system/ExportButtons';
 import { createMissionResultColumns } from '../tables/MissionResultColumn';
 import { TablePagination } from '../tables/Pagination';
@@ -31,9 +32,10 @@ interface MissionResultTableProps {
 }
 
 export default function MissionResultTable({ data, onDelete, onEdit, isDark }: MissionResultTableProps) {
+  const { t } = useTranslation();
   const columns = useMemo(
-    () => createMissionResultColumns({ isDark, onEditClick: onEdit, onDelete }),
-    [isDark, onEdit, onDelete]
+    () => createMissionResultColumns({ isDark, onEditClick: onEdit, onDelete, t }),
+    [isDark, onEdit, onDelete, t]
   );
 
   const table = useReactTable({
@@ -102,10 +104,10 @@ export default function MissionResultTable({ data, onDelete, onEdit, isDark }: M
                       <CheckCircle2 size={20} className="opacity-50" />
                     </div>
                     <p className={`text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                      No results defined yet
+                      {t('missionResult.table.emptyTitle')}
                     </p>
                     <p className={`text-[11px] mt-1 ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>
-                      Create your first result type to get started
+                      {t('missionResult.table.emptySubtitle')}
                     </p>
                   </div>
                 </TableCell>
@@ -117,8 +119,8 @@ export default function MissionResultTable({ data, onDelete, onEdit, isDark }: M
 
       <div className={`border-t flex items-center justify-between px-3 ${isDark ? 'border-white/[0.06]' : 'border-gray-100'}`}>
         <ExportButtons
-          filename="Mission Results"
-          headers={['ID', 'Code', 'Description']}
+          filename={t('missionResult.table.exportFilename')}
+          headers={['ID', t('missionResult.table.colCode'), t('missionResult.table.colDescription')]}
           rows={data.map(d => [d.id, d.code, d.description])}
         />
         <TablePagination table={table} />

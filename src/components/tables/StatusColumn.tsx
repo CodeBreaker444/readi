@@ -14,12 +14,14 @@ interface GetStatusColumnsOptions {
   isDark: boolean;
   onEditClick: (status: Mission) => void;
   onDelete: (id: number) => void;
+  t: (key: string) => string;
 }
 
 export function createMissionStatusColumns({
   isDark,
   onEditClick,
   onDelete,
+  t,
 }: GetStatusColumnsOptions): ColumnDef<Mission>[] {
   return [
     {
@@ -34,7 +36,7 @@ export function createMissionStatusColumns({
     },
     {
       accessorKey: 'code',
-      header: () => <span>Code</span>,
+      header: () => <span>{t('missionStatus.table.colCode')}</span>,
       cell: ({ row }) => (
         <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-mono font-semibold tracking-wide ${
           isDark
@@ -47,7 +49,7 @@ export function createMissionStatusColumns({
     },
     {
       accessorKey: 'name',
-      header: () => <span>Name</span>,
+      header: () => <span>{t('missionStatus.table.colName')}</span>,
       cell: ({ row }) => (
         <span className={`text-[13px] font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
           {row.original.name}
@@ -56,14 +58,14 @@ export function createMissionStatusColumns({
     },
     {
       accessorKey: 'description',
-      header: () => <span>Description</span>,
+      header: () => <span>{t('missionStatus.table.colDescription')}</span>,
       cell: ({ row }) => (
         <span className={`text-xs truncate max-w-[240px] block leading-relaxed ${
           isDark ? 'text-gray-500' : 'text-gray-400'
         }`}>
           {row.original.description || (
             <span className={`italic ${isDark ? 'text-gray-700' : 'text-gray-300'}`}>
-              No description
+              {t('missionStatus.table.noDescription')}
             </span>
           )}
         </span>
@@ -71,7 +73,7 @@ export function createMissionStatusColumns({
     },
     {
       accessorKey: 'order',
-      header: () => <span>Order</span>,
+      header: () => <span>{t('missionStatus.table.colOrder')}</span>,
       cell: ({ row }) => (
         <span className={`text-[11px] font-mono tabular-nums ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
           {row.original.order ?? '—'}
@@ -81,7 +83,7 @@ export function createMissionStatusColumns({
     },
     {
       accessorKey: 'isFinalStatus',
-      header: () => <span className="flex justify-center">Final</span>,
+      header: () => <span className="flex justify-center">{t('missionStatus.table.colFinal')}</span>,
       cell: ({ row }) => {
         const status = row.original;
         return (
@@ -93,7 +95,7 @@ export function createMissionStatusColumns({
                   : 'bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200/60'
               }`}>
                 <span className="w-1 h-1 rounded-full bg-current" />
-                Final
+                {t('missionStatus.table.finalBadge')}
               </span>
             ) : (
               <span className={`text-[10px] ${isDark ? 'text-gray-700' : 'text-gray-300'}`}>—</span>
@@ -105,7 +107,7 @@ export function createMissionStatusColumns({
     },
     {
       id: 'actions',
-      header: () => <div className="flex justify-end">Actions</div>,
+      header: () => <div className="flex justify-end">{t('missionStatus.table.colActions')}</div>,
       cell: ({ row }) => {
         const status = row.original;
         return (
@@ -124,7 +126,7 @@ export function createMissionStatusColumns({
                     <Pencil size={13} strokeWidth={2} />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="top" className="text-[11px]">Edit</TooltipContent>
+                <TooltipContent side="top" className="text-[11px]">{t('common.edit')}</TooltipContent>
               </Tooltip>
 
               <Tooltip>
@@ -140,7 +142,7 @@ export function createMissionStatusColumns({
                     <Trash2 size={13} strokeWidth={2} />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="top" className="text-[11px]">Delete</TooltipContent>
+                <TooltipContent side="top" className="text-[11px]">{t('common.delete')}</TooltipContent>
               </Tooltip>
             </div>
           </TooltipProvider>
