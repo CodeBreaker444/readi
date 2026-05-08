@@ -4,6 +4,7 @@ import { useTheme } from "@/components/useTheme";
 import type { ToolsResponse } from "@/config/types/types";
 import { colorByStatus, isDock, statusLabel } from "@/lib/mapUtils";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 interface ComponentRow {
   tool_component_id: number;
@@ -29,6 +30,8 @@ interface Props {
 
 export default function ToolDetailModal({ open, tool, onClose }: Props) {
   const { isDark } = useTheme();
+  const { t } = useTranslation();
+  
   const [components, setComponents] = useState<ComponentRow[]>([]);
   const [loadingComponents, setLoadingComponents] = useState(false);
   const [tab, setTab] = useState<"general" | "specs" | "components">("general");
@@ -63,10 +66,10 @@ export default function ToolDetailModal({ open, tool, onClose }: Props) {
   const flownMin = Math.round((tool.tot_flown_time || 0) / 60);
   const flownKm = ((tool.tot_flown_meter || 0) / 1000).toFixed(2);
 
-  const tabs = [
-    { key: "general" as const, label: "General Info" },
-    { key: "specs" as const, label: "Specifications" },
-    { key: "components" as const, label: `Components (${components.length})` },
+const tabs = [
+    { key: "general" as const, label: t('systems.map.toolDetail.tabs.generalInfo') },
+    { key: "specs" as const, label: t('systems.map.toolDetail.tabs.specifications') },
+    { key: "components" as const, label: t('systems.map.toolDetail.tabs.components', { count: components.length }) },
   ];
 
   const cardBg = isDark ? "bg-slate-800 border-slate-700" : "bg-white";
@@ -85,7 +88,7 @@ export default function ToolDetailModal({ open, tool, onClose }: Props) {
         <div className={`flex items-center justify-between px-6 py-4 border-b sticky top-0 z-10 ${headerBg}`}>
           <div>
             <h2 className={`text-lg font-bold ${isDark ? "text-white" : "text-gray-900"}`}>
-              Tool Details — {tool.tool_code || `#${tool.tool_id}`}
+              {t('systems.map.toolDetail.titleWithCode', { code: tool.tool_code || `#${tool.tool_id}` })}
             </h2>
             <div className="flex items-center gap-2 mt-1 flex-wrap">
               <span className="inline-block text-xs text-white px-2 py-0.5 rounded"
@@ -95,7 +98,7 @@ export default function ToolDetailModal({ open, tool, onClose }: Props) {
               {isDock(tool) && (
                 <span className={`text-xs px-2 py-0.5 rounded
                   ${isDark ? "bg-blue-500/15 text-blue-400" : "bg-blue-100 text-blue-700"}`}>
-                  DOCK
+               {t('systems.map.toolDetail.dock')}
                 </span>
               )}
               <span className={`text-xs px-2 py-0.5 rounded
@@ -130,26 +133,26 @@ export default function ToolDetailModal({ open, tool, onClose }: Props) {
           {tab === "general" && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4 text-sm">
-                <Field label="Tool Code" value={tool.tool_code} isDark={isDark} />
-                <Field label="Serial Number" value={tool.tool_serialnumber} isDark={isDark} />
-                <Field label="Model" value={[tool.factory_type, tool.factory_serie, tool.factory_model].filter(Boolean).join(" ") || null} isDark={isDark} />
-                <Field label="Client" value={tool.client_name} isDark={isDark} />
-                <Field label="Purchase Date" value={tool.tool_purchase_date} isDark={isDark} />
-                <Field label="Activation Date" value={tool.date_activation} isDark={isDark} />
+                <Field label={t('systems.map.toolDetail.fields.toolCode')} value={tool.tool_code} isDark={isDark} />
+                <Field label={t('systems.map.toolDetail.fields.serialNumber')} value={tool.tool_serialnumber} isDark={isDark} />
+                <Field label={t('systems.map.toolDetail.fields.model')} value={[tool.factory_type, tool.factory_serie, tool.factory_model].filter(Boolean).join(" ") || null} isDark={isDark} />
+                <Field label={t('systems.map.toolDetail.fields.client')} value={tool.client_name} isDark={isDark} />
+                <Field label={t('systems.map.toolDetail.fields.purchaseDate')} value={tool.tool_purchase_date} isDark={isDark} />
+                <Field label={t('systems.map.toolDetail.fields.activationDate')} value={tool.date_activation} isDark={isDark} />
                 <div className="col-span-2">
-                  <Field label="Description" value={tool.tool_desc} isDark={isDark} />
+                  <Field label={t('systems.map.toolDetail.fields.description')} value={tool.tool_desc} isDark={isDark} />
                 </div>
               </div>
 
               <div className={`border-t pt-4 ${borderCls}`}>
                 <h3 className={`text-sm font-semibold mb-3 ${isDark ? "text-slate-200" : "text-gray-800"}`}>
-                  Flight Statistics
+                {t('systems.map.toolDetail.flightStats.title')}
                 </h3>
                 <div className="grid grid-cols-3 gap-4">
-                  {[
-                    { label: "Total Missions", value: tool.tot_mission ?? 0, bg: isDark ? "bg-blue-500/10" : "bg-blue-50" },
-                    { label: "Flight Time", value: `${flownMin} min`, bg: isDark ? "bg-emerald-500/10" : "bg-green-50" },
-                    { label: "Distance", value: `${flownKm} km`, bg: isDark ? "bg-violet-500/10" : "bg-purple-50" },
+                 {[
+                    { label: t('systems.map.toolDetail.flightStats.totalMissions'), value: tool.tot_mission ?? 0, bg: isDark ? "bg-blue-500/10" : "bg-blue-50" },
+                    { label: t('systems.map.toolDetail.flightStats.flightTime'), value: `${flownMin} min`, bg: isDark ? "bg-emerald-500/10" : "bg-green-50" },
+                    { label: t('systems.map.toolDetail.flightStats.distance'), value: `${flownKm} km`, bg: isDark ? "bg-violet-500/10" : "bg-purple-50" },
                   ].map(({ label, value, bg }) => (
                     <div key={label} className={`${bg} p-4 rounded-lg`}>
                       <p className={`text-sm ${muteText}`}>{label}</p>
@@ -163,15 +166,15 @@ export default function ToolDetailModal({ open, tool, onClose }: Props) {
 
           {tab === "specs" && (
             <div className="grid grid-cols-2 gap-4 text-sm">
-              <Field label="Vendor" value={tool.tool_vendor} isDark={isDark} />
-              <Field label="GCS Type" value={tool.tool_gcs_type} isDark={isDark} />
-              <Field label="Streaming Type" value={tool.tool_streaming_type} isDark={isDark} />
-              <Field label="C2 Platform" value={tool.tool_ccPlatform} isDark={isDark} />
-              <Field label="Latitude" value={tool.tool_latitude} isDark={isDark} />
-              <Field label="Longitude" value={tool.tool_longitude} isDark={isDark} />
-              <Field label="Guarantee Days" value={tool.tool_guarantee_day} isDark={isDark} />
+              <Field label={t('systems.map.toolDetail.fields.vendor')} value={tool.tool_vendor} isDark={isDark} />
+              <Field label={t('systems.map.toolDetail.fields.gcsType')} value={tool.tool_gcs_type} isDark={isDark} />
+              <Field label={t('systems.map.toolDetail.fields.streamingType')} value={tool.tool_streaming_type} isDark={isDark} />
+              <Field label={t('systems.map.toolDetail.fields.c2Platform')} value={tool.tool_ccPlatform} isDark={isDark} />
+              <Field label={t('systems.map.toolDetail.fields.latitude')} value={tool.tool_latitude} isDark={isDark} />
+              <Field label={t('systems.map.toolDetail.fields.longitude')} value={tool.tool_longitude} isDark={isDark} />
+              <Field label={t('systems.map.toolDetail.fields.guaranteeDays')} value={tool.tool_guarantee_day} isDark={isDark} />
               <div className="col-span-2">
-                <Field label="Streaming URL" value={tool.tool_streaming_url} isDark={isDark} />
+                <Field label={t('systems.map.toolDetail.fields.streamingUrl')} value={tool.tool_streaming_url} isDark={isDark} />
               </div>
             </div>
           )}
@@ -181,7 +184,7 @@ export default function ToolDetailModal({ open, tool, onClose }: Props) {
                 <div className={`animate-spin rounded-full h-6 w-6 border-b-2 ${isDark ? "border-blue-400" : "border-blue-600"}`} />
               </div>
             ) : components.length === 0 ? (
-              <div className={`text-center py-8 ${muteText}`}>No components found for this tool.</div>
+              <div className={`text-center py-8 ${muteText}`}>{t('systems.map.toolDetail.noComponents')}</div>
             ) : (
               <div className="space-y-3">
                 {components.map((comp) => (
@@ -206,14 +209,14 @@ export default function ToolDetailModal({ open, tool, onClose }: Props) {
                       </span>
                     </div>
                     <div className={`mt-2 grid grid-cols-3 gap-2 text-sm ${muteText}`}>
-                      <div><span className={`font-medium ${isDark ? "text-slate-400" : "text-gray-700"}`}>Code:</span> {comp.component_code ?? comp.factory_serie ?? "—"}</div>
-                      <div><span className={`font-medium ${isDark ? "text-slate-400" : "text-gray-700"}`}>S/N:</span> {comp.component_sn ?? "—"}</div>
-                      <div><span className={`font-medium ${isDark ? "text-slate-400" : "text-gray-700"}`}>Usage:</span> {comp.component_cycles ?? 0} / {comp.component_total_cycles ?? "—"} hrs</div>
+                      <div><span className={`font-medium ${isDark ? "text-slate-400" : "text-gray-700"}`}>{t('systems.map.toolDetail.fields.code')}</span> {comp.component_code ?? comp.factory_serie ?? "—"}</div>
+                      <div><span className={`font-medium ${isDark ? "text-slate-400" : "text-gray-700"}`}>{t('systems.map.toolDetail.fields.sn')}</span> {comp.component_sn ?? "—"}</div>
+                      <div><span className={`font-medium ${isDark ? "text-slate-400" : "text-gray-700"}`}>{t('systems.map.toolDetail.fields.usage')}</span> {comp.component_cycles ?? 0} / {comp.component_total_cycles ?? "—"} hrs</div>
                       {comp.cc_platform && (
-                        <div><span className={`font-medium ${isDark ? "text-slate-400" : "text-gray-700"}`}>C2 Platform:</span> {comp.cc_platform.replace('_', '')}</div>
+                        <div><span className={`font-medium ${isDark ? "text-slate-400" : "text-gray-700"}`}>{t('systems.map.toolDetail.fields.c2Platform')}:</span> {comp.cc_platform.replace('_', '')}</div>
                       )}
                       {comp.gcs_type && (
-                        <div><span className={`font-medium ${isDark ? "text-slate-400" : "text-gray-700"}`}>GCS:</span> {comp.gcs_type.replace('_', '')}</div>
+                        <div><span className={`font-medium ${isDark ? "text-slate-400" : "text-gray-700"}`}>{t('systems.map.toolDetail.fields.gcs')}</span> {comp.gcs_type.replace('_', '')}</div>
                       )}
                     </div>
                   </div>
@@ -230,7 +233,7 @@ export default function ToolDetailModal({ open, tool, onClose }: Props) {
                 ? "bg-slate-700 hover:bg-slate-600 text-slate-300"
                 : "bg-gray-100 hover:bg-gray-200 text-gray-700"
               }`}>
-            Close
+           {t('systems.map.toolDetail.close')}
           </button>
         </div>
       </div>
