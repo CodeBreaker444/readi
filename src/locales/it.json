@@ -294,7 +294,7 @@
     }
   },
   "profile": {
-    "title": "Profilo utente",
+    "title": "Profilo",
     "unknownUser": "Utente sconosciuto",
     "userFallback": "Utente",
     "avatarAlt": "Profilo",

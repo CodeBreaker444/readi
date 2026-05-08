@@ -1,4 +1,4 @@
-{
+﻿{
   "common": {
     "save": "Speichern",
     "cancel": "Abbrechen",
@@ -294,7 +294,7 @@
     }
   },
   "profile": {
-    "title": "Benutzerprofil",
+    "title": "Profil",
     "unknownUser": "Unbekannter Benutzer",
     "userFallback": "Benutzer",
     "avatarAlt": "Profil",

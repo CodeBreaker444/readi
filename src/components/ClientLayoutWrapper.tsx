@@ -91,10 +91,11 @@ const ClientLayoutWrapper: React.FC<ClientLayoutWrapperProps> = ({
               role={role}
               isCollapsed={sidebarCollapsed}
               onToggleCollapse={toggleSidebar}
+              userData={userData}
             />
           </div>
 
-          <MobileSidebar isDark={isDark} role={role} />
+          <MobileSidebar isDark={isDark} role={role} userData={userData} />
 
           <div className="flex-1 flex flex-col overflow-hidden pt-1">
             <TopBar isDark={isDark} toggleTheme={toggleTheme} userData={userData} />
