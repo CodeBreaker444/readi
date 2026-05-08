@@ -106,10 +106,7 @@ export function UserFormModal({
       toast.error('Please select a role for the user');
       return;
     }
-    if (requiresEasa && !formData.easa_operator_code.trim()) {
-      toast.error('EASA Operator Code is required for this role (Drone ATC access)');
-      return;
-    }
+    
     setIsSubmitting(true);
     Promise.resolve(onSubmit(formData)).finally(() => {
       setIsSubmitting(false);
