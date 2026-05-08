@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTheme } from '@/components/useTheme';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 const INITIAL_FORM = {
@@ -23,6 +24,7 @@ interface AddToolModalProps {
 
 export default function AddSystemModal({ open, onClose, onSuccess, models, clients }: AddToolModalProps) {
   const { isDark } = useTheme();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [files, setFiles] = useState<File[]>([]);
@@ -35,14 +37,14 @@ export default function AddSystemModal({ open, onClose, onSuccess, models, clien
     if (formData.latitude) {
       const lat = Number(formData.latitude);
       if (isNaN(lat) || lat < -90 || lat > 90) {
-        toast.error('Latitude must be between -90 and 90');
+        toast.error(t('systems.components.addSystem.toasts.latitudeRange'));
         return;
       }
     }
     if (formData.longitude) {
       const lng = Number(formData.longitude);
       if (isNaN(lng) || lng < -180 || lng > 180) {
-        toast.error('Longitude must be between -180 and 180');
+        toast.error(t('systems.components.addSystem.toasts.longitudeRange'));
         return;
       }
     }
@@ -66,9 +68,9 @@ export default function AddSystemModal({ open, onClose, onSuccess, models, clien
 
       const res = await fetch('/api/system/add', { method: 'POST', body: formPayload });
       const result = await res.json();
-      if (result.code === 1) { toast.success('System added successfully'); onSuccess(); }
-      else toast.error(result.message || 'Failed to add tool');
-    } catch { toast.error('Error adding tool'); } finally { setLoading(false); }
+      if (result.code === 1) { toast.success(t('systems.components.addSystem.toasts.success')); onSuccess(); }
+      else toast.error(result.message || t('systems.components.addSystem.toasts.failed'));
+    } catch { toast.error(t('systems.components.addSystem.toasts.error')); } finally { setLoading(false); }
   };
 
   const handleChange = (field: string, value: string) => setFormData(prev => ({ ...prev, [field]: value }));
@@ -86,45 +88,46 @@ export default function AddSystemModal({ open, onClose, onSuccess, models, clien
       <DialogContent className={`max-w-225! w-[90vw] max-h-[90vh] overflow-y-auto
         ${isDark ? 'bg-slate-800 border-slate-700' : ''}`}>
         <DialogHeader className={`border-b pb-3 ${isDark ? 'border-slate-700/60' : 'border-gray-100'}`}>
-          <DialogTitle className={isDark ? 'text-white' : ''}>Add New System</DialogTitle>
+          <DialogTitle className={isDark ? 'text-white' : ''}>{t('systems.components.addSystem.title')}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-5">
 
           <div>
-            <p className={sectionLabelCls}>Basic Information</p>
+            <p className={sectionLabelCls}>{t('systems.components.addSystem.sections.basicInfo')}</p>
             <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-              <div className="col-span-1 sm:col-span-2"><Label className={labelCls}>Code *</Label>
+              <div className="col-span-1 sm:col-span-2"><Label className={labelCls}>{t('systems.components.addSystem.fields.code')}</Label>
                 <Input className={inputCls} value={formData.tool_code} onChange={e => handleChange('tool_code', e.target.value)} required />
               </div>
-              <div className="col-span-1 sm:col-span-3"><Label className={labelCls}>Description</Label>
+              <div className="col-span-1 sm:col-span-3"><Label className={labelCls}>{t('systems.components.addSystem.fields.description')}</Label>
                 <Input className={inputCls} value={formData.tool_description} onChange={e => handleChange('tool_description', e.target.value)} />
               </div>
             </div>
           </div>
 
           <div>
-            <p className={sectionLabelCls}>Location</p>
+            <p className={sectionLabelCls}>{t('systems.components.addSystem.sections.location')}</p>
             <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-              <div className="col-span-1 sm:col-span-3"><Label className={labelCls}>Latitude</Label>
+              <div className="col-span-1 sm:col-span-3"><Label className={labelCls}>{t('systems.components.addSystem.fields.latitude')}</Label>
                 <Input className={inputCls} value={formData.latitude} onChange={e => handleChange('latitude', e.target.value)} />
               </div>
-              <div className="col-span-1 sm:col-span-3"><Label className={labelCls}>Longitude</Label>
+              <div className="col-span-1 sm:col-span-3"><Label className={labelCls}>{t('systems.components.addSystem.fields.longitude')}</Label>
                 <Input className={inputCls} value={formData.longitude} onChange={e => handleChange('longitude', e.target.value)} />
               </div>
             </div>
           </div>
 
           <div>
-            <p className={sectionLabelCls}>Purchase & Activation</p>
+            <p className={sectionLabelCls}>{t('systems.components.addSystem.sections.purchaseActivation')}</p>
             <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-              <div className="col-span-1 sm:col-span-3"><Label className={labelCls}>Activation Date</Label>
+              <div className="col-span-1 sm:col-span-3"><Label className={labelCls}>{t('systems.components.addSystem.fields.activationDate')}</Label>
                 <Input type="date" className={inputCls} value={formData.activation_date} onChange={e => handleChange('activation_date', e.target.value)} />
               </div>
-              <div className="col-span-1 sm:col-span-3"><Label className={labelCls}>Active</Label>
+              <div className="col-span-1 sm:col-span-3"><Label className={labelCls}>{t('systems.components.addSystem.fields.active')}</Label>
                 <Select value={formData.tool_active} onValueChange={v => handleChange('tool_active', v)}>
                   <SelectTrigger className={selectTriggerCls}><SelectValue /></SelectTrigger>
                   <SelectContent className={selectContentCls}>
-                    <SelectItem value="Y">ACTIVE</SelectItem><SelectItem value="N">NOT ACTIVE</SelectItem>
+                    <SelectItem value="Y">{t('systems.components.addSystem.activeOptions.active')}</SelectItem>
+                    <SelectItem value="N">{t('systems.components.addSystem.activeOptions.notActive')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -132,38 +135,37 @@ export default function AddSystemModal({ open, onClose, onSuccess, models, clien
           </div>
 
           <div>
-            <p className={sectionLabelCls}>Status & Assignment</p>
+            <p className={sectionLabelCls}>{t('systems.components.addSystem.sections.statusAssignment')}</p>
             <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-
-              <div className="col-span-1 sm:col-span-3"><Label className={labelCls}>Status</Label>
+              <div className="col-span-1 sm:col-span-3"><Label className={labelCls}>{t('systems.components.addSystem.fields.status')}</Label>
                 <Select value={formData.tool_status} onValueChange={v => handleChange('tool_status', v)}>
                   <SelectTrigger className={selectTriggerCls}><SelectValue /></SelectTrigger>
                   <SelectContent className={selectContentCls}>
-                    <SelectItem value="OPERATIONAL">Operational</SelectItem>
-                    <SelectItem value="NOT_OPERATIONAL">Not Operational</SelectItem>
-                    <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
+                    <SelectItem value="OPERATIONAL">{t('systems.components.addSystem.statusOptions.operational')}</SelectItem>
+                    <SelectItem value="NOT_OPERATIONAL">{t('systems.components.addSystem.statusOptions.notOperational')}</SelectItem>
+                    <SelectItem value="MAINTENANCE">{t('systems.components.addSystem.statusOptions.maintenance')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <div className="col-span-1 sm:col-span-3"><Label className={labelCls}>Client</Label>
+              <div className="col-span-1 sm:col-span-3"><Label className={labelCls}>{t('systems.components.addSystem.fields.client')}</Label>
                 <Select value={formData.fk_client_id} onValueChange={v => handleChange('fk_client_id', v)}>
-                  <SelectTrigger className={selectTriggerCls}><SelectValue placeholder="Select" /></SelectTrigger>
+                  <SelectTrigger className={selectTriggerCls}><SelectValue placeholder={t('systems.components.common.select')} /></SelectTrigger>
                   <SelectContent className={selectContentCls}>
                     <SelectItem value="0">None</SelectItem>
                     {clients.map((c: any) => (<SelectItem key={c.client_id} value={c.client_id.toString()}>{c.client_name}</SelectItem>))}
                   </SelectContent>
                 </Select>
               </div>
-              <div className="col-span-1 sm:col-span-3"><Label className={labelCls}>Location</Label>
+              <div className="col-span-1 sm:col-span-3"><Label className={labelCls}>{t('systems.components.addSystem.fields.location')}</Label>
                 <Input className={inputCls} value={formData.location} onChange={e => handleChange('location', e.target.value)} />
               </div>
             </div>
           </div>
           <div>
-            <p className={sectionLabelCls}>Documentation</p>
+            <p className={sectionLabelCls}>{t('systems.components.addSystem.sections.documentation')}</p>
             <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
               <div className="col-span-1 sm:col-span-6">
-                <Label className={labelCls}>Attach Files (manual, certificate, etc.)</Label>
+                <Label className={labelCls}>{t('systems.components.addSystem.fields.attachFiles')}</Label>
                 <Input
                   type="file"
                   multiple
@@ -182,10 +184,12 @@ export default function AddSystemModal({ open, onClose, onSuccess, models, clien
 
           <div className={`flex justify-end gap-2 pt-2 border-t ${isDark ? 'border-slate-700/60' : 'border-gray-100'}`}>
             <Button type="button" variant="outline" onClick={onClose}
-              className={isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : ''}>Cancel</Button>
+              className={isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : ''}>
+              {t('systems.components.addSystem.buttons.cancel')}
+            </Button>
             <Button type="submit" disabled={loading}
               className="bg-violet-600 hover:bg-violet-500 text-white">
-              {loading ? 'Adding...' : 'Add System'}
+              {loading ? t('systems.components.addSystem.buttons.adding') : t('systems.components.addSystem.buttons.addSystem')}
             </Button>
           </div>
         </form>

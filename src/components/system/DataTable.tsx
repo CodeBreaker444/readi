@@ -14,6 +14,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { TablePagination } from '../tables/Pagination';
 import { Skeleton } from '../ui/skeleton';
 import ExportButtons from './ExportButtons';
@@ -34,6 +35,7 @@ export default function DataTable<TData, TValue>({
   exportFilename,
   actions,
 }: DataTableProps<TData, TValue>) {
+  const { t } = useTranslation();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState('');
@@ -82,7 +84,7 @@ export default function DataTable<TData, TValue>({
       {/* Search bar row: input left, actions right, wraps on small screens */}
       <div className="flex flex-wrap items-center gap-2">
         <Input
-          placeholder="Search..."
+          placeholder={t('systems.components.dataTable.searchPlaceholder')}
           value={globalFilter ?? ''}
           onChange={(event) => setGlobalFilter(event.target.value)}
           className="flex-1 min-w-[180px] max-w-sm"
@@ -133,7 +135,7 @@ export default function DataTable<TData, TValue>({
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No results.
+                  {t('systems.components.dataTable.noResults')}
                 </TableCell>
               </TableRow>
             )}

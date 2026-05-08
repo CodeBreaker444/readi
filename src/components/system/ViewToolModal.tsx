@@ -13,6 +13,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { HiDownload } from 'react-icons/hi';
 import { toast } from 'sonner';
 import { Badge } from '../ui/badge';
@@ -24,6 +25,7 @@ interface ViewSystemModalProps {
 }
 
 export default function ViewSystemModal({ open, toolId, onClose }: ViewSystemModalProps) {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [toolData, setSystemData] = useState<any>(null);
   const [components, setComponents] = useState([]);
@@ -54,7 +56,7 @@ export default function ViewSystemModal({ open, toolId, onClose }: ViewSystemMod
         setSystemData(tool);
       }
     } catch (error) {
-      toast.error('Error fetching tool details');
+      toast.error(t('systems.components.viewTool.toasts.loadError'));
       console.error(error);
     } finally {
       setLoading(false);
@@ -174,7 +176,7 @@ export default function ViewSystemModal({ open, toolId, onClose }: ViewSystemMod
       triggerDownload(blob, `system-details-${toolData?.tool_code ?? toolId}.${format}`);
     } catch (err) {
       console.error(`[ViewSystemModal] ${format} export error`, err);
-      toast.error(`Failed to export ${format.toUpperCase()} file.`);
+      toast.error(t('systems.components.viewTool.toasts.exportFailed', { format: format.toUpperCase() }));
     } finally {
       setExporting(null);
     }
@@ -198,9 +200,9 @@ export default function ViewSystemModal({ open, toolId, onClose }: ViewSystemMod
           reader.onerror = reject;
           reader.readAsDataURL(blob);
         });
-      } catch { 
+      } catch {
         console.log('Logo is Missing for PDF export!');
-       }
+      }
 
       const doc = new jsPDF({ orientation: 'landscape', unit: 'mm' });
       const pageW = doc.internal.pageSize.width;
@@ -269,7 +271,7 @@ export default function ViewSystemModal({ open, toolId, onClose }: ViewSystemMod
       doc.save(`system-details-${toolData?.tool_code ?? toolId}.pdf`);
     } catch (err) {
       console.error('[ViewSystemModal] pdf export error', err);
-      toast.error('Failed to export PDF.');
+      toast.error(t('systems.components.viewTool.toasts.pdfExportFailed'));
     } finally {
       setExporting(null);
     }
@@ -296,31 +298,36 @@ export default function ViewSystemModal({ open, toolId, onClose }: ViewSystemMod
         <DialogHeader>
           <div className="flex items-center justify-between gap-3 mr-6">
             <DialogTitle>
-              {loading ? <Skeleton className="h-6 w-48" /> : `System Details - ${toolData?.tool_code || 'Loading...'}`}
+              {loading
+                ? <Skeleton className="h-6 w-48" />
+                : t('systems.components.viewTool.titleWithCode', { code: toolData?.tool_code || t('systems.components.viewTool.loading') })
+              }
             </DialogTitle>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" disabled={isExportDisabled} className="gap-1.5 text-xs h-7 cursor-pointer">
                   <HiDownload className="w-3.5 h-3.5" />
-                  {exporting ? 'Exporting…' : 'Export'}
+                  {exporting ? t('systems.components.viewTool.exporting') : t('systems.components.viewTool.export')}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="min-w-47">
-                <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-slate-400">Download as</DropdownMenuLabel>
+                <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-slate-400">
+                  {t('systems.components.viewTool.downloadAs')}
+                </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => handleServerExport('xlsx')} disabled={!!exporting} className="text-xs gap-2 cursor-pointer">
                   <span className="w-4 text-center text-emerald-500 font-bold text-sm">X</span>
-                  Excel (.xlsx)
+                  {t('systems.components.viewTool.exportOptions.xlsx')}
                   {exporting === 'xlsx' && <span className="ml-auto text-[10px] opacity-60">…</span>}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handlePdfExport} disabled={!!exporting} className="text-xs gap-2 cursor-pointer">
                   <span className="w-4 text-center text-red-500 font-bold text-sm">P</span>
-                  PDF (.pdf)
+                  {t('systems.components.viewTool.exportOptions.pdf')}
                   {exporting === 'pdf' && <span className="ml-auto text-[10px] opacity-60">…</span>}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleServerExport('docx')} disabled={!!exporting} className="text-xs gap-2 cursor-pointer">
                   <span className="w-4 text-center text-blue-500 font-bold text-sm">W</span>
-                  Word (.docx)
+                  {t('systems.components.viewTool.exportOptions.docx')}
                   {exporting === 'docx' && <span className="ml-auto text-[10px] opacity-60">…</span>}
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -348,20 +355,20 @@ export default function ViewSystemModal({ open, toolId, onClose }: ViewSystemMod
           <>
             <Tabs defaultValue="general" className="w-full">
               <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="general">General Info</TabsTrigger>
-                <TabsTrigger value="specifications">Specifications</TabsTrigger>
-                <TabsTrigger value="components">Components</TabsTrigger>
-                <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
+                <TabsTrigger value="general">{t('systems.components.viewTool.tabs.general')}</TabsTrigger>
+                <TabsTrigger value="specifications">{t('systems.components.viewTool.tabs.specifications')}</TabsTrigger>
+                <TabsTrigger value="components">{t('systems.components.viewTool.tabs.components')}</TabsTrigger>
+                <TabsTrigger value="maintenance">{t('systems.components.viewTool.tabs.maintenance')}</TabsTrigger>
               </TabsList>
 
               <TabsContent value="general" className="space-y-4 pt-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm font-medium text-gray-500">System Code</p>
+                    <p className="text-sm font-medium text-gray-500">{t('systems.components.viewTool.fields.systemCode')}</p>
                     <p className="text-base font-semibold">{toolData?.tool_code || 'N/A'}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Status</p>
+                    <p className="text-sm font-medium text-gray-500">{t('systems.components.viewTool.fields.status')}</p>
                     <Badge variant={
                       toolData?.tool_status === 'MAINTENANCE' ? 'destructive' :
                       toolData?.tool_status === 'OPERATIONAL' ? 'default' : 'secondary'
@@ -370,32 +377,32 @@ export default function ViewSystemModal({ open, toolId, onClose }: ViewSystemMod
                     </Badge>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Active</p>
+                    <p className="text-sm font-medium text-gray-500">{t('systems.components.viewTool.fields.active')}</p>
                     <Badge variant={toolData?.active === 'Y' ? 'default' : 'destructive'}>
-                      {toolData?.active === 'Y' ? 'Yes' : 'No'}
+                      {toolData?.active === 'Y' ? t('systems.components.common.phaseOutOptions.yes') : t('systems.components.common.phaseOutOptions.no')}
                     </Badge>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Client</p>
+                    <p className="text-sm font-medium text-gray-500">{t('systems.components.viewTool.fields.client')}</p>
                     <p className="text-base">{toolData?.client_name || 'N/A'}</p>
                   </div>
                   <div className="col-span-2 border-t pt-2">
-                    <p className="text-sm font-medium text-gray-500">Description</p>
+                    <p className="text-sm font-medium text-gray-500">{t('systems.components.viewTool.fields.description')}</p>
                     <p className="text-sm text-gray-700">
-                      {toolData?.tool_desc || 'No description provided.'}
+                      {toolData?.tool_desc || t('systems.components.viewTool.noDescription')}
                     </p>
                   </div>
                 </div>
 
                 <div className="border-t pt-4">
-                  <h3 className="text-lg font-semibold mb-3">Flight Statistics</h3>
+                  <h3 className="text-lg font-semibold mb-3">{t('systems.components.viewTool.flightStats.title')}</h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="bg-blue-50 p-4 rounded-lg">
-                      <p className="text-sm text-gray-600">Total Missions</p>
+                      <p className="text-sm text-gray-600">{t('systems.components.viewTool.flightStats.totalMissions')}</p>
                       <p className="text-2xl font-bold">{toolData?.tot_mission ?? 0}</p>
                     </div>
                     <div className="bg-green-50 p-4 rounded-lg">
-                      <p className="text-sm text-gray-600">Total Hours</p>
+                      <p className="text-sm text-gray-600">{t('systems.components.viewTool.flightStats.totalHours')}</p>
                       <p className="text-2xl font-bold">
                         {(() => {
                           const droneComp = (components as any[]).find(c => c.component_type === 'DRONE');
@@ -411,11 +418,11 @@ export default function ViewSystemModal({ open, toolId, onClose }: ViewSystemMod
               <TabsContent value="specifications" className="space-y-4 pt-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Latitude</p>
+                    <p className="text-sm font-medium text-gray-500">{t('systems.components.viewTool.fields.latitude')}</p>
                     <p className="text-base">{toolData?.tool_latitude || 'N/A'}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Longitude</p>
+                    <p className="text-sm font-medium text-gray-500">{t('systems.components.viewTool.fields.longitude')}</p>
                     <p className="text-base">{toolData?.tool_longitude || 'N/A'}</p>
                   </div>
                 </div>
@@ -424,14 +431,12 @@ export default function ViewSystemModal({ open, toolId, onClose }: ViewSystemMod
               <TabsContent value="components" className="pt-4">
                 {components.length === 0 ? (
                   <div className="text-center py-8 text-gray-500 border rounded-lg border-dashed">
-                    No components found for this tool
+                    {t('systems.components.viewTool.noComponents')}
                   </div>
                 ) : (() => {
-                  // Build a tree: top-level components and their children
                   const allComps = components as any[];
                   const parentIds = new Set(allComps.map(c => c.fk_parent_component_id).filter(Boolean));
                   const topLevel = allComps.filter(c => !c.fk_parent_component_id);
-                  // Any component whose declared parent doesn't exist in the list → treat as top-level
                   const orphaned = allComps.filter(c => c.fk_parent_component_id && !allComps.find(p => p.tool_component_id === c.fk_parent_component_id));
                   const roots = [...topLevel, ...orphaned];
                   const childrenOf = (parentId: number) => allComps.filter(c => c.fk_parent_component_id === parentId);
@@ -447,18 +452,18 @@ export default function ViewSystemModal({ open, toolId, onClose }: ViewSystemMod
                               <div className="flex items-center gap-2 flex-wrap">
                                 {isChild && (
                                   <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-violet-500 bg-violet-50 border border-violet-200 rounded px-1.5 py-0.5">
-                                    ↳ child
+                                    {t('systems.components.relations.child')}
                                   </span>
                                 )}
                                 <h4 className="font-semibold">{component.factory_model || component.component_code || `#${component.tool_component_id}`}</h4>
                                 {inMaintenance && (
                                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-yellow-200 text-yellow-800 border border-yellow-300">
-                                    In Maintenance
+                                    {t('systems.components.viewTool.inMaintenance')}
                                   </span>
                                 )}
                                 {parentIds.has(component.tool_component_id) && (
                                   <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500 bg-slate-100 border border-slate-200 rounded px-1.5 py-0.5">
-                                    parent
+                                    {t('systems.components.relations.parent')}
                                   </span>
                                 )}
                               </div>
@@ -471,25 +476,24 @@ export default function ViewSystemModal({ open, toolId, onClose }: ViewSystemMod
                             )}
                           </div>
                           <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                            <div><span className="text-gray-500">Code:</span> {component.component_code || component.factory_serie || '—'}</div>
-                            <div><span className="text-gray-500">Serial:</span> {component.component_sn || 'N/A'}</div>
+                            <div><span className="text-gray-500">{t('systems.components.viewTool.componentFields.code')}</span> {component.component_code || component.factory_serie || '—'}</div>
+                            <div><span className="text-gray-500">{t('systems.components.viewTool.componentFields.serial')}</span> {component.component_sn || 'N/A'}</div>
                           </div>
                           <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
                             <div className="bg-gray-50 rounded px-2 py-1">
-                              <p className="text-gray-400">Since last maint.</p>
+                              <p className="text-gray-400">{t('systems.components.viewTool.componentFields.sinceLastMaint')}</p>
                               <p className="font-semibold">{Number(component.current_maintenance_hours || 0).toFixed(1)} h</p>
                             </div>
                             <div className="bg-gray-50 rounded px-2 py-1">
-                              <p className="text-gray-400">Days</p>
+                              <p className="text-gray-400">{t('systems.components.viewTool.componentFields.days')}</p>
                               <p className="font-semibold">{component.current_maintenance_days ?? 0} d</p>
                             </div>
                             <div className="bg-gray-50 rounded px-2 py-1">
-                              <p className="text-gray-400">Flights</p>
+                              <p className="text-gray-400">{t('systems.components.viewTool.componentFields.flights')}</p>
                               <p className="font-semibold">{component.current_maintenance_flights ?? 0}</p>
                             </div>
                           </div>
                         </div>
-                        {/* Children */}
                         {children.length > 0 && (
                           <div className="mt-2 space-y-2">
                             {children.map(child => renderComponent(child, true))}
@@ -507,7 +511,6 @@ export default function ViewSystemModal({ open, toolId, onClose }: ViewSystemMod
                 })()}
               </TabsContent>
 
-
               <TabsContent value="maintenance" className="pt-4">
                 {loadingTickets ? (
                   <div className="space-y-3">
@@ -515,7 +518,7 @@ export default function ViewSystemModal({ open, toolId, onClose }: ViewSystemMod
                   </div>
                 ) : maintenanceTickets.length === 0 ? (
                   <div className="text-center py-8 text-gray-500 border rounded-lg border-dashed">
-                    No maintenance history for this system
+                    {t('systems.components.viewTool.noMaintenance')}
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -542,10 +545,10 @@ export default function ViewSystemModal({ open, toolId, onClose }: ViewSystemMod
                           </span>
                         </div>
                         <div className="grid grid-cols-3 gap-2 text-sm">
-                          <div><span className="text-gray-500">Type:</span> {ticket.ticket_type}</div>
-                          <div><span className="text-gray-500">Assigned:</span> {ticket.assigner_name || 'Unassigned'}</div>
+                          <div><span className="text-gray-500">{t('systems.components.viewTool.maintenanceFields.type')}</span> {ticket.ticket_type}</div>
+                          <div><span className="text-gray-500">{t('systems.components.viewTool.maintenanceFields.assigned')}</span> {ticket.assigner_name || t('systems.components.viewTool.maintenanceFields.unassigned')}</div>
                           <div>
-                            <span className="text-gray-500">Closed:</span>{' '}
+                            <span className="text-gray-500">{t('systems.components.viewTool.maintenanceFields.closed')}</span>{' '}
                             {ticket.closed_at ? new Date(ticket.closed_at).toLocaleDateString() : '—'}
                           </div>
                         </div>
@@ -560,7 +563,7 @@ export default function ViewSystemModal({ open, toolId, onClose }: ViewSystemMod
             </Tabs>
 
             <div className="flex justify-end mt-6">
-              <Button variant="outline" onClick={onClose}>Close</Button>
+              <Button variant="outline" onClick={onClose}>{t('systems.components.viewTool.buttons.close')}</Button>
             </div>
           </>
         )}

@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { useTheme } from '@/components/useTheme';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Skeleton } from '../ui/skeleton';
 
@@ -18,21 +19,6 @@ interface EditModelModalProps {
   onSuccess: () => void;
   initialModelId?: number | null;
 }
-
-const AIRCRAFT_SUBTYPES = [
-  { value: 'MULTIROTOR',    label: 'Multirotor / Drone' },
-  { value: 'FIXED_WING',   label: 'Fixed Wing' },
-  { value: 'VTOL',         label: 'VTOL' },
-  { value: 'HELICOPTER',   label: 'Helicopter' },
-  { value: 'SINGLE_ROTOR', label: 'Single Rotor' },
-];
-
-const DOCK_SUBTYPES = [
-  { value: 'INDOOR',   label: 'Indoor Dock' },
-  { value: 'OUTDOOR',  label: 'Outdoor Dock' },
-  { value: 'MOBILE',   label: 'Mobile Dock' },
-  { value: 'PORTABLE', label: 'Portable Dock' },
-];
 
 function splitModelType(modelType: string): { category: string; subtype: string } {
   if (!modelType) return { category: '', subtype: '' };
@@ -69,12 +55,28 @@ const EMPTY_FORM = {
 };
 
 export default function EditModelModal({ open, toolId, onClose, onSuccess, initialModelId }: EditModelModalProps) {
+  const { t } = useTranslation();
   const { isDark } = useTheme();
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(false);
   const [allModels, setAllModels] = useState<any[]>([]);
   const [selectedModelId, setSelectedModelId] = useState<string>('');
   const [formData, setFormData] = useState(EMPTY_FORM);
+
+  const AIRCRAFT_SUBTYPES = [
+    { value: 'MULTIROTOR',    label: t('systems.components.addModel.subtypeOptions.multirotor') },
+    { value: 'FIXED_WING',   label: t('systems.components.addModel.subtypeOptions.fixedWing') },
+    { value: 'VTOL',         label: t('systems.components.addModel.subtypeOptions.vtol') },
+    { value: 'HELICOPTER',   label: t('systems.components.addModel.subtypeOptions.helicopter') },
+    { value: 'SINGLE_ROTOR', label: t('systems.components.addModel.subtypeOptions.singleRotor') },
+  ];
+
+  const DOCK_SUBTYPES = [
+    { value: 'INDOOR',   label: t('systems.components.addModel.subtypeOptions.indoorDock') },
+    { value: 'OUTDOOR',  label: t('systems.components.addModel.subtypeOptions.outdoorDock') },
+    { value: 'MOBILE',   label: t('systems.components.addModel.subtypeOptions.mobileDock') },
+    { value: 'PORTABLE', label: t('systems.components.addModel.subtypeOptions.portableDock') },
+  ];
 
   useEffect(() => {
     if (open) {
@@ -126,7 +128,7 @@ export default function EditModelModal({ open, toolId, onClose, onSuccess, initi
         }
       }
     } catch {
-      toast.error('Error loading models');
+      toast.error(t('systems.components.editModel.toasts.loadError'));
     } finally {
       setFetching(false);
     }
@@ -151,7 +153,7 @@ export default function EditModelModal({ open, toolId, onClose, onSuccess, initi
         }
       }
     } catch {
-      toast.error('Error loading model');
+      toast.error(t('systems.components.editModel.toasts.loadModelError'));
     } finally {
       setFetching(false);
     }
@@ -252,9 +254,9 @@ export default function EditModelModal({ open, toolId, onClose, onSuccess, initi
     }));
   };
 
-  const handleCycleInput = (field: string, value: string ) => {
+  const handleCycleInput = (field: string, value: string) => {
     const num = Number(value);
-    if (value === '' || num >= 0 ) handleChange(field, value);
+    if (value === '' || num >= 0) handleChange(field, value);
   };
 
   const showHours   = formData.maintenance_cycle === 'HOURS'   || formData.maintenance_cycle === 'MIXED';
@@ -270,12 +272,12 @@ export default function EditModelModal({ open, toolId, onClose, onSuccess, initi
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedModelId) { toast.error('Please select a model'); return; }
-    if (!formData.model_category) { toast.error('Please select a component type'); return; }
-    if (!formData.model_subtype)   { toast.error('Please select a sub-type'); return; }
-    if (!formData.manufacturer.trim()) { toast.error('Manufacturer (Brand) is required'); return; }
-    if (!formData.model_code.trim()) { toast.error('Model code (Serie) is required'); return; }
-    if (!formData.model_name.trim()) { toast.error('Model name is required'); return; }
+    if (!selectedModelId) { toast.error(t('systems.components.editModel.toasts.selectModel')); return; }
+    if (!formData.model_category) { toast.error(t('systems.components.editModel.toasts.selectType')); return; }
+    if (!formData.model_subtype)   { toast.error(t('systems.components.editModel.toasts.selectSubType')); return; }
+    if (!formData.manufacturer.trim()) { toast.error(t('systems.components.editModel.toasts.manufacturerRequired')); return; }
+    if (!formData.model_code.trim()) { toast.error(t('systems.components.editModel.toasts.modelCodeRequired')); return; }
+    if (!formData.model_name.trim()) { toast.error(t('systems.components.editModel.toasts.modelNameRequired')); return; }
 
     setLoading(true);
     try {
@@ -320,13 +322,13 @@ export default function EditModelModal({ open, toolId, onClose, onSuccess, initi
       });
       const result = await res.json();
       if (result.code === 1) {
-        toast.success('Model updated successfully');
+        toast.success(t('systems.components.editModel.toasts.updateSuccess'));
         onSuccess();
       } else {
-        toast.error(result.message || 'Failed to update model');
+        toast.error(result.message || t('systems.components.editModel.toasts.updateFailed'));
       }
     } catch {
-      toast.error('Error updating model');
+      toast.error(t('systems.components.editModel.toasts.updateError'));
     } finally {
       setLoading(false);
     }
@@ -342,7 +344,7 @@ export default function EditModelModal({ open, toolId, onClose, onSuccess, initi
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className={`!max-w-[900px] w-[90vw] h-[90vh] overflow-y-auto ${isDark ? 'bg-slate-800 border-slate-700' : ''}`}>
         <DialogHeader className={`border-b pb-3 ${isDark ? 'border-slate-700/60' : 'border-gray-100'}`}>
-          <DialogTitle className={isDark ? 'text-white' : ''}>Edit Model</DialogTitle>
+          <DialogTitle className={isDark ? 'text-white' : ''}>{t('systems.components.editModel.title')}</DialogTitle>
         </DialogHeader>
 
         {fetching ? (
@@ -367,10 +369,10 @@ export default function EditModelModal({ open, toolId, onClose, onSuccess, initi
         ) : (
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <p className={sectionLabelCls}>Select Model to Edit</p>
+              <p className={sectionLabelCls}>{t('systems.components.editModel.selectModelLabel')}</p>
               <Select value={selectedModelId} onValueChange={handleModelSelect}>
                 <SelectTrigger className={selectTriggerCls}>
-                  <SelectValue placeholder="Select a model..." />
+                  <SelectValue placeholder={t('systems.components.editModel.selectModelPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent className={selectContentCls}>
                   {allModels.map(m => (
@@ -385,27 +387,29 @@ export default function EditModelModal({ open, toolId, onClose, onSuccess, initi
             {selectedModelId && (
               <>
                 <div>
-                  <p className={sectionLabelCls}>Identification</p>
+                  <p className={sectionLabelCls}>{t('systems.components.addModel.sections.identification')}</p>
                   <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
                     <div className="col-span-1 sm:col-span-3">
-                      <Label className={labelCls}>Component Type *</Label>
+                      <Label className={labelCls}>{t('systems.components.addModel.fields.componentType')}</Label>
                       <Select value={formData.model_category} onValueChange={handleCategoryChange}>
-                        <SelectTrigger className={selectTriggerCls}><SelectValue placeholder="Select type" /></SelectTrigger>
+                        <SelectTrigger className={selectTriggerCls}>
+                          <SelectValue placeholder={t('systems.components.addModel.placeholders.selectType')} />
+                        </SelectTrigger>
                         <SelectContent className={selectContentCls}>
-                          <SelectItem value="AIRCRAFT">Aircraft</SelectItem>
-                          <SelectItem value="DOCK">Dock</SelectItem>
+                          <SelectItem value="AIRCRAFT">{t('systems.components.addModel.categoryOptions.aircraft')}</SelectItem>
+                          <SelectItem value="DOCK">{t('systems.components.addModel.categoryOptions.dock')}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     <div className="col-span-1 sm:col-span-3">
-                      <Label className={labelCls}>Sub-Type *</Label>
+                      <Label className={labelCls}>{t('systems.components.addModel.fields.subType')}</Label>
                       <Select
                         value={formData.model_subtype}
                         onValueChange={v => handleChange('model_subtype', v)}
                         disabled={!formData.model_category}
                       >
                         <SelectTrigger className={selectTriggerCls}>
-                          <SelectValue placeholder={formData.model_category ? 'Select sub-type' : 'Select type first'} />
+                          <SelectValue placeholder={formData.model_category ? t('systems.components.addModel.placeholders.selectSubType') : t('systems.components.addModel.placeholders.selectTypeFirst')} />
                         </SelectTrigger>
                         <SelectContent className={selectContentCls}>
                           {subtypeOptions.map(opt => (
@@ -415,160 +419,162 @@ export default function EditModelModal({ open, toolId, onClose, onSuccess, initi
                       </Select>
                     </div>
                     <div className="col-span-1 sm:col-span-3">
-                      <Label className={labelCls}>Brand (Manufacturer) *</Label>
+                      <Label className={labelCls}>{t('systems.components.addModel.fields.brand')}</Label>
                       <Input className={inputCls} value={formData.manufacturer} onChange={e => handleChange('manufacturer', e.target.value)} required />
                     </div>
                     <div className="col-span-1 sm:col-span-3">
-                      <Label className={labelCls}>Serie (Model Code) *</Label>
+                      <Label className={labelCls}>{t('systems.components.addModel.fields.serie')}</Label>
                       <Input className={inputCls} value={formData.model_code} onChange={e => handleChange('model_code', e.target.value)} required />
                     </div>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 mt-3">
                     <div className="col-span-1 sm:col-span-3">
-                      <Label className={labelCls}>Model (Name) *</Label>
+                      <Label className={labelCls}>{t('systems.components.addModel.fields.modelName')}</Label>
                       <Input className={inputCls} value={formData.model_name} onChange={e => handleChange('model_name', e.target.value)} required />
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <p className={sectionLabelCls}>Classification & Weight</p>
+                  <p className={sectionLabelCls}>{t('systems.components.addModel.sections.classificationWeight')}</p>
                   <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
                     <div className="col-span-1 sm:col-span-4">
-                      <Label className={labelCls}>Version</Label>
+                      <Label className={labelCls}>{t('systems.components.addModel.fields.version')}</Label>
                       <Input className={inputCls} value={formData.version} onChange={e => handleChange('version', e.target.value)} />
                     </div>
                     <div className="col-span-1 sm:col-span-4">
-                      <Label className={labelCls}>MTOM (kg)</Label>
+                      <Label className={labelCls}>{t('systems.components.addModel.fields.mtom')}</Label>
                       <Input type="number" step="0.01" className={inputCls} value={formData.mtom} onChange={e => handleChange('mtom', e.target.value)} />
                     </div>
                     <div className="col-span-1 sm:col-span-4">
-                      <Label className={labelCls}>Weight (kg)</Label>
+                      <Label className={labelCls}>{t('systems.components.addModel.fields.weight')}</Label>
                       <Input type="number" step="0.01" className={inputCls} value={formData.weight} onChange={e => handleChange('weight', e.target.value)} />
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <p className={sectionLabelCls}>Operating Conditions</p>
+                  <p className={sectionLabelCls}>{t('systems.components.addModel.sections.operatingConditions')}</p>
                   <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
                     <div className="col-span-1 sm:col-span-3">
-                      <Label className={labelCls}>Wind Min (m/s)</Label>
+                      <Label className={labelCls}>{t('systems.components.addModel.fields.windMin')}</Label>
                       <Input type="number" step="0.1" className={inputCls} value={formData.wind_min} onChange={e => handleChange('wind_min', e.target.value)} />
                     </div>
                     <div className="col-span-1 sm:col-span-3">
-                      <Label className={labelCls}>Wind Max (m/s)</Label>
+                      <Label className={labelCls}>{t('systems.components.addModel.fields.windMax')}</Label>
                       <Input type="number" step="0.1" className={inputCls} value={formData.wind_max} onChange={e => handleChange('wind_max', e.target.value)} />
                     </div>
                     <div className="col-span-1 sm:col-span-3">
-                      <Label className={labelCls}>Temp Min (°C)</Label>
+                      <Label className={labelCls}>{t('systems.components.addModel.fields.tempMin')}</Label>
                       <Input type="number" step="0.1" className={inputCls} value={formData.temp_min} onChange={e => handleChange('temp_min', e.target.value)} />
                     </div>
                     <div className="col-span-1 sm:col-span-3">
-                      <Label className={labelCls}>Temp Max (°C)</Label>
+                      <Label className={labelCls}>{t('systems.components.addModel.fields.tempMax')}</Label>
                       <Input type="number" step="0.1" className={inputCls} value={formData.temp_max} onChange={e => handleChange('temp_max', e.target.value)} />
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <p className={sectionLabelCls}>Performance</p>
+                  <p className={sectionLabelCls}>{t('systems.components.addModel.sections.performance')}</p>
                   <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
                     <div className="col-span-1 sm:col-span-3">
-                      <Label className={labelCls}>Endurance Min (min)</Label>
+                      <Label className={labelCls}>{t('systems.components.addModel.fields.enduranceMin')}</Label>
                       <Input type="number" className={inputCls} value={formData.endurance_min} onChange={e => handleChange('endurance_min', e.target.value)} />
                     </div>
                     <div className="col-span-1 sm:col-span-3">
-                      <Label className={labelCls}>Endurance Max (min)</Label>
+                      <Label className={labelCls}>{t('systems.components.addModel.fields.enduranceMax')}</Label>
                       <Input type="number" className={inputCls} value={formData.endurance_max} onChange={e => handleChange('endurance_max', e.target.value)} />
                     </div>
                     <div className="col-span-1 sm:col-span-3">
-                      <Label className={labelCls}>Max Speed (km/h)</Label>
+                      <Label className={labelCls}>{t('systems.components.addModel.fields.maxSpeed')}</Label>
                       <Input type="number" className={inputCls} value={formData.max_speed} onChange={e => handleChange('max_speed', e.target.value)} />
                     </div>
                     <div className="col-span-1 sm:col-span-3">
-                      <Label className={labelCls}>Max Altitude (m)</Label>
+                      <Label className={labelCls}>{t('systems.components.addModel.fields.maxAltitude')}</Label>
                       <Input type="number" className={inputCls} value={formData.max_altitude} onChange={e => handleChange('max_altitude', e.target.value)} />
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <p className={sectionLabelCls}>Maintenance</p>
+                  <p className={sectionLabelCls}>{t('systems.components.addModel.sections.maintenance')}</p>
                   <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
                     <div className="col-span-1 sm:col-span-3">
-                      <Label className={labelCls}>Phase-out</Label>
+                      <Label className={labelCls}>{t('systems.components.addModel.fields.phaseOut')}</Label>
                       <Select value={formData.phase_out} onValueChange={v => handleChange('phase_out', v)}>
                         <SelectTrigger className={selectTriggerCls}><SelectValue /></SelectTrigger>
                         <SelectContent className={selectContentCls}>
-                          <SelectItem value="N">No</SelectItem>
-                          <SelectItem value="Y">Yes</SelectItem>
+                          <SelectItem value="N">{t('systems.components.common.phaseOutOptions.no')}</SelectItem>
+                          <SelectItem value="Y">{t('systems.components.common.phaseOutOptions.yes')}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     <div className="col-span-1 sm:col-span-3">
-                      <Label className={labelCls}>Maintenance Cycle</Label>
+                      <Label className={labelCls}>{t('systems.components.addModel.fields.maintenanceCycle')}</Label>
                       <Select value={formData.maintenance_cycle} onValueChange={handleCycleChange}>
-                        <SelectTrigger className={selectTriggerCls}><SelectValue placeholder="Select" /></SelectTrigger>
+                        <SelectTrigger className={selectTriggerCls}>
+                          <SelectValue placeholder={t('systems.components.common.select')} />
+                        </SelectTrigger>
                         <SelectContent className={selectContentCls}>
-                          <SelectItem value="HOURS">Hours</SelectItem>
-                          <SelectItem value="DAYS">Days</SelectItem>
-                          <SelectItem value="FLIGHTS">Flights</SelectItem>
-                          <SelectItem value="MIXED">Mixed</SelectItem>
-                          <SelectItem value="NONE">None</SelectItem>
+                          <SelectItem value="HOURS">{t('systems.components.common.maintenanceCycle.hours')}</SelectItem>
+                          <SelectItem value="DAYS">{t('systems.components.common.maintenanceCycle.days')}</SelectItem>
+                          <SelectItem value="FLIGHTS">{t('systems.components.common.maintenanceCycle.flights')}</SelectItem>
+                          <SelectItem value="MIXED">{t('systems.components.common.maintenanceCycle.mixed')}</SelectItem>
+                          <SelectItem value="NONE">{t('systems.components.common.maintenanceCycle.none')}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     {showNone && (
                       <div className="col-span-1 sm:col-span-6 flex items-end">
                         <span className={`inline-flex items-center px-3 py-2 rounded-md text-sm ${isDark ? 'bg-slate-700 text-slate-400' : 'bg-muted text-muted-foreground'}`}>
-                          No maintenance cycle required
+                          {t('systems.components.common.maintenanceCycle.noCycleRequired')}
                         </span>
                       </div>
                     )}
                     {showHours && (
                       <div className="col-span-1 sm:col-span-2">
-                        <Label className={labelCls}>Hours Limit </Label>
-                        <Input type="number" min={0}   className={inputCls} value={formData.maintenance_cycle_hour}
-                          onChange={e => handleCycleInput('maintenance_cycle_hour', e.target.value)}   />
+                        <Label className={labelCls}>{t('systems.components.common.maintenanceCycle.hoursLimit')}</Label>
+                        <Input type="number" min={0} className={inputCls} value={formData.maintenance_cycle_hour}
+                          onChange={e => handleCycleInput('maintenance_cycle_hour', e.target.value)} />
                       </div>
                     )}
                     {showDays && (
                       <div className="col-span-1 sm:col-span-2">
-                        <Label className={labelCls}>Days Limit </Label>
-                        <Input type="number" min={0}   className={inputCls} value={formData.maintenance_cycle_day}
-                          onChange={e => handleCycleInput('maintenance_cycle_day', e.target.value)}  />
+                        <Label className={labelCls}>{t('systems.components.common.maintenanceCycle.daysLimit')}</Label>
+                        <Input type="number" min={0} className={inputCls} value={formData.maintenance_cycle_day}
+                          onChange={e => handleCycleInput('maintenance_cycle_day', e.target.value)} />
                       </div>
                     )}
                     {showFlights && (
                       <div className="col-span-1 sm:col-span-2">
-                        <Label className={labelCls}>Flights Limit</Label>
-                        <Input type="number" min={0}   className={inputCls} value={formData.maintenance_cycle_flight}
-                          onChange={e => handleCycleInput('maintenance_cycle_flight', e.target.value)}  />
+                        <Label className={labelCls}>{t('systems.components.common.maintenanceCycle.flightsLimit')}</Label>
+                        <Input type="number" min={0} className={inputCls} value={formData.maintenance_cycle_flight}
+                          onChange={e => handleCycleInput('maintenance_cycle_flight', e.target.value)} />
                       </div>
                     )}
                   </div>
                 </div>
 
                 <div>
-                  <p className={sectionLabelCls}>Guarantee & Notes</p>
+                  <p className={sectionLabelCls}>{t('systems.components.addModel.sections.guaranteeNotes')}</p>
                   <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
                     <div className="col-span-1 sm:col-span-3">
-                      <Label className={labelCls}>Guarantee (years)</Label>
+                      <Label className={labelCls}>{t('systems.components.addModel.fields.guaranteeYears')}</Label>
                       <Input type="number" step="0.1" className={inputCls} value={formData.guarantee_years} onChange={e => handleChange('guarantee_years', e.target.value)} />
                     </div>
                     <div className="col-span-1 sm:col-span-3">
-                      <Label className={labelCls}>Max Flight Time (min)</Label>
+                      <Label className={labelCls}>{t('systems.components.addModel.fields.maxFlightTime')}</Label>
                       <Input type="number" className={inputCls} value={formData.max_flight_time} onChange={e => handleChange('max_flight_time', e.target.value)} />
                     </div>
                     <div className="col-span-1 sm:col-span-6">
-                      <Label className={labelCls}>Additional Specifications</Label>
+                      <Label className={labelCls}>{t('systems.components.addModel.fields.additionalSpecs')}</Label>
                       <Textarea
                         className={inputCls}
                         value={formData.specifications}
                         onChange={e => handleChange('specifications', e.target.value)}
                         rows={2}
-                        placeholder="Additional notes..."
+                        placeholder={t('systems.components.addModel.placeholders.additionalNotes')}
                       />
                     </div>
                   </div>
@@ -576,9 +582,11 @@ export default function EditModelModal({ open, toolId, onClose, onSuccess, initi
 
                 <div className={`flex justify-end gap-2 pt-2 border-t ${isDark ? 'border-slate-700/60' : 'border-gray-100'}`}>
                   <Button type="button" variant="outline" onClick={onClose}
-                    className={isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : ''}>Cancel</Button>
+                    className={isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : ''}>
+                    {t('systems.components.editModel.buttons.cancel')}
+                  </Button>
                   <Button type="submit" disabled={loading} className="bg-violet-600 hover:bg-violet-500 text-white">
-                    {loading ? 'Saving...' : 'Save Changes'}
+                    {loading ? t('systems.components.editModel.buttons.saving') : t('systems.components.editModel.buttons.saveChanges')}
                   </Button>
                 </div>
               </>
@@ -587,7 +595,9 @@ export default function EditModelModal({ open, toolId, onClose, onSuccess, initi
             {!selectedModelId && (
               <div className={`flex justify-end pt-2 border-t ${isDark ? 'border-slate-700/60' : 'border-gray-100'}`}>
                 <Button type="button" variant="outline" onClick={onClose}
-                  className={isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : ''}>Cancel</Button>
+                  className={isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : ''}>
+                  {t('systems.components.editModel.buttons.cancel')}
+                </Button>
               </div>
             )}
           </form>

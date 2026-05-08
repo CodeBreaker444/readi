@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import axios from 'axios';
 import { Loader2, Pencil, RotateCcw } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { ManageComponentTypesModal } from './ManageComponentTypesModal';
 
@@ -99,6 +100,7 @@ function ModelOptionLabel({ model }: { model: any }) {
 }
 
 export default function AddComponentModal({ open, onClose, onSuccess, tools, models }: AddComponentModalProps) {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [showManageTypes, setShowManageTypes] = useState(false);
@@ -114,7 +116,6 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
     if (open) setFormData(INITIAL_FORM);
   }, [open]);
 
-  // When system changes, reload the candidate parent components
   useEffect(() => {
     if (!formData.fk_tool_id) { setParentComponents([]); return; }
     setParentLoading(true);
@@ -145,7 +146,7 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
     }, []);
 
     useEffect(() => { reload(); }, [reload]);
-  
+
 
   const handleChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -173,7 +174,7 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
         maintenance_cycle_day: model.maintenance_cycle_day != null ? String(model.maintenance_cycle_day) : '',
         maintenance_cycle_flight: model.maintenance_cycle_flight != null ? String(model.maintenance_cycle_flight) : '',
       }));
-      toast.info('Maintenance cycle reset to model defaults');
+      toast.info(t('systems.components.addComponent.toasts.resetToModel'));
     }
   };
 
@@ -192,11 +193,11 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.fk_tool_id) { toast.error('Please select a system'); return; }
-    if (!formData.component_type) { toast.error('Please select a component type'); return; }
+    if (!formData.fk_tool_id) { toast.error(t('systems.components.addComponent.toasts.selectSystem')); return; }
+    if (!formData.component_type) { toast.error(t('systems.components.addComponent.toasts.selectType')); return; }
     if (formData.component_activation_date && formData.component_purchase_date &&
         formData.component_activation_date < formData.component_purchase_date) {
-      toast.error('Activation date cannot be before purchase date'); return;
+      toast.error(t('systems.components.addComponent.toasts.activationBeforePurchase')); return;
     }
 
     setLoading(true);
@@ -229,14 +230,14 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
 
       const response = await axios.post('/api/system/component/add', payload);
       if (response.data.code === 1) {
-        toast.success('Component added successfully');
+        toast.success(t('systems.components.addComponent.toasts.success'));
         setFormData(INITIAL_FORM);
         onSuccess();
       } else {
-        toast.error(response.data.message || 'Failed to add component');
+        toast.error(response.data.message || t('systems.components.addComponent.toasts.failed'));
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Error adding component');
+      toast.error(error.response?.data?.message || t('systems.components.addComponent.toasts.error'));
     } finally {
       setLoading(false);
     }
@@ -247,18 +248,18 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
       <Dialog open={open} onOpenChange={onClose}>
         <DialogContent className="!max-w-[900px] w-[90vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Add New Component</DialogTitle>
+            <DialogTitle>{t('systems.components.addComponent.title')}</DialogTitle>
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 overflow-visible">
               <div className="col-span-1 sm:col-span-3 min-w-0">
-                <Label className="pb-2">System *</Label>
+                <Label className="pb-2">{t('systems.components.addComponent.fields.system')}</Label>
                 <Select value={formData.fk_tool_id} onValueChange={(v) => { handleChange('fk_tool_id', v); handleChange('fk_parent_component_id', ''); }}>
                   <SelectTrigger className="w-full truncate">
-                    <SelectValue placeholder="Select System">
+                    <SelectValue placeholder={t('systems.components.addComponent.placeholders.selectSystem')}>
                       {formData.fk_tool_id
-                        ? (() => { const t = tools.find(x => String(x.tool_id) === formData.fk_tool_id); return t ? <span className="block w-full truncate text-left">{t.tool_code}</span> : null; })()
+                        ? (() => { const tool = tools.find(x => String(x.tool_id) === formData.fk_tool_id); return tool ? <span className="block w-full truncate text-left">{tool.tool_code}</span> : null; })()
                         : null}
                     </SelectValue>
                   </SelectTrigger>
@@ -272,10 +273,9 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
                 </Select>
               </div>
 
-              {/* Parent Component — only shown once a system is selected */}
               {formData.fk_tool_id && (
                 <div className="col-span-1 sm:col-span-3 min-w-0">
-                  <Label className="pb-2">Parent Component <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                  <Label className="pb-2">{t('systems.components.addComponent.fields.parentComponent')} <span className="text-muted-foreground font-normal">{t('systems.components.common.optional')}</span></Label>
                   <Select
                     value={formData.fk_parent_component_id}
                     onValueChange={(v) => handleChange('fk_parent_component_id', v === '_none' ? '' : v)}
@@ -284,10 +284,10 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
                     <SelectTrigger className="w-full truncate">
                       {parentLoading ? (
                         <span className="flex items-center gap-2 text-muted-foreground">
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading...
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t('systems.components.common.loading')}
                         </span>
                       ) : (
-                        <SelectValue placeholder="None (top-level)">
+                        <SelectValue placeholder={t('systems.components.common.noneTopLevel')}>
                           {formData.fk_parent_component_id
                             ? (() => {
                                 const p = parentComponents.find(c => String(c.tool_component_id) === formData.fk_parent_component_id);
@@ -298,7 +298,7 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
                       )}
                     </SelectTrigger>
                     <SelectContent className="z-50 max-h-60 overflow-y-auto">
-                      <SelectItem value="_none"><span className="text-muted-foreground italic">None (top-level)</span></SelectItem>
+                      <SelectItem value="_none"><span className="text-muted-foreground italic">{t('systems.components.common.noneTopLevel')}</span></SelectItem>
                       {parentComponents.map((c: any) => (
                         <SelectItem key={c.tool_component_id} value={String(c.tool_component_id)}>
                           <div className="flex flex-col gap-0.5 leading-tight">
@@ -314,7 +314,7 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
 
               <div className="col-span-1 sm:col-span-3">
                 <div className="flex items-center gap-1.5 pb-2">
-                  <Label>Component Type *</Label>
+                  <Label>{t('systems.components.addComponent.fields.componentType')}</Label>
                   <button type="button" onClick={() => setShowManageTypes(true)} className="text-slate-400 hover:text-violet-600 transition-colors" title="Manage types">
                     <Pencil className="h-3 w-3" />
                   </button>
@@ -323,40 +323,40 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
                   <SelectTrigger>
                     {typesLoading ? (
                       <span className="flex items-center gap-2 text-muted-foreground">
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading...
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t('systems.components.common.loading')}
                       </span>
                     ) : (
-                      <SelectValue placeholder="Select type" />
+                      <SelectValue placeholder={t('systems.components.addComponent.placeholders.selectType')} />
                     )}
                   </SelectTrigger>
                   <SelectContent>
-                    {types.map((t) => (
-                      <SelectItem key={t.type_id} value={t.type_value}>{t.type_label}</SelectItem>
+                    {types.map((tp) => (
+                      <SelectItem key={tp.type_id} value={tp.type_value}>{tp.type_label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="col-span-1 sm:col-span-3">
-                <Label className="pb-2">Code</Label>
-                <Input value={formData.component_code} onChange={(e) => handleChange('component_code', e.target.value)} placeholder="e.g. BATT-01" />
+                <Label className="pb-2">{t('systems.components.addComponent.fields.code')}</Label>
+                <Input value={formData.component_code} onChange={(e) => handleChange('component_code', e.target.value)} placeholder={t('systems.components.addComponent.placeholders.code')} />
               </div>
               <div className="col-span-1 sm:col-span-3">
-                <Label className="pb-2">Serial Number</Label>
+                <Label className="pb-2">{t('systems.components.addComponent.fields.serialNumber')}</Label>
                 <Input value={formData.component_sn} onChange={(e) => handleChange('component_sn', e.target.value)} />
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 overflow-visible">
               <div className="col-span-1 sm:col-span-4">
-                <Label className="pb-2">Name</Label>
-                <Input value={formData.component_name} onChange={(e) => handleChange('component_name', e.target.value)} placeholder="Component name" />
+                <Label className="pb-2">{t('systems.components.addComponent.fields.name')}</Label>
+                <Input value={formData.component_name} onChange={(e) => handleChange('component_name', e.target.value)} placeholder={t('systems.components.addComponent.placeholders.componentName')} />
               </div>
               <div className="col-span-1 sm:col-span-4 min-w-0">
-                <Label className="pb-2">Brand / Model</Label>
+                <Label className="pb-2">{t('systems.components.addComponent.fields.brandModel')}</Label>
                 <Select value={formData.fk_tool_model_id} onValueChange={handleModelSelect}>
                   <SelectTrigger className="w-full min-w-0">
-                    <SelectValue placeholder="Select Model">
+                    <SelectValue placeholder={t('systems.components.common.select')}>
                       {selectedModelLabel ? <span className="block w-full truncate text-left">{selectedModelLabel}</span> : null}
                     </SelectValue>
                   </SelectTrigger>
@@ -370,50 +370,50 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
                 </Select>
               </div>
               <div className="col-span-1 sm:col-span-4">
-                <Label className="pb-2">Description</Label>
-                <Input value={formData.component_desc} onChange={(e) => handleChange('component_desc', e.target.value)} placeholder="Component description" />
+                <Label className="pb-2">{t('systems.components.addComponent.fields.description')}</Label>
+                <Input value={formData.component_desc} onChange={(e) => handleChange('component_desc', e.target.value)} placeholder={t('systems.components.addComponent.placeholders.componentDesc')} />
               </div>
             </div>
 
             {formData.component_type === 'DRONE' && (
               <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 overflow-visible">
                 <div className="col-span-1 sm:col-span-3">
-                  <Label className="pb-2">C2 Platform</Label>
+                  <Label className="pb-2">{t('systems.components.addComponent.fields.c2Platform')}</Label>
                   <Select value={formData.cc_platform} onValueChange={(v) => handleChange('cc_platform', v)}>
-                    <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder={t('systems.components.common.select')} /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="_FLYTBASE">Flytbase</SelectItem>
-                      <SelectItem value="_VOTIX">Votix</SelectItem>
-                      <SelectItem value="_FLIGHTHUB">DJI FlightHub</SelectItem>
-                      <SelectItem value="_APP">APP on GCS</SelectItem>
+                      <SelectItem value="_FLYTBASE">{t('systems.components.addComponent.c2Options.flytbase')}</SelectItem>
+                      <SelectItem value="_VOTIX">{t('systems.components.addComponent.c2Options.votix')}</SelectItem>
+                      <SelectItem value="_FLIGHTHUB">{t('systems.components.addComponent.c2Options.flighthub')}</SelectItem>
+                      <SelectItem value="_APP">{t('systems.components.addComponent.c2Options.app')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="col-span-1 sm:col-span-3">
-                  <Label className="pb-2">GCS</Label>
+                  <Label className="pb-2">{t('systems.components.addComponent.fields.gcs')}</Label>
                   <Select value={formData.gcs_type} onValueChange={(v) => handleChange('gcs_type', v)}>
-                    <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder={t('systems.components.common.select')} /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="_DOCK">Docking Station</SelectItem>
-                      <SelectItem value="_RC">Remote Control</SelectItem>
-                      <SelectItem value="_GCS">Ground Control Station</SelectItem>
+                      <SelectItem value="_DOCK">{t('systems.components.addComponent.gcsOptions.dock')}</SelectItem>
+                      <SelectItem value="_RC">{t('systems.components.addComponent.gcsOptions.rc')}</SelectItem>
+                      <SelectItem value="_GCS">{t('systems.components.addComponent.gcsOptions.gcs')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="col-span-1 sm:col-span-3">
-                  <Label className="pb-2">DCC Drone ID (UUID)</Label>
+                  <Label className="pb-2">{t('systems.components.addComponent.fields.dccDroneId')}</Label>
                   <Input
                     value={formData.dcc_drone_id}
                     onChange={(e) => handleChange('dcc_drone_id', e.target.value)}
-                    placeholder="e.g. e47c7fa4-f6c7-4bc2-9d55-84ad69bf2a95"
+                    placeholder={t('systems.components.addComponent.placeholders.dccId')}
                   />
                 </div>
                 <div className="col-span-1 sm:col-span-3">
-                  <Label className="pb-2">Drone Registration Code <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                  <Label className="pb-2">{t('systems.components.addComponent.fields.droneRegCode')} <span className="text-muted-foreground font-normal">{t('systems.components.common.optional')}</span></Label>
                   <Input
                     value={formData.drone_registration_code}
                     onChange={(e) => handleChange('drone_registration_code', e.target.value)}
-                    placeholder="e.g. UAS-2024-001"
+                    placeholder={t('systems.components.addComponent.placeholders.regCode')}
                   />
                 </div>
               </div>
@@ -421,52 +421,52 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
 
             <div>
               <div className="flex items-center justify-between mb-2">
-                <p className="text-sm font-medium text-muted-foreground">Maintenance Cycle</p>
+                <p className="text-sm font-medium text-muted-foreground">{t('systems.components.common.maintenanceCycle.label')}</p>
                 {formData.fk_tool_model_id && (
                   <button type="button" onClick={handleResetMaintenanceToModel} className="inline-flex items-center gap-1 text-xs text-violet-600 hover:text-violet-500 transition-colors">
-                    <RotateCcw className="h-3 w-3" /> Reset to model defaults
+                    <RotateCcw className="h-3 w-3" /> {t('systems.components.common.maintenanceCycle.resetToModel')}
                   </button>
                 )}
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
                 <div className="col-span-1 sm:col-span-3">
-                  <Label className="pb-2">Cycle Type</Label>
+                  <Label className="pb-2">{t('systems.components.common.maintenanceCycle.cycleType')}</Label>
                   <Select value={formData.maintenance_cycle} onValueChange={handleCycleChange}>
-                    <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder={t('systems.components.common.select')} /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="HOURS">Hours</SelectItem>
-                      <SelectItem value="DAYS">Days</SelectItem>
-                      <SelectItem value="FLIGHTS">Flights</SelectItem>
-                      <SelectItem value="MIXED">Mixed</SelectItem>
-                      <SelectItem value="NONE">None</SelectItem>
+                      <SelectItem value="HOURS">{t('systems.components.common.maintenanceCycle.hours')}</SelectItem>
+                      <SelectItem value="DAYS">{t('systems.components.common.maintenanceCycle.days')}</SelectItem>
+                      <SelectItem value="FLIGHTS">{t('systems.components.common.maintenanceCycle.flights')}</SelectItem>
+                      <SelectItem value="MIXED">{t('systems.components.common.maintenanceCycle.mixed')}</SelectItem>
+                      <SelectItem value="NONE">{t('systems.components.common.maintenanceCycle.none')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 {showNone && (
                   <div className="col-span-1 sm:col-span-9 flex items-end">
-                    <span className="inline-flex items-center px-3 py-2 rounded-md bg-muted text-muted-foreground text-sm">No maintenance cycle required</span>
+                    <span className="inline-flex items-center px-3 py-2 rounded-md bg-muted text-muted-foreground text-sm">{t('systems.components.common.maintenanceCycle.noCycleRequired')}</span>
                   </div>
                 )}
                 {showHours && (
                   <div className="col-span-1 sm:col-span-2">
-                    <Label className="pb-2">Hours Limit</Label>
+                    <Label className="pb-2">{t('systems.components.common.maintenanceCycle.hoursLimit')}</Label>
                     <Input type="number" min={0} value={formData.maintenance_cycle_hour} onChange={(e) => handleCycleInput('maintenance_cycle_hour', e.target.value)} />
                   </div>
                 )}
                 {showDays && (
                   <div className="col-span-1 sm:col-span-2">
-                    <Label className="pb-2">Day Limit</Label>
+                    <Label className="pb-2">{t('systems.components.common.maintenanceCycle.daysLimit')}</Label>
                     <Input type="number" min={0} value={formData.maintenance_cycle_day} onChange={(e) => handleCycleInput('maintenance_cycle_day', e.target.value)} />
                   </div>
                 )}
                 {showFlights && (
                   <div className="col-span-1 sm:col-span-4 flex items-end gap-2">
                     <div className="flex-1 min-w-0">
-                      <Label className="pb-2">Flights Limit</Label>
+                      <Label className="pb-2">{t('systems.components.common.maintenanceCycle.flightsLimit')}</Label>
                       <Input type="number" min={0} value={formData.maintenance_cycle_flight} onChange={(e) => handleCycleInput('maintenance_cycle_flight', e.target.value)} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <Label className="pb-2">Cycle Ratio</Label>
+                      <Label className="pb-2">{t('systems.components.common.maintenanceCycle.cycleRatio')}</Label>
                       <Input
                         type="number"
                         min={0.01}
@@ -484,41 +484,43 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
 
             <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 overflow-visible mt-2">
               <div className="col-span-1 sm:col-span-3">
-                <Label className="pb-2">Activation Date</Label>
+                <Label className="pb-2">{t('systems.components.addComponent.fields.activationDate')}</Label>
                 <Input type="date" value={formData.component_activation_date} onChange={(e) => handleChange('component_activation_date', e.target.value)} />
               </div>
               <div className="col-span-1 sm:col-span-3">
-                <Label className="pb-2">Purchase Date</Label>
+                <Label className="pb-2">{t('systems.components.addComponent.fields.purchaseDate')}</Label>
                 <Input type="date" value={formData.component_purchase_date} onChange={(e) => handleChange('component_purchase_date', e.target.value)} />
               </div>
               <div className="col-span-1 sm:col-span-3">
-                <Label className="pb-2">Vendor</Label>
+                <Label className="pb-2">{t('systems.components.addComponent.fields.vendor')}</Label>
                 <Input value={formData.component_vendor} onChange={(e) => handleChange('component_vendor', e.target.value)} />
               </div>
               <div className="col-span-1 sm:col-span-3">
-                <Label className="pb-2">Guarantee (days)</Label>
+                <Label className="pb-2">{t('systems.components.addComponent.fields.guarantee')}</Label>
                 <Input type="number" value={formData.component_guarantee_day} onChange={(e) => handleChange('component_guarantee_day', e.target.value)} />
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 overflow-visible">
               <div className="col-span-1 sm:col-span-3">
-                <Label className="pb-2">Status *</Label>
+                <Label className="pb-2">{t('systems.components.addComponent.fields.status')}</Label>
                 <Select value={formData.component_status} onValueChange={(v) => handleChange('component_status', v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="OPERATIONAL">Operational</SelectItem>
-                    <SelectItem value="NOT_OPERATIONAL">Not Operational</SelectItem>
-                    <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
-                    <SelectItem value="DECOMMISSIONED">Decommissioned</SelectItem>
+                    <SelectItem value="OPERATIONAL">{t('systems.components.common.statusOptions.operational')}</SelectItem>
+                    <SelectItem value="NOT_OPERATIONAL">{t('systems.components.common.statusOptions.notOperational')}</SelectItem>
+                    <SelectItem value="MAINTENANCE">{t('systems.components.common.statusOptions.maintenance')}</SelectItem>
+                    <SelectItem value="DECOMMISSIONED">{t('systems.components.common.statusOptions.decommissioned')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
             <div className="flex justify-end gap-2 pt-2">
-              <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-              <Button type="submit" className="bg-violet-600 hover:bg-violet-700" disabled={loading}>{loading ? 'Adding...' : 'Add Component'}</Button>
+              <Button type="button" variant="outline" onClick={onClose}>{t('systems.components.addComponent.buttons.cancel')}</Button>
+              <Button type="submit" className="bg-violet-600 hover:bg-violet-700" disabled={loading}>
+                {loading ? t('systems.components.addComponent.buttons.adding') : t('systems.components.addComponent.buttons.addComponent')}
+              </Button>
             </div>
           </form>
         </DialogContent>

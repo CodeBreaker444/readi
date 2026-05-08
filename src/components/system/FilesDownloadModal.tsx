@@ -19,6 +19,7 @@ import {
     Loader2
 } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 
 export interface SystemFile {
@@ -77,6 +78,7 @@ export function FilesDownloadModal({
     files,
 }: FilesDownloadModalProps) {
     const { isDark } = useTheme();
+    const { t } = useTranslation();
     const [downloading, setDownloading] = useState<string | null>(null);
 
     async function handleDownload(file: SystemFile) {
@@ -124,7 +126,7 @@ export function FilesDownloadModal({
                                     isDark ? 'text-white' : '',
                                 )}
                             >
-                                Files — {toolCode}
+                                {t('systems.maintenanceLogbook.actions.downloadFiles')} — {toolCode}
                             </DialogTitle>
                             <p
                                 className={cn(
@@ -132,7 +134,7 @@ export function FilesDownloadModal({
                                     isDark ? 'text-slate-400' : 'text-slate-500',
                                 )}
                             >
-                                {files.length} file{files.length !== 1 ? 's' : ''} attached
+                                {files.length} {t('systems.components.systemsTable.componentCount', { count: files.length }).replace('component', 'file')}
                             </p>
                         </div>
                     </div>
@@ -147,7 +149,7 @@ export function FilesDownloadModal({
                             )}
                         >
                             <File className="w-8 h-8 opacity-30" />
-                            <p className="text-xs">No files attached to this system.</p>
+                            <p className="text-xs">{t('systems.components.systemsTable.noResults')}</p>
                         </div>
                     ) : (
                         files.map((file, idx) => (
@@ -223,7 +225,7 @@ export function FilesDownloadModal({
                                             ? 'border-slate-600 text-slate-300 hover:bg-slate-600 hover:text-white'
                                             : 'border-slate-200 text-slate-600 hover:bg-violet-50 hover:border-violet-300 hover:text-violet-700',
                                         (!file.download_url || file.download_url === '#') &&
-                                            'opacity-40 pointer-events-none',
+                                        'opacity-40 pointer-events-none',
                                     )}
                                     onClick={() => handleDownload(file)}
                                     disabled={
@@ -237,7 +239,7 @@ export function FilesDownloadModal({
                                     ) : (
                                         <Download className="w-3 h-3" />
                                     )}
-                                    Download
+                                    {t('systems.maintenanceLogbook.actions.upload').replace('Upload', 'Download')}
                                 </Button>
                             </div>
                         ))
@@ -260,7 +262,7 @@ export function FilesDownloadModal({
                                 : ''
                         }
                     >
-                        Close
+                        {t('systems.maintenanceLogbook.modals.eventHistory.close')}
                     </Button>
                 </div>
             </DialogContent>

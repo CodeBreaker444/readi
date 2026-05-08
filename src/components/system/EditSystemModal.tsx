@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useTheme } from '@/components/useTheme';
 import { AlertTriangle, Loader2, Pencil, Unlink } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Skeleton } from '../ui/skeleton';
 
@@ -47,6 +48,7 @@ const STATUS_STYLES_DARK: Record<string, string> = {
 
 export default function EditSystemModal({ open, toolId, onClose, onSuccess, clients, models = [], tools = [] }: EditSystemModalProps) {
   const { isDark } = useTheme();
+  const { t } = useTranslation();
   const { requireAuthorization } = useAuthorization();
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(false);
@@ -93,7 +95,7 @@ export default function EditSystemModal({ open, toolId, onClose, onSuccess, clie
         }
       }
     } catch {
-      toast.error('Error loading tool data');
+      toast.error(t('systems.components.editSystem.toasts.loadError'));
     } finally {
       setFetching(false);
     }
@@ -137,13 +139,13 @@ export default function EditSystemModal({ open, toolId, onClose, onSuccess, clie
       const res = await fetch(`/api/system/component/${componentId}/detach`, { method: 'POST' });
       const result = await res.json();
       if (result.code === 1) {
-        toast.success('Component removed from system');
+        toast.success(t('systems.components.editSystem.toasts.componentRemoved'));
         setComponents(prev => prev.filter(c => c.tool_component_id !== componentId));
       } else {
-        toast.error(result.message || 'Failed to remove component');
+        toast.error(result.message || t('systems.components.editSystem.toasts.removeFailed'));
       }
     } catch {
-      toast.error('Error removing component');
+      toast.error(t('systems.components.editSystem.toasts.removeError'));
     } finally {
       setDetachingId(null);
       setDetachConfirm(null);
@@ -153,7 +155,6 @@ export default function EditSystemModal({ open, toolId, onClose, onSuccess, clie
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    // Require authorization when putting a drone back in operation after maintenance
     if (formData.tool_status === 'OPERATIONAL' && originalStatus !== 'OPERATIONAL') {
       try {
         await requireAuthorization({
@@ -195,13 +196,13 @@ export default function EditSystemModal({ open, toolId, onClose, onSuccess, clie
       });
       const result = await res.json();
       if (result.code === 1) {
-        toast.success('System updated successfully');
+        toast.success(t('systems.components.editSystem.toasts.updateSuccess'));
         onSuccess();
       } else {
-        toast.error(result.message || 'Failed to update system');
+        toast.error(result.message || t('systems.components.editSystem.toasts.updateFailed'));
       }
     } catch {
-      toast.error('Error updating system');
+      toast.error(t('systems.components.editSystem.toasts.updateError'));
     } finally {
       setLoading(false);
     }
@@ -223,7 +224,7 @@ export default function EditSystemModal({ open, toolId, onClose, onSuccess, clie
       <Dialog open={open} onOpenChange={onClose}>
         <DialogContent className={`max-w-225! w-[90vw] h-[90vh] overflow-y-auto ${isDark ? 'bg-slate-800 border-slate-700' : ''}`}>
           <DialogHeader className={`border-b pb-3 ${isDark ? 'border-slate-700/60' : 'border-gray-100'}`}>
-            <DialogTitle className={isDark ? 'text-white' : ''}>Edit System</DialogTitle>
+            <DialogTitle className={isDark ? 'text-white' : ''}>{t('systems.components.editSystem.title')}</DialogTitle>
           </DialogHeader>
 
           {fetching ? (
@@ -271,61 +272,61 @@ export default function EditSystemModal({ open, toolId, onClose, onSuccess, clie
           ) : (
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
-                <p className={sectionLabelCls}>Basic Information</p>
+                <p className={sectionLabelCls}>{t('systems.components.editSystem.sections.basicInfo')}</p>
                 <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
                   <div className="col-span-1 sm:col-span-2">
-                    <Label className={labelCls}>Code *</Label>
+                    <Label className={labelCls}>{t('systems.components.editSystem.fields.code')}</Label>
                     <Input className={inputCls} value={formData.tool_code} onChange={e => handleChange('tool_code', e.target.value)} required />
                   </div>
                   <div className="col-span-1 sm:col-span-3">
-                    <Label className={labelCls}>Description</Label>
+                    <Label className={labelCls}>{t('systems.components.editSystem.fields.description')}</Label>
                     <Input className={inputCls} value={formData.tool_desc} onChange={e => handleChange('tool_desc', e.target.value)} />
                   </div>
                 </div>
               </div>
 
               <div>
-                <p className={sectionLabelCls}>  Location</p>
+                <p className={sectionLabelCls}>{t('systems.components.editSystem.sections.location')}</p>
                 <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
                   <div className="col-span-1 sm:col-span-3">
-                    <Label className={labelCls}>Latitude</Label>
+                    <Label className={labelCls}>{t('systems.components.editSystem.fields.latitude')}</Label>
                     <Input className={inputCls} value={formData.tool_latitude} onChange={e => handleChange('tool_latitude', e.target.value)} />
                   </div>
                   <div className="col-span-1 sm:col-span-3">
-                    <Label className={labelCls}>Longitude</Label>
+                    <Label className={labelCls}>{t('systems.components.editSystem.fields.longitude')}</Label>
                     <Input className={inputCls} value={formData.tool_longitude} onChange={e => handleChange('tool_longitude', e.target.value)} />
                   </div>
                 </div>
               </div>
 
               <div>
-                <p className={sectionLabelCls}>Status & Assignment</p>
+                <p className={sectionLabelCls}>{t('systems.components.editSystem.sections.statusAssignment')}</p>
                 <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
                   <div className="col-span-1 sm:col-span-3">
-                    <Label className={labelCls}>Status</Label>
+                    <Label className={labelCls}>{t('systems.components.editSystem.fields.status')}</Label>
                     <Select value={formData.tool_status} onValueChange={v => handleChange('tool_status', v)}>
                       <SelectTrigger className={selectTriggerCls}><SelectValue /></SelectTrigger>
                       <SelectContent className={selectContentCls}>
-                        <SelectItem value="OPERATIONAL">Operational</SelectItem>
-                        <SelectItem value="NOT_OPERATIONAL">Not Operational</SelectItem>
-                        <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
+                        <SelectItem value="OPERATIONAL">{t('systems.components.common.statusOptions.operational')}</SelectItem>
+                        <SelectItem value="NOT_OPERATIONAL">{t('systems.components.common.statusOptions.notOperational')}</SelectItem>
+                        <SelectItem value="MAINTENANCE">{t('systems.components.common.statusOptions.maintenance')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="col-span-1 sm:col-span-3">
-                    <Label className={labelCls}>Active</Label>
+                    <Label className={labelCls}>{t('systems.components.editSystem.fields.active')}</Label>
                     <Select value={formData.tool_active} onValueChange={v => handleChange('tool_active', v)}>
                       <SelectTrigger className={selectTriggerCls}><SelectValue /></SelectTrigger>
                       <SelectContent className={selectContentCls}>
-                        <SelectItem value="Y">ACTIVE</SelectItem>
-                        <SelectItem value="N">NOT ACTIVE</SelectItem>
+                        <SelectItem value="Y">{t('systems.components.common.activeOptions.active')}</SelectItem>
+                        <SelectItem value="N">{t('systems.components.common.activeOptions.notActive')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="col-span-1 sm:col-span-3">
-                    <Label className={labelCls}>Client</Label>
+                    <Label className={labelCls}>{t('systems.components.editSystem.fields.client')}</Label>
                     <Select value={formData.fk_client_id} onValueChange={v => handleChange('fk_client_id', v)}>
-                      <SelectTrigger className={selectTriggerCls}><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectTrigger className={selectTriggerCls}><SelectValue placeholder={t('systems.components.common.select')} /></SelectTrigger>
                       <SelectContent className={selectContentCls}>
                         <SelectItem value="0">None</SelectItem>
                         {clients.map((c: any) => (
@@ -335,26 +336,26 @@ export default function EditSystemModal({ open, toolId, onClose, onSuccess, clie
                     </Select>
                   </div>
                   <div className="col-span-1 sm:col-span-3">
-                    <Label className={labelCls}>Location</Label>
+                    <Label className={labelCls}>{t('systems.components.editSystem.fields.location')}</Label>
                     <Input className={inputCls} value={formData.location} onChange={e => handleChange('location', e.target.value)} />
                   </div>
                 </div>
               </div>
 
               <div>
-                <p className={sectionLabelCls}>Dates & Settings</p>
+                <p className={sectionLabelCls}>{t('systems.components.editSystem.sections.datesSettings')}</p>
                 <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
                   <div className="col-span-1 sm:col-span-3">
-                    <Label className={labelCls}>Activation Date</Label>
+                    <Label className={labelCls}>{t('systems.components.editSystem.fields.activationDate')}</Label>
                     <Input type="date" className={inputCls} value={formData.date_activation} onChange={e => handleChange('date_activation', e.target.value)} />
                   </div>
                   <div className="col-span-1 sm:col-span-3">
-                    <Label className={labelCls}>Maintenance Logbook</Label>
+                    <Label className={labelCls}>{t('systems.components.editSystem.fields.maintenanceLogbook')}</Label>
                     <Select value={formData.tool_maintenance_logbook} onValueChange={v => handleChange('tool_maintenance_logbook', v)}>
                       <SelectTrigger className={selectTriggerCls}><SelectValue /></SelectTrigger>
                       <SelectContent className={selectContentCls}>
-                        <SelectItem value="Y">Enabled</SelectItem>
-                        <SelectItem value="N">Disabled</SelectItem>
+                        <SelectItem value="Y">{t('systems.components.editSystem.fields.logbookEnabled')}</SelectItem>
+                        <SelectItem value="N">{t('systems.components.editSystem.fields.logbookDisabled')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -362,19 +363,19 @@ export default function EditSystemModal({ open, toolId, onClose, onSuccess, clie
               </div>
 
               <div className={`border-t pt-4 ${isDark ? 'border-slate-700/60' : 'border-gray-100'}`}>
-                <p className={sectionLabelCls}>Attached Components ({components.length})</p>
+                <p className={sectionLabelCls}>{t('systems.components.editSystem.sections.attachedComponents', { count: components.length })}</p>
                 {components.length === 0 ? (
-                  <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>No components attached to this system.</p>
+                  <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{t('systems.components.editSystem.noComponents')}</p>
                 ) : (
                   <div className={`rounded-lg border overflow-hidden ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
                     <table className="w-full text-xs">
                       <thead>
                         <tr className={isDark ? 'bg-slate-700/50' : 'bg-gray-50'}>
-                          <th className={`text-left px-3 py-2 font-medium ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>Type</th>
-                          <th className={`text-left px-3 py-2 font-medium ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>Code</th>
-                          <th className={`text-left px-3 py-2 font-medium ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>Serial No.</th>
-                          <th className={`text-left px-3 py-2 font-medium ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>Status</th>
-                          <th className={`text-right px-3 py-2 font-medium ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>Actions</th>
+                          <th className={`text-left px-3 py-2 font-medium ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>{t('systems.components.editSystem.componentTable.type')}</th>
+                          <th className={`text-left px-3 py-2 font-medium ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>{t('systems.components.editSystem.componentTable.code')}</th>
+                          <th className={`text-left px-3 py-2 font-medium ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>{t('systems.components.editSystem.componentTable.serialNo')}</th>
+                          <th className={`text-left px-3 py-2 font-medium ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>{t('systems.components.editSystem.componentTable.status')}</th>
+                          <th className={`text-right px-3 py-2 font-medium ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>{t('systems.components.editSystem.componentTable.actions')}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -416,7 +417,7 @@ export default function EditSystemModal({ open, toolId, onClose, onSuccess, clie
                                   className={`h-6 px-2 text-[10px] gap-1 ${isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : ''}`}
                                   onClick={() => setEditComponentId(comp.tool_component_id)}
                                 >
-                                  <Pencil className="w-2.5 h-2.5" /> Edit
+                                  <Pencil className="w-2.5 h-2.5" /> {t('systems.components.editSystem.buttons.edit')}
                                 </Button>
                                 <Button
                                   type="button"
@@ -433,7 +434,7 @@ export default function EditSystemModal({ open, toolId, onClose, onSuccess, clie
                                   {detachingId === comp.tool_component_id
                                     ? <Loader2 className="w-2.5 h-2.5 animate-spin" />
                                     : <Unlink className="w-2.5 h-2.5" />}
-                                  Remove
+                                  {t('systems.components.editSystem.buttons.remove')}
                                 </Button>
                               </div>
                             </td>
@@ -447,9 +448,11 @@ export default function EditSystemModal({ open, toolId, onClose, onSuccess, clie
 
               <div className={`flex justify-end gap-2 pt-2 border-t ${isDark ? 'border-slate-700/60' : 'border-gray-100'}`}>
                 <Button type="button" variant="outline" onClick={onClose}
-                  className={isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : ''}>Cancel</Button>
+                  className={isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : ''}>
+                  {t('systems.components.editSystem.buttons.cancel')}
+                </Button>
                 <Button type="submit" disabled={loading} className="bg-violet-600 hover:bg-violet-500 text-white">
-                  {loading ? 'Saving...' : 'Save Changes'}
+                  {loading ? t('systems.components.editSystem.buttons.saving') : t('systems.components.editSystem.buttons.saveChanges')}
                 </Button>
               </div>
             </form>
@@ -462,19 +465,19 @@ export default function EditSystemModal({ open, toolId, onClose, onSuccess, clie
           <DialogHeader>
             <DialogTitle className={`flex items-center gap-2 ${isDark ? 'text-white' : ''}`}>
               <AlertTriangle className="h-4 w-4 text-amber-500" />
-              Remove Component from System
+              {t('systems.components.editSystem.removeDialog.title')}
             </DialogTitle>
           </DialogHeader>
           <p className={`text-sm ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-            Remove <span className="font-semibold">{detachConfirm?.name}</span> from this system?
+            {t('systems.components.editSystem.removeDialog.description', { name: detachConfirm?.name })}
           </p>
           <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-            The component will remain on the platform and can be reassigned to another system.
+            {t('systems.components.editSystem.removeDialog.note')}
           </p>
           <div className="flex justify-end gap-2 pt-1">
             <Button variant="outline" size="sm" onClick={() => setDetachConfirm(null)}
               className={isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : ''}>
-              Cancel
+              {t('systems.components.editSystem.buttons.cancel')}
             </Button>
             <Button
               size="sm"
@@ -483,7 +486,7 @@ export default function EditSystemModal({ open, toolId, onClose, onSuccess, clie
               onClick={() => detachConfirm && handleDetach(detachConfirm.id)}
             >
               {detachingId !== null ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
-              Remove
+              {t('systems.components.editSystem.buttons.remove')}
             </Button>
           </div>
         </DialogContent>
