@@ -26,10 +26,10 @@ export default function EasaGate() {
           Open your profile from the top-right menu and add your EASA Operator Code, or ask your administrator to set it for you.
         </p>
         <a
-          href="/dashboard"
+          href="/profile"
           className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold transition-colors"
         >
-          Go to Dashboard
+          Go to Profile
           <ExternalLink className="w-3.5 h-3.5" />
         </a>
       </div>

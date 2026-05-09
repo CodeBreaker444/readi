@@ -1,7 +1,7 @@
 import { getUserSession } from '@/lib/auth/server-session';
 import { getEasaCode } from '@/lib/flytrelay-service';
 import { redirect } from 'next/navigation';
-import EasaGate from './EasaGate';
+import EasaGate from '../../components/drone-atc/EasaGate';
 
 const DRONE_ATC_ROLES = new Set(['SUPERADMIN', 'ADMIN', 'PIC', 'OPM']);
 
