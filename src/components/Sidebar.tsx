@@ -772,26 +772,29 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
         ) : (
           <button
             onClick={handleOpenUserMenu}
-            className={`w-full flex items-center gap-2.5 px-2 py-2 rounded-lg transition-all duration-150 ${
+            className={`w-full flex items-center gap-2.5 px-2 py-2.5 rounded-lg transition-all duration-150 ${
               showUserMenu
                 ? isDark ? 'bg-slate-800' : 'bg-slate-100'
                 : isDark ? 'hover:bg-slate-800/70' : 'hover:bg-slate-50'
             }`}
           >
-            <div className={`w-8 h-8 rounded-full overflow-hidden flex items-center justify-center shrink-0 border bg-linear-to-br ${
+            <div className={`w-10 h-10 rounded-full overflow-hidden flex items-center justify-center shrink-0 border bg-linear-to-br ${
               isDark ? 'border-slate-700 from-violet-600 to-indigo-600' : 'border-slate-200 from-violet-500 to-indigo-500'
             }`}>
               {userData?.avatar ? (
                 <img src={userData.avatar} alt="Profile" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
               ) : (
-                <User size={14} className="text-white" />
+                <User size={18} className="text-white" />
               )}
             </div>
             <div className="flex-1 min-w-0 text-left">
-              <p className={`text-xs font-semibold truncate ${isDark ? 'text-slate-200' : 'text-slate-700'}`} style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+              <p className={`text-sm font-semibold truncate ${isDark ? 'text-slate-200' : 'text-slate-700'}`} style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
                 {userData?.username || 'User'}
               </p>
-              <p className={`text-[10px] truncate ${isDark ? 'text-slate-500' : 'text-slate-400'}`} style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+              <p className={`text-[11px] truncate ${isDark ? 'text-slate-400' : 'text-slate-500'}`} style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+                {userData?.email || ''}
+              </p>
+              <p className={`text-[11px] truncate ${isDark ? 'text-slate-500' : 'text-slate-400'}`} style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
                 {userData?.role || ''}
               </p>
             </div>
