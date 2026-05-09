@@ -1,5 +1,5 @@
 import { getUserSession } from '@/lib/auth/server-session';
-import { getEasaCode } from '@/lib/flytrelay.service';
+import { getEasaCode } from '@/lib/flytrelay-service';
 import { redirect } from 'next/navigation';
 import EasaGate from './EasaGate';
 

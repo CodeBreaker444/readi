@@ -4,7 +4,7 @@ import { internalError } from '@/lib/api-error';
 import { requireAuth } from '@/lib/auth/api-auth';
 import { verifyFlytrelayJwt } from '@/lib/drone-atc-jwt';
 import { E } from '@/lib/error-codes';
-import { updateFlytrelayUsers } from '@/lib/flytrelay.service';
+import { updateFlytrelayUsers } from '@/lib/flytrelay-service';
 import { NextRequest, NextResponse } from 'next/server';
  
 export async function GET(req: NextRequest) {

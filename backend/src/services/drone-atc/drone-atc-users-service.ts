@@ -29,7 +29,7 @@ export interface DroneAtcUser {
   email: string;
   fullname: string;
   role: string;
-  ownerId: number;
+  companyId: number;
   flytbaseToken: string;
   flytbaseOrgId: string;
   systems: DroneAtcSystem[];
@@ -115,7 +115,7 @@ export async function getUsersWithDroneAtc(): Promise<DroneAtcUser[]> {
       email: u.email,
       fullname: [u.first_name, u.last_name].filter(Boolean).join(' ') || u.username || u.email,
       role: u.user_role,
-      ownerId: u.fk_owner_id,
+      companyId: u.fk_owner_id,
       flytbaseToken: u.flytbase_api_token.trim(),
       flytbaseOrgId: u.flytbase_org_id.trim(),
       systems: systemsByOwner.get(u.fk_owner_id) ?? [],
