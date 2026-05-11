@@ -31,13 +31,32 @@ interface TicketWithEvents {
   maintenance_ticket_event: TicketEvent[];
 }
 
+interface MissionEntry {
+  pilot_mission_id: number;
+  mission_code: string | null;
+  actual_start: string | null;
+  actual_end: string | null;
+  flight_duration: number | null;
+  distance_flown: number | null;
+}
+
 interface LogEntry {
   id: string;
   time: string;
   type: string;
   label: string;
   description: string;
-  source: 'audit' | 'ticket';
+  source: 'audit' | 'ticket' | 'mission';
+}
+
+function formatDuration(mins: number): string {
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
+function formatDistance(meters: number): string {
+  return meters >= 1000 ? `${(meters / 1000).toFixed(2)} km` : `${Math.round(meters)} m`;
 }
 
 
@@ -51,6 +70,7 @@ const EVENT_COLORS: Record<string, string> = {
   REPORT_ADDED: 'bg-amber-100 text-amber-700 border-amber-200',
   ATTACHMENT_ADDED: 'bg-sky-100 text-sky-700 border-sky-200',
   ATTACHMENT_DELETED: 'bg-red-100 text-red-700 border-red-200',
+  MISSION: 'bg-violet-100 text-violet-700 border-violet-200',
 };
 
 export function ComponentLogModal({
@@ -73,7 +93,7 @@ export function ComponentLogModal({
       entries.map((e) => ({
         timestamp: formatDateTimeInTz(e.time, timezone),
         type: e.type,
-        source: e.source === 'ticket' ? 'Maintenance' : 'System',
+        source: e.source === 'ticket' ? 'Maintenance' : e.source === 'mission' ? 'Mission' : 'System',
         description: e.description,
       })),
     [entries, timezone]
@@ -117,6 +137,21 @@ export function ComponentLogModal({
               source: 'ticket',
             });
           }
+        }
+
+        for (const m of (data.missions ?? []) as MissionEntry[]) {
+          if (!m.actual_start) continue;
+          const parts: string[] = [m.mission_code ?? `Mission #${m.pilot_mission_id}`];
+          if (m.flight_duration != null) parts.push(formatDuration(m.flight_duration));
+          if (m.distance_flown != null) parts.push(formatDistance(m.distance_flown));
+          logs.push({
+            id: `mission-${m.pilot_mission_id}`,
+            time: m.actual_start,
+            type: 'MISSION',
+            label: 'MISSION',
+            description: parts.join(' · '),
+            source: 'mission',
+          });
         }
 
         logs.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
@@ -172,7 +207,7 @@ export function ComponentLogModal({
                       {entry.label}
                     </span>
                     <span className="text-[10px] text-slate-400 font-medium">
-                      {entry.source === 'ticket' ? 'Maintenance' : 'System'}
+                      {entry.source === 'ticket' ? 'Maintenance' : entry.source === 'mission' ? 'Mission' : 'System'}
                     </span>
                   </div>
                   <p className="text-sm text-slate-700">{entry.description}</p>

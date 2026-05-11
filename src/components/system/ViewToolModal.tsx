@@ -394,25 +394,6 @@ export default function ViewSystemModal({ open, toolId, onClose }: ViewSystemMod
                   </div>
                 </div>
 
-                <div className="border-t pt-4">
-                  <h3 className="text-lg font-semibold mb-3">{t('systems.components.viewTool.flightStats.title')}</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-blue-50 p-4 rounded-lg">
-                      <p className="text-sm text-gray-600">{t('systems.components.viewTool.flightStats.totalMissions')}</p>
-                      <p className="text-2xl font-bold">{toolData?.tot_mission ?? 0}</p>
-                    </div>
-                    <div className="bg-green-50 p-4 rounded-lg">
-                      <p className="text-sm text-gray-600">{t('systems.components.viewTool.flightStats.totalHours')}</p>
-                      <p className="text-2xl font-bold">
-                        {(() => {
-                          const droneComp = (components as any[]).find(c => c.component_type === 'DRONE');
-                          const hours = droneComp?.current_usage_hours || toolData?.tot_flown_time || 0;
-                          return `${Number(hours).toFixed(1)} h`;
-                        })()}
-                      </p>
-                    </div>
-                  </div>
-                </div>
               </TabsContent>
 
               <TabsContent value="specifications" className="space-y-4 pt-4">
