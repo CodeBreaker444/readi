@@ -285,6 +285,7 @@ export default function DroneATCPage() {
           <div className="absolute inset-0 rounded-2xl overflow-hidden">
             <DroneATCMap
               drones={drones}
+              docks={docks}
               aircraft={aircraft}
               selectedDroneId={selectedDroneId}
               layers={layers}

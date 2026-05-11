@@ -134,9 +134,11 @@ export function useDroneATCSocket(): UseDroneATCSocketReturn {
           return prev;
         });
 
-        setDocks(prev =>
-          id in prev ? { ...prev, [id]: { ...prev[id], ...update } } : prev,
-        );
+        setDocks(prev => {
+          if (id in prev) return { ...prev, [id]: { ...prev[id], ...update } };
+          if (isDockDevice(update)) return { ...prev, [id]: update };
+          return prev;
+        });
       });
 
       socket.on('disconnect', () => {

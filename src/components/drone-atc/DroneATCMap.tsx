@@ -9,6 +9,7 @@ import type { DroneMap, TelemetryData } from './useDroneATCSocket';
 
 interface DroneATCMapProps {
   drones: DroneMap;
+  docks: DroneMap;
   aircraft: AircraftState[];
   selectedDroneId: string | null;
   layers: LayerVisibility;
@@ -128,6 +129,38 @@ function aircraftIcon(heading?: number | null, altitude?: number | null): L.DivI
   });
 }
 
+function dockIcon(status?: string, name?: string): L.DivIcon {
+  const isOnline = status === 'online' || !status;
+  const isStandby = status === 'standby';
+  const color = isOnline ? '#06b6d4' : isStandby ? '#f59e0b' : '#6b7280';
+  const size = 36;
+  const cx = size / 2;
+  const cy = size / 2;
+  const glowOpacity = isOnline ? '0.14' : isStandby ? '0.10' : '0.04';
+
+  const safeName = name ? name.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
+  const nameLabel = safeName
+    ? `<div style="position:absolute;bottom:${size + 3}px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:9px;font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-weight:600;color:#fff;background:rgba(10,12,20,0.65);padding:1px 5px;border-radius:3px;pointer-events:none;letter-spacing:0.2px;">${safeName}</div>`
+    : '';
+
+  return L.divIcon({
+    className: '',
+    html: `<div style="position:relative;width:${size}px;height:${size}px;">
+      ${nameLabel}
+      <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="${cx}" cy="${cy}" r="${cx * 0.95}" fill="${color}" fill-opacity="${glowOpacity}"/>
+        <rect x="${cx - 9}" y="${cy - 9}" width="18" height="18" rx="3" fill="${color}" fill-opacity="0.15" stroke="${color}" stroke-width="1.5"/>
+        <line x1="${cx - 6}" y1="${cy}" x2="${cx + 6}" y2="${cy}" stroke="${color}" stroke-width="1.8" stroke-linecap="round"/>
+        <line x1="${cx}" y1="${cy - 6}" x2="${cx}" y2="${cy + 6}" stroke="${color}" stroke-width="1.8" stroke-linecap="round"/>
+        <circle cx="${cx}" cy="${cy}" r="2.5" fill="${color}"/>
+        <rect x="${cx - 11}" y="${cy + 10}" width="22" height="3" rx="1.5" fill="${color}" fill-opacity="0.6"/>
+      </svg>
+    </div>`,
+    iconSize: [size, size],
+    iconAnchor: [cx, cy],
+  });
+}
+
 interface AirspaceZone {
   id: string;
   name: string;
@@ -193,7 +226,7 @@ type WeatherLayerKey = 'wind' | 'temp' | 'clouds' | 'precip' | 'pressure';
 const WEATHER_KEYS: WeatherLayerKey[] = ['wind', 'temp', 'clouds', 'precip', 'pressure'];
 
 export default function DroneATCMap({
-  drones, aircraft, selectedDroneId, layers, onDroneClick, isDark, owmApiKey, onBoundsChange,
+  drones, docks, aircraft, selectedDroneId, layers, onDroneClick, isDark, owmApiKey, onBoundsChange,
 }: DroneATCMapProps) {
   const [airspaceZones, setAirspaceZones] = useState<AirspaceZone[]>([]);
   const lastAirspaceFetchRef = useRef<L.LatLngBounds | null>(null);
@@ -203,10 +236,12 @@ export default function DroneATCMap({
   const containerRef = useRef<HTMLDivElement>(null);
   const tileLayerRef = useRef<L.TileLayer | null>(null);
   const droneLayerRef = useRef<L.LayerGroup | null>(null);
+  const dockLayerRef = useRef<L.LayerGroup | null>(null);
   const flightLayerRef = useRef<L.LayerGroup | null>(null);
   const airspaceLayerRef = useRef<L.LayerGroup | null>(null);
   const weatherRefs = useRef<Partial<Record<WeatherLayerKey, L.TileLayer>>>({});
   const droneMarkersRef = useRef<Record<string, L.Marker>>({});
+  const dockMarkersRef = useRef<Record<string, L.Marker>>({});
   const flightMarkersRef = useRef<Record<string, L.Marker>>({});
   const cloudCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const cloudAnimRef = useRef<number>(0);
@@ -394,11 +429,13 @@ export default function DroneATCMap({
 
     const airspaceLayer = L.layerGroup().addTo(map);
     const flightLayer = L.layerGroup().addTo(map);
+    const dockLayer = L.layerGroup().addTo(map);
     const droneLayer = L.layerGroup().addTo(map);
 
     mapRef.current = map;
     tileLayerRef.current = tile;
     droneLayerRef.current = droneLayer;
+    dockLayerRef.current = dockLayer;
     flightLayerRef.current = flightLayer;
     airspaceLayerRef.current = airspaceLayer;
 
@@ -428,9 +465,11 @@ export default function DroneATCMap({
       map.remove();
       mapRef.current = null;
       droneLayerRef.current = null;
+      dockLayerRef.current = null;
       flightLayerRef.current = null;
       airspaceLayerRef.current = null;
       droneMarkersRef.current = {};
+      dockMarkersRef.current = {};
       flightMarkersRef.current = {};
     };
   }, []);
@@ -539,6 +578,33 @@ export default function DroneATCMap({
     });
   }, [drones, selectedDroneId, layers.drones, onDroneClick]);
 
+  const updateDockMarkers = useCallback(() => {
+    const layer = dockLayerRef.current;
+    if (!layer) return;
+
+    const existing = dockMarkersRef.current;
+    const seen = new Set<string>();
+
+    Object.values(docks).forEach((d: TelemetryData) => {
+      if (!d.latitude && !d.longitude) return;
+      seen.add(d.drone_id);
+      const icon = dockIcon(d.status, d.name ?? d.drone_id);
+      if (existing[d.drone_id]) {
+        existing[d.drone_id].setLatLng([d.latitude, d.longitude]).setIcon(icon);
+      } else {
+        const marker = L.marker([d.latitude, d.longitude], { icon })
+          .bindTooltip(`${d.name ?? d.drone_id} · ${d.model ?? 'Dock'}`, { permanent: false, direction: 'top' })
+          .on('click', () => onDroneClick(d.drone_id));
+        marker.addTo(layer);
+        existing[d.drone_id] = marker;
+      }
+    });
+
+    Object.keys(existing).forEach(id => {
+      if (!seen.has(id)) { existing[id].remove(); delete existing[id]; }
+    });
+  }, [docks, onDroneClick]);
+
   // Aircraft markers
   const updateFlightMarkers = useCallback(() => {
     const layer = flightLayerRef.current;
@@ -572,15 +638,15 @@ export default function DroneATCMap({
   }, [aircraft, layers.flights]);
 
   useEffect(() => { updateDroneMarkers(); }, [updateDroneMarkers]);
+  useEffect(() => { updateDockMarkers(); }, [updateDockMarkers]);
   useEffect(() => { updateFlightMarkers(); }, [updateFlightMarkers]);
 
-  // Fly to selected drone
+  // Fly to selected drone or dock
   useEffect(() => {
-    if (selectedDroneId && drones[selectedDroneId] && mapRef.current) {
-      const d = drones[selectedDroneId];
-      if (!d.latitude && !d.longitude) return;
-      mapRef.current.flyTo([d.latitude, d.longitude], 14, { duration: 1.2 });
-    }
+    if (!selectedDroneId || !mapRef.current) return;
+    const target = drones[selectedDroneId] ?? docks[selectedDroneId];
+    if (!target || (!target.latitude && !target.longitude)) return;
+    mapRef.current.flyTo([target.latitude, target.longitude], 14, { duration: 1.2 });
   }, [selectedDroneId]);
 
   return (
