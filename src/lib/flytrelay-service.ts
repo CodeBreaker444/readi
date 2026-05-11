@@ -19,7 +19,7 @@ export async function connectToFlytrelay(
   if (!baseUrl) throw new Error('FLYTRELAY_BASE_URL is not configured');
 
   const jwt = signReadiDroneJwt(userId, flytbaseKey, orgId, companyId);
-
+  
   const res = await fetch(`${baseUrl}/api/auth/identify`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${jwt}`, 'Content-Type': 'application/json' },

@@ -21,20 +21,29 @@ export interface TelemetryData {
   hms_flags?: string[];
   status?: string;
   timestamp: number;
+  company_id?: number;
+  user_details?: {
+    fullname?: string;
+    email?: string;
+    company_id?: number;
+  };
 }
 
 export type DroneMap = Record<string, TelemetryData>;
 
 export type ConnectionStatus = 'idle' | 'connecting' | 'connected' | 'error' | 'no_flytbase_key';
 
-interface ConnectionEntry {
-  wsUrl: string;
-  topic: string;
-  token: string;
+function isDockDevice(item: Pick<TelemetryData, 'model' | 'device_type'>): boolean {
+  return (
+    item.model=== 'Dock2v1' ||
+    item.device_type === 'DockingStation'
+  );
 }
 
 interface UseDroneATCSocketReturn {
   drones: DroneMap;
+  docks: DroneMap;
+  userRole: string | null;
   status: ConnectionStatus;
   errorMessage: string | null;
   reconnect: () => void;
@@ -42,83 +51,104 @@ interface UseDroneATCSocketReturn {
 
 export function useDroneATCSocket(): UseDroneATCSocketReturn {
   const [drones, setDrones] = useState<DroneMap>({});
+  const [docks, setDocks] = useState<DroneMap>({});
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [status, setStatus] = useState<ConnectionStatus>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const socketsRef = useRef<Socket[]>([]);
+  const socketRef = useRef<Socket | null>(null);
   const retryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const retryCountRef = useRef(0);
-  const connectedCountRef = useRef(0);
-
-  const disconnectAll = useCallback(() => {
-    socketsRef.current.forEach(s => s.disconnect());
-    socketsRef.current = [];
-    connectedCountRef.current = 0;
-  }, []);
 
   const connect = useCallback(async () => {
-    // Clean up any stale sockets before opening new ones
-    if (socketsRef.current.some(s => s.connected)) return;
-    socketsRef.current.forEach(s => s.disconnect());
-    socketsRef.current = [];
-    connectedCountRef.current = 0;
+    if (socketRef.current?.connected) return;
 
     setStatus('connecting');
     setErrorMessage(null);
 
     try {
-      const res = await fetch('/api/drone-atc/connect', { method: 'POST' });
-      if (!res.ok) throw new Error(`Connect failed: ${res.status}`);
+      const connectRes = await fetch('/api/drone-atc/connect', { method: 'POST' });
+      if (!connectRes.ok) throw new Error(`Connect failed: ${connectRes.status}`);
 
-      const data = await res.json();
-
-      if (!data.hasFlytbaseKey) {
+      const connectData = await connectRes.json();
+      if (!connectData.hasFlytbaseKey) {
         setStatus('no_flytbase_key');
         return;
       }
 
-      const connections: ConnectionEntry[] = data.connections;
+      const fleetRes = await fetch('/api/drone-atc/fleet');
+      
+      if (fleetRes.ok) {
+        const fleetData = await fleetRes.json();
+        setUserRole(fleetData.role ?? null);
 
-      connections.forEach(({ wsUrl, topic, token }) => {
-        const socket = io(wsUrl, {
-          path: '/socket.io/',
-          transports: ['websocket'],
-          reconnection: false,
-          auth: { token },
-        });
+        const items: TelemetryData[] = fleetData.items ?? [];
+        const droneMap: DroneMap = {};
+        const dockMap: DroneMap = {};
 
-        socketsRef.current.push(socket);
-
-        socket.on('connect', () => {
-          connectedCountRef.current += 1;
-          retryCountRef.current = 0;
-          setStatus('connected');
-          socket.emit('subscribe', { droneId: topic });
-        });
-
-        socket.on('telemetry', (payload: { droneId: string; data: TelemetryData; timestamp: number }) => {
-          const telemetry = payload.data ?? (payload as unknown as TelemetryData);
-          const id = telemetry.drone_id ?? payload.droneId;
-          setDrones(prev => ({ ...prev, [id]: { ...telemetry, drone_id: id } }));
-        });
-
-        socket.on('disconnect', () => {
-          connectedCountRef.current = Math.max(0, connectedCountRef.current - 1);
-          if (connectedCountRef.current === 0) {
-            setStatus('error');
-            scheduleRetry();
+        for (const item of items) {
+          if (isDockDevice(item)) {
+            dockMap[item.drone_id] = item;
+          } else {
+            droneMap[item.drone_id] = item;
           }
+        }
+
+        setDrones(droneMap);
+        setDocks(dockMap);
+      }
+
+      const { wsUrl, topic, token } = connectData as { wsUrl: string; topic: string; token: string };
+
+      if (!wsUrl || !token) {
+        throw new Error(`FlytRelay returned incomplete connection data — wsUrl: ${wsUrl}, token present: ${!!token}`);
+      }
+
+      const socket = io(wsUrl, {
+        path: '/socket.io/',
+        transports: ['websocket'],
+        reconnection: false,
+        auth: { token },
+      });
+
+      socketRef.current = socket;
+
+      socket.on('connect', () => {
+        retryCountRef.current = 0;
+        setStatus('connected');
+        socket.emit('subscribe', { droneId: topic });
+      });
+
+      socket.on('telemetry', (payload: { droneId: string; data: TelemetryData; timestamp: number }) => {
+        const incoming = payload.data ?? (payload as unknown as TelemetryData);
+        console.log('tele:',incoming);
+        
+        const id = incoming.drone_id ?? payload.droneId;
+        if (!id) return;
+
+        const update = { ...incoming, drone_id: id };
+
+        setDrones(prev => {
+          if (id in prev) return { ...prev, [id]: { ...prev[id], ...update } };
+          if (!isDockDevice(update)) return { ...prev, [id]: update };
+          return prev;
         });
 
-        socket.on('connect_error', (err) => {
-          connectedCountRef.current = Math.max(0, connectedCountRef.current - 1);
-          setErrorMessage(err.message);
-          socket.disconnect();
-          if (connectedCountRef.current === 0) {
-            setStatus('error');
-            scheduleRetry();
-          }
-        });
+        setDocks(prev =>
+          id in prev ? { ...prev, [id]: { ...prev[id], ...update } } : prev,
+        );
+      });
+
+      socket.on('disconnect', () => {
+        setStatus('error');
+        scheduleRetry();
+      });
+
+      socket.on('connect_error', (err) => {
+        setStatus('error');
+        setErrorMessage(err.message);
+        socket.disconnect();
+        scheduleRetry();
       });
     } catch (err) {
       setStatus('error');
@@ -128,7 +158,7 @@ export function useDroneATCSocket(): UseDroneATCSocketReturn {
   }, []);
 
   function scheduleRetry() {
-    if (retryRef.current !== null) return; // already scheduled
+    if (retryRef.current !== null) return;
     if (retryCountRef.current >= 5) return;
     const delay = Math.min(1000 * 2 ** retryCountRef.current, 30000);
     retryCountRef.current += 1;
@@ -141,18 +171,21 @@ export function useDroneATCSocket(): UseDroneATCSocketReturn {
   const reconnect = useCallback(() => {
     retryCountRef.current = 0;
     if (retryRef.current) { clearTimeout(retryRef.current); retryRef.current = null; }
-    disconnectAll();
+    socketRef.current?.disconnect();
+    socketRef.current = null;
     setDrones({});
+    setDocks({});
     connect();
-  }, [connect, disconnectAll]);
+  }, [connect]);
 
   useEffect(() => {
     connect();
     return () => {
       if (retryRef.current) { clearTimeout(retryRef.current); retryRef.current = null; }
-      disconnectAll();
+      socketRef.current?.disconnect();
+      socketRef.current = null;
     };
-  }, [connect, disconnectAll]);
+  }, [connect]);
 
-  return { drones, status, errorMessage, reconnect };
+  return { drones, docks, userRole, status, errorMessage, reconnect };
 }

@@ -60,10 +60,7 @@ function StatusBadge({ status, count, isDark }: { status: string; count: number;
 export default function DroneATCPage() {
   const { isDark } = useTheme();
   const { t } = useTranslation();
-  const { drones: liveDrones, status, errorMessage, reconnect } = useDroneATCSocket();
-  const drones = Object.fromEntries(
-    Object.entries(liveDrones).filter(([, d]) => d.device_type === 'Drone')
-  );
+  const { drones, docks, userRole, status, errorMessage, reconnect } = useDroneATCSocket();
 
   const [selectedDroneId, setSelectedDroneId] = useState<string | null>(null);
   const [aircraft, setAircraft] = useState<AircraftState[]>([]);
@@ -274,10 +271,12 @@ export default function DroneATCPage() {
             <style jsx>{`div::-webkit-scrollbar { display: none; }`}</style>
             <DroneList
               drones={drones}
+              docks={docks}
               selectedDroneId={selectedDroneId}
               onSelect={setSelectedDroneId}
               isDark={isDark}
               isLoading={isLoading}
+              userRole={userRole}
             />
           </div>
         </aside>
@@ -374,10 +373,12 @@ export default function DroneATCPage() {
               >
                 <DroneList
                   drones={drones}
+                  docks={docks}
                   selectedDroneId={selectedDroneId}
                   onSelect={(id) => { setSelectedDroneId(id); setShowFleet(false); }}
                   isDark={isDark}
                   isLoading={isLoading}
+                  userRole={userRole}
                 />
               </div>
             </div>

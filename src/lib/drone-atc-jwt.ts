@@ -1,6 +1,6 @@
-import 'server-only';
-import jwt from 'jsonwebtoken';
 import { env } from '@/backend/config/env';
+import jwt from 'jsonwebtoken';
+import 'server-only';
 
 export interface ReadiDronePayload {
   sub: string;
@@ -20,8 +20,11 @@ export function signReadiDroneJwt(
   if (!env.READI_DRONE_PRIVATE_KEY) {
     throw new Error('READI_DRONE_PRIVATE_KEY is not configured');
   }
-  const payload: Record<string, string> = { userId, flytbaseKey, orgId };
-  if (companyId) payload.companyId = companyId;
+  const payload: Record<string, string | number> = { userId, flytbaseKey, orgId };
+  if (companyId !== undefined) payload.companyId = Number(companyId);
+
+  console.log('payload:',payload);
+  
   return jwt.sign(payload, env.READI_DRONE_PRIVATE_KEY, {
     algorithm: 'RS256',
     expiresIn: '1h',

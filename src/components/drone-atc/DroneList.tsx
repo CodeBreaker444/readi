@@ -2,17 +2,21 @@
 
 import { Skeleton } from '@/components/ui/skeleton';
 import '@/lib/i18n/config';
-import { FiArrowUp, FiNavigation, FiWifi, FiZap } from 'react-icons/fi';
+import { useState } from 'react';
+import { FiArrowUp, FiNavigation, FiSearch, FiWifi, FiZap } from 'react-icons/fi';
 import { GiDeliveryDrone } from 'react-icons/gi';
+import { MdDock } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
 import type { DroneMap, TelemetryData } from './useDroneATCSocket';
 
 interface DroneListProps {
   drones: DroneMap;
+  docks: DroneMap;
   selectedDroneId: string | null;
   onSelect: (id: string) => void;
   isDark: boolean;
   isLoading?: boolean;
+  userRole?: string | null;
 }
 
 function StatusBadge({ status, isDark }: { status?: string; isDark: boolean }) {
@@ -89,7 +93,7 @@ function DroneCardSkeleton({ isDark }: { isDark: boolean }) {
         <Skeleton className={`h-4 w-12 rounded-full ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
       </div>
       <div className="grid grid-cols-4 gap-1.5 mt-2">
-        {[1,2,3,4].map(i => (
+        {[1, 2, 3, 4].map(i => (
           <Skeleton key={i} className={`h-10 rounded-lg ${isDark ? 'bg-slate-700/40' : 'bg-slate-100'}`} />
         ))}
       </div>
@@ -98,11 +102,249 @@ function DroneCardSkeleton({ isDark }: { isDark: boolean }) {
   );
 }
 
-export default function DroneList({ drones, selectedDroneId, onSelect, isDark, isLoading }: DroneListProps) {
+function EmptyState({ isDark, type }: { isDark: boolean; type: 'drone' | 'dock' }) {
   const { t } = useTranslation();
-  const droneList = Object.values(drones);
+  const isDrone = type === 'drone';
+  return (
+    <div className="flex flex-col items-center justify-center py-10 gap-4">
+      <div className="relative">
+        <div className={`w-14 h-14 rounded-full flex items-center justify-center ${
+          isDark ? 'bg-violet-950/50 border border-violet-800/30' : 'bg-violet-50 border border-violet-200'
+        }`}>
+          {isDrone
+            ? <GiDeliveryDrone className={`w-6 h-6 ${isDark ? 'text-violet-500' : 'text-violet-400'}`} />
+            : <MdDock className={`w-6 h-6 ${isDark ? 'text-violet-500' : 'text-violet-400'}`} />}
+        </div>
+        <div className="absolute inset-0 rounded-full border border-violet-500/20 animate-ping" />
+      </div>
+      <div className="text-center">
+        <p className={`text-sm font-semibold ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
+          {isDrone ? t('droneAtc.droneList.noActiveDrones') : 'No active docks'}
+        </p>
+        <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+          {isDrone ? t('droneAtc.droneList.scanningAirspace') : 'No docks connected'}
+        </p>
+      </div>
+      <div className="flex gap-1.5">
+        {[0, 1, 2].map(i => (
+          <div key={i} className="w-1.5 h-1.5 rounded-full bg-violet-500/70 animate-bounce" style={{ animationDelay: `${i * 0.18}s` }} />
+        ))}
+      </div>
+    </div>
+  );
+}
 
-  if (isLoading && droneList.length === 0) {
+function CompanyHeader({ companyId, isDark }: { companyId: number; isDark: boolean }) {
+  return (
+    <div className={`flex items-center gap-2 px-1 pt-3 pb-1 first:pt-0`}>
+      <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${isDark ? 'bg-violet-500' : 'bg-violet-400'}`} />
+      <span className={`text-[9px] font-bold uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+        Company {companyId}
+      </span>
+      <div className={`flex-1 h-px ${isDark ? 'bg-slate-700/50' : 'bg-slate-200'}`} />
+    </div>
+  );
+}
+
+function DroneCard({
+  drone,
+  isSelected,
+  onSelect,
+  isDark,
+  showUser,
+}: {
+  drone: TelemetryData;
+  isSelected: boolean;
+  onSelect: () => void;
+  isDark: boolean;
+  showUser: boolean;
+}) {
+  const { t } = useTranslation();
+  const online  = drone.status === 'online' || !drone.status;
+  const standby = drone.status === 'standby';
+  const noGps   = !drone.latitude && !drone.longitude;
+
+  const borderColor = isSelected
+    ? 'border-l-violet-500'
+    : noGps    ? 'border-l-slate-400/40'
+    : online   ? 'border-l-emerald-500'
+    : standby  ? 'border-l-amber-400'
+    : 'border-l-slate-500';
+
+  const cardBg = isSelected
+    ? isDark
+      ? 'bg-violet-900/15 border border-l-0 border-violet-500/30 shadow-sm shadow-violet-900/20'
+      : 'bg-violet-50/80 border border-l-0 border-violet-200 shadow-sm'
+    : noGps
+      ? isDark
+        ? 'bg-slate-800/20 border border-l-0 border-slate-700/30 opacity-50'
+        : 'bg-slate-50/60 border border-l-0 border-slate-200/60 opacity-50'
+      : isDark
+        ? 'bg-slate-800/30 border border-l-0 border-slate-700/40 hover:bg-slate-800/50 hover:border-slate-600/50'
+        : 'bg-white border border-l-0 border-slate-200 hover:bg-slate-50 hover:border-slate-300';
+
+  const speedKts = drone.velocity != null ? Math.round(drone.velocity * 1.944) : null;
+  const ownerLabel = drone.user_details?.fullname || drone.user_details?.email;
+
+  return (
+    <button
+      onClick={noGps ? undefined : onSelect}
+      disabled={noGps}
+      className={`w-full text-left p-3 rounded-xl border-l-[3px] transition-all duration-150 ${noGps ? 'cursor-default pointer-events-none' : 'cursor-pointer'} ${borderColor} ${cardBg}`}
+    >
+      <div className="flex items-start justify-between gap-2 mb-2.5">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+            isSelected
+              ? isDark ? 'bg-violet-500/15 ring-1 ring-violet-500/30' : 'bg-violet-100 ring-1 ring-violet-200'
+              : isDark ? 'bg-slate-700/50' : 'bg-slate-100'
+          }`}>
+            <GiDeliveryDrone className={`w-4 h-4 ${isSelected ? 'text-violet-400' : isDark ? 'text-slate-400' : 'text-slate-500'}`} />
+          </div>
+          <div className="min-w-0">
+            <span className={`text-[12px] font-semibold truncate block leading-tight ${
+              isSelected
+                ? isDark ? 'text-violet-200' : 'text-violet-700'
+                : isDark ? 'text-slate-100' : 'text-slate-800'
+            }`}>
+              {drone.name ?? drone.drone_id}
+            </span>
+            {drone.model ? (
+              <span className={`text-[10px] truncate block leading-tight mt-0.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                {drone.model}
+              </span>
+            ) : (
+              <span className={`text-[9px] font-mono truncate block leading-tight mt-0.5 ${isDark ? 'text-slate-600' : 'text-slate-300'}`}>
+                {drone.drone_id}
+              </span>
+            )}
+            {showUser && ownerLabel && (
+              <span className={`text-[9px] truncate block leading-tight mt-0.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                {ownerLabel}
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="flex flex-col items-end gap-1">
+          <StatusBadge status={drone.status} isDark={isDark} />
+          {noGps && (
+            <span className={`inline-flex items-center gap-1 text-[9px] font-bold tracking-wide px-1.5 py-0.5 rounded-full ${
+              isDark ? 'bg-slate-700/60 text-slate-400 ring-1 ring-slate-600/30' : 'bg-slate-100 text-slate-400 ring-1 ring-slate-200'
+            }`}>
+              {t('droneAtc.droneList.noGps')}
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-4 gap-1.5">
+        <MetricCell icon={<FiArrowUp className="w-2.5 h-2.5" />}     value={`${Math.round(drone.altitude)}m`} isDark={isDark} />
+        <MetricCell icon={<FiNavigation className="w-2.5 h-2.5" />}  value={speedKts != null ? `${speedKts}kt` : '—'} isDark={isDark} />
+        <MetricCell
+          icon={<FiZap className={`w-2.5 h-2.5 ${drone.battery_percentage > 50 ? 'text-emerald-500' : drone.battery_percentage > 20 ? 'text-amber-500' : 'text-red-500'}`} />}
+          value={`${Math.round(drone.battery_percentage)}%`}
+          isDark={isDark}
+        />
+        <MetricCell icon={<FiWifi className="w-2.5 h-2.5" />} value={drone.signal_strength != null ? `${Math.round(drone.signal_strength)}%` : '—'} isDark={isDark} />
+      </div>
+
+      <div className="mt-2">
+        <BatteryBar pct={drone.battery_percentage} isDark={isDark} />
+      </div>
+    </button>
+  );
+}
+
+function DockCard({ dock, isDark, showUser }: { dock: TelemetryData; isDark: boolean; showUser: boolean }) {
+  const online  = dock.status === 'online' || !dock.status;
+  const standby = dock.status === 'standby';
+  const ownerLabel = dock.user_details?.fullname || dock.user_details?.email;
+
+  const borderColor = online ? 'border-l-cyan-500' : standby ? 'border-l-amber-400' : 'border-l-slate-500';
+  const cardBg = isDark
+    ? 'bg-slate-800/30 border border-l-0 border-slate-700/40'
+    : 'bg-white border border-l-0 border-slate-200';
+
+  return (
+    <div className={`p-3 rounded-xl border-l-[3px] ${borderColor} ${cardBg}`}>
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isDark ? 'bg-cyan-500/10 ring-1 ring-cyan-500/20' : 'bg-cyan-50 ring-1 ring-cyan-200'}`}>
+            <MdDock className={`w-4 h-4 ${isDark ? 'text-cyan-400' : 'text-cyan-500'}`} />
+          </div>
+          <div className="min-w-0">
+            <span className={`text-[12px] font-semibold truncate block leading-tight ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>
+              {dock.name ?? dock.drone_id}
+            </span>
+            {dock.model && (
+              <span className={`text-[10px] truncate block leading-tight mt-0.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                {dock.model}
+              </span>
+            )}
+            {showUser && ownerLabel && (
+              <span className={`text-[9px] truncate block leading-tight mt-0.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                {ownerLabel}
+              </span>
+            )}
+          </div>
+        </div>
+        <StatusBadge status={dock.status} isDark={isDark} />
+      </div>
+    </div>
+  );
+}
+
+export default function DroneList({
+  drones,
+  docks,
+  selectedDroneId,
+  onSelect,
+  isDark,
+  isLoading,
+  userRole,
+}: DroneListProps) {
+  const { t } = useTranslation();
+  const [activeTab, setActiveTab] = useState<'drone' | 'dock'>('drone');
+  const [userFilter, setUserFilter] = useState('');
+
+  const isSuperAdmin = userRole === 'SUPERADMIN';
+  const isAdmin      = userRole === 'ADMIN' || isSuperAdmin;
+
+  const droneList = Object.values(drones);
+  const dockList  = Object.values(docks);
+
+  const tabCounts = { drone: droneList.length, dock: dockList.length };
+
+  const filteredDrones = isAdmin && userFilter.trim()
+    ? droneList.filter(d => {
+        const q = userFilter.toLowerCase();
+        return (
+          d.user_details?.fullname?.toLowerCase().includes(q) ||
+          d.user_details?.email?.toLowerCase().includes(q)
+        );
+      })
+    : droneList;
+
+  // Group drones by company for superadmin
+  const groupedDrones: Map<number, TelemetryData[]> = isSuperAdmin
+    ? filteredDrones.reduce((map, d) => {
+        const cid = d.company_id ?? 0;
+        const list = map.get(cid) ?? [];
+        list.push(d);
+        map.set(cid, list);
+        return map;
+      }, new Map<number, TelemetryData[]>())
+    : new Map();
+
+  const tabBase = `flex-1 py-1.5 text-[10px] font-bold tracking-wide rounded-lg transition-all flex items-center justify-center gap-1.5`;
+  const tabActive = isDark
+    ? 'bg-violet-600/20 text-violet-300 ring-1 ring-violet-500/30'
+    : 'bg-violet-100 text-violet-700 ring-1 ring-violet-200';
+  const tabInactive = isDark
+    ? 'text-slate-500 hover:text-slate-300'
+    : 'text-slate-400 hover:text-slate-600';
+
+  if (isLoading && droneList.length === 0 && dockList.length === 0) {
     return (
       <div className="flex flex-col gap-2.5">
         {[1, 2, 3].map(i => <DroneCardSkeleton key={i} isDark={isDark} />)}
@@ -110,142 +352,133 @@ export default function DroneList({ drones, selectedDroneId, onSelect, isDark, i
     );
   }
 
-  if (droneList.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-10 gap-4">
-        <div className="relative">
-          <div className={`w-14 h-14 rounded-full flex items-center justify-center ${
-            isDark ? 'bg-violet-950/50 border border-violet-800/30' : 'bg-violet-50 border border-violet-200'
-          }`}>
-            <GiDeliveryDrone className={`w-6 h-6 ${isDark ? 'text-violet-500' : 'text-violet-400'}`} />
-          </div>
-          <div className="absolute inset-0 rounded-full border border-violet-500/20 animate-ping" />
-        </div>
-        <div className="text-center">
-          <p className={`text-sm font-semibold ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{t('droneAtc.droneList.noActiveDrones')}</p>
-          <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t('droneAtc.droneList.scanningAirspace')}</p>
-        </div>
-        <div className="flex gap-1.5">
-          {[0, 1, 2].map(i => (
-            <div key={i} className="w-1.5 h-1.5 rounded-full bg-violet-500/70 animate-bounce" style={{ animationDelay: `${i * 0.18}s` }} />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col gap-2">
-      {droneList.map((drone: TelemetryData) => {
-        const isSelected = drone.drone_id === selectedDroneId;
-        const online = drone.status === 'online' || !drone.status;
-        const standby = drone.status === 'standby';
-        const noGps = !drone.latitude && !drone.longitude;
+      {/* Drone / Dock tabs */}
+      <div className={`flex gap-1 p-1 rounded-xl ${isDark ? 'bg-slate-800/60' : 'bg-slate-100'}`}>
+        <button
+          onClick={() => setActiveTab('drone')}
+          className={`${tabBase} ${activeTab === 'drone' ? tabActive : tabInactive}`}
+        >
+          <GiDeliveryDrone className="w-3 h-3" />
+          Drones
+          <span className={`text-[9px] font-bold px-1 py-0.5 rounded-full ${
+            activeTab === 'drone'
+              ? isDark ? 'bg-violet-500/20 text-violet-400' : 'bg-violet-200 text-violet-600'
+              : isDark ? 'bg-slate-700 text-slate-400' : 'bg-slate-200 text-slate-500'
+          }`}>{tabCounts.drone}</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('dock')}
+          className={`${tabBase} ${activeTab === 'dock' ? tabActive : tabInactive}`}
+        >
+          <MdDock className="w-3 h-3" />
+          Docks
+          <span className={`text-[9px] font-bold px-1 py-0.5 rounded-full ${
+            activeTab === 'dock'
+              ? isDark ? 'bg-violet-500/20 text-violet-400' : 'bg-violet-200 text-violet-600'
+              : isDark ? 'bg-slate-700 text-slate-400' : 'bg-slate-200 text-slate-500'
+          }`}>{tabCounts.dock}</span>
+        </button>
+      </div>
 
-        const borderColor = isSelected
-          ? 'border-l-violet-500'
-          : noGps    ? 'border-l-slate-400/40'
-          : online  ? 'border-l-emerald-500'
-          : standby ? 'border-l-amber-400'
-          : 'border-l-slate-500';
+      {/* Admin user filter (shown only when on drone tab) */}
+      {isAdmin && activeTab === 'drone' && droneList.length > 0 && (
+        <div className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg ring-1 ${
+          isDark ? 'bg-slate-800/40 ring-slate-700/40' : 'bg-white ring-slate-200'
+        }`}>
+          <FiSearch className={`w-3 h-3 shrink-0 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
+          <input
+            type="text"
+            placeholder="Filter by user..."
+            value={userFilter}
+            onChange={e => setUserFilter(e.target.value)}
+            className={`flex-1 text-[11px] bg-transparent outline-none ${isDark ? 'text-slate-200 placeholder:text-slate-600' : 'text-slate-700 placeholder:text-slate-400'}`}
+          />
+          {userFilter && (
+            <button onClick={() => setUserFilter('')} className={`text-[9px] px-1.5 py-0.5 rounded ${isDark ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600'}`}>✕</button>
+          )}
+        </div>
+      )}
 
-        const cardBg = isSelected
-          ? isDark
-            ? 'bg-violet-900/15 border border-l-0 border-violet-500/30 shadow-sm shadow-violet-900/20'
-            : 'bg-violet-50/80 border border-l-0 border-violet-200 shadow-sm'
-          : noGps
-            ? isDark
-              ? 'bg-slate-800/20 border border-l-0 border-slate-700/30 opacity-50'
-              : 'bg-slate-50/60 border border-l-0 border-slate-200/60 opacity-50'
-          : isDark
-            ? 'bg-slate-800/30 border border-l-0 border-slate-700/40 hover:bg-slate-800/50 hover:border-slate-600/50'
-            : 'bg-white border border-l-0 border-slate-200 hover:bg-slate-50 hover:border-slate-300';
-
-        const speedKts = drone.velocity != null ? Math.round(drone.velocity * 1.944) : null;
-
-        return (
-          <button
-            key={drone.drone_id}
-            onClick={noGps ? undefined : () => onSelect(drone.drone_id)}
-            disabled={noGps}
-            className={`w-full text-left p-3 rounded-xl border-l-[3px] transition-all duration-150 ${noGps ? 'cursor-default pointer-events-none' : 'cursor-pointer'} ${borderColor} ${cardBg}`}
-          >
-            {/* Header row */}
-            <div className="flex items-start justify-between gap-2 mb-2.5">
-              <div className="flex items-center gap-2 min-w-0">
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                  isSelected
-                    ? isDark ? 'bg-violet-500/15 ring-1 ring-violet-500/30' : 'bg-violet-100 ring-1 ring-violet-200'
-                    : isDark ? 'bg-slate-700/50' : 'bg-slate-100'
-                }`}>
-                  <GiDeliveryDrone className={`w-4 h-4 ${
-                    isSelected ? 'text-violet-400' : isDark ? 'text-slate-400' : 'text-slate-500'
-                  }`} />
-                </div>
-                <div className="min-w-0">
-                  <span className={`text-[12px] font-semibold truncate block leading-tight ${
-                    isSelected
-                      ? isDark ? 'text-violet-200' : 'text-violet-700'
-                      : isDark ? 'text-slate-100' : 'text-slate-800'
-                  }`}>
-                    {drone.name ?? drone.drone_id}
-                  </span>
-                  {drone.model ? (
-                    <span className={`text-[10px] truncate block leading-tight mt-0.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                      {drone.model}
-                    </span>
-                  ) : (
-                    <span className={`text-[9px] font-mono truncate block leading-tight mt-0.5 ${isDark ? 'text-slate-600' : 'text-slate-300'}`}>
-                      {drone.drone_id}
-                    </span>
-                  )}
-                </div>
+      {/* Drone list */}
+      {activeTab === 'drone' && (
+        filteredDrones.length === 0
+          ? <EmptyState isDark={isDark} type="drone" />
+          : isSuperAdmin
+            ? (
+              // Super admin: grouped by company
+              <div className="flex flex-col">
+                {Array.from(groupedDrones.entries()).map(([companyId, items]) => (
+                  <div key={companyId}>
+                    <CompanyHeader companyId={companyId} isDark={isDark} />
+                    <div className="flex flex-col gap-2">
+                      {items.map(drone => (
+                        <DroneCard
+                          key={drone.drone_id}
+                          drone={drone}
+                          isSelected={drone.drone_id === selectedDroneId}
+                          onSelect={() => onSelect(drone.drone_id)}
+                          isDark={isDark}
+                          showUser={true}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="flex flex-col items-end gap-1">
-                <StatusBadge status={drone.status} isDark={isDark} />
-                {noGps && (
-                  <span className={`inline-flex items-center gap-1 text-[9px] font-bold tracking-wide px-1.5 py-0.5 rounded-full ${
-                    isDark ? 'bg-slate-700/60 text-slate-400 ring-1 ring-slate-600/30' : 'bg-slate-100 text-slate-400 ring-1 ring-slate-200'
-                  }`}>
-                    {t('droneAtc.droneList.noGps')}
-                  </span>
-                )}
+            )
+            : (
+              // Admin / regular: flat list, show user for admin
+              <div className="flex flex-col gap-2">
+                {filteredDrones.map(drone => (
+                  <DroneCard
+                    key={drone.drone_id}
+                    drone={drone}
+                    isSelected={drone.drone_id === selectedDroneId}
+                    onSelect={() => onSelect(drone.drone_id)}
+                    isDark={isDark}
+                    showUser={isAdmin}
+                  />
+                ))}
               </div>
-            </div>
+            )
+      )}
 
-            {/* Metrics grid */}
-            <div className="grid grid-cols-4 gap-1.5">
-              <MetricCell
-                icon={<FiArrowUp className="w-2.5 h-2.5" />}
-                value={`${Math.round(drone.altitude)}m`}
-                isDark={isDark}
-              />
-              <MetricCell
-                icon={<FiNavigation className="w-2.5 h-2.5" />}
-                value={speedKts != null ? `${speedKts}kt` : '—'}
-                isDark={isDark}
-              />
-              <MetricCell
-                icon={<FiZap className={`w-2.5 h-2.5 ${
-                  drone.battery_percentage > 50 ? 'text-emerald-500' : drone.battery_percentage > 20 ? 'text-amber-500' : 'text-red-500'
-                }`} />}
-                value={`${Math.round(drone.battery_percentage)}%`}
-                isDark={isDark}
-              />
-              <MetricCell
-                icon={<FiWifi className="w-2.5 h-2.5" />}
-                value={drone.signal_strength != null ? `${Math.round(drone.signal_strength)}%` : '—'}
-                isDark={isDark}
-              />
-            </div>
-
-            {/* Battery bar */}
-            <div className="mt-2">
-              <BatteryBar pct={drone.battery_percentage} isDark={isDark} />
-            </div>
-          </button>
-        );
-      })}
+      {/* Dock list */}
+      {activeTab === 'dock' && (
+        dockList.length === 0
+          ? <EmptyState isDark={isDark} type="dock" />
+          : isSuperAdmin
+            ? (
+              // Super admin: docks grouped by company
+              <div className="flex flex-col">
+                {Array.from(
+                  dockList.reduce((map, d) => {
+                    const cid = d.company_id ?? 0;
+                    map.set(cid, [...(map.get(cid) ?? []), d]);
+                    return map;
+                  }, new Map<number, TelemetryData[]>()).entries(),
+                ).map(([companyId, items]) => (
+                  <div key={companyId}>
+                    <CompanyHeader companyId={companyId} isDark={isDark} />
+                    <div className="flex flex-col gap-2">
+                      {items.map(dock => (
+                        <DockCard key={dock.drone_id} dock={dock} isDark={isDark} showUser={true} />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
+            : (
+              <div className="flex flex-col gap-2">
+                {dockList.map(dock => (
+                  <DockCard key={dock.drone_id} dock={dock} isDark={isDark} showUser={isAdmin} />
+                ))}
+              </div>
+            )
+      )}
     </div>
   );
 }
