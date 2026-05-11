@@ -134,12 +134,12 @@ function EmptyState({ isDark, type }: { isDark: boolean; type: 'drone' | 'dock' 
   );
 }
 
-function CompanyHeader({ companyId, isDark }: { companyId: number; isDark: boolean }) {
+function PilotHeader({ pilotName, isDark }: { pilotName: string; isDark: boolean }) {
   return (
     <div className={`flex items-center gap-2 px-1 pt-3 pb-1 first:pt-0`}>
       <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${isDark ? 'bg-violet-500' : 'bg-violet-400'}`} />
       <span className={`text-[9px] font-bold uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-        Company {companyId}
+        {pilotName.toUpperCase()}
       </span>
       <div className={`flex-1 h-px ${isDark ? 'bg-slate-700/50' : 'bg-slate-200'}`} />
     </div>
@@ -207,7 +207,7 @@ function DroneCard({
                 ? isDark ? 'text-violet-200' : 'text-violet-700'
                 : isDark ? 'text-slate-100' : 'text-slate-800'
             }`}>
-              {drone.name ?? drone.drone_id}
+              {drone.tool_code ?? drone.name ?? drone.drone_id}
             </span>
             {drone.model ? (
               <span className={`text-[10px] truncate block leading-tight mt-0.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
@@ -274,7 +274,7 @@ function DockCard({ dock, isDark, showUser }: { dock: TelemetryData; isDark: boo
           </div>
           <div className="min-w-0">
             <span className={`text-[12px] font-semibold truncate block leading-tight ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>
-              {dock.name ?? dock.drone_id}
+              {dock.tool_code ?? dock.name ?? dock.drone_id}
             </span>
             {dock.model && (
               <span className={`text-[10px] truncate block leading-tight mt-0.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
@@ -325,16 +325,11 @@ export default function DroneList({
       })
     : droneList;
 
-  // Group drones by company for superadmin
-  const groupedDrones: Map<number, TelemetryData[]> = isSuperAdmin
-    ? filteredDrones.reduce((map, d) => {
-        const cid = d.company_id ?? 0;
-        const list = map.get(cid) ?? [];
-        list.push(d);
-        map.set(cid, list);
-        return map;
-      }, new Map<number, TelemetryData[]>())
-    : new Map();
+  const groupedDrones: Map<string, TelemetryData[]> = filteredDrones.reduce((map, d) => {
+    const pilot = d.pilot_name ?? 'Unknown';
+    map.set(pilot, [...(map.get(pilot) ?? []), d]);
+    return map;
+  }, new Map<string, TelemetryData[]>());
 
   const tabBase = `flex-1 py-1.5 text-[10px] font-bold tracking-wide rounded-lg transition-all flex items-center justify-center gap-1.5`;
   const tabActive = isDark
@@ -405,79 +400,53 @@ export default function DroneList({
       {activeTab === 'drone' && (
         filteredDrones.length === 0
           ? <EmptyState isDark={isDark} type="drone" />
-          : isSuperAdmin
-            ? (
-              // Super admin: grouped by company
-              <div className="flex flex-col">
-                {Array.from(groupedDrones.entries()).map(([companyId, items]) => (
-                  <div key={companyId}>
-                    <CompanyHeader companyId={companyId} isDark={isDark} />
-                    <div className="flex flex-col gap-2">
-                      {items.map(drone => (
-                        <DroneCard
-                          key={drone.drone_id}
-                          drone={drone}
-                          isSelected={drone.drone_id === selectedDroneId}
-                          onSelect={() => onSelect(drone.drone_id)}
-                          isDark={isDark}
-                          showUser={true}
-                        />
-                      ))}
-                    </div>
+          : (
+            <div className="flex flex-col">
+              {Array.from(groupedDrones.entries()).map(([pilotName, items]) => (
+                <div key={pilotName}>
+                  <PilotHeader pilotName={pilotName} isDark={isDark} />
+                  <div className="flex flex-col gap-2">
+                    {items.map(drone => (
+                      <DroneCard
+                        key={drone.drone_id}
+                        drone={drone}
+                        isSelected={drone.drone_id === selectedDroneId}
+                        onSelect={() => onSelect(drone.drone_id)}
+                        isDark={isDark}
+                        showUser={isAdmin}
+                      />
+                    ))}
                   </div>
-                ))}
-              </div>
-            )
-            : (
-              // Admin / regular: flat list, show user for admin
-              <div className="flex flex-col gap-2">
-                {filteredDrones.map(drone => (
-                  <DroneCard
-                    key={drone.drone_id}
-                    drone={drone}
-                    isSelected={drone.drone_id === selectedDroneId}
-                    onSelect={() => onSelect(drone.drone_id)}
-                    isDark={isDark}
-                    showUser={isAdmin}
-                  />
-                ))}
-              </div>
-            )
+                </div>
+              ))}
+            </div>
+          )
       )}
 
       {/* Dock list */}
       {activeTab === 'dock' && (
         dockList.length === 0
           ? <EmptyState isDark={isDark} type="dock" />
-          : isSuperAdmin
-            ? (
-              // Super admin: docks grouped by company
-              <div className="flex flex-col">
-                {Array.from(
-                  dockList.reduce((map, d) => {
-                    const cid = d.company_id ?? 0;
-                    map.set(cid, [...(map.get(cid) ?? []), d]);
-                    return map;
-                  }, new Map<number, TelemetryData[]>()).entries(),
-                ).map(([companyId, items]) => (
-                  <div key={companyId}>
-                    <CompanyHeader companyId={companyId} isDark={isDark} />
-                    <div className="flex flex-col gap-2">
-                      {items.map(dock => (
-                        <DockCard key={dock.drone_id} dock={dock} isDark={isDark} showUser={true} />
-                      ))}
-                    </div>
+          : (
+            <div className="flex flex-col">
+              {Array.from(
+                dockList.reduce((map, d) => {
+                  const pilot = d.pilot_name ?? 'Unknown';
+                  map.set(pilot, [...(map.get(pilot) ?? []), d]);
+                  return map;
+                }, new Map<string, TelemetryData[]>()).entries(),
+              ).map(([pilotName, items]) => (
+                <div key={pilotName}>
+                  <PilotHeader pilotName={pilotName} isDark={isDark} />
+                  <div className="flex flex-col gap-2">
+                    {items.map(dock => (
+                      <DockCard key={dock.drone_id} dock={dock} isDark={isDark} showUser={isAdmin} />
+                    ))}
                   </div>
-                ))}
-              </div>
-            )
-            : (
-              <div className="flex flex-col gap-2">
-                {dockList.map(dock => (
-                  <DockCard key={dock.drone_id} dock={dock} isDark={isDark} showUser={isAdmin} />
-                ))}
-              </div>
-            )
+                </div>
+              ))}
+            </div>
+          )
       )}
     </div>
   );

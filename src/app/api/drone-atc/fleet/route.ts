@@ -38,13 +38,20 @@ export async function GET() {
       return NextResponse.json({ items: [], role, companyId: ownerId });
     }
 
-    const items = await res.json();
+    const data = await res.json();
+    console.log('[fleet/overview] raw:', JSON.stringify(data).slice(0, 500));
+console.log('res:',data);
 
-    return NextResponse.json({
-      items: Array.isArray(items) ? items : [],
-      role,
-      companyId: ownerId,
-    });
+    const rawItems: Record<string, unknown>[] = Array.isArray(data.drones) ? data.drones : [];
+
+    const items = rawItems.map((item) => ({
+      ...item,
+      drone_id: item.flytbase_id ?? item.drone_id,
+      name: item.tool_name ?? item.name,
+      model: item.tool_name ?? item.model,
+    }));
+
+    return NextResponse.json({ items, role, companyId: ownerId });
   } catch (err) {
     console.error('[GET /api/drone-atc/fleet]', err);
     return internalError(E.SV001, err);

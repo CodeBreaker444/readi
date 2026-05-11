@@ -22,8 +22,6 @@ export function signReadiDroneJwt(
   }
   const payload: Record<string, string | number> = { userId, flytbaseKey, orgId };
   if (companyId !== undefined) payload.companyId = Number(companyId);
-
-  console.log('payload:',payload);
   
   return jwt.sign(payload, env.READI_DRONE_PRIVATE_KEY, {
     algorithm: 'RS256',

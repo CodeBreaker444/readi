@@ -47,10 +47,21 @@ function centroidAndRadius(coords: [number, number][]): { lat: number; lon: numb
   return { lat, lon, radiusM: Math.round(radiusM) };
 }
 
+const CLASS_NUMBER_MAP: Record<number, AirspaceZone['class']> = {
+  0: 'A', 1: 'B', 2: 'C', 3: 'D',
+};
+
 function mapOpenAIPItem(item: Record<string, unknown>): AirspaceZone | null {
   try {
-    const cls = item.airspaceClass as string;
-    if (!['A', 'C', 'D'].includes(cls)) return null;
+    const raw = item.airspaceClass;
+    // OpenAIP v2 returns an integer (0=A,1=B,2=C,3=D); v1 returned a string letter.
+    const cls: AirspaceZone['class'] | undefined =
+      typeof raw === 'number'
+        ? CLASS_NUMBER_MAP[raw]
+        : (['A', 'B', 'C', 'D'] as string[]).includes(raw as string)
+          ? (raw as AirspaceZone['class'])
+          : undefined;
+    if (!cls) return null;
 
     const type = OPENAIP_TYPE_MAP[item.type as number];
     if (!type) return null;
@@ -73,7 +84,7 @@ function mapOpenAIPItem(item: Record<string, unknown>): AirspaceZone | null {
       lat,
       lon,
       radiusM,
-      class: cls as AirspaceZone['class'],
+      class: cls,
       type,
       lowerFt: toFeet(lower?.value ?? 0, lower?.unit ?? 1),
       upperFt: toFeet(upper?.value ?? 0, upper?.unit ?? 1),

@@ -7,6 +7,8 @@ export interface TelemetryData {
   drone_id: string;
   name?: string;
   model?: string;
+  tool_code?: string;
+  pilot_name?: string;
   device_type?: string;
   latitude: number;
   longitude: number;
