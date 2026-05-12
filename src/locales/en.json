@@ -2725,69 +2725,7 @@
       "created": "Emergency response plan created successfully",
       "saveFailed": "Failed to save the plan"
     }
-  },
-  "droneAtc": {
-    "title": "Drone ATC",
-    "subtitle": "Air Traffic Control",
-    "sync": {
-      "updating": "Updating…",
-      "updated": "Updated",
-      "failed": "Failed",
-      "updateDrones": "Update Drones To FlytRelay",
-      "syncDrones": "Sync Drones To FlytRelay",
-      "updatingShort": "…",
-      "updatedShort": "Done",
-      "failedShort": "Err"
-    },
-    "status": {
-      "live": "Live",
-      "connecting": "Connecting…",
-      "error": "Error",
-      "initialising": "Initialising…",
-      "noApiKey": "No API Key"
-    },
-    "noFlytbaseKey": "No FlytBase API key configured.",
-    "configure": "Configure →",
-    "retry": "Retry",
-    "fleetManagement": "Fleet Management",
-    "fleet": "Fleet",
-    "droneList": {
-      "live": "LIVE",
-      "standby": "STANDBY",
-      "offline": "OFFLINE",
-      "noGps": "NO GPS",
-      "noActiveDrones": "No Active Drones",
-      "scanningAirspace": "Scanning airspace"
-    },
-    "layers": {
-      "layers": "Layers",
-      "mapLayers": "Map Layers",
-      "traffic": "Traffic",
-      "drones": "Drones",
-      "liveFleetTelemetry": "Live fleet telemetry",
-      "aircraft": "Aircraft",
-      "airspace": "Airspace",
-      "weather": "Weather",
-      "wind": "Wind",
-      "animatedFlow": "Animated flow",
-      "temperature": "Temperature",
-      "surfaceCelsius": "Surface °C",
-      "clouds": "Clouds",
-      "cloudCover": "Cloud cover %",
-      "precip": "Precip",
-      "rainSnow": "Rain & snow mm/h",
-      "pressure": "Pressure",
-      "atmosphericHpa": "Atmospheric hPa",
-      "classMeta": {
-        "A": { "label": "Class A", "desc": "FL180+" },
-        "B": { "label": "Class B", "desc": "Surface–10,000 ft" },
-        "C": { "label": "Class C", "desc": "Surface–4,000 ft" },
-        "D": { "label": "Class D", "desc": "Surface–2,500 ft" }
-      }
-    },
-    "connection": {
-      "failed": "Connection failed"
-    },
+  }, 
   "auditLogs": {
     "title": "Audit Logs",
     "subtitle": "Track and monitor system-wide activity",
@@ -2864,7 +2802,75 @@
       }
     }
   },
-  "organization": {
+  "droneAtc": {
+    "title": "Drone ATC",
+    "subtitle": "Air Traffic Control",
+    "sync": {
+      "updating": "Updating…",
+      "updated": "Updated",
+      "failed": "Failed",
+      "updateDrones": "Update Drones To FlytRelay",
+      "syncDrones": "Sync Drones To FlytRelay",
+      "updatingShort": "…",
+      "updatedShort": "Done",
+      "failedShort": "Err"
+    },
+    "status": {
+      "live": "Live",
+      "connecting": "Connecting…",
+      "error": "Error",
+      "initialising": "Initialising…",
+      "noApiKey": "No API Key"
+    },
+    "noFlytbaseKey": "No FlytBase API key configured.",
+    "configure": "Configure →",
+    "retry": "Retry",
+    "fleetManagement": "Fleet Management",
+    "fleet": "Fleet",
+    "droneList": {
+      "live": "LIVE",
+      "standby": "STANDBY",
+      "offline": "OFFLINE",
+      "noGps": "NO GPS",
+      "noActiveDrones": "No Active Drones",
+      "scanningAirspace": "Scanning airspace"
+    },
+    "layers": {
+      "layers": "Layers",
+      "mapLayers": "Map Layers",
+      "traffic": "Traffic",
+      "drones": "Drones",
+      "liveFleetTelemetry": "Live fleet telemetry",
+      "aircraft": "Aircraft",
+      "airspace": "Airspace",
+      "weather": "Weather",
+      "wind": "Wind",
+      "animatedFlow": "Animated flow",
+      "temperature": "Temperature",
+      "surfaceCelsius": "Surface °C",
+      "clouds": "Clouds",
+      "cloudCover": "Cloud cover %",
+      "precip": "Precip",
+      "rainSnow": "Rain & snow mm/h",
+      "pressure": "Pressure",
+      "atmosphericHpa": "Atmospheric hPa",
+      "classMeta": {
+        "A": { "label": "Class A", "desc": "FL180+" },
+        "B": { "label": "Class B", "desc": "Surface–10,000 ft" },
+        "C": { "label": "Class C", "desc": "Surface–4,000 ft" },
+        "D": { "label": "Class D", "desc": "Surface–2,500 ft" }
+      }
+    },
+    "connection": {
+      "failed": "Connection failed"
+    }
+},
+"export": {
+    "export": "Export",
+    "exporting": "Exporting…",
+    "downloadAs": "Download as"
+  },
+"organization": {
     "common": {
       "refresh": "Refresh",
       "cancel": "Cancel",
@@ -3039,12 +3045,7 @@
       }
     }
   },
-  "export": {
-    "export": "Export",
-    "exporting": "Exporting…",
-    "downloadAs": "Download as"
-  },
-  "systems": {
+   "systems": {
     "manage": {
       "title": "Drone System List",
       "subtitle": "Manage systems, models, and system components",
@@ -3964,5 +3965,4 @@
       }
     }
   }
-}
 }

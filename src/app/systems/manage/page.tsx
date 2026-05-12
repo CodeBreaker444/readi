@@ -39,7 +39,8 @@ interface DeleteConfirm {
     type: 'system' | 'model' | 'component';
     id: number;
     name: string;
-    warning: string;
+    warningKey?: string;
+    warning?: string;
     canDelete: boolean;
     usedBy?: { systems: any[]; components: any[] };
     attachedSystemCode?: string;
@@ -190,7 +191,7 @@ export default function DroneToolPage() {
             type: 'system',
             id: toolId,
             name: tool?.tool_code || `#${toolId}`,
-            warning: t('systems.manage.deleteDialog.warningSystem'),
+            warningKey: 'systems.manage.deleteDialog.warningSystem',
             canDelete: true,
         });
     };
@@ -211,7 +212,7 @@ export default function DroneToolPage() {
             type: 'model',
             id: modelId,
             name: modelName,
-            warning: t('systems.manage.deleteDialog.warningModel'),
+            warningKey: 'systems.manage.deleteDialog.warningModel',
             canDelete: true,
         });
     };
@@ -228,7 +229,7 @@ export default function DroneToolPage() {
             type: 'component',
             id: componentId,
             name: componentName,
-            warning: t('systems.manage.deleteDialog.warningComponent'),
+            warningKey: 'systems.manage.deleteDialog.warningComponent',
             canDelete: true,
         });
     };
@@ -333,7 +334,7 @@ export default function DroneToolPage() {
             onEdit: handleEditModelDirect,
             onDelete: handleDeleteModel
         }),
-        [isDark]
+        [isDark, t]
     );
 
     const componentColumns = useMemo(
@@ -346,7 +347,7 @@ export default function DroneToolPage() {
             onDelete: handleDeleteComponent,
             onLog: handleLogComponent,
         }),
-        [isDark, toolCodeMap, modelMap]
+        [isDark, toolCodeMap, modelMap, t]
     );
 
     const standaloneComponents = useMemo(
@@ -597,7 +598,7 @@ export default function DroneToolPage() {
                                 ? isDark ? 'bg-amber-950/40 text-amber-300 border border-amber-800/50' : 'bg-amber-50 text-amber-800 border border-amber-200'
                                 : isDark ? 'bg-red-950/40 text-red-300 border border-red-800/50' : 'bg-red-50 text-red-800 border border-red-200'
                                 }`}>
-                                {deleteConfirm.warning}
+                                {deleteConfirm.warningKey ? t(deleteConfirm.warningKey) : deleteConfirm.warning}
                             </div>
 
                             {deleteConfirm.usedBy && (
