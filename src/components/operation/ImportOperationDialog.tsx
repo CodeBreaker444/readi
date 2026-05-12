@@ -65,7 +65,7 @@ const STEP_KEYS = [
     { id: 5, labelKey: 'confirm',     icon: ClipboardCheck },
 ];
 
-const PLATFORMS = [{ value: 'FLYTBASE', label: 'Flytbase' }];
+const PLATFORMS = [{ value: 'FLYTBASE', label: 'Control Center' }];
 
 export default function ImportOperationDialog({ open, onClose, onSaved }: ImportOperationDialogProps) {
     const { t } = useTranslation();

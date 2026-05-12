@@ -168,11 +168,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
     },
     {
       name: t('sidebar.flytbase'),
-      href: '/flytbase',
+      href: '/control-center',
       icon: HiOutlinePaperAirplane,
       subItems: [
-        { name: t('sidebar.settings'), href: '/flytbase' },
-        { name: t('sidebar.recentFlights'), href: '/flytbase/flights' },
+        { name: t('sidebar.settings'), href: '/control-center' },
+        { name: t('sidebar.recentFlights'), href: '/control-center/flights' },
       ],
     },
     {

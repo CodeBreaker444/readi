@@ -1,4 +1,4 @@
-import UserManagement from "@/components/superadmin/UserManagement";
+import UserManagement from "@/components/user/UserManagement";
 import { getUserSession } from "@/lib/auth/server-session";
 import { redirect } from "next/navigation";
 

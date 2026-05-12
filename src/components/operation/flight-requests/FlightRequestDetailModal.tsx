@@ -268,7 +268,7 @@ export function FlightRequestDetailModal({
                     className="w-full cursor-pointer h-9 text-xs bg-violet-600 hover:bg-violet-500 text-white gap-2"
                   >
                     <FileUp className="h-3.5 w-3.5" />
-                    Push FlytBase Log
+                    Push Control Center Log
                   </Button>
 
                 </div>

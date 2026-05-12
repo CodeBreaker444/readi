@@ -1,24 +1,24 @@
 'use client';
 
-import type { FlightWaypoint } from '@/components/flytbase/FlightPathMap';
+import type { FlightWaypoint } from '@/components/control-center/FlightPathMap';
 import { Skeleton } from '@/components/ui/skeleton';
 import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  HiChip,
-  HiClock,
-  HiFlag,
-  HiInformationCircle,
-  HiLocationMarker,
-  HiMap,
-  HiOutlineDocumentText,
-  HiTable,
-  HiUser,
+    HiChip,
+    HiClock,
+    HiFlag,
+    HiInformationCircle,
+    HiLocationMarker,
+    HiMap,
+    HiOutlineDocumentText,
+    HiTable,
+    HiUser,
 } from 'react-icons/hi';
 
 const FlightPathMapDynamic = dynamic(
-  () => import('@/components/flytbase/FlightPathMap').then((m) => ({ default: m.FlightPathMap })),
+  () => import('@/components/control-center/FlightPathMap').then((m) => ({ default: m.FlightPathMap })),
   { ssr: false },
 );
 
@@ -179,8 +179,7 @@ export function GutmaPreviewPanel({
             </div>
           )}
 
-          {/* Storage status badge */}
-          {archived ? (
+          {/* {archived ? (
             <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-500">
               <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -191,7 +190,7 @@ export function GutmaPreviewPanel({
             <span className={`text-[11px] font-medium ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
               {t('flytbase.preview.notSaved')}
             </span>
-          ) : null}
+          ) : null} */}
 
           {/* Archive button */}
           {/* {canArchive && !archived && (

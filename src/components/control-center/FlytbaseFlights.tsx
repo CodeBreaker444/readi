@@ -1,6 +1,6 @@
 'use client';
 
-import { GutmaPreviewPanel } from '@/components/flytbase/GutmaPreviewPanel';
+import { GutmaPreviewPanel } from '@/components/control-center/GutmaPreviewPanel';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -10,11 +10,11 @@ import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  HiChevronRight,
-  HiClock,
-  HiExclamationCircle,
-  HiOutlineDocumentText,
-  HiRefresh,
+    HiChevronRight,
+    HiClock,
+    HiExclamationCircle,
+    HiOutlineDocumentText,
+    HiRefresh,
 } from 'react-icons/hi';
 
 interface Flight {

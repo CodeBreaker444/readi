@@ -1062,7 +1062,7 @@ function EditMissionLogTab({ missionId, isDark }: { missionId: number; isDark: b
                 setFlightsError(data.error ?? 'Failed to fetch flights')
             }
         } catch {
-            setFlightsError('Failed to fetch Flytbase flights')
+            setFlightsError('Failed to fetch Control Center flights')
         } finally {
             setLoadingFlights(false)
         }

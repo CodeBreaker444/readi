@@ -189,6 +189,18 @@ export default function UserManagement({ session }: UserManagementProps) {
       });
       const data = res.data;
       if (data.code === 1) {
+        if (formData.ccToken && formData.ccOrgId && data.newId) {
+          try {
+            await axios.post('/api/team/user/control-center-token', {
+              user_id: data.newId,
+              token: formData.ccToken,
+              orgId: formData.ccOrgId,
+              tokenName: formData.ccTokenName || undefined,
+            });
+          } catch {
+            toast.warning('User created but Control Center token could not be saved');
+          }
+        }
         toast.success('User created successfully');
         setShowAddModal(false);
         fetchUsers();

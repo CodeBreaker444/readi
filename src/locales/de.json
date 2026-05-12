@@ -85,7 +85,7 @@
     "team": "Team",
     "reports": "Berichte",
     "settings": "Einstellungen",
-    "flytbase": "FlytBase",
+    "flytbase": "Control Center",
     "maintenance": "Wartung",
     "compliance": "Compliance"
   },
@@ -105,7 +105,7 @@
     "attachFlightLog": "Ausgewähltes Flugprotokoll anhängen",
     "attaching": "Anhängen…",
     "syncingGutma": "GUTMA synchronisieren…",
-    "fetchFromFlytbase": "Von FlytBase abrufen",
+    "fetchFromFlytbase": "Von Control Center abrufen",
     "fetchFlights": "Flüge abrufen",
     "manualUpload": "Manueller Upload",
     "attachedLogs": "Angehängte Protokolle",
@@ -167,7 +167,7 @@
     "generalAuditPlan": "Allgemeiner Auditplan",
     "safetyTargetReview": "Prufung der Sicherheitsziele",
     "requirementsEvidence": "Anforderungen und Nachweise",
-    "flytbase": "FlytBase",
+    "flytbase": "Control Center",
     "settings": "Einstellungen",
     "recentFlights": "Letzte Fluge",
     "training": "Schulung",
@@ -343,6 +343,10 @@
         "expiryDate": "Ablaufdatum",
         "status": "Status"
       }
+    },
+    "controlCenter": {
+      "title": "Control Center",
+      "subtitle": "Verwalte dein Control Center API-Token für den Import von Flugprotokollen."
     },
     "errors": {
       "load": "Profildaten konnten nicht geladen werden",
@@ -862,11 +866,11 @@
       "checking": "Wird überprüft…",
       "notAssigned": "Diese Anfrage ist noch keiner Planungsmission zugewiesen. Zuerst zuweisen.",
       "noMission": "Die zugewiesene Planung hat keine Mission konfiguriert. Öffnen Sie die Planung und weisen Sie zuerst ein System zu.",
-      "manualLog": "Manuelle Protokolle können nicht an DCC gesendet werden. Archivieren Sie unten einen FlytBase-Flug.",
+      "manualLog": "Manuelle Protokolle können nicht an DCC gesendet werden. Archivieren Sie unten einen Control Center-Flug.",
       "noLogArchived": "Noch kein Protokoll archiviert. Wählen Sie unten einen Flug zum Archivieren aus.",
-      "selectFlightArchive": "FlytBase-Flug zum Archivieren auswählen",
+      "selectFlightArchive": "Control Center-Flug zum Archivieren auswählen",
       "loadingFlights": "Flüge werden geladen…",
-      "noFlights": "Keine aktuellen FlytBase-Flüge gefunden. Überprüfen Sie Ihre FlytBase-Integration.",
+      "noFlights": "Keine aktuellen Control Center-Flüge gefunden. Überprüfen Sie Ihre Control Center-Integration.",
       "archiving": "Wird archiviert…",
       "archiveSelected": "Ausgewählten Flug in S3 archivieren",
       "step2": "Schritt 2 — An DCC senden",
@@ -878,7 +882,7 @@
       "selectPlanning": "Planungsmission auswählen",
       "noPlannings": "Keine Planungsmissionen gefunden.",
       "noDroneId": "Keine Drohne mit DCC-ID",
-      "flightSource": "FlytBase",
+      "flightSource": "Control Center",
       "manual": "manuell",
       "loadError": "Fluganfragen konnten nicht geladen werden",
       "denied": "Anfrage abgelehnt",
@@ -941,7 +945,7 @@
       "denying": "Wird abgelehnt…",
       "denyRequest": "Anfrage ablehnen",
       "log": "Protokoll",
-      "pushFlytbaseLog": "FlytBase-Protokoll senden",
+      "pushFlytbaseLog": "Control Center-Protokoll senden",
       "noActions": "Keine Aktionen für diesen Status verfügbar."
     },
     "missionTemplate": {
@@ -1488,12 +1492,12 @@
         "manualUpload": "Manueller Upload",
         "chooseFile": "GUTMA-Datei auswählen (.zip, .json, .xml)",
         "uploading": "Wird hochgeladen…",
-        "fetchFromFlytbase": "Von FlytBase abrufen",
+        "fetchFromFlytbase": "Von Control Center abrufen",
         "fetchFlights": "Flüge abrufen",
         "attachFlight": "Ausgewähltes Flugprotokoll anhängen",
         "attaching": "Wird angehängt…",
         "syncingGutma": "GUTMA wird synchronisiert…",
-        "sourceFlytbase": "FlytBase",
+        "sourceFlytbase": "Control Center",
         "sourceManual": "Manuell",
         "timeWindows": {
           "1hr": "Letzte 1 Std",
@@ -1548,7 +1552,7 @@
         "uploadSuccess": "Flugprotokoll hochgeladen",
         "uploadFailed": "Upload fehlgeschlagen",
         "noFlightsFound": "Keine Flüge in diesem Zeitfenster gefunden.",
-        "attachSuccess": "Flugprotokoll von FlytBase angehängt",
+        "attachSuccess": "Flugprotokoll von Control Center angehängt",
         "autoSyncSuccess_one": "Nutzung für {{count}} Komponente aus GUTMA ausgefüllt",
         "autoSyncSuccess_other": "Nutzung für {{count}} Komponenten aus GUTMA ausgefüllt",
         "postFlightSuccess": "Nachflugdaten gespeichert"
@@ -2436,24 +2440,24 @@
   },
   "flytbase": {
     "integration": {
-      "title": "FlytBase Integration",
-      "subtitle": "Verbinde dein FlytBase-Konto, um Flugprotokolle und Missionsdaten zu importieren",
+      "title": "Control Center",
+      "subtitle": "Verbinde dein Control Center-Konto, um Flugprotokolle und Missionsdaten zu importieren",
       "viewFlights": "Flüge anzeigen",
-      "needToken": "Benötigst du ein FlytBase API-Token?",
+      "needToken": "Benötigst du ein Control Center API-Token?",
       "viewDocumentation": "Dokumentation anzeigen",
       "tokenNote": "Verwende einen langlebigen API-Schlüssel (RS256 JWT), kein kurzlebiges Sitzungstoken."
     },
     "token": {
-      "title": "FlytBase API-Token",
-      "subtitle": "Wird verwendet, um deine Flugprotokolle und Missionshistorie von FlytBase abzurufen",
+      "title": "Control Center API-Token",
+      "subtitle": "Wird verwendet, um deine Flugprotokolle und Missionshistorie von Control Center abzurufen",
       "connected": "Verbunden",
       "notConnected": "Nicht verbunden",
       "secureNote": "Dein Token wird sicher gespeichert und wird niemals anderen Nutzern zugänglich gemacht oder protokolliert.",
-      "savedNote": "Ein FlytBase API-Token ist derzeit für dein Konto gespeichert.",
+      "savedNote": "Ein Control Center API-Token ist derzeit für dein Konto gespeichert.",
       "replaceToken": "Token ersetzen",
       "removing": "Wird entfernt…",
       "remove": "Entfernen",
-      "removeTitle": "FlytBase-Integration entfernen?",
+      "removeTitle": "Control Center-Integration entfernen?",
       "removeDescription": "Dadurch wird dein gespeichertes API-Token dauerhaft gelöscht. Du kannst keine Flugprotokolle oder Missionsdaten mehr abrufen, bis du dich mit einem neuen Token neu verbindest.",
       "cancel": "Abbrechen",
       "yesRemove": "Ja, Token entfernen",
@@ -2461,13 +2465,13 @@
       "optional": "(optional)",
       "tokenNamePlaceholder": "z.B. Produktion, Testkonto…",
       "apiToken": "API-Token",
-      "apiTokenPlaceholder": "Füge deinen langlebigen FlytBase API-Schlüssel ein",
+      "apiTokenPlaceholder": "Füge deinen langlebigen Control Center API-Schlüssel ein",
       "orgId": "Organisations-ID",
-      "orgIdPlaceholder": "z.B. 684fbfd4c264f8f677beb444",
-      "orgIdHint": "Zu finden in deinem FlytBase-Dashboard unter Organisationseinstellungen.",
+      "orgIdPlaceholder": "z.B. 684fbf23w2xs64f8sbn7beb114",
+      "orgIdHint": "Zu finden in deinem Control Center-Dashboard unter Organisationseinstellungen.",
       "verifying": "Wird verifiziert…",
       "verify": "Token verifizieren",
-      "verifiedTitle": "Token verifiziert — bestätige, dass dies dein FlytBase-Konto ist",
+      "verifiedTitle": "Token verifiziert — bestätige, dass dies dein Control Center-Konto ist",
       "saving": "Wird gespeichert…",
       "saveToken": "Ja, diesen Token speichern",
       "fields": {
@@ -2475,15 +2479,15 @@
         "username": "Benutzername",
         "phone": "Telefon",
         "organization": "Organisation",
-        "flytbaseId": "FlytBase-ID"
+        "flytbaseId": "Control Center-ID"
       },
       "toasts": {
-        "enterToken": "Bitte gib deinen FlytBase API-Token ein.",
-        "enterOrgId": "Bitte gib deine FlytBase Organisations-ID ein.",
+        "enterToken": "Bitte gib deinen Control Center API-Token ein.",
+        "enterOrgId": "Bitte gib deine Control Center Organisations-ID ein.",
         "verifyFailed": "Token-Verifizierung fehlgeschlagen. Bitte überprüfe deinen Token und die Organisations-ID.",
-        "saveSuccess": "FlytBase-Integration erfolgreich gespeichert.",
+        "saveSuccess": "Control Center-Integration erfolgreich gespeichert.",
         "saveFailed": "Token konnte nicht gespeichert werden.",
-        "removed": "FlytBase-Integration entfernt.",
+        "removed": "Control Center-Integration entfernt.",
         "removeFailed": "Token konnte nicht entfernt werden."
       }
     },
@@ -2495,7 +2499,7 @@
       "flightsLabel": "Flüge",
       "shown": "angezeigt",
       "of": "von",
-      "noToken": "Kein FlytBase API-Token für dein Konto konfiguriert.",
+      "noToken": "Kein Control Center API-Token für dein Konto konfiguriert.",
       "setUp": "Jetzt einrichten",
       "noRecentFlights": "Keine aktuellen Flüge gefunden.",
       "noFlightsInWindow": "Keine Flüge in den letzten {{window}} Minuten gefunden.",
@@ -2518,7 +2522,7 @@
         "gutmaLog": "GUTMA-Protokoll",
         "flightInfo": "Fluginformationen"
       },
-      "downloadingLog": "GUTMA-Protokoll wird von FlytBase heruntergeladen…",
+      "downloadingLog": "GUTMA-Protokoll wird von Control Center heruntergeladen…",
       "noGpsCoords": "Keine GPS-Koordinaten in dieser GUTMA-Datei gefunden.",
       "noFlightInfo": "Keine zusätzlichen Fluginformationen in dieser GUTMA-Datei verfügbar.",
       "noWaypointData": "Keine Wegpunktdaten in dieser GUTMA-Datei gefunden.",
@@ -3565,7 +3569,7 @@
           "regCode": "z.B. UAS-2024-001"
         },
         "c2Options": {
-          "flytbase": "Flytbase",
+          "flytbase": "Control Center",
           "votix": "Votix",
           "flighthub": "DJI FlightHub",
           "app": "APP auf GCS"
@@ -3912,7 +3916,7 @@
       "initialising": "Initialisierung…",
       "noApiKey": "Kein API-Schlüssel"
     },
-    "noFlytbaseKey": "Kein FlytBase API-Schlüssel konfiguriert.",
+    "noFlytbaseKey": "Kein Control Center API-Schlüssel konfiguriert.",
     "configure": "Konfigurieren →",
     "retry": "Wiederholen",
     "fleetManagement": "Flottenmanagement",

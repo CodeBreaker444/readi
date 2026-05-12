@@ -1,10 +1,10 @@
 'use client';
 
-import { FlightRequestDetailModal } from '@/components/planning/FlightRequestDetailModal';
-import { FlightRequestsHeader } from '@/components/planning/flight-requests/FlightRequestsHeader';
-import { FlightRequestsLogModal } from '@/components/planning/flight-requests/FlightRequestsLogModal';
-import { FlightRequestsPlanModal } from '@/components/planning/flight-requests/FlightRequestsPlanModal';
-import { FlightRequestsStats } from '@/components/planning/flight-requests/FlightRequestsStats';
+import { FlightRequestDetailModal } from '@/components/operation/flight-requests/FlightRequestDetailModal';
+import { FlightRequestsHeader } from '@/components/operation/flight-requests/FlightRequestsHeader';
+import { FlightRequestsLogModal } from '@/components/operation/flight-requests/FlightRequestsLogModal';
+import { FlightRequestsPlanModal } from '@/components/operation/flight-requests/FlightRequestsPlanModal';
+import { FlightRequestsStats } from '@/components/operation/flight-requests/FlightRequestsStats';
 import { FlightRequest, createFlightRequestColumns } from '@/components/tables/flightRequestsColumns';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
