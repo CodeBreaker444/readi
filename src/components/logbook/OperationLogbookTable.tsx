@@ -38,7 +38,7 @@ export function OperationLogbookTable({ data, loading, isDark }: OperationLogboo
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
 
-  const table = useReactTable({
+const table = useReactTable({
     data,
     columns: operationLogbookColumns,
     state: { sorting, columnFilters, globalFilter },
@@ -49,7 +49,11 @@ export function OperationLogbookTable({ data, loading, isDark }: OperationLogboo
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    initialState: { pagination: { pageSize: 25 } },
+    initialState: { 
+      pagination: { 
+        pageSize: 8 
+      } 
+    },
   });
 
   return (

@@ -56,6 +56,7 @@ export type CreateOperationSchema = {
   notes?: string | null;
   fk_pilot_user_id: number;
   fk_tool_id?: number | null;
+  fk_client_id?: number | null;
   fk_planning_id?: number | null;
   fk_mission_type_id?: number | null;
   fk_mission_category_id?: number | null;
@@ -73,6 +74,7 @@ export type UpdateOperationSchema = {
   notes?: string | null;
   fk_pilot_user_id?: number;
   fk_tool_id?: number | null;
+  fk_client_id?: number | null;
   fk_planning_id?: number | null;
   fk_mission_status_id?: number;
   distance_flown?: number | null;
@@ -262,6 +264,7 @@ export type CreateOperationCalendarInput = {
   scheduled_end: string
   fk_pilot_user_id: number
   fk_tool_id?: number | null
+  fk_client_id?: number | null
   fk_mission_type_id?: number | null
   fk_mission_category_id?: number | null
   fk_planning_id?: number | null

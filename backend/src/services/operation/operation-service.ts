@@ -187,6 +187,7 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
       fk_owner_id: ownerId,
       fk_pilot_user_id: input.fk_pilot_user_id,
       fk_tool_id: (input as any).fk_tool_id ?? null,
+      fk_client_id: (input as any).fk_client_id ?? null,
       fk_planning_id: input.fk_planning_id ?? null,
       fk_mission_type_id: (input as any).fk_mission_type_id ?? null,
       fk_mission_category_id: (input as any).fk_mission_category_id ?? null,
@@ -218,6 +219,7 @@ export async function updateOperation(id: number, input: UpdateOperationSchema):
   if (input.notes !== undefined) updatePayload.notes = input.notes;
   if (input.fk_pilot_user_id !== undefined) updatePayload.fk_pilot_user_id = input.fk_pilot_user_id;
   if (input.fk_tool_id !== undefined) updatePayload.fk_tool_id = input.fk_tool_id;
+  if ((input as any).fk_client_id !== undefined) updatePayload.fk_client_id = (input as any).fk_client_id;
   if (input.fk_planning_id !== undefined) updatePayload.fk_planning_id = input.fk_planning_id;
   if (input.fk_mission_status_id !== undefined) updatePayload.fk_mission_status_id = input.fk_mission_status_id;
   if ((input as any).fk_mission_type_id !== undefined) updatePayload.fk_mission_type_id = (input as any).fk_mission_type_id;

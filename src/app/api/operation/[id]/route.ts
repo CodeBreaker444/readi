@@ -27,6 +27,7 @@ const updateOperationSchema = z.object({
   notes: z.string().nullable().optional(),
   fk_pilot_user_id: z.number().int().positive().optional(),
   fk_tool_id: z.number().int().positive().nullable().optional(),
+  fk_client_id: z.number().int().positive().nullable().optional(),
   fk_planning_id: z.number().int().positive().nullable().optional(),
   fk_mission_status_id: z.number().int().positive().optional(),
   fk_mission_type_id: z.number().int().positive().nullable().optional(),
