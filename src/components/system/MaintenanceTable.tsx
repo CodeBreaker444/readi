@@ -380,6 +380,8 @@ function ComponentSubRow({ comp, threshold, isDark }: { comp: MaintenanceCompone
         {comp.serial_number ?? "—"}
       </td>
 
+      <td className={`px-3 py-2.5 text-xs ${isDark ? "text-slate-600" : "text-slate-300"}`}>—</td>
+
       <td className="px-3 py-2.5">
         <CycleBadge model={model} isDark={isDark} />
       </td>
@@ -488,6 +490,17 @@ function buildColumns(threshold: number, isDark: boolean): ColumnDef<Maintenance
           {row.original.serial_number || "—"}
         </span>
       ),
+    },
+    {
+      id: "model",
+      header: "Model",
+      cell: ({ row }) => {
+        const m = row.original.model;
+        const label = [m.factory_serie, m.factory_model].filter(Boolean).join(" ").trim();
+        return label
+          ? <span className={`text-xs ${isDark ? "text-slate-300" : "text-slate-600"}`}>{label}</span>
+          : <span className={isDark ? "text-slate-600" : "text-slate-300"}>—</span>;
+      },
     },
     {
       id: "cycle",

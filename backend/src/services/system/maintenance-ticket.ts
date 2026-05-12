@@ -638,6 +638,30 @@ async function resetComponentCounters(toolId: number, resetAt: string, component
   );
 }
 
+export async function getComponentMissions(componentId: number) {
+  const { data: comp } = await supabase
+    .from('tool_component')
+    .select('fk_tool_id, installation_date')
+    .eq('component_id', componentId)
+    .maybeSingle();
+
+  if (!comp?.fk_tool_id) return [];
+
+  let query = supabase
+    .from('pilot_mission')
+    .select('pilot_mission_id, mission_code, actual_start, actual_end, flight_duration, distance_flown')
+    .eq('fk_tool_id', comp.fk_tool_id)
+    .not('actual_end', 'is', null)
+    .order('actual_start', { ascending: false, nullsFirst: false });
+
+  if (comp.installation_date) {
+    query = query.gte('actual_start', comp.installation_date);
+  }
+
+  const { data } = await query;
+  return data ?? [];
+}
+
 export async function getComponentTicketEvents(componentId: number) {
   const { data, error } = await supabase
     .from('maintenance_ticket')
