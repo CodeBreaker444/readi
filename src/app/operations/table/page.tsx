@@ -14,8 +14,8 @@ import { OperationsPageHeader } from '@/components/operation/table/OperationsPag
 import { OperationsStats } from '@/components/operation/table/OperationsStats';
 import { OperationsTable } from '@/components/operation/table/OperationsTable';
 import { getOperationColumns, OperationTableMeta } from '@/components/tables/OperationColumn';
-import { TooltipProvider } from '@/components/ui/tooltip';
 import { useTimezone } from '@/components/TimezoneProvider';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import { useTheme } from '@/components/useTheme';
 import {
   getCoreRowModel,
@@ -44,6 +44,7 @@ export interface Operation {
   max_altitude?: number | null;
   notes?: string | null;
   fk_pilot_user_id: number;
+  fk_client_id?: number | null;
   fk_tool_id?: number | null;
   fk_mission_status_id?: number | null;
   fk_planning_id?: number | null;
@@ -272,6 +273,7 @@ const table = useReactTable({
         mission_ids: eligible.map((r) => r.pilot_mission_id),
       });
       setRowSelection({});
+      setRefreshKey((k) => k + 1);
       const skipped = selectedRows.length - eligible.length;
       toast.success(
         t('operations.table.toast.autofillSuccess', { count: res.data.processed }) +

@@ -122,7 +122,7 @@ function ProcedureBadge({ op, isDark }: { op: Operation; isDark: boolean }) {
     );
   }
 
-  const allDone = assignmentDone && checklistDone;
+  const allDone = !!op.luc_completed_at || (assignmentDone && checklistDone);
 
   return (
     <Tooltip>

@@ -73,7 +73,7 @@ interface OperationForm {
     status_name: StatusName;
     fk_pilot_user_id: string;
     fk_tool_id: string;
-    fk_client_id: string;
+    fk_client_id: number | null;
     fk_mission_type_id: string;
     fk_mission_category_id: string;
     is_recurring: boolean;
@@ -106,7 +106,7 @@ const EMPTY_FORM: OperationForm = {
     status_name: 'PLANNED',
     fk_pilot_user_id: '',
     fk_tool_id: '',
-    fk_client_id: '',
+    fk_client_id: null,
     fk_mission_type_id: '',
     fk_mission_category_id: '',
     is_recurring: false,
@@ -170,6 +170,7 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
                 scheduled_start: initial.scheduled_start ?? '',
                 scheduled_end: initial.actual_end ?? '',
                 status_name: (initial.status_name as StatusName) ?? 'PLANNED',
+                fk_client_id: initial.fk_client_id ?? null,
                 fk_pilot_user_id: initial.fk_pilot_user_id?.toString() ?? '',
                 fk_tool_id: initial.fk_tool_id?.toString() ?? '',
                 fk_mission_type_id: initial.fk_mission_type_id?.toString() ?? '',
@@ -226,7 +227,7 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
                         scheduled_start: form.scheduled_start,
                         fk_pilot_user_id: form.fk_pilot_user_id ? parseInt(form.fk_pilot_user_id) : undefined,
                         fk_tool_id: form.fk_tool_id ? parseInt(form.fk_tool_id) : undefined,
-                        fk_client_id: form.fk_client_id ? parseInt(form.fk_client_id) : undefined,
+                        fk_client_id: form.fk_client_id ? form.fk_client_id : undefined,
                         fk_mission_type_id: form.fk_mission_type_id ? parseInt(form.fk_mission_type_id) : undefined,
                         fk_mission_category_id: form.fk_mission_category_id ? parseInt(form.fk_mission_category_id) : undefined,
                         fk_planning_id: form.fk_planning_id ? parseInt(form.fk_planning_id) : undefined,
@@ -260,7 +261,7 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
                     actual_end: toIsoString(form.scheduled_end) ?? null,
                     fk_pilot_user_id: form.fk_pilot_user_id ? parseInt(form.fk_pilot_user_id) : undefined,
                     fk_tool_id: form.fk_tool_id ? parseInt(form.fk_tool_id) : undefined,
-                    fk_client_id: form.fk_client_id ? parseInt(form.fk_client_id) : undefined,
+                    fk_client_id: form.fk_client_id ? form.fk_client_id : undefined,
                     fk_mission_type_id: form.fk_mission_type_id ? parseInt(form.fk_mission_type_id) : undefined,
                     fk_mission_category_id: form.fk_mission_category_id ? parseInt(form.fk_mission_category_id) : undefined,
                     status_name: form.status_name,
@@ -627,7 +628,7 @@ export function OperationDialog({ open, onClose, initial, onSaved, onSuccess }: 
                                 <Select key={`planning-${plannings.length}`} value={form.fk_planning_id}
                                     onValueChange={(v) => {
                                         const selected = plannings.find(p => p.planning_id.toString() === v);
-                                        setForm((f) => ({ ...f, fk_planning_id: v, fk_client_id: selected?.fk_client_id?.toString() ?? f.fk_client_id }));
+                                        setForm((f) => ({ ...f, fk_planning_id: v, fk_client_id: selected?.fk_client_id ?? f.fk_client_id }));
                                     }}
                                     disabled={loadingOptions}>
                                     <SelectTrigger>

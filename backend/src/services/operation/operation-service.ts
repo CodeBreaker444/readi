@@ -536,13 +536,13 @@ export async function batchAutofill(
 ): Promise<{ processed: number[]; skipped: number[] }> {
   const { data: missions, error } = await supabase
     .from('pilot_mission')
-    .select('pilot_mission_id, status_name, fk_pilot_user_id, actual_end')
+    .select('pilot_mission_id, status_name, fk_pilot_user_id, actual_end, fk_luc_procedure_id, luc_procedure_progress')
     .in('pilot_mission_id', missionIds)
     .eq('fk_owner_id', ownerId);
 
   if (error) throw new Error(`Failed to fetch missions: ${error.message}`);
 
-  //COMPLETED and pilot assigned  
+  //completed and pilot assigned
   const eligible = (missions ?? []).filter(
     (m: any) => m.status_name === 'COMPLETED' && m.fk_pilot_user_id
   );
@@ -555,7 +555,7 @@ export async function batchAutofill(
   const now = new Date().toISOString();
   const ids = eligible.map((m: any) => m.pilot_mission_id);
 
-  // Filling actual_end for missions that completed but have no end timestamp
+  // filling actual_end for missions that completed but have no end timestamp
   const { error: updateError } = await supabase
     .from('pilot_mission')
     .update({ actual_end: now, updated_at: now })
@@ -563,6 +563,68 @@ export async function batchAutofill(
     .is('actual_end', null);
 
   if (updateError) throw new Error(`Failed to autofill missions: ${updateError.message}`);
+
+  // marking all checklist/communication/assignment tasks as completed
+  const uniqueProcedureIds = [...new Set(eligible.map((m: any) => m.fk_luc_procedure_id).filter(Boolean))];
+
+  if (uniqueProcedureIds.length > 0) {
+    const { data: procedures } = await supabase
+      .from('luc_procedure')
+      .select('procedure_id, procedure_steps')
+      .in('procedure_id', uniqueProcedureIds);
+
+    const procedureMap: Record<number, any> = {};
+    for (const proc of procedures ?? []) {
+      procedureMap[proc.procedure_id] = proc.procedure_steps;
+    }
+
+    await Promise.all(
+      eligible.map(async (m: any) => {
+        const steps = procedureMap[m.fk_luc_procedure_id];
+        if (!steps) return;
+
+        const tasksDef = steps.tasks;
+        let checklistCodes: string[] = [];
+        let communicationCodes: string[] = [];
+        let assignmentCodes: string[] = [];
+
+        if (Array.isArray(tasksDef)) {
+          checklistCodes = tasksDef.flatMap((t: any) => (t.checklist ?? []).map((c: any) => c.checklist_code).filter(Boolean));
+          communicationCodes = tasksDef.flatMap((t: any) => (t.communication ?? []).map((c: any) => c.communication_code).filter(Boolean));
+          assignmentCodes = tasksDef.flatMap((t: any) => (t.assignment ?? []).map((a: any) => a.assignment_code).filter(Boolean));
+        } else if (tasksDef && typeof tasksDef === 'object') {
+          checklistCodes = ((tasksDef as any).checklist ?? []).map((c: any) => c.checklist_code).filter(Boolean);
+          communicationCodes = ((tasksDef as any).communication ?? []).map((c: any) => c.communication_code).filter(Boolean);
+          assignmentCodes = ((tasksDef as any).assignment ?? []).map((a: any) => a.assignment_code).filter(Boolean);
+        }
+
+        const existing: Record<string, Record<string, string>> = (m.luc_procedure_progress as any) ?? {
+          checklist: {},
+          communication: {},
+          assignment: {},
+        };
+        const progress: Record<string, Record<string, string>> = {
+          checklist: { ...existing.checklist },
+          communication: { ...existing.communication },
+          assignment: { ...existing.assignment },
+        };
+
+        for (const code of checklistCodes) progress.checklist[code] = 'Y';
+        for (const code of communicationCodes) progress.communication[code] = 'Y';
+        for (const code of assignmentCodes) progress.assignment[code] = 'Y';
+
+        await supabase
+          .from('pilot_mission')
+          .update({
+            luc_procedure_progress: progress,
+            luc_completed_at: now,
+            updated_at: now,
+          })
+          .eq('pilot_mission_id', m.pilot_mission_id)
+          .eq('fk_owner_id', ownerId);
+      })
+    );
+  }
 
   return { processed: ids, skipped };
 }

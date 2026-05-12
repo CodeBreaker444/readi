@@ -220,7 +220,7 @@ export function OperationsBatchBar({
               <AlertDialogCancel className='cursor-pointer'>{t('common.cancel', 'Cancel')}</AlertDialogCancel>
               <AlertDialogAction
                 onClick={onBatchDelete}
-                className="bg-destructive cursor-pointer text-destructive-foreground hover:bg-destructive/90"
+                className="bg-red-500 hover:bg-red-600 cursor-pointer text-destructive-foreground"
               >
                 {t('common.delete', 'Delete')}
               </AlertDialogAction>
