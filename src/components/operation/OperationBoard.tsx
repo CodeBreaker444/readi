@@ -10,7 +10,8 @@ import { useTimezone } from "@/components/TimezoneProvider";
 import { cn, formatDateTimeInTz } from "@/lib/utils";
 import type { DccCallbackResult } from "@/types/dcc-callback";
 import axios from "axios";
-import { Activity, Calendar, CheckCircle2, Clock, Crosshair, FileText, MapPin, Navigation, Tag, User, Wrench } from "lucide-react";
+import { Activity, AlertTriangle, Calendar, CheckCircle2, ClipboardList, Clock, Crosshair, FileText, MapPin, Navigation, Tag, User, Wrench, XCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -362,6 +363,7 @@ export function OperationBoard() {
                 mission={selectedMission}
                 isDark={isDark}
                 onClose={() => setSelectedMission(null)}
+                onOpenLuc={(m) => { setSelectedMission(null); setLucMission(m); }}
             />
 
             {lucMission && (
@@ -379,11 +381,36 @@ function formatBoardDate(iso: string, tz: string): string {
     return formatDateTimeInTz(iso, tz);
 }
 
-function MissionDetailSheet({ mission, isDark, onClose }: { mission: Mission | null; isDark: boolean; onClose: () => void }) {
+function getMissionProcedureStatus(mission: Mission) {
+    const hasLuc = !!mission.fk_luc_procedure_id;
+    if (!hasLuc || !mission.luc_procedure_progress) {
+        return { hasLuc, assignmentDone: false, checklistDone: false, assignmentTotal: 0, assignmentComplete: 0, checklistTotal: 0, checklistComplete: 0 };
+    }
+    const progress = mission.luc_procedure_progress;
+    const assignmentEntries = Object.values(progress.assignment ?? {});
+    const checklistEntries = Object.values(progress.checklist ?? {});
+    const assignmentComplete = assignmentEntries.filter(v => v === "Y").length;
+    const checklistComplete = checklistEntries.filter(v => v === "Y").length;
+    return {
+        hasLuc,
+        assignmentDone: assignmentEntries.length === 0 || assignmentComplete === assignmentEntries.length,
+        checklistDone: checklistEntries.length === 0 || checklistComplete === checklistEntries.length,
+        assignmentTotal: assignmentEntries.length,
+        assignmentComplete,
+        checklistTotal: checklistEntries.length,
+        checklistComplete,
+    };
+}
+
+function MissionDetailSheet({ mission, isDark, onClose, onOpenLuc }: { mission: Mission | null; isDark: boolean; onClose: () => void; onOpenLuc: (m: Mission) => void }) {
     const { t } = useTranslation();
     const { timezone } = useTimezone();
     const isDone = mission?.fk_status_id === 3;
-    
+
+    const proc = mission ? getMissionProcedureStatus(mission) : null;
+    const procAllDone = proc ? proc.assignmentDone && proc.checklistDone : false;
+    const lucCompleted = !!mission?.luc_completed_at;
+
     const STATUS_LABEL: Record<string, { label: string; cls: string; darkCls: string }> = {
         "00": { label: t("operations.board.status.scheduled"), cls: "bg-blue-50 text-blue-700 border-blue-200", darkCls: "bg-blue-500/10 text-blue-400 border-blue-500/30" },
         "05": { label: t("operations.board.status.inProgress"), cls: "bg-amber-50 text-amber-700 border-amber-200", darkCls: "bg-amber-500/10 text-amber-400 border-amber-500/30" },
@@ -418,11 +445,79 @@ function MissionDetailSheet({ mission, isDark, onClose }: { mission: Mission | n
                                 )}
                             </div>
                             <SheetTitle className={cn("text-left text-base mt-1", isDark ? "text-white" : "")}>
-                                {mission.vehicle_code}{mission.vehicle_desc ? ` — ${mission.vehicle_desc}` : ""}
+                                {mission.mission_name || `${mission.vehicle_code}${mission.vehicle_desc ? ` — ${mission.vehicle_desc}` : ""}`}
                             </SheetTitle>
                         </SheetHeader>
 
                         <div className="space-y-6">
+                            {/* Procedure Checklist */}
+                            {proc?.hasLuc && (
+                                <section className="space-y-3">
+                                    <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                                        <ClipboardList className="h-3.5 w-3.5" />
+                                        {t("operations.table.detail.procedure")}
+                                    </h3>
+                                    <div className={cn("rounded-lg border p-3 space-y-2",
+                                        lucCompleted
+                                            ? isDark ? "bg-emerald-950/20 border-emerald-700" : "bg-emerald-50 border-emerald-200"
+                                            : !procAllDone
+                                                ? isDark ? "bg-amber-950/20 border-amber-700" : "bg-amber-50 border-amber-200"
+                                                : isDark ? "bg-slate-800 border-slate-700" : "bg-muted/30"
+                                    )}>
+                                        <div className="flex items-center gap-2">
+                                            {lucCompleted
+                                                ? <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+                                                : !procAllDone
+                                                    ? <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
+                                                    : <CheckCircle2 className="h-4 w-4 text-slate-400 shrink-0" />
+                                            }
+                                            <p className={cn("text-sm font-medium",
+                                                lucCompleted ? "text-emerald-700 dark:text-emerald-300"
+                                                    : !procAllDone ? "text-amber-800 dark:text-amber-300"
+                                                    : "text-foreground")}>
+                                                {lucCompleted
+                                                    ? t("operations.table.detail.procedureCompleted")
+                                                    : !procAllDone
+                                                        ? t("operations.table.detail.stepsPending")
+                                                        : t("operations.table.detail.stepsCompleteNotFinalized")}
+                                            </p>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2 pt-1">
+                                            <div className="flex items-center gap-1.5 text-xs">
+                                                {proc.assignmentDone
+                                                    ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                                                    : <XCircle className="h-3.5 w-3.5 text-amber-500" />}
+                                                <span className="text-muted-foreground">
+                                                    {t("operations.table.detail.assignment")}{proc.assignmentTotal > 0 ? ` (${proc.assignmentComplete}/${proc.assignmentTotal})` : ""}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-1.5 text-xs">
+                                                {proc.checklistDone
+                                                    ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                                                    : <XCircle className="h-3.5 w-3.5 text-amber-500" />}
+                                                <span className="text-muted-foreground">
+                                                    {t("operations.table.detail.checklist")}{proc.checklistTotal > 0 ? ` (${proc.checklistComplete}/${proc.checklistTotal})` : ""}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {!lucCompleted && (
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="w-full gap-2 text-xs"
+                                            onClick={() => { onClose(); onOpenLuc(mission); }}
+                                        >
+                                            <ClipboardList className="h-3.5 w-3.5" />
+                                            {t("operations.table.detail.manageProcedure")}
+                                        </Button>
+                                    )}
+                                </section>
+                            )}
+
+                            {proc?.hasLuc && <div className="h-px bg-border" />}
+
+                            {/* Timeline */}
                             <section className="space-y-3">
                                 <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t("operations.board.detail.timeline")}</h3>
                                 <div className="grid grid-cols-1 gap-2">
@@ -449,38 +544,56 @@ function MissionDetailSheet({ mission, isDark, onClose }: { mission: Mission | n
 
                             <div className="h-px bg-border" />
 
+                            {/* Personnel & Equipment */}
                             <section className="space-y-3">
                                 <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t("operations.board.detail.personnelEquipment")}</h3>
                                 <div className="space-y-2">
                                     <DetailItem icon={<User className="h-3.5 w-3.5" />} label={t("operations.board.detail.pilotInCommand")} value={mission.pic_fullname} />
+                                    <DetailItem icon={<Wrench className="h-3.5 w-3.5" />} label={t("operations.table.detail.droneSystem")} value={mission.vehicle_code + (mission.vehicle_desc ? ` — ${mission.vehicle_desc}` : "")} />
                                     <DetailItem icon={<Crosshair className="h-3.5 w-3.5" />} label={t("operations.board.detail.missionType")} value={mission.mission_type_desc} />
                                     <DetailItem icon={<Tag className="h-3.5 w-3.5" />} label={t("operations.board.detail.category")} value={mission.mission_category_desc} />
                                     <DetailItem icon={<MapPin className="h-3.5 w-3.5" />} label={t("operations.board.detail.planning")} value={mission.mission_planning_code} />
+                                    {mission.client_name && (
+                                        <DetailItem icon={<Activity className="h-3.5 w-3.5" />} label={t("operations.table.detail.client")} value={mission.client_name} />
+                                    )}
                                 </div>
                             </section>
 
-                            {isDone && (mission.flown_time != null || mission.flown_meter != null) && (
-                                <>
-                                    <div className="h-px bg-border" />
-                                    <section className="space-y-3">
-                                        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t("operations.board.detail.flightResults")}</h3>
-                                        <div className="grid grid-cols-2 gap-3">
-                                            {mission.flown_time != null && (
-                                                <div className={cn("rounded-lg border p-3 space-y-1", isDark ? "bg-emerald-950/20 border-emerald-800" : "bg-emerald-50 border-emerald-200")}>
-                                                    <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> {t("operations.board.detail.duration")}</p>
-                                                    <p className={cn("text-lg font-bold tabular-nums", isDark ? "text-emerald-400" : "text-emerald-700")}>{mission.flown_time} min</p>
-                                                </div>
-                                            )}
-                                            {mission.flown_meter != null && (
-                                                <div className={cn("rounded-lg border p-3 space-y-1", isDark ? "bg-emerald-950/20 border-emerald-800" : "bg-emerald-50 border-emerald-200")}>
-                                                    <p className="text-xs text-muted-foreground flex items-center gap-1"><Navigation className="h-3 w-3" /> {t("operations.board.detail.distance")}</p>
-                                                    <p className={cn("text-lg font-bold tabular-nums", isDark ? "text-emerald-400" : "text-emerald-700")}>{(mission.flown_meter / 1000).toFixed(1)} km</p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </section>
-                                </>
-                            )}
+                            {/* Flight Results — always shown */}
+                            <div className="h-px bg-border" />
+                            <section className="space-y-3">
+                                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t("operations.board.detail.flightResults")}</h3>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className={cn("rounded-lg border p-3 space-y-1",
+                                        isDone && mission.flown_time != null
+                                            ? isDark ? "bg-emerald-950/20 border-emerald-800" : "bg-emerald-50 border-emerald-200"
+                                            : isDark ? "bg-slate-800 border-slate-700" : "bg-muted/30"
+                                    )}>
+                                        <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> {t("operations.board.detail.duration")}</p>
+                                        <p className={cn("text-lg font-bold tabular-nums",
+                                            isDone && mission.flown_time != null
+                                                ? isDark ? "text-emerald-400" : "text-emerald-700"
+                                                : "text-foreground"
+                                        )}>
+                                            {mission.flown_time != null ? `${mission.flown_time} min` : "—"}
+                                        </p>
+                                    </div>
+                                    <div className={cn("rounded-lg border p-3 space-y-1",
+                                        isDone && mission.flown_meter != null
+                                            ? isDark ? "bg-emerald-950/20 border-emerald-800" : "bg-emerald-50 border-emerald-200"
+                                            : isDark ? "bg-slate-800 border-slate-700" : "bg-muted/30"
+                                    )}>
+                                        <p className="text-xs text-muted-foreground flex items-center gap-1"><Navigation className="h-3 w-3" /> {t("operations.board.detail.distance")}</p>
+                                        <p className={cn("text-lg font-bold tabular-nums",
+                                            isDone && mission.flown_meter != null
+                                                ? isDark ? "text-emerald-400" : "text-emerald-700"
+                                                : "text-foreground"
+                                        )}>
+                                            {mission.flown_meter != null ? `${(mission.flown_meter / 1000).toFixed(1)} km` : "—"}
+                                        </p>
+                                    </div>
+                                </div>
+                            </section>
 
                             {mission.mission_notes && (
                                 <>
