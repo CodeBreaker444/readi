@@ -337,7 +337,6 @@ export async function getTrainingCalendarEvents(owner_id: number): Promise<Train
     });
 }
 
-// ─── Flat per-user training records ──────────────────────────────────────────
 
 export interface FlatTrainingRecord {
   attendance_id: number;
@@ -349,6 +348,7 @@ export interface FlatTrainingRecord {
   training_type: string | null;
   certificate_type: string | null;
   session_code: string | null;
+  session_date: string | null;
   completion_date: string | null;
   expiry_date: string | null;
   status: 'VALID' | 'EXPIRED' | null;
@@ -361,6 +361,7 @@ export interface AddFlatTrainingInput {
   training_type?: string | null;
   certificate_type?: string | null;
   session_code?: string | null;
+  session_date?: string | null;
   completion_date?: string | null;
   expiry_date?: string | null;
 }
@@ -372,6 +373,7 @@ export interface UpdateFlatTrainingInput {
   training_type?: string | null;
   certificate_type?: string | null;
   session_code?: string | null;
+  session_date?: string | null;
   completion_date?: string | null;
   expiry_date?: string | null;
 }
@@ -398,6 +400,7 @@ export async function getFlatTrainingList(owner_id: number): Promise<FlatTrainin
       attendance_id,
       fk_training_id,
       fk_user_id,
+      training_session_date,
       certification_number,
       certification_date,
       certification_expiry,
@@ -416,7 +419,7 @@ export async function getFlatTrainingList(owner_id: number): Promise<FlatTrainin
     `
     )
     .eq('training.fk_owner_id', owner_id)
-    .order('certification_expiry', { ascending: false, nullsFirst: false });
+    .order('created_at', { ascending: false });
 
   if (error) throw new Error(`Failed to fetch training records: ${error.message}`);
 
@@ -438,6 +441,7 @@ export async function getFlatTrainingList(owner_id: number): Promise<FlatTrainin
       training_type: row.training?.training_type ?? null,
       certificate_type: row.training?.certificate_type ?? null,
       session_code: row.certification_number ?? null,
+      session_date: row.training_session_date ?? null,
       completion_date: row.certification_date ?? null,
       expiry_date: row.certification_expiry ?? null,
       status,
@@ -446,9 +450,9 @@ export async function getFlatTrainingList(owner_id: number): Promise<FlatTrainin
 }
 
 export async function addFlatTraining(input: AddFlatTrainingInput): Promise<number[]> {
-  const { owner_id, user_ids, training_name, training_type, certificate_type, session_code, completion_date, expiry_date } = input;
+  const { owner_id, user_ids, training_name, training_type, certificate_type, session_code, session_date, completion_date, expiry_date } = input;
 
-  // Create new training catalog entry for this session
+  // Creating new training catalog entry for this session
   const { data: created, error: createErr } = await supabase
     .from('training')
     .insert({
@@ -467,6 +471,7 @@ export async function addFlatTraining(input: AddFlatTrainingInput): Promise<numb
   const rows = user_ids.map((uid) => ({
     fk_training_id: trainingId,
     fk_user_id: uid,
+    training_session_date: session_date ?? null,
     certification_number: session_code ?? null,
     certification_date: completion_date ?? null,
     certification_expiry: expiry_date ?? null,
@@ -485,7 +490,7 @@ export async function addFlatTraining(input: AddFlatTrainingInput): Promise<numb
 }
 
 export async function updateFlatTraining(input: UpdateFlatTrainingInput): Promise<void> {
-  const { attendance_id, fk_training_id, training_name, training_type, certificate_type, session_code, completion_date, expiry_date } = input;
+  const { attendance_id, fk_training_id, training_name, training_type, certificate_type, session_code, session_date, completion_date, expiry_date } = input;
 
   await supabase
     .from('training')
@@ -495,6 +500,7 @@ export async function updateFlatTraining(input: UpdateFlatTrainingInput): Promis
   const { error } = await supabase
     .from('training_attendance')
     .update({
+      training_session_date: session_date ?? null,
       certification_number: session_code ?? null,
       certification_date: completion_date ?? null,
       certification_expiry: expiry_date ?? null,

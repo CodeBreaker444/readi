@@ -13,6 +13,7 @@ const addFlatSchema = z.object({
   training_type: z.enum(['INITIAL', 'RECURRENT', 'EMERGENCY', 'SIMULATOR', 'OTHER']).optional().nullable(),
   certificate_type: z.enum(['PARTICIPATION', 'QUALIFICATION']).optional().nullable(),
   session_code: z.string().max(100).optional().nullable(),
+  session_date: z.string().regex(dateRegex, 'Date must be YYYY-MM-DD').optional().nullable(),
   completion_date: z.string().regex(dateRegex, 'Date must be YYYY-MM-DD').optional().nullable(),
   expiry_date: z.string().regex(dateRegex, 'Date must be YYYY-MM-DD').optional().nullable(),
 });
@@ -24,6 +25,7 @@ const updateFlatSchema = z.object({
   training_type: z.enum(['INITIAL', 'RECURRENT', 'EMERGENCY', 'SIMULATOR', 'OTHER']).optional().nullable(),
   certificate_type: z.enum(['PARTICIPATION', 'QUALIFICATION']).optional().nullable(),
   session_code: z.string().max(100).optional().nullable(),
+  session_date: z.string().regex(dateRegex, 'Date must be YYYY-MM-DD').optional().nullable(),
   completion_date: z.string().regex(dateRegex, 'Date must be YYYY-MM-DD').optional().nullable(),
   expiry_date: z.string().regex(dateRegex, 'Date must be YYYY-MM-DD').optional().nullable(),
 });

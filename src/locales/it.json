@@ -2688,6 +2688,7 @@
       "certificateType": "Tipo di certificato",
       "certParticipation": "Certificato di partecipazione",
       "certQualification": "Qualifica (superamento esame)",
+      "sessionDate": "Data sessione",
       "completionDate": "Data di completamento",
       "expiryDate": "Data di scadenza",
       "cancel": "Annulla",

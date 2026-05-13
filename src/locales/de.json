@@ -2684,6 +2684,7 @@
       "certificateType": "Zertifikatstyp",
       "certParticipation": "Teilnahmezertifikat",
       "certQualification": "Qualifikation (Prüfungsbestehen)",
+      "sessionDate": "Sitzungsdatum",
       "completionDate": "Abschlussdatum",
       "expiryDate": "Ablaufdatum",
       "cancel": "Abbrechen",
