@@ -15,6 +15,7 @@ interface Props {
     form: SchedulerFormData
     onChange: <K extends keyof SchedulerFormData>(field: K, value: SchedulerFormData[K]) => void
     isEdit: boolean
+    statusName?: string
     generatingId: boolean
     onRefreshMissionId: () => void
     loadingConflicts: boolean
@@ -29,7 +30,7 @@ interface Props {
 }
 
 export function OperationStepScheduler({
-    form, onChange, isEdit, generatingId, onRefreshMissionId,
+    form, onChange, isEdit, statusName, generatingId, onRefreshMissionId,
     loadingConflicts, conflictChecked, conflicts, timezone,
     types, categories, lucProcedures, loadingOptions, isDark,
 }: Props) {
@@ -185,7 +186,7 @@ export function OperationStepScheduler({
                 </div>
                 <div>
                     <Label className={labelCls(isDark)}>{t('operations.newOperation.scheduler.status')}</Label>
-                    <Input value={t('operations.newOperation.scheduler.scheduled')} disabled className={cn(inputCls(isDark), 'opacity-60 cursor-not-allowed')} />
+                    <Input value={statusName || t('operations.newOperation.scheduler.scheduled')} disabled className={cn(inputCls(isDark), 'opacity-60 cursor-not-allowed')} />
                 </div>
                 <div>
                     <Label className={labelCls(isDark)}>{t('operations.newOperation.scheduler.procedure')} <span className="text-red-500">*</span></Label>

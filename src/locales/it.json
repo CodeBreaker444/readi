@@ -1803,7 +1803,8 @@
         "missionData": "Dati Missione",
         "missionExecution": "Esecuzione Missione",
         "missionLog": "Registro Missione",
-        "postFlight": "Post Volo"
+        "postFlight": "Post Volo",
+        "maintenance": "Manutenzione"
       },
       "client": {
         "sectionTitle": "Seleziona Cliente",
@@ -1913,7 +1914,8 @@
         "creating": "Creazione…",
         "createOperation": "Crea Operazione",
         "close": "Chiudi",
-        "savePostFlight": "Salva Post-Volo"
+        "savePostFlight": "Salva Post-Volo",
+        "saveMaintenance": "Salva Manutenzione"
       }
     }
   },

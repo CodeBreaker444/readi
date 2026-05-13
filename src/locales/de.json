@@ -1801,7 +1801,8 @@
         "missionData": "Missionsdaten",
         "missionExecution": "Missionsausführung",
         "missionLog": "Missionsprotokoll",
-        "postFlight": "Nach dem Flug"
+        "postFlight": "Nach dem Flug",
+        "maintenance": "Wartung"
       },
       "client": {
         "sectionTitle": "Kunden auswählen",
@@ -1911,7 +1912,8 @@
         "creating": "Wird erstellt…",
         "createOperation": "Vorgang erstellen",
         "close": "Schließen",
-        "savePostFlight": "Nach-Flug speichern"
+        "savePostFlight": "Nach-Flug speichern",
+        "saveMaintenance": "Wartung speichern"
       }
     }
   },

@@ -1812,7 +1812,8 @@
         "missionData": "Mission Data",
         "missionExecution": "Mission Execution",
         "missionLog": "Mission Log",
-        "postFlight": "Post Flight"
+        "postFlight": "Post Flight",
+        "maintenance": "Maintenance"
       },
       "client": {
         "sectionTitle": "Choose Client",
@@ -1922,7 +1923,8 @@
         "creating": "Creating…",
         "createOperation": "Create Operation",
         "close": "Close",
-        "savePostFlight": "Save Post-Flight"
+        "savePostFlight": "Save Post-Flight",
+        "saveMaintenance": "Save Maintenance"
       }
     }
   },

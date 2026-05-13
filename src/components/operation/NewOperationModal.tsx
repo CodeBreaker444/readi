@@ -16,12 +16,14 @@ import {
     Loader2,
     Settings,
     Shield,
+    Wrench,
 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { EditMissionLogTab } from './EditMissionLogTab'
 import { OperationErpTab } from './OperationErpTab'
+import { OperationMaintenanceTab, type OperationMaintenanceTabHandle } from './OperationMaintenanceTab'
 import { isoToLocalInput } from './OperationModalHelpers'
 import {
     Client,
@@ -51,13 +53,14 @@ export interface NewOperationModalProps {
     onSaved?: (op: Operation) => void
 }
 
-type EditTab = 'data' | 'execution' | 'log' | 'postFlight'
+type EditTab = 'data' | 'execution' | 'log' | 'postFlight' | 'maintenance'
 
 const EDIT_TABS = [
-    { id: 'data' as const,       labelKey: 'operations.newOperation.tabs.missionData',      icon: Settings },
-    { id: 'execution' as const,  labelKey: 'operations.newOperation.tabs.missionExecution', icon: Shield },
-    { id: 'log' as const,        labelKey: 'operations.newOperation.tabs.missionLog',        icon: FileUp },
-    { id: 'postFlight' as const, labelKey: 'operations.newOperation.tabs.postFlight',        icon: ClipboardList },
+    { id: 'data' as const,        labelKey: 'operations.newOperation.tabs.missionData',        icon: Settings },
+    { id: 'execution' as const,   labelKey: 'operations.newOperation.tabs.missionExecution',   icon: Shield },
+    { id: 'log' as const,         labelKey: 'operations.newOperation.tabs.missionLog',          icon: FileUp },
+    { id: 'postFlight' as const,  labelKey: 'operations.newOperation.tabs.postFlight',          icon: ClipboardList },
+    { id: 'maintenance' as const, labelKey: 'operations.newOperation.tabs.maintenance',         icon: Wrench },
 ]
 
 export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperation, onSaved }: NewOperationModalProps) {
@@ -65,8 +68,12 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
     const { timezone } = useTimezone()
     const { t } = useTranslation()
 
+    const skipDroneReset = useRef(false)
+    const maintRef = useRef<OperationMaintenanceTabHandle>(null)
+
     const [step, setStep] = useState(1)
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [submittingMaint, setSubmittingMaint] = useState(false)
     const [editTab, setEditTab] = useState<EditTab>('data')
 
     const [clients, setClients] = useState<Client[]>([])
@@ -141,7 +148,8 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                     last_name: p.last_name ?? '',
                 })))
                 setPlannings(res.data.plannings ?? [])
-                if (editOperation) {
+                // Only use all-tools fallback when the operation has no client assigned
+                if (editOperation && !editOperation.fk_client_id) {
                     setDrones((res.data.tools ?? []).map((t: any) => ({
                         tool_id: t.tool_id, tool_code: t.tool_code,
                         tool_name: t.tool_name, in_maintenance: t.in_maintenance,
@@ -154,6 +162,9 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
 
     useEffect(() => {
         if (!open || !editOperation) return
+        // Prevent the clientId change from resetting droneId/planId on initial load
+        if (editOperation.fk_client_id) skipDroneReset.current = true
+        setClientId(editOperation.fk_client_id?.toString() ?? '')
         setDroneId(editOperation.fk_tool_id?.toString() ?? '')
         setPilotId(editOperation.fk_pilot_user_id?.toString() ?? '')
         setPlanId(editOperation.fk_planning_id?.toString() ?? '')
@@ -176,9 +187,13 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
 
     useEffect(() => {
         if (!clientId) {
-            if (!isEdit) { setDrones([]); setDroneId(''); setPlanId('') }
+            setDrones([]); setDroneId(''); setPlanId('')
             return
         }
+        // On initial edit load the ref is set — fetch drones but keep pre-filled selections
+        const keepSelections = skipDroneReset.current
+        skipDroneReset.current = false
+        if (!keepSelections) { setDroneId(''); setPlanId('') }
         setLoadingDrones(true)
         axios.get(`/api/operation/import/options?type=drones&client_id=${clientId}`)
             .then(r => setDrones(r.data.drones ?? []))
@@ -444,7 +459,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
 
                 {/* Edit tab bar */}
                 {isEdit && (
-                    <div className={cn('flex border-b overflow-x-auto', isDark ? 'border-slate-700' : 'border-gray-200')}>
+                    <div className={cn('flex border-b overflow-x-auto scrollbar-thin', isDark ? 'border-slate-700' : 'border-gray-200')}>
                         {EDIT_TABS.map(tab => {
                             const Icon = tab.icon
                             return (
@@ -453,7 +468,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                                     type="button"
                                     onClick={() => setEditTab(tab.id)}
                                     className={cn(
-                                        'flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap shrink-0',
+                                        'flex items-center cursor-pointer gap-1.5 px-4 py-2.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap shrink-0',
                                         editTab === tab.id
                                             ? 'border-violet-600 text-violet-600'
                                             : isDark
@@ -541,6 +556,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                             form={schedulerForm}
                             onChange={handleSchedulerChange}
                             isEdit={isEdit}
+                            statusName={editOperation?.status_name ?? ''}
                             generatingId={generatingId}
                             onRefreshMissionId={refreshMissionId}
                             loadingConflicts={loadingConflicts}
@@ -600,6 +616,18 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                             onChange={handlePostFlightChange}
                         />
                     )}
+
+                    {isEdit && editTab === 'maintenance' && editOperation && (
+                        <OperationMaintenanceTab
+                            ref={maintRef}
+                            toolId={editOperation.fk_tool_id ?? 0}
+                            missionId={editOperation.pilot_mission_id}
+                            active={editTab === 'maintenance'}
+                            isDark={isDark}
+                            onSuccess={onSuccess}
+                            onSubmittingChange={setSubmittingMaint}
+                        />
+                    )}
                 </div>
 
                 {/* Footer — data tab (step navigation) */}
@@ -655,6 +683,19 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                                 {submittingPostFlight
                                     ? <><Loader2 className="h-4 w-4 animate-spin" /> {t('operations.newOperation.buttons.saving')}</>
                                     : t('operations.newOperation.buttons.savePostFlight')
+                                }
+                            </Button>
+                        )}
+                        {editTab === 'maintenance' && (
+                            <Button
+                                size="sm"
+                                onClick={() => maintRef.current?.submit()}
+                                disabled={submittingMaint}
+                                className="gap-2 bg-violet-600 hover:bg-violet-700 text-white"
+                            >
+                                {submittingMaint
+                                    ? <><Loader2 className="h-4 w-4 animate-spin" /> {t('operations.newOperation.buttons.saving')}</>
+                                    : t('operations.newOperation.buttons.saveMaintenance')
                                 }
                             </Button>
                         )}
