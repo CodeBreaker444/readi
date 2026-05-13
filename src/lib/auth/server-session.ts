@@ -21,6 +21,7 @@ export interface SessionUser {
   timezone?: string
   avatar?: string | null;
   droneAtcEnabled: boolean;
+  companyEasaCode: string | null;
 }
 
 export interface Session {
@@ -115,13 +116,15 @@ export const getUserSession = cache(async (): Promise<Session | null> => {
     const avatarUrl = await resolveAvatarUrl(profileData?.profile_picture);
 
     let droneAtcEnabled = false;
+    let companyEasaCode: string | null = null;
     if (userData.user_role !== 'SUPERADMIN' && userData.fk_owner_id) {
       const { data: ownerData } = await supabase
         .from('owner')
-        .select('drone_atc_enabled')
+        .select('drone_atc_enabled, easa_operator_code')
         .eq('owner_id', userData.fk_owner_id)
         .single();
       droneAtcEnabled = ownerData?.drone_atc_enabled ?? false;
+      companyEasaCode = (ownerData as any)?.easa_operator_code ?? null;
     } else if (userData.user_role === 'SUPERADMIN') {
       droneAtcEnabled = true;
     }
@@ -140,6 +143,7 @@ export const getUserSession = cache(async (): Promise<Session | null> => {
       timezone: userData.user_timezone ?? undefined,
       avatar: avatarUrl,
       droneAtcEnabled,
+      companyEasaCode,
     };
 
     return {

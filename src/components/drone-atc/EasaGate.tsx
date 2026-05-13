@@ -1,7 +1,7 @@
 'use client';
 
 import { useTheme } from '@/components/useTheme';
-import { AlertTriangle, ExternalLink } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 
 export default function EasaGate() {
   const { isDark } = useTheme();
@@ -16,22 +16,15 @@ export default function EasaGate() {
         </div>
         <div className="space-y-2">
           <h2 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-            EASA Operator Code Required
+            EASA Operator Code Not Configured
           </h2>
           <p className={`text-sm leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-            Your EASA Operator Code must be set before you can access Drone ATC. Please add it to your profile.
+            Your company does not have an EASA Operator Code saved in the system. Drone ATC access requires this code to be set at the company level.
           </p>
         </div>
         <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-          Open your profile from the top-right menu and add your EASA Operator Code, or ask your administrator to set it for you.
+          Please contact ReADI Team to add the EASA Operator Code to your company profile.
         </p>
-        <a
-          href="/profile"
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold transition-colors"
-        >
-          Go to Profile
-          <ExternalLink className="w-3.5 h-3.5" />
-        </a>
       </div>
     </div>
   );

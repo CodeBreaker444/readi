@@ -40,6 +40,7 @@ export default function EditOwnerModal({ open, onClose, onSuccess, owner }: Edit
     owner_website: '',
     owner_active: 'Y',
     drone_atc_enabled: false,
+    easa_operator_code: '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -54,6 +55,7 @@ export default function EditOwnerModal({ open, onClose, onSuccess, owner }: Edit
         owner_website: owner.owner_website,
         owner_active: owner.owner_active,
         drone_atc_enabled: owner.drone_atc_enabled ?? false,
+        easa_operator_code: owner.easa_operator_code ?? '',
       });
       setError('');
     }
@@ -163,6 +165,18 @@ export default function EditOwnerModal({ open, onClose, onSuccess, owner }: Edit
                 {form.drone_atc_enabled ? 'Enabled for this company' : 'Disabled for this company'}
               </span>
             </div>
+          </div>
+
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="edit-easa_operator_code" className="text-right">EASA Code</Label>
+            <Input
+              id="edit-easa_operator_code"
+              name="easa_operator_code"
+              value={form.easa_operator_code}
+              onChange={handleChange}
+              placeholder="e.g. ITA-OP-12345"
+              className="col-span-3"
+            />
           </div>
         </div>
         </div>

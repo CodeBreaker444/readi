@@ -1,12 +1,10 @@
- 
+
 import { getProfile, updateProfile } from '@/backend/services/user/user-profile';
 import { internalError } from '@/lib/api-error';
 import { requireAuth } from '@/lib/auth/api-auth';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
-
-const DRONE_ATC_ROLES = new Set(['SUPERADMIN', 'ADMIN', 'PIC', 'OPM']);
 
 const updateProfileSchema = z.object({
   fullname: z
@@ -20,7 +18,6 @@ const updateProfileSchema = z.object({
     .max(64, 'Timezone too long')
     .optional()
     .default('Europe/Berlin'),
-  easa_operator_code: z.string().max(100, 'EASA operator code too long').optional(),
 });
 
 export async function GET() {
@@ -48,7 +45,6 @@ export async function POST(req: NextRequest) {
       email: formData.get('email') as string | null,
       phone: formData.get('phone') as string | null,
       timezone: formData.get('timezone') as string | null,
-      easa_operator_code: formData.get('easa_operator_code') as string | null,
     };
 
     const validated = updateProfileSchema.parse({
@@ -56,20 +52,12 @@ export async function POST(req: NextRequest) {
       email: rawFields.email ?? '',
       phone: rawFields.phone ?? '',
       timezone: rawFields.timezone ?? 'Europe/Berlin',
-      easa_operator_code: rawFields.easa_operator_code ?? undefined,
     });
-
-    if (DRONE_ATC_ROLES.has(session!.user.role) && !validated.easa_operator_code?.trim()) {
-      return NextResponse.json(
-        { success: false, message: 'EASA Operator Code is required for Drone ATC access' },
-        { status: 422 },
-      );
-    }
 
     const avatarEntry = formData.get('avatar');
     let avatarFile: File | null = null;
     if (avatarEntry && avatarEntry instanceof File && avatarEntry.size > 0) {
-      const maxSize = 10 * 1024 * 1024;  
+      const maxSize = 10 * 1024 * 1024;
       if (avatarEntry.size > maxSize) {
         return NextResponse.json(
           { success: false, message: 'Avatar file must be under 10MB' },

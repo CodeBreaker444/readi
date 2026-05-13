@@ -35,9 +35,6 @@ const ROLE_OPTIONS = [
   { value: 17, label: 'Administrator (ADMIN)' },
 ];
 
-// Profile IDs whose roles have Drone ATC access (PIC, OPM, ADMIN)
-const DRONE_ATC_PROFILE_IDS = [8, 9, 17];
-
 
 interface UserFormModalProps {
   isOpen: boolean;
@@ -79,7 +76,6 @@ export function UserFormModal({
       is_viewer: 'N',
       is_manager: 'N',
       active: 1,
-      easa_operator_code: '',
     };
     if (!userData) return defaults;
     return {
@@ -92,7 +88,6 @@ export function UserFormModal({
       is_viewer: userData.is_viewer || 'N',
       is_manager: userData.is_manager || 'N',
       active: userData.active ?? 1,
-      easa_operator_code: userData.easa_operator_code || '',
     };
   });
 
@@ -179,8 +174,6 @@ export function UserFormModal({
     setCcTokenInput(''); setCcOrgIdInput(''); setCcNameInput('');
     setCcVerifiedUser(null); setCcStep('idle'); setCcShowForm(false);
   };
-
-  const requiresEasa = DRONE_ATC_PROFILE_IDS.includes(formData.fk_user_profile_id);
 
   const handleSubmit = (e: React.SyntheticEvent) => {
     e.preventDefault();
@@ -393,23 +386,6 @@ export function UserFormModal({
                   <SelectItem value="0">Inactive</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-          )}
-
-          {requiresEasa && (
-            <div>
-              <Label htmlFor="easa_operator_code" className="pb-2">
-                EASA Operator Code 
-              </Label>
-              <Input
-                id="easa_operator_code"
-                value={formData.easa_operator_code}
-                onChange={(e) => setFormData({ ...formData, easa_operator_code: e.target.value })}
-                placeholder="e.g. ITA-OP-12345"
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Required for Drone ATC access
-              </p>
             </div>
           )}
 

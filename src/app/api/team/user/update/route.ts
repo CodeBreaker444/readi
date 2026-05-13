@@ -27,7 +27,6 @@ export async function POST(request: NextRequest) {
       is_manager: body.is_manager || body.user_manager,
       user_image: body.user_image,
       user_signature: body.user_signature,
-      easa_operator_code: body.easa_operator_code,
     });
 
     return NextResponse.json({

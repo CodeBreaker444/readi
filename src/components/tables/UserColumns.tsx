@@ -26,7 +26,6 @@ export interface UserData {
   is_manager: string;
   owner_code?: string;
   owner_name?: string;
-  easa_operator_code?: string;
 }
 
 interface GetUserColumnsOptions {

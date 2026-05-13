@@ -42,7 +42,6 @@ export default function Profile({ user }: { user: SessionUser }) {
     client: '',
     profile: '',
     signature: '',
-    easaOperatorCode: '',
     role: '',
   });
   const [curriculum, setCurriculum] = useState<TrainingCurriculumRecord[]>([]);
@@ -80,7 +79,6 @@ export default function Profile({ user }: { user: SessionUser }) {
           client: '',
           profile: '',
           signature: data.user.users_profile?.user_signature || '',
-          easaOperatorCode: data.user.easa_operator_code || '',
           role: data.user.role || '',
         });
         setCanEditEmail(['ADMIN', 'SUPERADMIN'].includes(user.role));
@@ -123,7 +121,6 @@ export default function Profile({ user }: { user: SessionUser }) {
     fd.append('email', formData.email);
     fd.append('phone', formData.phone);
     fd.append('timezone', formData.timezone);
-    fd.append('easa_operator_code', formData.easaOperatorCode);
     if (avatar) fd.append('avatar', avatar);
 
     try {
@@ -284,11 +281,6 @@ export default function Profile({ user }: { user: SessionUser }) {
                   <div className="space-y-1.5 sm:col-span-2">
                     <Label htmlFor="signature">{t('profile.fields.signature')}</Label>
                     <Input id="signature" name="signature" value={formData.signature} onChange={handleInputChange} placeholder={t('profile.placeholders.signature')} />
-                  </div>
-
-                  <div className="space-y-1.5 sm:col-span-2 lg:col-span-1">
-                    <Label htmlFor="easaOperatorCode">{t('profile.fields.easaOperatorCode')}</Label>
-                    <Input id="easaOperatorCode" name="easaOperatorCode" value={formData.easaOperatorCode} onChange={handleInputChange} placeholder={t('profile.placeholders.easaOperatorCode')} />
                   </div>
 
                   <div className="flex items-end sm:col-span-2 lg:col-span-1">

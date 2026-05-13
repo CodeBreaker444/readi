@@ -70,11 +70,3 @@ export async function updateFlytrelayUsers(
   return { synced: users.length };
 }
 
-export async function getEasaCode(userId: number): Promise<string | null> {
-  const { data } = await supabase
-    .from('users')
-    .select('easa_operator_code')
-    .eq('user_id', userId)
-    .single();
-  return (data as any)?.easa_operator_code ?? null;
-}

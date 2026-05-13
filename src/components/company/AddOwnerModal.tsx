@@ -42,6 +42,7 @@ const initialForm = {
     owner_website: '',
     owner_active: 'Y',
     drone_atc_enabled: false,
+    easa_operator_code: '',
     tax_id: '',
     registration_number: '',
     license_number: '',
@@ -207,6 +208,18 @@ export default function AddOwnerModal({ open, onClose, onSuccess }: AddOwnerModa
                                     {form.drone_atc_enabled ? 'Enabled' : 'Disabled'}
                                 </span>
                             </div>
+                        </div>
+
+                        <div className="grid grid-cols-3 items-center gap-2">
+                            <Label htmlFor="easa_operator_code" className="text-right text-sm">EASA Code</Label>
+                            <Input
+                                id="easa_operator_code"
+                                name="easa_operator_code"
+                                value={form.easa_operator_code}
+                                onChange={handleChange}
+                                placeholder="e.g. ITA-OP-12345"
+                                className="col-span-2"
+                            />
                         </div>
                     </div>
                 </div>
