@@ -18,6 +18,7 @@ import {
   Calendar,
   CheckCircle2,
   Clock,
+  Download,
   Eye,
   Loader2,
   Pencil,
@@ -30,6 +31,7 @@ export interface OperationTableMeta {
   onAttach: (op: Operation) => void;
   onDelete: (op: Operation) => void;
   onViewDetails: (op: Operation) => void;
+  onDownloadReport: (op: Operation) => void;
 }
 
 const STATUS_CONFIG: Record<string, { label: string; light: string; dark: string; icon: React.ReactNode }> = {
@@ -235,11 +237,13 @@ export const getOperationColumns = (t: TFunction, isDark = false, timezone = 'Eu
     header: t('planning.table.actions'),
     cell: ({ row, table }) => {
       const meta = table.options.meta as any;
+      const op = row.original;
+      const isCompleted = op.status_name === 'COMPLETED';
       return (
         <div className="flex items-center gap-1">
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => meta.onViewDetails(row.original)}>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => meta.onViewDetails(op)}>
                 <Eye className="h-3.5 w-3.5" />
               </Button>
             </TooltipTrigger>
@@ -247,15 +251,30 @@ export const getOperationColumns = (t: TFunction, isDark = false, timezone = 'Eu
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => meta.onEdit(row.original)}>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => meta.onEdit(op)}>
                 <Pencil className="h-3.5 w-3.5" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>{t('operations.actions.edit')}</TooltipContent>
           </Tooltip>
+          {isCompleted && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                  onClick={(e) => { e.stopPropagation(); meta.onDownloadReport(op); }}
+                >
+                  <Download className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Download Mission Report</TooltipContent>
+            </Tooltip>
+          )}
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => meta.onDelete(row.original)}>
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => meta.onDelete(op)}>
                 <Trash2 className="h-3.5 w-3.5" />
               </Button>
             </TooltipTrigger>

@@ -25,6 +25,7 @@ import {
   SortingState,
   useReactTable,
 } from '@tanstack/react-table';
+import { generateMissionReport } from '@/lib/generateMissionReport';
 import axios from 'axios';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -156,8 +157,17 @@ const tableMeta = useMemo<OperationTableMeta>(
     onAttach: (op) => setAttachTarget(op),
     onDelete: (op) => setDeleteTarget(op),
     onViewDetails: (op) => setDetailTarget(op),
+    onDownloadReport: async (op) => {
+      const toastId = toast.loading(`Generating report for ${op.mission_code}…`);
+      try {
+        await generateMissionReport(op, timezone);
+        toast.success('Report downloaded.', { id: toastId });
+      } catch {
+        toast.error('Failed to generate report.', { id: toastId });
+      }
+    },
   }),
-  []
+  [timezone]
 );
 
 const table = useReactTable({

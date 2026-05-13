@@ -57,7 +57,8 @@ export async function listOperations(
       tool:tool!fk_tool_id ( tool_code, tool_name ),
       category:pilot_mission_category!fk_mission_category_id ( category_name ),
       type_data:pilot_mission_type!fk_mission_type_id ( type_name ),
-      planning:planning!fk_planning_id ( planning_name, client:client!fk_client_id ( client_name ) )
+      planning:planning!fk_planning_id ( planning_name, client:client!fk_client_id ( client_name ) ),
+      direct_client:client!fk_client_id ( client_name )
     `,
       { count: 'exact' }
     )
@@ -100,7 +101,7 @@ export async function listOperations(
     category_name: row.category?.category_name ?? null,
     type_name: row.type_data?.type_name ?? null,
     planning_name: row.planning?.planning_name ?? null,
-    client_name: row.planning?.client?.client_name ?? null,
+    client_name: row.planning?.client?.client_name ?? row.direct_client?.client_name ?? null,
   })) as Operation[];
 
   return { data: operations, total: count ?? 0, page, pageSize };
@@ -113,7 +114,11 @@ export async function getOperation(id: number): Promise<Operation | null> {
       `
       *,
       pilot:users!fk_pilot_user_id ( first_name, last_name ),
-      tool:tool!fk_tool_id ( tool_code )
+      tool:tool!fk_tool_id ( tool_code ),
+      direct_client:client!fk_client_id ( client_name ),
+      planning:planning!fk_planning_id ( planning_name, client:client!fk_client_id ( client_name ) ),
+      category:pilot_mission_category!fk_mission_category_id ( category_name ),
+      type_data:pilot_mission_type!fk_mission_type_id ( type_name )
     `
     )
     .eq('pilot_mission_id', id)
@@ -132,6 +137,10 @@ export async function getOperation(id: number): Promise<Operation | null> {
       ? `${data.pilot.first_name ?? ''} ${data.pilot.last_name ?? ''}`.trim()
       : null,
     tool_code: data.tool?.tool_code ?? null,
+    client_name: data.planning?.client?.client_name ?? data.direct_client?.client_name ?? null,
+    planning_name: data.planning?.planning_name ?? null,
+    category_name: data.category?.category_name ?? null,
+    type_name: data.type_data?.type_name ?? null,
   } as Operation;
 }
 
