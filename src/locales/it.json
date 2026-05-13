@@ -160,6 +160,7 @@
     "logbooks": "Registri",
     "plannedMissionLogbook": "Registro missioni pianificate",
     "flightLogbook": "Registro voli",
+    "batteryLogbook": "Registro batterie",
     "safetyManagement": "Gestione sicurezza",
     "spiKpiDefinitions": "Definizioni SPI e KPI",
     "emergencyContactList": "Elenco Contatti Emergenza",
@@ -1097,6 +1098,24 @@
         "notes": "Note"
       }
     },
+    "batteryLogbook": {
+      "title": "Registro Batterie",
+      "subtitle": "Sfoglia, filtra e analizza i record delle batterie di tutti i sistemi",
+      "refresh": "Aggiorna",
+      "filterError": "Impossibile caricare i filtri",
+      "loadError": "Impossibile caricare i dati",
+      "networkError": "Errore di rete",
+      "filter": {
+        "title": "Filtri",
+        "installedFrom": "Installato dal",
+        "installedTo": "Installato al",
+        "droneSystem": "Sistema drone",
+        "status": "Stato",
+        "all": "Tutti",
+        "search": "Cerca",
+        "reset": "Reimposta"
+      }
+    },
     "testLogbook": {
       "title": "Registro Test Missione",
       "subtitlePrefix": "[GO.00.P03] Test Missione — Gestisci i test per la pianificazione missione #",
@@ -1986,6 +2005,24 @@
         "time": "Tempo",
         "distance": "Distanza",
         "notes": "Note"
+      }
+    },
+    "batteryLogbook": {
+      "title": "Registro Batterie",
+      "subtitle": "Sfoglia, filtra e analizza i record delle batterie di tutti i sistemi",
+      "refresh": "Aggiorna",
+      "filterError": "Impossibile caricare i filtri",
+      "loadError": "Impossibile caricare i dati",
+      "networkError": "Errore di rete",
+      "filter": {
+        "title": "Filtri",
+        "installedFrom": "Installato dal",
+        "installedTo": "Installato al",
+        "droneSystem": "Sistema drone",
+        "status": "Stato",
+        "all": "Tutti",
+        "search": "Cerca",
+        "reset": "Reimposta"
       }
     }
   },

@@ -160,6 +160,7 @@
     "logbooks": "Logbooks",
     "plannedMissionLogbook": "Planned Mission Logbook",
     "flightLogbook": "Flight Logbook",
+    "batteryLogbook": "Battery Logbook",
     "safetyManagement": "Safety Management",
     "spiKpiDefinitions": "SPI & KPI Definitions",
     "emergencyContactList": "Emergency Contact List",
@@ -1095,6 +1096,24 @@
         "notes": "Notes"
       }
     },
+    "batteryLogbook": {
+      "title": "Battery Logbook",
+      "subtitle": "Browse, filter and analyse battery records across all systems",
+      "refresh": "Refresh",
+      "filterError": "Failed to load filters",
+      "loadError": "Failed to load data",
+      "networkError": "Network error",
+      "filter": {
+        "title": "Filters",
+        "installedFrom": "Installed From",
+        "installedTo": "Installed To",
+        "droneSystem": "Drone System",
+        "status": "Status",
+        "all": "All",
+        "search": "Search",
+        "reset": "Reset"
+      }
+    },
     "testLogbook": {
       "title": "Mission Test Logbook",
       "subtitlePrefix": "[GO.00.P03] Mission Test — Manage tests for mission planning #",
@@ -1993,6 +2012,24 @@
         "time": "Time",
         "distance": "Distance",
         "notes": "Notes"
+      }
+    },
+    "batteryLogbook": {
+      "title": "Battery Logbook",
+      "subtitle": "Browse, filter and analyse battery records across all systems",
+      "refresh": "Refresh",
+      "filterError": "Failed to load filters",
+      "loadError": "Failed to load data",
+      "networkError": "Network error",
+      "filter": {
+        "title": "Filters",
+        "installedFrom": "Installed From",
+        "installedTo": "Installed To",
+        "droneSystem": "Drone System",
+        "status": "Status",
+        "all": "All",
+        "search": "Search",
+        "reset": "Reset"
       }
     }
   },

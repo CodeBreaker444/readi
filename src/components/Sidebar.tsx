@@ -140,6 +140,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
       subItems: [
         { name: t('sidebar.plannedMissionLogbook'), href: '/logbooks/mission-planning-logbook' },
         { name: t('sidebar.flightLogbook'), href: '/logbooks/operation-logbook' },
+        { name: t('sidebar.batteryLogbook'), href: '/logbooks/battery-logbook' },
       ]
     },
     {

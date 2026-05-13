@@ -160,6 +160,7 @@
     "logbooks": "Logbucher",
     "plannedMissionLogbook": "Logbuch geplanter Missionen",
     "flightLogbook": "Fluglogbuch",
+    "batteryLogbook": "Akkuprotokoll",
     "safetyManagement": "Sicherheitsmanagement",
     "spiKpiDefinitions": "SPI- und KPI-Definitionen",
     "emergencyContactList": "Notfallkontaktliste",
@@ -1095,6 +1096,24 @@
         "notes": "Notizen"
       }
     },
+    "batteryLogbook": {
+      "title": "Akkuprotokoll",
+      "subtitle": "Akkuaufzeichnungen aller Systeme durchsuchen, filtern und analysieren",
+      "refresh": "Aktualisieren",
+      "filterError": "Filter konnten nicht geladen werden",
+      "loadError": "Daten konnten nicht geladen werden",
+      "networkError": "Netzwerkfehler",
+      "filter": {
+        "title": "Filter",
+        "installedFrom": "Eingebaut ab",
+        "installedTo": "Eingebaut bis",
+        "droneSystem": "Drohnensystem",
+        "status": "Status",
+        "all": "Alle",
+        "search": "Suchen",
+        "reset": "Zurücksetzen"
+      }
+    },
     "testLogbook": {
       "title": "Missions-Test-Logbuch",
       "subtitlePrefix": "[GO.00.P03] Missionstest — Tests für Missionsplanung # verwalten",
@@ -1982,6 +2001,24 @@
         "time": "Zeit",
         "distance": "Distanz",
         "notes": "Notizen"
+      }
+    },
+    "batteryLogbook": {
+      "title": "Akkuprotokoll",
+      "subtitle": "Akkuaufzeichnungen aller Systeme durchsuchen, filtern und analysieren",
+      "refresh": "Aktualisieren",
+      "filterError": "Filter konnten nicht geladen werden",
+      "loadError": "Daten konnten nicht geladen werden",
+      "networkError": "Netzwerkfehler",
+      "filter": {
+        "title": "Filter",
+        "installedFrom": "Eingebaut ab",
+        "installedTo": "Eingebaut bis",
+        "droneSystem": "Drohnensystem",
+        "status": "Status",
+        "all": "Alle",
+        "search": "Suchen",
+        "reset": "Zurücksetzen"
       }
     }
   },

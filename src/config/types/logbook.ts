@@ -137,3 +137,40 @@ export interface OperationFilterResponse {
   missionStatuses: { data: MissionStatusOption[] };
   missionPlans: { data: MissionPlanOption[] };
 }
+
+// Battery Logbook
+
+export interface BatteryLogbookItem {
+  component_id: number;
+  component_code: string;
+  component_sn: string;
+  component_status: string;
+  component_vendor: string;
+  component_purchase_date: string | null;
+  component_activation_date: string | null;
+  component_guarantee_day: number;
+  battery_cycle_ratio: number | null;
+  current_usage_hours: number;
+  current_maintenance_hours: number;
+  current_maintenance_days: number;
+  current_maintenance_flights: number;
+  last_maintenance_date: string | null;
+  maintenance_cycle: string;
+  fk_tool_id: number | null;
+  tool_code: string;
+  tool_desc: string;
+}
+
+export interface BatteryFilterParams {
+  owner_id: number;
+  tool_id?: number;
+  component_status?: string;
+  date_start?: string;
+  date_end?: string;
+}
+
+export interface BatterySystemOption {
+  tool_id: number;
+  tool_code: string;
+  tool_desc: string;
+}

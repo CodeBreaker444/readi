@@ -64,6 +64,7 @@ export async function POST(req: NextRequest) {
       maintenance_cycle_hour: d.maintenance_cycle_hour,
       maintenance_cycle_day: d.maintenance_cycle_day,
       maintenance_cycle_flight: d.maintenance_cycle_flight,
+      battery_cycle_ratio: d.battery_cycle_ratio ?? null,
       fk_parent_component_id: d.fk_parent_component_id ?? null,
     });
 

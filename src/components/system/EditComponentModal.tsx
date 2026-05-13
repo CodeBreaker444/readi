@@ -587,15 +587,15 @@ export default function EditComponentModal({
                       </div>
                     )}
                     {showFlights && (
-                      <div className="col-span-1 sm:col-span-4 flex items-end gap-2">
-                        <div className="flex-1 min-w-0">
-                          <Label className={labelCls}>{t('systems.components.common.maintenanceCycle.flightsLimit')}</Label>
-                          <Input type="number" min={0} className={inputCls} value={formData.maintenance_cycle_flight} onChange={e => handleCycleInput('maintenance_cycle_flight', e.target.value)} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <Label className={labelCls}>{t('systems.components.common.maintenanceCycle.cycleRatio')}</Label>
-                          <Input type="number" min={0.01} max={1} step={0.01} placeholder="e.g. 0.87" className={inputCls} value={formData.battery_cycle_ratio} onChange={e => handleChange('battery_cycle_ratio', e.target.value)} />
-                        </div>
+                      <div className="col-span-1 sm:col-span-2">
+                        <Label className={labelCls}>{t('systems.components.common.maintenanceCycle.flightsLimit')}</Label>
+                        <Input type="number" min={0} className={inputCls} value={formData.maintenance_cycle_flight} onChange={e => handleCycleInput('maintenance_cycle_flight', e.target.value)} />
+                      </div>
+                    )}
+                    {formData.component_type === 'BATTERY' && (
+                      <div className="col-span-1 sm:col-span-2">
+                        <Label className={labelCls}>{t('systems.components.common.maintenanceCycle.cycleRatio')}</Label>
+                        <Input type="number" min={0.01} max={1} step={0.01} placeholder="e.g. 0.87" className={inputCls} value={formData.battery_cycle_ratio} onChange={e => handleChange('battery_cycle_ratio', e.target.value)} />
                       </div>
                     )}
                   </div>
