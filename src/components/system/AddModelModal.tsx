@@ -24,7 +24,6 @@ interface AddModelModalProps {
 
 const INITIAL_FORM = {
   model_category: '',
-  model_subtype: '',
   model_code: '',
   model_name: '',
   manufacturer: '',
@@ -115,7 +114,6 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
     e.preventDefault();
 
     if (!formData.model_category) { toast.error(t('systems.components.addModel.toasts.selectType')); return; }
-    if (!formData.model_subtype)   { toast.error(t('systems.components.addModel.toasts.selectSubType')); return; }
     if (!formData.model_code.trim()) { toast.error(t('systems.components.addModel.toasts.modelCodeRequired')); return; }
     if (!formData.model_name.trim()) { toast.error(t('systems.components.addModel.toasts.modelNameRequired')); return; }
     if (!formData.manufacturer.trim()) { toast.error(t('systems.components.addModel.toasts.manufacturerRequired')); return; }
@@ -145,7 +143,6 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
     setLoading(true);
 
     try {
-      const combinedModelType = `${formData.model_category}_${formData.model_subtype}`;
 
       const extendedSpecs = [
         formData.version              && `Version: ${formData.version}`,
@@ -171,7 +168,6 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
         model_code:      formData.model_code.trim(),
         model_name:      formData.model_name.trim(),
         manufacturer:    formData.manufacturer.trim(),
-        model_type:      combinedModelType,
         specifications:  extendedSpecs || undefined,
         max_flight_time: formData.max_flight_time ? Number(formData.max_flight_time) : undefined,
         max_speed:       formData.max_speed       ? Number(formData.max_speed)       : undefined,
@@ -221,23 +217,7 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
                   </SelectContent>
                 </Select>
               </div>
-              <div className="col-span-1 sm:col-span-3">
-                <Label className="pb-2">{t('systems.components.addModel.fields.subType')}</Label>
-                <Select
-                  value={formData.model_subtype}
-                  onValueChange={(v) => handleChange('model_subtype', v)}
-                  disabled={!formData.model_category}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={formData.model_category ? t('systems.components.addModel.placeholders.selectSubType') : t('systems.components.addModel.placeholders.selectTypeFirst')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {subtypeOptions.map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              
               <div className="col-span-1 sm:col-span-3">
                 <Label className="pb-2">{t('systems.components.addModel.fields.brand')}</Label>
                 <Input value={formData.manufacturer} onChange={(e) => handleChange('manufacturer', e.target.value)} required />

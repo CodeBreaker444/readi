@@ -521,7 +521,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                 )}
 
                 {/* Tab content */}
-                <div className="px-6 py-5 h-[60vh] overflow-y-auto overflow-x-hidden">
+                <div className="px-6 py-5 h-[60vh] overflow-y-auto scrollbar-thin overflow-x-hidden">
 
                     {(!isEdit || editTab === 'data') && step === 1 && (
                         <OperationStepClient

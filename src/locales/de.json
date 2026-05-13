@@ -3778,7 +3778,7 @@
         }
       },
       "addModel": {
-        "title": "Neues Systemmodell hinzufügen",
+        "title": "Neues Modell hinzufügen",
         "sections": {
           "identification": "Identifikation",
           "classificationWeight": "Klassifikation & Gewicht",

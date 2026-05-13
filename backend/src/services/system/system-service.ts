@@ -456,7 +456,7 @@ export async function addModel(modelData: any) {
       model_code: modelData.factory_serie,
       model_name: modelData.factory_model,
       manufacturer: modelData.factory_type,
-      model_description: modelData.factory_desc || null,
+      model_description: null,
       specifications: specsWithOwner,
       model_active: 'Y',
     })
@@ -490,7 +490,7 @@ export async function updateModel(modelId: number, modelData: any) {
       manufacturer: modelData.manufacturer,
       model_code: modelData.model_code,
       model_name: modelData.model_name,
-      ...(modelData.model_type !== undefined ? { model_description: modelData.model_type } : {}),
+      model_description: null,
       specifications: updatedSpecs,
     })
     .eq('model_id', modelId)

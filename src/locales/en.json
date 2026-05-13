@@ -3853,7 +3853,7 @@
         }
       },
       "addModel": {
-        "title": "Add New System Model",
+        "title": "Add New Model",
         "sections": {
           "identification": "Identification",
           "classificationWeight": "Classification & Weight",

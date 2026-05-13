@@ -3857,7 +3857,7 @@
         }
       },
       "addModel": {
-        "title": "Aggiungi Nuovo Modello Sistema",
+        "title": "Aggiungi Nuovo Modello",
         "sections": {
           "identification": "Identificazione",
           "classificationWeight": "Classificazione e Peso",
