@@ -170,7 +170,7 @@ export default function AddOwnerModal({ open, onClose, onSuccess }: AddOwnerModa
                                     id={field.name}
                                     name={field.name}
                                     type={field.type || 'text'}
-                                    value={form[field.name as keyof typeof form]}
+                                    value={form[field.name as keyof typeof form] as string}
                                     onChange={handleChange}
                                     className="col-span-2"
                                 />
@@ -224,7 +224,7 @@ export default function AddOwnerModal({ open, onClose, onSuccess }: AddOwnerModa
                                 <Input
                                     id={field.name}
                                     name={field.name}
-                                    value={form[field.name as keyof typeof form]}
+                                    value={form[field.name as keyof typeof form] as string}
                                     onChange={handleChange}
                                     className="col-span-2"
                                 />
