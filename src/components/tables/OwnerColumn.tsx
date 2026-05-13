@@ -15,6 +15,7 @@ export interface OwnerData {
   owner_email: string;
   owner_website: string;
   owner_active: string;
+  drone_atc_enabled: boolean;
   tax_id: string | null;
   registration_number: string | null;
   license_number: string | null;
@@ -81,6 +82,21 @@ export const ownerColumns = ({ onView, onEdit, onDelete }: OwnerColumnActions): 
         }`}
       >
         {row.original.owner_active === 'Y' ? 'Active' : 'Disabled'}
+      </span>
+    ),
+  },
+  {
+    header: 'Drone ATC',
+    accessorKey: 'drone_atc_enabled',
+    cell: ({ row }) => (
+      <span
+        className={`rounded px-2 py-1 text-xs ${
+          row.original.drone_atc_enabled
+            ? 'bg-blue-100 text-blue-800'
+            : 'bg-gray-100 text-gray-500'
+        }`}
+      >
+        {row.original.drone_atc_enabled ? 'Enabled' : 'Disabled'}
       </span>
     ),
   },

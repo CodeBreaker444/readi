@@ -34,10 +34,11 @@ export async function POST(request: NextRequest) {
       return apiError(E.AU007, 403);
     }
 
+    let droneAtcEnabled = false;
     if (userData.user_role !== 'SUPERADMIN') {
       const { data: ownerData, error: ownerError } = await supabase
         .from('owner')
-        .select('owner_name, owner_active')
+        .select('owner_name, owner_active, drone_atc_enabled')
         .eq('owner_id', userData.fk_owner_id)
         .single();
 
@@ -45,6 +46,10 @@ export async function POST(request: NextRequest) {
         if (!ownerData) return apiError(E.NF002, 404);
         return apiError(E.BL002, 403);
       }
+
+      droneAtcEnabled = ownerData.drone_atc_enabled ?? false;
+    } else {
+      droneAtcEnabled = true;
     }
 
     await supabase
@@ -66,6 +71,7 @@ export async function POST(request: NextRequest) {
       email: userData.email,
       username: userData.username,
       role: userData.user_role as Role,
+      droneAtcEnabled,
     });
 
     const cookieStore = await cookies();

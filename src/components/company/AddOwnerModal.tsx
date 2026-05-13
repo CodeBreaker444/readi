@@ -18,6 +18,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -40,6 +41,7 @@ const initialForm = {
     owner_email: '',
     owner_website: '',
     owner_active: 'Y',
+    drone_atc_enabled: false,
     tax_id: '',
     registration_number: '',
     license_number: '',
@@ -190,6 +192,21 @@ export default function AddOwnerModal({ open, onClose, onSuccess }: AddOwnerModa
                                     <SelectItem value="N">Disabled</SelectItem>
                                 </SelectContent>
                             </Select>
+                        </div>
+
+                        <div className="grid grid-cols-3 items-center gap-2">
+                            <Label className="text-right text-sm">Drone ATC</Label>
+                            <div className="col-span-2 flex items-center gap-3">
+                                <Switch
+                                    checked={form.drone_atc_enabled}
+                                    onCheckedChange={(checked) =>
+                                        setForm((prev) => ({ ...prev, drone_atc_enabled: checked }))
+                                    }
+                                />
+                                <span className="text-sm text-muted-foreground">
+                                    {form.drone_atc_enabled ? 'Enabled' : 'Disabled'}
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>

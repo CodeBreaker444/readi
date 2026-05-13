@@ -176,11 +176,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
         { name: t('sidebar.recentFlights'), href: '/control-center/flights' },
       ],
     },
-    {
+    ...(userData?.droneAtcEnabled ? [{
       name: t('sidebar.droneAtc'),
       href: '/drone-atc',
       icon: TbRadar,
-    },
+    }] : []),
     {
       name: t('sidebar.training'),
       href: '/training/courses',

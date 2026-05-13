@@ -13,6 +13,7 @@ export interface OwnerData {
     owner_email: string;
     owner_website: string;
     owner_active: string;
+    drone_atc_enabled: boolean;
     created_at: string;
 }
 
@@ -29,6 +30,7 @@ export interface AddOwnerWithAdminPayload {
     owner_email: string;
     owner_website: string;
     owner_active: string;
+    drone_atc_enabled?: boolean;
     tax_id?: string;
     registration_number?: string;
     license_number?: string;
@@ -57,6 +59,7 @@ export interface UpdateOwnerPayload {
     owner_email: string;
     owner_website: string;
     owner_active: string;
+    drone_atc_enabled?: boolean;
 }
 
 export interface OwnerWithAdmin extends OwnerData {
@@ -74,7 +77,7 @@ export interface OwnerWithAdmin extends OwnerData {
 export async function getOwners(): Promise<OwnerWithAdmin[]> {
     const { data: owners, error } = await supabase
         .from('owner')
-        .select('owner_id, owner_code, owner_name, owner_legal_name, owner_type, owner_address, owner_city, owner_state, owner_postal_code, owner_phone, owner_email, owner_website, owner_active, tax_id, registration_number, license_number, license_expiry, created_at')
+        .select('owner_id, owner_code, owner_name, owner_legal_name, owner_type, owner_address, owner_city, owner_state, owner_postal_code, owner_phone, owner_email, owner_website, owner_active, drone_atc_enabled, tax_id, registration_number, license_number, license_expiry, created_at')
         .order('created_at', { ascending: false });
     if (error) throw new Error(error.message);
 
@@ -126,6 +129,7 @@ export async function updateOwner(id: string, payload: UpdateOwnerPayload) {
             owner_email: payload.owner_email,
             owner_website: payload.owner_website,
             owner_active: payload.owner_active,
+            drone_atc_enabled: payload.drone_atc_enabled ?? false,
         })
         .eq('owner_id', id)
         .select()
@@ -273,6 +277,7 @@ export async function addOwnerWithAdmin(payload: AddOwnerWithAdminPayload) {
             owner_email: payload.owner_email,
             owner_website: payload.owner_website,
             owner_active: payload.owner_active,
+            drone_atc_enabled: payload.drone_atc_enabled ?? false,
             tax_id: payload.tax_id || null,
             registration_number: payload.registration_number || null,
             license_number: payload.license_number || null,

@@ -7,6 +7,7 @@ export interface JWTPayload {
   email: string;
   username: string;
   role: Role;
+  droneAtcEnabled?: boolean;
   iat?: number;
   exp?: number;
 }

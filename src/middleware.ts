@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { getApiRoutePermission, Role, roleHasPermission, ROUTE_PERMISSIONS } from './lib/auth/roles'
-import { decodeJwtRole, hasRoutePermission, isJwtExpired } from './lib/utils'
+import { decodeJwtPayload, decodeJwtRole, hasRoutePermission, isJwtExpired } from './lib/utils'
 
 export async function updateSession(request: NextRequest) {
 
@@ -120,6 +120,21 @@ export async function updateSession(request: NextRequest) {
           )
         }
       }
+
+      // Company-level Drone ATC gate for API routes
+      if (pathname.startsWith('/api/drone-atc')) {
+        const role = decodeJwtRole(jwtToken)
+        if (role && role !== 'SUPERADMIN') {
+          const payload = decodeJwtPayload(jwtToken)
+          if (!payload?.droneAtcEnabled) {
+            return NextResponse.json(
+              { error: 'Drone ATC is not enabled for your organization' },
+              { status: 403 }
+            )
+          }
+        }
+      }
+
       return response
     }
 
@@ -128,6 +143,17 @@ export async function updateSession(request: NextRequest) {
       const requiredEntry = ROUTE_PERMISSIONS[pathname]
       if (requiredEntry !== undefined && !hasRoutePermission(role, requiredEntry)) {
         return NextResponse.redirect(new URL('/unauthorized', request.url))
+      }
+    }
+
+    // Company-level Drone ATC gate for page route
+    if (pathname.startsWith('/drone-atc')) {
+      const role = decodeJwtRole(jwtToken)
+      if (role && role !== 'SUPERADMIN') {
+        const payload = decodeJwtPayload(jwtToken)
+        if (!payload?.droneAtcEnabled) {
+          return NextResponse.redirect(new URL('/unauthorized', request.url))
+        }
       }
     }
 

@@ -7,14 +7,13 @@ import ViewOwnerModal from '@/components/company/ViewOwnerModal';
 import DataTable from '@/components/system/DataTable';
 import { ownerColumns, OwnerData } from '@/components/tables/OwnerColumn';
 import { Button } from '@/components/ui/button';
+import { useTheme } from '@/components/useTheme';
 import axios from 'axios';
 import { Plus } from 'lucide-react';
-import { useTheme } from 'next-themes';
 import { useEffect, useMemo, useState } from 'react';
 
 export default function OwnersPage() {
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
+ const { isDark } = useTheme();
 
   const [data, setData] = useState<OwnerData[]>([]);
   const [loading, setLoading] = useState(true);

@@ -10,6 +10,7 @@ const editOwnerValidation = z.object({
     owner_name: z.string().min(2, "Organization name must be at least 2 characters"),
     owner_email: z.string().email("Invalid email format"),
     owner_website: z.string().url("Invalid website URL"),
+    drone_atc_enabled: z.boolean().optional(),
 });
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
