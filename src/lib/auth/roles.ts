@@ -86,6 +86,7 @@ export const ROUTE_PERMISSIONS: Record<string, RoutePermissionEntry> = {
   '/operations/flight-requests': 'view_operations',
   '/logbooks/mission-planning-logbook': 'view_logbooks',
   '/logbooks/operation-logbook': 'view_logbooks',
+  '/logbooks/battery-logbook': 'view_logbooks',
   '/safety/spi-kpi-definitions': 'view_safety_mgmt',
   '/emergency-contact': 'view_erp',
   '/compliance/general-audit-plan': 'view_compliance',

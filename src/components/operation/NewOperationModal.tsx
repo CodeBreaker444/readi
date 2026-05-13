@@ -16,6 +16,7 @@ import {
     CheckCircle2,
     ChevronLeft,
     ChevronRight,
+    ClipboardList,
     FileUp,
     History,
     Loader2,
@@ -28,6 +29,7 @@ import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { EmergencyResponsePlan } from '@/config/types/erp'
 import { FlightLogsTab } from '@/components/operation/FlightLogsTab'
+import { PostFlightTab, type MissionResultOption, type PostFlightState } from '@/components/operation/PostFlightTab'
 
 
 interface Client { client_id: number; client_name: string; client_code: string }
@@ -109,9 +111,28 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
     const [existingMissionCodes, setExistingMissionCodes] = useState<Set<string>>(new Set())
     const [generatingId, setGeneratingId] = useState(false)
 
-    const [editTab, setEditTab] = useState<'data' | 'execution' | 'log' | 'history' | 'group'>('data')
+    const [editTab, setEditTab] = useState<'data' | 'execution' | 'log' | 'postFlight' | 'history' | 'group'>('data')
     const [erps, setErps] = useState<EmergencyResponsePlan[]>([])
     const [loadingErps, setLoadingErps] = useState(false)
+
+    const [loadingPostFlight, setLoadingPostFlight] = useState(false)
+    const [submittingPostFlight, setSubmittingPostFlight] = useState(false)
+    const [resultOptions, setResultOptions] = useState<MissionResultOption[]>([])
+    const [postFlightFromLog, setPostFlightFromLog] = useState(false)
+    const [postFlight, setPostFlight] = useState<PostFlightState>({
+        actual_end: '',
+        result_id: null,
+        flight_duration_min: '',
+        distance_m: '',
+        battery_charge_start: '',
+        battery_charge_end: '',
+        incident_flag: false,
+        rth_unplanned: false,
+        link_loss: false,
+        deviation_flag: false,
+        weather_temp: '',
+        notes: '',
+    })
 
     function generateMissionId(exclude: Set<string>): string {
         const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
@@ -258,6 +279,34 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
             .finally(() => setLoadingErps(false))
     }, [editTab, isEdit])
 
+    useEffect(() => {
+        if (!isEdit || editTab !== 'postFlight' || !editOperation) return
+        setLoadingPostFlight(true)
+        axios.get(`/api/operation/board/post-flight?mission_id=${editOperation.pilot_mission_id}`)
+            .then(res => {
+                if (res.data.code === 1 && res.data.data) {
+                    const { flight, result_options } = res.data.data
+                    setResultOptions(result_options ?? [])
+                    setPostFlight({
+                        actual_end: isoToLocalInput(flight?.actual_end),
+                        result_id: flight?.fk_mission_result_type_id ?? null,
+                        flight_duration_min: flight?.flight_duration != null ? String(flight.flight_duration) : '',
+                        distance_m: flight?.distance_flown != null ? String(flight.distance_flown) : '',
+                        battery_charge_start: flight?.battery_charge_start != null ? String(flight.battery_charge_start) : '',
+                        battery_charge_end: flight?.battery_charge_end != null ? String(flight.battery_charge_end) : '',
+                        incident_flag: flight?.incident_flag ?? false,
+                        rth_unplanned: flight?.rth_unplanned ?? false,
+                        link_loss: flight?.link_loss ?? false,
+                        deviation_flag: flight?.deviation_flag ?? false,
+                        weather_temp: flight?.weather_temperature != null ? String(flight.weather_temperature) : '',
+                        notes: flight?.notes ?? '',
+                    })
+                }
+            })
+            .catch(() => toast.error('Failed to load post-flight data'))
+            .finally(() => setLoadingPostFlight(false))
+    }, [editTab, isEdit, editOperation])
+
     function resetForm() {
         setStep(1)
         setClientId(''); setOpType('OPEN'); setDroneId(''); setPlanId('')
@@ -270,6 +319,46 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
         setTypes([]); setCategories([]); setLucProcedures([]); setPilots([])
         setExistingMissionCodes(new Set()); setGeneratingId(false)
         setEditTab('data'); setErps([])
+        setPostFlight({ actual_end: '', result_id: null, flight_duration_min: '', distance_m: '', battery_charge_start: '', battery_charge_end: '', incident_flag: false, rth_unplanned: false, link_loss: false, deviation_flag: false, weather_temp: '', notes: '' })
+        setResultOptions([]); setPostFlightFromLog(false)
+    }
+
+    const handlePostFlightChange = <K extends keyof PostFlightState>(field: K, value: PostFlightState[K]) => {
+        setPostFlight(prev => ({ ...prev, [field]: value }))
+    }
+
+    const handleSubmitPostFlight = async () => {
+        if (!editOperation) return
+        const payload: Record<string, unknown> = {
+            mission_id: editOperation.pilot_mission_id,
+            flight_duration: postFlight.flight_duration_min ? parseInt(postFlight.flight_duration_min, 10) : null,
+            actual_end: postFlight.actual_end ? new Date(postFlight.actual_end).toISOString() : null,
+            distance_flown: postFlight.distance_m ? parseFloat(postFlight.distance_m) : null,
+            battery_charge_start: postFlight.battery_charge_start ? parseFloat(postFlight.battery_charge_start) : null,
+            battery_charge_end: postFlight.battery_charge_end ? parseFloat(postFlight.battery_charge_end) : null,
+            incident_flag: postFlight.incident_flag,
+            rth_unplanned: postFlight.rth_unplanned,
+            link_loss: postFlight.link_loss,
+            deviation_flag: postFlight.deviation_flag,
+            weather_temperature: postFlight.weather_temp ? parseFloat(postFlight.weather_temp) : null,
+            notes: postFlight.notes || null,
+            fk_mission_result_type_id: postFlight.result_id,
+        }
+        setSubmittingPostFlight(true)
+        try {
+            const { data } = await axios.post('/api/operation/board/post-flight', payload)
+            if (data.code === 1) {
+                toast.success('Post-flight data saved successfully')
+                onSuccess()
+                onClose()
+            } else {
+                toast.error(data.message || 'Failed to save post-flight data')
+            }
+        } catch (e: any) {
+            toast.error(e.response?.data?.message ?? 'Failed to save post-flight data')
+        } finally {
+            setSubmittingPostFlight(false)
+        }
     }
 
     const clientPlannings = plannings.filter(p => String(p.fk_client_id) === clientId)
@@ -378,9 +467,10 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                 {isEdit && (
                     <div className={cn('flex border-b overflow-x-auto', isDark ? 'border-slate-700' : 'border-gray-200')}>
                         {([
-                            { id: 'data',      label: 'Mission Data',      icon: Settings },
-                            { id: 'execution', label: 'Mission Execution',  icon: Shield },
-                            { id: 'log',       label: 'Mission Log',        icon: FileUp },
+                            { id: 'data',       label: 'Mission Data',      icon: Settings },
+                            { id: 'execution',  label: 'Mission Execution',  icon: Shield },
+                            { id: 'log',        label: 'Mission Log',        icon: FileUp },
+                            { id: 'postFlight', label: 'Post Flight',        icon: ClipboardList },
                             // { id: 'history',   label: 'Mission History',    icon: History },
                             // { id: 'group',     label: 'Mission Group',      icon: RefreshCw },
                         ] as const).map(tab => {
@@ -885,6 +975,18 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                         <EditMissionLogTab missionId={editOperation.pilot_mission_id} isDark={isDark} />
                     )}
 
+                    {/* Post Flight */}
+                    {isEdit && editTab === 'postFlight' && (
+                        <PostFlightTab
+                            data={postFlight}
+                            resultOptions={resultOptions}
+                            loading={loadingPostFlight}
+                            fromLog={postFlightFromLog}
+                            isDark={isDark}
+                            onChange={handlePostFlightChange}
+                        />
+                    )}
+
                     {/* Mission History — placeholder */}
                     {/* {isEdit && editTab === 'history' && (
                         <div className="space-y-4">
@@ -953,10 +1055,23 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                     )}
                 </div>}
                 {isEdit && editTab !== 'data' && (
-                    <div className={cn('flex items-center justify-end px-6 pb-6 pt-2 border-t', isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-muted/20')}>
+                    <div className={cn('flex items-center justify-end gap-2 px-6 pb-6 pt-2 border-t', isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-muted/20')}>
                         <Button variant="outline" size="sm" onClick={onClose} className={cn(isDark && 'border-slate-600 text-slate-300 hover:bg-slate-700')}>
                             Close
                         </Button>
+                        {editTab === 'postFlight' && (
+                            <Button
+                                size="sm"
+                                onClick={handleSubmitPostFlight}
+                                disabled={submittingPostFlight || loadingPostFlight}
+                                className="gap-2 bg-violet-600 hover:bg-violet-700 text-white"
+                            >
+                                {submittingPostFlight
+                                    ? <><Loader2 className="h-4 w-4 animate-spin" /> Saving…</>
+                                    : 'Save Post-Flight'
+                                }
+                            </Button>
+                        )}
                     </div>
                 )}
             </DialogContent>
@@ -964,6 +1079,18 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
     )
 }
 
+
+function isoToLocalInput(iso: string | null | undefined): string {
+    if (!iso) return ''
+    try {
+        const d = new Date(iso)
+        if (isNaN(d.getTime())) return ''
+        const pad = (n: number) => String(n).padStart(2, '0')
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+    } catch {
+        return ''
+    }
+}
 
 function SectionTitle({ children, isDark }: { children: React.ReactNode; isDark: boolean }) {
     return (
