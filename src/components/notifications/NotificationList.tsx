@@ -88,7 +88,10 @@ export default function NotificationList({
                   </td>
 
                   <td className={`px-4 py-3 text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                    {notification.procedure_name}
+                    {notification.procedure_name
+                      ? notification.procedure_name.charAt(0).toUpperCase() +
+                        notification.procedure_name.slice(1).toLowerCase().replace(/_/g, ' ')
+                      : '-'}
                   </td>
 
                   <td className={`px-4 py-3 text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>

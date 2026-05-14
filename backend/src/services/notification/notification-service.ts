@@ -174,6 +174,38 @@ export async function sendNotificationToRoles(
   }
 }
 
+export interface AssignmentNotificationPayload {
+  pilotUserId: number;
+  missionId: number;
+  missionCode: string;
+  fromUserId: number;
+}
+
+export async function notifyPilotAssignment(
+  assignments: AssignmentNotificationPayload | AssignmentNotificationPayload[]
+): Promise<void> {
+  const rows = (Array.isArray(assignments) ? assignments : [assignments]).map((a) => ({
+    fk_user_id:           a.pilotUserId,
+    notification_type:    'assignment',
+    notification_title:   'New Assignment',
+    notification_message: `You have been assigned to operation ${a.missionCode}`,
+    notification_data: {
+      mission_id:   a.missionId,
+      task_code:    a.missionCode,
+      from_user_id: a.fromUserId,
+    },
+    priority:  'normal',
+    is_read:   false,
+    created_at: new Date().toISOString(),
+  }));
+
+  console.log('[notifyPilotAssignment] inserting', rows.length, 'notification(s) for user', rows[0]?.fk_user_id);
+  const { error } = await supabase.from('notification').insert(rows);
+  if (error) {
+    console.error('[notifyPilotAssignment] insert failed:', error.message, error.details, error.hint);
+  }
+}
+
 /**
  * Fire-and-forget: send a notification to a specific user.
  */

@@ -1,5 +1,6 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { notifyDccMissionCreation } from '@/backend/services/mission/dcc-callback-service';
+import { notifyPilotAssignment } from '@/backend/services/notification/notification-service';
 import { createOperation, createRecurringOperations, deleteOperation, listOperations } from '@/backend/services/operation/operation-service';
 import { assertToolNotInMaintenance } from '@/backend/services/system/maintenance-ticket';
 import { CreateOperationSchema, ListOperationsQuerySchema } from '@/config/types/operation';
@@ -25,7 +26,7 @@ const listOperationsQuerySchema = z.object({
   date_end: z.string().optional(),
 });
 const createOperationSchema = z.object({
-  mission_name: z.string().min(1),
+  mission_name: z.string().nullable().optional(),
   mission_code: z.string().min(1),
   status_name: z.enum(['PLANNED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'ABORTED']),
   mission_description: z.string().nullable().optional(),
@@ -50,6 +51,7 @@ const createRecurringSchema = z.object({
   mission_code: z.string().optional(),
   mission_description: z.string().nullable().optional(),
   scheduled_start: z.string(),
+  actual_end: z.string().nullable().optional(),
   fk_pilot_user_id: z.number().int().positive(),
   fk_tool_id: z.number().int().positive().nullable().optional(),
   fk_client_id: z.number().int().positive().nullable().optional(),
@@ -183,6 +185,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (validated.fk_pilot_user_id) {
+      await notifyPilotAssignment({
+        pilotUserId: validated.fk_pilot_user_id,
+        missionId:   operation.pilot_mission_id,
+        missionCode: operation.mission_code,
+        fromUserId:  session.user.userId,
+      });
+    }
+
     logEvent({
       eventType: 'CREATE',
       entityType: 'operation',
@@ -193,7 +204,7 @@ export async function POST(req: NextRequest) {
       userRole: session.user.role,
       ownerId,
     });
-    return NextResponse.json({ ...operation, dcc }, { status: 201 });
+    return NextResponse.json({ success: true, ...operation, dcc }, { status: 201 });
   } catch (err) {
     if (err instanceof ZodError) {
       return NextResponse.json({ error: 'Validation failed', details: err.issues }, { status: 400 });

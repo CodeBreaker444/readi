@@ -372,6 +372,7 @@ export async function createRecurringOperations(
     mission_code?: string;
     mission_description?: string | null;
     scheduled_start: string;
+    actual_end?: string | null;
     fk_pilot_user_id: number;
     fk_tool_id?: number | null;
     fk_mission_type_id?: number | null;
@@ -414,6 +415,18 @@ export async function createRecurringOperations(
   const startMatch = input.scheduled_start.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
   if (!startMatch) throw new Error('Invalid scheduled_start format. Expected YYYY-MM-DDTHH:mm');
   const [, sYear, sMonth, sDay, sHour, sMin] = startMatch.map(Number);
+
+  let durationMs = 0;
+  if (input.actual_end) {
+    const endMatch = input.actual_end.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+    if (endMatch) {
+      const [, eYear, eMonth, eDay, eHour, eMin] = endMatch.map(Number);
+      durationMs = Math.max(
+        Date.UTC(eYear, eMonth - 1, eDay, eHour, eMin) - Date.UTC(sYear, sMonth - 1, sDay, sHour, sMin),
+        0,
+      );
+    }
+  }
 
   const untilMatch = input.recur_until.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (!untilMatch) throw new Error('Invalid recur_until format. Expected YYYY-MM-DD');
@@ -467,7 +480,7 @@ export async function createRecurringOperations(
         notes: input.notes ?? null,
         mission_code: instanceCode,
         scheduled_start: instanceStart.toISOString(),
-        actual_end: null,
+        actual_end: durationMs > 0 ? new Date(instanceStart.getTime() + durationMs).toISOString() : null,
         recurring_group_id: recurringGroupId,
         mission_date_until: input.recur_until,
         mission_group_label: input.mission_group_label ?? null,

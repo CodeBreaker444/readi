@@ -1,6 +1,7 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { notifyDccAcceptance } from '@/backend/services/mission/dcc-callback-service';
 import { deleteOperation, getOperation, updateOperation } from '@/backend/services/operation/operation-service';
+import { notifyPilotAssignment } from '@/backend/services/notification/notification-service';
 import { UpdateOperationSchema } from '@/config/types/operation';
 import { internalError, notFound, zodError } from '@/lib/api-error';
 import { requirePermission } from '@/lib/auth/api-auth';
@@ -81,6 +82,15 @@ export async function PUT(req: NextRequest, { params }: Params) {
       userRole: session!.user.role,
       ownerId: session!.user.ownerId,
     });
+
+    if (validated.fk_pilot_user_id) {
+      await notifyPilotAssignment({
+        pilotUserId: validated.fk_pilot_user_id,
+        missionId:   id,
+        missionCode: (updated as any).mission_code ?? `#${id}`,
+        fromUserId:  session!.user.userId,
+      });
+    }
 
     // If a drone was just assigned to a mission that has a DCC planning link,
     // fire DCC acceptance now (it was skipped earlier when the drone wasn't set yet).

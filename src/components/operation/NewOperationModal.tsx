@@ -371,12 +371,11 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                 return
             }
 
-            const selectedLuc = lucProcedures.find(p => String(p.id) === schedulerForm.lucId)
             const payload = {
                 mission_code: schedulerForm.missionCode.trim(),
                 mission_name: schedulerForm.missionName.trim(),
                 scheduled_start: schedulerForm.scheduledStart,
-                scheduled_end: schedulerForm.scheduledEnd || undefined,
+                actual_end: schedulerForm.scheduledEnd || undefined,
                 fk_pilot_user_id: parseInt(pilotId),
                 fk_tool_id: droneId ? parseInt(droneId) : null,
                 fk_client_id: clientId ? parseInt(clientId) : null,
@@ -384,11 +383,10 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                 fk_mission_category_id: schedulerForm.categoryId ? parseInt(schedulerForm.categoryId) : null,
                 fk_planning_id: planId ? parseInt(planId) : null,
                 fk_luc_procedure_id: parseInt(schedulerForm.lucId),
-                luc_procedure_steps: selectedLuc?.steps ?? null,
                 location: schedulerForm.location || undefined,
                 notes: schedulerForm.notes || undefined,
                 distance_flown: schedulerForm.distanceFlown !== '' ? parseFloat(schedulerForm.distanceFlown) : null,
-                status_name: 'Scheduled',
+                status_name: 'PLANNED',
                 ...(schedulerForm.isRecurring && {
                     is_recurring: true,
                     days_of_week: schedulerForm.daysOfWeek,
@@ -396,7 +394,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                     mission_group_label: schedulerForm.missionGroupLabel || undefined,
                 }),
             }
-            const res = await axios.post('/api/operation/calendar/create', payload)
+            const res = await axios.post('/api/operation', payload)
             if (!res.data.success) throw new Error(res.data.error ?? t('operations.newOperation.toast.createError'))
             toast.success(t('operations.newOperation.toast.createSuccess'))
             onSuccess(); onClose()

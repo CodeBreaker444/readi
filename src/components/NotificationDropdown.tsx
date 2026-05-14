@@ -54,7 +54,8 @@ const NotificationItem: React.FC<ItemProps> = ({ notif, isUnread, isDark, subtex
             isDark ? 'bg-slate-600 text-gray-300' : 'bg-gray-100 text-gray-500'
           }`}
         >
-          {notif.procedure_name}
+          {notif.procedure_name.charAt(0).toUpperCase() +
+            notif.procedure_name.slice(1).toLowerCase().replace(/_/g, ' ')}
         </span>
       )}
       <p
