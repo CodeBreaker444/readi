@@ -30,7 +30,7 @@ export const sendUserActivationEmail = async (
     );
 
     const { data, error } = await resend.emails.send({
-      from: 'deepinspect <no-reply@app.d3d.ai>',
+      from: 'ReADI <no-reply@readi.theun1t.com>',
       to: [email],
       subject: `ReADI Control Center Account for: ${fullname}`,
       html: emailHtml,
@@ -73,7 +73,7 @@ export const sendTicketClosedEmail = async (
     );
 
     const { error } = await resend.emails.send({
-      from: 'deepinspect <no-reply@app.d3d.ai>',
+      from: 'ReADI <no-reply@readi.theun1t.com>',
       to: emails,
       subject: `Maintenance Complete — ${systemCode}`,
       html: emailHtml,
@@ -83,6 +83,37 @@ export const sendTicketClosedEmail = async (
     console.error('sendTicketClosedEmail exception:', err);
   }
 };
+
+// /**
+//  * Send maintenance alert email to maintenance managers (OPM / RM / ADMIN).
+//  * Uncomment when MaintenanceAlertEmail template is created under
+//  * src/components/email-template/MaintenanceAlertEmail.tsx.
+//  */
+// export const sendMaintenanceAlertEmail = async (
+//   emails: string[],
+//   systemCode: string,
+//   componentName: string,
+//   status: 'ALERT' | 'DUE',
+//   triggers: string[]
+// ) => {
+//   if (!emails.length) return;
+//   try {
+//     const { MaintenanceAlertEmail } = await import('@/components/email-template/MaintenanceAlertEmail');
+//     const emailHtml = await render(MaintenanceAlertEmail({ systemCode, componentName, status, triggers }));
+//     const subject = status === 'DUE'
+//       ? `Maintenance Required — ${systemCode}`
+//       : `Maintenance Alert — ${systemCode}`;
+//     const { error } = await resend.emails.send({
+//       from: 'ReADI <no-reply@readi.theun1t.com>',
+//       to: emails,
+//       subject,
+//       html: emailHtml,
+//     });
+//     if (error) console.error('sendMaintenanceAlertEmail error:', error);
+//   } catch (err) {
+//     console.error('sendMaintenanceAlertEmail exception:', err);
+//   }
+// };
 
 /**
  * Send verification email
@@ -98,11 +129,11 @@ export const sendTicketClosedEmail = async (
 //     const verifyLink = `${serverEnv.NEXTAUTH_URL}/api/user/verifyEmail?verificationToken=${token}`;
 
 //     const { data, error } = await resend.emails.send({
-//       from: 'deepinspect <no-reply@support.d3d.ai>',
+//       from: 'ReADI <no-reply@readi.theun1t.com>',
 //       to: [email],
 //       subject: 'Email Verification',
 //       react: UserActivationEmail({
-//         organization: 'DeepInspect',
+//         organization: 'ReADI',
 //         username: fullName,
 //         passcode: token.substring(0, 10),
 //         loginlink: verifyLink,

@@ -17,9 +17,9 @@ const DEFAULT_THRESHOLD = 80;
 export default function MaintenancePage() {
   const { isDark } = useTheme();
   const [data, setData] = useState<MaintenanceDrone[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [threshold, setThreshold] = useState(DEFAULT_THRESHOLD);
-  const hasFetched = useRef(false);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [threshold, setThreshold] = useState<number>(DEFAULT_THRESHOLD);
+  const hasFetched = useRef<boolean>(false);
 
   const fetchData = useCallback(async (alertThreshold: number) => {
     setLoading(true);

@@ -344,7 +344,7 @@ export default function DashboardClient({ ownerId, userProfileCode, userId, init
 
       {(userProfileCode === 'ADMIN' || userProfileCode === 'SUPERADMIN') && (
         <div className="mb-8 max-w-md">
-          <AiUsageWidget isDark={isDark} />
+          <AiUsageWidget isDark={isDark} initialData={data?.agent_usage} />
         </div>
       )}
 
