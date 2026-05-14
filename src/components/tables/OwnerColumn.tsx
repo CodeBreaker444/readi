@@ -16,6 +16,7 @@ export interface OwnerData {
   owner_website: string;
   owner_active: string;
   drone_atc_enabled: boolean;
+  email_notifications_enabled: boolean;
   easa_operator_code: string | null;
   tax_id: string | null;
   registration_number: string | null;
@@ -98,6 +99,21 @@ export const ownerColumns = ({ onView, onEdit, onDelete }: OwnerColumnActions): 
         }`}
       >
         {row.original.drone_atc_enabled ? 'Enabled' : 'Disabled'}
+      </span>
+    ),
+  },
+  {
+    header: 'Email Notifs',
+    accessorKey: 'email_notifications_enabled',
+    cell: ({ row }) => (
+      <span
+        className={`rounded px-2 py-1 text-xs ${
+          row.original.email_notifications_enabled
+            ? 'bg-green-100 text-green-800'
+            : 'bg-gray-100 text-gray-500'
+        }`}
+      >
+        {row.original.email_notifications_enabled ? 'On' : 'Off'}
       </span>
     ),
   },

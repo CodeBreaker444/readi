@@ -40,6 +40,7 @@ export default function EditOwnerModal({ open, onClose, onSuccess, owner }: Edit
     owner_website: '',
     owner_active: 'Y',
     drone_atc_enabled: false,
+    email_notifications_enabled: false,
     easa_operator_code: '',
   });
   const [loading, setLoading] = useState(false);
@@ -55,6 +56,7 @@ export default function EditOwnerModal({ open, onClose, onSuccess, owner }: Edit
         owner_website: owner.owner_website,
         owner_active: owner.owner_active,
         drone_atc_enabled: owner.drone_atc_enabled ?? false,
+        email_notifications_enabled: owner.email_notifications_enabled ?? false,
         easa_operator_code: owner.easa_operator_code ?? '',
       });
       setError('');
@@ -163,6 +165,23 @@ export default function EditOwnerModal({ open, onClose, onSuccess, owner }: Edit
               />
               <span className="text-sm text-muted-foreground">
                 {form.drone_atc_enabled ? 'Enabled for this company' : 'Disabled for this company'}
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label className="text-right">Email Notifications</Label>
+            <div className="col-span-3 flex items-center gap-3">
+              <Switch
+                checked={form.email_notifications_enabled}
+                onCheckedChange={(checked) =>
+                  setForm((prev) => ({ ...prev, email_notifications_enabled: checked }))
+                }
+              />
+              <span className="text-sm text-muted-foreground">
+                {form.email_notifications_enabled
+                  ? 'Notifications sent to user emails'
+                  : 'In-app notifications only'}
               </span>
             </div>
           </div>

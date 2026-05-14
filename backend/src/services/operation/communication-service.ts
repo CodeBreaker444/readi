@@ -1,4 +1,5 @@
 import { supabase } from '@/backend/database/database';
+import { sendNotificationEmail } from '../../../../lib/resend/mail';
 import {
     buildS3Url,
     uploadFileToS3
@@ -127,6 +128,32 @@ export async function sendGeneralCommunication(
 
     if (notifErr) {
       console.warn('[communicationService] Failed to create notifications:', notifErr.message);
+    }
+
+    const { data: ownerRow } = await supabase
+      .from('owner')
+      .select('email_notifications_enabled')
+      .eq('owner_id', params.ownerId)
+      .single();
+
+    if (ownerRow?.email_notifications_enabled) {
+      const { data: recipientUsers } = await supabase
+        .from('users')
+        .select('email')
+        .in('user_id', params.communicationTo)
+        .eq('user_active', 'Y');
+
+      const emails = (recipientUsers ?? []).map((u: { email: string }) => u.email).filter(Boolean);
+      if (emails.length) {
+        const emailTitle = `New ${params.procedureName.replace(/_/g, ' ')} message`;
+        sendNotificationEmail(
+          emails,
+          emailTitle,
+          params.communicationMessage,
+          params.procedureName.toUpperCase(),
+          null
+        );
+      }
     }
   }
 

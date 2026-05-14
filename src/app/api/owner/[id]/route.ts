@@ -11,6 +11,7 @@ const editOwnerValidation = z.object({
     owner_email: z.string().email("Invalid email format"),
     owner_website: z.string().url("Invalid website URL"),
     drone_atc_enabled: z.boolean().optional(),
+    email_notifications_enabled: z.boolean().optional(),
     easa_operator_code: z.string().max(100).optional(),
 });
 

@@ -42,6 +42,12 @@ export default function ViewOwnerModal({ open, onClose, owner }: ViewOwnerModalP
       active: owner.owner_active === 'Y',
     },
     {
+      label: 'Email Notifications',
+      value: owner.email_notifications_enabled ? 'Enabled' : 'Disabled',
+      badge: true,
+      active: owner.email_notifications_enabled,
+    },
+    {
       label: 'Created',
       value: new Date(owner.created_at).toLocaleDateString(),
     },

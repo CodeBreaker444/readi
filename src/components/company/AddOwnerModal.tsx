@@ -42,6 +42,7 @@ const initialForm = {
     owner_website: '',
     owner_active: 'Y',
     drone_atc_enabled: false,
+    email_notifications_enabled: false,
     easa_operator_code: '',
     tax_id: '',
     registration_number: '',
@@ -206,6 +207,23 @@ export default function AddOwnerModal({ open, onClose, onSuccess }: AddOwnerModa
                                 />
                                 <span className="text-sm text-muted-foreground">
                                     {form.drone_atc_enabled ? 'Enabled' : 'Disabled'}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-3 items-center gap-2">
+                            <Label className="text-right text-sm">Email Notifications</Label>
+                            <div className="col-span-2 flex items-center gap-3">
+                                <Switch
+                                    checked={form.email_notifications_enabled}
+                                    onCheckedChange={(checked) =>
+                                        setForm((prev) => ({ ...prev, email_notifications_enabled: checked }))
+                                    }
+                                />
+                                <span className="text-sm text-muted-foreground">
+                                    {form.email_notifications_enabled
+                                        ? 'Notifications sent to user emails'
+                                        : 'In-app notifications only'}
                                 </span>
                             </div>
                         </div>

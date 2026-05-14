@@ -1,4 +1,5 @@
 import { env } from '@/backend/config/env';
+import { NotificationEmail } from '@/components/email-template/NotificationEmail';
 import { TicketClosedEmail } from '@/components/email-template/TicketClosedEmail';
 import { UserActivationEmail } from '@/components/email-template/UserActivationEmail';
 import { render } from '@react-email/components';
@@ -81,6 +82,32 @@ export const sendTicketClosedEmail = async (
     if (error) console.error('sendTicketClosedEmail error:', error);
   } catch (err) {
     console.error('sendTicketClosedEmail exception:', err);
+  }
+};
+
+export const sendNotificationEmail = async (
+  emails: string[],
+  title: string,
+  message: string,
+  notificationType?: string,
+  actionUrl?: string | null
+) => {
+  if (!emails.length) return;
+  try {
+    const emailHtml = await render(
+      NotificationEmail({ title, message, notificationType, actionUrl })
+    );
+
+    const { error } = await resend.emails.send({
+      from: 'ReADI <no-reply@readi.theun1t.com>',
+      to: emails,
+      subject: title,
+      html: emailHtml,
+    });
+
+    if (error) console.error('sendNotificationEmail error:', error);
+  } catch (err) {
+    console.error('sendNotificationEmail exception:', err);
   }
 };
 

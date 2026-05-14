@@ -14,6 +14,7 @@ export interface OwnerData {
     owner_website: string;
     owner_active: string;
     drone_atc_enabled: boolean;
+    email_notifications_enabled: boolean;
     easa_operator_code: string | null;
     created_at: string;
 }
@@ -32,6 +33,7 @@ export interface AddOwnerWithAdminPayload {
     owner_website: string;
     owner_active: string;
     drone_atc_enabled?: boolean;
+    email_notifications_enabled?: boolean;
     easa_operator_code?: string;
     tax_id?: string;
     registration_number?: string;
@@ -62,6 +64,7 @@ export interface UpdateOwnerPayload {
     owner_website: string;
     owner_active: string;
     drone_atc_enabled?: boolean;
+    email_notifications_enabled?: boolean;
     easa_operator_code?: string;
 }
 
@@ -80,7 +83,7 @@ export interface OwnerWithAdmin extends OwnerData {
 export async function getOwners(): Promise<OwnerWithAdmin[]> {
     const { data: owners, error } = await supabase
         .from('owner')
-        .select('owner_id, owner_code, owner_name, owner_legal_name, owner_type, owner_address, owner_city, owner_state, owner_postal_code, owner_phone, owner_email, owner_website, owner_active, drone_atc_enabled, easa_operator_code, tax_id, registration_number, license_number, license_expiry, created_at')
+        .select('owner_id, owner_code, owner_name, owner_legal_name, owner_type, owner_address, owner_city, owner_state, owner_postal_code, owner_phone, owner_email, owner_website, owner_active, drone_atc_enabled, email_notifications_enabled, easa_operator_code, tax_id, registration_number, license_number, license_expiry, created_at')
         .order('created_at', { ascending: false });
     if (error) throw new Error(error.message);
 
@@ -133,6 +136,7 @@ export async function updateOwner(id: string, payload: UpdateOwnerPayload) {
             owner_website: payload.owner_website,
             owner_active: payload.owner_active,
             drone_atc_enabled: payload.drone_atc_enabled ?? false,
+            email_notifications_enabled: payload.email_notifications_enabled ?? false,
             easa_operator_code: payload.easa_operator_code ?? null,
         })
         .eq('owner_id', id)
@@ -291,6 +295,7 @@ export async function addOwnerWithAdmin(payload: AddOwnerWithAdminPayload) {
             owner_website: payload.owner_website,
             owner_active: payload.owner_active,
             drone_atc_enabled: payload.drone_atc_enabled ?? false,
+            email_notifications_enabled: payload.email_notifications_enabled ?? false,
             tax_id: payload.tax_id || null,
             registration_number: payload.registration_number || null,
             license_number: payload.license_number || null,

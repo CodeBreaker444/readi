@@ -1,4 +1,5 @@
 import { supabase } from "@/backend/database/database";
+import { sendNotificationEmail } from "../../../../lib/resend/mail";
 import type {
     MarkReadPayload,
     Notification,
@@ -126,6 +127,15 @@ export async function deleteNotification(
 }
 
 
+async function isEmailNotificationsEnabled(ownerId: number): Promise<boolean> {
+  const { data } = await supabase
+    .from("owner")
+    .select("email_notifications_enabled")
+    .eq("owner_id", ownerId)
+    .single();
+  return data?.email_notifications_enabled === true;
+}
+
 /**
  * Fire-and-forget: send a notification to all active users of the given roles within an owner.
  */
@@ -138,14 +148,14 @@ export async function sendNotificationToRoles(
 ): Promise<void> {
   const { data: users } = await supabase
     .from("users")
-    .select("user_id")
+    .select("user_id, email")
     .eq("fk_owner_id", ownerId)
     .eq("user_active", "Y")
     .in("user_role", roles);
 
   if (!users?.length) return;
 
-  const notifications = users.map((u: { user_id: number }) => ({
+  const notifications = users.map((u: { user_id: number; email: string }) => ({
     fk_user_id: u.user_id,
     notification_title: title,
     notification_message: message,
@@ -156,6 +166,12 @@ export async function sendNotificationToRoles(
   }));
 
   await supabase.from("notification").insert(notifications);
+
+  const emailEnabled = await isEmailNotificationsEnabled(ownerId);
+  if (emailEnabled) {
+    const emails = users.map((u: { user_id: number; email: string }) => u.email).filter(Boolean);
+    sendNotificationEmail(emails, title, message, "MAINTENANCE", actionUrl ?? null);
+  }
 }
 
 /**
@@ -176,4 +192,17 @@ export async function sendNotificationToUser(
     action_url: actionUrl ?? null,
     created_at: new Date().toISOString(),
   });
+
+  const { data: user } = await supabase
+    .from("users")
+    .select("email, fk_owner_id")
+    .eq("user_id", userId)
+    .single();
+
+  if (user?.fk_owner_id) {
+    const emailEnabled = await isEmailNotificationsEnabled(user.fk_owner_id);
+    if (emailEnabled && user.email) {
+      sendNotificationEmail([user.email], title, message, "MAINTENANCE", actionUrl ?? null);
+    }
+  }
 }
