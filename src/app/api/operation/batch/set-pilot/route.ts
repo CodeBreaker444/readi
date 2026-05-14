@@ -1,5 +1,6 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { batchSetPilot } from '@/backend/services/operation/operation-service';
+import { supabase } from '@/backend/database/database';
 import { internalError } from '@/lib/api-error';
 import { requirePermission } from '@/lib/auth/api-auth';
 import { E } from '@/lib/error-codes';
@@ -22,6 +23,23 @@ export async function POST(req: NextRequest) {
 
     // pilot can only be set on PLANNED missions
     const result = await batchSetPilot(mission_ids, pilot_id, ownerId);
+
+    if (result.updatedMissions.length > 0) {
+      await supabase.from('notification').insert(
+        result.updatedMissions.map((m) => ({
+          fk_user_id:           pilot_id,
+          notification_type:    'assignment',
+          notification_title:   'New Assignment',
+          notification_message: `You have been assigned to operation ${m.code}`,
+          notification_data: {
+            mission_id:   m.id,
+            task_code:    m.code,
+            from_user_id: session!.user.userId,
+          },
+          priority: 'normal',
+        })),
+      );
+    }
 
     logEvent({
       eventType: 'UPDATE',

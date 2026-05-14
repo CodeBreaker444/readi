@@ -504,10 +504,10 @@ export async function batchSetPilot(
   missionIds: number[],
   pilotId: number,
   ownerId: number,
-): Promise<{ updated: number[]; skipped: number[], pilotName: string}> {
+): Promise<{ updated: number[]; skipped: number[]; pilotName: string; updatedMissions: { id: number; code: string }[] }> {
   const { data: missions, error } = await supabase
     .from('pilot_mission')
-    .select('pilot_mission_id, status_name')
+    .select('pilot_mission_id, status_name, mission_code')
     .in('pilot_mission_id', missionIds)
     .eq('fk_owner_id', ownerId);
 
@@ -518,7 +518,7 @@ export async function batchSetPilot(
     .filter((m: any) => m.status_name !== 'PLANNED')
     .map((m: any) => m.pilot_mission_id);
 
-  if (planned.length === 0) return { updated: [], skipped, pilotName:'' };
+  if (planned.length === 0) return { updated: [], skipped, pilotName: '', updatedMissions: [] };
 
   const ids = planned.map((m: any) => m.pilot_mission_id);
   const { error: updateError } = await supabase
@@ -529,14 +529,15 @@ export async function batchSetPilot(
   if (updateError) throw new Error(`Failed to set pilot: ${updateError.message}`);
 
   const { data: pilotUser } = await supabase
-        .from('users')
-        .select('username')
-        .eq('user_id', pilotId)
-        .single();
-      const pilotName = pilotUser?.username
-        
+    .from('users')
+    .select('username')
+    .eq('user_id', pilotId)
+    .single();
+  const pilotName = pilotUser?.username ?? '';
 
-  return { updated: ids, skipped, pilotName };
+  const updatedMissions = planned.map((m: any) => ({ id: m.pilot_mission_id, code: m.mission_code }));
+
+  return { updated: ids, skipped, pilotName, updatedMissions };
 }
 
 export async function batchAutofill(
