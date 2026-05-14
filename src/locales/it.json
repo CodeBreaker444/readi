@@ -356,7 +356,8 @@
       "update": "Impossibile aggiornare il profilo"
     },
     "success": {
-      "updated": "Profilo aggiornato con successo"
+      "updated": "Profilo aggiornato con successo",
+      "easaUpdated": "Codice operatore EASA aggiornato con successo"
     }
   },
   "missionCategory": {

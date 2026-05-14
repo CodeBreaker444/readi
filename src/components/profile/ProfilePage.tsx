@@ -18,7 +18,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { SessionUser } from '@/lib/auth/server-session';
 import { formatDateInTz } from '@/lib/utils';
 import axios from 'axios';
-import { Camera, CheckCircle2, Clock, GraduationCap, Link2, Loader2, User } from 'lucide-react';
+import { Camera, CheckCircle2, Clock, GraduationCap, Link2, Loader2, ShieldCheck, User } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -51,6 +51,8 @@ export default function Profile({ user }: { user: SessionUser }) {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string | null>(null);
   const [canEditEmail, setCanEditEmail] = useState(false);
+  const [easaCode, setEasaCode] = useState('');
+  const [savingEasa, setSavingEasa] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -83,6 +85,7 @@ export default function Profile({ user }: { user: SessionUser }) {
         });
         setCanEditEmail(['ADMIN', 'SUPERADMIN'].includes(user.role));
         if (data.user.avatar_url) setCurrentAvatarUrl(data.user.avatar_url);
+        if (user.role === 'ADMIN') setEasaCode(user.companyEasaCode ?? '');
       }
 
       if (curriculumRes?.data?.data) setCurriculum(curriculumRes.data.data);
@@ -137,6 +140,24 @@ export default function Profile({ user }: { user: SessionUser }) {
       toast.error(t('profile.errors.update'));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleEasaCodeSave = async () => {
+    setSavingEasa(true);
+    try {
+      const response = await axios.patch('/api/profile/easa-code', {
+        easa_operator_code: easaCode.trim() || null,
+      });
+      if (response.data.success) {
+        toast.success(t('profile.success.easaUpdated'));
+      } else {
+        toast.error(t('profile.errors.update'));
+      }
+    } catch {
+      toast.error(t('profile.errors.update'));
+    } finally {
+      setSavingEasa(false);
     }
   };
 
@@ -309,6 +330,43 @@ export default function Profile({ user }: { user: SessionUser }) {
             </CardHeader>
             <CardContent className="pt-0">
               <FlytbaseTokenConfig />
+            </CardContent>
+          </Card>
+        )}
+
+        {/* EASA Operator Code card — ADMIN only */}
+        {!loading && user.role === 'ADMIN' && (
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 text-primary" />
+                <CardTitle className="text-base">{t('profile.fields.easaOperatorCode')}</CardTitle>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {t('profile.placeholders.easaOperatorCode')}
+              </p>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="flex gap-3 items-end">
+                <div className="flex-1 space-y-1.5">
+                  <Label htmlFor="easaCode">{t('profile.fields.easaOperatorCode')}</Label>
+                  <Input
+                    id="easaCode"
+                    value={easaCode}
+                    onChange={(e) => setEasaCode(e.target.value)}
+                    placeholder={t('profile.placeholders.easaOperatorCode')}
+                    maxLength={100}
+                  />
+                </div>
+                <Button
+                  onClick={handleEasaCodeSave}
+                  disabled={savingEasa}
+                  className="bg-violet-600 hover:bg-violet-700 cursor-pointer shrink-0"
+                >
+                  {savingEasa && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+                  {savingEasa ? t('profile.actions.updating') : t('profile.actions.update')}
+                </Button>
+              </div>
             </CardContent>
           </Card>
         )}

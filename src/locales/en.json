@@ -356,7 +356,8 @@
       "update": "Failed to update profile"
     },
     "success": {
-      "updated": "Profile updated successfully"
+      "updated": "Profile updated successfully",
+      "easaUpdated": "EASA operator code updated successfully"
     }
   },
   "missionCategory": {

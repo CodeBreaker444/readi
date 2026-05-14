@@ -356,7 +356,8 @@
       "update": "Profil konnte nicht aktualisiert werden"
     },
     "success": {
-      "updated": "Profil erfolgreich aktualisiert"
+      "updated": "Profil erfolgreich aktualisiert",
+      "easaUpdated": "EASA-Betreibercode erfolgreich aktualisiert"
     }
   },
   "missionCategory": {

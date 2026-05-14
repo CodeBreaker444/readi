@@ -142,6 +142,15 @@ export async function updateOwner(id: string, payload: UpdateOwnerPayload) {
     if (error) throw new Error(error.message);
     return data as OwnerData;
 }
+// used for updating just the easa code from admin profile page
+export async function updateCompanyEasaCode(ownerId: number, easaCode: string | null): Promise<void> {
+    const { error } = await supabase
+        .from('owner')
+        .update({ easa_operator_code: easaCode ?? null })
+        .eq('owner_id', ownerId);
+
+    if (error) throw new Error(error.message);
+}
 
 export async function deleteOwner(id: string, deletedByUserId: number) {
     const { data: owner, error: fetchError } = await supabase
