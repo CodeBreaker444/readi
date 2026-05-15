@@ -1,4 +1,5 @@
 import { supabase } from '@/backend/database/database';
+import { randomUUID } from 'crypto';
 
 export interface ClientInfo {
   client_name: string;
@@ -243,6 +244,47 @@ export async function getClientPortalAnalytics(
       distance_km: Math.round((v.distance_m / 1000) * 10) / 10,
     })),
   };
+}
+
+export interface CreateClientPortalRequestInput {
+  owner_id: number;
+  client_id: number;
+  mission_type?: string;
+  target?: string;
+  start_datetime?: string;
+  priority?: string;
+  notes?: string;
+  operator?: string;
+  localization?: Record<string, unknown>;
+  waypoint?: Record<string, unknown>;
+}
+
+export async function createClientPortalFlightRequest(
+  input: CreateClientPortalRequestInput,
+): Promise<{ request_id: number }> {
+  const external_mission_id = `CLIENT-${input.client_id}-${randomUUID().slice(0, 8).toUpperCase()}`;
+
+  const { data, error } = await supabase
+    .from('flight_requests')
+    .insert({
+      fk_owner_id: input.owner_id,
+      fk_api_key_id: null,
+      external_mission_id,
+      mission_type: input.mission_type ?? null,
+      target: input.target ?? null,
+      start_datetime: input.start_datetime ?? null,
+      priority: input.priority ?? null,
+      notes: input.notes ?? null,
+      operator: input.operator ?? null,
+      localization: input.localization ?? null,
+      waypoint: input.waypoint ?? null,
+      dcc_status: 'NEW',
+    })
+    .select('request_id')
+    .single();
+
+  if (error || !data) throw new Error(`createClientPortalFlightRequest: ${error?.message}`);
+  return { request_id: data.request_id };
 }
 
 export async function listClientPortalMissions(

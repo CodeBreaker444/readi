@@ -2891,7 +2891,7 @@
       "created": "Emergency response plan created successfully",
       "saveFailed": "Failed to save the plan"
     }
-  }, 
+  },
   "auditLogs": {
     "title": "Audit Logs",
     "subtitle": "Track and monitor system-wide activity",
@@ -3021,22 +3021,34 @@
       "pressure": "Pressure",
       "atmosphericHpa": "Atmospheric hPa",
       "classMeta": {
-        "A": { "label": "Class A", "desc": "FL180+" },
-        "B": { "label": "Class B", "desc": "Surface–10,000 ft" },
-        "C": { "label": "Class C", "desc": "Surface–4,000 ft" },
-        "D": { "label": "Class D", "desc": "Surface–2,500 ft" }
+        "A": {
+          "label": "Class A",
+          "desc": "FL180+"
+        },
+        "B": {
+          "label": "Class B",
+          "desc": "Surface–10,000 ft"
+        },
+        "C": {
+          "label": "Class C",
+          "desc": "Surface–4,000 ft"
+        },
+        "D": {
+          "label": "Class D",
+          "desc": "Surface–2,500 ft"
+        }
       }
     },
     "connection": {
       "failed": "Connection failed"
     }
-},
-"export": {
+  },
+  "export": {
     "export": "Export",
     "exporting": "Exporting…",
     "downloadAs": "Download as"
   },
-"organization": {
+  "organization": {
     "common": {
       "refresh": "Refresh",
       "cancel": "Cancel",
@@ -3211,7 +3223,7 @@
       }
     }
   },
-   "systems": {
+  "systems": {
     "manage": {
       "title": "Drone System List",
       "subtitle": "Manage systems, models, and system components",
@@ -4178,6 +4190,39 @@
     "missions_other": "{{count}} missions",
     "missionCount_one": "{{count}} mission",
     "missionCount_other": "{{count}} missions",
-    "pageOf": "Page {{page}} of {{total}}"
+    "pageOf": "Page {{page}} of {{total}}",
+    "requestFlight": "Request Flight",
+    "requestFlightTitle": "Request New Flight",
+    "requestFlightSubtitle": "Submit a new flight request to the operations team",
+    "flightDetails": "Flight Details",
+    "fieldMissionType": "Mission Type",
+    "missionTypePlaceholder": "e.g. ON_DEMAND, SCHEDULED...",
+    "fieldTarget": "Target / Area",
+    "targetPlaceholder": "Location or area description",
+    "fieldStartDatetime": "Preferred Start Time",
+    "fieldPriority": "Priority",
+    "priorityHigh": "High",
+    "priorityMedium": "Medium",
+    "priorityLow": "Low",
+    "notesPlaceholder": "Any additional information or special requirements…",
+    "submitRequest": "Submit Flight Request",
+    "submitting": "Submitting…",
+    "requestSubmitted": "Request Submitted!",
+    "requestSubmittedDesc": "Your flight request has been received. The operations team will review and respond shortly.",
+    "requestAnother": "Request Another Flight",
+    "requestFailed": "Failed to submit request",
+    "requestValidation": "Please fill in at least Mission Type or Target.",
+    "operatorSection": "Operator",
+    "fieldOperator": "Operator Name",
+    "operatorPlaceholder": "Company or person responsible for this request",
+    "localizationSection": "Localization",
+    "fieldHighway": "Highway",
+    "fieldCarriageway": "Carriageway",
+    "fieldKmStart": "Km Start",
+    "fieldKmEnd": "Km End",
+    "waypointSection": "Waypoint",
+    "fieldLatitude": "Latitude",
+    "fieldLongitude": "Longitude",
+    "fieldAltitude": "Altitude (m)"
   }
 }

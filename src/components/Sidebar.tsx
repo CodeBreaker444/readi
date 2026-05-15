@@ -261,6 +261,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
     { name: t('clientPortal.dashboard'), href: '/client/dashboard', icon: HiOutlineHome },
     { name: t('clientPortal.missions'), href: '/client/missions', icon: HiOutlineClipboardList },
     { name: t('clientPortal.analytics', 'Analytics'), href: '/client/analytics', icon: HiOutlineChartBar },
+    { name: t('clientPortal.requestFlight', 'Request Flight'), href: '/client/request-flight', icon: HiOutlinePaperAirplane },
   ] : [];
 
   useEffect(() => {
