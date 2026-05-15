@@ -1,12 +1,13 @@
 'use client';
 
 import { ClientMission, getClientMissionColumns } from '@/components/tables/ClientMissionColumns';
+import { TablePagination } from '@/components/tables/Pagination';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTheme } from '@/components/useTheme';
 import { cn } from '@/lib/utils';
 import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import axios from 'axios';
-import { ChevronLeft, ChevronRight, Search, X } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -62,6 +63,12 @@ export default function ClientMissionsPage() {
   const table = useReactTable({
     data: missions,
     columns,
+    state: {
+      pagination: {
+        pageIndex: page - 1,
+        pageSize: 8,
+      },
+    },
     getCoreRowModel: getCoreRowModel(),
     manualPagination: true,
     pageCount: totalPages,
@@ -130,8 +137,8 @@ export default function ClientMissionsPage() {
                   statusFilter === s
                     ? 'bg-violet-600 border-violet-600 text-white'
                     : isDark
-                    ? 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'
-                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50',
+                      ? 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'
+                      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50',
                 )}
               >
                 {statusLabel(s)}
@@ -211,36 +218,7 @@ export default function ClientMissionsPage() {
           )}
         </div>
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between pt-1">
-            <span className={cn('text-xs', textSub)}>
-              {t('clientPortal.pageOf', { page, total: totalPages })}
-            </span>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className={cn(
-                  'p-1.5 rounded-lg border transition-colors disabled:opacity-40',
-                  isDark ? 'border-white/10 hover:bg-white/10 text-slate-300' : 'border-slate-200 hover:bg-slate-100 text-slate-600',
-                )}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-                className={cn(
-                  'p-1.5 rounded-lg border transition-colors disabled:opacity-40',
-                  isDark ? 'border-white/10 hover:bg-white/10 text-slate-300' : 'border-slate-200 hover:bg-slate-100 text-slate-600',
-                )}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-        )}
+        <TablePagination table={table} />
       </div>
 
       {detail && <MissionDetailSheet mission={detail} isDark={isDark} onClose={() => setDetail(null)} />}
