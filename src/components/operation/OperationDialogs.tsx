@@ -1,4 +1,4 @@
-import { Operation } from "@/app/operations/table/page";
+import { Operation } from "@/app/missions/table/page";
 import { useTimezone } from "@/components/TimezoneProvider";
 import { cn, formatDateInTz, formatDateTimeInTz } from "@/lib/utils";
 import axios from "axios";

@@ -1,16 +1,16 @@
 'use client';
 
-import { Operation } from '@/app/operations/table/page';
+import { Operation } from '@/app/missions/table/page';
 import { getOperationColumns } from '@/components/tables/OperationColumn';
 import { TablePagination } from '@/components/tables/Pagination';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import { Table as ReactTable, flexRender } from '@tanstack/react-table';

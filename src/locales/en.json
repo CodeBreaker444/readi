@@ -153,8 +153,8 @@
     "planningDashboard": "P02 - Planning Dashboard",
     "missionTemplates": "P04 - Mission Templates",
     "flightRequests": "Flight Requests",
-    "operations": "Operations",
-    "operationsTable": "Operations Table",
+    "operations": "Missions",
+    "operationsTable": "Missions Table",
     "dailyBoard": "Daily Board",
     "calendar": "Calendar",
     "logbooks": "Logbooks",
@@ -1290,8 +1290,8 @@
   "operations": {
     "actions": {
       "view": "View Details",
-      "edit": "Edit Operation",
-      "delete": "Delete Operation"
+      "edit": "Edit Mission",
+      "delete": "Delete Mission"
     },
     "declaration": {
       "title": "Daily Pilot Declaration",
@@ -1307,11 +1307,11 @@
       "error": "Failed to save declaration"
     },
     "table": {
-      "title": "Operations",
-      "subtitle": "Pilot missions & flight operations",
+      "title": "Missions",
+      "subtitle": "Manage and track your missions",
       "communication": "Communication",
       "import": "Import",
-      "newOperation": "New Operation",
+      "newOperation": "New Mission",
       "stats": {
         "total": "Total",
         "planned": "Scheduled",
@@ -1319,7 +1319,7 @@
         "completed": "Completed"
       },
       "filters": {
-        "searchPlaceholder": "Search operations…",
+        "searchPlaceholder": "Search missions…",
         "allStatuses": "All Statuses",
         "allPilots": "All Pilots",
         "allDrones": "All Drones",
@@ -1334,7 +1334,7 @@
         "cancelled": "Cancelled",
         "aborted": "Aborted"
       },
-      "counter": "{{count}} operations",
+      "counter": "{{count}} missions",
       "batch": {
         "selected": "{{count}} selected",
         "setPilot": "Set pilot…",
@@ -1351,7 +1351,7 @@
         "deleteSelected": "Delete Selected",
         "deleting": "Deleting…"
       },
-      "empty": "No operations found",
+      "empty": "No missions found",
       "detail": {
         "timeline": "Timeline",
         "plannedDate": "Planned Date",
@@ -1388,22 +1388,22 @@
         "type": "Type"
       },
       "toast": {
-        "deleteSuccess": "{{count}} operation(s) deleted",
-        "deleteError": "Failed to delete some operations",
-        "statusSuccess": "{{count}} operation(s) updated to {{status}}",
-        "statusError": "Failed to update some operations",
-        "pilotWarning": "No Scheduled operations selected. Pilot can only be set on Scheduled missions.",
-        "pilotSuccess": "Pilot set for {{count}} operation(s)",
+        "deleteSuccess": "{{count}} mission(s) deleted",
+        "deleteError": "Failed to delete some missions",
+        "statusSuccess": "{{count}} mission(s) updated to {{status}}",
+        "statusError": "Failed to update some missions",
+        "pilotWarning": "No Scheduled missions selected. Pilot can only be set on Scheduled missions.",
+        "pilotSuccess": "Pilot set for {{count}} mission(s)",
         "pilotSkipped": "{{count}} skipped (not Scheduled).",
         "pilotError": "Failed to set pilot",
-        "autofillWarning": "No eligible operations. Autofill requires Completed missions with a pilot assigned.",
-        "autofillSuccess": "Autofilled {{count}} operation(s)",
+        "autofillWarning": "No eligible missions. Autofill requires Completed missions with a pilot assigned.",
+        "autofillSuccess": "Autofilled {{count}} mission(s)",
         "autofillSkipped": "{{count}} skipped (not Completed or no pilot).",
         "autofillError": "Failed to autofill tasks"
       }
     },
     "board": {
-      "title": "Operation Board",
+      "title": "Mission Board",
       "subtitle": "Real-time mission workflow management",
       "refresh": "Refresh",
       "columns": {
@@ -1472,9 +1472,9 @@
       }
     },
     "calendar": {
-      "title": "Operation Calendar",
+      "title": "Mission Calendar",
       "subtitle": "Manage mission scheduling and assignments",
-      "addOperation": "Add Operation",
+      "addOperation": "Add Mission",
       "missionOverview": "Mission Overview",
       "loading": "Loading…",
       "legend": {

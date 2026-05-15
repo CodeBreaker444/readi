@@ -1,6 +1,6 @@
 'use client'
 
-import { Operation } from '@/app/operations/table/page'
+import { Operation } from '@/app/missions/table/page'
 import { useTimezone } from '@/components/TimezoneProvider'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'

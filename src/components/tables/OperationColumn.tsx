@@ -1,29 +1,27 @@
 'use client';
 
-import { Operation } from '@/app/operations/table/page';
+import { Operation } from '@/app/missions/table/page';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { cn } from '@/lib/utils';
-import { formatDateTimeInTz } from '@/lib/utils';
+import { cn, formatDateTimeInTz } from '@/lib/utils';
 import { ColumnDef } from '@tanstack/react-table';
 import { TFunction } from 'i18next';
 import {
-  AlertCircle,
-  Calendar,
-  CheckCircle2,
-  Clock,
-  Download,
-  Eye,
-  Loader2,
-  Pencil,
-  Trash2,
-  XCircle,
+    AlertCircle,
+    Calendar,
+    CheckCircle2,
+    Download,
+    Eye,
+    Loader2,
+    Pencil,
+    Trash2,
+    XCircle
 } from 'lucide-react';
 
 export interface OperationTableMeta {

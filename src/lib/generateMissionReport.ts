@@ -1,6 +1,6 @@
 'use client';
 
-import { Operation } from '@/app/operations/table/page';
+import { Operation } from '@/app/missions/table/page';
 import { formatDateTimeInTz } from '@/lib/utils';
 
 interface PostFlightData {

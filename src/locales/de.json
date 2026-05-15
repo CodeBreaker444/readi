@@ -153,8 +153,8 @@
     "planningDashboard": "P02 - Planungsdashboard",
     "missionTemplates": "P04 - Missionsvorlagen",
     "flightRequests": "Fluganfragen",
-    "operations": "Betrieb",
-    "operationsTable": "Betriebstabelle",
+    "operations": "Missionen",
+    "operationsTable": "Missionstabelle",
     "dailyBoard": "Tagesboard",
     "calendar": "Kalender",
     "logbooks": "Logbucher",
@@ -1290,8 +1290,8 @@
   "operations": {
     "actions": {
       "view": "Details anzeigen",
-      "edit": "Operation bearbeiten",
-      "delete": "Operation löschen"
+      "edit": "Mission bearbeiten",
+      "delete": "Mission löschen"
     },
     "declaration": {
       "title": "Tägliche Pilotenerklärung",
@@ -1307,11 +1307,11 @@
       "error": "Fehler beim Speichern der Erklärung"
     },
     "table": {
-      "title": "Betrieb",
-      "subtitle": "Pilotenmissionen & Flugoperationen",
+      "title": "Missionen",
+      "subtitle": "Missionen verwalten und verfolgen",
       "communication": "Kommunikation",
       "import": "Importieren",
-      "newOperation": "Neue Operation",
+      "newOperation": "Neue Mission",
       "stats": {
         "total": "Gesamt",
         "planned": "Geplant",
@@ -1319,7 +1319,7 @@
         "completed": "Abgeschlossen"
       },
       "filters": {
-        "searchPlaceholder": "Operationen suchen…",
+        "searchPlaceholder": "Missionen suchen…",
         "allStatuses": "Alle Status",
         "allPilots": "Alle Piloten",
         "allDrones": "Alle Drohnen",
@@ -1333,7 +1333,7 @@
         "cancelled": "Abgebrochen",
         "aborted": "Abgebrochen"
       },
-      "counter": "{{count}} Operationen",
+      "counter": "{{count}} Missionen",
       "batch": {
         "selected": "{{count}} ausgewählt",
         "setPilot": "Pilot setzen…",
@@ -1350,7 +1350,7 @@
         "deleteSelected": "Ausgewählte löschen",
         "deleting": "Wird gelöscht…"
       },
-      "empty": "Keine Operationen gefunden",
+      "empty": "Keine Missionen gefunden",
       "detail": {
         "timeline": "Zeitplan",
         "scheduled": "Geplant",
@@ -1387,22 +1387,22 @@
         "type": "Typ"
       },
       "toast": {
-        "deleteSuccess": "{{count}} Operation(en) gelöscht",
-        "deleteError": "Einige Operationen konnten nicht gelöscht werden",
-        "statusSuccess": "{{count}} Operation(en) auf {{status}} aktualisiert",
-        "statusError": "Einige Operationen konnten nicht aktualisiert werden",
-        "pilotWarning": "Keine geplanten Operationen ausgewählt. Pilot kann nur bei geplanten Missionen gesetzt werden.",
-        "pilotSuccess": "Pilot für {{count}} Operation(en) gesetzt",
+        "deleteSuccess": "{{count}} Mission(en) gelöscht",
+        "deleteError": "Einige Missionen konnten nicht gelöscht werden",
+        "statusSuccess": "{{count}} Mission(en) auf {{status}} aktualisiert",
+        "statusError": "Einige Missionen konnten nicht aktualisiert werden",
+        "pilotWarning": "Keine geplanten Missionen ausgewählt. Pilot kann nur bei geplanten Missionen gesetzt werden.",
+        "pilotSuccess": "Pilot für {{count}} Mission(en) gesetzt",
         "pilotSkipped": "{{count}} übersprungen (nicht geplant).",
         "pilotError": "Pilot konnte nicht gesetzt werden",
-        "autofillWarning": "Keine geeigneten Operationen. Autofüllen erfordert abgeschlossene Missionen mit zugewiesenem Piloten.",
-        "autofillSuccess": "{{count}} Operation(en) automatisch ausgefüllt",
+        "autofillWarning": "Keine geeigneten Missionen. Autofüllen erfordert abgeschlossene Missionen mit zugewiesenem Piloten.",
+        "autofillSuccess": "{{count}} Mission(en) automatisch ausgefüllt",
         "autofillSkipped": "{{count}} übersprungen (nicht abgeschlossen oder kein Pilot).",
         "autofillError": "Aufgaben konnten nicht automatisch ausgefüllt werden"
       }
     },
     "board": {
-      "title": "Operations-Board",
+      "title": "Missions-Board",
       "subtitle": "Echtzeit-Missionsworkflow-Management",
       "refresh": "Aktualisieren",
       "columns": {
@@ -1470,7 +1470,7 @@
     "calendar": {
       "title": "Operations-Kalender",
       "subtitle": "Missionsplanung und Zuweisungen verwalten",
-      "addOperation": "Operation hinzufügen",
+      "addOperation": "Mission hinzufügen",
       "missionOverview": "Missionsübersicht",
       "loading": "Laden…",
       "legend": {

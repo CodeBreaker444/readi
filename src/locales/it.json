@@ -153,8 +153,8 @@
     "planningDashboard": "P02 - Dashboard pianificazione",
     "missionTemplates": "P04 - Modelli missione",
     "flightRequests": "Richieste di volo",
-    "operations": "Operazioni",
-    "operationsTable": "Tabella operazioni",
+    "operations": "Missioni",
+    "operationsTable": "Tabella missioni",
     "dailyBoard": "Pannello giornaliero",
     "calendar": "Calendario",
     "logbooks": "Registri",
@@ -1292,8 +1292,8 @@
   "operations": {
     "actions": {
       "view": "Visualizza dettagli",
-      "edit": "Modifica operazione",
-      "delete": "Elimina operazione"
+      "edit": "Modifica missione",
+      "delete": "Elimina missione"
     },
     "declaration": {
       "title": "Dichiarazione Giornaliera Pilota",
@@ -1309,11 +1309,11 @@
       "error": "Impossibile salvare la dichiarazione"
     },
     "table": {
-      "title": "Operazioni",
-      "subtitle": "Missioni pilota & operazioni di volo",
+      "title": "Missioni",
+      "subtitle": "Gestisci e monitora le tue missioni",
       "communication": "Comunicazione",
       "import": "Importa",
-      "newOperation": "Nuova Operazione",
+      "newOperation": "Nuova Missione",
       "stats": {
         "total": "Totale",
         "planned": "Pianificato",
@@ -1321,7 +1321,7 @@
         "completed": "Completato"
       },
       "filters": {
-        "searchPlaceholder": "Cerca operazioni…",
+        "searchPlaceholder": "Cerca missioni…",
         "allStatuses": "Tutti gli stati",
         "allPilots": "Tutti i piloti",
         "allDrones": "Tutti i droni",
@@ -1335,7 +1335,7 @@
         "cancelled": "Annullato",
         "aborted": "Interrotto"
       },
-      "counter": "{{count}} operazioni",
+      "counter": "{{count}} missioni",
       "batch": {
         "selected": "{{count}} selezionati",
         "setPilot": "Imposta pilota…",
@@ -1352,7 +1352,7 @@
         "deleteSelected": "Elimina selezionati",
         "deleting": "Eliminazione…"
       },
-      "empty": "Nessuna operazione trovata",
+      "empty": "Nessuna missione trovata",
       "detail": {
         "timeline": "Cronologia",
         "scheduled": "Pianificato",
@@ -1389,22 +1389,22 @@
         "type": "Tipo"
       },
       "toast": {
-        "deleteSuccess": "{{count}} operazione/i eliminata/e",
-        "deleteError": "Eliminazione di alcune operazioni fallita",
-        "statusSuccess": "{{count}} operazione/i aggiornata/e a {{status}}",
-        "statusError": "Aggiornamento di alcune operazioni fallito",
-        "pilotWarning": "Nessuna operazione pianificata selezionata. Il pilota può essere impostato solo su missioni pianificate.",
-        "pilotSuccess": "Pilota impostato per {{count}} operazione/i",
+        "deleteSuccess": "{{count}} missione/i eliminata/e",
+        "deleteError": "Eliminazione di alcune missioni fallita",
+        "statusSuccess": "{{count}} missione/i aggiornata/e a {{status}}",
+        "statusError": "Aggiornamento di alcune missioni fallito",
+        "pilotWarning": "Nessuna missione pianificata selezionata. Il pilota può essere impostato solo su missioni pianificate.",
+        "pilotSuccess": "Pilota impostato per {{count}} missione/i",
         "pilotSkipped": "{{count}} saltato/i (non pianificato/i).",
         "pilotError": "Impossibile impostare il pilota",
-        "autofillWarning": "Nessuna operazione idonea. La compilazione automatica richiede missioni completate con un pilota assegnato.",
-        "autofillSuccess": "{{count}} operazione/i compilata/e automaticamente",
+        "autofillWarning": "Nessuna missione idonea. La compilazione automatica richiede missioni completate con un pilota assegnato.",
+        "autofillSuccess": "{{count}} missione/i compilata/e automaticamente",
         "autofillSkipped": "{{count}} saltato/i (non completato/i o senza pilota).",
         "autofillError": "Compilazione automatica delle attività fallita"
       }
     },
     "board": {
-      "title": "Bacheca Operazioni",
+      "title": "Bacheca Missioni",
       "subtitle": "Gestione del flusso di lavoro missioni in tempo reale",
       "refresh": "Aggiorna",
       "columns": {
@@ -1472,7 +1472,7 @@
     "calendar": {
       "title": "Calendario Operazioni",
       "subtitle": "Gestisci pianificazione e assegnazioni missioni",
-      "addOperation": "Aggiungi operazione",
+      "addOperation": "Aggiungi missione",
       "missionOverview": "Panoramica missioni",
       "loading": "Caricamento…",
       "legend": {
