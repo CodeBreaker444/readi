@@ -56,12 +56,14 @@ export async function getUsersWithDroneAtc(): Promise<DroneAtcUser[]> {
 
   const { data: owners } = await supabase
     .from('owner')
-    .select('owner_id, owner_name')
+    .select('owner_id, owner_name, owner_code')
     .in('owner_id', ownerIds);
 
   const ownerNameById = new Map<number, string>();
+  const ownerCodeById = new Map<number, string>();
   for (const o of owners ?? []) {
     ownerNameById.set(o.owner_id, o.owner_name ?? null);
+    ownerCodeById.set(o.owner_id, o.owner_code ?? null);
   }
 
   const { data: tools, error: toolsError } = await supabase
@@ -128,6 +130,7 @@ export async function getUsersWithDroneAtc(): Promise<DroneAtcUser[]> {
       role: u.user_role,
       companyId: u.fk_owner_id,
       companyName: ownerNameById.get(u.fk_owner_id) ?? null,
+      companyCode: ownerCodeById.get(u.fk_owner_id) ?? null,
       flytbaseToken: u.flytbase_api_token.trim(),
       flytbaseOrgId: u.flytbase_org_id.trim(),
       systems: systemsByOwner.get(u.fk_owner_id) ?? [],
