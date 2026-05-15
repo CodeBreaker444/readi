@@ -149,6 +149,7 @@ export const API_ROUTE_PERMISSIONS: Array<{ prefix: string; permission: ApiPermi
   { prefix: '/api/team/user', permission: 'manage_users' },
   { prefix: '/api/client/list', permission: ['view_client', 'view_config', 'view_planning'] },
   { prefix: '/api/client', permission: 'view_client' },
+  { prefix: '/api/client-portal', permission: null },
   { prefix: '/api/audit-logs', permission: 'view_logs' },
   { prefix: '/api/training', permission: 'view_training' },
   { prefix: '/api/integrations/flytbase', permission: null },

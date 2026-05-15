@@ -257,6 +257,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
     },
   ];
 
+  const clientPortalItems: SubNavItem[] = userData?.clientId ? [
+    { name: t('clientPortal.dashboard'), href: '/client/dashboard', icon: HiOutlineHome },
+    { name: t('clientPortal.missions'), href: '/client/missions', icon: HiOutlinePaperAirplane },
+  ] : [];
+
   useEffect(() => {
     setActiveItem(pathname);
   }, [pathname]);
@@ -604,6 +609,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
               renderCollapsedIcon(item.icon, item.href, item.name, item.subItems)
             )}
 
+            {clientPortalItems.length > 0 && (
+              <>
+                <div className={`my-2 mx-2 border-t ${isDark ? 'border-slate-800' : 'border-slate-200'}`} />
+                {clientPortalItems.map((item) =>
+                  renderCollapsedIcon(item.icon || HiOutlineHome, item.href, item.name)
+                )}
+              </>
+            )}
+
             {filteredConfigurationItems.length > 0 && (
               <>
                 <div
@@ -672,6 +686,44 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
                 </div>
               );
             })}
+
+            {clientPortalItems.length > 0 && (
+              <div className="pt-4">
+                <p
+                  className={`px-3 pb-1.5 uppercase ${isDark ? 'text-slate-600' : 'text-slate-400'}`}
+                  style={{ fontSize: '0.6rem', letterSpacing: '0.12em', fontWeight: 600 }}
+                >
+                  {t('clientPortal.sectionTitle')}
+                </p>
+                <div className="space-y-0.5">
+                  {clientPortalItems.map((item) => {
+                    const ItemIcon = item.icon || HiOutlineHome;
+                    const isActive = isRouteActive(item.href);
+                    return (
+                      <a
+                        key={item.href}
+                        href={item.href}
+                        onClick={(e) => { e.preventDefault(); handleNavigation(item.href, false); }}
+                        onMouseEnter={() => setHoveredItem(item.href)}
+                        onMouseLeave={() => setHoveredItem(null)}
+                        className={`flex items-center justify-between px-3 py-1.5 rounded-r-md transition-all duration-150 cursor-pointer ${getItemClass(item.href, isActive)}`}
+                        style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}
+                      >
+                        <span className="flex items-center gap-2.5">
+                          <ItemIcon
+                            size={16}
+                            className={`shrink-0 transition-colors duration-150 ${getIconClass(item.href, isActive)}`}
+                          />
+                          <span style={{ fontSize: '0.75rem', fontWeight: isActive ? 600 : 500, letterSpacing: '0.01em' }}>
+                            {item.name}
+                          </span>
+                        </span>
+                      </a>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {filteredConfigurationItems.length > 0 && (
               <div className="pt-4">

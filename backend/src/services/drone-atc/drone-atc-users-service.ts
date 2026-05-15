@@ -30,6 +30,7 @@ export interface DroneAtcUser {
   fullname: string;
   role: string;
   companyId: number;
+  companyName: string | null;
   flytbaseToken: string;
   flytbaseOrgId: string;
   systems: DroneAtcSystem[];
@@ -52,6 +53,16 @@ export async function getUsersWithDroneAtc(): Promise<DroneAtcUser[]> {
 
   // collecting distinct owner IDs and fetch their systems
   const ownerIds = [...new Set(users.map((u) => u.fk_owner_id))];
+
+  const { data: owners } = await supabase
+    .from('owner')
+    .select('owner_id, owner_name')
+    .in('owner_id', ownerIds);
+
+  const ownerNameById = new Map<number, string>();
+  for (const o of owners ?? []) {
+    ownerNameById.set(o.owner_id, o.owner_name ?? null);
+  }
 
   const { data: tools, error: toolsError } = await supabase
     .from('tool')
@@ -116,6 +127,7 @@ export async function getUsersWithDroneAtc(): Promise<DroneAtcUser[]> {
       fullname: [u.first_name, u.last_name].filter(Boolean).join(' ') || u.username || u.email,
       role: u.user_role,
       companyId: u.fk_owner_id,
+      companyName: ownerNameById.get(u.fk_owner_id) ?? null,
       flytbaseToken: u.flytbase_api_token.trim(),
       flytbaseOrgId: u.flytbase_org_id.trim(),
       systems: systemsByOwner.get(u.fk_owner_id) ?? [],
