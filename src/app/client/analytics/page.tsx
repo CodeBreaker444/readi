@@ -100,20 +100,19 @@ function ContributionHeatmap({ data, isDark }: HeatmapProps) {
   return (
     <div className="overflow-x-auto">
       <div className="inline-block min-w-max">
-        {/* Month labels */}
-        <div className="flex mb-1 ml-8">
+        <div className="flex gap-[2px] mb-1 ml-7">
           {Array.from({ length: numWeeks }, (_, w) => {
             const label = monthLabels.find((ml) => ml.col === w);
             return (
-              <div key={w} className="w-[13px] mr-[2px] text-[9px] shrink-0" style={{ color: isDark ? '#64748b' : '#94a3b8' }}>
+              <div key={w} className="w-[11px] text-[9px] shrink-0 whitespace-nowrap overflow-visible" style={{ color: isDark ? '#64748b' : '#94a3b8' }}>
                 {label?.label ?? ''}
               </div>
             );
           })}
         </div>
 
-        <div className="flex gap-0">
-          {/* Day labels */}
+        <div className="flex">
+          {/* Day labels: w-6(24px) + mr-1(4px) = 28px offset for grid */}
           <div className="flex flex-col mr-1 gap-[2px]">
             {DAY_LABELS.map((d, i) => (
               <div key={d} className="h-[11px] text-[9px] leading-[11px] w-6 text-right pr-1"
@@ -145,8 +144,8 @@ function ContributionHeatmap({ data, isDark }: HeatmapProps) {
           </div>
         </div>
 
-        {/* Legend */}
-        <div className="flex items-center gap-1 mt-2 ml-8">
+        {/* Legend — same offset as grid start */}
+        <div className="flex items-center gap-1 mt-2 ml-7">
           <span className="text-[9px]" style={{ color: isDark ? '#64748b' : '#94a3b8' }}>Less</span>
           {palette.map((color, i) => (
             <div key={i} className="w-[11px] h-[11px] rounded-sm" style={{ backgroundColor: color }} />
