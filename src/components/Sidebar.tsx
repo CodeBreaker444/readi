@@ -259,7 +259,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
 
   const clientPortalItems: SubNavItem[] = userData?.clientId ? [
     { name: t('clientPortal.dashboard'), href: '/client/dashboard', icon: HiOutlineHome },
-    { name: t('clientPortal.missions'), href: '/client/missions', icon: HiOutlinePaperAirplane },
+    { name: t('clientPortal.missions'), href: '/client/missions', icon: HiOutlineClipboardList },
+    { name: t('clientPortal.analytics', 'Analytics'), href: '/client/analytics', icon: HiOutlineChartBar },
   ] : [];
 
   useEffect(() => {

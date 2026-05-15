@@ -1,5 +1,18 @@
 import { supabase } from '@/backend/database/database';
 
+export interface ClientInfo {
+  client_name: string;
+  client_legal_name: string | null;
+  client_code: string | null;
+  client_email: string | null;
+  client_phone: string | null;
+  client_website: string | null;
+  client_city: string | null;
+  client_state: string | null;
+  contract_start_date: string | null;
+  contract_end_date: string | null;
+}
+
 export interface ClientPortalDashboard {
   total_missions: number;
   planned: number;
@@ -9,6 +22,7 @@ export interface ClientPortalDashboard {
   total_flight_hours: number;
   total_distance_km: number;
   systems_used: { tool_id: number; tool_code: string; tool_name: string | null; mission_count: number }[];
+  client_info: ClientInfo | null;
 }
 
 export interface ClientPortalMission {
@@ -36,6 +50,10 @@ export interface ClientPortalMissionsResponse {
   pageSize: number;
 }
 
+function localDateStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 function asUtc(ts: string | null | undefined): string | null {
   if (!ts) return null;
   return ts.endsWith('Z') || ts.includes('+') ? ts : ts + 'Z';
@@ -54,7 +72,15 @@ export async function getClientPortalDashboard(
   clientId: number,
   ownerId: number,
 ): Promise<ClientPortalDashboard> {
-  const planningIds = await getClientPlanningIds(clientId, ownerId);
+  const [planningIds, clientResult] = await Promise.all([
+    getClientPlanningIds(clientId, ownerId),
+    supabase
+      .from('client')
+      .select('client_name, client_legal_name, client_code, client_email, client_phone, client_website, client_city, client_state, contract_start_date, contract_end_date')
+      .eq('client_id', clientId)
+      .eq('fk_owner_id', ownerId)
+      .single(),
+  ]);
 
   let query = supabase
     .from('pilot_mission')
@@ -119,6 +145,20 @@ export async function getClientPortalDashboard(
     }
   }
 
+  const ci = clientResult.data;
+  const client_info: ClientInfo | null = ci ? {
+    client_name: ci.client_name,
+    client_legal_name: ci.client_legal_name ?? null,
+    client_code: ci.client_code ?? null,
+    client_email: ci.client_email ?? null,
+    client_phone: ci.client_phone ?? null,
+    client_website: ci.client_website ?? null,
+    client_city: ci.client_city ?? null,
+    client_state: ci.client_state ?? null,
+    contract_start_date: ci.contract_start_date ?? null,
+    contract_end_date: ci.contract_end_date ?? null,
+  } : null;
+
   return {
     total_missions: rows.length,
     planned,
@@ -128,6 +168,80 @@ export async function getClientPortalDashboard(
     total_flight_hours: Math.round((total_flight_minutes / 60) * 10) / 10,
     total_distance_km: Math.round((total_distance_m / 1000) * 10) / 10,
     systems_used: Array.from(toolMap.values()).sort((a, b) => b.mission_count - a.mission_count),
+    client_info,
+  };
+}
+
+export interface ClientPortalAnalytics {
+  daily_flights: { date: string; count: number }[];
+  monthly_stats: { month: string; flights: number; hours: number; distance_km: number }[];
+}
+
+export async function getClientPortalAnalytics(
+  clientId: number,
+  ownerId: number,
+): Promise<ClientPortalAnalytics> {
+  const planningIds = await getClientPlanningIds(clientId, ownerId);
+
+  let query = supabase
+    .from('pilot_mission')
+    .select('scheduled_start, actual_start, flight_duration, distance_flown')
+    .eq('fk_owner_id', ownerId);
+
+  if (planningIds.length > 0) {
+    query = query.or(
+      `fk_client_id.eq.${clientId},fk_planning_id.in.(${planningIds.join(',')})`,
+    );
+  } else {
+    query = query.eq('fk_client_id', clientId);
+  }
+
+  const { data, error } = await query;
+  if (error) throw new Error(`Failed to fetch analytics: ${error.message}`);
+
+  const rows = data ?? [];
+
+  // Build daily flight counts (last 365 days)
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const dailyMap = new Map<string, number>();
+
+  for (let i = 364; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    dailyMap.set(localDateStr(d), 0);
+  }
+
+  // Build monthly stats (last 12 months)
+  const monthlyMap = new Map<string, { flights: number; minutes: number; distance_m: number }>();
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    monthlyMap.set(key, { flights: 0, minutes: 0, distance_m: 0 });
+  }
+
+  for (const row of rows) {
+    const dateStr = (row.actual_start ?? row.scheduled_start ?? '').slice(0, 10);
+    if (dailyMap.has(dateStr)) {
+      dailyMap.set(dateStr, (dailyMap.get(dateStr) ?? 0) + 1);
+    }
+    const monthKey = dateStr.slice(0, 7);
+    if (monthlyMap.has(monthKey)) {
+      const m = monthlyMap.get(monthKey)!;
+      m.flights++;
+      m.minutes += row.flight_duration ?? 0;
+      m.distance_m += row.distance_flown ?? 0;
+    }
+  }
+
+  return {
+    daily_flights: Array.from(dailyMap.entries()).map(([date, count]) => ({ date, count })),
+    monthly_stats: Array.from(monthlyMap.entries()).map(([month, v]) => ({
+      month,
+      flights: v.flights,
+      hours: Math.round((v.minutes / 60) * 10) / 10,
+      distance_km: Math.round((v.distance_m / 1000) * 10) / 10,
+    })),
   };
 }
 
