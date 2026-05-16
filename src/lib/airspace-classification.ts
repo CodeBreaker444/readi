@@ -65,8 +65,6 @@ const CLASS_NUMBER_MAP: Record<number, AirspaceZone['class']> = {
   0: 'A', 1: 'B', 2: 'C', 3: 'D', 4: 'E', 5: 'F', 6: 'G',
 };
 
-// FIR/UIR (9,10,26): span the whole country.
-// TMA (5,6,7,8,25): aircraft arrival/departure corridors above 1000ft — irrelevant for drones below 120m.
 const EXCLUDED_TYPES = new Set([5, 6, 7, 8, 9, 10, 25, 26]);
 // Zones larger than 80 km radius render as country-wide blobs; skip them.
 const MAX_RADIUS_M = 80_000;
