@@ -28,10 +28,19 @@ export async function GET(req: NextRequest) {
   try {
     const allZones = await fetchFromOpenAIP();
     if(!allZones) {
-      console.warn('[drone-atc/airspace] No OpenAIP data, returning empty set');
       return NextResponse.json(
-        { airspace: [], timestamp: new Date().toISOString(), source: 'none' },
-        { headers: { 'Cache-Control': 'public, max-age=3600' } },
+        {
+          airspace: [],
+          timestamp: new Date().toISOString(),
+          source: 'none',
+          debug: {
+            hasApiKey: !!env.OPENAIP_API_KEY,
+            apiKeyPrefix: env.OPENAIP_API_KEY?.slice(0, 6) ?? null,
+            hasBaseUrl: !!env.OPENAIP_BASE,
+            baseUrl: env.OPENAIP_BASE ?? null,
+          },
+        },
+        { headers: { 'Cache-Control': 'no-store' } },
       );
     }
     const filtered = filterByBounds(allZones, qS, qW, qN, qE);

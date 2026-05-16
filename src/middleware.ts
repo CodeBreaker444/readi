@@ -75,7 +75,12 @@ export async function updateSession(request: NextRequest) {
   const jwtToken = request.cookies.get('readi_auth_token')?.value
 
   if (pathname === '/') {
-    if ((jwtToken && !isJwtExpired(jwtToken)) || user) {
+    if (jwtToken && !isJwtExpired(jwtToken)) {
+      const role = decodeJwtRole(jwtToken)
+      const dest = role === 'CLIENT' ? '/client/dashboard' : '/dashboard'
+      return NextResponse.redirect(new URL(dest, request.url))
+    }
+    if (user) {
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
     return NextResponse.redirect(new URL('/auth/login', request.url))
@@ -101,8 +106,27 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.next()
     }
     if (isPublicRoute || isAuthFlowRoute) {
-      return NextResponse.redirect(new URL('/dashboard', request.url))
+      const role = decodeJwtRole(jwtToken)
+      const dest = role === 'CLIENT' ? '/client/dashboard' : '/dashboard'
+      return NextResponse.redirect(new URL(dest, request.url))
     }
+
+    const roleForCheck = decodeJwtRole(jwtToken)
+    if (roleForCheck === 'CLIENT') {
+      const isClientPortalRoute =
+        pathname.startsWith('/client/') || pathname.startsWith('/api/client-portal')
+      const isAllowedAuthRoute =
+        pathname === '/auth/change-password' || pathname === '/profile'
+      if (!isClientPortalRoute && !isAllowedAuthRoute && !pathname.startsWith('/api/profile')) {
+        return NextResponse.redirect(new URL('/client/dashboard', request.url))
+      }
+    }
+
+    // Block non-CLIENT roles from client portal page routes
+    if (!pathname.startsWith('/api/') && pathname.startsWith('/client/') && roleForCheck !== 'CLIENT') {
+      return NextResponse.redirect(new URL('/unauthorized', request.url))
+    }
+
     if (pathname.startsWith('/api/')) {
       const required = getApiRoutePermission(pathname)
 

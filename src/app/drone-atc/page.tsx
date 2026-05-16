@@ -66,8 +66,8 @@ export default function DroneATCPage() {
   const [aircraft, setAircraft] = useState<AircraftState[]>([]);
   const [showFleet, setShowFleet] = useState(false);
   const [layers, setLayers] = useState<LayerVisibility>({
-    drones: true, flights: true,
-    airspaceA: false, airspaceB: true, airspaceC: true, airspaceD: false,
+    drones: true, docks: true, flights: true,
+    airspaceA: false, airspaceB: true, airspaceC: true, airspaceD: true,
     wind: false, temp: false, clouds: false, precip: false, pressure: false,
   });
 
@@ -304,6 +304,7 @@ export default function DroneATCPage() {
             onToggle={toggleLayer}
             isDark={isDark}
             droneCount={droneList.length}
+            dockCount={Object.keys(docks).length}
             aircraftCount={aircraft.length}
             hasOwmKey={!!OWM_API_KEY}
           />

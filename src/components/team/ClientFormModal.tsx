@@ -2,21 +2,22 @@
 
 import { Button } from '@/components/ui/button';
 import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
-import { Loader2 } from 'lucide-react';
-import { useState } from 'react';
+import axios from 'axios';
+import { CheckCircle2, Loader2, XCircle } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { ClientData } from '../tables/ClientColumn';
 
@@ -30,6 +31,7 @@ const PAYMENT_TERMS = [
   'Prepaid',
 ];
 
+
 interface ClientFormModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -38,6 +40,8 @@ interface ClientFormModalProps {
   onSubmit: (data: any) => Promise<void>;
   isDark: boolean;
 }
+
+type UsernameStatus = 'idle' | 'checking' | 'available' | 'taken' | 'invalid';
 
 type FormState = {
   client_name: string;
@@ -55,6 +59,7 @@ type FormState = {
   contract_start_date: string;
   contract_end_date: string;
   client_active: string;
+  username: string;
 };
 
 const defaultForm: FormState = {
@@ -73,6 +78,7 @@ const defaultForm: FormState = {
   contract_start_date: '',
   contract_end_date: '',
   client_active: 'Y',
+  username: '',
 };
 
 export function ClientFormModal({ isOpen, onClose, mode, clientData, onSubmit, isDark }: ClientFormModalProps) {
@@ -84,13 +90,64 @@ export function ClientFormModal({ isOpen, onClose, mode, clientData, onSubmit, i
           credit_limit: clientData.credit_limit?.toString() || '',
           contract_start_date: clientData.contract_start_date || '',
           contract_end_date: clientData.contract_end_date || '',
+          username: clientData.username || '',
         }
       : defaultForm
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [usernameStatus, setUsernameStatus] = useState<UsernameStatus>('idle');
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const set = (key: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement>) =>
-    setFormData((prev) => ({ ...prev, [key]: e.target.value }));
+  // Reset form when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setFormData(
+        clientData
+          ? {
+              ...defaultForm,
+              ...clientData,
+              credit_limit: clientData.credit_limit?.toString() || '',
+              contract_start_date: clientData.contract_start_date || '',
+              contract_end_date: clientData.contract_end_date || '',
+              username: clientData.username || '',
+            }
+          : defaultForm
+      );
+      setUsernameStatus('idle');
+    }
+  }, [isOpen, clientData]);
+
+  const checkUsername = useCallback((value: string) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    if (!value || value.length < 3) {
+      setUsernameStatus(value.length > 0 ? 'invalid' : 'idle');
+      return;
+    }
+
+    if (!/^[a-z0-9_]+$/.test(value)) {
+      setUsernameStatus('invalid');
+      return;
+    }
+
+    setUsernameStatus('checking');
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const res = await axios.get(`/api/client/check-username?username=${encodeURIComponent(value)}`);
+        setUsernameStatus(res.data.available ? 'available' : 'taken');
+      } catch {
+        setUsernameStatus('idle');
+      }
+    }, 350);
+  }, []);
+
+  const set = (key: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setFormData((prev) => ({ ...prev, [key]: value }));
+    if (key === 'username' && mode === 'add') {
+      checkUsername(value.toLowerCase());
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,6 +155,24 @@ export function ClientFormModal({ isOpen, onClose, mode, clientData, onSubmit, i
     if (!formData.client_name.trim()) {
       toast.error('Client name is required');
       return;
+    }
+    if (mode === 'add') {
+      if (!formData.client_email) {
+        toast.error('Email is required');
+        return;
+      }
+      if (!formData.username) {
+        toast.error('Username is required');
+        return;
+      }
+      if (usernameStatus === 'taken') {
+        toast.error('Username is already taken');
+        return;
+      }
+      if (usernameStatus === 'invalid') {
+        toast.error('Username must be at least 3 characters (lowercase, numbers, underscores only)');
+        return;
+      }
     }
     if (formData.client_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.client_email)) {
       toast.error('Please enter a valid email address');
@@ -125,6 +200,31 @@ export function ClientFormModal({ isOpen, onClose, mode, clientData, onSubmit, i
 
   const inputClass = `h-9 text-sm ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200 placeholder:text-slate-600' : ''}`;
   const labelClass = `text-xs font-medium pb-1.5 block ${isDark ? 'text-slate-400' : 'text-slate-600'}`;
+
+  const usernameHint = () => {
+    if (mode === 'edit') return null;
+    if (usernameStatus === 'checking') return (
+      <span className="flex items-center gap-1 text-slate-400 text-[11px] mt-1">
+        <Loader2 size={11} className="animate-spin" /> Checking…
+      </span>
+    );
+    if (usernameStatus === 'available') return (
+      <span className="flex items-center gap-1 text-emerald-500 text-[11px] mt-1">
+        <CheckCircle2 size={11} /> Available
+      </span>
+    );
+    if (usernameStatus === 'taken') return (
+      <span className="flex items-center gap-1 text-rose-500 text-[11px] mt-1">
+        <XCircle size={11} /> Already taken
+      </span>
+    );
+    if (usernameStatus === 'invalid') return (
+      <span className="flex items-center gap-1 text-amber-500 text-[11px] mt-1">
+        <XCircle size={11} /> Min 3 chars, lowercase / numbers / underscore only
+      </span>
+    );
+    return null;
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -165,8 +265,16 @@ export function ClientFormModal({ isOpen, onClose, mode, clientData, onSubmit, i
             <p className={`text-[10px] font-bold uppercase tracking-widest mb-3 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Contact Details</p>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className={labelClass}>Email</label>
-                <Input className={inputClass} value={formData.client_email} onChange={set('client_email')} type="email" placeholder="contact@company.com" />
+                <label className={labelClass}>Email {mode === 'add' && <span className="text-rose-500">*</span>}</label>
+                <Input
+                  className={inputClass}
+                  value={formData.client_email}
+                  onChange={set('client_email')}
+                  type="email"
+                  placeholder="contact@company.com"
+                  required={mode === 'add'}
+                  readOnly={mode === 'edit'}
+                />
               </div>
               <div>
                 <label className={labelClass}>Phone</label>
@@ -174,6 +282,32 @@ export function ClientFormModal({ isOpen, onClose, mode, clientData, onSubmit, i
               </div>
             </div>
           </div>
+
+          {/* Portal Access — only shown in add mode */}
+          {mode === 'add' && (
+            <div>
+              <p className={`text-[10px] font-bold uppercase tracking-widest mb-3 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Portal Access</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={labelClass}>Username *</label>
+                  <Input
+                    className={`${inputClass} ${usernameStatus === 'taken' || usernameStatus === 'invalid' ? 'border-rose-500' : usernameStatus === 'available' ? 'border-emerald-500' : ''}`}
+                    value={formData.username}
+                    onChange={(e) => {
+                      const v = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
+                      setFormData((p) => ({ ...p, username: v }));
+                      checkUsername(v);
+                    }}
+                    placeholder="acme_corp"
+                    required
+                    autoComplete="off"
+                  />
+                  {usernameHint()}
+                </div>
+               
+              </div>
+            </div>
+          )}
 
           {/* Address */}
           <div>
@@ -250,7 +384,12 @@ export function ClientFormModal({ isOpen, onClose, mode, clientData, onSubmit, i
             <Button type="button" variant="outline" size="sm" onClick={onClose} className={isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : ''}>
               Cancel
             </Button>
-            <Button type="submit" size="sm" disabled={isSubmitting} className="gap-2 bg-violet-600 hover:bg-violet-700 text-white">
+            <Button
+              type="submit"
+              size="sm"
+              disabled={isSubmitting || (mode === 'add' && (usernameStatus === 'taken' || usernameStatus === 'invalid' || usernameStatus === 'checking'))}
+              className="gap-2 bg-violet-600 hover:bg-violet-700 text-white"
+            >
               {isSubmitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
               {mode === 'add' ? 'Add Client' : 'Save Changes'}
             </Button>

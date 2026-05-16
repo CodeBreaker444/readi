@@ -25,6 +25,7 @@ import {
   HiOutlineTemplate,
   HiOutlineUsers
 } from 'react-icons/hi';
+import { MdFlightTakeoff } from 'react-icons/md';
 import { TbLayoutSidebarFilled, TbRadar } from "react-icons/tb";
 import { Permission, Role, roleHasPermission, ROUTE_PERMISSIONS, RoutePermissionEntry } from '../lib/auth/roles';
 import { supabase } from '../lib/supabase/client';
@@ -257,11 +258,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
     },
   ];
 
-  const clientPortalItems: SubNavItem[] = userData?.clientId ? [
+  const isClientRole = role === 'CLIENT';
+
+  const clientPortalItems: SubNavItem[] = isClientRole ? [
     { name: t('clientPortal.dashboard'), href: '/client/dashboard', icon: HiOutlineHome },
     { name: t('clientPortal.missions'), href: '/client/missions', icon: HiOutlineClipboardList },
     { name: t('clientPortal.analytics', 'Analytics'), href: '/client/analytics', icon: HiOutlineChartBar },
-    { name: t('clientPortal.requestFlight', 'Request Flight'), href: '/client/request-flight', icon: HiOutlinePaperAirplane },
+    { name: t('clientPortal.requestFlight', 'Request Flight'), href: '/client/request-flight', icon: MdFlightTakeoff  },
   ] : [];
 
   useEffect(() => {
@@ -294,7 +297,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
     return false;
   };
 
-  const filteredNavigationItems = navigationItems
+  const filteredNavigationItems = isClientRole ? [] : navigationItems
     .map((item) => {
       const visibleSubItems =
         item.subItems?.filter((sub) => {
@@ -311,7 +314,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
     })
     .filter(Boolean) as typeof navigationItems;
 
-  const filteredConfigurationItems = configurationItems
+  const filteredConfigurationItems = isClientRole ? [] : configurationItems
     .map((configItem) => {
       // Hide Company section for non-superadmins (use stable href, not translated name)
       if (configItem.href === '/company' && role !== 'SUPERADMIN') {
@@ -690,13 +693,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
             })}
 
             {clientPortalItems.length > 0 && (
-              <div className="pt-4">
-                <p
-                  className={`px-3 pb-1.5 uppercase ${isDark ? 'text-slate-600' : 'text-slate-400'}`}
-                  style={{ fontSize: '0.6rem', letterSpacing: '0.12em', fontWeight: 600 }}
-                >
-                  {t('clientPortal.sectionTitle')}
-                </p>
+              <div className={isClientRole ? '' : 'pt-4'}>
+                {!isClientRole && (
+                  <p
+                    className={`px-3 pb-1.5 uppercase ${isDark ? 'text-slate-600' : 'text-slate-400'}`}
+                    style={{ fontSize: '0.6rem', letterSpacing: '0.12em', fontWeight: 600 }}
+                  >
+                    {t('clientPortal.sectionTitle')}
+                  </p>
+                )}
                 <div className="space-y-0.5">
                   {clientPortalItems.map((item) => {
                     const ItemIcon = item.icon || HiOutlineHome;

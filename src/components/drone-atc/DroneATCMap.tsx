@@ -195,6 +195,8 @@ async function fetchAirspaceForRegion(
     }
 
     const data = await res.json();
+    console.log('[DroneATCMap] airspace:', { source: data.source, count: (data.airspace ?? []).length, sample: (data.airspace ?? [])[0], debug: data.debug ?? null });
+
     const zones: AirspaceZone[] = (data.airspace ?? []).map((zone: any) => ({
       id: zone.id,
       name: zone.name,
@@ -207,17 +209,19 @@ async function fetchAirspaceForRegion(
 
     return zones;
   } catch (err) {
-    console.error('[DroneATCMap] Failed to fetch airspace:', err);
+    if (err instanceof Error && err.name !== 'AbortError') {
+      console.error('[DroneATCMap] Failed to fetch airspace:', err);
+    }
     return [];
   }
 }
 
 function getAirspaceColor(cls: string): string {
   const colors: Record<string, string> = {
-    A: '#dc2626', // Red - Most restricted
-    B: '#3b82f6', // Blue
-    C: '#a855f7', // Purple
-    D: '#06b6d4', // Cyan
+    A: '#dc2626',
+    B: '#3b82f6',
+    C: '#a855f7',
+    D: '#06b6d4',
   };
   return colors[cls] ?? '#6b7280';
 }
@@ -518,6 +522,7 @@ export default function DroneATCMap({
   // Trigger airspace fetch whenever any airspace layer is toggled on
   useEffect(() => {
     if (layers.airspaceA || layers.airspaceB || layers.airspaceC || layers.airspaceD) {
+      lastAirspaceFetchRef.current = null;
       doFetchAirspace();
     }
   }, [layers.airspaceA, layers.airspaceB, layers.airspaceC, layers.airspaceD, doFetchAirspace]);
@@ -581,6 +586,7 @@ export default function DroneATCMap({
   const updateDockMarkers = useCallback(() => {
     const layer = dockLayerRef.current;
     if (!layer) return;
+    if (!layers.docks) { layer.clearLayers(); dockMarkersRef.current = {}; return; }
 
     const existing = dockMarkersRef.current;
     const seen = new Set<string>();
@@ -603,7 +609,7 @@ export default function DroneATCMap({
     Object.keys(existing).forEach(id => {
       if (!seen.has(id)) { existing[id].remove(); delete existing[id]; }
     });
-  }, [docks, onDroneClick]);
+  }, [docks, layers.docks, onDroneClick]);
 
   // Aircraft markers
   const updateFlightMarkers = useCallback(() => {

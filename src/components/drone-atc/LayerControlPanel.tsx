@@ -3,7 +3,7 @@
 import '@/lib/i18n/config';
 import {
   ChevronDown, ChevronRight,
-  Cloud, Droplets, Gauge, Layers, Plane, Thermometer, Wind
+  Cloud, Droplets, Gauge, Home, Layers, Plane, Thermometer, Wind
 } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -11,6 +11,7 @@ import { TbDrone } from 'react-icons/tb';
 
 export interface LayerVisibility {
   drones: boolean;
+  docks: boolean;
   flights: boolean;
   airspaceA: boolean;
   airspaceB: boolean;
@@ -28,6 +29,7 @@ interface Props {
   onToggle: (key: keyof LayerVisibility) => void;
   isDark: boolean;
   droneCount: number;
+  dockCount: number;
   aircraftCount: number;
   hasOwmKey: boolean;
 }
@@ -156,7 +158,7 @@ function Divider({ isDark }: { isDark: boolean }) {
   return <div className={`h-px mx-3 ${isDark ? 'bg-slate-700/60' : 'bg-slate-100'}`} />;
 }
 
-export default function LayerControlPanel({ layers, onToggle, isDark, droneCount, aircraftCount, hasOwmKey }: Props) {
+export default function LayerControlPanel({ layers, onToggle, isDark, droneCount, dockCount, aircraftCount, hasOwmKey }: Props) {
   const { t } = useTranslation();
   const [collapsed, setCollapsed] = useState<boolean>(false);
   const [open, setOpen] = useState({ traffic: true, airspace: true, weather: false });
@@ -218,6 +220,16 @@ export default function LayerControlPanel({ layers, onToggle, isDark, droneCount
               active={layers.drones}
               onToggle={() => onToggle('drones')}
               accentColor="#8b5cf6"
+              isDark={isDark}
+            />
+            <ToggleRow
+              icon={<Home className="w-full h-full" />}
+              label="Docks"
+              sublabel="Charging stations"
+              count={dockCount}
+              active={layers.docks}
+              onToggle={() => onToggle('docks')}
+              accentColor="#06b6d4"
               isDark={isDark}
             />
             <ToggleRow

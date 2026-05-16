@@ -13,6 +13,7 @@ import {
     DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
 export interface ClientData {
+  username: string;
   client_id: number;
   fk_owner_id: number;
   client_code?: string;

@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
 
     const { data: userData, error: userError } = await supabase
       .from('users')
-      .select('user_id, username, email, user_active, user_role, password_hash, auth_user_id, fk_owner_id')
+      .select('user_id, username, email, user_active, user_role, password_hash, auth_user_id, fk_owner_id, fk_client_id')
       .eq('email', email)
       .single();
 
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     }
 
     let droneAtcEnabled = false;
-    if (userData.user_role !== 'SUPERADMIN') {
+    if (userData.user_role !== 'SUPERADMIN' && userData.user_role !== 'CLIENT') {
       const { data: ownerData, error: ownerError } = await supabase
         .from('owner')
         .select('owner_name, owner_active, drone_atc_enabled')
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
       }
 
       droneAtcEnabled = ownerData.drone_atc_enabled ?? false;
-    } else {
+    } else if (userData.user_role === 'SUPERADMIN') {
       droneAtcEnabled = true;
     }
 
@@ -72,6 +72,7 @@ export async function POST(request: NextRequest) {
       username: userData.username,
       role: userData.user_role as Role,
       droneAtcEnabled,
+      ...(userData.fk_client_id ? { clientId: userData.fk_client_id } : {}),
     });
 
     const cookieStore = await cookies();

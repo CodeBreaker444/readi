@@ -123,7 +123,7 @@ export function useDroneATCSocket(): UseDroneATCSocketReturn {
 
       socket.on('telemetry', (payload: { droneId: string; data: TelemetryData; timestamp: number }) => {
         const incoming = payload.data ?? (payload as unknown as TelemetryData);
-        console.log('tele:',incoming);
+        // console.log('tele:',incoming);
         
         const id = incoming.drone_id ?? payload.droneId;
         if (!id) return;

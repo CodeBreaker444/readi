@@ -9,7 +9,8 @@ export type Role =
   | 'RM'
   | 'TM'
   | 'DC'
-  | 'SLA';
+  | 'SLA'
+  | 'CLIENT';
 
 export type Permission =
   | 'view_dashboard'
@@ -29,7 +30,8 @@ export type Permission =
   | 'add_company'
   | 'view_client'
   | 'view_erp'
-  | 'view_drone_atc';
+  | 'view_drone_atc'
+  | 'view_client_portal';
 
 type WildcardPermission = '*';
 export type RolePermission = Permission | WildcardPermission;
@@ -58,6 +60,7 @@ export const ROLE_PERMISSIONS: Record<Role, RolePermission[]> = {
   TM:  ['view_dashboard', 'view_training', 'view_repository', 'view_notifications', 'view_erp'],
   DC:  ['view_repository', 'view_config', 'view_notifications', 'view_erp'],
   SLA: ['view_dashboard', 'view_logs', 'view_config', 'view_notifications', 'view_erp'],
+  CLIENT: ['view_client_portal'],
 };
 
 export function roleHasPermission(role: Role | null | undefined, permission: Permission): boolean {
@@ -111,6 +114,11 @@ export const ROUTE_PERMISSIONS: Record<string, RoutePermissionEntry> = {
   '/team/personnel': 'manage_users',
   '/team/crew-shift': 'manage_users',
   '/team/client': 'view_client',
+  '/client/dashboard': 'view_client_portal',
+  '/client/missions': 'view_client_portal',
+  '/client/request-flight': 'view_client_portal',
+  '/client/analytics': 'view_client_portal',
+  '/client/profile': 'view_client_portal',
   '/company': 'add_company',
   '/audit-logs': 'view_logs',
   '/training/courses': 'view_training',
@@ -149,7 +157,7 @@ export const API_ROUTE_PERMISSIONS: Array<{ prefix: string; permission: ApiPermi
   { prefix: '/api/team/user', permission: 'manage_users' },
   { prefix: '/api/client/list', permission: ['view_client', 'view_config', 'view_planning'] },
   { prefix: '/api/client', permission: 'view_client' },
-  { prefix: '/api/client-portal', permission: null },
+  { prefix: '/api/client-portal', permission: 'view_client_portal' },
   { prefix: '/api/audit-logs', permission: 'view_logs' },
   { prefix: '/api/training', permission: 'view_training' },
   { prefix: '/api/integrations/flytbase', permission: null },
@@ -170,6 +178,10 @@ export function getApiRoutePermission(pathname: string): ApiPermissionEntry | un
 export function canAccessRoute(role: Role | null | undefined, pathname: string): boolean {
   if (!role) return false;
   if (role === 'SUPERADMIN' || role === 'ADMIN') return true;
+
+  if (role === 'CLIENT') {
+    return pathname.startsWith('/client/');
+  }
 
   const required = ROUTE_PERMISSIONS[pathname];
   if (required === undefined) return true;
@@ -193,6 +205,7 @@ export function getAccessibleRoutes(role: Role | null | undefined): string[] {
 export function getDefaultRoute(role: Role | null | undefined): string {
   if (!role) return '/auth/login';
 
+  if (role === 'CLIENT') return '/client/dashboard';
   if (roleHasPermission(role, 'view_dashboard')) return '/dashboard';
   if (roleHasPermission(role, 'view_pilot_dashboard')) return '/dashboard';
   if (roleHasPermission(role, 'view_operations')) return '/missions/table';

@@ -1,3 +1,4 @@
+import ClientProfilePage from "@/components/profile/ClientProfilePage";
 import ProfilePage from "@/components/profile/ProfilePage";
 import { getUserSession } from "@/lib/auth/server-session";
 import { redirect } from "next/navigation";
@@ -8,5 +9,9 @@ export default async function Page() {
     redirect('/api/auth/logout');
   }
 
-  return (<ProfilePage user={session.user} />);
+  if (session.user.role === 'CLIENT') {
+    return <ClientProfilePage user={session.user} />;
+  }
+
+  return <ProfilePage user={session.user} />;
 }

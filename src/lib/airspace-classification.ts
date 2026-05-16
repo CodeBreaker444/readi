@@ -6,8 +6,8 @@ interface AirspaceZone {
   lat: number;
   lon: number;
   radiusM: number;
-  class: 'A' | 'B' | 'C' | 'D';
-  type: 'CTR' | 'TMA' | 'AIRPORT' | 'RESTRICTED';
+  class: 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G';
+  type: 'CTR' | 'TMA' | 'AIRPORT' | 'RESTRICTED' | 'DANGER' | 'PROHIBITED' | 'ATZ' | 'FIR' | 'OTHER';
   lowerFt: number;
   upperFt: number;
 }
@@ -21,9 +21,23 @@ let _cacheAt = 0;
 
 const OPENAIP_TYPE_MAP: Record<number, AirspaceZone['type']> = {
   1: 'RESTRICTED',
+  2: 'DANGER',
+  3: 'PROHIBITED',
   4: 'CTR',
   5: 'TMA',
-  25: 'TMA',   
+  6: 'TMA',
+  7: 'TMA',
+  8: 'TMA',
+  9: 'FIR',
+  10: 'FIR',
+  12: 'ATZ',
+  13: 'ATZ',
+  14: 'OTHER',
+  16: 'DANGER',
+  17: 'DANGER',
+  18: 'RESTRICTED',
+  25: 'TMA',
+  26: 'FIR',
 };
 
 function toFeet(value: number, unit: number): number {
@@ -48,7 +62,7 @@ function centroidAndRadius(coords: [number, number][]): { lat: number; lon: numb
 }
 
 const CLASS_NUMBER_MAP: Record<number, AirspaceZone['class']> = {
-  0: 'A', 1: 'B', 2: 'C', 3: 'D',
+  0: 'A', 1: 'B', 2: 'C', 3: 'D', 4: 'E', 5: 'F', 6: 'G',
 };
 
 function mapOpenAIPItem(item: Record<string, unknown>): AirspaceZone | null {
@@ -58,13 +72,12 @@ function mapOpenAIPItem(item: Record<string, unknown>): AirspaceZone | null {
     const cls: AirspaceZone['class'] | undefined =
       typeof raw === 'number'
         ? CLASS_NUMBER_MAP[raw]
-        : (['A', 'B', 'C', 'D'] as string[]).includes(raw as string)
+        : (['A', 'B', 'C', 'D', 'E', 'F', 'G'] as string[]).includes(raw as string)
           ? (raw as AirspaceZone['class'])
           : undefined;
     if (!cls) return null;
 
-    const type = OPENAIP_TYPE_MAP[item.type as number];
-    if (!type) return null;
+    const type: AirspaceZone['type'] = OPENAIP_TYPE_MAP[item.type as number] ?? 'OTHER';
 
     const geom = item.geometry as { coordinates?: [number, number][][] } | undefined;
     const ring = geom?.coordinates?.[0];
@@ -96,44 +109,80 @@ function mapOpenAIPItem(item: Record<string, unknown>): AirspaceZone | null {
 
 export async function fetchFromOpenAIP(): Promise<AirspaceZone[] | null> {
   const apiKey = env.OPENAIP_API_KEY;
-  if (!apiKey) return null;
+  const baseUrl = env.OPENAIP_BASE;
 
-  if (_cache && Date.now() - _cacheAt < CACHE_TTL_MS) return _cache;
+  console.log('[openAIP] apiKey present:', !!apiKey, '| baseUrl:', baseUrl);
+
+  if (!apiKey) {
+    console.error('[openAIP] OPENAIP_API_KEY is missing — check .env');
+    return null;
+  }
+  if (!baseUrl) {
+    console.error('[openAIP] OPENAIP_BASE is missing — check .env');
+    return null;
+  }
+
+  if (_cache && Date.now() - _cacheAt < CACHE_TTL_MS) {
+    console.log('[openAIP] returning cached zones:', _cache.length);
+    return _cache;
+  }
 
   const zones: AirspaceZone[] = [];
   let page = 1;
 
   try {
     while (true) {
-      const res = await fetch(
-        `${env.OPENAIP_BASE}/airspaces?country=IT&page=${page}&limit=100`,
-        {
-          headers: { 'x-openaip-api-key': apiKey, Accept: 'application/json' },
-          signal: AbortSignal.timeout(10_000),
-        },
-      );
+      const url = `${baseUrl}/airspaces?country=IT&page=${page}&limit=100`;
+      console.log('[openAIP] fetching page', page, url);
+
+      const res = await fetch(url, {
+        headers: { 'x-openaip-api-key': apiKey, Accept: 'application/json' },
+        signal: AbortSignal.timeout(15_000),
+      });
+
+      console.log('[openAIP] page', page, 'status:', res.status);
 
       if (!res.ok) {
-        console.error('[drone-atc/airspace] OpenAIP error:', res.status);
+        const text = await res.text();
+        console.error('[openAIP] error body:', text.slice(0, 300));
         break;
       }
 
-      const body = await res.json() as { items?: Record<string, unknown>[]; totalCount?: number };
-      const items = body.items ?? [];
+      const raw = await res.text();
+      console.log('[openAIP] raw body sample:', raw.slice(0, 400));
 
+      let body: Record<string, unknown>;
+      try {
+        body = JSON.parse(raw);
+      } catch {
+        console.error('[openAIP] failed to parse JSON');
+        break;
+      }
+
+      // handle both { items: [...] } and { data: [...] } response shapes
+      const items: Record<string, unknown>[] =
+        (body.items as Record<string, unknown>[] | undefined) ??
+        (body.data  as Record<string, unknown>[] | undefined) ??
+        (Array.isArray(body) ? (body as Record<string, unknown>[]) : []);
+
+      console.log('[openAIP] page', page, 'items received:', items.length);
+
+      let parsed = 0;
       for (const item of items) {
         const z = mapOpenAIPItem(item);
-        if (z) zones.push(z);
+        if (z) { zones.push(z); parsed++; }
       }
+      console.log('[openAIP] page', page, 'zones parsed:', parsed, '/', items.length);
 
       if (items.length < 100) break;
       page++;
     }
   } catch (err) {
-    console.error('[drone-atc/airspace] OpenAIP fetch failed:', err);
+    console.error('[openAIP] fetch threw:', err);
     return null;
   }
 
+  console.log('[openAIP] total zones after all pages:', zones.length);
   if (zones.length === 0) return null;
 
   _cache = zones;

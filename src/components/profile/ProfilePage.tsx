@@ -50,7 +50,7 @@ export default function Profile({ user }: { user: SessionUser }) {
   const [avatar, setAvatar] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string | null>(null);
-  const [canEditEmail, setCanEditEmail] = useState(false);
+  const canEditEmail = false;
   const [easaCode, setEasaCode] = useState('');
   const [savingEasa, setSavingEasa] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -83,7 +83,6 @@ export default function Profile({ user }: { user: SessionUser }) {
           signature: data.user.users_profile?.user_signature || '',
           role: data.user.role || '',
         });
-        setCanEditEmail(['ADMIN', 'SUPERADMIN'].includes(user.role));
         if (data.user.avatar_url) setCurrentAvatarUrl(data.user.avatar_url);
         if (user.role === 'ADMIN') setEasaCode(user.companyEasaCode ?? '');
       }

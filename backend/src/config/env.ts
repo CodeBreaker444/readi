@@ -24,5 +24,5 @@ export const env = {
   OPENSKY_USERNAME: process.env.OPENSKY_USERNAME,
   OPENSKY_PASSWORD: process.env.OPENSKY_PASSWORD,
   OPENAIP_API_KEY: process.env.OPENAIP_API_KEY,
-  OPENAIP_BASE: process.env.OPENAIP_BASE_URL 
+  OPENAIP_BASE: process.env.OPENAIP_BASE
 };
