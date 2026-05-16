@@ -65,10 +65,18 @@ const CLASS_NUMBER_MAP: Record<number, AirspaceZone['class']> = {
   0: 'A', 1: 'B', 2: 'C', 3: 'D', 4: 'E', 5: 'F', 6: 'G',
 };
 
+// FIR/UIR (9,10,26): span the whole country.
+// TMA (5,6,7,8,25): aircraft arrival/departure corridors above 1000ft — irrelevant for drones below 120m.
+const EXCLUDED_TYPES = new Set([5, 6, 7, 8, 9, 10, 25, 26]);
+// Zones larger than 80 km radius render as country-wide blobs; skip them.
+const MAX_RADIUS_M = 80_000;
+
 function mapOpenAIPItem(item: Record<string, unknown>): AirspaceZone | null {
   try {
-    const raw = item.airspaceClass;
-    // OpenAIP v2 returns an integer (0=A,1=B,2=C,3=D); v1 returned a string letter.
+    const typeNum = item.type as number;
+    if (EXCLUDED_TYPES.has(typeNum)) return null;
+
+    const raw = item.icaoClass ?? item.airspaceClass;
     const cls: AirspaceZone['class'] | undefined =
       typeof raw === 'number'
         ? CLASS_NUMBER_MAP[raw]
@@ -77,13 +85,15 @@ function mapOpenAIPItem(item: Record<string, unknown>): AirspaceZone | null {
           : undefined;
     if (!cls) return null;
 
-    const type: AirspaceZone['type'] = OPENAIP_TYPE_MAP[item.type as number] ?? 'OTHER';
+    const type: AirspaceZone['type'] = OPENAIP_TYPE_MAP[typeNum] ?? 'OTHER';
 
     const geom = item.geometry as { coordinates?: [number, number][][] } | undefined;
     const ring = geom?.coordinates?.[0];
     if (!ring || ring.length < 3) return null;
 
     const { lat, lon, radiusM } = centroidAndRadius(ring);
+
+    if (radiusM > MAX_RADIUS_M) return null;
 
     if (lat < ITALY_BOUNDS.latMin || lat > ITALY_BOUNDS.latMax ||
         lon < ITALY_BOUNDS.lonMin || lon > ITALY_BOUNDS.lonMax) return null;
@@ -159,7 +169,6 @@ export async function fetchFromOpenAIP(): Promise<AirspaceZone[] | null> {
         break;
       }
 
-      // handle both { items: [...] } and { data: [...] } response shapes
       const items: Record<string, unknown>[] =
         (body.items as Record<string, unknown>[] | undefined) ??
         (body.data  as Record<string, unknown>[] | undefined) ??

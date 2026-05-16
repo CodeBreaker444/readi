@@ -67,7 +67,7 @@ export default function DroneATCPage() {
   const [showFleet, setShowFleet] = useState(false);
   const [layers, setLayers] = useState<LayerVisibility>({
     drones: true, docks: true, flights: true,
-    airspaceA: false, airspaceB: true, airspaceC: true, airspaceD: true,
+    airspaceA: false, airspaceB: false, airspaceC: false, airspaceD: true,
     wind: false, temp: false, clouds: false, precip: false, pressure: false,
   });
 
