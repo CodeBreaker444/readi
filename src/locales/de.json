@@ -1975,7 +1975,10 @@
       "errorFile": "Bitte wählen Sie eine Datei aus",
       "errorFileSize": "Datei ist zu groß. Bitte wählen Sie eine Datei unter 25 MB.",
       "saveSuccess": "Dokument erfolgreich gespeichert",
-      "saveError": "Fehler beim Speichern des Dokuments. Bitte versuchen Sie es erneut."
+      "saveError": "Fehler beim Speichern des Dokuments. Bitte versuchen Sie es erneut.",
+      "component": "Komponente",
+      "componentOptional": "(optional)",
+      "componentNone": "Keine — mit einer Komponente verknüpfen"
     },
     "toast": {
       "deleteSuccess": "Dokument erfolgreich gelöscht.",
@@ -3351,7 +3354,8 @@
           "createTicket": "Ticket erstellen",
           "typeBasic": "Basis",
           "typeStandard": "Standard",
-          "typeExtraordinary": "Außerordentlich"
+          "typeExtraordinary": "Außerordentlich",
+          "location": "Standort (optional)"
         },
         "closeTicket": {
           "title": "Ticket schließen",
@@ -3644,7 +3648,13 @@
         "optional": "(optional)",
         "noneTopLevel": "Keiner (oberste Ebene)",
         "none": "Keiner",
-        "loading": "Laden..."
+        "loading": "Laden...",
+        "droneClasses": "Drohnenklassen",
+        "droneClassesOptional": "Drohnenklassen (optional, Mehrfachauswahl)",
+        "manageClasses": "Klassen verwalten",
+        "location": "Standort",
+        "locationOptional": "Standort (optional)",
+        "locationUpdated": "Standort aktualisiert →"
       },
       "editSystem": {
         "title": "System bearbeiten",

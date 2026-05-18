@@ -18,6 +18,7 @@ const DocumentUpdateSchema = z.object({
   description:     z.string().max(2000).optional().nullable(),
   keywords:        z.string().max(500).optional().nullable(),
   tags:            z.string().max(1000).optional().nullable(),
+  fk_component_id: z.number().int().positive().optional().nullable(),
 });
 export async function POST(req: NextRequest) {
   try {

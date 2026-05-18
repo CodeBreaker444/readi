@@ -12,7 +12,9 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Skeleton } from '../ui/skeleton';
+import LocationMapPicker from '@/components/LocationMapPicker';
 import { ManageComponentTypesModal } from './ManageComponentTypesModal';
+import { DroneClassRow, ManageDroneClassesModal } from './ManageDroneClassesModal';
 
 function SystemOptionLabel({ tool }: { tool: any }) {
   const statusColors: Record<string, string> = {
@@ -73,6 +75,9 @@ const EMPTY_FORM = {
   maintenance_cycle_flight: '',
   battery_cycle_ratio: '',
   fk_parent_component_id: '_none',
+  latitude: '',
+  longitude: '',
+  drone_classes: [] as string[],
 };
 interface ComponentType {
   type_id: number;
@@ -84,18 +89,21 @@ export default function EditComponentModal({
 }: EditComponentModalProps) {
   const { isDark } = useTheme();
   const { t } = useTranslation();
-  const [loading, setLoading] = useState(false);
-  const [fetching, setFetching] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [fetching, setFetching] = useState<boolean>(false);
   const [components, setComponents] = useState<any[]>([]);
   const [selectedComponentId, setSelectedComponentId] = useState<string>('');
-  const [showManageTypes, setShowManageTypes] = useState(false);
-  const [loadingParent, setLoadingParent] = useState(false);
+  const [showManageTypes, setShowManageTypes] = useState<boolean>(false);
+  const [showManageClasses, setShowManageClasses] = useState<boolean>(false);
+  const [droneClasses, setDroneClasses] = useState<DroneClassRow[]>([]);
+  const [droneClassesLoading, setDroneClassesLoading] = useState<boolean>(false);
+  const [loadingParent, setLoadingParent] = useState<boolean>(false);
   const [originalFkToolId, setOriginalFkToolId] = useState<number | null>(null);
 
     const [formData, setFormData] = useState(EMPTY_FORM);
 
     const [types, setTypes] = useState<ComponentType[]>([]);
-    const [typesLoading, setTypesLoading] = useState(false);
+    const [typesLoading, setTypesLoading] = useState<boolean>(false);
 
     const reload = useCallback(async () => {
       setTypesLoading(true);
@@ -110,6 +118,15 @@ export default function EditComponentModal({
     }, []);
 
     useEffect(() => { reload(); }, [reload]);
+
+  const reloadDroneClasses = useCallback(async () => {
+    setDroneClassesLoading(true);
+    try {
+      const { data } = await axios.get('/api/system/drone-classes');
+      if (data.code === 1) setDroneClasses(data.data ?? []);
+    } catch { /* non-fatal */ } finally { setDroneClassesLoading(false); }
+  }, []);
+  useEffect(() => { reloadDroneClasses(); }, [reloadDroneClasses]);
 
   useEffect(() => {
     if (open) {
@@ -155,6 +172,9 @@ export default function EditComponentModal({
       maintenance_cycle_flight: comp.maintenance_cycle_flight != null && comp.maintenance_cycle_flight !== '' ? String(comp.maintenance_cycle_flight) : '',
       battery_cycle_ratio: comp.battery_cycle_ratio != null ? String(comp.battery_cycle_ratio) : '',
       fk_parent_component_id: comp.fk_parent_component_id ? String(comp.fk_parent_component_id) : '_none',
+      latitude: comp.latitude != null ? String(comp.latitude) : '',
+      longitude: comp.longitude != null ? String(comp.longitude) : '',
+      drone_classes: Array.isArray(comp.drone_classes) ? comp.drone_classes : [],
     });
   };
 
@@ -312,6 +332,9 @@ export default function EditComponentModal({
         maintenance_cycle_flight: formData.maintenance_cycle_flight ? Number(formData.maintenance_cycle_flight) : null,
         battery_cycle_ratio: formData.battery_cycle_ratio ? Number(formData.battery_cycle_ratio) : null,
         fk_parent_component_id: formData.fk_parent_component_id && formData.fk_parent_component_id !== '_none' ? Number(formData.fk_parent_component_id) : null,
+        latitude: formData.latitude ? Number(formData.latitude) : null,
+        longitude: formData.longitude ? Number(formData.longitude) : null,
+        drone_classes: formData.drone_classes.length > 0 ? formData.drone_classes : null,
       };
 
       const res = await fetch(`/api/system/component/${selectedComponentId}/update`, {
@@ -508,6 +531,47 @@ export default function EditComponentModal({
                 </div>
 
                 {formData.component_type === 'DRONE' && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-1.5">
+                      <Label className={`${labelCls} pb-0`}>{t('systems.components.common.droneClasses')} <span className="font-normal opacity-60 text-xs">{t('systems.components.common.optional')}</span></Label>
+                      <button type="button" onClick={() => setShowManageClasses(true)} className="text-slate-400 hover:text-violet-600 transition-colors" title={t('systems.components.common.manageClasses')}>
+                        <Pencil className="h-3 w-3" />
+                      </button>
+                    </div>
+                    {droneClassesLoading ? (
+                      <span className={`text-xs ${isDark ? 'text-slate-400' : 'text-muted-foreground'}`}>{t('systems.components.common.loading')}</span>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        {droneClasses.map(dc => {
+                          const selected = formData.drone_classes.includes(dc.class_value);
+                          return (
+                            <button
+                              key={dc.class_id}
+                              type="button"
+                              onClick={() => {
+                                const next = selected
+                                  ? formData.drone_classes.filter((v: string) => v !== dc.class_value)
+                                  : [...formData.drone_classes, dc.class_value];
+                                setFormData(prev => ({ ...prev, drone_classes: next }));
+                              }}
+                              className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                                selected
+                                  ? 'bg-violet-600 border-violet-600 text-white'
+                                  : isDark
+                                    ? 'bg-slate-700 border-slate-600 text-slate-300 hover:border-violet-400 hover:text-violet-300'
+                                    : 'bg-white border-slate-300 text-slate-600 hover:border-violet-400 hover:text-violet-600'
+                              }`}
+                            >
+                              {dc.class_value} — {dc.class_label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {formData.component_type === 'DRONE' && (
                   <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
                     <div className="col-span-1 sm:col-span-3">
                       <Label className={labelCls}>{t('systems.components.addComponent.fields.c2Platform')}</Label>
@@ -542,6 +606,17 @@ export default function EditComponentModal({
                     </div>
                   </div>
                 )}
+
+                <div className="space-y-1">
+                  <p className={sectionLabelCls}>{t('systems.components.common.locationOptional')}</p>
+                  <LocationMapPicker
+                    latitude={formData.latitude}
+                    longitude={formData.longitude}
+                    onLatChange={v => setFormData(prev => ({ ...prev, latitude: v }))}
+                    onLonChange={v => setFormData(prev => ({ ...prev, longitude: v }))}
+                    isDark={isDark}
+                  />
+                </div>
 
                 <div>
                   <div className="flex items-center justify-between mb-2">
@@ -658,6 +733,13 @@ export default function EditComponentModal({
       onClose={() => setShowManageTypes(false)}
       types={types}
       onReload={reload}
+      isDark={isDark}
+    />
+    <ManageDroneClassesModal
+      open={showManageClasses}
+      onClose={() => setShowManageClasses(false)}
+      classes={droneClasses}
+      onReload={reloadDroneClasses}
       isDark={isDark}
     />
     </>

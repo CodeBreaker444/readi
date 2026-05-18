@@ -621,6 +621,9 @@ function buildComponentListResult(data: any[]) {
       last_maintenance_date: item.last_maintenance_date || null,
       dcc_drone_id: item.dcc_drone_id ?? null,
       drone_registration_code: item.drone_registration_code ?? null,
+      latitude: item.component_metadata?.latitude ?? null,
+      longitude: item.component_metadata?.longitude ?? null,
+      drone_classes: item.component_metadata?.drone_classes ?? null,
     })),
   };
 }
@@ -705,6 +708,12 @@ export async function addComponent(componentData: any) {
         component_guarantee_day: componentData.component_guarantee_day || null,
         component_vendor: componentData.component_vendor || null,
         battery_cycle_ratio: componentData.battery_cycle_ratio != null ? Number(componentData.battery_cycle_ratio) : null,
+        latitude: componentData.latitude ?? null,
+        longitude: componentData.longitude ?? null,
+        drone_classes: componentData.drone_classes ?? null,
+        location_history: componentData.latitude != null && componentData.longitude != null
+          ? [{ latitude: componentData.latitude, longitude: componentData.longitude, changed_at: new Date().toISOString() }]
+          : [],
       },
     })
     .select()
@@ -749,6 +758,20 @@ export async function updateComponent(componentId: number, componentData: any) {
   const { system_detached: _ignored, ...existingMetaWithoutDetached } = existingMeta;
   const baseMeta = componentData.system_detached ? existingMeta : existingMetaWithoutDetached;
 
+  const prevLat = existingMeta?.latitude ?? null;
+  const prevLon = existingMeta?.longitude ?? null;
+  const newLat = componentData.latitude ?? null;
+  const newLon = componentData.longitude ?? null;
+  const locationChanged =
+    newLat != null &&
+    newLon != null &&
+    (String(prevLat) !== String(newLat) || String(prevLon) !== String(newLon));
+
+  const existingHistory: any[] = Array.isArray(baseMeta.location_history) ? baseMeta.location_history : [];
+  const updatedHistory = locationChanged
+    ? [...existingHistory, { latitude: newLat, longitude: newLon, changed_at: new Date().toISOString() }]
+    : existingHistory;
+
   const { data, error } = await supabase
     .from('tool_component')
     .update({
@@ -777,6 +800,10 @@ export async function updateComponent(componentId: number, componentData: any) {
         component_guarantee_day: componentData.component_guarantee_day || null,
         component_vendor: componentData.component_vendor || null,
         battery_cycle_ratio: componentData.battery_cycle_ratio != null ? Number(componentData.battery_cycle_ratio) : null,
+        latitude: newLat,
+        longitude: newLon,
+        drone_classes: componentData.drone_classes ?? baseMeta.drone_classes ?? null,
+        location_history: updatedHistory,
       },
     })
     .eq('component_id', componentId)

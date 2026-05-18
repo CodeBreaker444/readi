@@ -52,6 +52,8 @@ const OWNER_ROLE_OPTIONS = [
   'Administrator',
 ];
 
+interface ComponentOption { tool_component_id: number; component_code: string | null; component_name: string | null; component_type: string }
+
 export default function DocumentFormModal({ open, onClose, onSaved, docTypes, onTypesReload, document }: Props) {
   const { t } = useTranslation();
   const { isDark } = useTheme();
@@ -72,8 +74,21 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
   const [tags, setTags] = useState('');
   const [versionLabel, setVersionLabel] = useState('');
   const [changeLog, setChangeLog] = useState('');
+  const [fkComponentId, setFkComponentId] = useState('__none__');
+  const [components, setComponents] = useState<ComponentOption[]>([]);
+  const [componentsLoading, setComponentsLoading] = useState(false);
 
   const isEdit = !!document;
+
+  useEffect(() => {
+    if (!open) return;
+    setComponentsLoading(true);
+    fetch('/api/system/component/list', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })
+      .then(r => r.json())
+      .then(d => { if (d.code === 1) setComponents(d.data ?? []); })
+      .catch(() => {})
+      .finally(() => setComponentsLoading(false));
+  }, [open]);
 
   useEffect(() => {
     if (document) {
@@ -90,11 +105,12 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
       setTags(document.tags ?? '');
       setVersionLabel(document.version_label ?? '');
       setChangeLog(document.change_log ?? '');
+      setFkComponentId(document.fk_component_id ? String(document.fk_component_id) : '__none__');
     } else {
       setDocTypeId(''); setDocCode(''); setStatus('DRAFT'); setTitle('');
       setConfidentiality('INTERNAL'); setOwnerRole('__none__'); setEffectiveDate('');
       setExpiryDate(''); setDescription(''); setKeywords(''); setTags('');
-      setVersionLabel(''); setChangeLog('');
+      setVersionLabel(''); setChangeLog(''); setFkComponentId('__none__');
     }
     if (fileRef.current) fileRef.current.value = '';
   }, [document, open]);
@@ -150,6 +166,7 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
           tags:             tags || undefined,
           version_label:   versionLabel || undefined,
           change_log:       changeLog || undefined,
+          fk_component_id:  fkComponentId !== '__none__' ? Number(fkComponentId) : undefined,
         });
       } else {
         const file = fileRef.current?.files?.[0];
@@ -182,6 +199,7 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
           description:     description || null,
           keywords:         keywords || null,
           tags:             tags || null,
+          fk_component_id:  fkComponentId !== '__none__' ? Number(fkComponentId) : null,
         });
       }
       onSaved();
@@ -292,6 +310,24 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
                     <SelectItem value="__none__">— {t('repository.form.none')} —</SelectItem>
                     {OWNER_ROLE_OPTIONS.map((r) => (
                       <SelectItem key={r} value={r}>{r}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="sm:col-span-2 space-y-1.5">
+                <Label className={labelCls}>{t('repository.form.component')} <span className={`font-normal ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{t('repository.form.componentOptional')}</span></Label>
+                <Select value={fkComponentId} onValueChange={setFkComponentId} disabled={componentsLoading}>
+                  <SelectTrigger className={`text-sm ${selectTriggerCls}`}>
+                    <SelectValue placeholder={componentsLoading ? t('systems.components.common.loading') : t('repository.form.componentNone')} />
+                  </SelectTrigger>
+                  <SelectContent className={selectContentCls}>
+                    <SelectItem value="__none__"><span className={`italic ${isDark ? 'text-slate-400' : 'text-muted-foreground'}`}>{t('repository.form.none')}</span></SelectItem>
+                    {components.map(c => (
+                      <SelectItem key={c.tool_component_id} value={String(c.tool_component_id)}>
+                        <span className="text-[11px]">{c.component_code || c.component_name || `#${c.tool_component_id}`}</span>
+                        <span className={`ml-1.5 text-[10px] ${isDark ? 'text-slate-400' : 'text-muted-foreground'}`}>{c.component_type}</span>
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

@@ -1,6 +1,8 @@
 'use client';
 
+import LocationMapPicker from '@/components/LocationMapPicker';
 import { Button } from '@/components/ui/button';
+import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
@@ -158,6 +160,7 @@ export function NewTicketModal({
   open, onClose, drones, components, users,
   form, onFormChange, onDroneChange, onSubmit, isDark, loading,
 }: NewTicketProps) {
+  const { t } = useTranslation();
   return (
     <Modal title="New Maintenance Ticket" open={open} onClose={onClose} isDark={isDark}>
       {loading ? (
@@ -250,6 +253,16 @@ export function NewTicketModal({
               value={form.note}
               onChange={(e) => onFormChange({ note: e.target.value })}
               placeholder="Describe the issue…"
+            />
+          </Field>
+
+          <Field label={t('systems.maintenanceLogbook.modals.newTicket.location')}>
+            <LocationMapPicker
+              latitude={form.latitude}
+              longitude={form.longitude}
+              onLatChange={v => onFormChange({ latitude: v })}
+              onLonChange={v => onFormChange({ longitude: v })}
+              isDark={isDark}
             />
           </Field>
 

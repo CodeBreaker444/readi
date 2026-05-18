@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDateTimeInTz } from '@/lib/utils';
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface AuditLog {
   id: number;
@@ -40,13 +41,19 @@ interface MissionEntry {
   distance_flown: number | null;
 }
 
+interface LocationHistoryEntry {
+  latitude: number;
+  longitude: number;
+  changed_at: string;
+}
+
 interface LogEntry {
   id: string;
   time: string;
   type: string;
   label: string;
   description: string;
-  source: 'audit' | 'ticket' | 'mission';
+  source: 'audit' | 'ticket' | 'mission' | 'location';
 }
 
 function formatDuration(mins: number): string {
@@ -71,6 +78,7 @@ const EVENT_COLORS: Record<string, string> = {
   ATTACHMENT_ADDED: 'bg-sky-100 text-sky-700 border-sky-200',
   ATTACHMENT_DELETED: 'bg-red-100 text-red-700 border-red-200',
   MISSION: 'bg-violet-100 text-violet-700 border-violet-200',
+  LOCATION: 'bg-teal-100 text-teal-700 border-teal-200',
 };
 
 export function ComponentLogModal({
@@ -84,6 +92,7 @@ export function ComponentLogModal({
   componentId: number | null;
   componentLabel: string;
 }) {
+  const { t } = useTranslation();
   const { timezone } = useTimezone();
   const [loading, setLoading] = useState(false);
   const [entries, setEntries] = useState<LogEntry[]>([]);
@@ -93,7 +102,7 @@ export function ComponentLogModal({
       entries.map((e) => ({
         timestamp: formatDateTimeInTz(e.time, timezone),
         type: e.type,
-        source: e.source === 'ticket' ? 'Maintenance' : e.source === 'mission' ? 'Mission' : 'System',
+        source: e.source === 'ticket' ? 'Maintenance' : e.source === 'mission' ? 'Mission' : e.source === 'location' ? 'Location' : 'System',
         description: e.description,
       })),
     [entries, timezone]
@@ -137,6 +146,17 @@ export function ComponentLogModal({
               source: 'ticket',
             });
           }
+        }
+
+        for (const loc of (data.location_history ?? []) as LocationHistoryEntry[]) {
+          logs.push({
+            id: `loc-${loc.changed_at}`,
+            time: loc.changed_at,
+            type: 'LOCATION',
+            label: 'LOCATION',
+            description: `${t('systems.components.common.locationUpdated')} ${loc.latitude.toFixed(5)}, ${loc.longitude.toFixed(5)}`,
+            source: 'location',
+          });
         }
 
         for (const m of (data.missions ?? []) as MissionEntry[]) {
@@ -207,7 +227,7 @@ export function ComponentLogModal({
                       {entry.label}
                     </span>
                     <span className="text-[10px] text-slate-400 font-medium">
-                      {entry.source === 'ticket' ? 'Maintenance' : entry.source === 'mission' ? 'Mission' : 'System'}
+                      {entry.source === 'ticket' ? 'Maintenance' : entry.source === 'mission' ? 'Mission' : entry.source === 'location' ? 'Location' : 'System'}
                     </span>
                   </div>
                   <p className="text-sm text-slate-700">{entry.description}</p>

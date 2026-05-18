@@ -29,6 +29,9 @@ const ComponentSchema = z.object({
   maintenance_cycle_flight: z.number().optional().nullable(),
   battery_cycle_ratio: z.number().min(0).max(1).optional().nullable(),
   fk_parent_component_id: z.number().positive().optional().nullable(),
+  latitude: z.number().min(-90).max(90).optional().nullable(),
+  longitude: z.number().min(-180).max(180).optional().nullable(),
+  drone_classes: z.array(z.string()).optional().nullable(),
 });
 
 export async function POST(req: NextRequest) {
@@ -66,6 +69,9 @@ export async function POST(req: NextRequest) {
       maintenance_cycle_flight: d.maintenance_cycle_flight,
       battery_cycle_ratio: d.battery_cycle_ratio ?? null,
       fk_parent_component_id: d.fk_parent_component_id ?? null,
+      latitude: d.latitude ?? null,
+      longitude: d.longitude ?? null,
+      drone_classes: d.drone_classes ?? null,
     });
 
     if (result.code === 1) {

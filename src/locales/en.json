@@ -1986,7 +1986,10 @@
       "errorFile": "Please select a file",
       "errorFileSize": "File is too large. Please choose a file under 25 MB.",
       "saveSuccess": "Document saved successfully",
-      "saveError": "Failed to save document. Please try again."
+      "saveError": "Failed to save document. Please try again.",
+      "component": "Component",
+      "componentOptional": "(optional)",
+      "componentNone": "None — attach to a component"
     },
     "toast": {
       "deleteSuccess": "Document deleted successfully.",
@@ -3438,7 +3441,8 @@
           "createTicket": "Create Ticket",
           "typeBasic": "Basic",
           "typeStandard": "Standard",
-          "typeExtraordinary": "Extraordinary"
+          "typeExtraordinary": "Extraordinary",
+          "location": "Location (optional)"
         },
         "closeTicket": {
           "title": "Close Ticket",
@@ -3731,7 +3735,13 @@
         "optional": "(optional)",
         "noneTopLevel": "None (top-level)",
         "none": "None",
-        "loading": "Loading..."
+        "loading": "Loading...",
+        "droneClasses": "Drone Classes",
+        "droneClassesOptional": "Drone Classes (optional, multi-select)",
+        "manageClasses": "Manage classes",
+        "location": "Location",
+        "locationOptional": "Location (optional)",
+        "locationUpdated": "Location updated →"
       },
       "editSystem": {
         "title": "Edit System",

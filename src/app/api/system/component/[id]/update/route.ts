@@ -31,6 +31,9 @@ const schema = z.object({
   battery_cycle_ratio: z.number().min(0).max(1).optional().nullable(),
   fk_parent_component_id: z.number().positive().optional().nullable(),
   system_detached: z.boolean().optional(),
+  latitude: z.number().min(-90).max(90).optional().nullable(),
+  longitude: z.number().min(-180).max(180).optional().nullable(),
+  drone_classes: z.array(z.string()).optional().nullable(),
 });
 
 export async function POST(

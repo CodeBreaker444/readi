@@ -139,6 +139,7 @@ export async function listDocuments(input: DocumentListInput): Promise<{
     .select(`
       document_id,
       fk_doc_type_id,
+      fk_component_id,
       document_code,
       document_title,
       document_description,
@@ -204,6 +205,7 @@ export async function listDocuments(input: DocumentListInput): Promise<{
     return {
       document_id:       d.document_id,
       doc_type_id:       d.fk_doc_type_id ?? 0,
+      fk_component_id:   (d as any).fk_component_id ?? null,
       type_name:         typeData?.doc_type_name ?? null,
       doc_area:          (typeData?.doc_type_category ?? null) as RepositoryDocument['doc_area'],
       doc_category:      typeData?.doc_type_category ?? null,
@@ -271,6 +273,7 @@ export async function createDocument(
       tags:                 input.tags ?? null,
       is_current_version:   true,
       document_active:      'Y',
+      fk_component_id:      input.fk_component_id ?? null,
     })
     .select('document_id')
     .single();
@@ -313,6 +316,7 @@ export async function updateDocument(input: DocumentUpdateInput): Promise<void> 
       owner_role:           input.owner_role ?? null,
       keywords:             input.keywords ?? null,
       tags:                 input.tags ?? null,
+      fk_component_id:      input.fk_component_id ?? null,
     })
     .eq('document_id', input.document_id)
     .eq('document_active', 'Y');

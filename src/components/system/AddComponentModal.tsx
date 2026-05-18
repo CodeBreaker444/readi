@@ -1,5 +1,6 @@
 'use client';
 
+import LocationMapPicker from '@/components/LocationMapPicker';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -10,6 +11,7 @@ import { Loader2, Pencil, RotateCcw } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { DroneClassRow, ManageDroneClassesModal } from './ManageDroneClassesModal';
 import { ManageComponentTypesModal } from './ManageComponentTypesModal';
 
 interface AddComponentModalProps {
@@ -44,6 +46,9 @@ const INITIAL_FORM = {
   maintenance_cycle_flight: '',
   battery_cycle_ratio: '',
   fk_parent_component_id: '',
+  latitude: '',
+  longitude: '',
+  drone_classes: [] as string[],
 };
 export interface ComponentType {
   type_id: number;
@@ -104,6 +109,9 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [showManageTypes, setShowManageTypes] = useState(false);
+  const [showManageClasses, setShowManageClasses] = useState(false);
+  const [droneClasses, setDroneClasses] = useState<DroneClassRow[]>([]);
+  const [droneClassesLoading, setDroneClassesLoading] = useState(false);
   const [parentComponents, setParentComponents] = useState<any[]>([]);
   const [parentLoading, setParentLoading] = useState(false);
 
@@ -147,8 +155,19 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
 
     useEffect(() => { reload(); }, [reload]);
 
+  const reloadDroneClasses = useCallback(async () => {
+    setDroneClassesLoading(true);
+    try {
+      const { data } = await axios.get('/api/system/drone-classes');
+      if (data.code === 1) setDroneClasses(data.data ?? []);
+    } catch { /* non-fatal */ }
+    finally { setDroneClassesLoading(false); }
+  }, []);
 
-  const handleChange = (field: string, value: any) => {
+  useEffect(() => { reloadDroneClasses(); }, [reloadDroneClasses]);
+
+
+  const handleChange = (field: keyof typeof INITIAL_FORM, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -226,6 +245,9 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
         maintenance_cycle_flight: formData.maintenance_cycle_flight ? Number(formData.maintenance_cycle_flight) : null,
         battery_cycle_ratio: formData.battery_cycle_ratio ? Number(formData.battery_cycle_ratio) : null,
         fk_parent_component_id: formData.fk_parent_component_id ? Number(formData.fk_parent_component_id) : null,
+        latitude: formData.latitude ? Number(formData.latitude) : null,
+        longitude: formData.longitude ? Number(formData.longitude) : null,
+        drone_classes: formData.drone_classes.length > 0 ? formData.drone_classes : null,
       };
 
       const response = await axios.post('/api/system/component/add', payload);
@@ -376,6 +398,45 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
             </div>
 
             {formData.component_type === 'DRONE' && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5">
+                  <Label className="text-sm font-medium text-muted-foreground">{t('systems.components.common.droneClassesOptional')}</Label>
+                  <button type="button" onClick={() => setShowManageClasses(true)} className="text-slate-400 hover:text-violet-600 transition-colors" title={t('systems.components.common.manageClasses')}>
+                    <Pencil className="h-3 w-3" />
+                  </button>
+                </div>
+                {droneClassesLoading ? (
+                  <span className="text-xs text-muted-foreground">{t('systems.components.common.loading')}</span>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {droneClasses.map(dc => {
+                      const selected = formData.drone_classes.includes(dc.class_value);
+                      return (
+                        <button
+                          key={dc.class_id}
+                          type="button"
+                          onClick={() => {
+                            const next = selected
+                              ? formData.drone_classes.filter(v => v !== dc.class_value)
+                              : [...formData.drone_classes, dc.class_value];
+                            handleChange('drone_classes' as any, next as any);
+                          }}
+                          className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                            selected
+                              ? 'bg-violet-600 border-violet-600 text-white'
+                              : 'bg-white border-slate-300 text-slate-600 hover:border-violet-400 hover:text-violet-600'
+                          }`}
+                        >
+                          {dc.class_value} — {dc.class_label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {formData.component_type === 'DRONE' && (
               <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 overflow-visible">
                 <div className="col-span-1 sm:col-span-3">
                   <Label className="pb-2">{t('systems.components.addComponent.fields.c2Platform')}</Label>
@@ -418,6 +479,16 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
                 </div>
               </div>
             )}
+
+            <div>
+              <p className="text-sm font-medium text-muted-foreground mb-2">{t('systems.components.common.locationOptional')}</p>
+              <LocationMapPicker
+                latitude={formData.latitude}
+                longitude={formData.longitude}
+                onLatChange={v => handleChange('latitude', v)}
+                onLonChange={v => handleChange('longitude', v)}
+              />
+            </div>
 
             <div>
               <div className="flex items-center justify-between mb-2">
@@ -532,6 +603,13 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
         types={types}
         onReload={reload}
         isDark={false}
+      />
+
+      <ManageDroneClassesModal
+        open={showManageClasses}
+        onClose={() => setShowManageClasses(false)}
+        classes={droneClasses}
+        onReload={reloadDroneClasses}
       />
     </>
   );

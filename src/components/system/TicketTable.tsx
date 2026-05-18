@@ -236,17 +236,20 @@ export function TicketTable({
         },
       },
       {
-        id: "serial",
-        header: "Serial",
-        cell: ({ row }) => (
-          <span
-            className={`text-xs font-mono ${
-              isDark ? "text-slate-400" : "text-slate-500"
-            }`}
-          >
-            {row.original.drone_serial ?? "—"}
-          </span>
-        ),
+        id: "location",
+        header: "Location",
+        cell: ({ row }) => {
+          const lat = row.original.location_latitude;
+          const lon = row.original.location_longitude;
+          if (lat === null || lat === undefined || lon === null || lon === undefined) {
+            return <span className={`text-xs ${isDark ? "text-slate-600" : "text-slate-300"}`}>—</span>;
+          }
+          return (
+            <span className={`text-[11px] font-mono tabular-nums whitespace-nowrap ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+              {Number(lat).toFixed(5)} / {Number(lon).toFixed(5)}
+            </span>
+          );
+        },
       },
       {
         id: "assigned",
@@ -467,8 +470,8 @@ export function TicketTable({
       <div className={`border-t px-2 flex items-center justify-between ${isDark ? "border-slate-700" : "border-slate-200"}`}>
         <ExportButtons
           filename="Maintenance Tickets"
-          headers={['Ticket ID', 'Type', 'System', 'Serial', 'Component', 'Component SN', 'Description', 'Assigned To', 'Email', 'Status', 'Priority', 'Opened', 'Closed']}
-          rows={tickets.map(t => [t.ticket_id, t.ticket_type, t.drone_code ?? '', t.drone_serial ?? '', t.entity_name ?? '', t.component_sn ?? '', t.note ?? '', t.assigner_name ?? '', t.assigner_email ?? '', t.ticket_status, t.ticket_priority, t.opened_at, t.closed_at ?? ''])}
+          headers={['Ticket ID', 'Type', 'System', 'Latitude', 'Longitude', 'Component', 'Component SN', 'Description', 'Assigned To', 'Email', 'Status', 'Priority', 'Opened', 'Closed']}
+          rows={tickets.map(t => [t.ticket_id, t.ticket_type, t.drone_code ?? '', t.location_latitude ?? '', t.location_longitude ?? '', t.entity_name ?? '', t.component_sn ?? '', t.note ?? '', t.assigner_name ?? '', t.assigner_email ?? '', t.ticket_status, t.ticket_priority, t.opened_at, t.closed_at ?? ''])}
         />
         <TablePagination table={table} />
       </div>

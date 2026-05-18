@@ -88,6 +88,8 @@ export async function getTicketList(owner_id: number, tool_id?: number): Promise
       reported_at,
       closed_at,
       resolution_notes,
+      location_latitude,
+      location_longitude,
       created_at,
       updated_at,
       tool:fk_tool_id (
@@ -184,8 +186,10 @@ export async function getTicketList(owner_id: number, tool_id?: number): Promise
       assigner_name:  row.assignee
         ? `${row.assignee.first_name ?? ''} ${row.assignee.last_name ?? ''}`.trim()
         : 'Unassigned',
-      assigner_email: row.assignee?.email ?? '',
-      trigger_params: null,
+      assigner_email:     row.assignee?.email ?? '',
+      trigger_params:     null,
+      location_latitude:  row.location_latitude  ?? null,
+      location_longitude: row.location_longitude ?? null,
     };
   });
 }
@@ -209,6 +213,8 @@ export async function createTicket(payload: CreateTicketPayload): Promise<number
     assigned_to_user_id: payload.assigned_to || null,
     resolution_notes:    payload.note ?? null,
     reported_at:         new Date().toISOString(),
+    location_latitude:   payload.latitude  ?? null,
+    location_longitude:  payload.longitude ?? null,
   }));
 
   const { data, error } = await supabase
