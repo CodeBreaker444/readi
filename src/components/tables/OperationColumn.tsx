@@ -1,6 +1,6 @@
 'use client';
 
-import { Operation } from '@/app/missions/table/page';
+import { Operation } from '@/app/operations/table/page';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';

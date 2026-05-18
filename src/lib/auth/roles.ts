@@ -83,10 +83,10 @@ export const ROUTE_PERMISSIONS: Record<string, RoutePermissionEntry> = {
   '/planning/mission-template': 'view_planning',
   '/planning/flight-requests': 'view_planning_advanced',
   '/settings/security': 'view_config',
-  '/missions/table': 'view_operations',
-  '/missions/daily-board': 'view_operations',
-  '/missions/calendar': 'view_operations',
-  '/missions/flight-requests': 'view_operations',
+  '/operations/table': 'view_operations',
+  '/operations/daily-board': 'view_operations',
+  '/operations/calendar': 'view_operations',
+  '/operations/flight-requests': 'view_operations',
   '/logbooks/mission-planning-logbook': 'view_logbooks',
   '/logbooks/operation-logbook': 'view_logbooks',
   '/logbooks/battery-logbook': 'view_logbooks',
@@ -208,7 +208,7 @@ export function getDefaultRoute(role: Role | null | undefined): string {
   if (role === 'CLIENT') return '/client/dashboard';
   if (roleHasPermission(role, 'view_dashboard')) return '/dashboard';
   if (roleHasPermission(role, 'view_pilot_dashboard')) return '/dashboard';
-  if (roleHasPermission(role, 'view_operations')) return '/missions/table';
+  if (roleHasPermission(role, 'view_operations')) return '/operations/table';
   if (roleHasPermission(role, 'view_repository')) return '/document-repository';
 
   return '/auth/login';

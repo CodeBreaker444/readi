@@ -2,12 +2,16 @@
 
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BatteryLogbookItem } from "@/config/types/logbook";
+import { BatteryCycleItem, BatteryLogbookItem } from "@/config/types/logbook";
+import '@/lib/i18n/config';
 import { cn } from "@/lib/utils";
 import {
+  ColumnDef,
   ColumnFiltersState,
+  ExpandedState,
   flexRender,
   getCoreRowModel,
+  getExpandedRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
@@ -16,11 +20,12 @@ import {
 } from "@tanstack/react-table";
 import { Battery, Search } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import ExportButtons from "../system/ExportButtons";
-import { batteryLogbookColumns } from "../tables/BatteryLogbookColumn";
+import { getBatteryLogbookColumns } from "../tables/BatteryLogbookColumn";
 import { TablePagination } from "../tables/Pagination";
 
-const SKELETON_COL_WIDTHS = [55, 155, 140, 115, 100, 110, 85, 75, 110, 120, 120, 115];
+const SKELETON_COL_WIDTHS = [32, 55, 155, 140, 115, 100, 110, 85, 75, 110, 120, 120, 115];
 const SKELETON_ROWS = 10;
 
 interface BatteryLogbookTableProps {
@@ -29,25 +34,124 @@ interface BatteryLogbookTableProps {
   isDark: boolean;
 }
 
+function CycleSubTable({
+  cycles,
+  cycleRatio,
+  isDark,
+}: {
+  cycles: BatteryCycleItem[];
+  cycleRatio: number | null;
+  isDark: boolean;
+}) {
+  const { t } = useTranslation();
+
+  if (cycles.length === 0) {
+    return (
+      <div className={`px-6 py-4 text-xs ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+        {t('logbooks.batteryLogbook.cycleLog.noMissions')}
+      </div>
+    );
+  }
+
+  const totalCycles = Math.round(cycles.length * (cycleRatio ?? 1) * 100) / 100;
+  const headers = [
+    t('logbooks.batteryLogbook.cycleLog.columns.mission'),
+    t('logbooks.batteryLogbook.cycleLog.columns.date'),
+    t('logbooks.batteryLogbook.cycleLog.columns.duration'),
+    t('logbooks.batteryLogbook.cycleLog.columns.cycles'),
+    t('logbooks.batteryLogbook.cycleLog.columns.pilot'),
+  ];
+
+  return (
+    <div className={`px-6 py-3 ${isDark ? "bg-slate-950/50" : "bg-slate-50/80"}`}>
+      <div className="flex items-center gap-3 mb-2">
+        <span className={`text-[10px] font-semibold uppercase tracking-widest ${isDark ? "text-violet-400" : "text-violet-600"}`}>
+          {t('logbooks.batteryLogbook.cycleLog.title')}
+        </span>
+        <span className={`text-[10px] ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+          {cycles.length} {t('logbooks.batteryLogbook.cycleLog.missions')} · {totalCycles} {t('logbooks.batteryLogbook.cycleLog.totalCycles')}
+        </span>
+      </div>
+      <div className={`overflow-x-auto rounded-lg border ${isDark ? "border-slate-800" : "border-slate-200"}`}>
+        <table className="w-full text-xs border-collapse">
+          <thead>
+            <tr className={`border-b ${isDark ? "border-slate-800 bg-slate-900/60" : "border-slate-200 bg-slate-100/80"}`}>
+              {headers.map((h) => (
+                <th
+                  key={h}
+                  className={`px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-widest whitespace-nowrap ${isDark ? "text-slate-500" : "text-slate-400"}`}
+                >
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {cycles.map((c, i) => (
+              <tr
+                key={c.mission_id}
+                className={cn(
+                  "border-b",
+                  isDark ? "border-slate-800/60" : "border-slate-100",
+                  isDark
+                    ? i % 2 !== 0 && "bg-slate-900/20"
+                    : i % 2 !== 0 && "bg-slate-50/40"
+                )}
+              >
+                <td className="px-3 py-2 font-mono text-slate-400 dark:text-slate-500">
+                  {c.mission_code || String(c.mission_id).padStart(4, "0")}
+                </td>
+                <td className={`px-3 py-2 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+                  {c.actual_start
+                    ? new Date(c.actual_start).toLocaleString(undefined, {
+                        dateStyle: "short",
+                        timeStyle: "short",
+                      })
+                    : "—"}
+                </td>
+                <td className={`px-3 py-2 font-mono ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+                  {c.flight_duration_min > 0 ? `${c.flight_duration_min} min` : "—"}
+                </td>
+                <td className={`px-3 py-2 font-mono font-semibold ${isDark ? "text-violet-400" : "text-violet-600"}`}>
+                  {c.cycles_consumed.toFixed(2)}
+                </td>
+                <td className={`px-3 py-2 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+                  {c.pilot_name}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 export function BatteryLogbookTable({ data, loading, isDark }: BatteryLogbookTableProps) {
+  const { t } = useTranslation();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
+  const [expanded, setExpanded] = useState<ExpandedState>({});
 
-const table = useReactTable({
+  const columns: ColumnDef<BatteryLogbookItem>[] = getBatteryLogbookColumns(t, isDark);
+
+  const table = useReactTable({
     data,
-    columns: batteryLogbookColumns,
-    state: { sorting, columnFilters, globalFilter },
+    columns,
+    state: { sorting, columnFilters, globalFilter, expanded },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onGlobalFilterChange: setGlobalFilter,
+    onExpandedChange: setExpanded,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
+    getExpandedRowModel: getExpandedRowModel(),
     initialState: {
-      pagination: { 
-        pageSize: 8,  
+      pagination: {
+        pageSize: 8,
       },
     },
   });
@@ -74,7 +178,7 @@ const table = useReactTable({
                 {table.getFilteredRowModel().rows.length}
               </span>
               <span className={isDark ? "text-slate-500" : "text-slate-400"}>
-                {" "}batteries found
+                {" "}{t('logbooks.batteryLogbook.table.batteriesFound')}
               </span>
             </span>
           )}
@@ -87,7 +191,7 @@ const table = useReactTable({
             }`}
           />
           <Input
-            placeholder="Search table…"
+            placeholder={t('logbooks.batteryLogbook.table.searchPlaceholder')}
             value={globalFilter}
             onChange={(e) => setGlobalFilter(e.target.value)}
             disabled={loading}
@@ -142,11 +246,13 @@ const table = useReactTable({
                     const skBase = isDark ? "bg-slate-800" : "bg-slate-200";
                     const skFaint = isDark ? "bg-slate-800/60" : "bg-slate-100";
                     const ratio = 0.5 + ((rowIdx * 3 + colIdx * 7) % 30) / 100;
-                    const isDouble = [1, 2].includes(colIdx);
-                    const isBadge = [3, 9].includes(colIdx);
+                    const isDouble = [2, 3].includes(colIdx);
+                    const isBadge = [4, 10].includes(colIdx);
                     return (
                       <td key={colIdx} className="px-3 py-3 align-middle">
-                        {isDouble ? (
+                        {colIdx === 0 ? (
+                          <Skeleton className={`h-3.5 w-3.5 rounded ${skBase}`} />
+                        ) : isDouble ? (
                           <div className="flex flex-col gap-1.5">
                             <Skeleton className={`h-3 rounded ${skBase}`} style={{ width: Math.round(colW * 0.7) }} />
                             <Skeleton className={`h-2.5 rounded ${skFaint}`} style={{ width: Math.round(colW * 0.45) }} />
@@ -163,39 +269,61 @@ const table = useReactTable({
               ))
             ) : table.getRowModel().rows.length === 0 ? (
               <tr>
-                <td colSpan={batteryLogbookColumns.length} className="py-20 text-center">
+                <td colSpan={columns.length} className="py-20 text-center">
                   <div className="flex flex-col items-center gap-2">
                     <Battery className={`h-8 w-8 ${isDark ? "text-slate-500" : "text-slate-400"}`} />
                     <span className={`text-xs ${isDark ? "text-slate-500" : "text-slate-400"}`}>
-                      No batteries found
+                      {t('logbooks.batteryLogbook.table.noBatteries')}
                     </span>
                     <span className={`text-[11px] ${isDark ? "text-slate-600" : "text-slate-300"}`}>
-                      Adjust filters and search again
+                      {t('logbooks.batteryLogbook.table.noBatteriesHint')}
                     </span>
                   </div>
                 </td>
               </tr>
             ) : (
-              table.getRowModel().rows.map((row, i) => (
-                <tr
-                  key={row.id}
-                  className={cn(
-                    "border-b transition-colors",
-                    isDark
-                      ? "border-slate-800/70 hover:bg-slate-800/40"
-                      : "border-slate-100 hover:bg-slate-50",
-                    isDark
-                      ? i % 2 !== 0 && "bg-slate-900/30"
-                      : i % 2 !== 0 && "bg-slate-50/60"
-                  )}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-3 py-2.5 align-middle">
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+              table.getRowModel().rows.flatMap((row, i) => {
+                const mainRow = (
+                  <tr
+                    key={row.id}
+                    onClick={() => row.toggleExpanded()}
+                    className={cn(
+                      "border-b transition-colors cursor-pointer select-none",
+                      isDark
+                        ? "border-slate-800/70 hover:bg-slate-800/40"
+                        : "border-slate-100 hover:bg-slate-50",
+                      isDark
+                        ? i % 2 !== 0 && "bg-slate-900/30"
+                        : i % 2 !== 0 && "bg-slate-50/60"
+                    )}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <td key={cell.id} className="px-3 py-2.5 align-middle">
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
+                    ))}
+                  </tr>
+                );
+
+                if (!row.getIsExpanded()) return [mainRow];
+
+                const expandRow = (
+                  <tr
+                    key={`${row.id}-expand`}
+                    className={isDark ? "border-b border-slate-800/70" : "border-b border-slate-100"}
+                  >
+                    <td colSpan={columns.length} className="p-0">
+                      <CycleSubTable
+                        cycles={row.original.cycles}
+                        cycleRatio={row.original.battery_cycle_ratio}
+                        isDark={isDark}
+                      />
                     </td>
-                  ))}
-                </tr>
-              ))
+                  </tr>
+                );
+
+                return [mainRow, expandRow];
+              })
             )}
           </tbody>
         </table>

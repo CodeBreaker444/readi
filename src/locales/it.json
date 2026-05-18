@@ -153,8 +153,8 @@
     "planningDashboard": "P02 - Dashboard pianificazione",
     "missionTemplates": "P04 - Modelli missione",
     "flightRequests": "Richieste di volo",
-    "operations": "Missioni",
-    "operationsTable": "Tabella missioni",
+    "operations": "Operazioni",
+    "operationsTable": "Tabella missione",
     "dailyBoard": "Pannello giornaliero",
     "calendar": "Calendario",
     "logbooks": "Registri",
@@ -1115,6 +1115,40 @@
         "all": "Tutti",
         "search": "Cerca",
         "reset": "Reimposta"
+      },
+      "table": {
+        "batteriesFound": "batterie trovate",
+        "searchPlaceholder": "Cerca nella tabella…",
+        "noBatteries": "Nessuna batteria trovata",
+        "noBatteriesHint": "Modifica i filtri e cerca di nuovo"
+      },
+      "columns": {
+        "id": "#",
+        "battery": "Batteria",
+        "snPrefix": "N/S",
+        "droneSystem": "Sistema Drone",
+        "status": "Stato",
+        "cycleHealth": "Salute Cicli",
+        "installed": "Installata",
+        "lastMaint": "Ultima Manutenzione",
+        "maintCycle": "Ciclo Manutenzione",
+        "vendor": "Fornitore",
+        "purchaseDate": "Data Acquisto"
+      },
+      "cycleLog": {
+        "title": "Registro Cicli",
+        "missions": "missioni",
+        "totalCycles": "cicli totali",
+        "noMissions": "Nessuna missione registrata per questa batteria.",
+        "loadError": "Impossibile caricare i cicli.",
+        "loading": "Caricamento cicli…",
+        "columns": {
+          "mission": "Missione",
+          "date": "Data",
+          "duration": "Durata",
+          "cycles": "Cicli",
+          "pilot": "Pilota"
+        }
       }
     },
     "testLogbook": {
@@ -1800,8 +1834,8 @@
       }
     },
     "newOperation": {
-      "title": "Nuova Operazione",
-      "editTitle": "Modifica Operazione",
+      "title": "Nuova missione",
+      "editTitle": "Modifica missione",
       "tabs": {
         "missionData": "Dati Missione",
         "missionExecution": "Esecuzione Missione",
@@ -2159,6 +2193,40 @@
         "all": "Tutti",
         "search": "Cerca",
         "reset": "Reimposta"
+      },
+      "table": {
+        "batteriesFound": "batterie trovate",
+        "searchPlaceholder": "Cerca nella tabella…",
+        "noBatteries": "Nessuna batteria trovata",
+        "noBatteriesHint": "Modifica i filtri e cerca di nuovo"
+      },
+      "columns": {
+        "id": "#",
+        "battery": "Batteria",
+        "snPrefix": "N/S",
+        "droneSystem": "Sistema Drone",
+        "status": "Stato",
+        "cycleHealth": "Salute Cicli",
+        "installed": "Installata",
+        "lastMaint": "Ultima Manutenzione",
+        "maintCycle": "Ciclo Manutenzione",
+        "vendor": "Fornitore",
+        "purchaseDate": "Data Acquisto"
+      },
+      "cycleLog": {
+        "title": "Registro Cicli",
+        "missions": "missioni",
+        "totalCycles": "cicli totali",
+        "noMissions": "Nessuna missione registrata per questa batteria.",
+        "loadError": "Impossibile caricare i cicli.",
+        "loading": "Caricamento cicli…",
+        "columns": {
+          "mission": "Missione",
+          "date": "Data",
+          "duration": "Durata",
+          "cycles": "Cicli",
+          "pilot": "Pilota"
+        }
       }
     }
   },

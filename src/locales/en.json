@@ -153,8 +153,8 @@
     "planningDashboard": "P02 - Planning Dashboard",
     "missionTemplates": "P04 - Mission Templates",
     "flightRequests": "Flight Requests",
-    "operations": "Missions",
-    "operationsTable": "Missions Table",
+    "operations": "Operations",
+    "operationsTable": "Mission Table",
     "dailyBoard": "Daily Board",
     "calendar": "Calendar",
     "logbooks": "Logbooks",
@@ -1113,6 +1113,40 @@
         "all": "All",
         "search": "Search",
         "reset": "Reset"
+      },
+      "table": {
+        "batteriesFound": "batteries found",
+        "searchPlaceholder": "Search table…",
+        "noBatteries": "No batteries found",
+        "noBatteriesHint": "Adjust filters and search again"
+      },
+      "columns": {
+        "id": "#",
+        "battery": "Battery",
+        "snPrefix": "S/N",
+        "droneSystem": "Drone System",
+        "status": "Status",
+        "cycleHealth": "Cycle Health",
+        "installed": "Installed",
+        "lastMaint": "Last Maint.",
+        "maintCycle": "Maint. Cycle",
+        "vendor": "Vendor",
+        "purchaseDate": "Purchase Date"
+      },
+      "cycleLog": {
+        "title": "Cycle Log",
+        "missions": "missions",
+        "totalCycles": "total cycles",
+        "noMissions": "No missions recorded for this battery.",
+        "loadError": "Failed to load cycles.",
+        "loading": "Loading cycles…",
+        "columns": {
+          "mission": "Mission",
+          "date": "Date",
+          "duration": "Duration",
+          "cycles": "Cycles",
+          "pilot": "Pilot"
+        }
       }
     },
     "testLogbook": {
@@ -1809,8 +1843,8 @@
       }
     },
     "newOperation": {
-      "title": "New Operation",
-      "editTitle": "Edit Operation",
+      "title": "New Mission",
+      "editTitle": "Edit Mission",
       "tabs": {
         "missionData": "Mission Data",
         "missionExecution": "Mission Execution",
@@ -2166,6 +2200,40 @@
         "all": "All",
         "search": "Search",
         "reset": "Reset"
+      },
+      "table": {
+        "batteriesFound": "batteries found",
+        "searchPlaceholder": "Search table…",
+        "noBatteries": "No batteries found",
+        "noBatteriesHint": "Adjust filters and search again"
+      },
+      "columns": {
+        "id": "#",
+        "battery": "Battery",
+        "snPrefix": "S/N",
+        "droneSystem": "Drone System",
+        "status": "Status",
+        "cycleHealth": "Cycle Health",
+        "installed": "Installed",
+        "lastMaint": "Last Maint.",
+        "maintCycle": "Maint. Cycle",
+        "vendor": "Vendor",
+        "purchaseDate": "Purchase Date"
+      },
+      "cycleLog": {
+        "title": "Cycle Log",
+        "missions": "missions",
+        "totalCycles": "total cycles",
+        "noMissions": "No missions recorded for this battery.",
+        "loadError": "Failed to load cycles.",
+        "loading": "Loading cycles…",
+        "columns": {
+          "mission": "Mission",
+          "date": "Date",
+          "duration": "Duration",
+          "cycles": "Cycles",
+          "pilot": "Pilot"
+        }
       }
     }
   },

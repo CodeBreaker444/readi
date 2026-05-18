@@ -153,7 +153,7 @@
     "planningDashboard": "P02 - Planungsdashboard",
     "missionTemplates": "P04 - Missionsvorlagen",
     "flightRequests": "Fluganfragen",
-    "operations": "Missionen",
+    "operations": "Operationen",
     "operationsTable": "Missionstabelle",
     "dailyBoard": "Tagesboard",
     "calendar": "Kalender",
@@ -1113,6 +1113,40 @@
         "all": "Alle",
         "search": "Suchen",
         "reset": "Zurücksetzen"
+      },
+      "table": {
+        "batteriesFound": "Akkus gefunden",
+        "searchPlaceholder": "Tabelle durchsuchen…",
+        "noBatteries": "Keine Akkus gefunden",
+        "noBatteriesHint": "Filter anpassen und erneut suchen"
+      },
+      "columns": {
+        "id": "#",
+        "battery": "Akku",
+        "snPrefix": "S/N",
+        "droneSystem": "Drohnensystem",
+        "status": "Status",
+        "cycleHealth": "Zyklusgesundheit",
+        "installed": "Eingebaut",
+        "lastMaint": "Letzte Wartung",
+        "maintCycle": "Wartungszyklus",
+        "vendor": "Hersteller",
+        "purchaseDate": "Kaufdatum"
+      },
+      "cycleLog": {
+        "title": "Zyklusprotokoll",
+        "missions": "Missionen",
+        "totalCycles": "Gesamtzyklen",
+        "noMissions": "Keine Missionen für diesen Akku erfasst.",
+        "loadError": "Zyklen konnten nicht geladen werden.",
+        "loading": "Zyklen werden geladen…",
+        "columns": {
+          "mission": "Mission",
+          "date": "Datum",
+          "duration": "Dauer",
+          "cycles": "Zyklen",
+          "pilot": "Pilot"
+        }
       }
     },
     "testLogbook": {
@@ -1798,8 +1832,8 @@
       }
     },
     "newOperation": {
-      "title": "Neuer Vorgang",
-      "editTitle": "Vorgang bearbeiten",
+      "title": "Neue Mission",
+      "editTitle": "Mission bearbeiten",
       "tabs": {
         "missionData": "Missionsdaten",
         "missionExecution": "Missionsausführung",
@@ -2155,6 +2189,40 @@
         "all": "Alle",
         "search": "Suchen",
         "reset": "Zurücksetzen"
+      },
+      "table": {
+        "batteriesFound": "Akkus gefunden",
+        "searchPlaceholder": "Tabelle durchsuchen…",
+        "noBatteries": "Keine Akkus gefunden",
+        "noBatteriesHint": "Filter anpassen und erneut suchen"
+      },
+      "columns": {
+        "id": "#",
+        "battery": "Akku",
+        "snPrefix": "S/N",
+        "droneSystem": "Drohnensystem",
+        "status": "Status",
+        "cycleHealth": "Zyklusgesundheit",
+        "installed": "Eingebaut",
+        "lastMaint": "Letzte Wartung",
+        "maintCycle": "Wartungszyklus",
+        "vendor": "Hersteller",
+        "purchaseDate": "Kaufdatum"
+      },
+      "cycleLog": {
+        "title": "Zyklusprotokoll",
+        "missions": "Missionen",
+        "totalCycles": "Gesamtzyklen",
+        "noMissions": "Keine Missionen für diesen Akku erfasst.",
+        "loadError": "Zyklen konnten nicht geladen werden.",
+        "loading": "Zyklen werden geladen…",
+        "columns": {
+          "mission": "Mission",
+          "date": "Datum",
+          "duration": "Dauer",
+          "cycles": "Zyklen",
+          "pilot": "Pilot"
+        }
       }
     }
   },
@@ -4079,8 +4147,7 @@
         }
       }
     }
-  }
-,
+  },
   "droneAtc": {
     "title": "Drone ATC",
     "subtitle": "Luftverkehrskontrolle",
@@ -4134,10 +4201,22 @@
       "pressure": "Luftdruck",
       "atmosphericHpa": "Atmosphärisch hPa",
       "classMeta": {
-        "A": { "label": "Klasse A", "desc": "FL180+" },
-        "B": { "label": "Klasse B", "desc": "Oberfläche–10.000 ft" },
-        "C": { "label": "Klasse C", "desc": "Oberfläche–4.000 ft" },
-        "D": { "label": "Klasse D", "desc": "Oberfläche–2.500 ft" }
+        "A": {
+          "label": "Klasse A",
+          "desc": "FL180+"
+        },
+        "B": {
+          "label": "Klasse B",
+          "desc": "Oberfläche–10.000 ft"
+        },
+        "C": {
+          "label": "Klasse C",
+          "desc": "Oberfläche–4.000 ft"
+        },
+        "D": {
+          "label": "Klasse D",
+          "desc": "Oberfläche–2.500 ft"
+        }
       }
     },
     "connection": {

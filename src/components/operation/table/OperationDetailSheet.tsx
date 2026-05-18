@@ -1,6 +1,6 @@
 'use client';
 
-import { Operation } from '@/app/missions/table/page';
+import { Operation } from '@/app/operations/table/page';
 import { MaintenanceCycleModal } from '@/components/operation/MaintenanceCycleModal';
 import { MissionLucProcedureModal } from '@/components/operation/MissionLucProcedureModal';
 import { ReportIssueModal } from '@/components/operation/ReportIssueModal';

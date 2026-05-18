@@ -125,13 +125,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
     },
     {
       name: t('sidebar.operations'),
-      href: '/missions/table',
+      href: '/operations/table',
       icon: HiOutlineCog,
       subItems: [
-        { name: t('sidebar.operationsTable'), href: '/missions/table' },
-        { name: t('sidebar.dailyBoard'), href: '/missions/daily-board' },
-        { name: t('sidebar.flightRequests'), href: '/missions/flight-requests' },
-        { name: t('sidebar.calendar'), href: '/missions/calendar' }
+        { name: t('sidebar.operationsTable'), href: '/operations/table' },
+        { name: t('sidebar.dailyBoard'), href: '/operations/daily-board' },
+        { name: t('sidebar.flightRequests'), href: '/operations/flight-requests' },
+        { name: t('sidebar.calendar'), href: '/operations/calendar' }
       ]
     },
     {

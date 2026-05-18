@@ -159,6 +159,17 @@ export interface BatteryLogbookItem {
   fk_tool_id: number | null;
   tool_code: string;
   tool_desc: string;
+  cycles: BatteryCycleItem[];
+}
+
+export interface BatteryCycleItem {
+  mission_id: number;
+  mission_code: string;
+  actual_start: string | null;
+  actual_end: string | null;
+  flight_duration_min: number;
+  cycles_consumed: number;
+  pilot_name: string;
 }
 
 export interface BatteryFilterParams {

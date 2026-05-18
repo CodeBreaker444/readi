@@ -1,6 +1,6 @@
 'use client';
 
-import { Operation } from '@/app/missions/table/page';
+import { Operation } from '@/app/operations/table/page';
 import { getOperationColumns } from '@/components/tables/OperationColumn';
 import { TablePagination } from '@/components/tables/Pagination';
 import { Skeleton } from '@/components/ui/skeleton';
