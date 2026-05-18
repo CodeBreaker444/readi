@@ -49,6 +49,7 @@ export async function listOperations(
       fk_luc_procedure_id,
       luc_procedure_progress,
       luc_completed_at,
+      mission_metadata,
       fk_owner_id,
       status_name,
       created_at,
@@ -102,6 +103,7 @@ export async function listOperations(
     type_name: row.type_data?.type_name ?? null,
     planning_name: row.planning?.planning_name ?? null,
     client_name: row.planning?.client?.client_name ?? row.direct_client?.client_name ?? null,
+    visual_observer_ids: row.mission_metadata?.visual_observers ?? null,
   })) as Operation[];
 
   return { data: operations, total: count ?? 0, page, pageSize };
@@ -141,6 +143,7 @@ export async function getOperation(id: number): Promise<Operation | null> {
     planning_name: data.planning?.planning_name ?? null,
     category_name: data.category?.category_name ?? null,
     type_name: data.type_data?.type_name ?? null,
+    visual_observer_ids: data.mission_metadata?.visual_observers ?? null,
   } as Operation;
 }
 
@@ -181,33 +184,75 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
       assignment: {},
     };
 
-  const { data: inserted, error } = await supabase
-    .from('pilot_mission')
-    .insert({
-      mission_code: codeToChild,
-      mission_name: input.mission_name,
-      mission_description: input.mission_description ?? null,
-      status_name: input.status_name,
-      fk_mission_status_id: STATUS_NAME_TO_ID[input.status_name] ?? 1,
-      scheduled_start: input.scheduled_start || null,
-      actual_end: input.actual_end ?? null,
-      location: input.location ?? null,
-      notes: input.notes ?? null,
-      fk_owner_id: ownerId,
-      fk_pilot_user_id: input.fk_pilot_user_id,
-      fk_tool_id: (input as any).fk_tool_id ?? null,
-      fk_client_id: (input as any).fk_client_id ?? null,
-      fk_planning_id: input.fk_planning_id ?? null,
-      fk_mission_type_id: (input as any).fk_mission_type_id ?? null,
-      fk_mission_category_id: (input as any).fk_mission_category_id ?? null,
-      fk_luc_procedure_id: fkLuc,
-      luc_procedure_progress,
-      luc_completed_at: null,
-    })
-    .select('pilot_mission_id')
-    .single();
+  const rawObserverIds: number[] | null = (input as any).visual_observer_ids ?? null;
+  let visualObservers: { user_id: number; name: string }[] | null = null;
+  if (rawObserverIds?.length) {
+    const { data: observerUsers } = await supabase
+      .from('users')
+      .select('user_id, first_name, last_name')
+      .in('user_id', rawObserverIds);
+    if (observerUsers?.length) {
+      visualObservers = observerUsers.map((u: any) => ({
+        user_id: u.user_id,
+        name: `${u.first_name ?? ''} ${u.last_name ?? ''}`.trim(),
+      }));
+    }
+  }
+
+  const baseInsert = {
+    mission_code: codeToChild,
+    mission_name: input.mission_name,
+    mission_description: input.mission_description ?? null,
+    status_name: input.status_name,
+    fk_mission_status_id: STATUS_NAME_TO_ID[input.status_name] ?? 1,
+    scheduled_start: input.scheduled_start || null,
+    actual_end: input.actual_end ?? null,
+    location: input.location ?? null,
+    notes: input.notes ?? null,
+    fk_owner_id: ownerId,
+    fk_pilot_user_id: input.fk_pilot_user_id,
+    fk_tool_id: (input as any).fk_tool_id ?? null,
+    fk_client_id: (input as any).fk_client_id ?? null,
+    fk_planning_id: input.fk_planning_id ?? null,
+    fk_mission_type_id: (input as any).fk_mission_type_id ?? null,
+    fk_mission_category_id: (input as any).fk_mission_category_id ?? null,
+    fk_luc_procedure_id: fkLuc,
+    luc_procedure_progress,
+    luc_completed_at: null,
+  };
+
+  let inserted: { pilot_mission_id: number } | null = null;
+  let error: any = null;
+
+  if (visualObservers?.length) {
+    const res = await supabase
+      .from('pilot_mission')
+      .insert({ ...baseInsert, mission_metadata: { visual_observers: visualObservers } })
+      .select('pilot_mission_id')
+      .single();
+    inserted = res.data;
+    error = res.error;
+    if (error?.message?.includes('mission_metadata')) {
+      const fallback = await supabase
+        .from('pilot_mission')
+        .insert(baseInsert)
+        .select('pilot_mission_id')
+        .single();
+      inserted = fallback.data;
+      error = fallback.error;
+    }
+  } else {
+    const res = await supabase
+      .from('pilot_mission')
+      .insert(baseInsert)
+      .select('pilot_mission_id')
+      .single();
+    inserted = res.data;
+    error = res.error;
+  }
 
   if (error) throw new Error(`Failed to create operation: ${error.message}`);
+  if (!inserted) throw new Error('Failed to create operation: no row returned');
 
   const full = await getOperation(inserted.pilot_mission_id);
   if (!full) throw new Error('Failed to fetch created operation');
@@ -680,7 +725,7 @@ export async function getToolOptions(ownerId: number) {
 
   const toolIds = tools.map((t: any) => t.tool_id);
 
-  const [{ data: openTickets }, { data: droneComponents }] = await Promise.all([
+  const [{ data: openTickets }, { data: droneComponents }, { data: maintComps }] = await Promise.all([
     supabase
       .from('maintenance_ticket')
       .select('fk_tool_id')
@@ -692,6 +737,11 @@ export async function getToolOptions(ownerId: number) {
       .in('fk_tool_id', toolIds)
       .eq('component_type', 'DRONE')
       .eq('component_active', 'Y'),
+    supabase
+      .from('tool_component')
+      .select('fk_tool_id, maintenance_cycle_day, maintenance_cycle_hour, maintenance_cycle_flight, current_maintenance_days, current_usage_hours, current_maintenance_flights')
+      .in('fk_tool_id', toolIds)
+      .eq('component_active', 'Y'),
   ]);
 
   const inMaintenanceSet = new Set<number>(
@@ -700,11 +750,20 @@ export async function getToolOptions(ownerId: number) {
   const hasDroneSet = new Set<number>(
     (droneComponents ?? []).map((c: any) => c.fk_tool_id)
   );
+  const maintenanceDueSet = new Set<number>();
+  (maintComps ?? []).forEach((c: any) => {
+    if (inMaintenanceSet.has(c.fk_tool_id)) return;
+    const dayDue = c.maintenance_cycle_day > 0 && Number(c.current_maintenance_days) >= Number(c.maintenance_cycle_day);
+    const hourDue = c.maintenance_cycle_hour > 0 && Number(c.current_usage_hours) >= Number(c.maintenance_cycle_hour);
+    const flightDue = c.maintenance_cycle_flight > 0 && Number(c.current_maintenance_flights) >= Number(c.maintenance_cycle_flight);
+    if (dayDue || hourDue || flightDue) maintenanceDueSet.add(c.fk_tool_id);
+  });
 
   return tools.map((t: any) => ({
     ...t,
     in_maintenance: inMaintenanceSet.has(t.tool_id),
     has_drone_component: hasDroneSet.has(t.tool_id),
+    maintenance_due: maintenanceDueSet.has(t.tool_id),
   }));
 }
 

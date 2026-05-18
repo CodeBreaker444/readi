@@ -201,7 +201,7 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
     setFormData(prev => ({ ...prev, maintenance_cycle: value, maintenance_cycle_hour: '', maintenance_cycle_day: '', maintenance_cycle_flight: '' }));
   };
 
-  const handleCycleInput = (field: string, value: string) => {
+  const handleCycleInput = (field: keyof typeof INITIAL_FORM, value: string) => {
     if (value === '' || Number(value) >= 0) handleChange(field, value);
   };
 

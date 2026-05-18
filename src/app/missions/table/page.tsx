@@ -61,6 +61,7 @@ export interface Operation {
   category_name?: string | null;
   type_name?: string | null;
   planning_name?: string | null;
+  visual_observer_ids?: Array<{ user_id: number; name: string }> | null;
   created_at: string;
   updated_at: string;
 }

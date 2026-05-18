@@ -624,6 +624,7 @@ function buildComponentListResult(data: any[]) {
       latitude: item.component_metadata?.latitude ?? null,
       longitude: item.component_metadata?.longitude ?? null,
       drone_classes: item.component_metadata?.drone_classes ?? null,
+      is_primary: item.component_metadata?.is_primary ?? false,
     })),
   };
 }

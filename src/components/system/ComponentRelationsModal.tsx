@@ -12,10 +12,8 @@ import { toast } from 'sonner';
 interface Props {
   open: boolean;
   onClose: () => void;
-  /** Pass a toolId to scope to one system, or omit to let user pick */
   toolId?: number | null;
   toolCode?: string;
-  /** All tools, for optional system picker */
   tools: any[];
   onSuccess?: () => void;
 }
@@ -27,6 +25,7 @@ interface ComponentRow {
   component_type: string;
   fk_parent_component_id: number | null;
   fk_tool_id: number;
+  is_primary?: boolean;
 }
 
 export default function ComponentRelationsModal({ open, onClose, toolId, toolCode, tools, onSuccess }: Props) {
@@ -36,6 +35,8 @@ export default function ComponentRelationsModal({ open, onClose, toolId, toolCod
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [relations, setRelations] = useState<Record<number, number | null>>({});
+  const [primaryId, setPrimaryId] = useState<number | null>(null);
+  const [savedPrimaryId, setSavedPrimaryId] = useState<number | null>(null);
 
   const bg = isDark ? 'bg-[#0f1419] border-white/[0.08]' : 'bg-white';
   const text = isDark ? 'text-slate-200' : 'text-slate-800';
@@ -55,6 +56,8 @@ export default function ComponentRelationsModal({ open, onClose, toolId, toolCod
     } else if (!open) {
       setComponents([]);
       setRelations({});
+      setPrimaryId(null);
+      setSavedPrimaryId(null);
       setSelectedTid(null);
       setSelectedTCode('');
     }
@@ -75,6 +78,9 @@ export default function ComponentRelationsModal({ open, onClose, toolId, toolCod
         const initial: Record<number, number | null> = {};
         comps.forEach(c => { initial[c.tool_component_id] = c.fk_parent_component_id ?? null; });
         setRelations(initial);
+        const initialPrimary = comps.find(c => c.is_primary)?.tool_component_id ?? null;
+        setPrimaryId(initialPrimary);
+        setSavedPrimaryId(initialPrimary);
       } else {
         toast.error(t('systems.components.relations.toasts.loadFailed'));
       }
@@ -115,15 +121,16 @@ export default function ComponentRelationsModal({ open, onClose, toolId, toolCod
       const updated = relations[c.tool_component_id] ?? null;
       return original !== updated;
     });
+    const primaryChanged = primaryId !== savedPrimaryId;
 
-    if (dirtyComponents.length === 0) {
+    if (dirtyComponents.length === 0 && !primaryChanged) {
       toast.info(t('systems.components.relations.buttons.noChangesToSave'));
       setSaving(false);
       return;
     }
 
     try {
-      const results = await Promise.allSettled(
+      const relationResults = await Promise.allSettled(
         dirtyComponents.map(c =>
           fetch(`/api/system/component/${c.tool_component_id}/update`, {
             method: 'POST',
@@ -137,11 +144,34 @@ export default function ComponentRelationsModal({ open, onClose, toolId, toolCod
         )
       );
 
-      const failed = results.filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && r.value?.code !== 1));
+      if (primaryChanged) {
+        const primaryUpdates: Promise<any>[] = [];
+        if (savedPrimaryId !== null) {
+          primaryUpdates.push(
+            fetch(`/api/system/component/${savedPrimaryId}/primary`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ is_primary: false }),
+            })
+          );
+        }
+        if (primaryId !== null) {
+          primaryUpdates.push(
+            fetch(`/api/system/component/${primaryId}/primary`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ is_primary: true }),
+            })
+          );
+        }
+        await Promise.allSettled(primaryUpdates);
+      }
+
+      const failed = relationResults.filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && r.value?.code !== 1));
       if (failed.length > 0) {
         toast.error(t('systems.components.relations.toasts.failedCount', { count: failed.length }));
       } else {
-        toast.success(t('systems.components.relations.toasts.savedCount', { count: dirtyComponents.length }));
+        toast.success(t('systems.components.relations.toasts.savedCount', { count: dirtyComponents.length + (primaryChanged ? 1 : 0) }));
         onSuccess?.();
         await loadComponents(selectedTid!);
       }
@@ -160,7 +190,7 @@ export default function ComponentRelationsModal({ open, onClose, toolId, toolCod
     const orig = c.fk_parent_component_id ?? null;
     const curr = relations[c.tool_component_id] ?? null;
     return orig !== curr;
-  }).length;
+  }).length + (primaryId !== savedPrimaryId ? 1 : 0);
 
   return (
     <Dialog open={open} onOpenChange={o => { if (!o) onClose(); }}>
@@ -210,8 +240,44 @@ export default function ComponentRelationsModal({ open, onClose, toolId, toolCod
         )}
 
         <div className="flex flex-1 overflow-hidden min-h-0">
-          {/* Left: relation editor */}
           <div className="flex-1 overflow-y-auto px-5 py-4 space-y-2 border-r border-dashed border-slate-200 dark:border-slate-700">
+            {components.length > 0 && (
+              <div className={`rounded-lg border px-3 py-2.5 mb-3 ${isDark ? 'bg-violet-900/20 border-violet-700/40' : 'bg-violet-50 border-violet-200'}`}>
+                <p className={`text-[10px] uppercase tracking-widest font-semibold mb-2 ${isDark ? 'text-violet-400' : 'text-violet-600'}`}>
+                  {t('systems.components.relations.primaryComponent')}
+                </p>
+                <Select
+                  value={primaryId ? String(primaryId) : '_none'}
+                  onValueChange={v => setPrimaryId(v === '_none' ? null : Number(v))}
+                >
+                  <SelectTrigger className={`h-8 text-xs w-full ${selectCls}`}>
+                    <SelectValue placeholder={t('systems.components.relations.primaryComponentPlaceholder')}>
+                      {primaryId
+                        ? (() => {
+                            const p = components.find(x => x.tool_component_id === primaryId);
+                            return p ? <span className="truncate">{label(p)}</span> : null;
+                          })()
+                        : <span className={`italic ${muted}`}>{t('systems.components.relations.primaryComponentNone')}</span>}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className={`${selectContentCls} text-xs`}>
+                    <SelectItem value="_none">
+                      <span className={`italic ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                        {t('systems.components.relations.primaryComponentNone')}
+                      </span>
+                    </SelectItem>
+                    {components.map(c => (
+                      <SelectItem key={c.tool_component_id} value={String(c.tool_component_id)}>
+                        <div className="flex flex-col leading-tight">
+                          <span className="font-medium">{label(c)}</span>
+                          <span className={`text-[10px] ${muted}`}>{c.component_type}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <p className={`text-[10px] uppercase tracking-widest font-semibold mb-3 ${muted}`}>
               {t('systems.components.relations.componentAssignments', { count: components.length })}
             </p>
@@ -298,7 +364,6 @@ export default function ComponentRelationsModal({ open, onClose, toolId, toolCod
             )}
           </div>
 
-          {/* Right: live tree preview */}
           <div className={`w-64 shrink-0 overflow-y-auto px-4 py-4 ${isDark ? 'bg-slate-900/30' : 'bg-slate-50/60'}`}>
             <p className={`text-[10px] uppercase tracking-widest font-semibold mb-3 ${muted}`}>
               {t('systems.components.relations.livePreview')}
@@ -314,6 +379,11 @@ export default function ComponentRelationsModal({ open, onClose, toolId, toolCod
                       <div className={`flex items-center gap-2 rounded-md px-2 py-1.5 ${isDark ? 'bg-slate-800 border border-slate-700' : 'bg-white border border-slate-200'}`}>
                         <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${kids.length > 0 ? 'bg-violet-500' : 'bg-slate-300'}`} />
                         <span className={`text-[11px] font-medium truncate ${text}`}>{label(c)}</span>
+                        {primaryId === c.tool_component_id && (
+                          <span className={`text-[9px] px-1 py-0.5 rounded font-semibold shrink-0 ${isDark ? 'bg-violet-800 text-violet-300' : 'bg-violet-100 text-violet-700'}`}>
+                            {t('systems.components.relations.primaryTag')}
+                          </span>
+                        )}
                       </div>
                       {kids.map(kid => (
                         <div key={kid.tool_component_id} className="ml-4 mt-1">

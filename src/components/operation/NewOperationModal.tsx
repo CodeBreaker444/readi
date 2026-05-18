@@ -107,6 +107,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
 
     const [pilots, setPilots] = useState<PilotOption[]>([])
     const [pilotId, setPilotId] = useState('')
+    const [visualObserverIds, setVisualObserverIds] = useState<string[]>([])
 
     const [erps, setErps] = useState<EmergencyResponsePlan[]>([])
     const [loadingErps, setLoadingErps] = useState(false)
@@ -167,6 +168,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
         setClientId(editOperation.fk_client_id?.toString() ?? '')
         setDroneId(editOperation.fk_tool_id?.toString() ?? '')
         setPilotId(editOperation.fk_pilot_user_id?.toString() ?? '')
+        setVisualObserverIds((editOperation.visual_observer_ids ?? []).map(o => String(o.user_id)))
         setPlanId(editOperation.fk_planning_id?.toString() ?? '')
         setOpType(editOperation.fk_planning_id ? 'PDRA' : 'OPEN')
         setSchedulerForm({
@@ -302,7 +304,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
     function resetForm() {
         setStep(1); setEditTab('data'); setIsSubmitting(false)
         setClientId(''); setOpType('OPEN'); setDroneId(''); setPlanId(''); setFlightMode('RC')
-        setPilotId(''); setDrones([]); setClients([]); setPlannings([])
+        setPilotId(''); setVisualObserverIds([]); setDrones([]); setClients([]); setPlannings([])
         setTypes([]); setCategories([]); setLucProcedures([]); setPilots([])
         setExistingMissionCodes(new Set()); setGeneratingId(false)
         setConflicts([]); setConflictChecked(false)
@@ -387,6 +389,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                 notes: schedulerForm.notes || undefined,
                 distance_flown: schedulerForm.distanceFlown !== '' ? parseFloat(schedulerForm.distanceFlown) : null,
                 status_name: 'PLANNED',
+                ...(visualObserverIds.length > 0 && { visual_observer_ids: visualObserverIds.map(Number) }),
                 ...(schedulerForm.isRecurring && {
                     is_recurring: true,
                     days_of_week: schedulerForm.daysOfWeek,
@@ -574,6 +577,9 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                             pilots={pilots}
                             pilotId={pilotId}
                             onPilotChange={setPilotId}
+                            visualObserverIds={visualObserverIds}
+                            onVisualObserverChange={setVisualObserverIds}
+                            loadingOptions={loadingOptions}
                             isDark={isDark}
                             summary={{
                                 clientName: selectedClient?.client_name,

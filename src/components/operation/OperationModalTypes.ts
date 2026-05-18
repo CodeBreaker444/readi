@@ -1,7 +1,7 @@
 import { CalendarClock, Settings, User } from 'lucide-react'
 
 export interface Client { client_id: number; client_name: string; client_code: string }
-export interface Drone { tool_id: number; tool_code: string; tool_name: string; in_maintenance?: boolean }
+export interface Drone { tool_id: number; tool_code: string; tool_name: string; in_maintenance?: boolean; maintenance_due?: boolean }
 export interface PlanningOption { planning_id: number; planning_name: string; fk_client_id: number; client_name: string }
 export interface GenericOption { id: number; label: string }
 export interface LucOption { id: number; label: string; steps?: any }

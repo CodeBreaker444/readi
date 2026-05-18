@@ -44,6 +44,7 @@ const createOperationSchema = z.object({
   fk_mission_category_id: z.number().int().positive().nullable().optional(),
   fk_luc_procedure_id: z.number().int().positive(),
   actual_end: z.string().nullable().optional(),
+  visual_observer_ids: z.array(z.number().int().positive()).optional().nullable(),
 });
 
 const createRecurringSchema = z.object({

@@ -1,7 +1,7 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { notifyDccAcceptance } from '@/backend/services/mission/dcc-callback-service';
-import { deleteOperation, getOperation, updateOperation } from '@/backend/services/operation/operation-service';
 import { notifyPilotAssignment } from '@/backend/services/notification/notification-service';
+import { deleteOperation, getOperation, updateOperation } from '@/backend/services/operation/operation-service';
 import { UpdateOperationSchema } from '@/config/types/operation';
 import { internalError, notFound, zodError } from '@/lib/api-error';
 import { requirePermission } from '@/lib/auth/api-auth';
@@ -18,7 +18,7 @@ const flexibleDatetime = z.string().refine(
 
 const updateOperationSchema = z.object({
   mission_code: z.string().min(1).optional(),
-  mission_name: z.string().min(1).optional(),
+  mission_name: z.string().optional(),
   mission_description: z.string().nullable().optional(),
   scheduled_start: flexibleDatetime.nullable().optional(),
   actual_start: flexibleDatetime.nullable().optional(),

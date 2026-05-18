@@ -31,6 +31,7 @@ export function OperationStepDrone({
 }: Props) {
     const { t } = useTranslation()
     const allInMaintenance = drones.length > 0 && drones.every(d => d.in_maintenance)
+    const anyMaintenanceDue = drones.some(d => d.maintenance_due && !d.in_maintenance)
 
     return (
         <div className="space-y-4">
@@ -82,7 +83,12 @@ export function OperationStepDrone({
                                     <span>{d.tool_code} — {d.tool_name}</span>
                                     {d.in_maintenance && (
                                         <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 leading-none">
-                                            MAINTENANCE
+                                            {t('operations.newOperation.drone.maintenanceTag')}
+                                        </span>
+                                    )}
+                                    {!d.in_maintenance && d.maintenance_due && (
+                                        <span className="text-[10px] font-semibold text-orange-600 bg-orange-50 border border-orange-200 rounded px-1.5 py-0.5 leading-none">
+                                            {t('operations.newOperation.drone.maintenanceDueTag')}
                                         </span>
                                     )}
                                 </span>
@@ -94,6 +100,12 @@ export function OperationStepDrone({
                     <p className="mt-1.5 text-xs text-amber-600 flex items-center gap-1">
                         <AlertTriangle className="h-3 w-3 shrink-0" />
                         {t('operations.newOperation.drone.allInMaintenanceWarning')}
+                    </p>
+                )}
+                {anyMaintenanceDue && !allInMaintenance && (
+                    <p className="mt-1.5 text-xs text-orange-600 flex items-center gap-1">
+                        <AlertTriangle className="h-3 w-3 shrink-0" />
+                        {t('operations.newOperation.drone.maintenanceDueWarning')}
                     </p>
                 )}
             </div>
