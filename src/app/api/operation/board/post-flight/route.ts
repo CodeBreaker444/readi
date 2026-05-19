@@ -1,4 +1,4 @@
-import { getPostFlightData, updatePostFlightData } from "@/backend/services/mission/post-flight-service";
+import { getPostFlightData, updatePostFlightData, upsertMissionResult } from "@/backend/services/mission/post-flight-service";
 import { getMissionResultList } from "@/backend/services/mission/result-service";
 import { apiError, dbError, internalError, notFound, zodError } from "@/lib/api-error";
 import { requirePermission } from "@/lib/auth/api-auth";
@@ -86,6 +86,17 @@ export async function POST(req: NextRequest) {
 
   try {
     await updatePostFlightData(mission_id, payload);
+
+    if (fields.fk_mission_result_type_id) {
+      await upsertMissionResult(mission_id, fields.fk_mission_result_type_id, {
+        flight_duration: fields.flight_duration ?? null,
+        distance_flown: fields.distance_flown ?? null,
+        battery_charge_start: fields.battery_charge_start ?? null,
+        battery_charge_end: fields.battery_charge_end ?? null,
+        notes: fields.notes ?? null,
+      });
+    }
+
     return NextResponse.json({ code: 1, message: "Post-flight data saved successfully" });
   } catch (err) {
     const supaErr = err as { code?: string } | null;
