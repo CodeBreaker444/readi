@@ -10,6 +10,7 @@ import { useTheme } from '@/components/useTheme';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import LocationPicker from './LocationPicker';
 
 const INITIAL_FORM = {
   tool_code: '', tool_description: '',
@@ -106,14 +107,16 @@ export default function AddSystemModal({ open, onClose, onSuccess, models, clien
 
           <div>
             <p className={sectionLabelCls}>{t('systems.components.addSystem.sections.location')}</p>
-            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-              <div className="col-span-1 sm:col-span-3"><Label className={labelCls}>{t('systems.components.addSystem.fields.latitude')}</Label>
-                <Input className={inputCls} value={formData.latitude} onChange={e => handleChange('latitude', e.target.value)} />
-              </div>
-              <div className="col-span-1 sm:col-span-3"><Label className={labelCls}>{t('systems.components.addSystem.fields.longitude')}</Label>
-                <Input className={inputCls} value={formData.longitude} onChange={e => handleChange('longitude', e.target.value)} />
-              </div>
-            </div>
+            <LocationPicker
+              lat={formData.latitude}
+              lng={formData.longitude}
+              isDark={isDark}
+              onChange={(lat, lng, label) => {
+                handleChange('latitude', lat);
+                handleChange('longitude', lng);
+                if (label !== undefined) handleChange('location', label);
+              }}
+            />
           </div>
 
           <div>

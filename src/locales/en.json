@@ -3819,7 +3819,8 @@
         "manageClasses": "Manage classes",
         "location": "Location",
         "locationOptional": "Location (optional)",
-        "locationUpdated": "Location updated →"
+        "locationUpdated": "Location updated →",
+        "locationSearchPlaceholder": "e.g. Piazza Navona, Roma"
       },
       "editSystem": {
         "title": "Edit System",

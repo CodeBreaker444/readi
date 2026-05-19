@@ -13,6 +13,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Skeleton } from '../ui/skeleton';
+import LocationPicker from './LocationPicker';
 
 interface EditSystemModalProps {
   open: boolean;
@@ -287,16 +288,16 @@ export default function EditSystemModal({ open, toolId, onClose, onSuccess, clie
 
               <div>
                 <p className={sectionLabelCls}>{t('systems.components.editSystem.sections.location')}</p>
-                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-                  <div className="col-span-1 sm:col-span-3">
-                    <Label className={labelCls}>{t('systems.components.editSystem.fields.latitude')}</Label>
-                    <Input className={inputCls} value={formData.tool_latitude} onChange={e => handleChange('tool_latitude', e.target.value)} />
-                  </div>
-                  <div className="col-span-1 sm:col-span-3">
-                    <Label className={labelCls}>{t('systems.components.editSystem.fields.longitude')}</Label>
-                    <Input className={inputCls} value={formData.tool_longitude} onChange={e => handleChange('tool_longitude', e.target.value)} />
-                  </div>
-                </div>
+                <LocationPicker
+                  lat={formData.tool_latitude}
+                  lng={formData.tool_longitude}
+                  isDark={isDark}
+                  onChange={(lat, lng, label) => {
+                    handleChange('tool_latitude', lat);
+                    handleChange('tool_longitude', lng);
+                    if (label !== undefined) handleChange('location', label);
+                  }}
+                />
               </div>
 
               <div>

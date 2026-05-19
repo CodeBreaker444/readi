@@ -5,13 +5,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
 import axios from 'axios';
 import { Loader2, Pencil, RotateCcw } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import LocationPicker from './LocationPicker';
 import { ManageComponentTypesModal } from './ManageComponentTypesModal';
-import { DroneClassRow } from './ManageDroneClassesModal';
+import { DroneClassRow, ManageDroneClassesModal } from './ManageDroneClassesModal';
 
 interface AddComponentModalProps {
   open: boolean;
@@ -154,6 +156,15 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
 
     useEffect(() => { reload(); }, [reload]);
 
+  const reloadDroneClasses = useCallback(async () => {
+    setDroneClassesLoading(true);
+    try {
+      const { data } = await axios.get('/api/system/drone-classes');
+      if (data.code === 1) setDroneClasses(data.data ?? []);
+    } catch { /* non-fatal */ } finally { setDroneClassesLoading(false); }
+  }, []);
+  useEffect(() => { reloadDroneClasses(); }, [reloadDroneClasses]);
+
 
   const handleChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -233,6 +244,9 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
         maintenance_cycle_flight: formData.maintenance_cycle_flight ? Number(formData.maintenance_cycle_flight) : null,
         battery_cycle_ratio: formData.battery_cycle_ratio ? Number(formData.battery_cycle_ratio) : null,
         fk_parent_component_id: formData.fk_parent_component_id ? Number(formData.fk_parent_component_id) : null,
+        latitude: formData.latitude ? Number(formData.latitude) : null,
+        longitude: formData.longitude ? Number(formData.longitude) : null,
+        drone_classes: formData.drone_classes.length > 0 ? formData.drone_classes : null,
       };
 
       const response = await axios.post('/api/system/component/add', payload);
@@ -426,6 +440,49 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
               </div>
             )}
 
+            {formData.component_type === 'DRONE' && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5">
+                  <Label className="pb-0">{t('systems.components.common.droneClasses')} <span className="font-normal opacity-60 text-xs">{t('systems.components.common.optional')}</span></Label>
+                  <button type="button" onClick={() => setShowManageClasses(true)} className="text-slate-400 hover:text-violet-600 transition-colors" title={t('systems.components.common.manageClasses')}>
+                    <Pencil className="h-3 w-3" />
+                  </button>
+                </div>
+                {droneClassesLoading ? (
+                  <div className="flex flex-wrap gap-2">
+                    {[72, 88, 64, 80, 76].map(w => (
+                      <Skeleton key={w} className="h-7 rounded-full" style={{ width: w }} />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {droneClasses.map(dc => {
+                      const selected = formData.drone_classes.includes(dc.class_value);
+                      return (
+                        <button
+                          key={dc.class_id}
+                          type="button"
+                          onClick={() => {
+                            const next = selected
+                              ? formData.drone_classes.filter((v: string) => v !== dc.class_value)
+                              : [...formData.drone_classes, dc.class_value];
+                            setFormData(prev => ({ ...prev, drone_classes: next }));
+                          }}
+                          className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                            selected
+                              ? 'bg-violet-600 border-violet-600 text-white'
+                              : 'bg-white border-slate-300 text-slate-600 hover:border-violet-400 hover:text-violet-600'
+                          }`}
+                        >
+                          {dc.class_value} — {dc.class_label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
             <div>
               <div className="flex items-center justify-between mb-2">
                 <p className="text-sm font-medium text-muted-foreground">{t('systems.components.common.maintenanceCycle.label')}</p>
@@ -489,6 +546,18 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
               </div>
             </div>
 
+            <div className="space-y-1">
+              <p className="text-sm font-medium mb-2 text-muted-foreground">{t('systems.components.common.locationOptional')}</p>
+              <LocationPicker
+                lat={formData.latitude}
+                lng={formData.longitude}
+                onChange={(lat, lng) => {
+                  handleChange('latitude', lat);
+                  handleChange('longitude', lng);
+                }}
+              />
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 overflow-visible mt-2">
               <div className="col-span-1 sm:col-span-3">
                 <Label className="pb-2">{t('systems.components.addComponent.fields.activationDate')}</Label>
@@ -538,6 +607,13 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
         onClose={() => setShowManageTypes(false)}
         types={types}
         onReload={reload}
+        isDark={false}
+      />
+      <ManageDroneClassesModal
+        open={showManageClasses}
+        onClose={() => setShowManageClasses(false)}
+        classes={droneClasses}
+        onReload={reloadDroneClasses}
         isDark={false}
       />
     </>

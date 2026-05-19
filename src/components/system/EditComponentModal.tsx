@@ -12,7 +12,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Skeleton } from '../ui/skeleton';
-import LocationMapPicker from '@/components/LocationMapPicker';
+import LocationPicker from '@/components/system/LocationPicker';
 import { ManageComponentTypesModal } from './ManageComponentTypesModal';
 import { DroneClassRow, ManageDroneClassesModal } from './ManageDroneClassesModal';
 
@@ -539,7 +539,11 @@ export default function EditComponentModal({
                       </button>
                     </div>
                     {droneClassesLoading ? (
-                      <span className={`text-xs ${isDark ? 'text-slate-400' : 'text-muted-foreground'}`}>{t('systems.components.common.loading')}</span>
+                      <div className="flex flex-wrap gap-2">
+                        {[72, 88, 64, 80, 76].map(w => (
+                          <Skeleton key={w} className="h-7 rounded-full" style={{ width: w }} />
+                        ))}
+                      </div>
                     ) : (
                       <div className="flex flex-wrap gap-2">
                         {droneClasses.map(dc => {
@@ -609,12 +613,11 @@ export default function EditComponentModal({
 
                 <div className="space-y-1">
                   <p className={sectionLabelCls}>{t('systems.components.common.locationOptional')}</p>
-                  <LocationMapPicker
-                    latitude={formData.latitude}
-                    longitude={formData.longitude}
-                    onLatChange={v => setFormData(prev => ({ ...prev, latitude: v }))}
-                    onLonChange={v => setFormData(prev => ({ ...prev, longitude: v }))}
+                  <LocationPicker
+                    lat={formData.latitude}
+                    lng={formData.longitude}
                     isDark={isDark}
+                    onChange={(lat, lng) => setFormData(prev => ({ ...prev, latitude: lat, longitude: lng }))}
                   />
                 </div>
 

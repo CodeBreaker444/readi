@@ -3811,7 +3811,8 @@
         "manageClasses": "Gestisci classi",
         "location": "Posizione",
         "locationOptional": "Posizione (opzionale)",
-        "locationUpdated": "Posizione aggiornata →"
+        "locationUpdated": "Posizione aggiornata →",
+        "locationSearchPlaceholder": "es. Piazza Navona, Roma"
       },
       "editSystem": {
         "title": "Modifica Sistema",

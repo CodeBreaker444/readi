@@ -3732,7 +3732,8 @@
         "manageClasses": "Klassen verwalten",
         "location": "Standort",
         "locationOptional": "Standort (optional)",
-        "locationUpdated": "Standort aktualisiert →"
+        "locationUpdated": "Standort aktualisiert →",
+        "locationSearchPlaceholder": "z.B. Piazza Navona, Rom"
       },
       "editSystem": {
         "title": "System bearbeiten",
