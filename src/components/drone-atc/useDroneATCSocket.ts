@@ -37,8 +37,9 @@ export type ConnectionStatus = 'idle' | 'connecting' | 'connected' | 'error' | '
 
 function isDockDevice(item: Pick<TelemetryData, 'model' | 'device_type'>): boolean {
   return (
-    item.model=== 'Dock2v1' ||
-    item.device_type === 'DockingStation'
+    item.model === 'Dock2v1' ||
+    item.device_type === 'DockingStation' ||
+    item.device_type === 'DOCK'
   );
 }
 
@@ -128,16 +129,26 @@ export function useDroneATCSocket(): UseDroneATCSocketReturn {
         const id = incoming.drone_id ?? payload.droneId;
         if (!id) return;
 
-        const update = { ...incoming, drone_id: id };
+        const update = {
+          ...incoming,
+          drone_id: id,
+          pilot_name: incoming.user_details?.fullname ?? incoming.pilot_name,
+        };
 
         setDrones(prev => {
-          if (id in prev) return { ...prev, [id]: { ...prev[id], ...update } };
+          if (id in prev) {
+            const existing = prev[id];
+            return { ...prev, [id]: { ...existing, ...update, pilot_name: existing.pilot_name ?? update.pilot_name } };
+          }
           if (!isDockDevice(update)) return { ...prev, [id]: update };
           return prev;
         });
 
         setDocks(prev => {
-          if (id in prev) return { ...prev, [id]: { ...prev[id], ...update } };
+          if (id in prev) {
+            const existing = prev[id];
+            return { ...prev, [id]: { ...existing, ...update, pilot_name: existing.pilot_name ?? update.pilot_name } };
+          }
           if (isDockDevice(update)) return { ...prev, [id]: update };
           return prev;
         });

@@ -39,17 +39,32 @@ export async function GET() {
     }
 
     const data = await res.json();
-    console.log('[fleet/overview] raw:', JSON.stringify(data).slice(0, 500));
-console.log('res:',data);
 
-    const rawItems: Record<string, unknown>[] = Array.isArray(data.drones) ? data.drones : [];
+    type GroupedEntry = { pilot_name?: string; pilot_email?: string; drones?: Record<string, unknown>[] };
+    const grouped: GroupedEntry[] = Array.isArray(data.grouped) ? data.grouped : [];
 
-    const items = rawItems.map((item) => ({
-      ...item,
-      drone_id: item.flytbase_id ?? item.drone_id,
-      name: item.tool_name ?? item.name,
-      model: item.tool_name ?? item.model,
-    }));
+    let items: Record<string, unknown>[];
+
+    if (grouped.length > 0) {
+      items = grouped.flatMap((group) =>
+        (group.drones ?? []).map((drone) => ({
+          ...drone,
+          drone_id: drone.flytbase_id ?? drone.drone_id,
+          name: drone.tool_name ?? drone.name,
+          model: drone.tool_name ?? drone.model,
+          pilot_name: group.pilot_name,
+          pilot_email: group.pilot_email,
+        }))
+      );
+    } else {
+      const rawItems: Record<string, unknown>[] = Array.isArray(data.drones) ? data.drones : [];
+      items = rawItems.map((drone) => ({
+        ...drone,
+        drone_id: drone.flytbase_id ?? drone.drone_id,
+        name: drone.tool_name ?? drone.name,
+        model: drone.tool_name ?? drone.model,
+      }));
+    }
 
     return NextResponse.json({ items, role, companyId: ownerId });
   } catch (err) {
