@@ -40,6 +40,7 @@ export interface CreateClientInput {
   client_email: string;
   client_website?: string;
   username: string;
+  password?: string;
   contract_start_date?: string;
   contract_end_date?: string;
   payment_terms?: string;
@@ -94,12 +95,14 @@ export async function checkClientUsername(
   return { available, similar };
 }
 
-export async function addClient(input: CreateClientInput): Promise<{ code: number; data?: ClientData; error?: string }> {
+export async function addClient(input: CreateClientInput): Promise<{ code: number; data?: ClientData; temp_password?: string; error?: string }> {
   try {
-    const { username, ...clientFields } = input;
-    const temp_password = Array.from(crypto.getRandomValues(new Uint8Array(12)))
-      .map((b) => 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'[b % 62])
-      .join('');
+    const { username, password, ...clientFields } = input;
+    const temp_password = password?.trim() ||
+      Array.from(crypto.getRandomValues(new Uint8Array(12)))
+        .map((b) => 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'[b % 62])
+        .join('');
+    const activationKey = crypto.randomUUID().replace(/-/g, '');
 
     if (clientFields.client_code) {
       const { data: existing } = await supabase
@@ -173,6 +176,8 @@ export async function addClient(input: CreateClientInput): Promise<{ code: numbe
         fk_client_id: clientRow.client_id,
         username,
         password_hash: passwordHash,
+        user_active: 'N',
+        _key_: activationKey,
       })
       .eq('auth_user_id', authData.user.id);
 
@@ -183,16 +188,17 @@ export async function addClient(input: CreateClientInput): Promise<{ code: numbe
     }
     // user_settings already seeded by initialize_user_settings() in the trigger
 
-    // Send invitation email (best-effort — don't fail the whole request if email fails)
-    const loginUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'}/auth/login`;
+    // Send activation email with link — client must click to activate their account
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+    const activationLink = `${appUrl}/auth/activate?o=${clientFields.fk_owner_id}&email=${encodeURIComponent(email)}&username=${encodeURIComponent(username)}&id=${activationKey}`;
     sendUserActivationEmail(clientFields.client_email, clientFields.client_name, {
       organization: 'ReADI',
       username,
       passcode: temp_password,
-      loginlink: loginUrl,
+      loginlink: activationLink,
     }).catch(() => {});
 
-    return { code: 1, data: clientRow as ClientData };
+    return { code: 1, data: clientRow as ClientData, temp_password };
   } catch (e: any) {
     return { code: 0, error: e.message };
   }

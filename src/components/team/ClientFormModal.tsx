@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import axios from 'axios';
-import { CheckCircle2, Loader2, XCircle } from 'lucide-react';
+import { CheckCircle2, Copy, Eye, EyeOff, Loader2, RefreshCw, XCircle } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { ClientData } from '../tables/ClientColumn';
@@ -96,7 +96,15 @@ export function ClientFormModal({ isOpen, onClose, mode, clientData, onSubmit, i
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [usernameStatus, setUsernameStatus] = useState<UsernameStatus>('idle');
+  const [generatedPassword, setGeneratedPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [copied, setCopied] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const makePassword = () =>
+    Array.from(crypto.getRandomValues(new Uint8Array(12)))
+      .map((b) => 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'[b % 62])
+      .join('');
 
   // Reset form when modal opens
   useEffect(() => {
@@ -114,6 +122,9 @@ export function ClientFormModal({ isOpen, onClose, mode, clientData, onSubmit, i
           : defaultForm
       );
       setUsernameStatus('idle');
+      setGeneratedPassword(mode === 'add' ? makePassword() : '');
+      setShowPassword(false);
+      setCopied(false);
     }
   }, [isOpen, clientData]);
 
@@ -187,6 +198,7 @@ export function ClientFormModal({ isOpen, onClose, mode, clientData, onSubmit, i
     try {
       await onSubmit({
         ...formData,
+        password: mode === 'add' ? generatedPassword : undefined,
         credit_limit: formData.credit_limit ? parseFloat(formData.credit_limit) : undefined,
         contract_start_date: formData.contract_start_date || undefined,
         contract_end_date: formData.contract_end_date || undefined,
@@ -196,6 +208,12 @@ export function ClientFormModal({ isOpen, onClose, mode, clientData, onSubmit, i
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(generatedPassword);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   const inputClass = `h-9 text-sm ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200 placeholder:text-slate-600' : ''}`;
@@ -304,7 +322,42 @@ export function ClientFormModal({ isOpen, onClose, mode, clientData, onSubmit, i
                   />
                   {usernameHint()}
                 </div>
-               
+                <div>
+                  <label className={labelClass}>Temporary Password</label>
+                  <div className="flex items-center gap-1.5">
+                    <div className={`flex flex-1 items-center h-9 rounded-md border px-3 text-sm font-mono tracking-wider ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-800'}`}>
+                      {showPassword ? generatedPassword : '•'.repeat(generatedPassword.length)}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                      className={`h-9 w-9 flex items-center justify-center rounded-md border ${isDark ? 'border-slate-700 hover:bg-slate-700 text-slate-400' : 'border-slate-200 hover:bg-slate-100 text-slate-500'}`}
+                    >
+                      {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleCopy}
+                      title="Copy password"
+                      className={`h-9 w-9 flex items-center justify-center rounded-md border transition-colors ${
+                        copied
+                          ? 'border-emerald-500 bg-emerald-500 text-white'
+                          : isDark ? 'border-slate-700 hover:bg-slate-700 text-slate-400' : 'border-slate-200 hover:bg-slate-100 text-slate-500'
+                      }`}
+                    >
+                      <Copy size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setCopied(false); setGeneratedPassword(makePassword()); }}
+                      title="Regenerate password"
+                      className={`h-9 w-9 flex items-center justify-center rounded-md border ${isDark ? 'border-slate-700 hover:bg-slate-700 text-slate-400' : 'border-slate-200 hover:bg-slate-100 text-slate-500'}`}
+                    >
+                      <RefreshCw size={14} />
+                    </button>
+                  </div>
+                  {copied && <span className="text-[11px] text-emerald-500 mt-1 block">Copied to clipboard!</span>}
+                </div>
               </div>
             </div>
           )}
