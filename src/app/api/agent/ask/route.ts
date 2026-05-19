@@ -329,6 +329,6 @@ export async function POST(req: NextRequest) {
 
     } catch (error: any) {
         console.error("Agent Error:", error);
-      return internalError(E.AU001, error);
+      return internalError(E.SV001, error);
     }
 }
