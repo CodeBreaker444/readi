@@ -1,6 +1,6 @@
 'use client';
 
-import LocationMapPicker from '@/components/LocationMapPicker';
+import LocationPicker from '@/components/system/LocationPicker';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -257,11 +257,10 @@ export function NewTicketModal({
           </Field>
 
           <Field label={t('systems.maintenanceLogbook.modals.newTicket.location')}>
-            <LocationMapPicker
-              latitude={form.latitude}
-              longitude={form.longitude}
-              onLatChange={v => onFormChange({ latitude: v })}
-              onLonChange={v => onFormChange({ longitude: v })}
+            <LocationPicker
+              lat={form.latitude}
+              lng={form.longitude}
+              onChange={(lat, lng) => onFormChange({ latitude: lat, longitude: lng })}
               isDark={isDark}
             />
           </Field>
