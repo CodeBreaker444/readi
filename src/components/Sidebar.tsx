@@ -237,7 +237,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
       icon: HiOutlineUsers,
       subItems: [
         { name: t('sidebar.personnel'), href: '/team/personnel' },
-        { name: t('sidebar.crewShift'), href: '/team/crew-shift' },
+        // { name: t('sidebar.crewShift'), href: '/team/crew-shift' },
         { name: t('sidebar.client'), href: '/team/client' },
       ],
     },
