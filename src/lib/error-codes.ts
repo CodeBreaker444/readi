@@ -75,6 +75,9 @@ export const E = {
   /** getUserSession threw an unexpected exception. */
   AU011: { code: 'AU011', category: 'Authentication', message: 'Authentication required', detail: 'getUserSession: unexpected exception in session retrieval (cookie store error, etc.).' },
 
+  /** Login — CLIENT user's linked client record has client_active "N". */
+  AU012: { code: 'AU012', category: 'Authentication', message: 'Your client account has been deactivated. Please contact your administrator.', detail: 'POST /api/auth/login: user_role is CLIENT and client.client_active is "N"; login blocked.' },
+
   // ── Permission (PX) ──────────────────────────────────────────────────────
 
   /** requirePermission: role does not have the required permission flag. */

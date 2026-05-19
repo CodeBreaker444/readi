@@ -48,6 +48,17 @@ export async function POST(request: NextRequest) {
       }
 
       droneAtcEnabled = ownerData.drone_atc_enabled ?? false;
+    } else if (userData.user_role === 'CLIENT') {
+      if (userData.fk_client_id) {
+        const { data: clientData, error: clientError } = await supabase
+          .from('client')
+          .select('client_active')
+          .eq('client_id', userData.fk_client_id)
+          .single();
+
+        if (clientError || !clientData) return apiError(E.NF010, 404);
+        if (clientData.client_active !== 'Y') return apiError(E.AU012, 403);
+      }
     } else if (userData.user_role === 'SUPERADMIN') {
       droneAtcEnabled = true;
     }
