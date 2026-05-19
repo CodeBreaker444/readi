@@ -52,7 +52,7 @@ async function handleClassifier(groq: any, question: string, acc: TokenAccumulat
 
     acc.add(res.usage);
 
-    const content = res.choices[0].message.content || "[]";
+    const content = res.choices?.[0]?.message?.content || "[]";
     try {
         const matches = content.match(/\[.*\]/);
         return JSON.parse(matches ? matches[0] : "[]");
@@ -95,7 +95,7 @@ async function handleDatabase(
 
     acc.add(pickerRes.usage);
 
-    const tablesString = (pickerRes.choices[0].message.content ?? "").replace(/['"`]/g, "").trim();
+    const tablesString = (pickerRes.choices?.[0]?.message?.content ?? "").replace(/['"`]/g, "").trim();
     const selectedTables = tablesString.split(",").map((t: string) => t.trim()).filter((t: string) => t !== "");
 
     let combinedData = "";
@@ -137,7 +137,7 @@ async function handleDatabase(
 
         acc.add(planRes.usage);
 
-        const cleanPlan = (planRes.choices[0].message.content ?? "").replace(/```json|```/g, "").trim();
+        const cleanPlan = (planRes.choices?.[0]?.message?.content ?? "").replace(/```json|```/g, "").trim();
         try {
             const plan = JSON.parse(cleanPlan);
             debugPlans.push(plan);
@@ -159,21 +159,36 @@ async function handleDatabase(
 }
 
 async function handleProcedure(question: string) {
-    const supabase = getSupabase();
+    try {
+        const supabase = getSupabase();
 
-    const { data: embeddingRes } = await supabase.functions.invoke('get-embedding', {
-        body: { text: question }
-    });
+        const { data: embeddingRes, error: embeddingError } = await supabase.functions.invoke('get-embedding', {
+            body: { text: question }
+        });
 
-    const { data: matches } = await supabase.rpc('match_documents', {
-        query_embedding: embeddingRes?.embedding || [],
-        match_threshold: 0.5,
-        match_count: 5
-    });
+        if (embeddingError || !embeddingRes?.embedding) {
+            console.error("Embedding error:", embeddingError);
+            return "No specific company procedures found for this topic.";
+        }
 
-    if (!matches || matches.length === 0) return "No specific company procedures found for this topic.";
+        const { data: matches, error: matchError } = await supabase.rpc('match_documents', {
+            query_embedding: embeddingRes.embedding,
+            match_threshold: 0.5,
+            match_count: 5
+        });
 
-    return matches.map((m: any) => m.content).join("\n\n---\n\n");
+        if (matchError) {
+            console.error("Match documents error:", matchError);
+            return "No specific company procedures found for this topic.";
+        }
+
+        if (!matches || matches.length === 0) return "No specific company procedures found for this topic.";
+
+        return matches.map((m: any) => m.content).join("\n\n---\n\n");
+    } catch (e) {
+        console.error("Procedure lookup error:", e);
+        return "No specific company procedures found for this topic.";
+    }
 }
 
 async function handleWebSearch(question: string) {
@@ -315,7 +330,7 @@ export async function POST(req: NextRequest) {
         }).catch((e) => console.error("Token record error:", e));
 
         return NextResponse.json({
-            answer: finalRes.choices[0].message.content,
+            answer: finalRes.choices?.[0]?.message?.content ?? "No response generated.",
             debug: {
                 intents,
                 role: user.role,

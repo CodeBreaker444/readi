@@ -557,7 +557,6 @@ export async function getComponentList(ownerId: number, toolId?: number) {
       .from('tool_component')
       .select(selectFields)
       .in('fk_tool_id', toolIds)
-      .eq('component_active', 'Y')
       .order('component_id', { ascending: false });
     if (error) throw error;
     const data = (rawData || []).filter(item => item.component_metadata?.system_detached !== true);
@@ -567,8 +566,7 @@ export async function getComponentList(ownerId: number, toolId?: number) {
   // components attached to owner's tools + standalone (fk_tool_id IS NULL)
   let compQuery = supabase
     .from('tool_component')
-    .select(selectFields)
-    .eq('component_active', 'Y');
+    .select(selectFields);
 
   if (toolIds.length > 0) {
     compQuery = (compQuery as any).or(`fk_tool_id.in.(${toolIds.join(',')}),fk_tool_id.is.null`);
@@ -590,6 +588,7 @@ function buildComponentListResult(data: any[]) {
     data: data.map((item) => ({
       tool_component_id: item.component_id,
       fk_tool_id: item.fk_tool_id,
+      component_active: item.component_active,
       system_detached: item.component_metadata?.system_detached === true,
       component_type: item.component_type,
       component_code: item.component_code,
