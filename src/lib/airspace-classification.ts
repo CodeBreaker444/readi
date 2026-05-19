@@ -119,7 +119,7 @@ export async function fetchFromOpenAIP(): Promise<AirspaceZone[] | null> {
   const apiKey = env.OPENAIP_API_KEY;
   const baseUrl = env.OPENAIP_BASE;
 
-  console.log('[openAIP] apiKey present:', !!apiKey, '| baseUrl:', baseUrl);
+  // console.log('[openAIP] apiKey present:', !!apiKey, '| baseUrl:', baseUrl);
 
   if (!apiKey) {
     console.error('[openAIP] OPENAIP_API_KEY is missing — check .env');
@@ -141,23 +141,23 @@ export async function fetchFromOpenAIP(): Promise<AirspaceZone[] | null> {
   try {
     while (true) {
       const url = `${baseUrl}/airspaces?country=IT&page=${page}&limit=100`;
-      console.log('[openAIP] fetching page', page, url);
+      // console.log('[openAIP] fetching page', page, url);
 
       const res = await fetch(url, {
         headers: { 'x-openaip-api-key': apiKey, Accept: 'application/json' },
         signal: AbortSignal.timeout(15_000),
       });
 
-      console.log('[openAIP] page', page, 'status:', res.status);
+      // console.log('[openAIP] page', page, 'status:', res.status);
 
       if (!res.ok) {
         const text = await res.text();
-        console.error('[openAIP] error body:', text.slice(0, 300));
+        // console.error('[openAIP] error body:', text.slice(0, 300));
         break;
       }
 
       const raw = await res.text();
-      console.log('[openAIP] raw body sample:', raw.slice(0, 400));
+      // console.log('[openAIP] raw body sample:', raw.slice(0, 400));
 
       let body: Record<string, unknown>;
       try {
@@ -172,14 +172,14 @@ export async function fetchFromOpenAIP(): Promise<AirspaceZone[] | null> {
         (body.data  as Record<string, unknown>[] | undefined) ??
         (Array.isArray(body) ? (body as Record<string, unknown>[]) : []);
 
-      console.log('[openAIP] page', page, 'items received:', items.length);
+      // console.log('[openAIP] page', page, 'items received:', items.length);
 
       let parsed = 0;
       for (const item of items) {
         const z = mapOpenAIPItem(item);
         if (z) { zones.push(z); parsed++; }
       }
-      console.log('[openAIP] page', page, 'zones parsed:', parsed, '/', items.length);
+      // console.log('[openAIP] page', page, 'zones parsed:', parsed, '/', items.length);
 
       if (items.length < 100) break;
       page++;
@@ -189,7 +189,7 @@ export async function fetchFromOpenAIP(): Promise<AirspaceZone[] | null> {
     return null;
   }
 
-  console.log('[openAIP] total zones after all pages:', zones.length);
+  // console.log('[openAIP] total zones after all pages:', zones.length);
   if (zones.length === 0) return null;
 
   _cache = zones;

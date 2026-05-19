@@ -79,7 +79,7 @@ export function useDroneATCSocket(): UseDroneATCSocketReturn {
       }
 
       const fleetRes = await fetch('/api/drone-atc/fleet');
-      
+
       if (fleetRes.ok) {
         const fleetData = await fleetRes.json();
         setUserRole(fleetData.role ?? null);
@@ -124,7 +124,7 @@ export function useDroneATCSocket(): UseDroneATCSocketReturn {
       socket.on('telemetry', (payload: { droneId: string; data: TelemetryData; timestamp: number }) => {
         const incoming = payload.data ?? (payload as unknown as TelemetryData);
         // console.log('tele:',incoming);
-        
+
         const id = incoming.drone_id ?? payload.droneId;
         if (!id) return;
 

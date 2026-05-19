@@ -206,7 +206,18 @@ export const getOperationColumns = (t: TFunction, isDark = false, timezone = 'Eu
   {
     accessorKey: 'tool_code',
     header: t('operations.table.detail.droneSystem'),
-    cell: ({ getValue }) => <span className="text-xs">{getValue<string>() || '—'}</span>,
+    cell: ({ getValue, row }) => {
+      const systemCode = getValue<string>();
+      const primaryComp = row.original.primary_component_code;
+      return (
+        <div className="flex flex-col gap-0.5">
+          <span className="text-xs">{systemCode || '—'}</span>
+          {primaryComp && (
+            <span className="text-[10px] text-muted-foreground leading-tight">{primaryComp}</span>
+          )}
+        </div>
+      );
+    },
   },
   {
     accessorKey: 'distance_flown',

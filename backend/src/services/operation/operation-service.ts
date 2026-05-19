@@ -106,6 +106,23 @@ export async function listOperations(
     visual_observer_ids: row.mission_metadata?.visual_observers ?? null,
   })) as Operation[];
 
+  const toolIds = [...new Set(operations.filter(op => op.fk_tool_id).map(op => op.fk_tool_id as number))];
+  if (toolIds.length > 0) {
+    const { data: primaryComps } = await supabase
+      .from('tool_component')
+      .select('fk_tool_id, component_code, component_name')
+      .in('fk_tool_id', toolIds)
+      .contains('component_metadata', { is_primary: true });
+
+    const primaryMap = new Map<number, string>();
+    (primaryComps ?? []).forEach((c: any) => {
+      if (c.fk_tool_id) primaryMap.set(c.fk_tool_id, c.component_code || c.component_name || '');
+    });
+    operations.forEach(op => {
+      (op as any).primary_component_code = op.fk_tool_id ? (primaryMap.get(op.fk_tool_id) ?? null) : null;
+    });
+  }
+
   return { data: operations, total: count ?? 0, page, pageSize };
 }
 
