@@ -406,7 +406,7 @@ export async function deleteComponent(ownerId: number, componentId: number, forc
 
   const { error } = await supabase
     .from('tool_component')
-    .update({ component_active: 'N' })
+    .delete()
     .eq('component_id', componentId);
 
   if (error) throw error;
