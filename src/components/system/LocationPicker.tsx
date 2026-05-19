@@ -54,15 +54,12 @@ export default function LocationPicker({ lat, lng, onChange, isDark = false }: L
   const [showDropdown, setShowDropdown] = useState(false);
   const [locating, setLocating]         = useState(false);
 
-  // Local draft values for the direct-input fields so typing is smooth
   const [draftLat, setDraftLat] = useState(lat);
   const [draftLng, setDraftLng] = useState(lng);
 
-  // Keep drafts in sync when parent resets or geocoder sets values
   useEffect(() => { setDraftLat(lat); }, [lat]);
   useEffect(() => { setDraftLng(lng); }, [lng]);
 
-  // ── helpers ────────────────────────────────────────────────────────────────
 
   const placeOrMoveMarker = (map: L.Map, clat: number, clng: number) => {
     if (markerRef.current) {
@@ -76,8 +73,6 @@ export default function LocationPicker({ lat, lng, onChange, isDark = false }: L
       markerRef.current = m;
     }
   };
-
-  // ── init map once ──────────────────────────────────────────────────────────
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -103,10 +98,8 @@ export default function LocationPicker({ lat, lng, onChange, isDark = false }: L
 
     mapRef.current = map;
     return () => { map.remove(); mapRef.current = null; markerRef.current = null; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── tile swap on theme change ──────────────────────────────────────────────
 
   useEffect(() => {
     if (!mapRef.current || !tileRef.current) return;
@@ -117,7 +110,6 @@ export default function LocationPicker({ lat, lng, onChange, isDark = false }: L
     tileRef.current = tile;
   }, [isDark]);
 
-  // ── sync external lat/lng into map ────────────────────────────────────────
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -129,10 +121,8 @@ export default function LocationPicker({ lat, lng, onChange, isDark = false }: L
       markerRef.current.remove();
       markerRef.current = null;
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lat, lng]);
 
-  // ── address search (Nominatim) ─────────────────────────────────────────────
 
   useEffect(() => {
     if (query.length < 3) { setResults([]); setShowDropdown(false); return; }
@@ -193,7 +183,6 @@ export default function LocationPicker({ lat, lng, onChange, isDark = false }: L
     onChange('', '', '');
   };
 
-  // ── direct coord input handlers ───────────────────────────────────────────
 
   const handleLatBlur = () => {
     if (isValidLat(draftLat) && isValidLng(draftLng || lng)) {
@@ -211,7 +200,6 @@ export default function LocationPicker({ lat, lng, onChange, isDark = false }: L
     }
   };
 
-  // ── styles ─────────────────────────────────────────────────────────────────
 
   const inputCls = isDark
     ? 'bg-slate-700 border-slate-600 text-slate-200 placeholder:text-slate-500'
@@ -226,7 +214,6 @@ export default function LocationPicker({ lat, lng, onChange, isDark = false }: L
   return (
     <div className="space-y-2">
 
-      {/* Address search */}
       <div className="relative">
         <div className="relative flex items-center">
           {searching
@@ -299,13 +286,13 @@ export default function LocationPicker({ lat, lng, onChange, isDark = false }: L
         {locating
           ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
           : <LocateFixed className="h-3.5 w-3.5" />}
-        Use my location
+        {t('systems.components.common.useMyLocation')}
       </button>
 
       {/* Direct coordinate inputs */}
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <p className={labelCls}>Latitude</p>
+          <p className={labelCls}>{t('systems.components.common.latitude')}</p>
           <input
             type="number"
             step="any"
@@ -315,12 +302,12 @@ export default function LocationPicker({ lat, lng, onChange, isDark = false }: L
             onChange={e => setDraftLat(e.target.value)}
             onBlur={handleLatBlur}
             onKeyDown={e => e.key === 'Enter' && (e.currentTarget as HTMLInputElement).blur()}
-            placeholder="e.g. 41.902782"
+            placeholder={t('systems.components.common.latPlaceholder')}
             className={coordInputCls}
           />
         </div>
         <div>
-          <p className={labelCls}>Longitude</p>
+          <p className={labelCls}>{t('systems.components.common.longitude')}</p>
           <input
             type="number"
             step="any"
@@ -330,7 +317,7 @@ export default function LocationPicker({ lat, lng, onChange, isDark = false }: L
             onChange={e => setDraftLng(e.target.value)}
             onBlur={handleLngBlur}
             onKeyDown={e => e.key === 'Enter' && (e.currentTarget as HTMLInputElement).blur()}
-            placeholder="e.g. 12.496366"
+            placeholder={t('systems.components.common.lngPlaceholder')}
             className={coordInputCls}
           />
         </div>

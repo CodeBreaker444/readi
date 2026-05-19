@@ -3733,7 +3733,12 @@
         "location": "Standort",
         "locationOptional": "Standort (optional)",
         "locationUpdated": "Standort aktualisiert →",
-        "locationSearchPlaceholder": "z.B. Piazza Navona, Rom"
+        "locationSearchPlaceholder": "z.B. Piazza Navona, Rom",
+        "useMyLocation": "Meinen Standort verwenden",
+        "latitude": "Breitengrad",
+        "longitude": "Längengrad",
+        "latPlaceholder": "z.B. 41.902782",
+        "lngPlaceholder": "z.B. 12.496366"
       },
       "editSystem": {
         "title": "System bearbeiten",

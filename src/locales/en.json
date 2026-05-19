@@ -3820,7 +3820,12 @@
         "location": "Location",
         "locationOptional": "Location (optional)",
         "locationUpdated": "Location updated →",
-        "locationSearchPlaceholder": "e.g. Piazza Navona, Roma"
+        "locationSearchPlaceholder": "e.g. Piazza Navona, Roma",
+        "useMyLocation": "Use my location",
+        "latitude": "Latitude",
+        "longitude": "Longitude",
+        "latPlaceholder": "e.g. 41.902782",
+        "lngPlaceholder": "e.g. 12.496366"
       },
       "editSystem": {
         "title": "Edit System",

@@ -3812,7 +3812,12 @@
         "location": "Posizione",
         "locationOptional": "Posizione (opzionale)",
         "locationUpdated": "Posizione aggiornata →",
-        "locationSearchPlaceholder": "es. Piazza Navona, Roma"
+        "locationSearchPlaceholder": "es. Piazza Navona, Roma",
+        "useMyLocation": "Usa la mia posizione",
+        "latitude": "Latitudine",
+        "longitude": "Longitudine",
+        "latPlaceholder": "es. 41.902782",
+        "lngPlaceholder": "es. 12.496366"
       },
       "editSystem": {
         "title": "Modifica Sistema",
