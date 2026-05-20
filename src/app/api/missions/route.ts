@@ -21,6 +21,7 @@ const WaypointSchema = z.object({
 const MissionItemSchema = z.object({
   missionId:     z.string().min(1, 'missionId is required'),
   startDateTime: z.string().optional(),
+  waypoint:      WaypointSchema.optional(),
 });
 
 // New batch format: PMVD sends a list of pre-generated mission IDs with their scheduled times
@@ -29,7 +30,6 @@ const BatchMissionSchema = z.object({
   target:        z.string().optional(),
   user_timezone: z.string().optional(),
   localization:  LocalizationSchema.optional(),
-  waypoint:      WaypointSchema.optional(),
   missions:      z.array(MissionItemSchema).min(1, 'missions array must not be empty'),
   priority:      z.string().optional(),
   notes:         z.string().optional(),
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
       const parsed = BatchMissionSchema.safeParse(body);
       if (!parsed.success) return zodError(E.VL001, parsed.error);
 
-      const { type, target, localization, waypoint, priority, notes, operator } = parsed.data;
+      const { type, target, localization, priority, notes, operator } = parsed.data;
       const created: Array<{ missionId: string; dcc_status: string }> = [];
 
       for (const item of parsed.data.missions) {
@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
           mission_type:        type,
           target,
           localization:        localization as Record<string, unknown> | undefined,
-          waypoint:            waypoint as Record<string, unknown> | undefined,
+          waypoint:            item.waypoint as Record<string, unknown> | undefined,
           start_datetime:      item.startDateTime,
           priority,
           notes,
