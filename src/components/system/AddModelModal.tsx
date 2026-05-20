@@ -24,6 +24,7 @@ interface AddModelModalProps {
 
 const INITIAL_FORM = {
   model_category: '',
+  model_subtype: '',
   model_code: '',
   model_name: '',
   manufacturer: '',
@@ -39,10 +40,6 @@ const INITIAL_FORM = {
   temp_max: '',
   endurance_min: '',
   endurance_max: '',
-  maintenance_cycle: '',
-  maintenance_cycle_hour: '',
-  maintenance_cycle_day: '',
-  maintenance_cycle_flight: '',
   phase_out: 'N',
   guarantee_years: '',
   specifications: '',
@@ -82,28 +79,6 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
     setFormData((prev) => ({ ...prev, model_category: value, model_subtype: '' }));
   };
 
-  const handleCycleChange = (value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      maintenance_cycle: value,
-      maintenance_cycle_hour: '',
-      maintenance_cycle_day: '',
-      maintenance_cycle_flight: '',
-    }));
-  };
-
-  const handleCycleInput = (field: string, value: string ) => {
-    const num = Number(value);
-    if (value === '' || num >= 0  ) {
-      handleChange(field, value);
-    }
-  };
-
-  const showHours    = formData.maintenance_cycle === 'HOURS'   || formData.maintenance_cycle === 'MIXED';
-  const showDays     = formData.maintenance_cycle === 'DAYS'    || formData.maintenance_cycle === 'MIXED';
-  const showFlights  = formData.maintenance_cycle === 'FLIGHTS' || formData.maintenance_cycle === 'MIXED';
-  const showNone     = formData.maintenance_cycle === 'NONE';
-
   const subtypeOptions = formData.model_category === 'AIRCRAFT'
     ? AIRCRAFT_SUBTYPES
     : formData.model_category === 'DOCK'
@@ -114,6 +89,7 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
     e.preventDefault();
 
     if (!formData.model_category) { toast.error(t('systems.components.addModel.toasts.selectType')); return; }
+    if (!formData.model_subtype) { toast.error(t('systems.components.editModel.toasts.selectSubType')); return; }
     if (!formData.model_code.trim()) { toast.error(t('systems.components.addModel.toasts.modelCodeRequired')); return; }
     if (!formData.model_name.trim()) { toast.error(t('systems.components.addModel.toasts.modelNameRequired')); return; }
     if (!formData.manufacturer.trim()) { toast.error(t('systems.components.addModel.toasts.manufacturerRequired')); return; }
@@ -144,6 +120,8 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
 
     try {
 
+      const combinedModelType = `${formData.model_category}_${formData.model_subtype}`;
+
       const extendedSpecs = [
         formData.version              && `Version: ${formData.version}`,
         formData.mtom                 && `MTOM: ${formData.mtom} kg`,
@@ -153,10 +131,6 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
         formData.temp_max             && `Temp Max: ${formData.temp_max} °C`,
         formData.endurance_min        && `Endurance Min: ${formData.endurance_min} min`,
         formData.endurance_max        && `Endurance Max: ${formData.endurance_max} min`,
-        formData.maintenance_cycle    && `Maintenance Cycle: ${formData.maintenance_cycle}`,
-        formData.maintenance_cycle_hour   && `Maint. Hours: ${formData.maintenance_cycle_hour}`,
-        formData.maintenance_cycle_day    && `Maint. Days: ${formData.maintenance_cycle_day}`,
-        formData.maintenance_cycle_flight && `Maint. Flights: ${formData.maintenance_cycle_flight}`,
         formData.phase_out === 'Y'    && `Phase-out: Yes`,
         formData.guarantee_years      && `Guarantee: ${formData.guarantee_years} years`,
         formData.specifications,
@@ -168,6 +142,7 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
         model_code:      formData.model_code.trim(),
         model_name:      formData.model_name.trim(),
         manufacturer:    formData.manufacturer.trim(),
+        model_type:      combinedModelType,
         specifications:  extendedSpecs || undefined,
         max_flight_time: formData.max_flight_time ? Number(formData.max_flight_time) : undefined,
         max_speed:       formData.max_speed       ? Number(formData.max_speed)       : undefined,
@@ -217,7 +192,25 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
                   </SelectContent>
                 </Select>
               </div>
-              
+
+              <div className="col-span-1 sm:col-span-3">
+                <Label className="pb-2">{t('systems.components.addModel.fields.subType')}</Label>
+                <Select
+                  value={formData.model_subtype}
+                  onValueChange={v => handleChange('model_subtype', v)}
+                  disabled={!formData.model_category}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={formData.model_category ? t('systems.components.addModel.placeholders.selectSubType') : t('systems.components.addModel.placeholders.selectTypeFirst')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {subtypeOptions.map(opt => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="col-span-1 sm:col-span-3">
                 <Label className="pb-2">{t('systems.components.addModel.fields.brand')}</Label>
                 <Input value={formData.manufacturer} onChange={(e) => handleChange('manufacturer', e.target.value)} required />
@@ -294,82 +287,6 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
                 <Label className="pb-2">{t('systems.components.addModel.fields.maxAltitude')}</Label>
                 <Input type="number" value={formData.max_altitude} onChange={(e) => handleChange('max_altitude', e.target.value)} />
               </div>
-            </div>
-          </div>
-
-          <div>
-            <p className="text-sm font-medium text-muted-foreground mb-2">{t('systems.components.addModel.sections.maintenance')}</p>
-            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
-
-              <div className="col-span-1 sm:col-span-3">
-                <Label className="pb-2">{t('systems.components.addModel.fields.phaseOut')}</Label>
-                <Select value={formData.phase_out} onValueChange={(v) => handleChange('phase_out', v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="N">{t('systems.components.common.phaseOutOptions.no')}</SelectItem>
-                    <SelectItem value="Y">{t('systems.components.common.phaseOutOptions.yes')}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="col-span-1 sm:col-span-3">
-                <Label className="pb-2">{t('systems.components.addModel.fields.maintenanceCycle')}</Label>
-                <Select value={formData.maintenance_cycle} onValueChange={handleCycleChange}>
-                  <SelectTrigger><SelectValue placeholder={t('systems.components.common.select')} /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="HOURS">{t('systems.components.common.maintenanceCycle.hours')}</SelectItem>
-                    <SelectItem value="DAYS">{t('systems.components.common.maintenanceCycle.days')}</SelectItem>
-                    <SelectItem value="FLIGHTS">{t('systems.components.common.maintenanceCycle.flights')}</SelectItem>
-                    <SelectItem value="MIXED">{t('systems.components.common.maintenanceCycle.mixed')}</SelectItem>
-                    <SelectItem value="NONE">{t('systems.components.common.maintenanceCycle.none')}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {showNone && (
-                <div className="col-span-1 sm:col-span-6 flex items-end">
-                  <span className="inline-flex items-center px-3 py-2 rounded-md bg-muted text-muted-foreground text-sm">
-                    {t('systems.components.common.maintenanceCycle.noCycleRequired')}
-                  </span>
-                </div>
-              )}
-
-              {showHours && (
-                <div className="col-span-1 sm:col-span-2">
-                  <Label className="pb-2">{t('systems.components.common.maintenanceCycle.hoursLimit')}</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    value={formData.maintenance_cycle_hour}
-                    onChange={(e) => handleCycleInput('maintenance_cycle_hour', e.target.value)}
-                  />
-                </div>
-              )}
-
-              {showDays && (
-                <div className="col-span-1 sm:col-span-2">
-                  <Label className="pb-2">{t('systems.components.common.maintenanceCycle.daysLimit')}</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    value={formData.maintenance_cycle_day}
-                    onChange={(e) => handleCycleInput('maintenance_cycle_day', e.target.value)}
-                  />
-                </div>
-              )}
-
-              {showFlights && (
-                <div className="col-span-1 sm:col-span-2">
-                  <Label className="pb-2">{t('systems.components.common.maintenanceCycle.flightsLimit')}</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    value={formData.maintenance_cycle_flight}
-                    onChange={(e) => handleCycleInput('maintenance_cycle_flight', e.target.value)}
-                  />
-                </div>
-              )}
-
             </div>
           </div>
 

@@ -3243,11 +3243,11 @@
         "cannotDelete": "Löschen nicht möglich",
         "warningSystem": "Das Löschen dieses Systems wird es deaktivieren. Verbundene Komponenten bleiben erhalten und werden nicht gelöscht.",
         "warningModel": "Dieses Modell wird dauerhaft von der Plattform entfernt.",
-        "warningComponent": "Diese Komponente wird dauerhaft von der Plattform entfernt.",
+        "warningComponent": "Diese Komponente wird dauerhaft gelöscht.",
         "systemsUsingModel": "Systeme, die dieses Modell verwenden:",
         "componentsUsingModel": "Komponenten, die dieses Modell verwenden:",
         "attachedToSystemLabel": "Verbunden mit System:",
-        "detachFirst": "Trennen Sie zuerst die Komponente von diesem System, dann können Sie sie von der Plattform löschen.",
+        "detachFirst": "Trennen Sie zuerst die Komponente von diesem System. Sie wird im Lager als zur Neuzuweisung verfügbar aufgelistet.",
         "detaching": "Trennung läuft...",
         "detachFrom": "Von {{code}} trennen",
         "cancel": "Abbrechen",
@@ -3263,6 +3263,8 @@
         "detachFailed": "Komponente konnte nicht getrennt werden",
         "detachError": "Fehler beim Trennen der Komponente",
         "systemDeactivated": "System erfolgreich deaktiviert",
+        "systemSetNonOperational": "System auf nicht betriebsbereit gesetzt. Erneut löschen, um es dauerhaft zu entfernen.",
+        "systemDeleted": "System gelöscht. Komponenten ins Lager verschoben.",
         "deleteFailed": "Systemlöschung fehlgeschlagen",
         "modelDeleted": "Modell erfolgreich gelöscht",
         "componentDeleted": "Komponente erfolgreich gelöscht",
@@ -3701,7 +3703,9 @@
         },
         "activeOptions": {
           "active": "AKTIV",
-          "notActive": "NICHT AKTIV"
+          "notActive": "NICHT AKTIV",
+          "yes": "Ja",
+          "no": "Nein"
         },
         "maintenanceCycle": {
           "label": "Wartungszyklus",
@@ -3900,6 +3904,7 @@
           "maxSpeed": "Max. Geschwindigkeit (km/h)",
           "maxAltitude": "Max. Höhe (m)",
           "phaseOut": "Auslaufen",
+          "active": "Aktiv",
           "maintenanceCycle": "Wartungszyklus",
           "guaranteeYears": "Garantie (Jahre)",
           "maxFlightTime": "Max. Flugzeit (min)",

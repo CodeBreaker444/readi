@@ -516,11 +516,26 @@ export default function EditComponentModal({
                         <SelectValue placeholder={t('systems.components.common.select')} />
                       </SelectTrigger>
                       <SelectContent className={selectContentCls}>
-                        {models.map((m: any) => (
-                          <SelectItem key={m.tool_model_id} value={m.tool_model_id.toString()}>
-                            {m.factory_model} — {m.factory_type}
-                          </SelectItem>
-                        ))}
+                        {models.map((m: any) => {
+                          const inactive = m.model_active !== 'Y';
+                          return (
+                            <SelectItem
+                              key={m.tool_model_id}
+                              value={m.tool_model_id.toString()}
+                              disabled={inactive}
+                              className={inactive ? 'opacity-50 cursor-not-allowed' : ''}
+                            >
+                              <span className="flex items-center gap-2">
+                                <span>{m.factory_model} — {m.factory_type}</span>
+                                {inactive && (
+                                  <span className={`px-1.5 py-0.5 rounded text-[9px] font-semibold border ${isDark ? 'bg-slate-700 text-slate-500 border-slate-600' : 'bg-gray-100 text-gray-400 border-gray-200'}`}>
+                                    Inactive
+                                  </span>
+                                )}
+                              </span>
+                            </SelectItem>
+                          );
+                        })}
                       </SelectContent>
                     </Select>
                   </div>

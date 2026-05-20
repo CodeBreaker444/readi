@@ -86,12 +86,18 @@ function ModelOptionLabel({ model }: { model: any }) {
   const manufacturer = model.factory_type ?? '—';
   const modelName = model.factory_model ?? '—';
   const modelCode = model.factory_serie ?? '—';
+  const isInactive = model.model_active !== 'Y';
 
   return (
     <div className="flex flex-col gap-0.5 leading-tight">
-      <div className="flex gap-2">
+      <div className="flex gap-2 items-center">
         <span className="w-24 shrink-0 text-[10px] font-semibold uppercase text-muted-foreground">Manufacturer</span>
         <span className="truncate text-[11px] font-medium">{manufacturer}</span>
+        {isInactive && (
+          <span className="ml-auto shrink-0 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-gray-100 text-gray-400 border border-gray-200">
+            Inactive
+          </span>
+        )}
       </div>
       <div className="flex gap-2">
         <span className="w-24 shrink-0 text-[10px] font-semibold uppercase text-muted-foreground">Model name</span>
@@ -382,11 +388,19 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    {models.map((m: any) => (
-                      <SelectItem key={m.tool_model_id} value={m.tool_model_id.toString()}>
-                        <ModelOptionLabel model={m} />
-                      </SelectItem>
-                    ))}
+                    {models.map((m: any) => {
+                      const inactive = m.model_active !== 'Y';
+                      return (
+                        <SelectItem
+                          key={m.tool_model_id}
+                          value={m.tool_model_id.toString()}
+                          disabled={inactive}
+                          className={inactive ? 'opacity-50 cursor-not-allowed' : ''}
+                        >
+                          <ModelOptionLabel model={m} />
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
               </div>

@@ -106,7 +106,6 @@ export async function getOwners(): Promise<OwnerWithAdmin[]> {
         .in('fk_owner_id', ownerIds)
         .eq('relationship_type', 'OWNER_ADMIN')
         .eq('is_primary', true)
-        .eq('is_active', true);
 
     const adminMap = new Map<number, any>();
     if (adminRelations) {

@@ -245,6 +245,21 @@ export const getModelColumns = ({ isDark, onEdit, onDelete }: ModelColumnProps):
             },
         },
         {
+            header: () => <span className={hd}>Active</span>,
+            accessorKey: 'model_active',
+            cell: ({ getValue }) => {
+                const isActive = (getValue() as string) === 'Y';
+                return (
+                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${isActive
+                        ? isDark ? 'bg-green-950 text-green-400 border border-green-800' : 'bg-green-100 text-green-800'
+                        : isDark ? 'bg-red-950 text-red-400 border border-red-800' : 'bg-red-100 text-red-800'
+                    }`}>
+                        {isActive ? 'Yes' : 'No'}
+                    </span>
+                );
+            },
+        },
+        {
             id: 'actions',
             header: () => <span className={hd}>Actions</span>,
             cell: ({ row }) => (
@@ -346,6 +361,21 @@ export const getComponentColumns = ({ isDark, toolCodeMap, modelMap, onView, onE
                     DECOMMISSIONED: isDark ? 'bg-gray-800 text-gray-400 border border-gray-700' : 'bg-gray-100 text-gray-600',
                 };
                 return <span className={`px-2 py-0.5 rounded text-xs font-medium ${cls[s] || ''}`}>{s}</span>;
+            },
+        },
+        {
+            header: () => <span className={hd}>Active</span>,
+            accessorKey: 'component_active',
+            cell: ({ getValue }) => {
+                const isActive = (getValue() as string) !== 'N';
+                return (
+                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${isActive
+                        ? isDark ? 'bg-green-950 text-green-400 border border-green-800' : 'bg-green-100 text-green-800'
+                        : isDark ? 'bg-red-950 text-red-400 border border-red-800' : 'bg-red-100 text-red-800'
+                    }`}>
+                        {isActive ? 'Yes' : 'No'}
+                    </span>
+                );
             },
         },
         {

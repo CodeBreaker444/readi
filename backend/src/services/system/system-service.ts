@@ -36,8 +36,12 @@ export async function getSystemList(
 
   if (active !== 'ALL') query = query.eq('tool_active', active);
 
-  const { data, error } = await query.order('tool_id', { ascending: false });
+  const { data: rawTools, error } = await query.order('tool_id', { ascending: false });
   if (error) throw error;
+
+  const data = (rawTools || []).filter(
+    t => t.tool_metadata?.deleted !== true && t.tool_metadata?.is_warehouse !== true,
+  );
 
   const clientIds = [
     ...new Set(
@@ -168,13 +172,13 @@ const sanitizeFilename = (original: string): string => {
 }
 
 export async function addSystem(toolData: AddSystemInput) {
-  const { data: existing } = await supabase
+  const { data: existingTools } = await supabase
     .from('tool')
-    .select('tool_id')
+    .select('tool_id, tool_metadata')
     .eq('fk_owner_id', toolData.fk_owner_id)
-    .eq('tool_code', toolData.tool_code)
-    .maybeSingle();
+    .eq('tool_code', toolData.tool_code);
 
+  const existing = (existingTools || []).find(t => t.tool_metadata?.deleted !== true);
   if (existing) throw new Error('System code already exists for this owner');
 
   const filesToUpload: File[] = Array.isArray(toolData.files)
@@ -262,23 +266,101 @@ export async function updateTool(toolId: number, toolData: any) {
 }
 
 
-export async function deleteSystem(ownerId: number, toolId: number) {
-  const { error } = await supabase
+async function getOrCreateWarehouseTool(ownerId: number): Promise<number> {
+  const { data: existing } = await supabase
     .from('tool')
-    .update({ tool_active: 'N' })
+    .select('tool_id')
+    .eq('fk_owner_id', ownerId)
+    .eq('tool_metadata->>is_warehouse', 'true')
+    .maybeSingle();
+
+  if (existing) return existing.tool_id;
+
+  const { data: created, error } = await supabase
+    .from('tool')
+    .insert({
+      fk_owner_id: ownerId,
+      tool_code: '__WAREHOUSE__',
+      tool_name: 'Warehouse',
+      tool_active: 'Y',
+      tool_metadata: { is_warehouse: true },
+    })
+    .select('tool_id')
+    .single();
+
+  if (error) throw error;
+  return created.tool_id;
+}
+
+
+export async function deleteSystem(ownerId: number, toolId: number) {
+  const { data: tool, error: fetchError } = await supabase
+    .from('tool')
+    .select('tool_id, tool_metadata')
+    .eq('tool_id', toolId)
+    .eq('fk_owner_id', ownerId)
+    .maybeSingle() as { data: { tool_id: number; tool_code: string; tool_metadata: any } | null; error: any };
+
+  if (fetchError || !tool) throw new Error('System not found or unauthorized');
+
+  const currentStatus = tool.tool_metadata?.status || 'OPERATIONAL';
+
+  if (currentStatus !== 'NOT_OPERATIONAL') {
+    const { error } = await supabase
+      .from('tool')
+      .update({ tool_metadata: { ...tool.tool_metadata, status: 'NOT_OPERATIONAL' } })
+      .eq('tool_id', toolId)
+      .eq('fk_owner_id', ownerId);
+
+    if (error) throw error;
+    return { code: 2, message: 'System set to non-operational. Delete again to permanently remove it.' };
+  }
+
+  const { data: components, error: compFetchError } = await supabase
+    .from('tool_component')
+    .select('component_id, component_metadata')
+    .eq('fk_tool_id', toolId);
+
+  if (compFetchError) throw compFetchError;
+
+  if ((components || []).length > 0) {
+    // Relocate all attached components to the hidden warehouse tool.
+    // This satisfies the FK NOT NULL + CASCADE constraint while keeping
+    // every component intact with its current status.
+    const warehouseToolId = await getOrCreateWarehouseTool(ownerId);
+
+    for (const comp of components) {
+      const { error: moveErr } = await supabase
+        .from('tool_component')
+        .update({
+          fk_tool_id: warehouseToolId,
+          component_metadata: {
+            ...comp.component_metadata,
+            system_detached: true,
+          },
+        })
+        .eq('component_id', comp.component_id);
+
+      if (moveErr) throw moveErr;
+    }
+  }
+
+  // With no components left referencing this tool, hard-delete is safe.
+  const { error: deleteError } = await supabase
+    .from('tool')
+    .delete()
     .eq('tool_id', toolId)
     .eq('fk_owner_id', ownerId);
 
-  if (error) throw error;
-  return { code: 1, message: 'system deleted successfully' };
+  if (deleteError) throw deleteError;
+  return { code: 1, message: 'System permanently deleted. All components moved to warehouse.' };
 }
 
 
 export async function getModelList(ownerId: number) {
   const { data, error } = await supabase
     .from('tool_model')
-    .select('model_id, model_code, model_name, manufacturer, specifications, model_description')
-    .eq('model_active', 'Y')
+    .select('model_id, model_code, model_name, manufacturer, specifications, model_description, model_active')
     .eq('specifications->>fk_owner_id', String(ownerId))
     .order('model_id', { ascending: false });
 
@@ -303,6 +385,7 @@ export async function getModelList(ownerId: number) {
         factory_serie: item.model_code,
         factory_model: item.model_name,
         model_type: item.model_description || '',
+        model_active: item.model_active ?? 'Y',
         specifications: item.specifications,
         max_flight_time: specs.max_flight_time ?? null,
         max_speed: specs.max_speed ?? null,
@@ -319,54 +402,38 @@ export async function getModelList(ownerId: number) {
 
 
 export async function deleteModel(ownerId: number, modelId: number) {
-  const { data: toolsUsing } = await supabase
-    .from('tool')
-    .select('tool_id, tool_code')
-    .eq('fk_model_id', modelId)
-    .eq('fk_owner_id', ownerId)
-    .eq('tool_active', 'Y');
-
   const { data: ownerTools } = await supabase
     .from('tool')
     .select('tool_id')
     .eq('fk_owner_id', ownerId);
 
   const toolIds = (ownerTools || []).map((t: any) => t.tool_id);
-  let componentsUsing: any[] = [];
 
   if (toolIds.length > 0) {
     const { data: comps } = await supabase
       .from('tool_component')
-      .select('component_id, component_code, component_name, component_type, component_metadata')
-      .in('fk_tool_id', toolIds)
-      .eq('component_active', 'Y');
+      .select('component_id, component_metadata')
+      .in('fk_tool_id', toolIds);
 
-    componentsUsing = (comps || []).filter(
+    const referencing = (comps || []).filter(
       (c: any) => c.component_metadata?.fk_tool_model_id == modelId,
     );
-  }
 
-  const systemCount = toolsUsing?.length || 0;
-  const componentCount = componentsUsing.length;
+    for (const comp of referencing) {
+      const { error: updateErr } = await supabase
+        .from('tool_component')
+        .update({
+          component_metadata: { ...comp.component_metadata, fk_tool_model_id: null },
+        })
+        .eq('component_id', comp.component_id);
 
-  if (systemCount > 0 || componentCount > 0) {
-    return {
-      code: 0,
-      message: `Cannot delete: model is used by ${systemCount} system(s) and ${componentCount} component(s). Please reassign them first.`,
-      usedBy: {
-        systems: (toolsUsing || []).map((t: any) => ({ id: t.tool_id, code: t.tool_code })),
-        components: componentsUsing.map((c: any) => ({
-          id: c.component_id,
-          code: c.component_code || c.component_name || `#${c.component_id}`,
-          type: c.component_type,
-        })),
-      },
-    };
+      if (updateErr) throw updateErr;
+    }
   }
 
   const { error } = await supabase
     .from('tool_model')
-    .update({ model_active: 'N' })
+    .delete()
     .eq('model_id', modelId);
 
   if (error) throw error;
@@ -456,7 +523,7 @@ export async function addModel(modelData: any) {
       model_code: modelData.factory_serie,
       model_name: modelData.factory_model,
       manufacturer: modelData.factory_type,
-      model_description: null,
+      model_description: modelData.model_type || null,
       specifications: specsWithOwner,
       model_active: 'Y',
     })
@@ -484,15 +551,20 @@ export async function updateModel(modelId: number, modelData: any) {
     ...(modelData.notes !== undefined ? { notes: modelData.notes } : {}),
   };
 
+  const updatePayload: Record<string, any> = {
+    manufacturer: modelData.manufacturer,
+    model_code: modelData.model_code,
+    model_name: modelData.model_name,
+    model_description: modelData.model_type || null,
+    specifications: updatedSpecs,
+  };
+  if (modelData.model_active !== undefined) {
+    updatePayload.model_active = modelData.model_active;
+  }
+
   const { data, error } = await supabase
     .from('tool_model')
-    .update({
-      manufacturer: modelData.manufacturer,
-      model_code: modelData.model_code,
-      model_name: modelData.model_name,
-      model_description: null,
-      specifications: updatedSpecs,
-    })
+    .update(updatePayload)
     .eq('model_id', modelId)
     .select()
     .single();
@@ -509,20 +581,6 @@ export async function getComponentList(ownerId: number, toolId?: number) {
   } else {
     await refreshMaintenanceDaysForOwner(ownerId);
   }
-
-  let toolQuery = supabase
-    .from('tool')
-    .select('tool_id')
-    .eq('fk_owner_id', ownerId);
-
-  if (toolId && toolId !== 0) {
-    toolQuery = toolQuery.eq('tool_id', toolId);
-  }
-
-  const { data: ownerTools, error: toolError } = await toolQuery;
-  if (toolError) throw toolError;
-
-  const toolIds = (ownerTools || []).map((t) => t.tool_id);
 
   const selectFields = `
     component_id,
@@ -548,35 +606,46 @@ export async function getComponentList(ownerId: number, toolId?: number) {
     drone_registration_code
   `;
 
-  // only attached, non-detached components for that system
+  // Specific system view: non-detached components for that tool only
   if (toolId && toolId !== 0) {
-    if (toolIds.length === 0) {
-      return { code: 1, message: 'Success', dataRows: 0, data: [] };
-    }
+    const { data: ownerTool } = await supabase
+      .from('tool')
+      .select('tool_id')
+      .eq('fk_owner_id', ownerId)
+      .eq('tool_id', toolId)
+      .maybeSingle();
+
+    if (!ownerTool) return { code: 1, message: 'Success', dataRows: 0, data: [] };
+
     const { data: rawData, error } = await supabase
       .from('tool_component')
       .select(selectFields)
-      .in('fk_tool_id', toolIds)
+      .eq('fk_tool_id', toolId)
       .order('component_id', { ascending: false });
+
     if (error) throw error;
     const data = (rawData || []).filter(item => item.component_metadata?.system_detached !== true);
     return buildComponentListResult(data);
   }
 
-  // components attached to owner's tools + standalone (fk_tool_id IS NULL)
-  let compQuery = supabase
+  // All-components view: every component across all owner tools (active and inactive)
+  const { data: allTools, error: toolsError } = await supabase
+    .from('tool')
+    .select('tool_id')
+    .eq('fk_owner_id', ownerId);
+
+  if (toolsError) throw toolsError;
+  const allToolIds = (allTools || []).map((t) => t.tool_id);
+
+  if (allToolIds.length === 0) return { code: 1, message: 'Success', dataRows: 0, data: [] };
+
+  const { data: rawData, error } = await supabase
     .from('tool_component')
-    .select(selectFields);
+    .select(selectFields)
+    .in('fk_tool_id', allToolIds)
+    .order('component_id', { ascending: false });
 
-  if (toolIds.length > 0) {
-    compQuery = (compQuery as any).or(`fk_tool_id.in.(${toolIds.join(',')}),fk_tool_id.is.null`);
-  } else {
-    compQuery = (compQuery as any).is('fk_tool_id', null);
-  }
-
-  const { data: rawData, error } = await compQuery.order('component_id', { ascending: false });
   if (error) throw error;
-
   return buildComponentListResult(rawData || []);
 }
 
@@ -833,7 +902,6 @@ export async function getMaintenanceDashboard(
         )
       `)
     .eq('fk_owner_id', ownerId)
-    .eq('tool_active', 'Y');
 
   if (error) throw error;
 

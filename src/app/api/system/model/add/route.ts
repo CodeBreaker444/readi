@@ -11,6 +11,7 @@ const ModelSchema = z.object({
   model_code: z.string().min(1, "Model code is required"),
   model_name: z.string().min(1, "Model name is required"),
   manufacturer: z.string().min(1, "Manufacturer is required"),
+  model_type: z.string().optional().nullable(),
   specifications: z.string().optional(),
   max_flight_time: z.number().optional(),
   max_speed: z.number().optional(),
@@ -45,6 +46,7 @@ export async function POST(req: NextRequest) {
       factory_serie: d.model_code,
       factory_model: d.model_name,
       factory_type: d.manufacturer,
+      model_type: d.model_type || null,
       technical_specs: specsJson,
     });
 

@@ -16,6 +16,7 @@ const schema = z.object({
   max_altitude:    z.number().optional().nullable(),
   weight:          z.number().optional().nullable(),
   notes:           z.string().optional().nullable(),
+  model_active:    z.enum(['Y', 'N']).optional(),
 });
 
 export async function POST(

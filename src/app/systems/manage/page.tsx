@@ -262,7 +262,12 @@ export default function DroneToolPage() {
                 const res = await fetch(`/api/system/${deleteConfirm.id}/delete`, { method: 'POST' });
                 const result = await res.json();
                 if (result.code === 1) {
-                    toast.success(t('systems.manage.toasts.systemDeactivated'));
+                    toast.success(t('systems.manage.toasts.systemDeleted'));
+                    setDeleteConfirm(null);
+                    fetchToolData();
+                    fetchAllComponents();
+                } else if (result.code === 2) {
+                    toast.info(t('systems.manage.toasts.systemSetNonOperational'));
                     setDeleteConfirm(null);
                     fetchToolData();
                 } else {
@@ -350,8 +355,8 @@ export default function DroneToolPage() {
         [isDark, toolCodeMap, modelMap, t]
     );
 
-    const standaloneComponents = useMemo(
-        () => componentData.filter((c: any) => !c.fk_tool_id || c.system_detached),
+    const warehouseComponents = useMemo(
+        () => componentData.filter((c: any) => c.system_detached === true),
         [componentData]
     );
 
@@ -475,7 +480,7 @@ export default function DroneToolPage() {
                             <DataTable columns={modelColumns} data={models} loading={loadingModels} exportFilename="models" />
                         )}
                         {activeTab === 'component' && (
-                            <DataTable columns={componentColumns} data={standaloneComponents} loading={loadingComponents} exportFilename="components" />
+                            <DataTable columns={componentColumns} data={warehouseComponents} loading={loadingComponents} exportFilename="components" />
                         )}
                     </CardContent>
                 </Card>

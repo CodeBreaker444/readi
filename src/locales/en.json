@@ -3330,11 +3330,11 @@
         "cannotDelete": "Cannot Delete",
         "warningSystem": "Deleting this system will deactivate it. Attached components will remain and are not deleted.",
         "warningModel": "This model will be permanently removed from the platform.",
-        "warningComponent": "This component will be permanently removed from the platform.",
+        "warningComponent": "This component will be permanently deleted.",
         "systemsUsingModel": "Systems using this model:",
         "componentsUsingModel": "Components using this model:",
         "attachedToSystemLabel": "Attached to system:",
-        "detachFirst": "Detach the component from this system first, then you can delete it from the platform.",
+        "detachFirst": "Detach the component from this system first. It will be listed in the warehouse as available for reassignment.",
         "detaching": "Detaching...",
         "detachFrom": "Detach from {{code}}",
         "cancel": "Cancel",
@@ -3350,6 +3350,8 @@
         "detachFailed": "Failed to detach component",
         "detachError": "Error detaching component",
         "systemDeactivated": "System deactivated successfully",
+        "systemSetNonOperational": "System set to non-operational. Delete again to permanently remove it.",
+        "systemDeleted": "System deleted. Components moved to warehouse.",
         "deleteFailed": "Failed to delete system",
         "modelDeleted": "Model deleted successfully",
         "componentDeleted": "Component deleted successfully",
@@ -3788,7 +3790,9 @@
         },
         "activeOptions": {
           "active": "ACTIVE",
-          "notActive": "NOT ACTIVE"
+          "notActive": "NOT ACTIVE",
+          "yes": "Yes",
+          "no": "No"
         },
         "maintenanceCycle": {
           "label": "Maintenance Cycle",
@@ -3987,6 +3991,7 @@
           "maxSpeed": "Max Speed (km/h)",
           "maxAltitude": "Max Altitude (m)",
           "phaseOut": "Phase-out",
+          "active": "Active",
           "maintenanceCycle": "Maintenance Cycle",
           "guaranteeYears": "Guarantee (years)",
           "maxFlightTime": "Max Flight Time (min)",
