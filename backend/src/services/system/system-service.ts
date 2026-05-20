@@ -85,7 +85,6 @@ export async function getSystemList(
         .from('tool_component')
         .select('fk_tool_id')
         .in('fk_tool_id', toolIds)
-        .eq('component_active', 'Y')
         .eq('component_metadata->>component_status', 'MAINTENANCE'),
     ]);
 
