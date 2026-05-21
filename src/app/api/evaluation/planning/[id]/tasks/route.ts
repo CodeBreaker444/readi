@@ -24,7 +24,7 @@ export async function GET(
 
         const { id } = planningIdParamSchema.parse(await params);
         const result = await getPlanningTasks(session!.user.ownerId, id);
-        return NextResponse.json({ code: 1, message: 'Planning tasks fetched successfully', data: result.tasks, dataRows: result.tasks.length });
+        return NextResponse.json({ code: 1, message: 'Planning tasks fetched successfully', tasks: result.tasks, allCompleted: result.allCompleted, data: result.tasks, dataRows: result.tasks.length });
     } catch (err: any) {
         if (err.name === 'ZodError') {
             return NextResponse.json({ success: false, errors: err.flatten().fieldErrors }, { status: 400 });
