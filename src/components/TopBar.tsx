@@ -148,23 +148,22 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData, loading 
 
   return (
     <>
-      <div className={`h-[69px] ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'} border-b flex items-center px-3 sm:px-6`}>
-        <div className="flex-1" />
+      <div className="fixed top-0 left-1/2 -translate-x-1/2 h-[69px] flex items-center pointer-events-none select-none z-10">
+        {loading ? (
+          <Skeleton className={`h-5 w-24 sm:w-36 rounded ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
+        ) : userData?.ownerName ? (
+          <span
+            className={`text-base sm:text-xl tracking-wider uppercase font-bold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}
+            style={{ fontFamily: 'var(--font-bebas-neue)' }}
+          >
+            {userData.ownerName}
+          </span>
+        ) : null}
+      </div>
 
-        <div className="flex items-center justify-center px-2 pointer-events-none select-none min-w-0">
-          {loading ? (
-            <Skeleton className={`h-5 w-24 sm:w-32 rounded ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
-          ) : userData?.ownerName ? (
-            <span
-              className={`text-base sm:text-xl tracking-widest uppercase truncate ${isDark ? 'text-amber-400' : 'text-amber-600'}`}
-              style={{ fontFamily: 'var(--font-bebas-neue)' }}
-            >
-              {userData.ownerName}
-            </span>
-          ) : null}
-        </div>
+      <div className={`h-[69px] ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'} border-b flex items-center justify-between px-3 sm:px-6`}>
+        <div />
 
-        <div className="flex-1 flex justify-end">
         <div className="flex items-center gap-2 sm:gap-4">
           <button
             onClick={() => { if (!isChatRestricted) setShowSearch(true); }}
@@ -225,7 +224,6 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData, loading 
 
 
           <NotificationDropdown isDark={isDark} />
-        </div>
         </div>
       </div>
 
