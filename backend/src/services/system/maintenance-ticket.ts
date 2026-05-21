@@ -465,12 +465,14 @@ export async function getDroneList(ownerId: number): Promise<DroneOption[]> {
 
   if (error) throw new Error(`getDroneList: ${error.message}`);
 
-  return (data ?? []).map((row: any) => ({
-    tool_id:     row.tool_id,
-    tool_code:   row.tool_code ?? '',
-    tool_desc:   row.tool_description ?? row.tool_name ?? '',
-    tool_status: row.tool_metadata?.status ?? 'OPERATIONAL',
-  }));
+  return (data ?? [])
+    .filter((row: any) => row.tool_metadata?.is_warehouse !== true && row.tool_metadata?.deleted !== true)
+    .map((row: any) => ({
+      tool_id:     row.tool_id,
+      tool_code:   row.tool_code ?? '',
+      tool_desc:   row.tool_description ?? row.tool_name ?? '',
+      tool_status: row.tool_metadata?.status ?? 'OPERATIONAL',
+    }));
 }
 
 export async function getComponentList(toolId: number): Promise<ComponentOption[]> {
@@ -647,7 +649,7 @@ async function resetComponentCounters(toolId: number, resetAt: string, component
 export async function getComponentMissions(componentId: number) {
   const { data: comp } = await supabase
     .from('tool_component')
-    .select('fk_tool_id, installation_date')
+    .select('fk_tool_id, installation_date, created_at')
     .eq('component_id', componentId)
     .maybeSingle();
 
@@ -660,9 +662,10 @@ export async function getComponentMissions(componentId: number) {
     .not('actual_end', 'is', null)
     .order('actual_start', { ascending: false, nullsFirst: false });
 
-  if (comp.installation_date) {
-    query = query.gte('actual_start', comp.installation_date);
-  }
+  const installDate = comp.installation_date ?? new Date().toISOString().split('T')[0];
+  const createdDate = comp.created_at ? comp.created_at.split('T')[0].split(' ')[0] : null;
+  const cutoff = createdDate && createdDate > installDate ? createdDate : installDate;
+  query = query.gte('actual_start', cutoff);
 
   const { data } = await query;
   return data ?? [];
