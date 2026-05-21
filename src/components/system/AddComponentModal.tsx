@@ -50,6 +50,9 @@ const INITIAL_FORM = {
   latitude: '',
   longitude: '',
   drone_classes: [] as string[],
+  initial_usage_hours: '',
+  initial_maintenance_hours: '',
+  initial_maintenance_flights: '',
 };
 export interface ComponentType {
   type_id: number;
@@ -253,6 +256,9 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
         latitude: formData.latitude ? Number(formData.latitude) : null,
         longitude: formData.longitude ? Number(formData.longitude) : null,
         drone_classes: formData.drone_classes.length > 0 ? formData.drone_classes : null,
+        initial_usage_hours: formData.initial_usage_hours ? Number(formData.initial_usage_hours) : null,
+        initial_maintenance_hours: formData.initial_maintenance_hours ? Number(formData.initial_maintenance_hours) : null,
+        initial_maintenance_flights: formData.initial_maintenance_flights ? Number(formData.initial_maintenance_flights) : null,
       };
 
       const response = await axios.post('/api/system/component/add', payload);
@@ -554,6 +560,52 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
                       placeholder="e.g. 0.87"
                       value={formData.battery_cycle_ratio}
                       onChange={(e) => handleChange('battery_cycle_ratio', e.target.value)}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <p className="text-sm font-medium text-muted-foreground">{t('systems.components.common.defaultCounters.label')}</p>
+                <span className="text-xs text-muted-foreground font-normal">{t('systems.components.common.defaultCounters.hint')}</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                <div className="col-span-1 sm:col-span-3">
+                  <Label className="pb-2">{t('systems.components.common.defaultCounters.usageHours')}</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    placeholder="0"
+                    value={formData.initial_usage_hours}
+                    onChange={(e) => { if (e.target.value === '' || Number(e.target.value) >= 0) handleChange('initial_usage_hours', e.target.value); }}
+                  />
+                </div>
+                {showHours && (
+                  <div className="col-span-1 sm:col-span-3">
+                    <Label className="pb-2">{t('systems.components.common.defaultCounters.maintenanceHours')}</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      step={0.01}
+                      placeholder="0"
+                      value={formData.initial_maintenance_hours}
+                      onChange={(e) => { if (e.target.value === '' || Number(e.target.value) >= 0) handleChange('initial_maintenance_hours', e.target.value); }}
+                    />
+                  </div>
+                )}
+                {showFlights && (
+                  <div className="col-span-1 sm:col-span-3">
+                    <Label className="pb-2">{t('systems.components.common.defaultCounters.maintenanceFlights')}</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      step={1}
+                      placeholder="0"
+                      value={formData.initial_maintenance_flights}
+                      onChange={(e) => { if (e.target.value === '' || Number(e.target.value) >= 0) handleChange('initial_maintenance_flights', e.target.value); }}
                     />
                   </div>
                 )}

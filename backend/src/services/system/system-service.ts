@@ -763,6 +763,9 @@ export async function addComponent(componentData: any) {
       maintenance_cycle_hour: finalHour ?? null,
       maintenance_cycle_day: finalDay ?? null,
       maintenance_cycle_flight: finalFlight ?? null,
+      current_usage_hours: componentData.initial_usage_hours ?? 0,
+      current_maintenance_hours: componentData.initial_maintenance_hours ?? 0,
+      current_maintenance_flights: componentData.initial_maintenance_flights ?? 0,
       dcc_drone_id: componentData.dcc_drone_id || null,
       drone_registration_code: componentData.drone_registration_code || null,
       component_metadata: {
@@ -856,6 +859,9 @@ export async function updateComponent(componentId: number, componentData: any) {
       maintenance_cycle_hour: componentData.maintenance_cycle_hour ?? null,
       maintenance_cycle_day: componentData.maintenance_cycle_day ?? null,
       maintenance_cycle_flight: componentData.maintenance_cycle_flight ?? null,
+      ...(componentData.initial_usage_hours != null && { current_usage_hours: componentData.initial_usage_hours }),
+      ...(componentData.initial_maintenance_hours != null && { current_maintenance_hours: componentData.initial_maintenance_hours }),
+      ...(componentData.initial_maintenance_flights != null && { current_maintenance_flights: componentData.initial_maintenance_flights }),
       component_metadata: {
         ...baseMeta,
         cc_platform: componentData.cc_platform || null,

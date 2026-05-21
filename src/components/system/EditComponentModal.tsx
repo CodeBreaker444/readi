@@ -78,6 +78,9 @@ const EMPTY_FORM = {
   latitude: '',
   longitude: '',
   drone_classes: [] as string[],
+  initial_usage_hours: '',
+  initial_maintenance_hours: '',
+  initial_maintenance_flights: '',
 };
 interface ComponentType {
   type_id: number;
@@ -175,6 +178,9 @@ export default function EditComponentModal({
       latitude: comp.latitude != null ? String(comp.latitude) : '',
       longitude: comp.longitude != null ? String(comp.longitude) : '',
       drone_classes: Array.isArray(comp.drone_classes) ? comp.drone_classes : [],
+      initial_usage_hours: comp.current_usage_hours != null && comp.current_usage_hours !== 0 ? String(comp.current_usage_hours) : '',
+      initial_maintenance_hours: comp.current_maintenance_hours != null && comp.current_maintenance_hours !== 0 ? String(comp.current_maintenance_hours) : '',
+      initial_maintenance_flights: comp.current_maintenance_flights != null && comp.current_maintenance_flights !== 0 ? String(comp.current_maintenance_flights) : '',
     });
   };
 
@@ -335,6 +341,9 @@ export default function EditComponentModal({
         latitude: formData.latitude ? Number(formData.latitude) : null,
         longitude: formData.longitude ? Number(formData.longitude) : null,
         drone_classes: formData.drone_classes.length > 0 ? formData.drone_classes : null,
+        initial_usage_hours: formData.initial_usage_hours !== '' ? Number(formData.initial_usage_hours) : null,
+        initial_maintenance_hours: formData.initial_maintenance_hours !== '' ? Number(formData.initial_maintenance_hours) : null,
+        initial_maintenance_flights: formData.initial_maintenance_flights !== '' ? Number(formData.initial_maintenance_flights) : null,
       };
 
       const res = await fetch(`/api/system/component/${selectedComponentId}/update`, {
@@ -689,6 +698,55 @@ export default function EditComponentModal({
                       <div className="col-span-1 sm:col-span-2">
                         <Label className={labelCls}>{t('systems.components.common.maintenanceCycle.cycleRatio')}</Label>
                         <Input type="number" min={0.01} max={1} step={0.01} placeholder="e.g. 0.87" className={inputCls} value={formData.battery_cycle_ratio} onChange={e => handleChange('battery_cycle_ratio', e.target.value)} />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <p className={sectionLabelCls}>{t('systems.components.common.defaultCounters.label')}</p>
+                    <span className={`text-xs font-normal ${isDark ? 'text-slate-500' : 'text-muted-foreground'}`}>{t('systems.components.common.defaultCounters.hint')}</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                    <div className="col-span-1 sm:col-span-3">
+                      <Label className={labelCls}>{t('systems.components.common.defaultCounters.usageHours')}</Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        step={0.01}
+                        placeholder="0"
+                        className={inputCls}
+                        value={formData.initial_usage_hours}
+                        onChange={(e) => { if (e.target.value === '' || Number(e.target.value) >= 0) handleChange('initial_usage_hours', e.target.value); }}
+                      />
+                    </div>
+                    {showHours && (
+                      <div className="col-span-1 sm:col-span-3">
+                        <Label className={labelCls}>{t('systems.components.common.defaultCounters.maintenanceHours')}</Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          step={0.01}
+                          placeholder="0"
+                          className={inputCls}
+                          value={formData.initial_maintenance_hours}
+                          onChange={(e) => { if (e.target.value === '' || Number(e.target.value) >= 0) handleChange('initial_maintenance_hours', e.target.value); }}
+                        />
+                      </div>
+                    )}
+                    {showFlights && (
+                      <div className="col-span-1 sm:col-span-3">
+                        <Label className={labelCls}>{t('systems.components.common.defaultCounters.maintenanceFlights')}</Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          step={1}
+                          placeholder="0"
+                          className={inputCls}
+                          value={formData.initial_maintenance_flights}
+                          onChange={(e) => { if (e.target.value === '' || Number(e.target.value) >= 0) handleChange('initial_maintenance_flights', e.target.value); }}
+                        />
                       </div>
                     )}
                   </div>

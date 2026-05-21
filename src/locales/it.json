@@ -3815,6 +3815,13 @@
         "manageClasses": "Gestisci classi",
         "location": "Posizione",
         "locationOptional": "Posizione (opzionale)",
+        "defaultCounters": {
+          "label": "Contatori iniziali",
+          "hint": "— per componenti usati, imposta valori > 0",
+          "usageHours": "Ore totali",
+          "maintenanceHours": "Ore dall'ultima manutenzione",
+          "maintenanceFlights": "Voli dall'ultima manutenzione"
+        },
         "locationUpdated": "Posizione aggiornata →",
         "locationSearchPlaceholder": "es. Piazza Navona, Roma",
         "useMyLocation": "Usa la mia posizione",

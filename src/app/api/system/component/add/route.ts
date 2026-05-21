@@ -32,6 +32,9 @@ const ComponentSchema = z.object({
   latitude: z.number().min(-90).max(90).optional().nullable(),
   longitude: z.number().min(-180).max(180).optional().nullable(),
   drone_classes: z.array(z.string()).optional().nullable(),
+  initial_usage_hours: z.number().min(0).optional().nullable(),
+  initial_maintenance_hours: z.number().min(0).optional().nullable(),
+  initial_maintenance_flights: z.number().min(0).optional().nullable(),
 });
 
 export async function POST(req: NextRequest) {
@@ -72,6 +75,9 @@ export async function POST(req: NextRequest) {
       latitude: d.latitude ?? null,
       longitude: d.longitude ?? null,
       drone_classes: d.drone_classes ?? null,
+      initial_usage_hours: d.initial_usage_hours ?? null,
+      initial_maintenance_hours: d.initial_maintenance_hours ?? null,
+      initial_maintenance_flights: d.initial_maintenance_flights ?? null,
     });
 
     if (result.code === 1) {

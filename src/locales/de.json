@@ -3736,6 +3736,13 @@
         "manageClasses": "Klassen verwalten",
         "location": "Standort",
         "locationOptional": "Standort (optional)",
+        "defaultCounters": {
+          "label": "Startzähler",
+          "hint": "— für gebrauchte Komponenten, Werte > 0 setzen",
+          "usageHours": "Gesamtstunden",
+          "maintenanceHours": "Stunden seit letzter Wartung",
+          "maintenanceFlights": "Flüge seit letzter Wartung"
+        },
         "locationUpdated": "Standort aktualisiert →",
         "locationSearchPlaceholder": "z.B. Piazza Navona, Rom",
         "useMyLocation": "Meinen Standort verwenden",

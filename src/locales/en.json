@@ -3823,6 +3823,13 @@
         "manageClasses": "Manage classes",
         "location": "Location",
         "locationOptional": "Location (optional)",
+        "defaultCounters": {
+          "label": "Starting Counters",
+          "hint": "— for used components, set values > 0",
+          "usageHours": "Lifetime Hours",
+          "maintenanceHours": "Hours Since Maintenance",
+          "maintenanceFlights": "Flights Since Maintenance"
+        },
         "locationUpdated": "Location updated →",
         "locationSearchPlaceholder": "e.g. Piazza Navona, Roma",
         "useMyLocation": "Use my location",
