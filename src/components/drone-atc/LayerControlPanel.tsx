@@ -32,6 +32,7 @@ interface Props {
   dockCount: number;
   aircraftCount: number;
   hasOwmKey: boolean;
+  wrapperClassName?: string;
 }
 
 function Toggle({ on, onChange, disabled, isDark }: { on: boolean; onChange: () => void; disabled?: boolean; isDark: boolean }) {
@@ -158,7 +159,7 @@ function Divider({ isDark }: { isDark: boolean }) {
   return <div className={`h-px mx-3 ${isDark ? 'bg-slate-700/60' : 'bg-slate-100'}`} />;
 }
 
-export default function LayerControlPanel({ layers, onToggle, isDark, droneCount, dockCount, aircraftCount, hasOwmKey }: Props) {
+export default function LayerControlPanel({ layers, onToggle, isDark, droneCount, dockCount, aircraftCount, hasOwmKey, wrapperClassName }: Props) {
   const { t } = useTranslation();
   const [collapsed, setCollapsed] = useState<boolean>(false);
   const [open, setOpen] = useState({ traffic: true, airspace: true, weather: false });
@@ -168,9 +169,11 @@ export default function LayerControlPanel({ layers, onToggle, isDark, droneCount
     ? 'bg-slate-900/95 border border-slate-700/60 shadow-2xl shadow-black/40 backdrop-blur-xl'
     : 'bg-white/97 border border-slate-200/80 shadow-xl shadow-slate-200/60 backdrop-blur-xl';
 
+  const posClass = wrapperClassName !== undefined ? wrapperClassName : 'absolute top-3 right-3 z-450';
+
   if (collapsed) {
     return (
-      <div className="absolute top-3 right-3 z-[450]">
+      <div className={posClass}>
         <button
           type="button"
           onClick={() => setCollapsed(false)}
@@ -186,7 +189,7 @@ export default function LayerControlPanel({ layers, onToggle, isDark, droneCount
   }
 
   return (
-    <div className={`absolute top-3 right-3 z-[450] w-56 rounded-2xl overflow-hidden ${glass}`}>
+    <div className={`${posClass} w-56 rounded-2xl overflow-hidden ${glass}`}>
       <div className={`flex items-center justify-between px-3 py-2.5 ${isDark ? 'border-b border-slate-700/60' : 'border-b border-slate-100'}`}>
         <div className="flex items-center gap-2">
           <div className={`w-6 h-6 rounded-lg flex items-center justify-center ${isDark ? 'bg-violet-500/15' : 'bg-violet-50'}`}>

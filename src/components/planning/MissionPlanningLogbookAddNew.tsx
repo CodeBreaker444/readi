@@ -190,6 +190,7 @@ export default function MissionPlanningLogbookAddNew({
               type="file"
               ref={fileInputRef}
               name="mission_planning_file"
+              accept=".kmz,.kml,.json,.geojson"
               className={`${inputStyle} file:text-black file:font-medium cursor-pointer file:border-0 file:bg-transparent`}
             />
           </div>

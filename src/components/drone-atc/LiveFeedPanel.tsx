@@ -7,10 +7,21 @@ import type { TelemetryData } from './useDroneATCSocket';
 interface LiveFeedPanelProps {
   drone: TelemetryData | null;
   isDark: boolean;
+  wrapperClassName?: string;
+  onCameraClick?: () => void;
+  cameraActive?: boolean;
+  cameraLoading?: boolean;
 }
 
-export default function LiveFeedPanel({ drone, isDark }: LiveFeedPanelProps) {
+export default function LiveFeedPanel({
+  drone, isDark, wrapperClassName,
+  onCameraClick, cameraActive, cameraLoading,
+}: LiveFeedPanelProps) {
   if (!drone) return null;
+
+  const posClass = wrapperClassName !== undefined
+    ? wrapperClassName
+    : 'absolute bottom-3 right-3 w-68 z-[400]';
 
   const bg     = isDark ? 'bg-slate-900/92 border-slate-700/50 backdrop-blur-xl' : 'bg-white/95 border-slate-200 shadow-lg backdrop-blur-xl';
   const div    = isDark ? 'border-slate-700/50' : 'border-slate-100';
@@ -27,7 +38,7 @@ export default function LiveFeedPanel({ drone, isDark }: LiveFeedPanelProps) {
       : isDark ? 'text-red-400' : 'text-red-600';
 
   return (
-    <div className={`absolute bottom-3 right-3 w-68 z-400 rounded-2xl overflow-hidden border ${bg}`}>
+    <div className={`${posClass} rounded-2xl overflow-hidden border ${bg}`}>
 
       <div className={`flex items-center justify-between px-3 py-2 border-b ${div}`}>
         <div className="flex items-center gap-1.5 min-w-0">
@@ -41,9 +52,33 @@ export default function LiveFeedPanel({ drone, isDark }: LiveFeedPanelProps) {
             <span className={`text-[10px] truncate ${lbl}`}>· {drone.model}</span>
           )}
         </div>
-        <span className={`w-2 h-2 rounded-full shrink-0 ml-2 ${
-          online ? 'bg-emerald-400 shadow-[0_0_5px_rgba(52,211,153,0.8)]' : 'bg-slate-500'
-        }`} />
+
+        <div className="flex items-center gap-2 shrink-0 ml-2">
+          {/* {onCameraClick && (
+            <button
+              type="button"
+              onClick={onCameraClick}
+              title={cameraActive ? 'Stop stream' : 'Live stream'}
+              className={`flex cursor-pointer items-center justify-center w-8 h-8 rounded-lg transition-all ${
+                cameraActive
+                  ? isDark
+                    ? 'bg-violet-500/25 text-violet-300 ring-1 ring-violet-500/40'
+                    : 'bg-violet-100 text-violet-600 ring-1 ring-violet-300'
+                  : isDark
+                    ? 'bg-slate-700/60 text-slate-300 hover:bg-slate-600/60 hover:text-white'
+                    : 'bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800'
+              }`}
+            >
+              {cameraLoading
+                ? <FiRefreshCw className="w-4 h-4 animate-spin" />
+                : <Video className="w-4 h-4" />
+              }
+            </button>
+          )} */}
+          <span className={`w-2 h-2 rounded-full shrink-0 ${
+            online ? 'bg-emerald-400 shadow-[0_0_5px_rgba(52,211,153,0.8)]' : 'bg-slate-500'
+          }`} />
+        </div>
       </div>
 
       <div className="px-3 py-2 space-y-2">
@@ -65,7 +100,6 @@ export default function LiveFeedPanel({ drone, isDark }: LiveFeedPanelProps) {
         <div className={`border-t ${div}`} />
 
         <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-
           <div className="flex items-center gap-1.5">
             <TbSatellite className={`w-3.5 h-3.5 shrink-0 ${lbl}`} />
             <span className={`text-[11px] font-mono font-bold tabular-nums ${val}`}>
@@ -99,7 +133,6 @@ export default function LiveFeedPanel({ drone, isDark }: LiveFeedPanelProps) {
               {drone.battery_temp != null ? `${Math.round(drone.battery_temp)}°C` : '—'}
             </span>
           </div>
-
         </div>
       </div>
     </div>

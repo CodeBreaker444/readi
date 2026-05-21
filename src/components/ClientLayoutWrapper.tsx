@@ -98,7 +98,7 @@ const ClientLayoutWrapper: React.FC<ClientLayoutWrapperProps> = ({
           <MobileSidebar isDark={isDark} role={role} userData={userData} />
 
           <div className="flex-1 flex flex-col overflow-hidden pt-1">
-            <TopBar isDark={isDark} toggleTheme={toggleTheme} userData={userData} />
+            <TopBar isDark={isDark} toggleTheme={toggleTheme} userData={userData} loading={loading} />
 
             <main
               className={`relative flex-1 overflow-y-auto ${

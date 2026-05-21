@@ -5,11 +5,12 @@ import DroneList from '@/components/drone-atc/DroneList';
 import LayerControlPanel, { type LayerVisibility } from '@/components/drone-atc/LayerControlPanel';
 import LiveFeedPanel from '@/components/drone-atc/LiveFeedPanel';
 import { useDroneATCSocket } from '@/components/drone-atc/useDroneATCSocket';
+import VideoStreamPlayer from '@/components/drone-atc/VideoStreamPlayer';
 import WindGridOverlay, { type MapBounds } from '@/components/drone-atc/WindGridOverlay';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTheme } from '@/components/useTheme';
 import '@/lib/i18n/config';
-import { ChevronRight, Maximize2, Minimize2 } from 'lucide-react';
+import { ChevronRight, Maximize2, Minimize2, X } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -20,8 +21,20 @@ import { MdFlight, MdRefresh } from 'react-icons/md';
 
 const DroneATCMap = dynamic(() => import('@/components/drone-atc/DroneATCMap'), {
   ssr: false,
-  loading: () => <Skeleton className="w-full h-full rounded-2xl bg-slate-800" />,
+  loading: () => <Skeleton className="w-full h-full rounded-2xl bg-slate-400" />,
 });
+
+interface StreamingResponse {
+  hasCredentials: boolean;
+  platform?: 'agora' | 'millicast' | 'mediamtx' | 'antmedia';
+  url?: string;
+  url_type?: number;
+  agora?: { appid: string; rtc_token: string; channelName?: string };
+  millicast?: { subscribe_token: string; endPoints: { subscribe_api_url: string } };
+  mediamtx?: { play_whep_url: string; play_rtsp_url: string; play_rtmp_url: string; stream_id: string; play_token?: string };
+  token?: { value: string; expires_at?: string };
+  error?: string;
+}
 
 const FLIGHT_REFRESH_MS = 12000;
 const OWM_API_KEY = process.env.NEXT_PUBLIC_OWM_API_KEY ?? '';
@@ -73,6 +86,9 @@ export default function DroneATCPage() {
 
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [syncState, setSyncState] = useState<'idle' | 'loading' | 'ok' | 'error'>('idle');
+  const [showVideoPanel, setShowVideoPanel] = useState(false);
+  const [streamingData, setStreamingData] = useState<StreamingResponse | null>(null);
+  const [streamingLoading, setStreamingLoading] = useState(false);
   const boundsRef = useRef<MapBounds | null>(null);
   const [windFetchTrigger, setWindFetchTrigger] = useState(0);
   const windTriggerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -86,6 +102,24 @@ export default function DroneATCPage() {
   const flightTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasAutoSelected = useRef(false);
+
+  const handleCameraClick = useCallback(async () => {
+    if (!selectedDroneId) return;
+    if (showVideoPanel) { setShowVideoPanel(false); return; }
+    setStreamingLoading(true);
+    try {
+      const res = await fetch(`/api/drone-atc/stream?droneId=${encodeURIComponent(selectedDroneId)}`);
+      if (!res.ok) return;
+      const data: StreamingResponse = await res.json();
+      if (!data.hasCredentials) return;
+      setStreamingData(data);
+      setShowVideoPanel(true);
+    } catch {
+      // silently ignore
+    } finally {
+      setStreamingLoading(false);
+    }
+  }, [selectedDroneId, showVideoPanel]);
 
   const handleUpdateDrones = useCallback(async () => {
     if (syncState === 'loading') return;
@@ -151,6 +185,11 @@ export default function DroneATCPage() {
   useEffect(() => {
     if (layers.wind) setWindFetchTrigger(t => t + 1);
   }, [layers.wind]);
+
+  useEffect(() => {
+    setShowVideoPanel(false);
+    setStreamingData(null);
+  }, [selectedDroneId]);
 
   const droneList = Object.values(drones);
   const selectedDrone = selectedDroneId ? drones[selectedDroneId] ?? null : null;
@@ -393,12 +432,48 @@ export default function DroneATCPage() {
             </div>
           )}
 
-          {selectedDrone && <LiveFeedPanel drone={selectedDrone} isDark={isDark} />}
+          {selectedDrone && (
+            <div className="absolute bottom-3 right-3 z-400 flex flex-col gap-2 w-68">
+              {showVideoPanel && streamingData && (
+                <div className="relative rounded-2xl overflow-hidden bg-black" style={{ aspectRatio: '16/9' }}>
+                  {streamingData.error ? (
+                    <div className="absolute inset-0 flex items-center justify-center px-4 text-center">
+                      <span className="text-[11px] text-red-400 font-medium">{streamingData.error}</span>
+                    </div>
+                  ) : (
+                    <VideoStreamPlayer
+                      data={streamingData as Parameters<typeof VideoStreamPlayer>[0]['data']}
+                      isDark={isDark}
+                    />
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setShowVideoPanel(false)}
+                    className="absolute top-2 right-2 z-10 w-6 h-6 rounded-full bg-black/60 flex items-center justify-center text-white hover:bg-black/80 transition-colors"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                  <span className="absolute top-2 left-2 flex items-center gap-1 text-[9px] text-green-400 font-semibold">
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                    LIVE
+                  </span>
+                </div>
+              )}
+              <LiveFeedPanel
+                drone={selectedDrone}
+                isDark={isDark}
+                wrapperClassName=""
+                onCameraClick={handleCameraClick}
+                cameraActive={showVideoPanel}
+                cameraLoading={streamingLoading}
+              />
+            </div>
+          )}
 
           <button
             onClick={() => setIsFullscreen(f => !f)}
             title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen map'}
-            className="absolute bottom-9 left-1/2 -translate-x-1/2 z-1010 p-2 rounded-full shadow-lg backdrop-blur-sm transition-all hover:scale-105 active:scale-95"
+            className="absolute cursor-pointer bottom-9 left-1/2 -translate-x-1/2 z-1010 p-2 rounded-full shadow-lg backdrop-blur-sm transition-all hover:scale-105 active:scale-95"
             style={{ background: 'rgba(15,15,25,0.70)', color: '#e2e8f0', border: '1px solid rgba(255,255,255,0.15)' }}
           >
             {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}

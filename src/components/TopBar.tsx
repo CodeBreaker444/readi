@@ -26,12 +26,13 @@ interface TopBarProps {
   isDark: boolean;
   toggleTheme: () => void;
   userData: SessionUser | null;
+  loading?: boolean;
 }
 
 // Only SUPERADMIN has chat fully disabled; ADMIN gets OPM impersonation mode
 const CHAT_RESTRICTED_ROLES = ['SUPERADMIN'];
 
-const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
+const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData, loading }) => {
   const { t } = useTranslation();
   const isChatRestricted = CHAT_RESTRICTED_ROLES.includes(userData?.role ?? '');
   const isAdmin = userData?.role === 'ADMIN';
@@ -147,9 +148,23 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
 
   return (
     <>
-      <div className={`h-[69px] ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'} border-b flex items-center justify-between px-3 sm:px-6`}>
-        <div />
+      <div className={`h-[69px] ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'} border-b flex items-center px-3 sm:px-6`}>
+        <div className="flex-1" />
 
+        <div className="flex items-center justify-center px-2 pointer-events-none select-none min-w-0">
+          {loading ? (
+            <Skeleton className={`h-5 w-24 sm:w-32 rounded ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
+          ) : userData?.ownerName ? (
+            <span
+              className={`text-base sm:text-xl tracking-widest uppercase truncate ${isDark ? 'text-amber-400' : 'text-amber-600'}`}
+              style={{ fontFamily: 'var(--font-bebas-neue)' }}
+            >
+              {userData.ownerName}
+            </span>
+          ) : null}
+        </div>
+
+        <div className="flex-1 flex justify-end">
         <div className="flex items-center gap-2 sm:gap-4">
           <button
             onClick={() => { if (!isChatRestricted) setShowSearch(true); }}
@@ -210,6 +225,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
 
 
           <NotificationDropdown isDark={isDark} />
+        </div>
         </div>
       </div>
 
