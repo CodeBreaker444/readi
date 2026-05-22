@@ -1780,7 +1780,10 @@
         "notes": "Notes",
         "pilotInCommand": "Pilot in Command",
         "selected": "Selected",
-        "optional": "(optional)"
+        "optional": "(optional)",
+        "flightDate": "Date",
+        "flightTime": "Time",
+        "flightDuration": "Flight Time"
       },
       "placeholders": {
         "selectClient": "Select client…",
@@ -1980,6 +1983,13 @@
     "searchPlaceholder": "Search title, code, description...",
     "allAreas": "All Areas",
     "allStatuses": "All Statuses",
+    "allConfidentiality": "All Confidentiality",
+    "confidentiality": {
+      "PUBLIC": "Public",
+      "INTERNAL": "Internal",
+      "CONFIDENTIAL": "Confidential",
+      "RESTRICTED": "Restricted"
+    },
     "reset": "Reset",
     "noDocuments": "No documents match your search criteria.",
     "deleteTitle": "Are you absolutely sure?",
@@ -2033,7 +2043,9 @@
       "saveError": "Failed to save document. Please try again.",
       "component": "Component",
       "componentOptional": "(optional)",
-      "componentNone": "None — attach to a component"
+      "componentNone": "None — attach to a component",
+      "filterBySystem": "Filter by system",
+      "allSystems": "All systems"
     },
     "toast": {
       "deleteSuccess": "Document deleted successfully.",
@@ -2951,6 +2963,7 @@
     },
     "form": {
       "title": "New Emergency Response Plan",
+      "editTitle": "Edit Emergency Response Plan",
       "type": "Type",
       "contact": "Contact",
       "contactPlaceholder": "e.g. +1 555 000 0000",
@@ -2958,6 +2971,7 @@
       "descriptionPlaceholder": "Describe the response procedure and escalation steps...",
       "cancel": "Cancel",
       "create": "Create Plan",
+      "update": "Save Changes",
       "processing": "Saving..."
     },
     "table": {
@@ -2965,12 +2979,21 @@
       "contact": "Contact",
       "description": "Description",
       "createdAt": "Created",
+      "actions": "Actions",
       "noResults": "No emergency response plans found. Create one to get started."
+    },
+    "deleteDialog": {
+      "title": "Delete Emergency Response Plan",
+      "description": "This will permanently delete this emergency response plan. This action cannot be undone."
     },
     "toast": {
       "loadError": "Failed to load emergency response plans",
       "created": "Emergency response plan created successfully",
-      "saveFailed": "Failed to save the plan"
+      "updated": "Emergency response plan updated successfully",
+      "deleted": "Emergency response plan deleted",
+      "saveFailed": "Failed to save the plan",
+      "updateFailed": "Failed to update the plan",
+      "deleteFailed": "Failed to delete the plan"
     }
   },
   "auditLogs": {
@@ -3577,6 +3600,13 @@
         "fileUploaded": "File uploaded",
         "selectFile": "Please select a file to upload"
       }
+    },
+    "files": {
+      "systemFiles": "System Files",
+      "componentDocs": "Component Documents",
+      "loadingDocs": "Loading documents…",
+      "noComponentDocs": "No component documents found.",
+      "totalFiles": "files"
     },
     "map": {
       "title": "Drone System Map",

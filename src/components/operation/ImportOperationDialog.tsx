@@ -25,6 +25,7 @@ import {
     ChevronLeft,
     ChevronRight,
     ClipboardCheck,
+    Clock,
     FileText,
     FileUp,
     Loader2,
@@ -66,6 +67,15 @@ const STEP_KEYS = [
 ];
 
 const PLATFORMS = [{ value: 'FLYTBASE', label: 'Control Center' }];
+
+function formatDuration(secs?: number): string {
+    if (secs == null) return '—';
+    const h = Math.floor(secs / 3600);
+    const m = Math.floor((secs % 3600) / 60);
+    const s = secs % 60;
+    if (h > 0) return `${h}h ${m}m`;
+    return m > 0 ? `${m}m ${s}s` : `${s}s`;
+}
 
 export default function ImportOperationDialog({ open, onClose, onSaved }: ImportOperationDialogProps) {
     const { t } = useTranslation();
@@ -253,9 +263,10 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
         }
     }
 
-    const selectedPilot = pilots.find((p) => String(p.user_id) === pilotId);
-    const pilotLabel    = selectedPilot ? `${selectedPilot.first_name} ${selectedPilot.last_name}` : '';
-    const statusLabel   = statuses.find((s) => String(s.id) === statusId)?.name ?? '';
+    const selectedPilot    = pilots.find((p) => String(p.user_id) === pilotId);
+    const pilotLabel       = selectedPilot ? `${selectedPilot.first_name} ${selectedPilot.last_name}` : '';
+    const statusLabel      = statuses.find((s) => String(s.id) === statusId)?.name ?? '';
+    const selectedFlightObj = flights.find((f) => f.flight_id === selectedFlightId);
 
     return (
         <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -415,6 +426,33 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                         <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">{flightsError}</p>
                                     )}
                                 </div>
+
+                                {selectedFlightObj && (
+                                    <div className="flex items-center gap-3 rounded-lg border border-violet-200 bg-violet-50 dark:bg-violet-950/20 dark:border-violet-800 px-4 py-3">
+                                        <Clock className="h-5 w-5 text-violet-600 shrink-0" />
+                                        <div className="grid grid-cols-3 gap-6 text-sm flex-1">
+                                            {selectedFlightObj.start_time != null && (
+                                                <>
+                                                    <div>
+                                                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">{t(`${ns}.fields.flightDate`)}</p>
+                                                        <p className="font-medium text-xs">{new Date(selectedFlightObj.start_time).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}</p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">{t(`${ns}.fields.flightTime`)}</p>
+                                                        <p className="font-medium text-xs">{new Date(selectedFlightObj.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                                                    </div>
+                                                </>
+                                            )}
+                                            {selectedFlightObj.duration != null && (
+                                                <div>
+                                                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">{t(`${ns}.fields.flightDuration`)}</p>
+                                                    <p className="font-medium text-xs">{formatDuration(selectedFlightObj.duration)}</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
                                 <p className="text-xs text-muted-foreground">
                                     {t(`${ns}.info.uploadOrSelectFlight`)}
                                 </p>

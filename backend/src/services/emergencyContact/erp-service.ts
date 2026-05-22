@@ -39,3 +39,28 @@ export async function createErp(input: ErpCreateInput): Promise<EmergencyRespons
   if (error) throw new Error(error.message)
   return mapRow(data)
 }
+
+export async function updateErp(id: number, input: Omit<ErpCreateInput, 'owner_id'>): Promise<EmergencyResponsePlan> {
+  const { data, error } = await supabase
+    .from('emergency_response_plan')
+    .update({
+      description: input.description,
+      contact: input.contact,
+      erp_type: input.type,
+    })
+    .eq('erp_id', id)
+    .select()
+    .single()
+
+  if (error) throw new Error(error.message)
+  return mapRow(data)
+}
+
+export async function deleteErp(id: number): Promise<void> {
+  const { error } = await supabase
+    .from('emergency_response_plan')
+    .delete()
+    .eq('erp_id', id)
+
+  if (error) throw new Error(error.message)
+}

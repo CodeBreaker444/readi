@@ -92,7 +92,8 @@ export default function DroneToolPage() {
         open: boolean;
         toolCode: string;
         files: SystemFile[];
-    }>({ open: false, toolCode: '', files: [] });
+        toolId: number | null;
+    }>({ open: false, toolCode: '', files: [], toolId: null });
 
     useEffect(() => {
         fetchToolData();
@@ -197,7 +198,7 @@ export default function DroneToolPage() {
     };
 
     const handleViewFiles = (tool: DroneToolData) => {
-        setFilesModal({ open: true, toolCode: tool.tool_code, files: tool.files ?? [] });
+        setFilesModal({ open: true, toolCode: tool.tool_code, files: tool.files ?? [], toolId: tool.tool_id ?? null });
     };
 
     const handleEditModelDirect = (modelId: number) => {
@@ -568,7 +569,8 @@ export default function DroneToolPage() {
             )}
 
             <FilesDownloadModal open={filesModal.open} toolCode={filesModal.toolCode} files={filesModal.files}
-                onClose={() => setFilesModal({ open: false, toolCode: '', files: [] })} />
+                toolId={filesModal.toolId ?? undefined}
+                onClose={() => setFilesModal({ open: false, toolCode: '', files: [], toolId: null })} />
 
             <ComponentRelationsModal
                 open={showRelations}

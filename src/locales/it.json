@@ -1776,7 +1776,10 @@
         "notes": "Note",
         "pilotInCommand": "Pilota Responsabile",
         "selected": "Selezionato",
-        "optional": "(opzionale)"
+        "optional": "(opzionale)",
+        "flightDate": "Data",
+        "flightTime": "Ora",
+        "flightDuration": "Durata Volo"
       },
       "placeholders": {
         "selectClient": "Seleziona cliente…",
@@ -1971,6 +1974,13 @@
     "searchPlaceholder": "Cerca titolo, codice, descrizione...",
     "allAreas": "Tutte le aree",
     "allStatuses": "Tutti gli stati",
+    "allConfidentiality": "Tutta la riservatezza",
+    "confidentiality": {
+      "PUBLIC": "Pubblico",
+      "INTERNAL": "Interno",
+      "CONFIDENTIAL": "Riservato",
+      "RESTRICTED": "Limitato"
+    },
     "reset": "Ripristina",
     "noDocuments": "Nessun documento corrisponde ai criteri di ricerca.",
     "deleteTitle": "Sei assolutamente sicuro?",
@@ -2024,7 +2034,9 @@
       "saveError": "Errore durante il salvataggio del documento. Riprova.",
       "component": "Componente",
       "componentOptional": "(opzionale)",
-      "componentNone": "Nessuno — collega a un componente"
+      "componentNone": "Nessuno — collega a un componente",
+      "filterBySystem": "Filtra per sistema",
+      "allSystems": "Tutti i sistemi"
     },
     "toast": {
       "deleteSuccess": "Documento eliminato con successo.",
@@ -2943,6 +2955,7 @@
     },
     "form": {
       "title": "Nuovo Piano di Risposta alle Emergenze",
+      "editTitle": "Modifica Piano di Risposta alle Emergenze",
       "type": "Tipo",
       "contact": "Contatto",
       "contactPlaceholder": "es. +39 555 000 0000",
@@ -2950,6 +2963,7 @@
       "descriptionPlaceholder": "Descrivi la procedura di risposta e i passaggi di escalation...",
       "cancel": "Annulla",
       "create": "Crea Piano",
+      "update": "Salva Modifiche",
       "processing": "Salvataggio..."
     },
     "table": {
@@ -2957,12 +2971,21 @@
       "contact": "Contatto",
       "description": "Descrizione",
       "createdAt": "Creato",
+      "actions": "Azioni",
       "noResults": "Nessun piano di risposta alle emergenze trovato. Creane uno per iniziare."
+    },
+    "deleteDialog": {
+      "title": "Elimina Piano di Risposta alle Emergenze",
+      "description": "Questo eliminerà definitivamente questo piano di risposta alle emergenze. Questa azione non può essere annullata."
     },
     "toast": {
       "loadError": "Impossibile caricare i piani di risposta alle emergenze",
       "created": "Piano di risposta alle emergenze creato con successo",
-      "saveFailed": "Impossibile salvare il piano"
+      "updated": "Piano di risposta alle emergenze aggiornato con successo",
+      "deleted": "Piano di risposta alle emergenze eliminato",
+      "saveFailed": "Impossibile salvare il piano",
+      "updateFailed": "Impossibile aggiornare il piano",
+      "deleteFailed": "Impossibile eliminare il piano"
     }
   },
   "auditLogs": {
@@ -3569,6 +3592,13 @@
         "fileUploaded": "File caricato",
         "selectFile": "Per favore seleziona un file da caricare"
       }
+    },
+    "files": {
+      "systemFiles": "File di Sistema",
+      "componentDocs": "Documenti Componenti",
+      "loadingDocs": "Caricamento documenti…",
+      "noComponentDocs": "Nessun documento componente trovato.",
+      "totalFiles": "file"
     },
     "map": {
       "title": "Mappa Sistemi Drone",

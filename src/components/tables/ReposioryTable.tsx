@@ -46,6 +46,7 @@ export default function RepositoryTable() {
     const [searchText, setSearchText] = useState('');
     const [filterArea, setFilterArea] = useState('all');
     const [filterStatus, setFilterStatus] = useState('all');
+    const [filterConfidentiality, setFilterConfidentiality] = useState('all');
 
     const [sorting, setSorting] = useState<SortingState>([]);
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -72,6 +73,7 @@ export default function RepositoryTable() {
                 {
                     area: filterArea === 'all' ? undefined : filterArea,
                     status: filterStatus === 'all' ? undefined : filterStatus,
+                    confidentiality: filterConfidentiality === 'all' ? undefined : filterConfidentiality,
                     search: searchText || undefined,
                 }
             );
@@ -82,7 +84,7 @@ export default function RepositoryTable() {
         } finally {
             setLoading(false);
         }
-    }, [filterArea, filterStatus, searchText]);
+    }, [filterArea, filterStatus, filterConfidentiality, searchText]);
 
     useEffect(() => {
         const t = setTimeout(loadDocuments, 300);
@@ -161,6 +163,7 @@ export default function RepositoryTable() {
         setSearchText('');
         setFilterArea('all');
         setFilterStatus('all');
+        setFilterConfidentiality('all');
     }
 
     return (
@@ -199,7 +202,7 @@ export default function RepositoryTable() {
 
                 <div className={`rounded-xl border p-4 shadow-sm
       ${isDark ? 'bg-slate-800/80 border-slate-700/60' : 'bg-white border-gray-200'}`}>
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6">
                         <div className="relative lg:col-span-2">
                             <Search className={`absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2
             ${isDark ? 'text-slate-500' : 'text-gray-400'}`} />
@@ -240,6 +243,23 @@ export default function RepositoryTable() {
                             <SelectContent className={isDark ? 'bg-slate-800 border-slate-700 text-slate-200' : ''}>
                                 <SelectItem value="all">{t('repository.allStatuses')}</SelectItem>
                                 {statusOptions.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+
+                        <Select value={filterConfidentiality} onValueChange={setFilterConfidentiality}>
+                            <SelectTrigger className={`text-sm
+            ${isDark
+                                    ? 'bg-slate-700 border-slate-600 text-slate-200'
+                                    : 'bg-gray-50 border-gray-200 text-gray-700'
+                                }`}>
+                                <SelectValue placeholder={t('repository.allConfidentiality')} />
+                            </SelectTrigger>
+                            <SelectContent className={isDark ? 'bg-slate-800 border-slate-700 text-slate-200' : ''}>
+                                <SelectItem value="all">{t('repository.allConfidentiality')}</SelectItem>
+                                <SelectItem value="PUBLIC">{t('repository.confidentiality.PUBLIC')}</SelectItem>
+                                <SelectItem value="INTERNAL">{t('repository.confidentiality.INTERNAL')}</SelectItem>
+                                <SelectItem value="CONFIDENTIAL">{t('repository.confidentiality.CONFIDENTIAL')}</SelectItem>
+                                <SelectItem value="RESTRICTED">{t('repository.confidentiality.RESTRICTED')}</SelectItem>
                             </SelectContent>
                         </Select>
 

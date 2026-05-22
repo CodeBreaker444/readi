@@ -52,7 +52,8 @@ const OWNER_ROLE_OPTIONS = [
   'Administrator',
 ];
 
-interface ComponentOption { tool_component_id: number; component_code: string | null; component_name: string | null; component_type: string }
+interface ComponentOption { tool_component_id: number; component_code: string | null; component_name: string | null; component_type: string; fk_tool_id?: number | null }
+interface SystemOption { tool_id: number; tool_code: string }
 
 export default function DocumentFormModal({ open, onClose, onSaved, docTypes, onTypesReload, document }: Props) {
   const { t } = useTranslation();
@@ -76,6 +77,8 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
   const [changeLog, setChangeLog] = useState('');
   const [fkComponentId, setFkComponentId] = useState('__none__');
   const [components, setComponents] = useState<ComponentOption[]>([]);
+  const [systems, setSystems] = useState<SystemOption[]>([]);
+  const [filterSystem, setFilterSystem] = useState('__all__');
   const [componentsLoading, setComponentsLoading] = useState(false);
 
   const isEdit = !!document;
@@ -83,12 +86,24 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
   useEffect(() => {
     if (!open) return;
     setComponentsLoading(true);
-    fetch('/api/system/component/list', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })
-      .then(r => r.json())
-      .then(d => { if (d.code === 1) setComponents(d.data ?? []); })
+    setFilterSystem('__all__');
+    Promise.all([
+      fetch('/api/system/component/list', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })
+        .then(r => r.json()),
+      fetch('/api/system/list', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ active: 'ALL', status: 'ALL' }) })
+        .then(r => r.json()),
+    ])
+      .then(([compData, sysData]) => {
+        if (compData.code === 1) setComponents(compData.data ?? []);
+        if (sysData.code === 1) setSystems((sysData.data ?? []).map((s: any) => ({ tool_id: s.tool_id, tool_code: s.tool_code })));
+      })
       .catch(() => {})
       .finally(() => setComponentsLoading(false));
   }, [open]);
+
+  const filteredComponents = filterSystem === '__all__'
+    ? components
+    : components.filter(c => c.fk_tool_id != null && String(c.fk_tool_id) === filterSystem);
 
   useEffect(() => {
     if (document) {
@@ -317,20 +332,33 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
 
               <div className="sm:col-span-2 space-y-1.5">
                 <Label className={labelCls}>{t('repository.form.component')} <span className={`font-normal ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{t('repository.form.componentOptional')}</span></Label>
-                <Select value={fkComponentId} onValueChange={setFkComponentId} disabled={componentsLoading}>
-                  <SelectTrigger className={`text-sm ${selectTriggerCls}`}>
-                    <SelectValue placeholder={componentsLoading ? t('systems.components.common.loading') : t('repository.form.componentNone')} />
-                  </SelectTrigger>
-                  <SelectContent className={selectContentCls}>
-                    <SelectItem value="__none__"><span className={`italic ${isDark ? 'text-slate-400' : 'text-muted-foreground'}`}>{t('repository.form.none')}</span></SelectItem>
-                    {components.map(c => (
-                      <SelectItem key={c.tool_component_id} value={String(c.tool_component_id)}>
-                        <span className="text-[11px]">{c.component_code || c.component_name || `#${c.tool_component_id}`}</span>
-                        <span className={`ml-1.5 text-[10px] ${isDark ? 'text-slate-400' : 'text-muted-foreground'}`}>{c.component_type}</span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="flex gap-2">
+                  <Select value={filterSystem} onValueChange={(v) => { setFilterSystem(v); setFkComponentId('__none__'); }} disabled={componentsLoading}>
+                    <SelectTrigger className={`text-sm w-44 shrink-0 ${selectTriggerCls}`}>
+                      <SelectValue placeholder={t('repository.form.filterBySystem')} />
+                    </SelectTrigger>
+                    <SelectContent className={selectContentCls}>
+                      <SelectItem value="__all__">{t('repository.form.allSystems')}</SelectItem>
+                      {systems.map(s => (
+                        <SelectItem key={s.tool_id} value={String(s.tool_id)}>{s.tool_code}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={fkComponentId} onValueChange={setFkComponentId} disabled={componentsLoading}>
+                    <SelectTrigger className={`text-sm flex-1 ${selectTriggerCls}`}>
+                      <SelectValue placeholder={componentsLoading ? t('systems.components.common.loading') : t('repository.form.componentNone')} />
+                    </SelectTrigger>
+                    <SelectContent className={selectContentCls}>
+                      <SelectItem value="__none__"><span className={`italic ${isDark ? 'text-slate-400' : 'text-muted-foreground'}`}>{t('repository.form.none')}</span></SelectItem>
+                      {filteredComponents.map(c => (
+                        <SelectItem key={c.tool_component_id} value={String(c.tool_component_id)}>
+                          <span className="text-[11px]">{c.component_code || c.component_name || `#${c.tool_component_id}`}</span>
+                          <span className={`ml-1.5 text-[10px] ${isDark ? 'text-slate-400' : 'text-muted-foreground'}`}>{c.component_type}</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               <div className="space-y-1.5">

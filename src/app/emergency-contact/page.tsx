@@ -20,6 +20,16 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useTheme } from '@/components/useTheme'
 import { EmergencyResponsePlan } from '@/config/types/erp'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 export default function EmergencyContactPage() {
   const { t } = useTranslation()
@@ -29,6 +39,8 @@ export default function EmergencyContactPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [editRecord, setEditRecord] = useState<EmergencyResponsePlan | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<EmergencyResponsePlan | null>(null)
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 8 })
 
   const loadData = useCallback(async () => {
@@ -66,7 +78,56 @@ export default function EmergencyContactPage() {
     }
   }
 
-  const columns = useMemo(() => getErpColumns(isDark, t), [isDark, t])
+  const handleUpdate = async (values: { description: string; contact: string; type: string }) => {
+    if (!editRecord) return
+    setIsSaving(true)
+    try {
+      const response = await axios.post('/api/erp/update', { id: editRecord.id, ...values })
+      if (response.data.code === 1 && response.data.data) {
+        setData((prev) => prev.map((r) => (r.id === editRecord.id ? response.data.data : r)))
+        setEditRecord(null)
+        setDialogOpen(false)
+        toast.success(t('erp.toast.updated'))
+      } else {
+        throw new Error(response.data.error || 'Server returned an error')
+      }
+    } catch (err) {
+      const message = axios.isAxiosError(err)
+        ? err.response?.data?.error
+        : t('erp.toast.updateFailed')
+      toast.error(message)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return
+    try {
+      await axios.post('/api/erp/delete', { id: deleteTarget.id })
+      setData((prev) => prev.filter((r) => r.id !== deleteTarget.id))
+      toast.success(t('erp.toast.deleted'))
+    } catch {
+      toast.error(t('erp.toast.deleteFailed'))
+    } finally {
+      setDeleteTarget(null)
+    }
+  }
+
+  const handleOpenEdit = (row: EmergencyResponsePlan) => {
+    setEditRecord(row)
+    setDialogOpen(true)
+  }
+
+  const handleCloseDialog = () => {
+    setDialogOpen(false)
+    setEditRecord(null)
+  }
+
+  const columns = useMemo(() => getErpColumns(isDark, t, undefined, {
+    onEdit: handleOpenEdit,
+    onDelete: setDeleteTarget,
+  }), [isDark, t])
 
   const table = useReactTable({
     data,
@@ -107,7 +168,7 @@ export default function EmergencyContactPage() {
               <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
             </Button>
             <Button
-              onClick={() => setDialogOpen(true)}
+              onClick={() => { setEditRecord(null); setDialogOpen(true) }}
               className="h-8 gap-1.5 text-xs bg-violet-600 hover:bg-violet-500 text-white border-none shadow-sm shadow-violet-500/20"
             >
               <Plus className="w-3.5 h-3.5" />
@@ -200,11 +261,31 @@ export default function EmergencyContactPage() {
 
       <ERPFormDialog
         open={dialogOpen}
-        onClose={() => setDialogOpen(false)}
-        onSubmit={handleCreate}
+        onClose={handleCloseDialog}
+        onSubmit={editRecord ? handleUpdate : handleCreate}
         loading={isSaving}
         isDark={isDark}
+        editRecord={editRecord}
       />
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent className={isDark ? 'bg-slate-800 border-slate-700 text-white' : ''}>
+          <AlertDialogHeader>
+            <AlertDialogTitle className={isDark ? 'text-white' : ''}>{t('erp.deleteDialog.title')}</AlertDialogTitle>
+            <AlertDialogDescription className={isDark ? 'text-slate-400' : ''}>
+              {t('erp.deleteDialog.description')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className={isDark ? 'bg-slate-700 border-slate-600 text-slate-200 hover:bg-slate-600' : ''}>
+              {t('common.cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-red-600 text-white hover:bg-red-700">
+              {t('common.delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

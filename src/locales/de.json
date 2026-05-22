@@ -1774,7 +1774,10 @@
         "notes": "Notizen",
         "pilotInCommand": "Verantwortlicher Pilot",
         "selected": "Ausgewählt",
-        "optional": "(optional)"
+        "optional": "(optional)",
+        "flightDate": "Datum",
+        "flightTime": "Uhrzeit",
+        "flightDuration": "Flugzeit"
       },
       "placeholders": {
         "selectClient": "Kunden auswählen…",
@@ -1969,6 +1972,13 @@
     "searchPlaceholder": "Titel, Code, Beschreibung suchen...",
     "allAreas": "Alle Bereiche",
     "allStatuses": "Alle Status",
+    "allConfidentiality": "Alle Vertraulichkeiten",
+    "confidentiality": {
+      "PUBLIC": "Öffentlich",
+      "INTERNAL": "Intern",
+      "CONFIDENTIAL": "Vertraulich",
+      "RESTRICTED": "Eingeschränkt"
+    },
     "reset": "Zurücksetzen",
     "noDocuments": "Keine Dokumente entsprechen Ihren Suchkriterien.",
     "deleteTitle": "Sind Sie absolut sicher?",
@@ -2022,7 +2032,9 @@
       "saveError": "Fehler beim Speichern des Dokuments. Bitte versuchen Sie es erneut.",
       "component": "Komponente",
       "componentOptional": "(optional)",
-      "componentNone": "Keine — mit einer Komponente verknüpfen"
+      "componentNone": "Keine — mit einer Komponente verknüpfen",
+      "filterBySystem": "Nach System filtern",
+      "allSystems": "Alle Systeme"
     },
     "toast": {
       "deleteSuccess": "Dokument erfolgreich gelöscht.",
@@ -2939,6 +2951,7 @@
     },
     "form": {
       "title": "Neuer Notfallreaktionsplan",
+      "editTitle": "Notfallreaktionsplan bearbeiten",
       "type": "Typ",
       "contact": "Kontakt",
       "contactPlaceholder": "z.B. +49 555 000 0000",
@@ -2946,6 +2959,7 @@
       "descriptionPlaceholder": "Beschreiben Sie das Reaktionsverfahren und die Eskalationsschritte...",
       "cancel": "Abbrechen",
       "create": "Plan erstellen",
+      "update": "Änderungen speichern",
       "processing": "Speichern..."
     },
     "table": {
@@ -2953,12 +2967,21 @@
       "contact": "Kontakt",
       "description": "Beschreibung",
       "createdAt": "Erstellt",
+      "actions": "Aktionen",
       "noResults": "Keine Notfallreaktionspläne gefunden. Erstellen Sie einen, um zu beginnen."
+    },
+    "deleteDialog": {
+      "title": "Notfallreaktionsplan löschen",
+      "description": "Dies löscht diesen Notfallreaktionsplan dauerhaft. Diese Aktion kann nicht rückgängig gemacht werden."
     },
     "toast": {
       "loadError": "Notfallreaktionspläne konnten nicht geladen werden",
       "created": "Notfallreaktionsplan erfolgreich erstellt",
-      "saveFailed": "Plan konnte nicht gespeichert werden"
+      "updated": "Notfallreaktionsplan erfolgreich aktualisiert",
+      "deleted": "Notfallreaktionsplan gelöscht",
+      "saveFailed": "Plan konnte nicht gespeichert werden",
+      "updateFailed": "Plan konnte nicht aktualisiert werden",
+      "deleteFailed": "Plan konnte nicht gelöscht werden"
     }
   },
   "auditLogs": {
@@ -3490,6 +3513,13 @@
         "fileUploaded": "Datei hochgeladen",
         "selectFile": "Bitte wählen Sie eine Datei zum Hochladen aus"
       }
+    },
+    "files": {
+      "systemFiles": "Systemdateien",
+      "componentDocs": "Komponentendokumente",
+      "loadingDocs": "Dokumente werden geladen…",
+      "noComponentDocs": "Keine Komponentendokumente gefunden.",
+      "totalFiles": "Dateien"
     },
     "map": {
       "title": "Drohnensystem-Karte",
