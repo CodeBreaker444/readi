@@ -46,7 +46,14 @@ export async function PATCH() {
     }
 
     const users = await getUsersWithDroneAtc();
-    const result = await updateFlytrelayUsers(String(userId), creds.token, creds.orgId, users);
+    const flytrelayUsers = users.map(({ systems, ...user }) => ({
+      ...user,
+      systems: systems.map(({ components, ...system }) => ({
+        ...system,
+        components: components.map(({ dccDroneId, ...comp }) => ({ ...comp, drone_id: dccDroneId })),
+      })),
+    }));
+    const result = await updateFlytrelayUsers(String(userId), creds.token, creds.orgId, flytrelayUsers);
 
     return NextResponse.json({ ok: true, synced: result.synced });
   } catch (err) {
