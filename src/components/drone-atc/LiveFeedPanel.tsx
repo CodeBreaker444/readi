@@ -1,6 +1,7 @@
 'use client';
 
-import { FiArrowUp, FiCrosshair, FiThermometer, FiWifi, FiZap } from 'react-icons/fi';
+import { Video } from 'lucide-react';
+import { FiArrowUp, FiCrosshair, FiRefreshCw, FiThermometer, FiWifi, FiZap } from 'react-icons/fi';
 import { TbDrone, TbSatellite } from 'react-icons/tb';
 import type { TelemetryData } from './useDroneATCSocket';
 
@@ -54,27 +55,23 @@ export default function LiveFeedPanel({
         </div>
 
         <div className="flex items-center gap-2 shrink-0 ml-2">
-          {/* {onCameraClick && (
+          {onCameraClick && (
             <button
               type="button"
               onClick={onCameraClick}
               title={cameraActive ? 'Stop stream' : 'Live stream'}
-              className={`flex cursor-pointer items-center justify-center w-8 h-8 rounded-lg transition-all ${
+              className={`flex cursor-pointer items-center justify-center w-9 h-9 rounded-xl transition-all shadow-sm ${
                 cameraActive
-                  ? isDark
-                    ? 'bg-violet-500/25 text-violet-300 ring-1 ring-violet-500/40'
-                    : 'bg-violet-100 text-violet-600 ring-1 ring-violet-300'
-                  : isDark
-                    ? 'bg-slate-700/60 text-slate-300 hover:bg-slate-600/60 hover:text-white'
-                    : 'bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800'
+                  ? 'bg-red-500 hover:bg-red-600 text-white ring-2 ring-red-400/50 shadow-red-500/30 shadow-md'
+                  : 'bg-violet-600 hover:bg-violet-500 text-white ring-2 ring-violet-400/40 shadow-violet-500/20 shadow-md'
               }`}
             >
               {cameraLoading
-                ? <FiRefreshCw className="w-4 h-4 animate-spin" />
-                : <Video className="w-4 h-4" />
+                ? <FiRefreshCw className="w-5 h-5 animate-spin" />
+                : <Video className="w-5 h-5" />
               }
             </button>
-          )} */}
+          )}
           <span className={`w-2 h-2 rounded-full shrink-0 ${
             online ? 'bg-emerald-400 shadow-[0_0_5px_rgba(52,211,153,0.8)]' : 'bg-slate-500'
           }`} />
