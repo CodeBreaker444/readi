@@ -43,6 +43,10 @@ const INITIAL_FORM = {
   phase_out: 'N',
   guarantee_years: '',
   specifications: '',
+  maintenance_cycle: '',
+  maintenance_cycle_hour: '',
+  maintenance_cycle_day: '',
+  maintenance_cycle_flight: '',
 };
 
 export default function AddModelModal({ open, onClose, onSuccess }: AddModelModalProps) {
@@ -78,6 +82,14 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
   const handleCategoryChange = (value: string) => {
     setFormData((prev) => ({ ...prev, model_category: value, model_subtype: '' }));
   };
+
+  const handleCycleChange = (value: string) => {
+    setFormData(prev => ({ ...prev, maintenance_cycle: value, maintenance_cycle_hour: '', maintenance_cycle_day: '', maintenance_cycle_flight: '' }));
+  };
+
+  const showHours = formData.maintenance_cycle === 'HOURS' || formData.maintenance_cycle === 'MIXED';
+  const showDays = formData.maintenance_cycle === 'DAYS' || formData.maintenance_cycle === 'MIXED';
+  const showFlights = formData.maintenance_cycle === 'FLIGHTS' || formData.maintenance_cycle === 'MIXED';
 
   const subtypeOptions = formData.model_category === 'AIRCRAFT'
     ? AIRCRAFT_SUBTYPES
@@ -131,6 +143,10 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
         formData.temp_max             && `Temp Max: ${formData.temp_max} °C`,
         formData.endurance_min        && `Endurance Min: ${formData.endurance_min} min`,
         formData.endurance_max        && `Endurance Max: ${formData.endurance_max} min`,
+        formData.maintenance_cycle    && `Maintenance Cycle: ${formData.maintenance_cycle}`,
+        showHours && formData.maintenance_cycle_hour && `Maint. Hours: ${formData.maintenance_cycle_hour}`,
+        showDays && formData.maintenance_cycle_day   && `Maint. Days: ${formData.maintenance_cycle_day}`,
+        showFlights && formData.maintenance_cycle_flight && `Maint. Flights: ${formData.maintenance_cycle_flight}`,
         formData.phase_out === 'Y'    && `Phase-out: Yes`,
         formData.guarantee_years      && `Guarantee: ${formData.guarantee_years} years`,
         formData.specifications,
@@ -287,6 +303,43 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
                 <Label className="pb-2">{t('systems.components.addModel.fields.maxAltitude')}</Label>
                 <Input type="number" value={formData.max_altitude} onChange={(e) => handleChange('max_altitude', e.target.value)} />
               </div>
+            </div>
+          </div>
+
+          <div>
+            <p className="text-sm font-medium text-muted-foreground mb-2">{t('systems.components.common.maintenanceCycle.label')}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+              <div className="col-span-1 sm:col-span-3">
+                <Label className="pb-2">{t('systems.components.common.maintenanceCycle.cycleType')}</Label>
+                <Select value={formData.maintenance_cycle} onValueChange={handleCycleChange}>
+                  <SelectTrigger><SelectValue placeholder={t('systems.components.common.select')} /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="HOURS">{t('systems.components.common.maintenanceCycle.hours')}</SelectItem>
+                    <SelectItem value="DAYS">{t('systems.components.common.maintenanceCycle.days')}</SelectItem>
+                    <SelectItem value="FLIGHTS">{t('systems.components.common.maintenanceCycle.flights')}</SelectItem>
+                    <SelectItem value="MIXED">{t('systems.components.common.maintenanceCycle.mixed')}</SelectItem>
+                    <SelectItem value="NONE">{t('systems.components.common.maintenanceCycle.none')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {showHours && (
+                <div className="col-span-1 sm:col-span-2">
+                  <Label className="pb-2">{t('systems.components.common.maintenanceCycle.hoursLimit')}</Label>
+                  <Input type="number" min={0} value={formData.maintenance_cycle_hour} onChange={(e) => { if (e.target.value === '' || Number(e.target.value) >= 0) handleChange('maintenance_cycle_hour', e.target.value); }} />
+                </div>
+              )}
+              {showDays && (
+                <div className="col-span-1 sm:col-span-2">
+                  <Label className="pb-2">{t('systems.components.common.maintenanceCycle.daysLimit')}</Label>
+                  <Input type="number" min={0} value={formData.maintenance_cycle_day} onChange={(e) => { if (e.target.value === '' || Number(e.target.value) >= 0) handleChange('maintenance_cycle_day', e.target.value); }} />
+                </div>
+              )}
+              {showFlights && (
+                <div className="col-span-1 sm:col-span-2">
+                  <Label className="pb-2">{t('systems.components.common.maintenanceCycle.flightsLimit')}</Label>
+                  <Input type="number" min={0} value={formData.maintenance_cycle_flight} onChange={(e) => { if (e.target.value === '' || Number(e.target.value) >= 0) handleChange('maintenance_cycle_flight', e.target.value); }} />
+                </div>
+              )}
             </div>
           </div>
 

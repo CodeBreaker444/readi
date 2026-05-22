@@ -265,7 +265,7 @@ export async function updateTool(toolId: number, toolData: any) {
 }
 
 
-async function getOrCreateWarehouseTool(ownerId: number): Promise<number> {
+export async function getOrCreateWarehouseTool(ownerId: number): Promise<number> {
   const { data: existing } = await supabase
     .from('tool')
     .select('tool_id')
@@ -785,6 +785,7 @@ export async function addComponent(componentData: any) {
         location_history: componentData.latitude != null && componentData.longitude != null
           ? [{ latitude: componentData.latitude, longitude: componentData.longitude, changed_at: new Date().toISOString() }]
           : [],
+        ...(componentData.system_detached ? { system_detached: true } : {}),
       },
     })
     .select()
@@ -878,6 +879,7 @@ export async function updateComponent(componentId: number, componentData: any) {
         longitude: newLon,
         drone_classes: componentData.drone_classes ?? baseMeta.drone_classes ?? null,
         location_history: updatedHistory,
+        ...(componentData.system_detached ? { system_detached: true } : {}),
       },
     })
     .eq('component_id', componentId)

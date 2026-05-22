@@ -41,11 +41,12 @@ function isValidLng(v: string) { const n = Number(v); return v !== '' && !isNaN(
 
 export default function LocationPicker({ lat, lng, onChange, isDark = false }: LocationPickerProps) {
   const { t } = useTranslation();
-  const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef       = useRef<L.Map | null>(null);
-  const markerRef    = useRef<L.Marker | null>(null);
-  const tileRef      = useRef<L.TileLayer | null>(null);
-  const searchRef    = useRef<HTMLInputElement>(null);
+  const containerRef      = useRef<HTMLDivElement>(null);
+  const mapRef            = useRef<L.Map | null>(null);
+  const markerRef         = useRef<L.Marker | null>(null);
+  const tileRef           = useRef<L.TileLayer | null>(null);
+  const searchRef         = useRef<HTMLInputElement>(null);
+  const justSelectedRef   = useRef(false);
   const [dropdownRect, setDropdownRect] = useState<DOMRect | null>(null);
 
   const [query, setQuery]               = useState('');
@@ -127,6 +128,8 @@ export default function LocationPicker({ lat, lng, onChange, isDark = false }: L
   useEffect(() => {
     if (query.length < 3) { setResults([]); setShowDropdown(false); return; }
     const timer = setTimeout(async () => {
+      // Skip re-opening dropdown when query was set programmatically after a selection
+      if (justSelectedRef.current) { justSelectedRef.current = false; return; }
       setSearching(true);
       try {
         const res = await fetch(`/api/geocode?q=${encodeURIComponent(query)}`);
@@ -149,6 +152,7 @@ export default function LocationPicker({ lat, lng, onChange, isDark = false }: L
     const rlat = parseFloat(r.lat);
     const rlng = parseFloat(r.lon);
     const shortLabel = r.display_name.split(',').slice(0, 3).join(', ').trim();
+    justSelectedRef.current = true;  // prevent the query change from reopening the dropdown
     setQuery(shortLabel);
     setShowDropdown(false);
     if (mapRef.current) {

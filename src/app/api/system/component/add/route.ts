@@ -1,41 +1,47 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
-import { addComponent } from '@/backend/services/system/system-service';
+import { addComponent, getOrCreateWarehouseTool } from '@/backend/services/system/system-service';
 import { internalError, zodError } from '@/lib/api-error';
 import { requirePermission } from '@/lib/auth/api-auth';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
-const ComponentSchema = z.object({
-  fk_tool_id: z.number().positive(),
-  component_type: z.string().min(1, "Type is required"),
-  component_category: z.string().optional().nullable(),
-  component_code: z.string().optional().nullable(),
-  component_desc: z.string().optional().nullable(),
-  fk_tool_model_id: z.number().optional().nullable(),
-  component_sn: z.string().optional().nullable(),
-  component_activation_date: z.string().optional().nullable(),
-  component_purchase_date: z.string().optional().nullable(),
-  component_vendor: z.string().optional().nullable(),
-  component_guarantee_day: z.number().optional().nullable(),
-  component_status: z.string().default('OPERATIONAL'),
-  cc_platform: z.string().optional().nullable(),
-  gcs_type: z.string().optional().nullable(),
-  dcc_drone_id: z.string().uuid().optional().nullable(),
-  drone_registration_code: z.string().optional().nullable(),
-  maintenance_cycle: z.string().optional().nullable(),
-  maintenance_cycle_hour: z.number().optional().nullable(),
-  maintenance_cycle_day: z.number().optional().nullable(),
-  maintenance_cycle_flight: z.number().optional().nullable(),
-  battery_cycle_ratio: z.number().min(0).max(1).optional().nullable(),
-  fk_parent_component_id: z.number().positive().optional().nullable(),
-  latitude: z.number().min(-90).max(90).optional().nullable(),
-  longitude: z.number().min(-180).max(180).optional().nullable(),
-  drone_classes: z.array(z.string()).optional().nullable(),
-  initial_usage_hours: z.number().min(0).optional().nullable(),
-  initial_maintenance_hours: z.number().min(0).optional().nullable(),
-  initial_maintenance_flights: z.number().min(0).optional().nullable(),
-});
+const ComponentSchema = z
+  .object({
+    fk_tool_id: z.number().positive().optional(),
+    warehouse: z.boolean().optional(),
+    component_type: z.string().min(1, 'Type is required'),
+    component_category: z.string().optional().nullable(),
+    component_code: z.string().optional().nullable(),
+    component_desc: z.string().optional().nullable(),
+    fk_tool_model_id: z.number().optional().nullable(),
+    component_sn: z.string().optional().nullable(),
+    component_activation_date: z.string().optional().nullable(),
+    component_purchase_date: z.string().optional().nullable(),
+    component_vendor: z.string().optional().nullable(),
+    component_guarantee_day: z.number().optional().nullable(),
+    component_status: z.string().default('OPERATIONAL'),
+    cc_platform: z.string().optional().nullable(),
+    gcs_type: z.string().optional().nullable(),
+    dcc_drone_id: z.string().uuid().optional().nullable(),
+    drone_registration_code: z.string().optional().nullable(),
+    maintenance_cycle: z.string().optional().nullable(),
+    maintenance_cycle_hour: z.number().optional().nullable(),
+    maintenance_cycle_day: z.number().optional().nullable(),
+    maintenance_cycle_flight: z.number().optional().nullable(),
+    battery_cycle_ratio: z.number().min(0).max(1).optional().nullable(),
+    fk_parent_component_id: z.number().positive().optional().nullable(),
+    latitude: z.number().min(-90).max(90).optional().nullable(),
+    longitude: z.number().min(-180).max(180).optional().nullable(),
+    drone_classes: z.array(z.string()).optional().nullable(),
+    initial_usage_hours: z.number().min(0).optional().nullable(),
+    initial_maintenance_hours: z.number().min(0).optional().nullable(),
+    initial_maintenance_flights: z.number().min(0).optional().nullable(),
+  })
+  .refine((data) => !!data.fk_tool_id || !!data.warehouse, {
+    message: 'Either fk_tool_id or warehouse:true is required',
+    path: ['fk_tool_id'],
+  });
 
 export async function POST(req: NextRequest) {
   try {
@@ -49,8 +55,13 @@ export async function POST(req: NextRequest) {
 
     const d = validation.data;
 
+    const toolId = d.warehouse
+      ? await getOrCreateWarehouseTool(session!.user.ownerId)
+      : d.fk_tool_id!;
+
     const result = await addComponent({
-      fk_tool_id: d.fk_tool_id,
+      fk_tool_id: toolId,
+      system_detached: d.warehouse ? true : undefined,
       component_type: d.component_type,
       component_category: d.component_category,
       component_code: d.component_code,
@@ -85,7 +96,9 @@ export async function POST(req: NextRequest) {
         eventType: 'CREATE',
         entityType: 'system_component',
         entityId: result.data?.component_id,
-        description: `Added component '${d.component_code ?? d.component_type}' to system #${d.fk_tool_id}`,
+        description: d.warehouse
+          ? `Added component '${d.component_code ?? d.component_type}' to warehouse`
+          : `Added component '${d.component_code ?? d.component_type}' to system #${toolId}`,
         userId: session!.user.userId,
         userName: session!.user.fullname,
         userEmail: session!.user.email,

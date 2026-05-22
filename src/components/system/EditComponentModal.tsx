@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTheme } from '@/components/useTheme';
 import axios from 'axios';
-import { Loader2, Pencil, RotateCcw } from 'lucide-react';
+import { Loader2, Pencil, Search } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -69,10 +69,6 @@ const EMPTY_FORM = {
   component_vendor: '',
   component_guarantee_day: '',
   component_status: 'OPERATIONAL',
-  maintenance_cycle: '',
-  maintenance_cycle_hour: '',
-  maintenance_cycle_day: '',
-  maintenance_cycle_flight: '',
   battery_cycle_ratio: '',
   fk_parent_component_id: '_none',
   latitude: '',
@@ -94,6 +90,7 @@ export default function EditComponentModal({
   const { t } = useTranslation();
   const [loading, setLoading] = useState<boolean>(false);
   const [fetching, setFetching] = useState<boolean>(false);
+  const [systemSearch, setSystemSearch] = useState('');
   const [components, setComponents] = useState<any[]>([]);
   const [selectedComponentId, setSelectedComponentId] = useState<string>('');
   const [showManageTypes, setShowManageTypes] = useState<boolean>(false);
@@ -147,6 +144,7 @@ export default function EditComponentModal({
       setSelectedComponentId('');
       setFormData(EMPTY_FORM);
       setOriginalFkToolId(null);
+      setSystemSearch('');
     }
   }, [open, toolId, initialComponentId]);
 
@@ -169,10 +167,6 @@ export default function EditComponentModal({
       component_vendor: comp.component_vendor || '',
       component_guarantee_day: comp.component_guarantee_day ? String(comp.component_guarantee_day) : '',
       component_status: comp.component_status || 'OPERATIONAL',
-      maintenance_cycle: comp.maintenance_cycle || '',
-      maintenance_cycle_hour: comp.maintenance_cycle_hour != null && comp.maintenance_cycle_hour !== '' ? String(comp.maintenance_cycle_hour) : '',
-      maintenance_cycle_day: comp.maintenance_cycle_day != null && comp.maintenance_cycle_day !== '' ? String(comp.maintenance_cycle_day) : '',
-      maintenance_cycle_flight: comp.maintenance_cycle_flight != null && comp.maintenance_cycle_flight !== '' ? String(comp.maintenance_cycle_flight) : '',
       battery_cycle_ratio: comp.battery_cycle_ratio != null ? String(comp.battery_cycle_ratio) : '',
       fk_parent_component_id: comp.fk_parent_component_id ? String(comp.fk_parent_component_id) : '_none',
       latitude: comp.latitude != null ? String(comp.latitude) : '',
@@ -239,47 +233,12 @@ export default function EditComponentModal({
 
   const handleModelSelect = (modelId: string) => {
     handleChange('fk_tool_model_id', modelId);
-    const model = models.find(m => String(m.tool_model_id) === modelId);
-    if (model) {
-      setFormData(prev => ({
-        ...prev,
-        fk_tool_model_id: modelId,
-        maintenance_cycle: model.maintenance_cycle || '',
-        maintenance_cycle_hour: model.maintenance_cycle_hour != null ? String(model.maintenance_cycle_hour) : '',
-        maintenance_cycle_day: model.maintenance_cycle_day != null ? String(model.maintenance_cycle_day) : '',
-        maintenance_cycle_flight: model.maintenance_cycle_flight != null ? String(model.maintenance_cycle_flight) : '',
-      }));
-    }
   };
 
-  const handleResetMaintenanceToModel = () => {
-    const model = models.find(m => String(m.tool_model_id) === formData.fk_tool_model_id);
-    if (model) {
-      setFormData(prev => ({
-        ...prev,
-        maintenance_cycle: model.maintenance_cycle || '',
-        maintenance_cycle_hour: model.maintenance_cycle_hour != null ? String(model.maintenance_cycle_hour) : '',
-        maintenance_cycle_day: model.maintenance_cycle_day != null ? String(model.maintenance_cycle_day) : '',
-        maintenance_cycle_flight: model.maintenance_cycle_flight != null ? String(model.maintenance_cycle_flight) : '',
-      }));
-      toast.info(t('systems.components.editComponent.toasts.resetToModel'));
-    }
-  };
-
-  const handleCycleChange = (value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      maintenance_cycle: value,
-      maintenance_cycle_hour: '',
-      maintenance_cycle_day: '',
-      maintenance_cycle_flight: '',
-    }));
-  };
-
-  const handleCycleInput = (field: string, value: string ) => {
-    const num = Number(value);
-    if (value === '' || num >= 0) handleChange(field, value);
-  };
+  const selectedModel = models.find(m => String(m.tool_model_id) === formData.fk_tool_model_id);
+  const selectedModelCycle = selectedModel?.maintenance_cycle || '';
+  const showHours = selectedModelCycle === 'HOURS' || selectedModelCycle === 'MIXED';
+  const showFlights = selectedModelCycle === 'FLIGHTS' || selectedModelCycle === 'MIXED';
 
   const handleSystemChange = async (v: string) => {
     handleChange('fk_tool_id', v);
@@ -301,10 +260,11 @@ export default function EditComponentModal({
     }
   };
 
-  const showHours = formData.maintenance_cycle === 'HOURS' || formData.maintenance_cycle === 'MIXED';
-  const showDays = formData.maintenance_cycle === 'DAYS' || formData.maintenance_cycle === 'MIXED';
-  const showFlights = formData.maintenance_cycle === 'FLIGHTS' || formData.maintenance_cycle === 'MIXED';
-  const showNone = formData.maintenance_cycle === 'NONE';
+  const filteredTools = tools.filter((t: any) => {
+    if (!systemSearch) return true;
+    const q = systemSearch.toLowerCase();
+    return t.tool_code?.toLowerCase().includes(q) || t.tool_desc?.toLowerCase().includes(q);
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -332,10 +292,6 @@ export default function EditComponentModal({
         component_vendor: formData.component_vendor || null,
         component_guarantee_day: formData.component_guarantee_day ? Number(formData.component_guarantee_day) : null,
         component_status: formData.component_status,
-        maintenance_cycle: formData.maintenance_cycle || null,
-        maintenance_cycle_hour: formData.maintenance_cycle_hour ? Number(formData.maintenance_cycle_hour) : null,
-        maintenance_cycle_day: formData.maintenance_cycle_day ? Number(formData.maintenance_cycle_day) : null,
-        maintenance_cycle_flight: formData.maintenance_cycle_flight ? Number(formData.maintenance_cycle_flight) : null,
         battery_cycle_ratio: formData.battery_cycle_ratio ? Number(formData.battery_cycle_ratio) : null,
         fk_parent_component_id: formData.fk_parent_component_id && formData.fk_parent_component_id !== '_none' ? Number(formData.fk_parent_component_id) : null,
         latitude: formData.latitude ? Number(formData.latitude) : null,
@@ -427,18 +383,38 @@ export default function EditComponentModal({
                     <Select value={formData.fk_tool_id} onValueChange={handleSystemChange}>
                       <SelectTrigger className={`w-full truncate ${selectTriggerCls}`}>
                         <SelectValue placeholder={t('systems.components.common.select')}>
-                          {formData.fk_tool_id && formData.fk_tool_id !== '_none'
-                            ? (() => { const tool = tools.find((x: any) => String(x.tool_id) === formData.fk_tool_id); return tool ? <span className="block w-full truncate text-left">{tool.tool_code}</span> : null; })()
-                            : formData.fk_tool_id === '_none' ? <span className={`italic ${isDark ? 'text-slate-400' : 'text-muted-foreground'}`}>None</span> : null}
+                          {formData.fk_tool_id === '_none'
+                            ? <span className="font-medium text-amber-600">Warehouse</span>
+                            : formData.fk_tool_id
+                              ? (() => { const tool = tools.find((x: any) => String(x.tool_id) === formData.fk_tool_id); return tool ? <span className="block w-full truncate text-left">{tool.tool_code}</span> : null; })()
+                              : null}
                         </SelectValue>
                       </SelectTrigger>
-                      <SelectContent className={`z-50 max-h-60 overflow-y-auto ${selectContentCls}`}>
-                        <SelectItem value="_none"><span className={`italic ${isDark ? 'text-slate-400' : 'text-muted-foreground'}`}>None</span></SelectItem>
-                        {tools.map((tool: any) => (
-                          <SelectItem key={tool.tool_id} value={tool.tool_id.toString()}>
-                            <SystemOptionLabel tool={tool} />
+                      <SelectContent className={`z-50 max-h-80 overflow-hidden p-0 ${selectContentCls}`}>
+                        <div className={`p-2 pb-1 border-b ${isDark ? 'border-slate-700' : ''}`}>
+                          <div className="relative">
+                            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                            <input
+                              className={`w-full h-7 rounded-sm border pl-7 pr-2 text-xs outline-none focus:ring-1 focus:ring-violet-500/30 ${isDark ? 'bg-slate-700 border-slate-600 text-slate-200 placeholder:text-slate-500' : 'bg-background'}`}
+                              placeholder="Search system..."
+                              value={systemSearch}
+                              onChange={e => setSystemSearch(e.target.value)}
+                              onKeyDown={e => e.stopPropagation()}
+                            />
+                          </div>
+                        </div>
+                        <div className="overflow-y-auto max-h-60">
+                          <SelectItem value="_none">
+                            <span className="flex items-center gap-2 text-xs font-medium text-amber-600">
+                              Warehouse <span className="font-normal text-muted-foreground">(temporary storage)</span>
+                            </span>
                           </SelectItem>
-                        ))}
+                          {filteredTools.map((tool: any) => (
+                            <SelectItem key={tool.tool_id} value={tool.tool_id.toString()}>
+                              <SystemOptionLabel tool={tool} />
+                            </SelectItem>
+                          ))}
+                        </div>
                       </SelectContent>
                     </Select>
                   </div>
@@ -643,64 +619,6 @@ export default function EditComponentModal({
                     isDark={isDark}
                     onChange={(lat, lng) => setFormData(prev => ({ ...prev, latitude: lat, longitude: lng }))}
                   />
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <p className={sectionLabelCls}>{t('systems.components.common.maintenanceCycle.label')}</p>
-                    {formData.fk_tool_model_id && (
-                      <button type="button" onClick={handleResetMaintenanceToModel} className={`inline-flex items-center gap-1 text-xs transition-colors ${isDark ? 'text-violet-400 hover:text-violet-300' : 'text-violet-600 hover:text-violet-500'}`}>
-                        <RotateCcw className="h-3 w-3" />
-                        {t('systems.components.common.maintenanceCycle.resetToModel')}
-                      </button>
-                    )}
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
-                    <div className="col-span-1 sm:col-span-3">
-                      <Label className={labelCls}>{t('systems.components.common.maintenanceCycle.cycleType')}</Label>
-                      <Select value={formData.maintenance_cycle} onValueChange={handleCycleChange}>
-                        <SelectTrigger className={selectTriggerCls}><SelectValue placeholder={t('systems.components.common.select')} /></SelectTrigger>
-                        <SelectContent className={selectContentCls}>
-                          <SelectItem value="HOURS">{t('systems.components.common.maintenanceCycle.hours')}</SelectItem>
-                          <SelectItem value="DAYS">{t('systems.components.common.maintenanceCycle.days')}</SelectItem>
-                          <SelectItem value="FLIGHTS">{t('systems.components.common.maintenanceCycle.flights')}</SelectItem>
-                          <SelectItem value="MIXED">{t('systems.components.common.maintenanceCycle.mixed')}</SelectItem>
-                          <SelectItem value="NONE">{t('systems.components.common.maintenanceCycle.none')}</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    {showNone && (
-                      <div className="col-span-1 sm:col-span-9 flex items-end">
-                        <span className={`inline-flex items-center px-3 py-2 rounded-md text-sm ${isDark ? 'bg-slate-700 text-slate-400' : 'bg-muted text-muted-foreground'}`}>
-                          {t('systems.components.common.maintenanceCycle.noCycleRequired')}
-                        </span>
-                      </div>
-                    )}
-                    {showHours && (
-                      <div className="col-span-1 sm:col-span-2">
-                        <Label className={labelCls}>{t('systems.components.common.maintenanceCycle.hoursLimit')}</Label>
-                        <Input type="number" min={0} className={inputCls} value={formData.maintenance_cycle_hour} onChange={e => handleCycleInput('maintenance_cycle_hour', e.target.value)} />
-                      </div>
-                    )}
-                    {showDays && (
-                      <div className="col-span-1 sm:col-span-2">
-                        <Label className={labelCls}>{t('systems.components.common.maintenanceCycle.daysLimit')}</Label>
-                        <Input type="number" min={0} className={inputCls} value={formData.maintenance_cycle_day} onChange={e => handleCycleInput('maintenance_cycle_day', e.target.value)} />
-                      </div>
-                    )}
-                    {showFlights && (
-                      <div className="col-span-1 sm:col-span-2">
-                        <Label className={labelCls}>{t('systems.components.common.maintenanceCycle.flightsLimit')}</Label>
-                        <Input type="number" min={0} className={inputCls} value={formData.maintenance_cycle_flight} onChange={e => handleCycleInput('maintenance_cycle_flight', e.target.value)} />
-                      </div>
-                    )}
-                    {formData.component_type === 'BATTERY' && (
-                      <div className="col-span-1 sm:col-span-2">
-                        <Label className={labelCls}>{t('systems.components.common.maintenanceCycle.cycleRatio')}</Label>
-                        <Input type="number" min={0.01} max={1} step={0.01} placeholder="e.g. 0.87" className={inputCls} value={formData.battery_cycle_ratio} onChange={e => handleChange('battery_cycle_ratio', e.target.value)} />
-                      </div>
-                    )}
-                  </div>
                 </div>
 
                 <div>
