@@ -22,6 +22,7 @@ export interface TelemetryData {
   satellites?: number;
   hms_flags?: string[];
   status?: string;
+  armed?: boolean;
   timestamp: number;
   company_id?: number;
   user_details?: {
@@ -83,6 +84,7 @@ export function useDroneATCSocket(): UseDroneATCSocketReturn {
 
       if (fleetRes.ok) {
         const fleetData = await fleetRes.json();
+              console.log('fleet response:', fleetData);
         setUserRole(fleetData.role ?? null);
 
         const items: TelemetryData[] = fleetData.items ?? [];
@@ -124,7 +126,7 @@ export function useDroneATCSocket(): UseDroneATCSocketReturn {
 
       socket.on('telemetry', (payload: { droneId: string; data: TelemetryData; timestamp: number }) => {
         const incoming = payload.data ?? (payload as unknown as TelemetryData);
-        console.log('tele:',incoming);
+        // console.log('tele:',incoming);
 
         const id = incoming.drone_id ?? payload.droneId;
         if (!id) return;

@@ -26,6 +26,7 @@ const DroneATCMap = dynamic(() => import('@/components/drone-atc/DroneATCMap'), 
 
 interface StreamingResponse {
   hasCredentials: boolean;
+  statusMessage?: string;
   platform?: 'agora' | 'millicast' | 'mediamtx' | 'antmedia';
   url?: string;
   url_type?: number;
@@ -106,6 +107,21 @@ export default function DroneATCPage() {
   const handleCameraClick = useCallback(async () => {
     if (!selectedDroneId) return;
     if (showVideoPanel) { setShowVideoPanel(false); return; }
+
+    const currentDrone = drones[selectedDroneId];
+
+    if (currentDrone?.armed === false) {
+      setStreamingData({ hasCredentials: true, statusMessage: 'Drone is not armed. Arm the drone to enable live streaming.' });
+      setShowVideoPanel(true);
+      return;
+    }
+
+    if (currentDrone && currentDrone.armed === undefined) {
+      setStreamingData({ hasCredentials: true, statusMessage: 'Armed status not available for this drone.' });
+      setShowVideoPanel(true);
+      return;
+    }
+
     setStreamingLoading(true);
     try {
       const res = await fetch(`/api/drone-atc/stream?droneId=${encodeURIComponent(selectedDroneId)}`);
@@ -119,7 +135,7 @@ export default function DroneATCPage() {
     } finally {
       setStreamingLoading(false);
     }
-  }, [selectedDroneId, showVideoPanel]);
+  }, [selectedDroneId, showVideoPanel, drones]);
 
   const handleUpdateDrones = useCallback(async () => {
     if (syncState === 'loading') return;
@@ -436,7 +452,11 @@ export default function DroneATCPage() {
             <div className="absolute bottom-3 right-3 z-400 flex flex-col gap-2 w-68">
               {showVideoPanel && streamingData && (
                 <div className="relative rounded-2xl overflow-hidden bg-black" style={{ aspectRatio: '16/9' }}>
-                  {streamingData.error ? (
+                  {streamingData.statusMessage ? (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 px-4 text-center">
+                      <span className="text-[11px] text-amber-400 font-medium leading-snug">{streamingData.statusMessage}</span>
+                    </div>
+                  ) : streamingData.error ? (
                     <div className="absolute inset-0 flex items-center justify-center px-4 text-center">
                       <span className="text-[11px] text-red-400 font-medium">{streamingData.error}</span>
                     </div>
@@ -453,10 +473,12 @@ export default function DroneATCPage() {
                   >
                     <X className="w-3 h-3" />
                   </button>
-                  <span className="absolute top-2 left-2 flex items-center gap-1 text-[9px] text-green-400 font-semibold">
-                    <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                    LIVE
-                  </span>
+                  {!streamingData.statusMessage && !streamingData.error && (
+                    <span className="absolute top-2 left-2 flex items-center gap-1 text-[9px] text-green-400 font-semibold">
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                      LIVE
+                    </span>
+                  )}
                 </div>
               )}
               <LiveFeedPanel
