@@ -3,10 +3,10 @@
 import { Skeleton } from '@/components/ui/skeleton';
 import '@/lib/i18n/config';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FiArrowUp, FiNavigation, FiSearch, FiWifi, FiZap } from 'react-icons/fi';
 import { GiDeliveryDrone } from 'react-icons/gi';
 import { MdDock } from 'react-icons/md';
-import { useTranslation } from 'react-i18next';
 import type { DroneMap, TelemetryData } from './useDroneATCSocket';
 
 interface DroneListProps {
@@ -135,12 +135,19 @@ function EmptyState({ isDark, type }: { isDark: boolean; type: 'drone' | 'dock' 
 }
 
 function PilotHeader({ pilotName, isDark }: { pilotName: string; isDark: boolean }) {
+  const isFlytbase = pilotName === 'External / Unlinked';
   return (
     <div className={`flex items-center gap-2 px-1 pt-3 pb-1 first:pt-0`}>
       <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${isDark ? 'bg-violet-500' : 'bg-violet-400'}`} />
-      <span className={`text-[9px] font-bold uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-        {pilotName.toUpperCase()}
-      </span>
+      {isFlytbase ? (
+        <span className={`text-[9px] font-bold uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+          FLYBASE
+        </span>
+      ) : (
+        <span className={`text-[9px] font-bold uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+          {pilotName.toUpperCase()}
+        </span>
+      )}
       <div className={`flex-1 h-px ${isDark ? 'bg-slate-700/50' : 'bg-slate-200'}`} />
     </div>
   );
