@@ -47,6 +47,8 @@ export default function LocationPicker({ lat, lng, onChange, isDark = false }: L
   const tileRef           = useRef<L.TileLayer | null>(null);
   const searchRef         = useRef<HTMLInputElement>(null);
   const justSelectedRef   = useRef(false);
+  const blockMapClickRef  = useRef(false);
+  const dropdownRef       = useRef<HTMLDivElement>(null);
   const [dropdownRect, setDropdownRect] = useState<DOMRect | null>(null);
 
   const [query, setQuery]               = useState('');
@@ -68,7 +70,7 @@ export default function LocationPicker({ lat, lng, onChange, isDark = false }: L
     } else {
       const m = L.marker([clat, clng], { draggable: true, icon: PIN_ICON }).addTo(map);
       m.on('dragend', () => {
-        const p = m.getLatLng();
+        const p = m.getLatLng().wrap(); // wrap lon to [-180, 180] for world-copy maps
         onChange(p.lat.toFixed(6), p.lng.toFixed(6));
       });
       markerRef.current = m;
@@ -93,8 +95,10 @@ export default function LocationPicker({ lat, lng, onChange, isDark = false }: L
     }
 
     map.on('click', (e) => {
-      placeOrMoveMarker(map, e.latlng.lat, e.latlng.lng);
-      onChange(e.latlng.lat.toFixed(6), e.latlng.lng.toFixed(6));
+      if (blockMapClickRef.current) return;
+      const { lat: clat, lng: clng } = e.latlng.wrap(); // clamp lon to [-180, 180]
+      placeOrMoveMarker(map, clat, clng);
+      onChange(clat.toFixed(6), clng.toFixed(6));
     });
 
     mapRef.current = map;
@@ -128,7 +132,6 @@ export default function LocationPicker({ lat, lng, onChange, isDark = false }: L
   useEffect(() => {
     if (query.length < 3) { setResults([]); setShowDropdown(false); return; }
     const timer = setTimeout(async () => {
-      // Skip re-opening dropdown when query was set programmatically after a selection
       if (justSelectedRef.current) { justSelectedRef.current = false; return; }
       setSearching(true);
       try {
@@ -153,6 +156,8 @@ export default function LocationPicker({ lat, lng, onChange, isDark = false }: L
     const rlng = parseFloat(r.lon);
     const shortLabel = r.display_name.split(',').slice(0, 3).join(', ').trim();
     justSelectedRef.current = true;  // prevent the query change from reopening the dropdown
+    blockMapClickRef.current = true;  // prevent the map click (fired after mousedown) from overriding coords
+    setTimeout(() => { blockMapClickRef.current = false; }, 300);
     setQuery(shortLabel);
     setShowDropdown(false);
     if (mapRef.current) {
@@ -247,6 +252,7 @@ export default function LocationPicker({ lat, lng, onChange, isDark = false }: L
 
         {showDropdown && results.length > 0 && dropdownRect && typeof document !== 'undefined' && createPortal(
           <div
+            ref={dropdownRef}
             className={`fixed z-9999 max-h-48 overflow-y-auto rounded-md border shadow-lg ${dropdownCls}`}
             style={{
               top:  dropdownRect.bottom + window.scrollY + 4,
@@ -258,7 +264,7 @@ export default function LocationPicker({ lat, lng, onChange, isDark = false }: L
               <button
                 key={r.place_id}
                 type="button"
-                onMouseDown={() => selectResult(r)}
+                onPointerDown={(e) => { e.preventDefault(); selectResult(r); }}
                 className={`w-full border-b px-3 py-2 text-left text-xs last:border-0 ${resultItemCls}`}
               >
                 {r.display_name}

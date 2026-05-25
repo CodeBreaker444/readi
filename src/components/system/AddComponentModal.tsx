@@ -167,7 +167,9 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
     try {
       const { data } = await axios.get('/api/system/drone-classes');
       if (data.code === 1) setDroneClasses(data.data ?? []);
-    } catch { /* non-fatal */ } finally { setDroneClassesLoading(false); }
+    } catch { 
+      console.error('Failed to load drone classes');
+     } finally { setDroneClassesLoading(false); }
   }, []);
   useEffect(() => { reloadDroneClasses(); }, [reloadDroneClasses]);
 
