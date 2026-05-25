@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import axios from 'axios';
+import { Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTheme } from '../useTheme';
 import { ManageDocTypesModal } from './ManageDocTypesModal';
@@ -52,8 +53,37 @@ const OWNER_ROLE_OPTIONS = [
   'Administrator',
 ];
 
-interface ComponentOption { tool_component_id: number; component_code: string | null; component_name: string | null; component_type: string; fk_tool_id?: number | null }
-interface SystemOption { tool_id: number; tool_code: string }
+interface ComponentOption { tool_component_id: number; component_code: string | null; component_name: string | null; component_type: string; fk_tool_id?: number | null; component_status?: string | null }
+interface SystemOption { tool_id: number; tool_code: string; tool_desc?: string | null; tool_status?: string | null }
+
+const STATUS_COLORS: Record<string, string> = {
+  OPERATIONAL: 'bg-green-100 text-green-700',
+  MAINTENANCE: 'bg-yellow-100 text-yellow-700',
+  NOT_OPERATIONAL: 'bg-red-100 text-red-700',
+  DECOMMISSIONED: 'bg-gray-100 text-gray-500',
+};
+
+function SystemOptionLabel({ tool, isDark }: { tool: SystemOption; isDark: boolean }) {
+  const statusClass = STATUS_COLORS[tool.tool_status ?? ''] || (isDark ? 'bg-slate-600 text-slate-300' : 'bg-gray-100 text-gray-600');
+  const mutedCls = isDark ? 'text-slate-400' : 'text-muted-foreground';
+  const textCls = isDark ? 'text-slate-200' : '';
+  return (
+    <div className="flex flex-col gap-0.5 leading-tight">
+      <div className="flex gap-2">
+        <span className={`w-20 shrink-0 text-[10px] font-semibold uppercase ${mutedCls}`}>Code</span>
+        <span className={`truncate text-[11px] font-medium ${textCls}`}>{tool.tool_code}</span>
+      </div>
+      <div className="flex gap-2">
+        <span className={`w-20 shrink-0 text-[10px] font-semibold uppercase ${mutedCls}`}>Description</span>
+        <span className={`truncate text-[11px] ${textCls}`}>{tool.tool_desc || '—'}</span>
+      </div>
+      <div className="flex gap-2 items-center">
+        <span className={`w-20 shrink-0 text-[10px] font-semibold uppercase ${mutedCls}`}>Status</span>
+        <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${statusClass}`}>{tool.tool_status || '—'}</span>
+      </div>
+    </div>
+  );
+}
 
 export default function DocumentFormModal({ open, onClose, onSaved, docTypes, onTypesReload, document }: Props) {
   const { t } = useTranslation();
@@ -79,6 +109,7 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
   const [components, setComponents] = useState<ComponentOption[]>([]);
   const [systems, setSystems] = useState<SystemOption[]>([]);
   const [filterSystem, setFilterSystem] = useState('__all__');
+  const [systemSearch, setSystemSearch] = useState('');
   const [componentsLoading, setComponentsLoading] = useState(false);
 
   const isEdit = !!document;
@@ -95,7 +126,7 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
     ])
       .then(([compData, sysData]) => {
         if (compData.code === 1) setComponents(compData.data ?? []);
-        if (sysData.code === 1) setSystems((sysData.data ?? []).map((s: any) => ({ tool_id: s.tool_id, tool_code: s.tool_code })));
+        if (sysData.code === 1) setSystems((sysData.data ?? []).map((s: any) => ({ tool_id: s.tool_id, tool_code: s.tool_code, tool_desc: s.tool_desc ?? null, tool_status: s.tool_status ?? null })));
       })
       .catch(() => {})
       .finally(() => setComponentsLoading(false));
@@ -333,29 +364,87 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
               <div className="sm:col-span-2 space-y-1.5">
                 <Label className={labelCls}>{t('repository.form.component')} <span className={`font-normal ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{t('repository.form.componentOptional')}</span></Label>
                 <div className="flex gap-2">
-                  <Select value={filterSystem} onValueChange={(v) => { setFilterSystem(v); setFkComponentId('__none__'); }} disabled={componentsLoading}>
-                    <SelectTrigger className={`text-sm w-44 shrink-0 ${selectTriggerCls}`}>
-                      <SelectValue placeholder={t('repository.form.filterBySystem')} />
+                  <Select
+                    value={filterSystem}
+                    onValueChange={(v) => { setFilterSystem(v); setFkComponentId('__none__'); setSystemSearch(''); }}
+                    disabled={componentsLoading}
+                  >
+                    <SelectTrigger className={`text-sm w-52 shrink-0 ${selectTriggerCls}`}>
+                      <SelectValue placeholder={t('repository.form.filterBySystem')}>
+                        {filterSystem === '__all__'
+                          ? <span>{t('repository.form.allSystems')}</span>
+                          : (() => { const s = systems.find(x => String(x.tool_id) === filterSystem); return s ? <span className="block truncate text-left">{s.tool_code}</span> : null; })()}
+                      </SelectValue>
                     </SelectTrigger>
-                    <SelectContent className={selectContentCls}>
-                      <SelectItem value="__all__">{t('repository.form.allSystems')}</SelectItem>
-                      {systems.map(s => (
-                        <SelectItem key={s.tool_id} value={String(s.tool_id)}>{s.tool_code}</SelectItem>
-                      ))}
+                    <SelectContent className={`${selectContentCls} z-50 max-h-80 overflow-hidden p-0`}>
+                      <div className={`p-2 pb-1 border-b ${isDark ? 'border-slate-700' : ''}`}>
+                        <div className="relative">
+                          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                          <input
+                            className={`w-full h-7 rounded-sm border pl-7 pr-2 text-xs outline-none focus:ring-1 focus:ring-violet-500/30 ${isDark ? 'bg-slate-700 border-slate-600 text-slate-200 placeholder:text-slate-500' : 'bg-background'}`}
+                            placeholder="Search system..."
+                            value={systemSearch}
+                            onChange={e => setSystemSearch(e.target.value)}
+                            onKeyDown={e => e.stopPropagation()}
+                          />
+                        </div>
+                      </div>
+                      <div className="overflow-y-auto max-h-60">
+                        <SelectItem value="__all__">{t('repository.form.allSystems')}</SelectItem>
+                        {systems
+                          .filter(s => {
+                            if (!systemSearch) return true;
+                            const q = systemSearch.toLowerCase();
+                            return s.tool_code?.toLowerCase().includes(q) || s.tool_desc?.toLowerCase().includes(q);
+                          })
+                          .map(s => (
+                            <SelectItem key={s.tool_id} value={String(s.tool_id)}>
+                              <SystemOptionLabel tool={s} isDark={isDark} />
+                            </SelectItem>
+                          ))}
+                      </div>
                     </SelectContent>
                   </Select>
                   <Select value={fkComponentId} onValueChange={setFkComponentId} disabled={componentsLoading}>
                     <SelectTrigger className={`text-sm flex-1 ${selectTriggerCls}`}>
-                      <SelectValue placeholder={componentsLoading ? t('systems.components.common.loading') : t('repository.form.componentNone')} />
+                      <SelectValue placeholder={componentsLoading ? t('systems.components.common.loading') : t('repository.form.componentNone')}>
+                        {fkComponentId !== '__none__' && (() => {
+                          const c = filteredComponents.find(x => String(x.tool_component_id) === fkComponentId);
+                          if (!c) return null;
+                          const statusClass = STATUS_COLORS[c.component_status ?? ''] || (isDark ? 'bg-slate-600 text-slate-300' : 'bg-gray-100 text-gray-600');
+                          return (
+                            <span className="flex items-center gap-1.5 truncate">
+                              <span className="truncate">{c.component_code || c.component_name || `#${c.tool_component_id}`}</span>
+                              <span className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium ${statusClass}`}>{c.component_status}</span>
+                            </span>
+                          );
+                        })()}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent className={selectContentCls}>
                       <SelectItem value="__none__"><span className={`italic ${isDark ? 'text-slate-400' : 'text-muted-foreground'}`}>{t('repository.form.none')}</span></SelectItem>
-                      {filteredComponents.map(c => (
-                        <SelectItem key={c.tool_component_id} value={String(c.tool_component_id)}>
-                          <span className="text-[11px]">{c.component_code || c.component_name || `#${c.tool_component_id}`}</span>
-                          <span className={`ml-1.5 text-[10px] ${isDark ? 'text-slate-400' : 'text-muted-foreground'}`}>{c.component_type}</span>
-                        </SelectItem>
-                      ))}
+                      {filteredComponents.map(c => {
+                        const statusClass = STATUS_COLORS[c.component_status ?? ''] || (isDark ? 'bg-slate-600 text-slate-300' : 'bg-gray-100 text-gray-600');
+                        const mutedCls = isDark ? 'text-slate-400' : 'text-muted-foreground';
+                        return (
+                          <SelectItem key={c.tool_component_id} value={String(c.tool_component_id)}>
+                            <div className="flex flex-col gap-0.5 leading-tight">
+                              <div className="flex gap-2">
+                                <span className={`w-16 shrink-0 text-[10px] font-semibold uppercase ${mutedCls}`}>Name</span>
+                                <span className={`truncate text-[11px] font-medium ${isDark ? 'text-slate-200' : ''}`}>{c.component_code || c.component_name || `#${c.tool_component_id}`}</span>
+                              </div>
+                              <div className="flex gap-2">
+                                <span className={`w-16 shrink-0 text-[10px] font-semibold uppercase ${mutedCls}`}>Type</span>
+                                <span className={`truncate text-[11px] ${isDark ? 'text-slate-300' : ''}`}>{c.component_type}</span>
+                              </div>
+                              <div className="flex gap-2 items-center">
+                                <span className={`w-16 shrink-0 text-[10px] font-semibold uppercase ${mutedCls}`}>Status</span>
+                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${statusClass}`}>{c.component_status || '—'}</span>
+                              </div>
+                            </div>
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
                 </div>

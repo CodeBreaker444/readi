@@ -99,6 +99,7 @@ export default function EditComponentModal({
   const [droneClassesLoading, setDroneClassesLoading] = useState<boolean>(false);
   const [loadingParent, setLoadingParent] = useState<boolean>(false);
   const [originalFkToolId, setOriginalFkToolId] = useState<number | null>(null);
+  const [drcSyncedAt, setDrcSyncedAt] = useState<string | null>(null);
 
     const [formData, setFormData] = useState(EMPTY_FORM);
 
@@ -144,12 +145,14 @@ export default function EditComponentModal({
       setSelectedComponentId('');
       setFormData(EMPTY_FORM);
       setOriginalFkToolId(null);
+      setDrcSyncedAt(null);
       setSystemSearch('');
     }
   }, [open, toolId, initialComponentId]);
 
   const populateForm = (comp: any) => {
     setOriginalFkToolId(comp.fk_tool_id ?? null);
+    setDrcSyncedAt(comp.drc_synced_at ?? null);
     setFormData({
       fk_tool_id: (comp.system_detached || !comp.fk_tool_id) ? '_none' : String(comp.fk_tool_id),
       component_type: comp.component_type || '',
@@ -607,6 +610,11 @@ export default function EditComponentModal({
                     <div className="col-span-1 sm:col-span-3">
                       <Label className={labelCls}>{t('systems.components.addComponent.fields.droneRegCode')} <span className="font-normal opacity-60">{t('systems.components.common.optional')}</span></Label>
                       <Input className={inputCls} value={formData.drone_registration_code} onChange={e => handleChange('drone_registration_code', e.target.value)} placeholder={t('systems.components.addComponent.placeholders.regCode')} />
+                      {drcSyncedAt && (
+                        <p className={`mt-1 text-[11px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                          Synced from dFlight &middot; {new Date(drcSyncedAt).toLocaleString()}
+                        </p>
+                      )}
                     </div>
                   </div>
                 )}

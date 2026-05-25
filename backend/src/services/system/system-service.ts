@@ -602,7 +602,8 @@ export async function getComponentList(ownerId: number, toolId?: number) {
     current_maintenance_flights,
     last_maintenance_date,
     dcc_drone_id,
-    drone_registration_code
+    drone_registration_code,
+    drc_synced_at
   `;
 
   // Specific system view: non-detached components for that tool only
@@ -688,6 +689,7 @@ function buildComponentListResult(data: any[]) {
       last_maintenance_date: item.last_maintenance_date || null,
       dcc_drone_id: item.dcc_drone_id ?? null,
       drone_registration_code: item.drone_registration_code ?? null,
+      drc_synced_at: item.drc_synced_at ?? null,
       latitude: item.component_metadata?.latitude ?? null,
       longitude: item.component_metadata?.longitude ?? null,
       drone_classes: item.component_metadata?.drone_classes ?? null,
@@ -888,6 +890,52 @@ export async function updateComponent(componentId: number, componentData: any) {
 
   if (error) throw error;
   return { code: 1, message: 'Component updated successfully', data };
+}
+
+
+export async function syncDroneRegistrationCodes(
+  ownerId: number,
+  drones: { serial_number: string; drone_registration_code: string }[],
+): Promise<{ updated: number; not_found: string[] }> {
+  const { data: tools } = await supabase
+    .from('tool')
+    .select('tool_id')
+    .eq('fk_owner_id', ownerId);
+
+  const toolIds = (tools || []).map((t) => t.tool_id);
+  if (toolIds.length === 0) {
+    return { updated: 0, not_found: drones.map((d) => d.serial_number) };
+  }
+
+  const { data: components } = await supabase
+    .from('tool_component')
+    .select('component_id, serial_number')
+    .in('fk_tool_id', toolIds)
+    .not('serial_number', 'is', null);
+
+  const snToId = new Map<string, number>();
+  for (const c of components || []) {
+    if (c.serial_number) snToId.set(c.serial_number.toLowerCase(), c.component_id);
+  }
+
+  const now = new Date().toISOString();
+  const not_found: string[] = [];
+  let updated = 0;
+
+  for (const drone of drones) {
+    const componentId = snToId.get(drone.serial_number.toLowerCase());
+    if (!componentId) {
+      not_found.push(drone.serial_number);
+      continue;
+    }
+    const { error } = await supabase
+      .from('tool_component')
+      .update({ drone_registration_code: drone.drone_registration_code, drc_synced_at: now })
+      .eq('component_id', componentId);
+    if (!error) updated++;
+  }
+
+  return { updated, not_found };
 }
 
 
