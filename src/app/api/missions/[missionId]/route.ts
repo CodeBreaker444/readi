@@ -6,13 +6,13 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { missionId: string } },
+  { params }: { params: Promise<{ missionId: string }> },
 ) {
   try {
     const { session, error } = await requireApiKey(req);
     if (error) return error;
 
-    const { missionId } = params;
+    const { missionId } = await params;
 
     const result = await cancelFlightRequestByExternalId(missionId, session!.owner_id);
 

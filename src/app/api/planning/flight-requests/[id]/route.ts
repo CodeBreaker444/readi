@@ -9,10 +9,8 @@ const PatchSchema = z.object({
   dcc_status: z.enum(['IN_PROGRESS', 'COMPLETED', 'ISSUE', 'CANCELLED']),
 });
 
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: { id: string } },
-) {
+export async function PATCH(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const { session, error } = await requirePermission('view_planning_advanced');
     if (error) return error;
@@ -35,10 +33,8 @@ export async function PATCH(
   }
 }
 
-export async function DELETE(
-  _req: NextRequest,
-  { params }: { params: { id: string } },
-) {
+export async function DELETE(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const { session, error } = await requirePermission('view_planning_advanced');
     if (error) return error;

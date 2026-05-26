@@ -3,7 +3,7 @@ import { getUserSession } from '@/lib/auth/server-session';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 
-function clearAuthCookies(cookieStore: Awaited<ReturnType<typeof cookies>>) {
+function clearAuthCookies(cookieStore: Awaited<Awaited<ReturnType<typeof cookies>>>) {
   cookieStore.set('readi_auth_token', '', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
