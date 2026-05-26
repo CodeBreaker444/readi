@@ -3326,6 +3326,7 @@
       "table": {
         "droneComponent": "Drohne / Komponente",
         "serial": "S/N",
+        "model": "Modell",
         "maintenanceCycle": "Wartungszyklus",
         "lastMaintenance": "Letzte Wartung",
         "nextMaintenance": "Nächste Wartung",
@@ -3365,7 +3366,10 @@
           "type": "Typ",
           "hoursCurLimit": "Stunden (akt/Limit)",
           "flightsCurLimit": "Flüge (akt/Limit)",
-          "daysCurLimit": "Tage (akt/Limit)"
+          "daysCurLimit": "Tage (akt/Limit)",
+          "code": "Code",
+          "totalHours": "Gesamtstunden",
+          "totalFlights": "Gesamtflüge"
         }
       },
       "toasts": {
@@ -3396,6 +3400,7 @@
         "system": "System",
         "component": "Komponente",
         "description": "Beschreibung",
+        "location": "Standort",
         "serial": "Seriennummer",
         "assignedTo": "Zugewiesen an",
         "status": "Status",
@@ -3406,6 +3411,7 @@
         "unassigned": "Nicht zugewiesen",
         "noTickets": "Keine Tickets gefunden"
       },
+      "exportFilename": "Wartungstickets",
       "actions": {
         "events": "Ereignisse",
         "assign": "Zuweisen",
@@ -3440,7 +3446,9 @@
         "status": "Status",
         "priority": "Priorität",
         "opened": "Geöffnet",
-        "closed": "Geschlossen"
+        "closed": "Geschlossen",
+        "latitude": "Breitengrad",
+        "longitude": "Längengrad"
       },
       "modals": {
         "newTicket": {

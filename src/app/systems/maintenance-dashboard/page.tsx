@@ -8,6 +8,7 @@ import { MaintenanceDrone } from "@/config/types/maintenance";
 import axios from "axios";
 import { Loader2, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 const MIN_THRESHOLD = 50;
@@ -16,6 +17,7 @@ const DEFAULT_THRESHOLD = 80;
 
 export default function MaintenancePage() {
   const { isDark } = useTheme();
+  const { t } = useTranslation();
   const [data, setData] = useState<MaintenanceDrone[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [threshold, setThreshold] = useState<number>(DEFAULT_THRESHOLD);
@@ -31,14 +33,14 @@ export default function MaintenancePage() {
       if (json.code === 1) {
         setData(json.data ?? []);
       } else {
-        toast.error(json.message ?? "Failed to load data");
+        toast.error(json.message ?? t('systems.maintenanceDashboard.toasts.loadFailed'));
       }
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Network error");
+      toast.error(e instanceof Error ? e.message : t('systems.maintenanceDashboard.toasts.networkError'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     if (!hasFetched.current) {
@@ -72,23 +74,38 @@ export default function MaintenancePage() {
   }, [data]);
 
   const exportSections = useMemo(() => {
-    const thresholdLabel = threshold < 70 ? 'Sensitive' : threshold < 85 ? 'Normal' : 'Lenient';
+    const thresholdLabel = threshold < 70
+      ? t('systems.maintenanceDashboard.threshold.sensitive')
+      : threshold < 85
+      ? t('systems.maintenanceDashboard.threshold.normal')
+      : t('systems.maintenanceDashboard.threshold.lenient');
     return [
       {
-        title: 'Summary',
-        headers: ['Metric', 'Value'],
+        title: t('systems.maintenanceDashboard.export.sections.summary'),
+        headers: [
+          t('systems.maintenanceDashboard.export.headers.metric'),
+          t('systems.maintenanceDashboard.export.headers.value'),
+        ],
         rows: [
-          ['Alert Threshold', `${threshold}% (${thresholdLabel})`],
-          ['Total Systems',   String(summaryCounts.total)],
-          ['OK',              String(summaryCounts.ok)],
-          ['Alert',           String(summaryCounts.alert)],
-          ['Due',             String(summaryCounts.due)],
-          ['In Maintenance',  String(summaryCounts.inMaintenance)],
+          [t('systems.maintenanceDashboard.export.headers.alertThreshold'), `${threshold}% (${thresholdLabel})`],
+          [t('systems.maintenanceDashboard.export.headers.totalSystems'),   String(summaryCounts.total)],
+          [t('systems.maintenanceDashboard.export.headers.ok'),             String(summaryCounts.ok)],
+          [t('systems.maintenanceDashboard.export.headers.alert'),          String(summaryCounts.alert)],
+          [t('systems.maintenanceDashboard.export.headers.due'),            String(summaryCounts.due)],
+          [t('systems.maintenanceDashboard.export.headers.inMaintenance'),  String(summaryCounts.inMaintenance)],
         ],
       },
       {
-        title: 'Drone Systems',
-        headers: ['System Code', 'Serial', 'Status', 'Hours', 'Flights', 'Last Maintenance', 'Triggers'],
+        title: t('systems.maintenanceDashboard.export.sections.droneSystems'),
+        headers: [
+          t('systems.maintenanceDashboard.export.headers.systemCode'),
+          t('systems.maintenanceDashboard.export.headers.serial'),
+          t('systems.maintenanceDashboard.export.headers.status'),
+          t('systems.maintenanceDashboard.export.headers.hours'),
+          t('systems.maintenanceDashboard.export.headers.flights'),
+          t('systems.maintenanceDashboard.export.headers.lastMaintenance'),
+          t('systems.maintenanceDashboard.export.headers.triggers'),
+        ],
         rows: data.map((d) => [
           d.code,
           d.serial_number ?? '',
@@ -100,8 +117,19 @@ export default function MaintenancePage() {
         ]),
       },
       {
-        title: 'Component Details',
-        headers: ['System', 'Component', 'Type', 'Serial', 'Status', 'Hours (cur/limit)', 'Flights (cur/limit)', 'Days (cur/limit)', 'Last Maintenance', 'Triggers'],
+        title: t('systems.maintenanceDashboard.export.sections.componentDetails'),
+        headers: [
+          t('systems.maintenanceDashboard.export.headers.system'),
+          t('systems.maintenanceDashboard.export.headers.component'),
+          t('systems.maintenanceDashboard.export.headers.type'),
+          t('systems.maintenanceDashboard.export.headers.serial'),
+          t('systems.maintenanceDashboard.export.headers.status'),
+          t('systems.maintenanceDashboard.export.headers.hoursCurLimit'),
+          t('systems.maintenanceDashboard.export.headers.flightsCurLimit'),
+          t('systems.maintenanceDashboard.export.headers.daysCurLimit'),
+          t('systems.maintenanceDashboard.export.headers.lastMaintenance'),
+          t('systems.maintenanceDashboard.export.headers.triggers'),
+        ],
         rows: data.flatMap((d) =>
           d.components.map((c) => [
             d.code,
@@ -124,7 +152,7 @@ export default function MaintenancePage() {
         ),
       },
     ];
-  }, [data, threshold, summaryCounts]);
+  }, [data, threshold, summaryCounts, t]);
 
   function triggerDownload(blob: Blob, name: string) {
     const url = URL.createObjectURL(blob);
@@ -141,13 +169,13 @@ export default function MaintenancePage() {
       const res = await fetch('/api/export/sections', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ format, sections: exportSections, title: 'Maintenance Dashboard', filename: `maintenance-dashboard-${date}` }),
+        body: JSON.stringify({ format, sections: exportSections, title: t('systems.maintenanceDashboard.title'), filename: `${t('systems.maintenanceDashboard.export.filename')}-${date}` }),
       });
       if (!res.ok) throw new Error(`Server error ${res.status}`);
-      triggerDownload(await res.blob(), `maintenance-dashboard-${date}.${format}`);
+      triggerDownload(await res.blob(), `${t('systems.maintenanceDashboard.export.filename')}-${date}.${format}`);
     } catch (err) {
       console.error(err);
-      toast.error(`Failed to export ${format.toUpperCase()}`);
+      toast.error(t('systems.maintenanceDashboard.toasts.exportFailed', { format: format.toUpperCase() }));
     } finally { setExporting(null); }
   }
 
@@ -174,10 +202,14 @@ export default function MaintenancePage() {
       const pageW = doc.internal.pageSize.width;
       const pageH = doc.internal.pageSize.height;
       const exportedOn = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-      const thresholdLabel = threshold < 70 ? 'Sensitive' : threshold < 85 ? 'Normal' : 'Lenient';
+      const thresholdLabel = threshold < 70
+        ? t('systems.maintenanceDashboard.threshold.sensitive')
+        : threshold < 85
+        ? t('systems.maintenanceDashboard.threshold.normal')
+        : t('systems.maintenanceDashboard.threshold.lenient');
 
       doc.setFontSize(13); doc.setFont('helvetica', 'bold'); doc.setTextColor(15, 15, 15);
-      doc.text('Maintenance Dashboard', 14, 15);
+      doc.text(t('systems.maintenanceDashboard.title'), 14, 15);
       doc.setFontSize(8); doc.setFont('helvetica', 'normal'); doc.setTextColor(100, 116, 139);
       doc.text(`Exported ${exportedOn}`, 14, 21);
       doc.setTextColor(0, 0, 0);
@@ -185,12 +217,12 @@ export default function MaintenancePage() {
       const boxY = 26; const boxH = 17; const gap = 3;
       const boxW = (pageW - 28 - gap * 5) / 6;
       const statBoxes = [
-        { label: 'Alert Threshold', value: `${threshold}%`, sub: thresholdLabel, bg: [109,40,217] as [number,number,number], fg: [255,255,255] as [number,number,number] },
-        { label: 'Total Systems',   value: String(summaryCounts.total),         bg: [241,245,249] as [number,number,number], fg: [51,65,85]   as [number,number,number] },
-        { label: 'OK',              value: String(summaryCounts.ok),            bg: [236,253,245] as [number,number,number], fg: [5,150,105]  as [number,number,number] },
-        { label: 'Alert',           value: String(summaryCounts.alert),         bg: [255,251,235] as [number,number,number], fg: [217,119,6]  as [number,number,number] },
-        { label: 'Due',             value: String(summaryCounts.due),           bg: [255,241,242] as [number,number,number], fg: [225,29,72]  as [number,number,number] },
-        { label: 'In Maintenance',  value: String(summaryCounts.inMaintenance), bg: [239,246,255] as [number,number,number], fg: [37,99,235]  as [number,number,number] },
+        { label: t('systems.maintenanceDashboard.summary.alertThreshold'), value: `${threshold}%`, sub: thresholdLabel, bg: [109,40,217] as [number,number,number], fg: [255,255,255] as [number,number,number] },
+        { label: t('systems.maintenanceDashboard.summary.totalSystems'),   value: String(summaryCounts.total),         bg: [241,245,249] as [number,number,number], fg: [51,65,85]   as [number,number,number] },
+        { label: t('systems.maintenanceDashboard.summary.ok'),             value: String(summaryCounts.ok),            bg: [236,253,245] as [number,number,number], fg: [5,150,105]  as [number,number,number] },
+        { label: t('systems.maintenanceDashboard.summary.alert'),          value: String(summaryCounts.alert),         bg: [255,251,235] as [number,number,number], fg: [217,119,6]  as [number,number,number] },
+        { label: t('systems.maintenanceDashboard.summary.due'),            value: String(summaryCounts.due),           bg: [255,241,242] as [number,number,number], fg: [225,29,72]  as [number,number,number] },
+        { label: t('systems.maintenanceDashboard.summary.inMaintenance'),  value: String(summaryCounts.inMaintenance), bg: [239,246,255] as [number,number,number], fg: [37,99,235]  as [number,number,number] },
       ];
       statBoxes.forEach((box, i) => {
         const x = 14 + i * (boxW + gap);
@@ -234,9 +266,9 @@ export default function MaintenancePage() {
         doc.text(`Page ${i} of ${totalPages}`, pageW - 14, pageH - 7, { align: 'right' });
       }
 
-      doc.save(`maintenance-dashboard-${new Date().toISOString().slice(0, 10)}.pdf`);
+      doc.save(`${t('systems.maintenanceDashboard.export.filename')}-${new Date().toISOString().slice(0, 10)}.pdf`);
     } catch (err) {
-      console.error(err); toast.error('Failed to export PDF');
+      console.error(err); toast.error(t('systems.maintenanceDashboard.toasts.pdfExportFailed'));
     } finally { setExporting(null); }
   }
 
@@ -254,10 +286,10 @@ export default function MaintenancePage() {
             <div className="w-1 h-6 rounded-full bg-violet-600" />
             <div>
               <h1 className={`font-semibold text-base tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>
-                Maintenance Dashboard
+                {t('systems.maintenanceDashboard.title')}
               </h1>
               <p className={`text-xs ${isDark ? "text-slate-500" : "text-slate-400"}`}>
-                Drone systems & component maintenance status
+                {t('systems.maintenanceDashboard.subtitle')}
               </p>
             </div>
           </div>
@@ -274,7 +306,7 @@ export default function MaintenancePage() {
             }`}
           >
             {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-            <span>{loading ? "Loading..." : "Refresh"}</span>
+            <span>{loading ? t('systems.maintenanceDashboard.loading') : t('systems.maintenanceDashboard.refresh')}</span>
           </Button>
         </div>
       </div>

@@ -1,6 +1,5 @@
 'use client';
 
-import { ExportColumn } from '@/components/ExportButton';
 import { DownloadModal } from '@/components/system/DownloadModal';
 import {
   AssignTicketModal,
@@ -18,20 +17,7 @@ import { Button } from '@/components/ui/button';
 import { useTheme } from '@/components/useTheme';
 import { Plus } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-
-const TICKET_COLUMNS: ExportColumn[] = [
-  { header: 'Ticket #',    key: 'ticket_id' },
-  { header: 'Type',        key: 'type' },
-  { header: 'Status',      key: 'status' },
-  { header: 'Priority',    key: 'priority' },
-  { header: 'System',      key: 'system' },
-  { header: 'Serial',      key: 'serial' },
-  { header: 'Entity',      key: 'entity' },
-  { header: 'Assigned To', key: 'assigned_to' },
-  { header: 'Opened',      key: 'opened' },
-  { header: 'Closed',      key: 'closed' },
-  { header: 'Notes',       key: 'note' },
-];
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   canClose: boolean;
@@ -39,6 +25,8 @@ interface Props {
 
 export default function MaintenanceLogbookClient({ canClose }: Props) {
   const { isDark } = useTheme();
+  const { t } = useTranslation();
+
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [downloadTicketId, setDownloadTicketId] = useState<number | null>(null);
@@ -88,18 +76,18 @@ export default function MaintenanceLogbookClient({ canClose }: Props) {
 
   const ticketExportData = useMemo(
     () =>
-      filtered.map((t) => ({
-        ticket_id:   `#${t.ticket_id}`,
-        type:        t.ticket_type,
-        status:      t.ticket_status,
-        priority:    t.ticket_priority,
-        system:      t.drone_code ?? '',
-        serial:      t.drone_serial ?? '',
-        entity:      t.entity_name ?? '',
-        assigned_to: t.assigner_name ?? 'Unassigned',
-        opened:      t.opened_at  ? new Date(t.opened_at).toLocaleDateString('en-GB')  : '—',
-        closed:      t.closed_at  ? new Date(t.closed_at).toLocaleDateString('en-GB')  : '—',
-        note:        t.note ?? '',
+      filtered.map((ticket) => ({
+        ticket_id:   `#${ticket.ticket_id}`,
+        type:        ticket.ticket_type,
+        status:      ticket.ticket_status,
+        priority:    ticket.ticket_priority,
+        system:      ticket.drone_code ?? '',
+        serial:      ticket.drone_serial ?? '',
+        entity:      ticket.entity_name ?? '',
+        assigned_to: ticket.assigner_name ?? t('systems.maintenanceLogbook.table.unassigned'),
+        opened:      ticket.opened_at  ? new Date(ticket.opened_at).toLocaleDateString('en-GB')  : '—',
+        closed:      ticket.closed_at  ? new Date(ticket.closed_at).toLocaleDateString('en-GB')  : '—',
+        note:        ticket.note ?? '',
       })),
     [filtered]
   );
@@ -135,10 +123,10 @@ export default function MaintenanceLogbookClient({ canClose }: Props) {
                   isDark ? "text-white" : "text-slate-900"
                 }`}
               >
-                Maintenance Logbook
+                {t('systems.maintenanceLogbook.title')}
               </h1>
               <p className={`text-xs ${isDark ? "text-slate-500" : "text-slate-400"}`}>
-                Track and manage all maintenance tickets
+                {t('systems.maintenanceLogbook.subtitle')}
               </p>
             </div>
           </div>
@@ -154,7 +142,7 @@ export default function MaintenanceLogbookClient({ canClose }: Props) {
               }`}
             >
               <Plus size={14} />
-              <span>New Ticket</span>
+              <span>{t('systems.maintenanceLogbook.newTicket')}</span>
             </Button>
           </div>
         </div>

@@ -3413,6 +3413,7 @@
       "table": {
         "droneComponent": "Drone / Component",
         "serial": "Serial",
+        "model": "Model",
         "maintenanceCycle": "Maint. Cycle",
         "lastMaintenance": "Last Maintenance",
         "nextMaintenance": "Next Maint.",
@@ -3452,7 +3453,10 @@
           "type": "Type",
           "hoursCurLimit": "Hours (cur/limit)",
           "flightsCurLimit": "Flights (cur/limit)",
-          "daysCurLimit": "Days (cur/limit)"
+          "daysCurLimit": "Days (cur/limit)",
+          "code": "Code",
+          "totalHours": "Total Hours",
+          "totalFlights": "Total Flights"
         }
       },
       "toasts": {
@@ -3483,6 +3487,7 @@
         "system": "System",
         "component": "Component",
         "description": "Description",
+        "location": "Location",
         "serial": "Serial",
         "assignedTo": "Assigned To",
         "status": "Status",
@@ -3493,6 +3498,7 @@
         "unassigned": "Unassigned",
         "noTickets": "No tickets found"
       },
+      "exportFilename": "Maintenance Tickets",
       "actions": {
         "events": "Events",
         "assign": "Assign",
@@ -3527,7 +3533,9 @@
         "status": "Status",
         "priority": "Priority",
         "opened": "Opened",
-        "closed": "Closed"
+        "closed": "Closed",
+        "latitude": "Latitude",
+        "longitude": "Longitude"
       },
       "modals": {
         "newTicket": {

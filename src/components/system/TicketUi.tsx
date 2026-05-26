@@ -3,6 +3,7 @@
 import { formatDateTimeInTz } from '@/lib/utils';
 import { MaintenanceTicket, TicketPriority } from '@/config/types/maintenance';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export const PRIORITY_STYLES: Record<TicketPriority, string> = {
   HIGH: 'bg-red-500/10 text-red-500 border border-red-500/20',
@@ -145,25 +146,26 @@ interface Props {
 }
 
 export function TicketStats({ tickets, isDark }: Props) {
+  const { t } = useTranslation();
   const stats = [
     {
-      label: 'Total',
+      label: t('systems.maintenanceLogbook.stats.total'),
       value: tickets.length,
       valueColor: isDark ? 'text-white' : 'text-slate-700',
     },
     {
-      label: 'Open',
-      value: tickets.filter((t) => t.ticket_status === 'OPEN').length,
+      label: t('systems.maintenanceLogbook.stats.open'),
+      value: tickets.filter((ticket) => ticket.ticket_status === 'OPEN').length,
       valueColor: isDark ? 'text-rose-400' : 'text-rose-600',
     },
     {
-      label: 'Closed',
-      value: tickets.filter((t) => t.ticket_status === 'CLOSED').length,
+      label: t('systems.maintenanceLogbook.stats.closed'),
+      value: tickets.filter((ticket) => ticket.ticket_status === 'CLOSED').length,
       valueColor: isDark ? 'text-emerald-400' : 'text-emerald-600',
     },
     {
-      label: 'High Priority',
-      value: tickets.filter((t) => t.ticket_priority === 'HIGH' && t.ticket_status === 'OPEN').length,
+      label: t('systems.maintenanceLogbook.stats.highPriority'),
+      value: tickets.filter((ticket) => ticket.ticket_priority === 'HIGH' && ticket.ticket_status === 'OPEN').length,
       valueColor: isDark ? 'text-amber-400' : 'text-amber-600',
     },
   ];

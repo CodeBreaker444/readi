@@ -3405,6 +3405,7 @@
       "table": {
         "droneComponent": "Drone / Componente",
         "serial": "Seriale",
+        "model": "Modello",
         "maintenanceCycle": "Ciclo Manut.",
         "lastMaintenance": "Ultima Manutenzione",
         "nextMaintenance": "Prossima Manut.",
@@ -3444,7 +3445,10 @@
           "type": "Tipo",
           "hoursCurLimit": "Ore (corr/limite)",
           "flightsCurLimit": "Voli (corr/limite)",
-          "daysCurLimit": "Giorni (corr/limite)"
+          "daysCurLimit": "Giorni (corr/limite)",
+          "code": "Codice",
+          "totalHours": "Ore Totali",
+          "totalFlights": "Voli Totali"
         }
       },
       "toasts": {
@@ -3475,6 +3479,7 @@
         "system": "Sistema",
         "component": "Componente",
         "description": "Descrizione",
+        "location": "Posizione",
         "serial": "Seriale",
         "assignedTo": "Assegnato A",
         "status": "Stato",
@@ -3485,6 +3490,7 @@
         "unassigned": "Non assegnato",
         "noTickets": "Nessun ticket trovato"
       },
+      "exportFilename": "Ticket di Manutenzione",
       "actions": {
         "events": "Eventi",
         "assign": "Assegna",
@@ -3519,7 +3525,9 @@
         "status": "Stato",
         "priority": "Priorità",
         "opened": "Aperto",
-        "closed": "Chiuso"
+        "closed": "Chiuso",
+        "latitude": "Latitudine",
+        "longitude": "Longitudine"
       },
       "modals": {
         "newTicket": {
