@@ -907,7 +907,8 @@
         "IN_PROGRESS": "In corso",
         "COMPLETED": "Completate",
         "ISSUE": "Problema",
-        "REJECTED": "Rifiutate"
+        "REJECTED": "Rifiutate",
+        "CANCELLED": "Annullate"
       },
       "columns": {
         "missionId": "ID Missione",
