@@ -1,4 +1,4 @@
-import { createFlightRequest, flightRequestExists } from '@/backend/services/mission/flight-request-service';
+import { cancelFlightRequestByExternalId, createFlightRequest, flightRequestExists } from '@/backend/services/mission/flight-request-service';
 import { internalError, zodError } from '@/lib/api-error';
 import { requireApiKey } from '@/lib/auth/api-key-auth';
 import { E } from '@/lib/error-codes';
@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
 const LocalizationSchema = z.object({
-  type:        z.string(),
+  type:        z.string().min(1, 'type is required'),
   highway:     z.string().optional(),
   carriageway: z.string().optional(),
   kmStart:     z.number().optional(),
@@ -42,12 +42,13 @@ const SingleMissionSchema = z.object({
   type:          z.string().optional(),
   target:        z.string().optional(),
   localization:  LocalizationSchema.optional(),
-  waypoint:      WaypointSchema,
+  waypoint:      WaypointSchema.required(),
   startDateTime: z.string().optional(),
   priority:      z.string().optional(),
   notes:         z.string().optional(),
   operator:      z.string().optional(),
 });
+
 
 export async function POST(req: NextRequest) {
   try {
@@ -145,6 +146,41 @@ export async function POST(req: NextRequest) {
     });
   } catch (err) {
     console.error('[POST /api/missions]', err);
+    return internalError(E.SV001, err);
+  }
+}
+
+const DeleteSchema = z.object({
+  missionIds: z.array(z.string().min(1)).min(1, 'missionIds must have at least 1 entry').max(4, 'Maximum 4 missions can be deleted at once'),
+});
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const { session, error } = await requireApiKey(req);
+    if (error) return error;
+
+    const body = await req.json().catch(() => null);
+    const parsed = DeleteSchema.safeParse(body);
+    if (!parsed.success) return zodError(E.VL001, parsed.error);
+
+    const results = await Promise.all(
+      parsed.data.missionIds.map(async (missionId) => {
+        const result = await cancelFlightRequestByExternalId(missionId, session!.owner_id);
+        return {
+          missionId,
+          status: result,
+          message: result === 'not_found'
+            ? `Mission '${missionId}' not found`
+            : result === 'already_cancelled'
+            ? `Mission '${missionId}' was already cancelled`
+            : `Mission '${missionId}' cancelled`,
+        };
+      }),
+    );
+
+    return NextResponse.json({ code: 1, status: 'SUCCESS', results });
+  } catch (err) {
+    console.error('[DELETE /api/missions]', err);
     return internalError(E.SV001, err);
   }
 }
