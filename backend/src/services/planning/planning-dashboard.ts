@@ -12,6 +12,7 @@ export type UpdatePlanning = {
   planning_status: string;
   planning_request_date: string;
   planning_type: string;
+  planning_active?: string;
 };
 
 type CreatePlanningInput = {
@@ -272,6 +273,10 @@ export async function updatePlanning(payload: UpdatePlanning, ownerId: number) {
     planning_type: updates.planning_type ?? null,
     planned_date: updates.planning_request_date || null,
   };
+
+  if (updates.planning_active !== undefined) {
+    updateObj.planning_active = updates.planning_active;
+  }
 
   if (updates.fk_evaluation_id !== undefined) {
     updateObj.fk_evaluation_id = updates.fk_evaluation_id;

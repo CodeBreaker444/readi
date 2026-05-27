@@ -345,7 +345,15 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
 
     const canNext = () => {
         if (step === 1) return isEdit || !!clientId
-        if (step === 2) return !!droneId && (opType !== 'PDRA' || !!planId)
+        if (step === 2) {
+            if (!droneId) return false
+            if (opType === 'PDRA') {
+                if (!planId) return false
+                const selected = clientPlannings.find(p => String(p.planning_id) === planId)
+                if (selected && selected.planning_active === 'N') return false
+            }
+            return true
+        }
         if (step === 3) {
             if (!schedulerForm.missionCode.trim() || !schedulerForm.scheduledStart || !schedulerForm.lucId) return false
             if (schedulerForm.isRecurring && (schedulerForm.daysOfWeek.length === 0 || !schedulerForm.recurUntil)) return false
@@ -355,7 +363,13 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
         return true
     }
 
-    const clientPlannings = plannings.filter(p => String(p.fk_client_id) === clientId)
+    const clientPlannings = plannings
+        .filter(p => String(p.fk_client_id) === clientId)
+        .sort((a, b) => {
+            const aActive = !a.planning_active || a.planning_active === 'Y' ? 0 : 1
+            const bActive = !b.planning_active || b.planning_active === 'Y' ? 0 : 1
+            return aActive - bActive
+        })
 
 
     async function handleSubmit() {

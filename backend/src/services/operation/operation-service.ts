@@ -826,9 +826,9 @@ export async function getClientOptions(ownerId: number) {
 export async function getPlanningOptions(ownerId: number) {
   const { data, error } = await supabase
     .from('planning')
-    .select('planning_id, planning_name, fk_client_id, client:client!fk_client_id(client_name)')
+    .select('planning_id, planning_name, fk_client_id, planning_active, client:client!fk_client_id(client_name)')
     .eq('fk_owner_id', ownerId)
-    .eq('planning_active', 'Y')
+    .order('planning_active', { ascending: false })
     .order('planning_name');
 
   if (error) throw new Error(`Planning error: ${error.message}`);
@@ -836,6 +836,7 @@ export async function getPlanningOptions(ownerId: number) {
     planning_id: p.planning_id,
     planning_name: p.planning_name,
     fk_client_id: p.fk_client_id,
+    planning_active: (p.planning_active ?? 'Y').trim() as 'Y' | 'N',
     client_name: Array.isArray(p.client) ? p.client[0]?.client_name : p.client?.client_name ?? '',
   }));
 }

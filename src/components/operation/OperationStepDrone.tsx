@@ -158,11 +158,21 @@ export function OperationStepDrone({
                                 </SelectValue>
                             </SelectTrigger>
                             <SelectContent className={scCls(isDark)}>
-                                {clientPlannings.map(p => (
-                                    <SelectItem key={p.planning_id} value={String(p.planning_id)} className={siCls(isDark)}>
-                                        {p.planning_name}
-                                    </SelectItem>
-                                ))}
+                                {clientPlannings.map(p => {
+                                    const isActive = !p.planning_active || p.planning_active === 'Y'
+                                    return (
+                                        <SelectItem key={p.planning_id} value={String(p.planning_id)} disabled={!isActive} className={cn(siCls(isDark), !isActive && 'opacity-50')}>
+                                            <span className="flex items-center gap-2">
+                                                <span>{p.planning_name}</span>
+                                                {!isActive && (
+                                                    <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 border border-slate-200 rounded px-1.5 py-0.5 leading-none">
+                                                        Inactive
+                                                    </span>
+                                                )}
+                                            </span>
+                                        </SelectItem>
+                                    )
+                                })}
                             </SelectContent>
                         </Select>
                     </div>

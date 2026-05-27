@@ -17,6 +17,7 @@ import { getOperationColumns, OperationTableMeta } from '@/components/tables/Ope
 import { useTimezone } from '@/components/TimezoneProvider';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { useTheme } from '@/components/useTheme';
+import { generateMissionReport } from '@/lib/generateMissionReport';
 import {
   getCoreRowModel,
   getPaginationRowModel,
@@ -25,7 +26,6 @@ import {
   SortingState,
   useReactTable,
 } from '@tanstack/react-table';
-import { generateMissionReport } from '@/lib/generateMissionReport';
 import axios from 'axios';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -52,6 +52,7 @@ export interface Operation {
   fk_mission_type_id?: number | null;
   fk_mission_category_id?: number | null;
   fk_luc_procedure_id?: number | null;
+  fk_erp_group_id?: number | null;
   luc_procedure_progress?: Record<string, Record<string, string>> | null;
   luc_completed_at?: string | null;
   pilot_name?: string | null;

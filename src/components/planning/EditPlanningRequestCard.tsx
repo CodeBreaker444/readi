@@ -26,6 +26,7 @@ interface EditPlanningRequestCardProps {
 interface PlanningForm {
   planning_status: string;
   planning_result: string;
+  planning_active: string;
   client_name: string;
   fk_owner_id: number | string;
   fk_client_id: number;
@@ -51,6 +52,7 @@ export default function EditPlanningRequestCard({
   const [form, setForm] = useState<PlanningForm>({
     planning_status: "NEW",
     planning_result: "PROGRESS",
+    planning_active: "Y",
     client_name: "",
     fk_owner_id: "",
     fk_client_id: clinetId,
@@ -71,6 +73,7 @@ export default function EditPlanningRequestCard({
       setForm({
         planning_status: planningData.planning_status || "NEW",
         planning_result: planningData.planning_result || "PROGRESS",
+        planning_active: planningData.planning_active || "Y",
         client_name: planningData.client_name || "",
         fk_owner_id: planningData.fk_owner_id || "",
         fk_client_id: planningData.fk_client_id || clinetId,
@@ -111,7 +114,7 @@ export default function EditPlanningRequestCard({
   return (
     <div className={`p-4 space-y-4 ${isDark ? "bg-slate-900/50" : "bg-transparent"}`}>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <div className="space-y-2">
             <Label htmlFor="planning_status" className={labelColor}>{t("planning.form.status")}</Label>
             <Select
@@ -143,6 +146,21 @@ export default function EditPlanningRequestCard({
                 <SelectItem value="PROGRESS">{t("planning.status.inProgress")}</SelectItem>
                 <SelectItem value="RESULT_POSITIVE">{t("planning.status.completedPositive")}</SelectItem>
                 <SelectItem value="RESULT_NEGATIVE">{t("planning.status.completedRefused")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="planning_active" className={labelColor}>{t("planning.form.active")}</Label>
+            <Select
+              value={form.planning_active}
+              onValueChange={(val) => handleSelectChange("planning_active", val)}
+            >
+              <SelectTrigger id="planning_active" className={inputBg}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className={isDark ? "bg-slate-900 border-slate-800 text-slate-200" : ""}>
+                <SelectItem value="Y">{t("planning.form.yes")}</SelectItem>
+                <SelectItem value="N">{t("planning.form.no")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
