@@ -21,7 +21,7 @@ const WaypointSchema = z.object({
 const MissionItemSchema = z.object({
   missionId:     z.string().min(1, 'missionId is required'),
   startDateTime: z.string().optional(),
-  waypoint:      WaypointSchema.optional(),
+  waypoint:      WaypointSchema,
 });
 
 // New batch format: PMVD sends a list of pre-generated mission IDs with their scheduled times
@@ -42,7 +42,7 @@ const SingleMissionSchema = z.object({
   type:          z.string().optional(),
   target:        z.string().optional(),
   localization:  LocalizationSchema.optional(),
-  waypoint:      WaypointSchema.optional(),
+  waypoint:      WaypointSchema,
   startDateTime: z.string().optional(),
   priority:      z.string().optional(),
   notes:         z.string().optional(),
