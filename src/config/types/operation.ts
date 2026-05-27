@@ -17,6 +17,7 @@ export interface Operation {
   fk_tool_id: number | null;
   fk_mission_status_id: number | null;
   fk_planning_id: number | null;
+  fk_erp_group_id?: number | null;
   fk_mission_type_id?: number | null;
   fk_mission_category_id?: number | null;
   fk_luc_procedure_id?: number | null;

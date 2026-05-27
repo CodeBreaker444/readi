@@ -45,6 +45,7 @@ const createOperationSchema = z.object({
   fk_luc_procedure_id: z.number().int().positive(),
   actual_end: z.string().nullable().optional(),
   visual_observer_ids: z.array(z.number().int().positive()).optional().nullable(),
+  fk_erp_group_id: z.number().int().positive().nullable().optional(),
 });
 
 const createRecurringSchema = z.object({
@@ -65,6 +66,7 @@ const createRecurringSchema = z.object({
   recur_until: z.string(),
   mission_group_label: z.string().nullable().optional(),
   fk_luc_procedure_id: z.number().int().positive(),
+  fk_erp_group_id: z.number().int().positive().nullable().optional(),
   is_recurring: z.literal(true),
 });
 

@@ -112,6 +112,10 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
     const [erps, setErps] = useState<EmergencyResponsePlan[]>([])
     const [loadingErps, setLoadingErps] = useState(false)
 
+    const [erpGroups, setErpGroups] = useState<import('@/config/types/erp').LocationGroup[]>([])
+    const [erpGroupId, setErpGroupId] = useState('')
+    const [loadingErpGroups, setLoadingErpGroups] = useState(false)
+
     const [loadingPostFlight, setLoadingPostFlight] = useState(false)
     const [submittingPostFlight, setSubmittingPostFlight] = useState(false)
     const [resultOptions, setResultOptions] = useState<MissionResultOption[]>([])
@@ -132,6 +136,12 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
             .then(r => setClients(r.data.clients ?? []))
             .catch(() => toast.error(t('operations.newOperation.toast.loadClientsError')))
             .finally(() => setLoadingClients(false))
+
+        setLoadingErpGroups(true)
+        axios.get('/api/erp/location-group/list')
+            .then(res => setErpGroups(res.data.data ?? []))
+            .catch(() => {})
+            .finally(() => setLoadingErpGroups(false))
 
         setLoadingOptions(true)
         axios.get('/api/operation/options')
@@ -171,6 +181,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
         setVisualObserverIds((editOperation.visual_observer_ids ?? []).map(o => String(o.user_id)))
         setPlanId(editOperation.fk_planning_id?.toString() ?? '')
         setOpType(editOperation.fk_planning_id ? 'PDRA' : 'OPEN')
+        setErpGroupId(editOperation.fk_erp_group_id?.toString() ?? '')
         setSchedulerForm({
             missionCode: editOperation.mission_code ?? '',
             scheduledStart: editOperation.scheduled_start?.slice(0, 16) ?? '',
@@ -309,6 +320,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
         setExistingMissionCodes(new Set()); setGeneratingId(false)
         setConflicts([]); setConflictChecked(false)
         setErps([]); setResultOptions([])
+        setErpGroupId(''); setErpGroups([]); setLoadingErpGroups(false)
         setSchedulerForm({
             missionCode: '', scheduledStart: '', scheduledEnd: '',
             missionName: '', location: '', notes: '', distanceFlown: '',
@@ -362,6 +374,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                     fk_mission_type_id: schedulerForm.typeId ? parseInt(schedulerForm.typeId) : null,
                     fk_mission_category_id: schedulerForm.categoryId ? parseInt(schedulerForm.categoryId) : null,
                     fk_planning_id: planId ? parseInt(planId) : null,
+                    fk_erp_group_id: erpGroupId && erpGroupId !== 'none' ? parseInt(erpGroupId) : null,
                     location: schedulerForm.location || undefined,
                     notes: schedulerForm.notes || undefined,
                     distance_flown: schedulerForm.distanceFlown !== '' ? parseFloat(schedulerForm.distanceFlown) : null,
@@ -385,6 +398,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                 fk_mission_category_id: schedulerForm.categoryId ? parseInt(schedulerForm.categoryId) : null,
                 fk_planning_id: planId ? parseInt(planId) : null,
                 fk_luc_procedure_id: parseInt(schedulerForm.lucId),
+                fk_erp_group_id: erpGroupId && erpGroupId !== 'none' ? parseInt(erpGroupId) : null,
                 location: schedulerForm.location || undefined,
                 notes: schedulerForm.notes || undefined,
                 distance_flown: schedulerForm.distanceFlown !== '' ? parseFloat(schedulerForm.distanceFlown) : null,
@@ -549,6 +563,11 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                             onFlightModeChange={setFlightMode}
                             loadingOptions={loadingOptions}
                             isDark={isDark}
+                            erpGroups={erpGroups}
+                            erpGroupId={erpGroupId}
+                            onErpGroupChange={setErpGroupId}
+                            loadingErpGroups={loadingErpGroups}
+                            selectedPlanName={editOperation?.planning_name ?? undefined}
                         />
                     )}
 

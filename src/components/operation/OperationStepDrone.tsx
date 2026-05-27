@@ -2,8 +2,9 @@
 
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { LocationGroup } from '@/config/types/erp'
 import { cn } from '@/lib/utils'
-import { AlertTriangle } from 'lucide-react'
+import { AlertTriangle, Shield } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { inputCls, labelCls, scCls, siCls, SectionTitle } from './OperationModalHelpers'
 import { Drone, FlightMode, OpType, PlanningOption } from './OperationModalTypes'
@@ -18,20 +19,40 @@ interface Props {
     planId: string
     onPlanChange: (id: string) => void
     clientPlannings: PlanningOption[]
+    /** Fallback plan name to display while plannings are loading (from editOperation.planning_name) */
+    selectedPlanName?: string
     flightMode: FlightMode
     onFlightModeChange: (m: FlightMode) => void
     loadingOptions: boolean
     isDark: boolean
+    erpGroups: LocationGroup[]
+    erpGroupId: string
+    onErpGroupChange: (id: string) => void
+    loadingErpGroups?: boolean
 }
 
 export function OperationStepDrone({
     opType, onOpTypeChange, droneId, onDroneChange, drones, loadingDrones,
-    planId, onPlanChange, clientPlannings, flightMode, onFlightModeChange,
-    loadingOptions, isDark,
+    planId, onPlanChange, clientPlannings, selectedPlanName, flightMode, onFlightModeChange,
+    loadingOptions, isDark, erpGroups, erpGroupId, onErpGroupChange, loadingErpGroups,
 }: Props) {
     const { t } = useTranslation()
     const allInMaintenance = drones.length > 0 && drones.every(d => d.in_maintenance)
     const anyMaintenanceDue = drones.some(d => d.maintenance_due && !d.in_maintenance)
+
+    // Resolve plan label: use loaded data if available, else the fallback name from editOperation
+    const planLabel = planId
+        ? (clientPlannings.find(p => String(p.planning_id) === planId)?.planning_name ?? selectedPlanName)
+        : undefined
+
+    // Resolve ERP group label from loaded data
+    const erpGroupLabel = (erpGroupId && erpGroupId !== 'none')
+        ? erpGroups.find(g => String(g.group_id) === erpGroupId)?.name
+        : undefined
+
+    const selectedErpGroup = erpGroupId && erpGroupId !== 'none'
+        ? erpGroups.find(g => String(g.group_id) === erpGroupId)
+        : undefined
 
     return (
         <div className="space-y-4">
@@ -115,17 +136,26 @@ export function OperationStepDrone({
                     <div>
                         <Label className={labelCls(isDark)}>
                             {t('operations.newOperation.drone.missionPlan')} <span className="text-red-500">*</span>
-                            {droneId && clientPlannings.length === 0 && (
+                            {droneId && clientPlannings.length === 0 && !loadingOptions && (
                                 <span className="ml-1 text-[11px] text-amber-500 font-normal">{t('operations.newOperation.drone.noPlansForClient')}</span>
                             )}
                         </Label>
-                        <Select value={planId} onValueChange={onPlanChange} disabled={loadingOptions || clientPlannings.length === 0}>
+                        <Select
+                            value={planId}
+                            onValueChange={onPlanChange}
+                            disabled={loadingOptions || (clientPlannings.length === 0 && !planLabel)}
+                        >
                             <SelectTrigger className={inputCls(isDark)}>
+                                {/* Explicit label bypasses Radix's async item-lookup so pre-filled values show correctly */}
                                 <SelectValue placeholder={
-                                    loadingOptions ? t('operations.newOperation.scheduler.missionIdPlaceholder')
-                                        : clientPlannings.length === 0 ? t('operations.newOperation.drone.noPlansAvailable')
+                                    loadingOptions
+                                        ? t('operations.newOperation.scheduler.missionIdPlaceholder')
+                                        : clientPlannings.length === 0
+                                            ? t('operations.newOperation.drone.noPlansAvailable')
                                             : t('operations.newOperation.drone.selectMissionPlan')
-                                } />
+                                }>
+                                    {planLabel || undefined}
+                                </SelectValue>
                             </SelectTrigger>
                             <SelectContent className={scCls(isDark)}>
                                 {clientPlannings.map(p => (
@@ -164,6 +194,65 @@ export function OperationStepDrone({
                     </div>
                 </>
             )}
+
+            {/* Emergency Response Plan */}
+            <div>
+                <Label className={labelCls(isDark)}>
+                    <span className="flex items-center gap-1.5">
+                        <Shield className="h-3.5 w-3.5 text-violet-500" />
+                        {t('operations.newOperation.drone.erpLabel')}
+                        <span className={cn('text-[10px] font-normal', isDark ? 'text-slate-500' : 'text-muted-foreground')}>
+                            {t('operations.newOperation.drone.erpOptional')}
+                        </span>
+                    </span>
+                </Label>
+                <Select value={erpGroupId} onValueChange={onErpGroupChange}>
+                    <SelectTrigger className={inputCls(isDark)}>
+                        <SelectValue placeholder={
+                            loadingErpGroups
+                                ? t('operations.newOperation.drone.erpLoading')
+                                : erpGroups.length === 0
+                                    ? t('operations.newOperation.drone.erpNoGroups')
+                                    : t('operations.newOperation.drone.erpPlaceholder')
+                        }>
+                            {/* Provide explicit label so Radix shows it correctly even when options are loading */}
+                            {erpGroupId && erpGroupId !== 'none'
+                                ? (erpGroupLabel ?? (loadingErpGroups ? t('operations.newOperation.drone.erpLoading') : undefined))
+                                : undefined}
+                        </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent className={scCls(isDark)}>
+                        <SelectItem value="none" className={siCls(isDark)}>
+                            <span className={cn('text-xs', isDark ? 'text-slate-400' : 'text-slate-500')}>
+                                {t('operations.newOperation.drone.erpNone')}
+                            </span>
+                        </SelectItem>
+                        {erpGroups.filter(g => g.is_active).map(g => (
+                            <SelectItem key={g.group_id} value={String(g.group_id)} className={siCls(isDark)}>
+                                <span className="flex items-center gap-1.5">
+                                    {g.name}
+                                    <span className={cn('text-[10px]', isDark ? 'text-slate-500' : 'text-slate-400')}>
+                                        · {g.contacts.length} contact{g.contacts.length !== 1 ? 's' : ''}
+                                    </span>
+                                </span>
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+                {selectedErpGroup && (
+                    <div className={cn(
+                        'mt-1.5 px-3 py-2 rounded-md text-xs',
+                        isDark ? 'bg-violet-900/20 text-violet-300' : 'bg-violet-50 text-violet-700'
+                    )}>
+                        <Shield className="inline h-3 w-3 mr-1" />
+                        {t('operations.newOperation.drone.erpSummary', {
+                            name: selectedErpGroup.name,
+                            locations: selectedErpGroup.locations.length,
+                            contacts: selectedErpGroup.contacts.length,
+                        })}
+                    </div>
+                )}
+            </div>
         </div>
     )
 }

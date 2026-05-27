@@ -1,4 +1,4 @@
-import { listErp } from '@/backend/services/emergency-contact/erp-service'
+import { listLocationGroups } from '@/backend/services/emergency-contact/erp-location-group-service'
 import { internalError } from '@/lib/api-error'
 import { requirePermission } from '@/lib/auth/api-auth'
 import { E } from '@/lib/error-codes'
@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
     const { session, error } = await requirePermission('view_erp')
     if (error) return error
 
-    const data = await listErp({ owner_id: session!.user.ownerId })
+    const data = await listLocationGroups(session!.user.ownerId)
     return NextResponse.json({ code: 1, data })
   } catch (err) {
     return internalError(E.SV001, err)

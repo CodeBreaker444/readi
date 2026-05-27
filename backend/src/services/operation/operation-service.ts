@@ -44,6 +44,7 @@ export async function listOperations(
       fk_tool_id,
       fk_mission_status_id,
       fk_planning_id,
+      fk_erp_group_id,
       fk_mission_type_id,
       fk_mission_category_id,
       fk_luc_procedure_id,
@@ -234,6 +235,7 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
     fk_mission_type_id: (input as any).fk_mission_type_id ?? null,
     fk_mission_category_id: (input as any).fk_mission_category_id ?? null,
     fk_luc_procedure_id: fkLuc,
+    fk_erp_group_id: (input as any).fk_erp_group_id ?? null,
     luc_procedure_progress,
     luc_completed_at: null,
   };
@@ -298,6 +300,7 @@ export async function updateOperation(id: number, input: UpdateOperationSchema):
   if ((input as any).status_name !== undefined) updatePayload.status_name = (input as any).status_name;
   if (input.distance_flown !== undefined) updatePayload.distance_flown = input.distance_flown;
   if (input.max_altitude !== undefined) updatePayload.max_altitude = input.max_altitude;
+  if ((input as any).fk_erp_group_id !== undefined) updatePayload.fk_erp_group_id = (input as any).fk_erp_group_id;
 
   const { error } = await supabase
     .from('pilot_mission')

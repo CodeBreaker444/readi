@@ -1,4 +1,4 @@
-import { updateErp } from '@/backend/services/emergencyContact/erp-service'
+import { updateErp } from '@/backend/services/emergency-contact/erp-service'
 import { ERP_TYPES } from '@/config/types/erp'
 import { internalError, zodError } from '@/lib/api-error'
 import { requirePermission } from '@/lib/auth/api-auth'

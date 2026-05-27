@@ -36,6 +36,7 @@ const updateOperationSchema = z.object({
   status_name: z.enum(['PLANNED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'ABORTED']).optional(),
   distance_flown: z.number().nonnegative().nullable().optional(),
   max_altitude: z.number().nonnegative().nullable().optional(),
+  fk_erp_group_id: z.number().int().positive().nullable().optional(),
 });
 
 interface Params {
