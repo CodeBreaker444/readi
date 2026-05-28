@@ -4008,7 +4008,8 @@
           "activationDate": "Activation Date",
           "purchaseDate": "Purchase Date",
           "vendor": "Vendor",
-          "guarantee": "Guarantee (days)"
+          "guarantee": "Guarantee (days)",
+          "batteryRatio": "Battery Cycle Ratio"
         },
         "placeholders": {
           "selectSystem": "Select System",

@@ -4000,7 +4000,8 @@
           "activationDate": "Data di attivazione",
           "purchaseDate": "Data di acquisto",
           "vendor": "Fornitore",
-          "guarantee": "Garanzia (giorni)"
+          "guarantee": "Garanzia (giorni)",
+          "batteryRatio": "Rapporto cicli batteria"
         },
         "placeholders": {
           "selectSystem": "Seleziona Sistema",

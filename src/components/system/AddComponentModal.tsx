@@ -573,6 +573,10 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
                 <Label className="pb-2">{t('systems.components.addComponent.fields.guarantee')}</Label>
                 <Input type="number" value={formData.component_guarantee_day} onChange={(e) => handleChange('component_guarantee_day', e.target.value)} />
               </div>
+              <div className="col-span-1 sm:col-span-3">
+                <Label className="pb-2">{t('systems.components.addComponent.fields.batteryRatio')}</Label>
+                <Input type="number" step="0.01" min={0} max={1} placeholder="0.00 – 1.00" value={formData.battery_cycle_ratio} onChange={(e) => handleChange('battery_cycle_ratio', e.target.value)} />
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 overflow-visible">

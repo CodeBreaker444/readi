@@ -710,6 +710,10 @@ export default function EditComponentModal({
                     <Label className={labelCls}>{t('systems.components.addComponent.fields.guarantee')}</Label>
                     <Input type="number" className={inputCls} value={formData.component_guarantee_day} onChange={e => handleChange('component_guarantee_day', e.target.value)} />
                   </div>
+                  <div className="col-span-1 sm:col-span-3">
+                    <Label className={labelCls}>{t('systems.components.addComponent.fields.batteryRatio')}</Label>
+                    <Input type="number" step="0.01" min={0} max={1} placeholder="0.00 – 1.00" className={inputCls} value={formData.battery_cycle_ratio} onChange={e => handleChange('battery_cycle_ratio', e.target.value)} />
+                  </div>
                 </div>
               </>
             )}

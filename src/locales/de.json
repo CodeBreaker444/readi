@@ -3921,7 +3921,8 @@
           "activationDate": "Aktivierungsdatum",
           "purchaseDate": "Kaufdatum",
           "vendor": "Lieferant",
-          "guarantee": "Garantie (Tage)"
+          "guarantee": "Garantie (Tage)",
+          "batteryRatio": "Akku-Zyklusverhältnis"
         },
         "placeholders": {
           "selectSystem": "System auswählen",
