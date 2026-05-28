@@ -3274,7 +3274,21 @@
       "levels": "Livelli",
       "active": "Attivo",
       "failedToLoad": "Caricamento grafico fallito",
-      "retry": "Riprova"
+      "retry": "Riprova",
+      "edit": {
+        "title": "Modifica nodo organigramma",
+        "positionLabel": "Posizione / Ruolo",
+        "positionPlaceholder": "es. Responsabile operativo",
+        "reportsToLabel": "Riporta a",
+        "selectParent": "Seleziona genitore…",
+        "companyRoot": "Radice aziendale",
+        "saveChanges": "Salva modifiche",
+        "toasts": {
+          "positionRequired": "La posizione non può essere vuota",
+          "saveSuccess": "Nodo aggiornato con successo",
+          "saveFailed": "Salvataggio fallito"
+        }
+      }
     },
     "communication": {
       "title": "Protocolli di comunicazione",

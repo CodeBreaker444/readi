@@ -3190,7 +3190,21 @@
       "levels": "Ebenen",
       "active": "Aktiv",
       "failedToLoad": "Diagramm konnte nicht geladen werden",
-      "retry": "Wiederholen"
+      "retry": "Wiederholen",
+      "edit": {
+        "title": "Diagrammknoten bearbeiten",
+        "positionLabel": "Position / Rolle",
+        "positionPlaceholder": "z.B. Betriebsleiter",
+        "reportsToLabel": "Berichtet an",
+        "selectParent": "Übergeordneten wählen…",
+        "companyRoot": "Unternehmenswurzel",
+        "saveChanges": "Änderungen speichern",
+        "toasts": {
+          "positionRequired": "Position darf nicht leer sein",
+          "saveSuccess": "Knoten erfolgreich aktualisiert",
+          "saveFailed": "Speichern fehlgeschlagen"
+        }
+      }
     },
     "communication": {
       "title": "Kommunikationsprotokolle",

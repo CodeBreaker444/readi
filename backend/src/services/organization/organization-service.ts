@@ -1,4 +1,5 @@
 import { supabase } from "@/backend/database/database";
+import { getChartOverrides } from "./chart-override-service";
 
 export interface OrgNodeData {
   imageURL: string;
@@ -14,6 +15,7 @@ export interface OrgNodeOptions {
 
 export interface OrgNode {
   id: string;
+  userId?: number; // raw DB user_id; undefined for the company root
   data: OrgNodeData;
   options: OrgNodeOptions;
   children?: OrgNode[];
@@ -55,11 +57,12 @@ function isManager(role: string): boolean {
   return MANAGER_KEYWORDS.some((kw) => lower.includes(kw));
 }
 
-function rowToNode(row: OrgUserRow, idPrefix = ""): OrgNode {
+function rowToNode(row: OrgUserRow): OrgNode {
   const role = row.role_in_organization ?? "Member";
   const u = row.users!;
   return {
-    id: `${idPrefix}user_${u.user_id}`,
+    id: `user_${u.user_id}`,
+    userId: u.user_id,
     data: {
       imageURL: u.users_profile?.profile_picture ?? "/assets/images/users/avatar-default.jpg",
       name: `${u.first_name ?? ""} ${u.last_name ?? ""}`.trim(),
@@ -161,32 +164,61 @@ export async function getOrganizationTree(ownerId: number): Promise<OrgNode> {
     },
   };
 
-  // Level 2: Managers (role contains OPM or TM)
-  // Level 3: Employees (PIC or any role without manager keyword)
-  const managerRows = rows.filter((r) => isManager(r.role_in_organization ?? ""));
-  const employeeRows = rows.filter((r) => !isManager(r.role_in_organization ?? ""));
-
-  if (managerRows.length === 0) {
-    // No managers found — employees are direct children of company
-    const employeeNodes = employeeRows.map((r) => rowToNode(r));
-    if (employeeNodes.length > 0) companyRoot.children = employeeNodes;
-    return companyRoot;
+  // Build flat node map: userId → OrgNode
+  const nodeMap = new Map<number, OrgNode>();
+  for (const row of rows) {
+    const node = rowToNode(row);
+    nodeMap.set(row.users!.user_id, node);
   }
 
-  // Build manager nodes (Level 2) each with employees as children (Level 3)
-  const managerNodes: OrgNode[] = managerRows.map((r) => {
-    const managerNode = rowToNode(r);
-    if (employeeRows.length > 0) {
-      // Prefix employee IDs with manager ID to keep React keys unique across the tree
-      managerNode.children = employeeRows.map((er) => rowToNode(er, `${managerNode.id}_`));
-    }
-    return managerNode;
-  });
+  const overrides = await getChartOverrides(ownerId);
+  const overrideMap = new Map<number, number | null>(
+    overrides.map((o) => [o.user_id, o.parent_user_id])
+  );
 
-  companyRoot.children = managerNodes;
+  // Determine parent for each user
+  const childrenOf = new Map<string, OrgNode[]>();
+  const addChild = (parentId: string, child: OrgNode) => {
+    if (!childrenOf.has(parentId)) childrenOf.set(parentId, []);
+    childrenOf.get(parentId)!.push(child);
+  };
+
+  for (const [userId, node] of nodeMap) {
+    if (overrideMap.has(userId)) {
+      const parentUserId = overrideMap.get(userId)!;
+      if (parentUserId === null) {
+        addChild(companyRoot.id, node);
+      } else {
+        addChild(`user_${parentUserId}`, node);
+      }
+    } else {
+      // Role-based default: managers under company, others under first manager
+      if (isManager(node.data.title)) {
+        addChild(companyRoot.id, node);
+      } else {
+        const firstManager = [...nodeMap.values()].find((n) => isManager(n.data.title));
+        addChild(firstManager?.id ?? companyRoot.id, node);
+      }
+    }
+  }
+
+  // Recursively attach collected children
+  const attachChildren = (node: OrgNode) => {
+    const kids = childrenOf.get(node.id) ?? [];
+    if (kids.length > 0) {
+      node.children = kids;
+      kids.forEach(attachChildren);
+    }
+  };
+  attachChildren(companyRoot);
+
   return companyRoot;
 }
 
 export function countNodes(node: OrgNode): number {
   return 1 + (node.children ?? []).reduce((s, c) => s + countNodes(c), 0);
+}
+
+export function flattenNodes(node: OrgNode): OrgNode[] {
+  return [node, ...(node.children ?? []).flatMap(flattenNodes)];
 }

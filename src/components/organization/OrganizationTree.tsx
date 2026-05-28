@@ -1,12 +1,13 @@
 "use client";
 
 import { OrgNode } from "@/backend/services/organization/organization-service";
-import { Maximize2, Minus, Plus } from "lucide-react";
+import { Maximize2, Minus, Pencil, Plus } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 
 interface OrganizationTreeProps {
   data: OrgNode | null;
   isDark?: boolean;
+  onEditNode?: (node: OrgNode) => void;
 }
 
 function stringToHue(str: string): number {
@@ -27,12 +28,14 @@ function NodeCard({
   hasChildren,
   expanded,
   onToggle,
+  onEdit,
 }: {
   node: OrgNode;
   isDark: boolean;
   hasChildren: boolean;
   expanded: boolean;
   onToggle: () => void;
+  onEdit?: (node: OrgNode) => void;
 }) {
   const card        = isDark ? "#1e293b" : "#ffffff";
   const border      = isDark ? "#334155" : "#e2e8f0";
@@ -90,6 +93,27 @@ function NodeCard({
             {node.data.email}
           </p>
         </div>
+
+        {onEdit && node.userId !== undefined && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onEdit(node); }}
+            title="Edit node"
+            style={{
+              flexShrink: 0,
+              width: 26, height: 26, borderRadius: 7,
+              background: isDark ? "#334155" : "#f1f5f9",
+              border: `1px solid ${border}`,
+              color: textSub,
+              cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              transition: "background .15s",
+            }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = isDark ? "#475569" : "#e2e8f0"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = isDark ? "#334155" : "#f1f5f9"; }}
+          >
+            <Pencil size={12} />
+          </button>
+        )}
       </div>
 
       {hasChildren && (
@@ -114,7 +138,7 @@ function NodeCard({
   );
 }
 
-function TreeNode({ node, isDark }: { node: OrgNode; isDark: boolean }) {
+function TreeNode({ node, isDark, onEdit }: { node: OrgNode; isDark: boolean; onEdit?: (node: OrgNode) => void }) {
   const [expanded, setExpanded] = useState(true);
   const children    = node.children ?? [];
   const hasChildren = children.length > 0;
@@ -128,6 +152,7 @@ function TreeNode({ node, isDark }: { node: OrgNode; isDark: boolean }) {
         hasChildren={hasChildren}
         expanded={expanded}
         onToggle={() => setExpanded(!expanded)}
+        onEdit={onEdit}
       />
 
       {hasChildren && expanded && (
@@ -160,7 +185,7 @@ function TreeNode({ node, isDark }: { node: OrgNode; isDark: boolean }) {
                     }} />
                   )}
                   <div style={{ width: 1, height: 28, background: lineColor }} />
-                  <TreeNode node={child} isDark={isDark} />
+                  <TreeNode node={child} isDark={isDark} onEdit={onEdit} />
                 </div>
               );
             })}
@@ -175,7 +200,7 @@ const MIN_SCALE = 0.2;
 const MAX_SCALE = 2.5;
 const ZOOM_STEP = 0.15;
 
-export default function OrganizationTree({ data, isDark = false }: OrganizationTreeProps) {
+export default function OrganizationTree({ data, isDark = false, onEditNode }: OrganizationTreeProps) {
   const [scale, setScale]   = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const isPanning           = useRef(false);
@@ -314,7 +339,7 @@ export default function OrganizationTree({ data, isDark = false }: OrganizationT
           pointerEvents: panning ? "none" : "auto",
         }}
       >
-        <TreeNode node={data} isDark={isDark} />
+        <TreeNode node={data} isDark={isDark} onEdit={onEditNode} />
       </div>
     </div>
   );

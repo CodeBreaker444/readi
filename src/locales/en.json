@@ -3282,7 +3282,21 @@
       "levels": "Levels",
       "active": "Active",
       "failedToLoad": "Failed to load chart",
-      "retry": "Retry"
+      "retry": "Retry",
+      "edit": {
+        "title": "Edit Chart Node",
+        "positionLabel": "Position / Role",
+        "positionPlaceholder": "e.g. Operations Manager",
+        "reportsToLabel": "Reports To",
+        "selectParent": "Select parent…",
+        "companyRoot": "Company Root",
+        "saveChanges": "Save Changes",
+        "toasts": {
+          "positionRequired": "Position cannot be empty",
+          "saveSuccess": "Node updated successfully",
+          "saveFailed": "Failed to save"
+        }
+      }
     },
     "communication": {
       "title": "Communication Protocols",
