@@ -57,6 +57,7 @@ export interface Operation {
   luc_completed_at?: string | null;
   pilot_name?: string | null;
   tool_code?: string | null;
+  tool_name?: string | null;
   primary_component_code?: string | null;
   status_name?: string | null;
   client_name?: string | null;

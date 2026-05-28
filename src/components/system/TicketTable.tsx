@@ -1,6 +1,7 @@
 "use client";
 
 import type { MaintenanceTicket } from "@/config/types/maintenance";
+import { SystemCell } from "@/components/tables/SystemCell";
 import {
   ColumnDef,
   flexRender,
@@ -154,27 +155,9 @@ export function TicketTable({
       {
         id: "drone",
         header: t('systems.maintenanceLogbook.table.system'),
-        cell: ({ row }) => {
-          const t = row.original;
-          return (
-            <div>
-              <p
-                className={`text-sm font-semibold ${
-                  isDark ? "text-indigo-400" : "text-indigo-600"
-                }`}
-              >
-                {t.drone_code ?? "—"}
-              </p>
-              <p
-                className={`text-[11px] truncate max-w-[140px] ${
-                  isDark ? "text-slate-500" : "text-slate-400"
-                }`}
-              >
-                {t.drone_model ?? "—"}
-              </p>
-            </div>
-          );
-        },
+        cell: ({ row }) => (
+          <SystemCell code={row.original.drone_code} name={row.original.drone_model} size="sm" />
+        ),
       },
       {
         id: "component",

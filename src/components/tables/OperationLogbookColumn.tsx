@@ -2,6 +2,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { SystemCell } from "@/components/tables/SystemCell";
 import { OperationLogbookItem } from "@/config/types/logbook";
 import { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, Clock, Map } from "lucide-react";
@@ -149,22 +150,9 @@ export const operationLogbookColumns: ColumnDef<OperationLogbookItem>[] = [
   {
     id: "drone",
     header: "Drone System",
-    cell: ({ row }) => {
-      const code = row.original.vehicle_code;
-      const desc = row.original.vehicle_desc;
-      return (
-        <div className="flex flex-col gap-0.5">
-          <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-200">
-            {code || "—"}
-          </span>
-          {desc && (
-            <span className="text-[10px] text-slate-400 dark:text-white truncate max-w-[120px]">
-              {desc}
-            </span>
-          )}
-        </div>
-      );
-    },
+    cell: ({ row }) => (
+      <SystemCell code={row.original.vehicle_code} name={row.original.vehicle_desc} size="sm" />
+    ),
     size: 140,
   },
   {

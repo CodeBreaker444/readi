@@ -337,6 +337,7 @@ export default function DroneToolPage() {
     const modelColumns = useMemo(
         () => getModelColumns({
             isDark,
+            t,
             onEdit: handleEditModelDirect,
             onDelete: handleDeleteModel
         }),
@@ -346,6 +347,7 @@ export default function DroneToolPage() {
     const componentColumns = useMemo(
         () => getComponentColumns({
             isDark,
+            t,
             toolCodeMap,
             modelMap,
             onView: handleViewComponent,

@@ -100,6 +100,7 @@ export async function listOperations(
       ? `${row.pilot.first_name ?? ''} ${row.pilot.last_name ?? ''}`.trim()
       : null,
     tool_code: row.tool?.tool_code ?? null,
+    tool_name: row.tool?.tool_name ?? null,
     category_name: row.category?.category_name ?? null,
     type_name: row.type_data?.type_name ?? null,
     planning_name: row.planning?.planning_name ?? null,

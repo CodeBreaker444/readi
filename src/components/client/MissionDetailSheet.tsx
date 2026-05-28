@@ -1,6 +1,7 @@
 'use client';
 
 import { ClientMission } from '@/components/tables/ClientMissionColumns';
+import { SystemCell } from '@/components/tables/SystemCell';
 import { Badge } from '@/components/ui/badge';
 import {
   Sheet,
@@ -149,9 +150,7 @@ export default function MissionDetailSheet({ mission, isDark, onClose }: Props) 
                   <DetailRow
                     icon={<Wrench className="h-3.5 w-3.5" />}
                     label={t('clientPortal.fieldDrone', 'Drone System')}
-                    value={mission.tool_code
-                      ? `${mission.tool_code}${mission.tool_name ? ` · ${mission.tool_name}` : ''}`
-                      : null}
+                    value={<SystemCell code={mission.tool_code} name={mission.tool_name} />}
                   />
                   {mission.location && (
                     <DetailRow

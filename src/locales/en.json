@@ -1437,6 +1437,16 @@
         "autofillSuccess": "Autofilled {{count}} mission(s)",
         "autofillSkipped": "{{count}} skipped (not Completed or no pilot).",
         "autofillError": "Failed to autofill tasks"
+      },
+      "procedureBadge": {
+        "noLuc": "No LUC",
+        "noLucTooltip": "No procedure assigned",
+        "done": "Done",
+        "pending": "Pending",
+        "assignment": "Assignment",
+        "checklist": "Checklist",
+        "complete": "✓ Complete",
+        "incomplete": "✗ Incomplete"
       }
     },
     "board": {
@@ -3440,6 +3450,38 @@
         "componentDeleted": "Component deleted successfully",
         "componentDeleteFailed": "Failed to delete component",
         "deleteError": "Error during delete"
+      },
+      "columns": {
+        "model": {
+          "manufacturer": "Manufacturer",
+          "modelCode": "Model Code",
+          "modelName": "Model Name",
+          "type": "Type",
+          "active": "Active",
+          "actions": "Actions",
+          "yes": "Yes",
+          "no": "No",
+          "edit": "Edit",
+          "delete": "Delete"
+        },
+        "component": {
+          "type": "Type",
+          "description": "Description",
+          "code": "Code",
+          "name": "Name",
+          "serialNo": "Serial No.",
+          "model": "Model",
+          "system": "System",
+          "status": "Status",
+          "active": "Active",
+          "actions": "Actions",
+          "yes": "Yes",
+          "no": "No",
+          "view": "View",
+          "edit": "Edit",
+          "log": "Log",
+          "delete": "Delete"
+        }
       }
     },
     "maintenanceDashboard": {

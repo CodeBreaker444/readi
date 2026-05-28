@@ -1,5 +1,6 @@
 'use client';
 
+import { SystemCell } from '@/components/tables/SystemCell';
 import { cn } from '@/lib/utils';
 import { ColumnDef } from '@tanstack/react-table';
 import { TFunction } from 'i18next';
@@ -97,8 +98,8 @@ export const getClientMissionColumns = (
     {
       accessorKey: 'tool_code',
       header: t('clientPortal.colDrone'),
-      cell: ({ getValue }) => (
-        <span className={cn('font-mono text-xs', textSub)}>{getValue<string | null>() ?? '—'}</span>
+      cell: ({ getValue, row }) => (
+        <SystemCell code={getValue<string | null>()} name={row.original.tool_name} size="sm" />
       ),
     },
     {

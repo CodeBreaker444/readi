@@ -1,6 +1,7 @@
 'use client';
 
 import { Operation } from '@/app/operations/table/page';
+import { SystemCell } from '@/components/tables/SystemCell';
 import { MaintenanceCycleModal } from '@/components/operation/MaintenanceCycleModal';
 import { MissionLucProcedureModal } from '@/components/operation/MissionLucProcedureModal';
 import { ReportIssueModal } from '@/components/operation/ReportIssueModal';
@@ -304,7 +305,7 @@ export function OperationDetailSheet({
                     <DetailRow
                       icon={<Wrench className="h-3.5 w-3.5" />}
                       label={t('operations.table.detail.droneSystem')}
-                      value={operation.tool_code}
+                      value={<SystemCell code={operation.tool_code} name={operation.tool_name} />}
                     />
                     {primaryComponent && (
                       <DetailRow

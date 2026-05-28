@@ -1,3 +1,4 @@
+import { SystemCell } from "@/components/tables/SystemCell";
 import { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, Clock } from "lucide-react";
 import { Mission } from "./FlightLogbookTable";
@@ -103,11 +104,7 @@ import { Mission } from "./FlightLogbookTable";
     {
       accessorKey: 'droneSystem',
       header: 'Drone System',
-      cell: ({ row }) => (
-        <span className="text-sm text-gray-700 dark:text-gray-300">
-          {row.getValue('droneSystem')}
-        </span>
-      ),
+      cell: ({ row }) => <SystemCell code={row.getValue('droneSystem')} size="sm" />,
     },
     {
       accessorKey: 'missionStatus',

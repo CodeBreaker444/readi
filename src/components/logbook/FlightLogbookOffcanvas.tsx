@@ -1,5 +1,6 @@
 'use client';
 
+import { SystemCell } from '@/components/tables/SystemCell';
 import { Activity, Briefcase, CheckCircle, Clock, Drone, FileText, MapPin, Target, User, X } from 'lucide-react';
 
 interface FlightLogbookOffcanvasProps {
@@ -166,9 +167,7 @@ export default function FlightLogbookOffcanvas({
                     <p className="text-xs text-gray-500 dark:text-gray-400">
                       Drone System
                     </p>
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                      {missionData.droneSystem}
-                    </p>
+                    <SystemCell code={missionData.droneSystem} />
                   </div>
                 </div>
               </div>

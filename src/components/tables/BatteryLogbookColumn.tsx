@@ -2,6 +2,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { SystemCell } from "@/components/tables/SystemCell";
 import { BatteryLogbookItem } from "@/config/types/logbook";
 import { ColumnDef } from "@tanstack/react-table";
 import { TFunction } from "i18next";
@@ -91,24 +92,9 @@ export function getBatteryLogbookColumns(t: TFunction, isDark: boolean): ColumnD
     {
       id: "drone_system",
       header: c("droneSystem"),
-      cell: ({ row }) => {
-        const code = row.original.tool_code;
-        const desc = row.original.tool_desc;
-        return code ? (
-          <div className="flex flex-col gap-0.5">
-            <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-200">
-              {code}
-            </span>
-            {desc && (
-              <span className="text-[10px] text-slate-400 dark:text-slate-500 truncate max-w-30">
-                {desc}
-              </span>
-            )}
-          </div>
-        ) : (
-          <span className="text-slate-300 dark:text-slate-600">—</span>
-        );
-      },
+      cell: ({ row }) => (
+        <SystemCell code={row.original.tool_code} name={row.original.tool_desc} size="sm" />
+      ),
       size: 140,
     },
     {

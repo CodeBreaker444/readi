@@ -1436,6 +1436,16 @@
         "autofillSuccess": "{{count}} Mission(en) automatisch ausgefüllt",
         "autofillSkipped": "{{count}} übersprungen (nicht abgeschlossen oder kein Pilot).",
         "autofillError": "Aufgaben konnten nicht automatisch ausgefüllt werden"
+      },
+      "procedureBadge": {
+        "noLuc": "Kein LUC",
+        "noLucTooltip": "Kein Verfahren zugewiesen",
+        "done": "Erledigt",
+        "pending": "Ausstehend",
+        "assignment": "Zuweisung",
+        "checklist": "Checkliste",
+        "complete": "✓ Abgeschlossen",
+        "incomplete": "✗ Unvollständig"
       }
     },
     "board": {
@@ -3353,6 +3363,38 @@
         "componentDeleted": "Komponente erfolgreich gelöscht",
         "componentDeleteFailed": "Komponente konnte nicht gelöscht werden",
         "deleteError": "Fehler beim Löschvorgang"
+      },
+      "columns": {
+        "model": {
+          "manufacturer": "Hersteller",
+          "modelCode": "Modellcode",
+          "modelName": "Modellname",
+          "type": "Typ",
+          "active": "Aktiv",
+          "actions": "Aktionen",
+          "yes": "Ja",
+          "no": "Nein",
+          "edit": "Bearbeiten",
+          "delete": "Löschen"
+        },
+        "component": {
+          "type": "Typ",
+          "description": "Beschreibung",
+          "code": "Code",
+          "name": "Name",
+          "serialNo": "Seriennr.",
+          "model": "Modell",
+          "system": "System",
+          "status": "Status",
+          "active": "Aktiv",
+          "actions": "Aktionen",
+          "yes": "Ja",
+          "no": "Nein",
+          "view": "Ansehen",
+          "edit": "Bearbeiten",
+          "log": "Protokoll",
+          "delete": "Löschen"
+        }
       }
     },
     "maintenanceDashboard": {

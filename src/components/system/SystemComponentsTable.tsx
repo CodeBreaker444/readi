@@ -1,6 +1,7 @@
 'use client';
 
 import { DroneToolData } from '@/components/tables/SystemColumn';
+import { SystemCell } from '@/components/tables/SystemCell';
 import { TablePagination } from '@/components/tables/Pagination';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -234,10 +235,9 @@ export default function SystemComponentsTable({
                         <td className="px-3 py-3">
                           <div className="flex items-start gap-2">
                             <ChevronRight className={`h-4 w-4 mt-0.5 transition-transform ${isOpen ? 'rotate-90' : ''}`} />
-                            <div>
-                              <p className={`font-semibold ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>{system.tool_code}</p>
-                              <p className="text-xs text-slate-400">{t('systems.components.systemsTable.componentCount', { count: totalComponentCount })}</p>
-                              {system.tool_desc ? <p className="text-xs text-slate-400">{system.tool_desc}</p> : null}
+                            <div className="flex flex-col gap-0.5">
+                              <SystemCell code={system.tool_code} name={system.tool_desc} size="lg" />
+                              <p className="text-[10px] text-slate-400">{t('systems.components.systemsTable.componentCount', { count: totalComponentCount })}</p>
                             </div>
                           </div>
                         </td>

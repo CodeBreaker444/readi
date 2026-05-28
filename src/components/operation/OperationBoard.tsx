@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuthorization } from "@/components/authorization/AuthorizationProvider";
+import { SystemCell } from "@/components/tables/SystemCell";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -549,7 +550,7 @@ function MissionDetailSheet({ mission, isDark, onClose, onOpenLuc }: { mission: 
                                 <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t("operations.board.detail.personnelEquipment")}</h3>
                                 <div className="space-y-2">
                                     <DetailItem icon={<User className="h-3.5 w-3.5" />} label={t("operations.board.detail.pilotInCommand")} value={mission.pic_fullname} />
-                                    <DetailItem icon={<Wrench className="h-3.5 w-3.5" />} label={t("operations.table.detail.droneSystem")} value={mission.vehicle_code + (mission.vehicle_desc ? ` — ${mission.vehicle_desc}` : "")} />
+                                    <DetailItem icon={<Wrench className="h-3.5 w-3.5" />} label={t("operations.table.detail.droneSystem")} value={<SystemCell code={mission.vehicle_code} name={mission.vehicle_desc} />} />
                                     <DetailItem icon={<Crosshair className="h-3.5 w-3.5" />} label={t("operations.board.detail.missionType")} value={mission.mission_type_desc} />
                                     <DetailItem icon={<Tag className="h-3.5 w-3.5" />} label={t("operations.board.detail.category")} value={mission.mission_category_desc} />
                                     <DetailItem icon={<MapPin className="h-3.5 w-3.5" />} label={t("operations.board.detail.planning")} value={mission.mission_planning_code} />

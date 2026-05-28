@@ -3,6 +3,7 @@
 import { Operation } from '@/app/operations/table/page';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { SystemCell } from '@/components/tables/SystemCell';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
     Tooltip,
@@ -104,7 +105,7 @@ function getProcedureStatus(op: Operation): { assignmentDone: boolean; checklist
   return { hasLuc, assignmentDone, checklistDone };
 }
 
-function ProcedureBadge({ op, isDark }: { op: Operation; isDark: boolean }) {
+function ProcedureBadge({ op, isDark, t }: { op: Operation; isDark: boolean; t: TFunction }) {
   const { hasLuc, assignmentDone, checklistDone } = getProcedureStatus(op);
 
   if (!hasLuc) {
@@ -114,10 +115,10 @@ function ProcedureBadge({ op, isDark }: { op: Operation; isDark: boolean }) {
           <span className={cn('inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium cursor-default',
             isDark ? 'bg-slate-800 text-slate-400 border-slate-600' : 'bg-slate-100 text-slate-400 border-slate-200')}>
             <AlertCircle className="h-3 w-3" />
-            No LUC
+            {t('operations.table.procedureBadge.noLuc')}
           </span>
         </TooltipTrigger>
-        <TooltipContent>No procedure assigned</TooltipContent>
+        <TooltipContent>{t('operations.table.procedureBadge.noLucTooltip')}</TooltipContent>
       </Tooltip>
     );
   }
@@ -132,13 +133,13 @@ function ProcedureBadge({ op, isDark }: { op: Operation; isDark: boolean }) {
             ? isDark ? 'bg-emerald-900/50 text-emerald-300 border-emerald-600' : 'bg-emerald-100 text-emerald-700 border-emerald-300'
             : isDark ? 'bg-amber-900/50 text-amber-300 border-amber-600' : 'bg-amber-100 text-amber-700 border-amber-300')}>
           {allDone ? <CheckCircle2 className="h-3 w-3" /> : <AlertCircle className="h-3 w-3" />}
-          {allDone ? 'Done' : 'Pending'}
+          {allDone ? t('operations.table.procedureBadge.done') : t('operations.table.procedureBadge.pending')}
         </span>
       </TooltipTrigger>
       <TooltipContent>
         <div className="text-xs space-y-0.5">
-          <p>Assignment: {assignmentDone ? '✓ Complete' : '✗ Incomplete'}</p>
-          <p>Checklist: {checklistDone ? '✓ Complete' : '✗ Incomplete'}</p>
+          <p>{t('operations.table.procedureBadge.assignment')}: {assignmentDone ? t('operations.table.procedureBadge.complete') : t('operations.table.procedureBadge.incomplete')}</p>
+          <p>{t('operations.table.procedureBadge.checklist')}: {checklistDone ? t('operations.table.procedureBadge.complete') : t('operations.table.procedureBadge.incomplete')}</p>
         </div>
       </TooltipContent>
     </Tooltip>
@@ -206,18 +207,14 @@ export const getOperationColumns = (t: TFunction, isDark = false, timezone = 'Eu
   {
     accessorKey: 'tool_code',
     header: t('operations.table.detail.droneSystem'),
-    cell: ({ getValue, row }) => {
-      const systemCode = getValue<string>();
-      const primaryComp = row.original.primary_component_code;
-      return (
-        <div className="flex flex-col gap-0.5">
-          <span className="text-xs">{systemCode || '—'}</span>
-          {primaryComp && (
-            <span className="text-[10px] text-muted-foreground leading-tight">{primaryComp}</span>
-          )}
-        </div>
-      );
-    },
+    cell: ({ getValue, row }) => (
+      <SystemCell
+        code={getValue<string>()}
+        name={row.original.tool_name}
+        primaryDrone={row.original.primary_component_code}
+        size="sm"
+      />
+    ),
   },
   {
     accessorKey: 'distance_flown',
@@ -239,7 +236,7 @@ export const getOperationColumns = (t: TFunction, isDark = false, timezone = 'Eu
   {
     id: 'procedure',
     header: 'Procedure',
-    cell: ({ row }) => <ProcedureBadge op={row.original} isDark={isDark} />,
+    cell: ({ row }) => <ProcedureBadge op={row.original} isDark={isDark} t={t} />,
   },
   {
     id: 'actions',

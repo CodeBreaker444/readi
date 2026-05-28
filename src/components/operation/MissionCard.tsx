@@ -2,6 +2,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { SystemCell } from "@/components/tables/SystemCell";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Mission, MissionStatusCode } from "@/config/types/operation";
@@ -168,8 +169,8 @@ export function MissionCard({ mission, draggable, onDragStart, onViewDetails, on
         </div>
 
         <div>
-          <p className={`text-[13px] font-semibold leading-tight ${isDark ? "text-slate-100" : "text-slate-800"}`}>
-            {mission.vehicle_code}
+          <div className="flex items-start gap-1.5">
+            <SystemCell code={mission.vehicle_code} name={mission.vehicle_desc} />
             {mission.maintenance_status && mission.maintenance_status !== "OK" && (() => {
               const mCfg = maintenanceStatusConfig[mission.maintenance_status];
               return (
@@ -177,7 +178,7 @@ export function MissionCard({ mission, draggable, onDragStart, onViewDetails, on
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <span className={cn(
-                        "ml-1.5 inline-flex items-center gap-1 rounded-full border px-1.5 py-0 text-[9px] font-medium align-middle cursor-default",
+                        "mt-0.5 inline-flex items-center gap-1 rounded-full border px-1.5 py-0 text-[9px] font-medium cursor-default shrink-0",
                         isDark ? mCfg.darkBg : mCfg.lightBg
                       )}>
                         <Wrench className="h-2.5 w-2.5" />
@@ -189,12 +190,7 @@ export function MissionCard({ mission, draggable, onDragStart, onViewDetails, on
                 </TooltipProvider>
               );
             })()}
-            {mission.vehicle_desc && (
-              <span className={`font-normal ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-                {" "}— {mission.vehicle_desc}
-              </span>
-            )}
-          </p>
+          </div>
           {mission.mission_planning_code && (
             <p className={`mt-0.5 truncate text-[11px] ${isDark ? "text-slate-500" : "text-slate-400"}`}>
               {mission.mission_planning_code}
