@@ -1,0 +1,23 @@
+meta {
+  name: Delete Communication
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{baseUrl}}/api/organization/communication/delete
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  { "communication_id": 1 }
+}
+
+settings {
+  encodeUrl: true
+}

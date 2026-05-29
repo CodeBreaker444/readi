@@ -1,5 +1,6 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { notifyDccAcceptance } from '@/backend/services/mission/dcc-callback-service';
+import { notifyPilotAssignment } from '@/backend/services/notification/notification-service';
 import { deleteOperation, getOperation, updateOperation } from '@/backend/services/operation/operation-service';
 import { UpdateOperationSchema } from '@/config/types/operation';
 import { internalError, notFound, zodError } from '@/lib/api-error';
@@ -17,7 +18,7 @@ const flexibleDatetime = z.string().refine(
 
 const updateOperationSchema = z.object({
   mission_code: z.string().min(1).optional(),
-  mission_name: z.string().min(1).optional(),
+  mission_name: z.string().optional(),
   mission_description: z.string().nullable().optional(),
   scheduled_start: flexibleDatetime.nullable().optional(),
   actual_start: flexibleDatetime.nullable().optional(),
@@ -27,6 +28,7 @@ const updateOperationSchema = z.object({
   notes: z.string().nullable().optional(),
   fk_pilot_user_id: z.number().int().positive().optional(),
   fk_tool_id: z.number().int().positive().nullable().optional(),
+  fk_client_id: z.number().int().positive().nullable().optional(),
   fk_planning_id: z.number().int().positive().nullable().optional(),
   fk_mission_status_id: z.number().int().positive().optional(),
   fk_mission_type_id: z.number().int().positive().nullable().optional(),
@@ -34,6 +36,7 @@ const updateOperationSchema = z.object({
   status_name: z.enum(['PLANNED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'ABORTED']).optional(),
   distance_flown: z.number().nonnegative().nullable().optional(),
   max_altitude: z.number().nonnegative().nullable().optional(),
+  fk_erp_group_id: z.number().int().positive().nullable().optional(),
 });
 
 interface Params {
@@ -80,6 +83,15 @@ export async function PUT(req: NextRequest, { params }: Params) {
       userRole: session!.user.role,
       ownerId: session!.user.ownerId,
     });
+
+    if (validated.fk_pilot_user_id) {
+      await notifyPilotAssignment({
+        pilotUserId: validated.fk_pilot_user_id,
+        missionId:   id,
+        missionCode: (updated as any).mission_code ?? `#${id}`,
+        fromUserId:  session!.user.userId,
+      });
+    }
 
     // If a drone was just assigned to a mission that has a DCC planning link,
     // fire DCC acceptance now (it was skipped earlier when the drone wasn't set yet).

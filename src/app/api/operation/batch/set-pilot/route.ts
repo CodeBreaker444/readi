@@ -1,5 +1,6 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { batchSetPilot } from '@/backend/services/operation/operation-service';
+import { notifyPilotAssignment } from '@/backend/services/notification/notification-service';
 import { internalError } from '@/lib/api-error';
 import { requirePermission } from '@/lib/auth/api-auth';
 import { E } from '@/lib/error-codes';
@@ -22,6 +23,17 @@ export async function POST(req: NextRequest) {
 
     // pilot can only be set on PLANNED missions
     const result = await batchSetPilot(mission_ids, pilot_id, ownerId);
+
+    if (result.updatedMissions.length > 0) {
+      await notifyPilotAssignment(
+        result.updatedMissions.map((m) => ({
+          pilotUserId: pilot_id,
+          missionId:   m.id,
+          missionCode: m.code,
+          fromUserId:  session!.user.userId,
+        })),
+      );
+    }
 
     logEvent({
       eventType: 'UPDATE',

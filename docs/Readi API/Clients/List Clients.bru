@@ -1,0 +1,19 @@
+meta {
+  name: List Clients
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/client/list
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  List clients. Requires `view_client`, `view_config`, or `view_planning`.
+}

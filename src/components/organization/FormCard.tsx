@@ -50,7 +50,7 @@ export default function FormCard({
           <button
             type="button"
             onClick={() => setIsVisible(!isVisible)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-white transition-all duration-200 backdrop-blur-sm border
+            className={`flex cursor-pointer items-center gap-2 px-4 py-2 rounded-lg text-white transition-all duration-200 backdrop-blur-sm border
               ${isDark
                 ? 'bg-white/5 hover:bg-white/10 border-white/10 hover:border-white/20'
                 : 'bg-white/10 hover:bg-white/20 border-white/20 hover:border-white/30'}`}

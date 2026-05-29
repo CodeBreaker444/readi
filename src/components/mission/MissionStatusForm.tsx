@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Mission } from '@/config/types/types';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface MissionStatusFormProps {
   onSubmit: (status: Omit<Mission, 'id'>) => Promise<void>;
@@ -17,6 +18,7 @@ interface MissionStatusFormProps {
 }
 
 export default function MissionStatusForm({ onSubmit, isDark, initialData, mode = 'add' }: MissionStatusFormProps) {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     code: initialData?.code ?? '',
     name: initialData?.name ?? '',
@@ -44,12 +46,12 @@ export default function MissionStatusForm({ onSubmit, isDark, initialData, mode 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <Label className={isDark ? 'text-gray-300' : 'text-gray-700'}>
-            Code <span className="text-red-500">*</span>
+            {t('missionStatus.form.codeLabel')} <span className="text-red-500">*</span>
           </Label>
           <Input
             required
             maxLength={50}
-            placeholder="e.g., PLANNED"
+            placeholder={t('missionStatus.form.codePlaceholder')}
             value={formData.code}
             onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
             className={`uppercase ${inputClass}`}
@@ -58,12 +60,12 @@ export default function MissionStatusForm({ onSubmit, isDark, initialData, mode 
         </div>
         <div className="space-y-1.5">
           <Label className={isDark ? 'text-gray-300' : 'text-gray-700'}>
-            Name <span className="text-red-500">*</span>
+            {t('missionStatus.form.nameLabel')} <span className="text-red-500">*</span>
           </Label>
           <Input
             required
             maxLength={100}
-            placeholder="e.g., Planned"
+            placeholder={t('missionStatus.form.namePlaceholder')}
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             className={inputClass}
@@ -73,10 +75,10 @@ export default function MissionStatusForm({ onSubmit, isDark, initialData, mode 
       </div>
 
       <div className="space-y-1.5">
-        <Label className={isDark ? 'text-gray-300' : 'text-gray-700'}>Description</Label>
+        <Label className={isDark ? 'text-gray-300' : 'text-gray-700'}>{t('missionStatus.form.descriptionLabel')}</Label>
         <Textarea
           rows={3}
-          placeholder="e.g., Mission is in planning phase"
+          placeholder={t('missionStatus.form.descriptionPlaceholder')}
           value={formData.description}
           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
           className={inputClass}
@@ -86,7 +88,7 @@ export default function MissionStatusForm({ onSubmit, isDark, initialData, mode 
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <Label className={isDark ? 'text-gray-300' : 'text-gray-700'}>Order</Label>
+          <Label className={isDark ? 'text-gray-300' : 'text-gray-700'}>{t('missionStatus.form.orderLabel')}</Label>
           <Input
             type="number"
             min="0"
@@ -104,7 +106,7 @@ export default function MissionStatusForm({ onSubmit, isDark, initialData, mode 
               disabled={isSubmitting}
             />
             <span className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-              Final Status
+              {t('missionStatus.form.finalStatusLabel')}
             </span>
           </label>
         </div>
@@ -116,9 +118,9 @@ export default function MissionStatusForm({ onSubmit, isDark, initialData, mode 
         className="w-full cursor-pointer bg-violet-600 hover:bg-violet-700 text-white font-semibold mt-2 gap-2"
       >
         {isSubmitting ? (
-          <><Loader2 size={14} className="animate-spin" />{mode === 'edit' ? 'Saving...' : 'Adding...'}</>
+          <><Loader2 size={14} className="animate-spin" />{mode === 'edit' ? t('missionStatus.form.saving') : t('missionStatus.form.adding')}</>
         ) : (
-          mode === 'edit' ? 'Save Changes' : 'Add Status'
+          mode === 'edit' ? t('missionStatus.form.saveChanges') : t('missionStatus.form.addButton')
         )}
       </Button>
     </form>

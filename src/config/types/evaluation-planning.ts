@@ -112,6 +112,7 @@ export interface PlanningData {
   planning_type: string;
   planning_folder: string;
   planning_json: string | null;
+  planning_active: string;
   client_name: string;
   default_limit_json?: string;
 }

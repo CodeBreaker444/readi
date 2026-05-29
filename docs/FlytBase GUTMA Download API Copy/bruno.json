@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "FlytBase GUTMA Download API Copy",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}

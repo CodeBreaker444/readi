@@ -1,0 +1,19 @@
+meta {
+  name: Delete Mission Status
+  type: http
+  seq: 9
+}
+
+delete {
+  url: {{baseUrl}}/api/mission/status/:id/delete
+  body: none
+  auth: inherit
+}
+
+params:path {
+  id: 1
+}
+
+settings {
+  encodeUrl: true
+}

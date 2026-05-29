@@ -255,7 +255,7 @@ const onSubmit = async (data: CreateShiftInput) => {
                         key={day}
                         type="button"
                         onClick={() => toggleDay(idx)}
-                        className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                        className={`px-3 cursor-pointer py-1.5 rounded-md text-xs font-semibold transition-all ${
                           selectedDays.includes(idx)
                             ? 'bg-blue-600 text-white shadow-sm'
                             : isDark

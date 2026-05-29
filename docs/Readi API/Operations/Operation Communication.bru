@@ -1,0 +1,27 @@
+meta {
+  name: Operation Communication
+  type: http
+  seq: 16
+}
+
+post {
+  url: {{baseUrl}}/api/operation/communication
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "operation_id": 1,
+    "message": "Mission briefing notes",
+    "recipients": [1, 2, 3]
+  }
+}
+
+settings {
+  encodeUrl: true
+}

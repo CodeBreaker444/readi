@@ -1,0 +1,31 @@
+meta {
+  name: Assign Flight Request to Planning
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/api/planning/flight-requests/assign
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "request_id": 1,
+    "planning_id": 42
+  }
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Assigns a DCC flight request to a PMVD planning mission. Triggers DCC acceptance callback automatically.
+  planning_id is optional — omit to acknowledge without assigning.
+}

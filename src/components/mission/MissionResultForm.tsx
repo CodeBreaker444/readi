@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { MissionResult } from '@/config/types/types';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface MissionResultFormProps {
   onSubmit: (result: Omit<MissionResult, 'id'>) => Promise<void>;
@@ -15,6 +16,7 @@ interface MissionResultFormProps {
 }
 
 export default function MissionResultForm({ onSubmit, isDark, initialData, mode = 'add' }: MissionResultFormProps) {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({ code: initialData?.code ?? '', description: initialData?.description ?? '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -34,18 +36,18 @@ export default function MissionResultForm({ onSubmit, isDark, initialData, mode 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 pt-2">
       <div className="space-y-1.5">
-        <Label className={isDark ? 'text-gray-300' : 'text-gray-700'}>Code <span className="text-red-500">*</span></Label>
-        <Input required maxLength={50} placeholder="e.g., SUCCESS" value={formData.code} onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })} className={`uppercase ${inputClass}`} disabled={isSubmitting} />
+        <Label className={isDark ? 'text-gray-300' : 'text-gray-700'}>{t('missionResult.form.codeLabel')} <span className="text-red-500">*</span></Label>
+        <Input required maxLength={50} placeholder={t('missionResult.form.codePlaceholder')} value={formData.code} onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })} className={`uppercase ${inputClass}`} disabled={isSubmitting} />
       </div>
       <div className="space-y-1.5">
-        <Label className={isDark ? 'text-gray-300' : 'text-gray-700'}>Description <span className="text-red-500">*</span></Label>
-        <Textarea required maxLength={255} rows={3} placeholder="e.g., Mission completed successfully" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} className={inputClass} disabled={isSubmitting} />
+        <Label className={isDark ? 'text-gray-300' : 'text-gray-700'}>{t('missionResult.form.descriptionLabel')} <span className="text-red-500">*</span></Label>
+        <Textarea required maxLength={255} rows={3} placeholder={t('missionResult.form.descriptionPlaceholder')} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} className={inputClass} disabled={isSubmitting} />
       </div>
       <Button type="submit" disabled={isSubmitting} className="w-full bg-violet-600 hover:bg-violet-700 text-white font-semibold mt-2 gap-2">
         {isSubmitting ? (
-          <><Loader2 size={14} className="animate-spin" />{mode === 'edit' ? 'Saving...' : 'Adding...'}</>
+          <><Loader2 size={14} className="animate-spin" />{mode === 'edit' ? t('missionResult.form.saving') : t('missionResult.form.adding')}</>
         ) : (
-          mode === 'edit' ? 'Save Changes' : 'Add Result'
+          mode === 'edit' ? t('missionResult.form.saveChanges') : t('missionResult.form.addButton')
         )}
       </Button>
     </form>

@@ -14,6 +14,7 @@ import { z } from 'zod';
 const saveSchema = z.object({
   token: z.string().min(8, 'Token too short').max(2048, 'Token too long'),
   orgId: z.string().min(4, 'Org ID too short').max(128, 'Org ID too long'),
+  tokenName: z.string().max(100, 'Name too long').optional(),
 });
 
 export async function GET() {
@@ -21,8 +22,8 @@ export async function GET() {
     const { session, error } = await requireAuth();
     if (error) return error;
 
-    const exists = await hasFlytbaseToken(session!.user.userId);
-    return NextResponse.json({ success: true, hasToken: exists });
+    const { exists, tokenName } = await hasFlytbaseToken(session!.user.userId);
+    return NextResponse.json({ success: true, hasToken: exists, tokenName });
   } catch (err) {
     console.error('[GET /api/integrations/flytbase/token]', err);
     return internalError(E.SV001, err);
@@ -49,6 +50,7 @@ export async function POST(req: NextRequest) {
       session!.user.userId,
       parsed.data.token,
       parsed.data.orgId,
+      parsed.data.tokenName,
     );
 
     logEvent({

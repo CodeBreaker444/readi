@@ -1,0 +1,30 @@
+meta {
+  name: Assign Flight Request
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/api/planning/flight-requests/assign
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "request_id": 42,
+    "planning_id": 7
+  }
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Accepts a DCC flight request and links it to a planning mission. Triggers acceptance callback to DCC (requires dcc_drone_id on the assigned drone).
+}

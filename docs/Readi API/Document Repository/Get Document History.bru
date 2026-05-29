@@ -1,0 +1,19 @@
+meta {
+  name: Get Document History
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/api/document/history?document_id=42
+  body: none
+  auth: inherit
+}
+
+params:query {
+  document_id: 42
+}
+
+settings {
+  encodeUrl: true
+}

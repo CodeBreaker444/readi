@@ -1,0 +1,15 @@
+meta {
+  name: Get Communication Recipients
+  type: http
+  seq: 17
+}
+
+get {
+  url: {{baseUrl}}/api/operation/communication/recipients
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

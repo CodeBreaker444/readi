@@ -41,3 +41,53 @@ export async function updatePostFlightData(
 
   if (error) throw error;
 }
+
+export async function upsertMissionResult(
+  missionId: number,
+  resultTypeId: number,
+  metadata: {
+    flight_duration?: number | null;
+    distance_flown?: number | null;
+    battery_charge_start?: number | null;
+    battery_charge_end?: number | null;
+    notes?: string | null;
+  }
+): Promise<void> {
+  const { data: resultType } = await supabase
+    .from('pilot_mission_result_type')
+    .select('result_type_desc')
+    .eq('result_type_id', resultTypeId)
+    .single();
+
+  const record = {
+    fk_pilot_mission_id: missionId,
+    result_type: resultType?.result_type_desc ?? null,
+    result_description: metadata.notes ?? null,
+    processing_status: 'completed',
+    result_metadata: {
+      flight_duration_min: metadata.flight_duration ?? null,
+      distance_flown_m: metadata.distance_flown ?? null,
+      battery_charge_start: metadata.battery_charge_start ?? null,
+      battery_charge_end: metadata.battery_charge_end ?? null,
+    },
+  };
+
+  const { data: existing } = await supabase
+    .from('pilot_mission_result')
+    .select('result_id')
+    .eq('fk_pilot_mission_id', missionId)
+    .maybeSingle();
+
+  if (existing) {
+    const { error } = await supabase
+      .from('pilot_mission_result')
+      .update(record)
+      .eq('result_id', existing.result_id);
+    if (error) throw error;
+  } else {
+    const { error } = await supabase
+      .from('pilot_mission_result')
+      .insert(record);
+    if (error) throw error;
+  }
+}

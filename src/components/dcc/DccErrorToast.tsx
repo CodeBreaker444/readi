@@ -64,7 +64,7 @@ export default function DccErrorToast({ toastId, title, dcc }: Props) {
         <button
           type="button"
           aria-label={t('dccToast.dismiss')}
-          className="shrink-0 rounded p-0.5 text-amber-600 hover:bg-amber-100 hover:text-amber-900 transition-colors mt-0.5"
+          className="cursor-pointer shrink-0 rounded p-0.5 text-amber-600 hover:bg-amber-100 hover:text-amber-900 transition-colors mt-0.5"
           onClick={(e) => { e.stopPropagation(); toast.dismiss(toastId); }}
         >
           <X className="h-3.5 w-3.5" />

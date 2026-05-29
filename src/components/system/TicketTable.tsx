@@ -1,6 +1,7 @@
 "use client";
 
 import type { MaintenanceTicket } from "@/config/types/maintenance";
+import { SystemCell } from "@/components/tables/SystemCell";
 import {
   ColumnDef,
   flexRender,
@@ -9,6 +10,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { TablePagination } from "../tables/Pagination";
 import ExportButtons from "./ExportButtons";
 import { Badge, PRIORITY_STYLES, STATUS_STYLES, fmtDate } from "./TicketUi";
@@ -108,6 +110,7 @@ export function TicketTable({
   canClose = false,
   isDark,
 }: Props) {
+  const { t } = useTranslation();
   const [pagination, setPagination] = useState({
     pageIndex: 0,
     pageSize: 8,
@@ -117,7 +120,7 @@ export function TicketTable({
     () => [
       {
         id: "ticket",
-        header: "Ticket",
+        header: t('systems.maintenanceLogbook.table.ticket'),
         accessorFn: (row) => row.ticket_id,
         cell: ({ row }) => {
           const t = row.original;
@@ -151,32 +154,14 @@ export function TicketTable({
       },
       {
         id: "drone",
-        header: "System",
-        cell: ({ row }) => {
-          const t = row.original;
-          return (
-            <div>
-              <p
-                className={`text-sm font-semibold ${
-                  isDark ? "text-indigo-400" : "text-indigo-600"
-                }`}
-              >
-                {t.drone_code ?? "—"}
-              </p>
-              <p
-                className={`text-[11px] truncate max-w-[140px] ${
-                  isDark ? "text-slate-500" : "text-slate-400"
-                }`}
-              >
-                {t.drone_model ?? "—"}
-              </p>
-            </div>
-          );
-        },
+        header: t('systems.maintenanceLogbook.table.system'),
+        cell: ({ row }) => (
+          <SystemCell code={row.original.drone_code} name={row.original.drone_model} size="sm" />
+        ),
       },
       {
         id: "component",
-        header: "Component",
+        header: t('systems.maintenanceLogbook.table.component'),
         cell: ({ row }) => {
           const t = row.original;
 
@@ -223,7 +208,7 @@ export function TicketTable({
       },
       {
         id: "description",
-        header: "Description",
+        header: t('systems.maintenanceLogbook.table.description'),
         cell: ({ row }) => {
           const note = row.original.note;
           return note ? (
@@ -236,23 +221,26 @@ export function TicketTable({
         },
       },
       {
-        id: "serial",
-        header: "Serial",
-        cell: ({ row }) => (
-          <span
-            className={`text-xs font-mono ${
-              isDark ? "text-slate-400" : "text-slate-500"
-            }`}
-          >
-            {row.original.drone_serial ?? "—"}
-          </span>
-        ),
+        id: "location",
+        header: t('systems.maintenanceLogbook.table.location'),
+        cell: ({ row }) => {
+          const lat = row.original.location_latitude;
+          const lon = row.original.location_longitude;
+          if (lat === null || lat === undefined || lon === null || lon === undefined) {
+            return <span className={`text-xs ${isDark ? "text-slate-600" : "text-slate-300"}`}>—</span>;
+          }
+          return (
+            <span className={`text-[11px] font-mono tabular-nums whitespace-nowrap ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+              {Number(lat).toFixed(5)} / {Number(lon).toFixed(5)}
+            </span>
+          );
+        },
       },
       {
         id: "assigned",
-        header: "Assigned To",
+        header: t('systems.maintenanceLogbook.table.assignedTo'),
         cell: ({ row }) => {
-          const t = row.original;
+          const ticket = row.original;
           return (
             <div>
               <p
@@ -260,15 +248,15 @@ export function TicketTable({
                   isDark ? "text-slate-200" : "text-slate-700"
                 }`}
               >
-                {t.assigner_name || "Unassigned"}
+                {ticket.assigner_name || t('systems.maintenanceLogbook.table.unassigned')}
               </p>
-              {t.assigner_email && (
+              {ticket.assigner_email && (
                 <p
                   className={`text-[11px] truncate max-w-[160px] ${
                     isDark ? "text-slate-500" : "text-slate-400"
                   }`}
                 >
-                  {t.assigner_email}
+                  {ticket.assigner_email}
                 </p>
               )}
             </div>
@@ -277,7 +265,7 @@ export function TicketTable({
       },
       {
         id: "status",
-        header: "Status",
+        header: t('systems.maintenanceLogbook.table.status'),
         accessorFn: (row) => row.ticket_status,
         cell: ({ row }) => (
           <Badge
@@ -290,7 +278,7 @@ export function TicketTable({
       },
       {
         id: "priority",
-        header: "Priority",
+        header: t('systems.maintenanceLogbook.table.priority'),
         cell: ({ row }) => (
           <Badge
             label={row.original.ticket_priority}
@@ -300,7 +288,7 @@ export function TicketTable({
       },
       {
         id: "opened",
-        header: "Opened",
+        header: t('systems.maintenanceLogbook.table.opened'),
         accessorFn: (row) => row.opened_at,
         cell: ({ getValue }) => {
           const val = getValue() as string | null;
@@ -317,7 +305,7 @@ export function TicketTable({
       },
       {
         id: "closed",
-        header: "Closed",
+        header: t('systems.maintenanceLogbook.table.closed'),
         accessorFn: (row) => row.closed_at,
         cell: ({ getValue }) => {
           const val = getValue() as string | null;
@@ -334,34 +322,34 @@ export function TicketTable({
       },
       {
         id: "actions",
-        header: "Actions",
+        header: t('systems.maintenanceLogbook.table.actions'),
         cell: ({ row }) => {
-          const t = row.original;
-          const isOpen = t.ticket_status === "OPEN";
+          const ticket = row.original;
+          const isOpen = ticket.ticket_status === "OPEN";
 
           return (
             <div className="flex items-center gap-0.5">
-              <ActionIcon label="Events" onClick={() => onEvents(t.ticket_id)}>
+              <ActionIcon label={t('systems.maintenanceLogbook.actions.events')} onClick={() => onEvents(ticket.ticket_id)}>
                 {Icons.events}
               </ActionIcon>
 
               {isOpen && (
                 <>
                   <ActionIcon
-                    label="Assign"
-                    onClick={() => onAssign(t.ticket_id)}
+                    label={t('systems.maintenanceLogbook.actions.assign')}
+                    onClick={() => onAssign(ticket.ticket_id)}
                   >
                     {Icons.assign}
                   </ActionIcon>
                   <ActionIcon
-                    label="Report"
-                    onClick={() => onReport(t.ticket_id)}
+                    label={t('systems.maintenanceLogbook.actions.report')}
+                    onClick={() => onReport(ticket.ticket_id)}
                   >
                     {Icons.report}
                   </ActionIcon>
                   <ActionIcon
-                    label="Upload"
-                    onClick={() => onUpload(t.ticket_id)}
+                    label={t('systems.maintenanceLogbook.actions.upload')}
+                    onClick={() => onUpload(ticket.ticket_id)}
                   >
                     {Icons.upload}
                   </ActionIcon>
@@ -370,8 +358,8 @@ export function TicketTable({
 
               {onDownload && (
                 <ActionIcon
-                  label="Download Files"
-                  onClick={() => onDownload(t.ticket_id)}
+                  label={t('systems.maintenanceLogbook.actions.downloadFiles')}
+                  onClick={() => onDownload(ticket.ticket_id)}
                   variant="download"
                 >
                   {Icons.download}
@@ -380,8 +368,8 @@ export function TicketTable({
 
               {isOpen && canClose && (
                 <ActionIcon
-                  label="Close Ticket"
-                  onClick={() => onClose(t.ticket_id)}
+                  label={t('systems.maintenanceLogbook.actions.closeTicket')}
+                  onClick={() => onClose(ticket.ticket_id)}
                   variant="success"
                 >
                   {Icons.close}
@@ -392,7 +380,7 @@ export function TicketTable({
         },
       },
     ],
-    [isDark, onEvents, onAssign, onReport, onUpload, onClose, onDownload, canClose]
+    [isDark, onEvents, onAssign, onReport, onUpload, onClose, onDownload, canClose, t]
   );
 
   const table = useReactTable({
@@ -466,9 +454,24 @@ export function TicketTable({
 
       <div className={`border-t px-2 flex items-center justify-between ${isDark ? "border-slate-700" : "border-slate-200"}`}>
         <ExportButtons
-          filename="Maintenance Tickets"
-          headers={['Ticket ID', 'Type', 'System', 'Serial', 'Component', 'Component SN', 'Description', 'Assigned To', 'Email', 'Status', 'Priority', 'Opened', 'Closed']}
-          rows={tickets.map(t => [t.ticket_id, t.ticket_type, t.drone_code ?? '', t.drone_serial ?? '', t.entity_name ?? '', t.component_sn ?? '', t.note ?? '', t.assigner_name ?? '', t.assigner_email ?? '', t.ticket_status, t.ticket_priority, t.opened_at, t.closed_at ?? ''])}
+          filename={t('systems.maintenanceLogbook.exportFilename')}
+          headers={[
+            t('systems.maintenanceLogbook.exportHeaders.ticketId'),
+            t('systems.maintenanceLogbook.exportHeaders.type'),
+            t('systems.maintenanceLogbook.exportHeaders.system'),
+            t('systems.maintenanceLogbook.exportHeaders.latitude'),
+            t('systems.maintenanceLogbook.exportHeaders.longitude'),
+            t('systems.maintenanceLogbook.exportHeaders.component'),
+            t('systems.maintenanceLogbook.exportHeaders.componentSN'),
+            t('systems.maintenanceLogbook.exportHeaders.description'),
+            t('systems.maintenanceLogbook.exportHeaders.assignedTo'),
+            t('systems.maintenanceLogbook.exportHeaders.email'),
+            t('systems.maintenanceLogbook.exportHeaders.status'),
+            t('systems.maintenanceLogbook.exportHeaders.priority'),
+            t('systems.maintenanceLogbook.exportHeaders.opened'),
+            t('systems.maintenanceLogbook.exportHeaders.closed'),
+          ]}
+          rows={tickets.map(t => [t.ticket_id, t.ticket_type, t.drone_code ?? '', t.location_latitude ?? '', t.location_longitude ?? '', t.entity_name ?? '', t.component_sn ?? '', t.note ?? '', t.assigner_name ?? '', t.assigner_email ?? '', t.ticket_status, t.ticket_priority, t.opened_at, t.closed_at ?? ''])}
         />
         <TablePagination table={table} />
       </div>
@@ -497,6 +500,7 @@ function SkeletonRows({ cols, isDark }: { cols: number; isDark: boolean }) {
 }
 
 function EmptyRow({ cols, isDark }: { cols: number; isDark: boolean }) {
+  const { t } = useTranslation();
   return (
     <tr>
       <td
@@ -520,7 +524,7 @@ function EmptyRow({ cols, isDark }: { cols: number; isDark: boolean }) {
             d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
           />
         </svg>
-        <p className="text-sm">No tickets found</p>
+        <p className="text-sm">{t('systems.maintenanceLogbook.table.noTickets')}</p>
       </td>
     </tr>
   );

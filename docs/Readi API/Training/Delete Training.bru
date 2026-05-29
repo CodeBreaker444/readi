@@ -1,0 +1,23 @@
+meta {
+  name: Delete Training
+  type: http
+  seq: 3
+}
+
+delete {
+  url: {{baseUrl}}/api/training/delete
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  { "training_id": 1 }
+}
+
+settings {
+  encodeUrl: true
+}

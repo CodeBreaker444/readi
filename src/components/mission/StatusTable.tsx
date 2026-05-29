@@ -77,10 +77,10 @@ export default function StatusTable({ data, onDelete, onEdit, isDark}: StatusTab
 
                 <td className="px-6 py-4 text-right">
                   <div className="flex justify-end gap-2">
-                    <button className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium" onClick={handleSaveEdit}>
+                    <button className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium" onClick={handleSaveEdit}>
                       <Check size={16} /> Save
                     </button>
-                    <button className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm font-medium" onClick={handleCancelEdit}>
+                    <button className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm font-medium" onClick={handleCancelEdit}>
                       <X size={16} /> Cancel
                     </button>
                   </div>
@@ -104,10 +104,10 @@ export default function StatusTable({ data, onDelete, onEdit, isDark}: StatusTab
 
                 <td className="px-6 py-4 text-right">
                   <div className="flex justify-end gap-2">
-                    <button className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium" onClick={() => handleEditClick(status)}>
+                    <button className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium" onClick={() => handleEditClick(status)}>
                       <Pencil size={16} /> Edit
                     </button>
-                    <button className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium" onClick={() => confirm('Are you sure you want to delete this mission status?') && onDelete(status.id)}>
+                    <button className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium" onClick={() => confirm('Are you sure you want to delete this mission status?') && onDelete(status.id)}>
                       <Trash2 size={16} /> Delete
                     </button>
                   </div>

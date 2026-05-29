@@ -1,0 +1,31 @@
+meta {
+  name: Update Shift
+  type: http
+  seq: 10
+}
+
+put {
+  url: {{baseUrl}}/api/team/shift/:id
+  body: json
+  auth: inherit
+}
+
+params:path {
+  id: 1
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "shift_name": "Updated Morning Shift",
+    "start_time": "07:00",
+    "end_time": "15:00"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

@@ -1,0 +1,19 @@
+meta {
+  name: Get Maintenance Cycles
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{baseUrl}}/api/operation/board/maintenance-cycle
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Get drone maintenance cycle data for the board.
+}

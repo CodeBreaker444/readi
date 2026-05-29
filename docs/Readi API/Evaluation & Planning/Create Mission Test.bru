@@ -1,0 +1,27 @@
+meta {
+  name: Create Mission Test
+  type: http
+  seq: 19
+}
+
+post {
+  url: {{baseUrl}}/api/evaluation/mission/mission-test
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "mission_id": 1,
+    "test_date": "2026-04-18",
+    "test_notes": "Initial test flight"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

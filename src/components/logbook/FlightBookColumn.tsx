@@ -1,3 +1,4 @@
+import { SystemCell } from "@/components/tables/SystemCell";
 import { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, Clock } from "lucide-react";
 import { Mission } from "./FlightLogbookTable";
@@ -28,7 +29,7 @@ import { Mission } from "./FlightLogbookTable";
       accessorKey: 'id',
       header: ({ column }) => (
         <button
-          className="flex items-center gap-2 font-semibold hover:text-slate-700 dark:hover:text-slate-300"
+          className="flex cursor-pointer items-center gap-2 font-semibold hover:text-slate-700 dark:hover:text-slate-300"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
           #
@@ -45,7 +46,7 @@ import { Mission } from "./FlightLogbookTable";
       accessorKey: 'startDate',
       header: ({ column }) => (
         <button
-          className="flex items-center gap-2 font-semibold hover:text-slate-700 dark:hover:text-slate-300"
+          className="flex cursor-pointer items-center gap-2 font-semibold hover:text-slate-700 dark:hover:text-slate-300"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
           Start Time
@@ -103,11 +104,7 @@ import { Mission } from "./FlightLogbookTable";
     {
       accessorKey: 'droneSystem',
       header: 'Drone System',
-      cell: ({ row }) => (
-        <span className="text-sm text-gray-700 dark:text-gray-300">
-          {row.getValue('droneSystem')}
-        </span>
-      ),
+      cell: ({ row }) => <SystemCell code={row.getValue('droneSystem')} size="sm" />,
     },
     {
       accessorKey: 'missionStatus',

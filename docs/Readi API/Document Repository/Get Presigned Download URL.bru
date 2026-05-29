@@ -1,0 +1,25 @@
+meta {
+  name: Get Presigned Download URL
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/api/document/presign-download
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "s3_key": "documents/1712345678_safety-manual.pdf"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

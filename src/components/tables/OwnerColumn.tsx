@@ -15,6 +15,9 @@ export interface OwnerData {
   owner_email: string;
   owner_website: string;
   owner_active: string;
+  drone_atc_enabled: boolean;
+  email_notifications_enabled: boolean;
+  easa_operator_code: string | null;
   tax_id: string | null;
   registration_number: string | null;
   license_number: string | null;
@@ -32,12 +35,11 @@ export interface OwnerData {
 }
 
 interface OwnerColumnActions {
-  onView: (owner: OwnerData) => void;
-  onEdit: (owner: OwnerData) => void;
+  onOpen: (owner: OwnerData) => void;
   onDelete: (owner: OwnerData) => void;
 }
 
-export const ownerColumns = ({ onView, onEdit, onDelete }: OwnerColumnActions): ColumnDef<OwnerData>[] => [
+export const ownerColumns = ({ onOpen, onDelete }: OwnerColumnActions): ColumnDef<OwnerData>[] => [
   {
     header: 'Code',
     accessorKey: 'owner_code',
@@ -85,20 +87,62 @@ export const ownerColumns = ({ onView, onEdit, onDelete }: OwnerColumnActions): 
     ),
   },
   {
+    header: 'Drone ATC',
+    accessorKey: 'drone_atc_enabled',
+    cell: ({ row }) => (
+      <span
+        className={`rounded px-2 py-1 text-xs ${
+          row.original.drone_atc_enabled
+            ? 'bg-blue-100 text-blue-800'
+            : 'bg-gray-100 text-gray-500'
+        }`}
+      >
+        {row.original.drone_atc_enabled ? 'Enabled' : 'Disabled'}
+      </span>
+    ),
+  },
+  {
+    header: 'Email Notifs',
+    accessorKey: 'email_notifications_enabled',
+    cell: ({ row }) => (
+      <span
+        className={`rounded px-2 py-1 text-xs ${
+          row.original.email_notifications_enabled
+            ? 'bg-green-100 text-green-800'
+            : 'bg-gray-100 text-gray-500'
+        }`}
+      >
+        {row.original.email_notifications_enabled ? 'On' : 'Off'}
+      </span>
+    ),
+  },
+  {
     header: 'Actions',
     id: 'actions',
-    cell: ({ row }) => (
-      <div className="flex gap-2">
-        <Button size="sm" className="bg-black text-white hover:bg-black/80" onClick={() => onView(row.original)}>
-          View
-        </Button>
-        <Button size="sm" className="bg-black text-white hover:bg-black/80" onClick={() => onEdit(row.original)}>
-          Edit
-        </Button>
-        <Button size="sm" variant="destructive" onClick={() => onDelete(row.original)}>
-          Delete
-        </Button>
-      </div>
-    ),
+    cell: ({ row }) => {
+      const isProtected = row.original.owner_id === 1;
+      return (
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs"
+            onClick={() => onOpen(row.original)}
+          >
+            Open
+          </Button>
+          <Button
+            size="sm"
+            variant="destructive"
+            className="h-7 text-xs"
+            onClick={() => onDelete(row.original)}
+            disabled={isProtected}
+            title={isProtected ? 'This company cannot be deactivated' : undefined}
+          >
+            Deactivate
+          </Button>
+        </div>
+      );
+    },
   },
 ];

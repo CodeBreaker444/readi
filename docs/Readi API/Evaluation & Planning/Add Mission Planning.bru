@@ -1,0 +1,27 @@
+meta {
+  name: Add Mission Planning
+  type: http
+  seq: 16
+}
+
+post {
+  url: {{baseUrl}}/api/evaluation/planning/add-mission-planning
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "planning_id": 1,
+    "mission_template_id": 2,
+    "scheduled_date": "2026-04-20"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

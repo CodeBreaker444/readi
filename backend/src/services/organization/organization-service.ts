@@ -1,4 +1,5 @@
 import { supabase } from "@/backend/database/database";
+import { getChartOverrides } from "./chart-override-service";
 
 export interface OrgNodeData {
   imageURL: string;
@@ -14,6 +15,7 @@ export interface OrgNodeOptions {
 
 export interface OrgNode {
   id: string;
+  userId?: number; // raw DB user_id; undefined for the company root
   data: OrgNodeData;
   options: OrgNodeOptions;
   children?: OrgNode[];
@@ -47,34 +49,34 @@ function roleToHoverColor(role: string): string {
   return HOVER_PALETTE[Math.abs(hash) % HOVER_PALETTE.length];
 }
 
-const ROOT_KEYWORDS        = ["accountable", "ceo", "chief executive", "director general", "managing director", "president", "general manager", "head of", "administrator", "admin"];
-const MID_MANAGER_KEYWORDS = ["operation", "operations", "ops manager"];
-const LEAF_KEYWORDS        = ["pilot", "crew", "staff", "operator", "technician", "engineer", "commander"];
+// Roles containing these keywords are classified as managers (Level 2)
+const MANAGER_KEYWORDS = ["opm", "tm", "admin"];
 
-function matchesAny(role: string, keywords: string[]): boolean {
+function isManager(role: string): boolean {
   const lower = role.toLowerCase();
-  return keywords.some((kw) => lower.includes(kw));
+  return MANAGER_KEYWORDS.some((kw) => lower.includes(kw));
 }
 
 function rowToNode(row: OrgUserRow): OrgNode {
   const role = row.role_in_organization ?? "Member";
-  const u    = row.users!;
+  const u = row.users!;
   return {
     id: `user_${u.user_id}`,
+    userId: u.user_id,
     data: {
       imageURL: u.users_profile?.profile_picture ?? "/assets/images/users/avatar-default.jpg",
-      name:     `${u.first_name ?? ""} ${u.last_name ?? ""}`.trim(),
-      email:    u.email ?? "",
-      title:    role,
+      name: `${u.first_name ?? ""} ${u.last_name ?? ""}`.trim(),
+      email: u.email ?? "",
+      title: role,
     },
     options: {
-      nodeBGColor:      "#ffffff",
+      nodeBGColor: "#ffffff",
       nodeBGColorHover: roleToHoverColor(role),
     },
   };
 }
 
-async function verifyOwner(ownerId: number): Promise<void> {
+async function verifyOwner(ownerId: number): Promise<string> {
   const { data, error } = await supabase
     .from("owner")
     .select("owner_id, owner_name")
@@ -88,11 +90,12 @@ async function verifyOwner(ownerId: number): Promise<void> {
       `Check getUserSession() — it should return the users.fk_owner_id value, not the user_id.`
     );
   }
+  return (data.owner_name as string) ?? "Organisation";
 }
 
 export async function getOrganizationTree(ownerId: number): Promise<OrgNode> {
 
-  await verifyOwner(ownerId);
+  const ownerName = await verifyOwner(ownerId);
 
   const { data, error } = await supabase
     .from("user_owner")
@@ -146,46 +149,76 @@ export async function getOrganizationTree(ownerId: number): Promise<OrgNode> {
     );
   }
 
-  const byRole = new Map<string, OrgUserRow[]>();
+  // Level 1: Company root
+  const companyRoot: OrgNode = {
+    id: `company_${ownerId}`,
+    data: {
+      imageURL: "/assets/images/users/avatar-default.jpg",
+      name: ownerName,
+      email: "",
+      title: "Company",
+    },
+    options: {
+      nodeBGColor: "#ffffff",
+      nodeBGColorHover: "#6366f1",
+    },
+  };
+
+  // Build flat node map: userId → OrgNode
+  const nodeMap = new Map<number, OrgNode>();
   for (const row of rows) {
-    const role = row.role_in_organization ?? "Member";
-    if (!byRole.has(role)) byRole.set(role, []);
-    byRole.get(role)!.push(row);
+    const node = rowToNode(row);
+    nodeMap.set(row.users!.user_id, node);
   }
 
-  const allRoles = [...byRole.keys()];
-
-  const rootRole =
-    allRoles.find((r) => matchesAny(r, ROOT_KEYWORDS)) ??
-    allRoles.reduce((a, b) =>
-      byRole.get(a)!.length <= byRole.get(b)!.length ? a : b
-    );
-
-  const root: OrgNode = rowToNode(byRole.get(rootRole)![0]);
-
-  const nonRootRoles    = allRoles.filter((r) => r !== rootRole);
-  const midManagerRoles = nonRootRoles.filter((r) => matchesAny(r, MID_MANAGER_KEYWORDS));
-  const leafRoles       = nonRootRoles.filter((r) => !midManagerRoles.includes(r) && matchesAny(r, LEAF_KEYWORDS));
-  const directRoles     = nonRootRoles.filter((r) => !midManagerRoles.includes(r) && !leafRoles.includes(r));
-
-  const midManagerNodes: OrgNode[] = midManagerRoles.flatMap((mmRole) =>
-    byRole.get(mmRole)!.map((r) => {
-      const node = rowToNode(r);
-      const subs = leafRoles.flatMap((lr) => byRole.get(lr)!.map(rowToNode));
-      if (subs.length > 0) node.children = subs;
-      return node;
-    })
+  const overrides = await getChartOverrides(ownerId);
+  const overrideMap = new Map<number, number | null>(
+    overrides.map((o) => [o.user_id, o.parent_user_id])
   );
 
-  const rootChildren: OrgNode[] = [
-    ...directRoles.flatMap((role) => byRole.get(role)!.map(rowToNode)),
-    ...midManagerNodes,
-  ];
+  // Determine parent for each user
+  const childrenOf = new Map<string, OrgNode[]>();
+  const addChild = (parentId: string, child: OrgNode) => {
+    if (!childrenOf.has(parentId)) childrenOf.set(parentId, []);
+    childrenOf.get(parentId)!.push(child);
+  };
 
-  if (rootChildren.length > 0) root.children = rootChildren;
-  return root;
+  for (const [userId, node] of nodeMap) {
+    if (overrideMap.has(userId)) {
+      const parentUserId = overrideMap.get(userId)!;
+      if (parentUserId === null) {
+        addChild(companyRoot.id, node);
+      } else {
+        addChild(`user_${parentUserId}`, node);
+      }
+    } else {
+      // Role-based default: managers under company, others under first manager
+      if (isManager(node.data.title)) {
+        addChild(companyRoot.id, node);
+      } else {
+        const firstManager = [...nodeMap.values()].find((n) => isManager(n.data.title));
+        addChild(firstManager?.id ?? companyRoot.id, node);
+      }
+    }
+  }
+
+  // Recursively attach collected children
+  const attachChildren = (node: OrgNode) => {
+    const kids = childrenOf.get(node.id) ?? [];
+    if (kids.length > 0) {
+      node.children = kids;
+      kids.forEach(attachChildren);
+    }
+  };
+  attachChildren(companyRoot);
+
+  return companyRoot;
 }
 
 export function countNodes(node: OrgNode): number {
   return 1 + (node.children ?? []).reduce((s, c) => s + countNodes(c), 0);
+}
+
+export function flattenNodes(node: OrgNode): OrgNode[] {
+  return [node, ...(node.children ?? []).flatMap(flattenNodes)];
 }

@@ -88,7 +88,10 @@ export default function NotificationList({
                   </td>
 
                   <td className={`px-4 py-3 text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                    {notification.procedure_name}
+                    {notification.procedure_name
+                      ? notification.procedure_name.charAt(0).toUpperCase() +
+                        notification.procedure_name.slice(1).toLowerCase().replace(/_/g, ' ')
+                      : '-'}
                   </td>
 
                   <td className={`px-4 py-3 text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
@@ -117,7 +120,7 @@ export default function NotificationList({
                       {notification.is_read === 'N' && (
                         <button
                           onClick={() => onMarkAsRead(notification.notification_id)}
-                          className={`w-full sm:w-auto inline-flex items-center justify-center gap-1 px-3 py-1.5 text-xs border rounded whitespace-nowrap transition-colors ${isDark ? 'border-green-500 text-green-400 hover:bg-green-900/30' : 'border-green-600 text-green-600 hover:bg-green-50'}`}
+                          className={`w-full cursor-pointer sm:w-auto inline-flex items-center justify-center gap-1 px-3 py-1.5 text-xs border rounded whitespace-nowrap transition-colors ${isDark ? 'border-green-500 text-green-400 hover:bg-green-900/30' : 'border-green-600 text-green-600 hover:bg-green-50'}`}
                         >
                           <Check className="w-3 h-3" />
                           Mark as read
@@ -126,7 +129,7 @@ export default function NotificationList({
 
                       <button
                         onClick={() => onDelete(notification.notification_id)}
-                        className={`w-full sm:w-auto inline-flex items-center justify-center gap-1 px-3 py-1.5 text-xs border rounded whitespace-nowrap transition-colors ${isDark ? 'border-red-500 text-red-400 hover:bg-red-900/30' : 'border-red-600 text-red-600 hover:bg-red-50'}`}
+                        className={`w-full cursor-pointer sm:w-auto inline-flex items-center justify-center gap-1 px-3 py-1.5 text-xs border rounded whitespace-nowrap transition-colors ${isDark ? 'border-red-500 text-red-400 hover:bg-red-900/30' : 'border-red-600 text-red-600 hover:bg-red-50'}`}
                       >
                         <Trash2 className="w-3 h-3" />
                         Delete

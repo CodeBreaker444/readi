@@ -1,0 +1,19 @@
+meta {
+  name: Cancel / Delete Scheduled Operation
+  type: http
+  seq: 3
+}
+
+delete {
+  url: {{base_url}}/api/operation/calendar/123
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Deletes a scheduled operation. Triggers POST /dcc/missions/cancel callback with the affected mission IDs. Replace 123 with the actual operation ID.
+}

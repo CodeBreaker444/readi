@@ -1,0 +1,19 @@
+meta {
+  name: Get Component Logs
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{baseUrl}}/api/system/component/:id/logs
+  body: none
+  auth: inherit
+}
+
+params:path {
+  id: 1
+}
+
+settings {
+  encodeUrl: true
+}

@@ -544,14 +544,14 @@ export default function RequirementsEvidencesPage() {
                         <div className="flex items-center gap-1">
                           <button
                             onClick={() => openStatusModal(row.original)}
-                            className={`p-1.5 rounded-md transition-colors text-xs ${isDark ? 'text-slate-500 hover:text-blue-400 hover:bg-blue-500/8' : 'text-slate-400 hover:text-blue-600 hover:bg-blue-50'}`}
+                            className={`p-1.5 cursor-pointer rounded-md transition-colors text-xs ${isDark ? 'text-slate-500 hover:text-blue-400 hover:bg-blue-500/8' : 'text-slate-400 hover:text-blue-600 hover:bg-blue-50'}`}
                             title={t('compliance.requirementsEvidences.table.tooltips.changeStatus')}
                           >
                             <RefreshCw size={13} strokeWidth={2} />
                           </button>
                           <button
                             onClick={() => openEviPanel(row.original)}
-                            className={`p-1.5 rounded-md transition-colors ${isDark ? 'text-slate-500 hover:text-amber-400 hover:bg-amber-500/8' : 'text-slate-400 hover:text-amber-600 hover:bg-amber-50'}`}
+                            className={`p-1.5 cursor-pointer rounded-md transition-colors ${isDark ? 'text-slate-500 hover:text-amber-400 hover:bg-amber-500/8' : 'text-slate-400 hover:text-amber-600 hover:bg-amber-50'}`}
                             title={t('compliance.requirementsEvidences.table.tooltips.manageEvidence')}
                           >
                             <Paperclip size={13} strokeWidth={2} />
@@ -778,7 +778,7 @@ export default function RequirementsEvidencesPage() {
                     </div>
                     <button
                       onClick={() => handleDeleteEvidence(ev.evidence_id)}
-                      className={`p-1.5 rounded-md flex-shrink-0 transition-colors ${isDark ? 'text-slate-600 hover:text-red-400 hover:bg-red-500/8' : 'text-slate-400 hover:text-red-500 hover:bg-red-50'}`}
+                      className={`p-1.5 cursor-pointer rounded-md shrink-0 transition-colors ${isDark ? 'text-slate-600 hover:text-red-400 hover:bg-red-500/8' : 'text-slate-400 hover:text-red-500 hover:bg-red-50'}`}
                     >
                       <X size={13} />
                     </button>

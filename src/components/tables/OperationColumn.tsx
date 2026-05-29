@@ -3,26 +3,26 @@
 import { Operation } from '@/app/operations/table/page';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { SystemCell } from '@/components/tables/SystemCell';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { cn } from '@/lib/utils';
-import { formatDateTimeInTz } from '@/lib/utils';
+import { cn, formatDateTimeInTz } from '@/lib/utils';
 import { ColumnDef } from '@tanstack/react-table';
 import { TFunction } from 'i18next';
 import {
-  AlertCircle,
-  Calendar,
-  CheckCircle2,
-  Clock,
-  Eye,
-  Loader2,
-  Pencil,
-  Trash2,
-  XCircle,
+    AlertCircle,
+    Calendar,
+    CheckCircle2,
+    Download,
+    Eye,
+    Loader2,
+    Pencil,
+    Trash2,
+    XCircle
 } from 'lucide-react';
 
 export interface OperationTableMeta {
@@ -30,6 +30,7 @@ export interface OperationTableMeta {
   onAttach: (op: Operation) => void;
   onDelete: (op: Operation) => void;
   onViewDetails: (op: Operation) => void;
+  onDownloadReport: (op: Operation) => void;
 }
 
 const STATUS_CONFIG: Record<string, { label: string; light: string; dark: string; icon: React.ReactNode }> = {
@@ -104,7 +105,7 @@ function getProcedureStatus(op: Operation): { assignmentDone: boolean; checklist
   return { hasLuc, assignmentDone, checklistDone };
 }
 
-function ProcedureBadge({ op, isDark }: { op: Operation; isDark: boolean }) {
+function ProcedureBadge({ op, isDark, t }: { op: Operation; isDark: boolean; t: TFunction }) {
   const { hasLuc, assignmentDone, checklistDone } = getProcedureStatus(op);
 
   if (!hasLuc) {
@@ -114,15 +115,15 @@ function ProcedureBadge({ op, isDark }: { op: Operation; isDark: boolean }) {
           <span className={cn('inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium cursor-default',
             isDark ? 'bg-slate-800 text-slate-400 border-slate-600' : 'bg-slate-100 text-slate-400 border-slate-200')}>
             <AlertCircle className="h-3 w-3" />
-            No LUC
+            {t('operations.table.procedureBadge.noLuc')}
           </span>
         </TooltipTrigger>
-        <TooltipContent>No procedure assigned</TooltipContent>
+        <TooltipContent>{t('operations.table.procedureBadge.noLucTooltip')}</TooltipContent>
       </Tooltip>
     );
   }
 
-  const allDone = assignmentDone && checklistDone;
+  const allDone = !!op.luc_completed_at || (assignmentDone && checklistDone);
 
   return (
     <Tooltip>
@@ -132,13 +133,13 @@ function ProcedureBadge({ op, isDark }: { op: Operation; isDark: boolean }) {
             ? isDark ? 'bg-emerald-900/50 text-emerald-300 border-emerald-600' : 'bg-emerald-100 text-emerald-700 border-emerald-300'
             : isDark ? 'bg-amber-900/50 text-amber-300 border-amber-600' : 'bg-amber-100 text-amber-700 border-amber-300')}>
           {allDone ? <CheckCircle2 className="h-3 w-3" /> : <AlertCircle className="h-3 w-3" />}
-          {allDone ? 'Done' : 'Pending'}
+          {allDone ? t('operations.table.procedureBadge.done') : t('operations.table.procedureBadge.pending')}
         </span>
       </TooltipTrigger>
       <TooltipContent>
         <div className="text-xs space-y-0.5">
-          <p>Assignment: {assignmentDone ? '✓ Complete' : '✗ Incomplete'}</p>
-          <p>Checklist: {checklistDone ? '✓ Complete' : '✗ Incomplete'}</p>
+          <p>{t('operations.table.procedureBadge.assignment')}: {assignmentDone ? t('operations.table.procedureBadge.complete') : t('operations.table.procedureBadge.incomplete')}</p>
+          <p>{t('operations.table.procedureBadge.checklist')}: {checklistDone ? t('operations.table.procedureBadge.complete') : t('operations.table.procedureBadge.incomplete')}</p>
         </div>
       </TooltipContent>
     </Tooltip>
@@ -206,7 +207,14 @@ export const getOperationColumns = (t: TFunction, isDark = false, timezone = 'Eu
   {
     accessorKey: 'tool_code',
     header: t('operations.table.detail.droneSystem'),
-    cell: ({ getValue }) => <span className="text-xs">{getValue<string>() || '—'}</span>,
+    cell: ({ getValue, row }) => (
+      <SystemCell
+        code={getValue<string>()}
+        name={row.original.tool_name}
+        primaryDrone={row.original.primary_component_code}
+        size="sm"
+      />
+    ),
   },
   {
     accessorKey: 'distance_flown',
@@ -228,18 +236,20 @@ export const getOperationColumns = (t: TFunction, isDark = false, timezone = 'Eu
   {
     id: 'procedure',
     header: 'Procedure',
-    cell: ({ row }) => <ProcedureBadge op={row.original} isDark={isDark} />,
+    cell: ({ row }) => <ProcedureBadge op={row.original} isDark={isDark} t={t} />,
   },
   {
     id: 'actions',
     header: t('planning.table.actions'),
     cell: ({ row, table }) => {
       const meta = table.options.meta as any;
+      const op = row.original;
+      const isCompleted = op.status_name === 'COMPLETED';
       return (
         <div className="flex items-center gap-1">
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => meta.onViewDetails(row.original)}>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => meta.onViewDetails(op)}>
                 <Eye className="h-3.5 w-3.5" />
               </Button>
             </TooltipTrigger>
@@ -247,15 +257,30 @@ export const getOperationColumns = (t: TFunction, isDark = false, timezone = 'Eu
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => meta.onEdit(row.original)}>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => meta.onEdit(op)}>
                 <Pencil className="h-3.5 w-3.5" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>{t('operations.actions.edit')}</TooltipContent>
           </Tooltip>
+          {isCompleted && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                  onClick={(e) => { e.stopPropagation(); meta.onDownloadReport(op); }}
+                >
+                  <Download className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Download Mission Report</TooltipContent>
+            </Tooltip>
+          )}
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => meta.onDelete(row.original)}>
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => meta.onDelete(op)}>
                 <Trash2 className="h-3.5 w-3.5" />
               </Button>
             </TooltipTrigger>

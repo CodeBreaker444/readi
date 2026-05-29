@@ -1,0 +1,27 @@
+meta {
+  name: Update Communication
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/organization/communication/update
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "communication_id": 1,
+    "title": "Updated Safety Briefing",
+    "content": "Updated content"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

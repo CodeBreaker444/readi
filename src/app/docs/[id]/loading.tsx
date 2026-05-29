@@ -1,7 +1,7 @@
 'use client';
 
-import { useTheme } from '@/components/useTheme';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useTheme } from '@/components/useTheme';
 import { ArrowLeft, Moon, Sun } from 'lucide-react';
 
 export default function DocLoading() {
@@ -16,14 +16,14 @@ export default function DocLoading() {
             }`}>
                 <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
+                        <div className={`p-2 cursor-pointer rounded-lg transition-colors ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
                             <ArrowLeft size={18} />
                         </div>
                         <Skeleton className={`h-5 w-36 rounded-md ${isDark ? 'bg-slate-800' : 'bg-gray-200'}`} />
                     </div>
                     <button
                         onClick={toggleTheme}
-                        className={`p-2 rounded-lg transition-colors ${isDark
+                        className={`p-2 cursor-pointer rounded-lg transition-colors ${isDark
                             ? 'text-slate-400 hover:text-white hover:bg-slate-700/60'
                             : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
                         }`}

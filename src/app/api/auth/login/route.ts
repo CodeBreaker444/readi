@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
 
     const { data: userData, error: userError } = await supabase
       .from('users')
-      .select('user_id, username, email, user_active, user_role, password_hash, auth_user_id, fk_owner_id')
+      .select('user_id, username, email, user_active, user_role, password_hash, auth_user_id, fk_owner_id, fk_client_id')
       .eq('email', email)
       .single();
 
@@ -34,10 +34,11 @@ export async function POST(request: NextRequest) {
       return apiError(E.AU007, 403);
     }
 
-    if (userData.user_role !== 'SUPERADMIN') {
+    let droneAtcEnabled = false;
+    if (userData.user_role !== 'SUPERADMIN' && userData.user_role !== 'CLIENT') {
       const { data: ownerData, error: ownerError } = await supabase
         .from('owner')
-        .select('owner_name, owner_active')
+        .select('owner_name, owner_active, drone_atc_enabled')
         .eq('owner_id', userData.fk_owner_id)
         .single();
 
@@ -45,6 +46,21 @@ export async function POST(request: NextRequest) {
         if (!ownerData) return apiError(E.NF002, 404);
         return apiError(E.BL002, 403);
       }
+
+      droneAtcEnabled = ownerData.drone_atc_enabled ?? false;
+    } else if (userData.user_role === 'CLIENT') {
+      if (userData.fk_client_id) {
+        const { data: clientData, error: clientError } = await supabase
+          .from('client')
+          .select('client_active')
+          .eq('client_id', userData.fk_client_id)
+          .single();
+
+        if (clientError || !clientData) return apiError(E.NF010, 404);
+        if (clientData.client_active !== 'Y') return apiError(E.AU012, 403);
+      }
+    } else if (userData.user_role === 'SUPERADMIN') {
+      droneAtcEnabled = true;
     }
 
     await supabase
@@ -66,6 +82,8 @@ export async function POST(request: NextRequest) {
       email: userData.email,
       username: userData.username,
       role: userData.user_role as Role,
+      droneAtcEnabled,
+      ...(userData.fk_client_id ? { clientId: userData.fk_client_id } : {}),
     });
 
     const cookieStore = await cookies();

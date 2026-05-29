@@ -79,7 +79,7 @@ function Header() {
       <div className="relative flex basis-0 items-center justify-end gap-5 sm:gap-7 md:flex-grow">
         <ThemeSelector className="relative z-10" />
         <Link
-          href="https://github.com/CodeBreaker444/theun1t/tree/main/deepinspect3d"
+          href="https://github.com/CodeBreaker444/theun1t/tree/main/readi"
           className="group"
           aria-label="GitHub"
         >

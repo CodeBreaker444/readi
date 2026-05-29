@@ -1,0 +1,26 @@
+meta {
+  name: Get Organization Info
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}/v2/organization
+  body: none
+  auth: inherit
+}
+
+headers {
+  org-id: {{org_id}}
+  Authorization: Bearer {{api_key}}
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Fetch organization details. Use this to verify your org_id is correct.
+  
+  Note: If this returns 404, try /v1/organization or check the API documentation.
+}

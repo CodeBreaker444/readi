@@ -573,7 +573,7 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
                 className={cn(
-                  "flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 transition-colors",
+                  "flex items-center cursor-pointer gap-2 px-5 py-3 text-sm font-medium border-b-2 transition-colors",
                   activeTab === tab.key
                     ? isDark ? "border-violet-400 text-violet-400" : "border-violet-600 text-violet-600"
                     : isDark ? "border-transparent text-slate-500 hover:text-slate-300" : "border-transparent text-slate-500 hover:text-slate-700"

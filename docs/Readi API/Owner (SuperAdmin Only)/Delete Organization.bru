@@ -1,0 +1,23 @@
+meta {
+  name: Delete Organization
+  type: http
+  seq: 4
+}
+
+delete {
+  url: {{baseUrl}}/api/owner/:id
+  body: none
+  auth: inherit
+}
+
+params:path {
+  id: 1
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Delete/deactivate organization. SUPERADMIN only.
+}

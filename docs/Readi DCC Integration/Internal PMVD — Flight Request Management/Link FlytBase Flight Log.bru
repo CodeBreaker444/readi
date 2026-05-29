@@ -1,0 +1,31 @@
+meta {
+  name: Link FlytBase Flight Log
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{base_url}}/api/planning/flight-requests/logs
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "action": "link",
+    "request_id": 1,
+    "flight_id": "flytbase-flight-uuid-here"
+  }
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Archives a FlytBase GUTMA log to S3 and records it against the mission.
+}

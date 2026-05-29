@@ -1,0 +1,19 @@
+meta {
+  name: Mark All Notifications Read
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/notification/mark-all-read
+  body: text
+  auth: inherit
+}
+
+body:text {
+  {}
+}
+
+settings {
+  encodeUrl: true
+}

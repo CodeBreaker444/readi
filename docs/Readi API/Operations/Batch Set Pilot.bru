@@ -1,0 +1,26 @@
+meta {
+  name: Batch Set Pilot
+  type: http
+  seq: 19
+}
+
+post {
+  url: {{baseUrl}}/api/operation/batch/set-pilot
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "operation_ids": [1, 2, 3],
+    "pilot_id": 5
+  }
+}
+
+settings {
+  encodeUrl: true
+}

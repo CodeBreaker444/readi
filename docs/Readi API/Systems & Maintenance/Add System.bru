@@ -1,0 +1,29 @@
+meta {
+  name: Add System
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/system/add
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "system_name": "DJI Matrice 300 RTK",
+    "system_code": "DJI-M300-001",
+    "model_id": 1,
+    "serial_number": "SN-2025-001",
+    "acquisition_date": "2025-01-15"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

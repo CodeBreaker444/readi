@@ -1,0 +1,30 @@
+meta {
+  name: Push Flight Log to DCC
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{base_url}}/api/planning/flight-requests/logs
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "action": "push",
+    "request_id": 1
+  }
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Pushes the already-archived FlytBase log URI to DCC via the /logging callback. Requires a log to have been linked first.
+}

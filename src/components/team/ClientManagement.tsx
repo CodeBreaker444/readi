@@ -114,7 +114,7 @@ export default function ClientManagement({ session }: ClientManagementProps) {
     }
   };
 
-  const handleAddClient = async (formData: any) => {
+  const handleAddClient = async (formData: any): Promise<void> => {
     try {
       const res = await axios.post('/api/client/add', {
         ...formData,
@@ -133,7 +133,7 @@ export default function ClientManagement({ session }: ClientManagementProps) {
     }
   };
 
-  const handleUpdateClient = async (formData: any) => {
+  const handleUpdateClient = async (formData: any): Promise<void> => {
     try {
       const res = await axios.post('/api/client/update', {
         ...formData,

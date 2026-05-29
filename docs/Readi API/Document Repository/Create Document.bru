@@ -1,0 +1,101 @@
+meta {
+  name: Create Document
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/document/create
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "doc_type_id": 1,
+    "s3_key": "documents/1712345678_safety-manual.pdf",
+    "file_name": "safety-manual.pdf",
+    "file_size": 1048576,
+    "doc_code": "DOC-2026-001",
+    "status": "DRAFT",
+    "title": "Safety Operations Manual",
+    "confidentiality": "INTERNAL",
+    "owner_role": "SM",
+    "effective_date": "2026-01-01",
+    "expiry_date": "2027-01-01",
+    "description": "Core safety procedures for drone operations",
+    "keywords": "safety, operations, drone",
+    "tags": "manual, safety",
+    "version_label": "v1.0",
+    "change_log": "Initial release"
+  }
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Create document record after uploading file to S3.
+  
+  status: DRAFT | IN_REVIEW | APPROVED | OBSOLETE
+  confidentiality: INTERNAL | PUBLIC | CONFIDENTIAL | RESTRICTED
+  
+  Requires `view_repository`.
+}
+
+example {
+  name: Success
+  
+  request: {
+    url: {{baseUrl}}/api/document/create
+    method: POST
+    mode: json
+    headers: {
+      Content-Type: application/json
+    }
+  
+    body:json: {
+      {
+        "doc_type_id": 1,
+        "s3_key": "documents/1712345678_safety-manual.pdf",
+        "file_name": "safety-manual.pdf",
+        "file_size": 1048576,
+        "doc_code": "DOC-2026-001",
+        "status": "DRAFT",
+        "title": "Safety Operations Manual",
+        "confidentiality": "INTERNAL",
+        "owner_role": "SM",
+        "effective_date": "2026-01-01",
+        "expiry_date": "2027-01-01",
+        "description": "Core safety procedures for drone operations",
+        "keywords": "safety, operations, drone",
+        "tags": "manual, safety",
+        "version_label": "v1.0",
+        "change_log": "Initial release"
+      }
+    }
+  }
+  
+  response: {
+    status: {
+      code: 201
+      text: Created
+    }
+  
+    body: {
+      type: text
+      content: '''
+        {
+          "code": 1,
+          "message": "Document created",
+          "document_id": 42
+        }
+      '''
+    }
+  }
+}

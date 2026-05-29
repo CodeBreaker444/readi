@@ -1,0 +1,19 @@
+meta {
+  name: List Mission Communications
+  type: http
+  seq: 21
+}
+
+get {
+  url: {{baseUrl}}/api/evaluation/mission/communication/list?mission_id=1
+  body: none
+  auth: inherit
+}
+
+params:query {
+  mission_id: 1
+}
+
+settings {
+  encodeUrl: true
+}

@@ -1,0 +1,30 @@
+meta {
+  name: Update Mission Type
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/api/mission/type/:typeId/edit
+  body: json
+  auth: inherit
+}
+
+params:path {
+  typeId: 1
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "type_name": "Updated Survey",
+    "description": "Updated description"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

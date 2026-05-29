@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import axios from 'axios';
 import { AlertTriangle, Check, Loader2, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { ComponentType } from './AddComponentModal';
 
@@ -18,6 +19,7 @@ interface Props {
 }
 
 export function ManageComponentTypesModal({ open, onClose, types, onReload, isDark }: Props) {
+  const { t } = useTranslation();
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editLabel, setEditLabel] = useState('');
   const [savingId, setSavingId] = useState<number | null>(null);
@@ -35,9 +37,9 @@ export function ManageComponentTypesModal({ open, onClose, types, onReload, isDa
   const text = isDark ? 'text-slate-200' : 'text-slate-800';
   const muted = isDark ? 'text-slate-500' : 'text-slate-400';
 
-  const startEdit = (t: ComponentType) => {
-    setEditingId(t.type_id);
-    setEditLabel(t.type_label);
+  const startEdit = (tp: ComponentType) => {
+    setEditingId(tp.type_id);
+    setEditLabel(tp.type_label);
     setImpactData(null);
   };
 
@@ -62,15 +64,15 @@ export function ManageComponentTypesModal({ open, onClose, types, onReload, isDa
       }
 
       if (data.code === 1) {
-        toast.success('Type updated');
+        toast.success(t('systems.components.manageTypes.toasts.typeUpdated'));
         setEditingId(null);
         setImpactData(null);
         onReload();
       } else {
-        toast.error(data.message ?? 'Update failed');
+        toast.error(data.message ?? t('systems.components.manageTypes.toasts.updateFailed'));
       }
     } catch (e: any) {
-      toast.error(e.response?.data?.message || 'Failed to update type');
+      toast.error(e.response?.data?.message || t('systems.components.manageTypes.toasts.updateFailed'));
     } finally {
       setSavingId(null);
     }
@@ -81,33 +83,33 @@ export function ManageComponentTypesModal({ open, onClose, types, onReload, isDa
     try {
       const { data } = await axios.delete(`/api/system/component-types/${typeId}`);
       if (data.code === 1) {
-        toast.success('Type removed');
+        toast.success(t('systems.components.manageTypes.toasts.typeRemoved'));
         onReload();
       } else {
-        toast.error(data.message ?? 'Delete failed');
+        toast.error(data.message ?? t('systems.components.manageTypes.toasts.deleteFailed'));
       }
     } catch (e: any) {
-      toast.error(e.response?.data?.message || 'Failed to delete type');
+      toast.error(e.response?.data?.message || t('systems.components.manageTypes.toasts.deleteFailed'));
     } finally {
       setDeletingId(null);
     }
   };
 
   const handleAdd = async () => {
-    if (!newLabel.trim() || !newValue.trim()) { toast.error('Both label and value are required'); return; }
+    if (!newLabel.trim() || !newValue.trim()) { toast.error(t('systems.components.manageTypes.toasts.bothRequired')); return; }
     setAdding(true);
     try {
       const { data } = await axios.post('/api/system/component-types', { type_value: newValue.trim(), type_label: newLabel.trim() });
       if (data.code === 1) {
-        toast.success('Type added');
+        toast.success(t('systems.components.manageTypes.toasts.typeAdded'));
         setNewLabel('');
         setNewValue('');
         onReload();
       } else {
-        toast.error(data.message ?? 'Failed to add type');
+        toast.error(data.message ?? t('systems.components.manageTypes.toasts.addFailed'));
       }
     } catch (e: any) {
-      toast.error(e.response?.data?.message ?? 'Failed to add type');
+      toast.error(e.response?.data?.message ?? t('systems.components.manageTypes.toasts.addFailed'));
     } finally {
       setAdding(false);
     }
@@ -117,29 +119,29 @@ export function ManageComponentTypesModal({ open, onClose, types, onReload, isDa
     <Dialog open={open} onOpenChange={(o) => { if (!o) { onClose(); setImpactData(null); } }}>
       <DialogContent className={`!max-w-[480px] w-[95vw] max-h-[80vh] overflow-hidden flex flex-col p-0 ${bg}`}>
         <DialogHeader className={`px-5 pt-5 pb-4 border-b ${isDark ? 'border-white/[0.06]' : 'border-slate-200'}`}>
-          <DialogTitle className={`text-sm font-semibold ${text}`}>Manage Component Types</DialogTitle>
-          <p className={`text-xs mt-0.5 ${muted}`}>Add, rename, or remove component type options.</p>
+          <DialogTitle className={`text-sm font-semibold ${text}`}>{t('systems.components.manageTypes.title')}</DialogTitle>
+          <p className={`text-xs mt-0.5 ${muted}`}>{t('systems.components.manageTypes.subtitle')}</p>
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto px-5 py-3 space-y-1.5">
-          {types.map((t) => (
-            <div key={t.type_id} className="space-y-2">
+          {types.map((tp) => (
+            <div key={tp.type_id} className="space-y-2">
               <div className={`flex items-center gap-2 rounded-lg border px-3 py-2 ${rowBg}`}>
-                {editingId === t.type_id ? (
+                {editingId === tp.type_id ? (
                   <>
                     <Input
                       value={editLabel}
                       onChange={(e) => setEditLabel(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === 'Enter') handleSave(t.type_id); if (e.key === 'Escape') cancelEdit(); }}
+                      onKeyDown={(e) => { if (e.key === 'Enter') handleSave(tp.type_id); if (e.key === 'Escape') cancelEdit(); }}
                       autoFocus
                       className={`h-7 text-xs flex-1 ${inputCls}`}
                     />
                     <button
-                      onClick={() => handleSave(t.type_id)}
-                      disabled={savingId === t.type_id}
+                      onClick={() => handleSave(tp.type_id)}
+                      disabled={savingId === tp.type_id}
                       className={`h-6 w-6 flex items-center justify-center rounded transition-colors ${isDark ? 'text-emerald-400 hover:bg-emerald-500/10' : 'text-emerald-600 hover:bg-emerald-50'}`}
                     >
-                      {savingId === t.type_id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                      {savingId === tp.type_id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
                     </button>
                     <button
                       onClick={cancelEdit}
@@ -151,33 +153,33 @@ export function ManageComponentTypesModal({ open, onClose, types, onReload, isDa
                 ) : (
                   <>
                     <div className="flex-1 min-w-0">
-                      <p className={`text-xs font-medium ${text}`}>{t.type_label}</p>
-                      <p className={`text-[10px] font-mono ${muted}`}>{t.type_value}</p>
+                      <p className={`text-xs font-medium ${text}`}>{tp.type_label}</p>
+                      <p className={`text-[10px] font-mono ${muted}`}>{tp.type_value}</p>
                     </div>
                     <button
-                      onClick={() => startEdit(t)}
+                      onClick={() => startEdit(tp)}
                       className={`h-6 w-6 cursor-pointer flex items-center justify-center rounded transition-colors ${isDark ? 'text-slate-500 hover:text-slate-200 hover:bg-slate-700' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}`}
                     >
                       <Pencil className="h-3 w-3" />
                     </button>
                     <button
-                      onClick={() => handleDelete(t.type_id)}
-                      disabled={deletingId === t.type_id}
+                      onClick={() => handleDelete(tp.type_id)}
+                      disabled={deletingId === tp.type_id}
                       className={`h-6 w-6 cursor-pointer flex items-center justify-center rounded transition-colors ${isDark ? 'text-slate-600 hover:text-rose-400 hover:bg-rose-500/10' : 'text-slate-300 hover:text-rose-500 hover:bg-rose-50'}`}
                     >
-                      {deletingId === t.type_id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                      {deletingId === tp.type_id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
                     </button>
                   </>
                 )}
               </div>
 
-              {editingId === t.type_id && impactData && (
+              {editingId === tp.type_id && impactData && (
                 <div className={`p-3 rounded-lg border text-[11px] animate-in fade-in slide-in-from-top-1 ${isDark ? 'bg-amber-500/10 border-amber-500/20 text-amber-200' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
                   <div className="flex gap-2 mb-2">
                     <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-500" />
-                    <p className="font-semibold">Rename Confirmation Required</p>
+                    <p className="font-semibold">{t('systems.components.manageTypes.renameConfirmTitle')}</p>
                   </div>
-                  <p className="mb-2">This change affects {impactData.length} active components:</p>
+                  <p className="mb-2">{t('systems.components.manageTypes.renameConfirmMessage', { count: impactData.length })}</p>
                   <div className={`max-h-24 overflow-y-auto rounded p-2 mb-3 space-y-1 ${isDark ? 'bg-black/20' : 'bg-white/50'}`}>
                     {impactData.map(c => (
                       <div key={c.component_id} className="flex justify-between font-mono text-[10px]">
@@ -187,13 +189,13 @@ export function ManageComponentTypesModal({ open, onClose, types, onReload, isDa
                     ))}
                   </div>
                   <div className="flex justify-end gap-2">
-                    <Button variant="ghost" size="sm" className="h-7 text-[10px]" onClick={() => setImpactData(null)}>Back</Button>
+                    <Button variant="ghost" size="sm" className="h-7 text-[10px]" onClick={() => setImpactData(null)}>{t('systems.components.manageTypes.back')}</Button>
                     <Button
                       size="sm"
                       className="h-7 cursor-pointer text-[10px] bg-amber-600 hover:bg-amber-500 text-white"
-                      onClick={() => handleSave(t.type_id, true)}
+                      onClick={() => handleSave(tp.type_id, true)}
                     >
-                      Yes, Rename All
+                      {t('systems.components.manageTypes.yesRenameAll')}
                     </Button>
                   </div>
                 </div>
@@ -203,16 +205,16 @@ export function ManageComponentTypesModal({ open, onClose, types, onReload, isDa
         </div>
 
         <div className={`px-5 py-4 border-t ${isDark ? 'border-white/[0.06] bg-slate-900/30' : 'border-slate-200 bg-slate-50'}`}>
-          <p className={`text-[10px] uppercase tracking-wider font-medium mb-2 ${muted}`}>Add new type</p>
+          <p className={`text-[10px] uppercase tracking-wider font-medium mb-2 ${muted}`}>{t('systems.components.manageTypes.addNewType')}</p>
           <div className="flex gap-2">
             <Input
-              placeholder="Label (e.g. Propeller)"
+              placeholder={t('systems.components.manageTypes.placeholders.label')}
               value={newLabel}
               onChange={(e) => { setNewLabel(e.target.value); setNewValue(e.target.value.toUpperCase().replace(/\s+/g, '_')); }}
               className={`h-8 text-xs flex-1 ${inputCls}`}
             />
             <Input
-              placeholder="Value (e.g. PROPELLER)"
+              placeholder={t('systems.components.manageTypes.placeholders.value')}
               value={newValue}
               onChange={(e) => setNewValue(e.target.value.toUpperCase().replace(/\s+/g, '_'))}
               className={`h-8 text-xs w-36 font-mono ${inputCls}`}

@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { ERP_TYPES, ErpType } from '@/config/types/erp'
+import { EmergencyResponsePlan, ERP_TYPES, ErpType } from '@/config/types/erp'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -55,19 +55,30 @@ interface Props {
   onSubmit: (values: FormState) => Promise<void>
   loading?: boolean
   isDark: boolean
+  editRecord?: EmergencyResponsePlan | null
 }
 
-export function ERPFormDialog({ open, onClose, onSubmit, loading, isDark }: Props) {
+export function ERPFormDialog({ open, onClose, onSubmit, loading, isDark, editRecord }: Props) {
   const { t } = useTranslation()
   const [form, setForm] = useState<FormState>(DEFAULT_STATE)
   const [errors, setErrors] = useState<FormErrors>({})
 
+  const isEdit = !!editRecord
+
   useEffect(() => {
     if (open) {
-      setForm(DEFAULT_STATE)
+      if (editRecord) {
+        setForm({
+          description: editRecord.description,
+          contact: editRecord.contact,
+          type: editRecord.type,
+        })
+      } else {
+        setForm(DEFAULT_STATE)
+      }
       setErrors({})
     }
-  }, [open])
+  }, [open, editRecord])
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -96,7 +107,7 @@ export function ERPFormDialog({ open, onClose, onSubmit, loading, isDark }: Prop
       <DialogContent className={`max-w-lg transition-colors duration-300 flex flex-col overflow-hidden p-0 gap-0 ${bgClass}`}>
         <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
           <DialogTitle className="text-lg font-semibold">
-            {t('erp.form.title')}
+            {isEdit ? t('erp.form.editTitle') : t('erp.form.title')}
           </DialogTitle>
         </DialogHeader>
 
@@ -164,7 +175,11 @@ export function ERPFormDialog({ open, onClose, onSubmit, loading, isDark }: Prop
               disabled={loading}
               className="bg-violet-600 hover:bg-violet-500 text-white px-8 shadow-lg shadow-violet-500/20"
             >
-              {loading ? t('erp.form.processing') : t('erp.form.create')}
+              {loading
+                ? t('erp.form.processing')
+                : isEdit
+                ? t('erp.form.update')
+                : t('erp.form.create')}
             </Button>
           </DialogFooter>
         </form>

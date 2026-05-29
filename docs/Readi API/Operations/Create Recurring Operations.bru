@@ -1,0 +1,40 @@
+meta {
+  name: Create Recurring Operations
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/operation
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "is_recurring": true,
+    "mission_name": "Daily Patrol",
+    "mission_code": "PATROL-REC",
+    "mission_description": "Daily perimeter patrol",
+    "scheduled_start": "2026-04-15T08:00:00Z",
+    "fk_pilot_user_id": 3,
+    "fk_tool_id": 2,
+    "location": "Perimeter Zone",
+    "notes": "Automated daily patrol",
+    "days_of_week": [1, 2, 3, 4, 5],
+    "recur_until": "2026-05-15",
+    "mission_group_label": "April Patrols"
+  }
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Create recurring operations. Set `is_recurring: true`. `days_of_week`: 0=Sun, 1=Mon...6=Sat.
+}

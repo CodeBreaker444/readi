@@ -1,0 +1,24 @@
+meta {
+  name: Add Attachment
+  type: http
+  seq: 25
+}
+
+post {
+  url: {{baseUrl}}/api/operation/:id/attachment
+  body: multipartForm
+  auth: inherit
+}
+
+params:path {
+  id: 1
+}
+
+body:multipart-form {
+  file: @file()
+  description: Pre-flight checklist
+}
+
+settings {
+  encodeUrl: true
+}

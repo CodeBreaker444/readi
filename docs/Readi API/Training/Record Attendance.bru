@@ -1,0 +1,28 @@
+meta {
+  name: Record Attendance
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/training/attendance
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "training_id": 1,
+    "user_id": 3,
+    "status": "PRESENT",
+    "score": 85
+  }
+}
+
+settings {
+  encodeUrl: true
+}

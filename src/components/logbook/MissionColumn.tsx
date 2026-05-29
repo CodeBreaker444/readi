@@ -15,7 +15,7 @@ import { ArrowUpDown } from "lucide-react";
       accessorKey: 'id',
       header: ({ column }) => (
         <button
-          className="flex items-center gap-2 font-semibold hover:text-blue-600 dark:hover:text-blue-400"
+          className="cursor-pointer flex items-center gap-2 font-semibold hover:text-blue-600 dark:hover:text-blue-400"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
           #
@@ -32,7 +32,7 @@ import { ArrowUpDown } from "lucide-react";
       accessorKey: 'client',
       header: ({ column }) => (
         <button
-          className="flex items-center gap-2 font-semibold hover:text-blue-600 dark:hover:text-blue-400"
+          className="cursor-pointer flex items-center gap-2 font-semibold hover:text-blue-600 dark:hover:text-blue-400"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
           Client
@@ -49,7 +49,7 @@ import { ArrowUpDown } from "lucide-react";
       accessorKey: 'evaluation',
       header: ({ column }) => (
         <button
-          className="flex items-center gap-2 font-semibold hover:text-blue-600 dark:hover:text-blue-400"
+          className="cursor-pointer flex items-center gap-2 font-semibold hover:text-blue-600 dark:hover:text-blue-400"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
           Evaluation
@@ -66,7 +66,7 @@ import { ArrowUpDown } from "lucide-react";
       accessorKey: 'planning',
       header: ({ column }) => (
         <button
-          className="flex items-center gap-2 font-semibold hover:text-blue-600 dark:hover:text-blue-400"
+          className="cursor-pointer flex items-center gap-2 font-semibold hover:text-blue-600 dark:hover:text-blue-400"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
           Planning
@@ -83,7 +83,7 @@ import { ArrowUpDown } from "lucide-react";
       accessorKey: 'pic',
       header: ({ column }) => (
         <button
-          className="flex items-center gap-2 font-semibold hover:text-blue-600 dark:hover:text-blue-400"
+          className="cursor-pointer flex items-center gap-2 font-semibold hover:text-blue-600 dark:hover:text-blue-400"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
           PiC
@@ -100,7 +100,7 @@ import { ArrowUpDown } from "lucide-react";
       accessorKey: 'lastUpdate',
       header: ({ column }) => (
         <button
-          className="flex items-center gap-2 font-semibold hover:text-blue-600 dark:hover:text-blue-400"
+          className="cursor-pointer flex items-center gap-2 font-semibold hover:text-blue-600 dark:hover:text-blue-400"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
           Last Update

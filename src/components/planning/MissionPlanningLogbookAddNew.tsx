@@ -170,14 +170,22 @@ export default function MissionPlanningLogbookAddNew({
                   {t("planning.form.selectDrone")}
                 </SelectItem>
 
-                {droneTools.map((tool) => (
-                  <SelectItem key={tool.tool_id} value={String(tool.tool_id)}>
-                    <div className="flex flex-col">
-                      <span className="font-medium">{tool.tool_code}</span>
-                      <span className="text-[10px] opacity-60">{tool.tool_desc}</span>
-                    </div>
-                  </SelectItem>
-                ))}
+                {droneTools.map((tool) => {
+                  const isActive = tool.tool_active === 'Y';
+                  return (
+                    <SelectItem
+                      key={tool.tool_id}
+                      value={String(tool.tool_id)}
+                      disabled={!isActive}
+                      className={!isActive ? 'opacity-40 cursor-not-allowed' : ''}
+                    >
+                      <div className="flex flex-col">
+                        <span className="font-medium">{tool.tool_code}</span>
+                        <span className="text-[10px] opacity-60">{tool.tool_desc}</span>
+                      </div>
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
           </div>
@@ -190,6 +198,7 @@ export default function MissionPlanningLogbookAddNew({
               type="file"
               ref={fileInputRef}
               name="mission_planning_file"
+              accept=".kmz,.kml,.json,.geojson"
               className={`${inputStyle} file:text-black file:font-medium cursor-pointer file:border-0 file:bg-transparent`}
             />
           </div>

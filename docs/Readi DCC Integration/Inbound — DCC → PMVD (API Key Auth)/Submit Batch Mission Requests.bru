@@ -1,0 +1,54 @@
+meta {
+  name: Submit Batch Mission Requests
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/api/missions
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+  X-API-KEY: {{api_key}}
+}
+
+body:json {
+  {
+    "type": "PATROL",
+    "target": "Highway A1 — North Carriageway",
+    "user_timezone": "Europe/Rome",
+    "localization": {
+      "type": "highway_segment",
+      "highway": "A1",
+      "carriageway": "North",
+      "kmStart": 10.0,
+      "kmEnd": 15.0
+    },
+    "waypoint": {
+      "type": "Point",
+      "coordinates": [9.18951, 45.46427, 95.0]
+    },
+    "missions": [
+      { "missionId": "BATCH-001", "startDateTime": "2025-06-02T07:00:00Z" },
+      { "missionId": "BATCH-002", "startDateTime": "2025-06-03T07:00:00Z" },
+      { "missionId": "BATCH-003", "startDateTime": "2025-06-04T07:00:00Z" }
+    ],
+    "priority": "NORMAL",
+    "notes": "Weekly patrol program — June week 1",
+    "operator": "Luigi Bianchi"
+  }
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  DCC sends multiple pre-scheduled missions in one request.
+  
+  waypoint.coordinates = [longitude, latitude, altitude_meters]
+  All missions share the same location, localization, and metadata.
+}

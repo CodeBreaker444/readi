@@ -48,6 +48,10 @@ export async function POST(request: NextRequest) {
       files,
     });
 
+    if (result.code === 2) {
+      return NextResponse.json(result);
+    }
+
     if (result.code === 1) {
       logEvent({
         eventType: 'CREATE',

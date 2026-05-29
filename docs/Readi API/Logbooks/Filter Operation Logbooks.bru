@@ -1,0 +1,20 @@
+meta {
+  name: Filter Operation Logbooks
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/api/logbooks/operation/filter?date_from=2026-01-01&date_to=2026-04-30
+  body: none
+  auth: inherit
+}
+
+params:query {
+  date_from: 2026-01-01
+  date_to: 2026-04-30
+}
+
+settings {
+  encodeUrl: true
+}

@@ -23,6 +23,7 @@ const schema = z.object({
   cc_platform: z.string().optional().nullable(),
   gcs_type: z.string().optional().nullable(),
   dcc_drone_id: z.string().uuid().optional().nullable(),
+  drone_registration_code: z.string().optional().nullable(),
   maintenance_cycle: z.string().optional().nullable(),
   maintenance_cycle_hour: z.number().optional().nullable(),
   maintenance_cycle_day: z.number().optional().nullable(),
@@ -30,6 +31,12 @@ const schema = z.object({
   battery_cycle_ratio: z.number().min(0).max(1).optional().nullable(),
   fk_parent_component_id: z.number().positive().optional().nullable(),
   system_detached: z.boolean().optional(),
+  latitude: z.number().min(-90).max(90).optional().nullable(),
+  longitude: z.number().min(-180).max(180).optional().nullable(),
+  drone_classes: z.array(z.string()).optional().nullable(),
+  initial_usage_hours: z.number().min(0).optional().nullable(),
+  initial_maintenance_hours: z.number().min(0).optional().nullable(),
+  initial_maintenance_flights: z.number().min(0).optional().nullable(),
 });
 
 export async function POST(
@@ -46,7 +53,13 @@ export async function POST(
     const parsed = schema.safeParse(body);
     if (!parsed.success) return zodError(E.VL009, parsed.error);
 
-    const result = await updateComponent(Number(id), { ...parsed.data, fk_parent_component_id: parsed.data.fk_parent_component_id ?? null });
+    const result = await updateComponent(Number(id), {
+      ...parsed.data,
+      fk_parent_component_id: parsed.data.fk_parent_component_id ?? null,
+      initial_usage_hours: parsed.data.initial_usage_hours ?? null,
+      initial_maintenance_hours: parsed.data.initial_maintenance_hours ?? null,
+      initial_maintenance_flights: parsed.data.initial_maintenance_flights ?? null,
+    });
 
     if (result.code === 1) {
       logEvent({

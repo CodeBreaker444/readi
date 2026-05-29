@@ -140,7 +140,7 @@ export default function ActivatePage() {
 
                 <button
                   onClick={() => router.push(`/auth/login?activated=true&username=${username}`)}
-                  className="w-full h-10 rounded-lg text-white text-sm font-semibold transition-all duration-150 active:scale-[0.99] flex items-center justify-center"
+                  className="w-full cursor-pointer h-10 rounded-lg text-white text-sm font-semibold transition-all duration-150 active:scale-[0.99] flex items-center justify-center"
                   style={{ background: 'linear-gradient(135deg, #7c3aed, #6d28d9)', boxShadow: '0 2px 12px rgba(124,58,237,0.25)' }}
                 >
                   Continue to login
@@ -160,7 +160,7 @@ export default function ActivatePage() {
                 </p>
                 <button
                   onClick={() => router.push('/auth/login')}
-                  className="w-full h-10 rounded-lg text-white text-sm font-semibold transition-all duration-150 active:scale-[0.99] flex items-center justify-center"
+                  className="w-full cursor-pointer h-10 rounded-lg text-white text-sm font-semibold transition-all duration-150 active:scale-[0.99] flex items-center justify-center"
                   style={{ background: 'linear-gradient(135deg, #7c3aed, #6d28d9)', boxShadow: '0 2px 12px rgba(124,58,237,0.25)' }}
                 >
                   Go to login

@@ -148,7 +148,7 @@ export function ManageDocTypesModal({ open, onClose, types, onReload, isDark }: 
                   <button
                     onClick={() => handleSave(t.doc_type_id)}
                     disabled={savingId === t.doc_type_id}
-                    className={`h-6 w-6 flex items-center justify-center rounded transition-colors ${isDark ? 'text-emerald-400 hover:bg-emerald-500/10' : 'text-emerald-600 hover:bg-emerald-50'}`}
+                    className={`h-6 w-6 cursor-pointer flex items-center justify-center rounded transition-colors ${isDark ? 'text-emerald-400 hover:bg-emerald-500/10' : 'text-emerald-600 hover:bg-emerald-50'}`}
                   >
                     {savingId === t.doc_type_id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
                   </button>

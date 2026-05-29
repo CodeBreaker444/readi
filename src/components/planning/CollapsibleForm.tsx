@@ -38,7 +38,7 @@ const CollapsibleForm: React.FC<CollapsibleFormProps> = ({
           </div>
           <button
             type="button"
-            className={`ml-4 p-2 rounded-lg transition-colors ${
+            className={`ml-4 cursor-pointer p-2 rounded-lg transition-colors ${
               isDark ? 'hover:bg-slate-700' : 'hover:bg-gray-100'
             }`}
           >

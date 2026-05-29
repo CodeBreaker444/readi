@@ -1,0 +1,23 @@
+meta {
+  name: Upload Flight Logs
+  type: http
+  seq: 12
+}
+
+post {
+  url: {{baseUrl}}/api/operation/board/flight-logs/upload
+  body: multipartForm
+  auth: inherit
+}
+
+body:multipart-form {
+  file: @file()
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Upload flight log file.
+}

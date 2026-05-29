@@ -2,6 +2,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { SystemCell } from "@/components/tables/SystemCell";
 import { OperationLogbookItem } from "@/config/types/logbook";
 import { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, Clock, Map } from "lucide-react";
@@ -22,7 +23,10 @@ function formatKm(meters: number): string {
 const statusColors: Record<string, string> = {
   COMPLETED:   "bg-emerald-500/15 text-emerald-600 border-emerald-500/30 dark:text-emerald-400",
   PLANNED:     "bg-sky-500/15 text-sky-600 border-sky-500/30 dark:text-sky-400",
+  SCHEDULED:   "bg-sky-500/15 text-sky-600 border-sky-500/30 dark:text-sky-400",
   IN_PROGRESS: "bg-amber-500/15 text-amber-600 border-amber-500/30 dark:text-amber-400",
+  INFLIGHT:    "bg-amber-500/15 text-amber-600 border-amber-500/30 dark:text-amber-400",
+  IN_FLIGHT:   "bg-amber-500/15 text-amber-600 border-amber-500/30 dark:text-amber-400",
   CANCELLED:   "bg-red-500/15 text-red-600 border-red-500/30 dark:text-red-400",
   ABORTED:     "bg-orange-500/15 text-orange-600 border-orange-500/30 dark:text-orange-400",
 };
@@ -52,10 +56,10 @@ export const operationLogbookColumns: ColumnDef<OperationLogbookItem>[] = [
       <Button
         variant="ghost"
         size="sm"
-        className="-ml-3 h-8 text-slate-400 hover:text-slate-800 dark:hover:text-white"
+        className="-ml-3 cursor-pointer h-8 text-xs font-medium text-slate-400 hover:text-slate-800 dark:hover:text-white"
         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
       >
-        Start
+        START
         <ArrowUpDown className="ml-1.5 h-3 w-3" />
       </Button>
     ),
@@ -146,22 +150,9 @@ export const operationLogbookColumns: ColumnDef<OperationLogbookItem>[] = [
   {
     id: "drone",
     header: "Drone System",
-    cell: ({ row }) => {
-      const code = row.original.vehicle_code;
-      const desc = row.original.vehicle_desc;
-      return (
-        <div className="flex flex-col gap-0.5">
-          <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-200">
-            {code || "—"}
-          </span>
-          {desc && (
-            <span className="text-[10px] text-slate-400 dark:text-white truncate max-w-[120px]">
-              {desc}
-            </span>
-          )}
-        </div>
-      );
-    },
+    cell: ({ row }) => (
+      <SystemCell code={row.original.vehicle_code} name={row.original.vehicle_desc} size="sm" />
+    ),
     size: 140,
   },
   {
@@ -180,24 +171,24 @@ export const operationLogbookColumns: ColumnDef<OperationLogbookItem>[] = [
     },
     size: 110,
   },
-  {
-    accessorKey: "mission_result_desc",
-    header: "Result",
-    cell: ({ row }) => {
-      const val = (row.getValue("mission_result_desc") as string) || "";
-      const color =
-        resultColors[val.toUpperCase()] ??
-        "bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-700/50 dark:text-white dark:border-slate-600";
-      return val ? (
-        <Badge variant="outline" className={`text-[10px] border ${color}`}>
-          {val}
-        </Badge>
-      ) : (
-        <span className="text-slate-300 dark:text-slate-600">—</span>
-      );
-    },
-    size: 100,
-  },
+  // {
+  //   accessorKey: "mission_result_desc",
+  //   header: "Result",
+  //   cell: ({ row }) => {
+  //     const val = (row.getValue("mission_result_desc") as string) || "";
+  //     const color =
+  //       resultColors[val.toUpperCase()] ??
+  //       "bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-700/50 dark:text-white dark:border-slate-600";
+  //     return val ? (
+  //       <Badge variant="outline" className={`text-[10px] border ${color}`}>
+  //         {val}
+  //       </Badge>
+  //     ) : (
+  //       <span className="text-slate-300 dark:text-slate-600">—</span>
+  //     );
+  //   },
+  //   size: 100,
+  // },
   {
     id: "mission_plan",
     header: "Mission Plan",
@@ -216,7 +207,7 @@ export const operationLogbookColumns: ColumnDef<OperationLogbookItem>[] = [
           )}
         </div>
       ) : (
-        <span className="text-slate-300 dark:text-slate-600">—</span>
+        <span className="text-slate-300 dark:text-slate-600">-</span>
       );
     },
     size: 150,

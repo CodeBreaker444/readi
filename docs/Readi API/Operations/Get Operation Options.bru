@@ -1,0 +1,19 @@
+meta {
+  name: Get Operation Options
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/api/operation/options
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Get filter options (pilots, types, categories). Requires `view_operations`.
+}

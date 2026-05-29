@@ -1,6 +1,8 @@
 'use client';
 
+import LocationPicker from '@/components/system/LocationPicker';
 import { Button } from '@/components/ui/button';
+import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
@@ -48,6 +50,7 @@ function ModalFooter({
   isDark?: boolean;
   loading?: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="flex justify-end gap-3 pt-2 mt-4 border-t border-slate-100 dark:border-slate-700">
       <button
@@ -60,7 +63,7 @@ function ModalFooter({
             : 'text-slate-600 hover:text-slate-800 hover:bg-slate-100'
         }`}
       >
-        Cancel
+        {t('common.cancel')}
       </button>
       <button
         type="button"
@@ -158,19 +161,20 @@ export function NewTicketModal({
   open, onClose, drones, components, users,
   form, onFormChange, onDroneChange, onSubmit, isDark, loading,
 }: NewTicketProps) {
+  const { t } = useTranslation();
   return (
-    <Modal title="New Maintenance Ticket" open={open} onClose={onClose} isDark={isDark}>
+    <Modal title={t('systems.maintenanceLogbook.modals.newTicket.title')} open={open} onClose={onClose} isDark={isDark}>
       {loading ? (
         <ModalSkeleton rows={5} />
       ) : (
         <>
-          <Field label="Drone">
+          <Field label={t('systems.maintenanceLogbook.modals.newTicket.drone')}>
             <select
               className={inputCls}
               value={form.fk_tool_id}
               onChange={(e) => onDroneChange(Number(e.target.value))}
             >
-              <option value={0}>Select drone…</option>
+              <option value={0}>{t('systems.maintenanceLogbook.modals.newTicket.selectDrone')}</option>
               {drones.map((d) => (
                 <option key={d.tool_id} value={d.tool_id}>
                   {d.tool_code} — {d.tool_desc} [{d.tool_status}]
@@ -179,7 +183,7 @@ export function NewTicketModal({
             </select>
           </Field>
 
-          <Field label="Components (optional, multi-select)">
+          <Field label={t('systems.maintenanceLogbook.modals.newTicket.components')}>
             <select
               className={`${inputCls} min-h-[90px]`}
               multiple
@@ -192,7 +196,7 @@ export function NewTicketModal({
               }
             >
               {components.length === 0 ? (
-                <option disabled value="">Select a drone first…</option>
+                <option disabled value="">{t('systems.maintenanceLogbook.modals.newTicket.selectDroneFirst')}</option>
               ) : (
                 components.map((c) => (
                   <option key={c.tool_component_id} value={c.tool_component_id}>
@@ -204,18 +208,18 @@ export function NewTicketModal({
           </Field>
 
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Type">
+            <Field label={t('systems.maintenanceLogbook.modals.newTicket.type')}>
               <select
                 className={inputCls}
                 value={form.type}
                 onChange={(e) => onFormChange({ type: e.target.value as TicketType })}
               >
-                <option value="BASIC">Basic</option>
-                <option value="STANDARD">Standard</option>
-                <option value="EXTRAORDINARY">Extraordinary</option>
+                <option value="BASIC">{t('systems.maintenanceLogbook.modals.newTicket.typeBasic')}</option>
+                <option value="STANDARD">{t('systems.maintenanceLogbook.modals.newTicket.typeStandard')}</option>
+                <option value="EXTRAORDINARY">{t('systems.maintenanceLogbook.modals.newTicket.typeExtraordinary')}</option>
               </select>
             </Field>
-            <Field label="Priority">
+            <Field label={t('systems.maintenanceLogbook.modals.newTicket.priority')}>
               <select
                 className={inputCls}
                 value={form.priority}
@@ -228,13 +232,13 @@ export function NewTicketModal({
             </Field>
           </div>
 
-          <Field label="Assign To">
+          <Field label={t('systems.maintenanceLogbook.modals.newTicket.assignTo')}>
             <select
               className={inputCls}
               value={form.assigned_to}
               onChange={(e) => onFormChange({ assigned_to: Number(e.target.value) })}
             >
-              <option value={0}>Select technician…</option>
+              <option value={0}>{t('systems.maintenanceLogbook.modals.newTicket.selectTechnician')}</option>
               {users.map((u) => (
                 <option key={u.user_id} value={u.user_id}>
                   {u.fullname} ({u.user_profile})
@@ -243,20 +247,29 @@ export function NewTicketModal({
             </select>
           </Field>
 
-          <Field label="Note">
+          <Field label={t('systems.maintenanceLogbook.modals.newTicket.note')}>
             <textarea
               className={inputCls}
               rows={3}
               value={form.note}
               onChange={(e) => onFormChange({ note: e.target.value })}
-              placeholder="Describe the issue…"
+              placeholder={t('systems.maintenanceLogbook.modals.newTicket.notePlaceholder')}
+            />
+          </Field>
+
+          <Field label={t('systems.maintenanceLogbook.modals.newTicket.location')}>
+            <LocationPicker
+              lat={form.latitude}
+              lng={form.longitude}
+              onChange={(lat, lng) => onFormChange({ latitude: lat, longitude: lng })}
+              isDark={isDark}
             />
           </Field>
 
           <ModalFooter
             onCancel={onClose}
             onConfirm={onSubmit}
-            confirmLabel="Create Ticket"
+            confirmLabel={t('systems.maintenanceLogbook.modals.newTicket.createTicket')}
             confirmClass="bg-black hover:bg-black/60 text-white"
             isDark={isDark}
           />
@@ -277,6 +290,7 @@ export function CloseTicketModal({
   isDark?: boolean;
   loading?: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent
@@ -300,10 +314,10 @@ export function CloseTicketModal({
             </div>
             <div>
               <DialogTitle className={cn('text-base font-bold', isDark ? 'text-white' : 'text-slate-900')}>
-                Close Ticket
+                {t('systems.maintenanceLogbook.modals.closeTicket.title')}
               </DialogTitle>
               <p className={cn('mt-0.5 text-[12px]', isDark ? 'text-slate-500' : 'text-slate-400')}>
-                Describe the intervention performed before closing
+                {t('systems.maintenanceLogbook.modals.closeTicket.subtitle')}
               </p>
             </div>
           </div>
@@ -312,12 +326,12 @@ export function CloseTicketModal({
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
           <div>
             <label className={cn('text-xs font-medium block mb-1.5', isDark ? 'text-slate-400' : 'text-slate-600')}>
-              Closing Note <span className="text-red-500">*</span>
+              {t('systems.maintenanceLogbook.modals.closeTicket.closingNote')} <span className="text-red-500">*</span>
             </label>
             <Textarea
               value={note}
               onChange={(e) => onNoteChange(e.target.value)}
-              placeholder="Describe the work performed and how the issue was resolved…"
+              placeholder={t('systems.maintenanceLogbook.modals.closeTicket.notePlaceholder')}
               rows={4}
               className={cn(
                 'text-sm resize-none',
@@ -333,7 +347,7 @@ export function CloseTicketModal({
               : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
           )}>
             <CheckCircle2 className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-            <span>Closing this ticket will mark the system as operational and log a maintenance record.</span>
+            <span>{t('systems.maintenanceLogbook.modals.closeTicket.warningMessage')}</span>
           </div>
         </div>
 
@@ -347,7 +361,7 @@ export function CloseTicketModal({
             disabled={loading}
             className={cn('h-9 px-4 text-sm', isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : '')}
           >
-            Cancel
+            {t('systems.maintenanceLogbook.modals.closeTicket.cancel')}
           </Button>
           <Button
             onClick={onSubmit}
@@ -355,9 +369,9 @@ export function CloseTicketModal({
             className="h-9 cursor-pointer px-4 text-sm bg-emerald-600 hover:bg-emerald-500 text-white"
           >
             {loading ? (
-              <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />Closing…</>
+              <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />{t('systems.maintenanceLogbook.modals.closeTicket.closing')}</>
             ) : (
-              'Close Ticket'
+              t('systems.maintenanceLogbook.modals.closeTicket.closeTicket')
             )}
           </Button>
         </div>
@@ -379,19 +393,20 @@ export function AssignTicketModal({
   isDark?: boolean;
   loading?: boolean;
 }) {
+  const { t } = useTranslation();
   return (
-    <Modal title="Assign Ticket" open={open} onClose={onClose} isDark={isDark}>
+    <Modal title={t('systems.maintenanceLogbook.modals.assignTicket.title')} open={open} onClose={onClose} isDark={isDark}>
       {loading ? (
         <ModalSkeleton rows={1} />
       ) : (
         <>
-          <Field label="Technician">
+          <Field label={t('systems.maintenanceLogbook.modals.assignTicket.technician')}>
             <select
               className={inputCls}
               value={assignTo}
               onChange={(e) => onAssignChange(Number(e.target.value))}
             >
-              <option value={0}>Select technician…</option>
+              <option value={0}>{t('systems.maintenanceLogbook.modals.assignTicket.selectTechnician')}</option>
               {users.map((u) => (
                 <option key={u.user_id} value={u.user_id}>
                   {u.fullname} ({u.user_profile})
@@ -402,7 +417,7 @@ export function AssignTicketModal({
           <ModalFooter
             onCancel={onClose}
             onConfirm={onSubmit}
-            confirmLabel="Assign"
+            confirmLabel={t('systems.maintenanceLogbook.modals.assignTicket.assign')}
             confirmClass="bg-indigo-600 hover:bg-indigo-700"
             isDark={isDark}
           />
@@ -426,11 +441,12 @@ export function ReportModal({
   canClose?: boolean;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
+  const { t } = useTranslation();
 
   return (
-    <Modal title="Intervention Report" open={open} onClose={onClose} isDark={isDark}>
+    <Modal title={t('systems.maintenanceLogbook.modals.interventionReport.title')} open={open} onClose={onClose} isDark={isDark}>
       <div className="grid grid-cols-2 gap-4">
-        <Field label="Work Start">
+        <Field label={t('systems.maintenanceLogbook.modals.interventionReport.workStart')}>
           <input
             type="datetime-local"
             className={inputCls}
@@ -438,7 +454,7 @@ export function ReportModal({
             onChange={(e) => onFormChange({ work_start: e.target.value })}
           />
         </Field>
-        <Field label="Work End">
+        <Field label={t('systems.maintenanceLogbook.modals.interventionReport.workEnd')}>
           <input
             type="datetime-local"
             className={inputCls}
@@ -447,16 +463,16 @@ export function ReportModal({
           />
         </Field>
       </div>
-      <Field label="Report">
+      <Field label={t('systems.maintenanceLogbook.modals.interventionReport.report')}>
         <textarea
           className={inputCls}
           rows={4}
           value={form.text}
           onChange={(e) => onFormChange({ text: e.target.value })}
-          placeholder="Describe work performed…"
+          placeholder={t('systems.maintenanceLogbook.modals.interventionReport.reportPlaceholder')}
         />
       </Field>
-      <Field label="Attachment (optional)">
+      <Field label={t('systems.maintenanceLogbook.modals.interventionReport.attachment')}>
         <input ref={fileRef} type="file" className={inputCls} />
       </Field>
       {canClose && (
@@ -467,13 +483,13 @@ export function ReportModal({
             checked={form.close}
             onChange={(e) => onFormChange({ close: e.target.checked })}
           />
-          Close ticket on save
+          {t('systems.maintenanceLogbook.modals.interventionReport.closeOnSave')}
         </label>
       )}
       <ModalFooter
         onCancel={onClose}
         onConfirm={() => onSubmit(fileRef.current?.files?.[0])}
-        confirmLabel="Save Report"
+        confirmLabel={t('systems.maintenanceLogbook.modals.interventionReport.saveReport')}
         confirmClass="bg-emerald-600 hover:bg-emerald-700"
         isDark={isDark}
         loading={loading}
@@ -495,28 +511,29 @@ export function UploadModal({
   loading?: boolean;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
+  const { t } = useTranslation();
 
   return (
-    <Modal title="Upload Attachment" open={open} onClose={onClose} isDark={isDark}>
-      <Field label="Description">
+    <Modal title={t('systems.maintenanceLogbook.modals.uploadAttachment.title')} open={open} onClose={onClose} isDark={isDark}>
+      <Field label={t('systems.maintenanceLogbook.modals.uploadAttachment.description')}>
         <input
           className={inputCls}
           value={desc}
           onChange={(e) => onDescChange(e.target.value)}
-          placeholder="Brief description of the file"
+          placeholder={t('systems.maintenanceLogbook.modals.uploadAttachment.filePlaceholder')}
         />
       </Field>
-      <Field label="File">
+      <Field label={t('systems.maintenanceLogbook.modals.uploadAttachment.file')}>
         <input ref={fileRef} type="file" className={inputCls} />
       </Field>
       <ModalFooter
         onCancel={onClose}
         onConfirm={() => {
           const file = fileRef.current?.files?.[0];
-          if (!file) { toast.error('Please select a file to upload'); return; }
+          if (!file) { toast.error(t('systems.maintenanceLogbook.toasts.selectFile')); return; }
           onSubmit(file);
         }}
-        confirmLabel="Upload"
+        confirmLabel={t('systems.maintenanceLogbook.modals.uploadAttachment.upload')}
         confirmClass="bg-indigo-600 hover:bg-indigo-700"
         isDark={isDark}
         loading={loading}
@@ -544,9 +561,12 @@ export function EventsModal({
   isDark?: boolean;
   loading?: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <Modal
-      title={ticketId ? `Ticket #${ticketId} — Event History` : 'Event History'}
+      title={ticketId
+        ? t('systems.maintenanceLogbook.modals.eventHistory.ticketTitle', { id: ticketId })
+        : t('systems.maintenanceLogbook.modals.eventHistory.title')}
       open={open}
       onClose={onClose}
       isDark={isDark}
@@ -564,7 +584,7 @@ export function EventsModal({
           ))}
         </div>
       ) : events.length === 0 ? (
-        <p className="text-sm text-slate-400 py-6 text-center">No events recorded yet.</p>
+        <p className="text-sm text-slate-400 py-6 text-center">{t('systems.maintenanceLogbook.modals.eventHistory.noEvents')}</p>
       ) : (
         <ol className="relative border-l border-indigo-200 ml-3 space-y-4">
           {events.map((ev) => (
@@ -590,7 +610,7 @@ export function EventsModal({
           onClick={onClose}
           className="cursor-pointer px-4 py-2 text-sm text-slate-600 hover:text-slate-800 dark:text-slate-300 dark:hover:text-white transition"
         >
-          Close
+          {t('systems.maintenanceLogbook.modals.eventHistory.close')}
         </button>
       </div>
     </Modal>

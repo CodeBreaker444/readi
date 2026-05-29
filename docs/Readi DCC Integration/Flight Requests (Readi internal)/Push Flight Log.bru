@@ -1,0 +1,30 @@
+meta {
+  name: Push Flight Log
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{base_url}}/api/planning/flight-requests/logs
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "action": "push",
+    "request_id": 42
+  }
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Pushes a linked flight log URI to DCC via the logging callback. action must be 'push'.
+}

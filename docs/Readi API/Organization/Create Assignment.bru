@@ -1,0 +1,27 @@
+meta {
+  name: Create Assignment
+  type: http
+  seq: 13
+}
+
+post {
+  url: {{baseUrl}}/api/organization/assignment
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "user_id": 3,
+    "role": "PILOT",
+    "territorial_unit_id": 1
+  }
+}
+
+settings {
+  encodeUrl: true
+}

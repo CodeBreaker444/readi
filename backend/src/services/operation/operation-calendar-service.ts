@@ -129,6 +129,7 @@ export const createOperationCalendarEntry = async (
     fk_mission_status_id: STATUS_NAME_TO_ID[statusName] ?? 1,
     fk_pilot_user_id: input.fk_pilot_user_id,
     fk_tool_id: input.fk_tool_id ?? null,
+    fk_client_id: input.fk_client_id ?? null,
     fk_mission_type_id: input.fk_mission_type_id ?? null,
     fk_mission_category_id: input.fk_mission_category_id ?? null,
     fk_planning_id: input.fk_planning_id ?? null,

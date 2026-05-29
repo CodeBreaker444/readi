@@ -1,0 +1,38 @@
+meta {
+  name: Download GUTMA (Batch - Max 50 Flights)
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}/v2/flight/report/download/gutma?flightIds={{flight_id}}&flightIds=
+  body: none
+  auth: inherit
+}
+
+params:query {
+  flightIds: {{flight_id}}
+  flightIds: 
+}
+
+headers {
+  org-id: {{org_id}}
+  Authorization: Bearer {{api_key}}
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Download GUTMA files for multiple flights in one ZIP archive.
+  
+  ⚠️ Max 50 flight IDs per request (HTTP 414 error above that)
+  
+  To add more flights:
+  1. Click the '+' button next to flightIds query param
+  2. Paste each flight ID
+  3. Send → Download the ZIP
+  
+  Response: ZIP file containing .gutma files (one per flight)
+}

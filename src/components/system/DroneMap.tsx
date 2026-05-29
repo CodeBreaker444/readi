@@ -201,7 +201,13 @@ const DroneMap = forwardRef<DroneMapHandle, DroneMapProps>(function DroneMap(
     mapRef.current = map;
     clusterRef.current = cluster;
 
+    const observer = new ResizeObserver(() => {
+      setTimeout(() => map.invalidateSize(), 50);
+    });
+    observer.observe(containerRef.current);
+
     return () => {
+      observer.disconnect();
       map.remove();
       mapRef.current = null;
       clusterRef.current = null;

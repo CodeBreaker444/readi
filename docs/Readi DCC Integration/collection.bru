@@ -1,0 +1,21 @@
+meta {
+  name: Readi DCC Integration
+}
+
+auth {
+  mode: none
+}
+
+vars:pre-request {
+  base_url: http://localhost:3000
+  api_key: rdi_your_api_key_here
+  dcc_base_url: https://your-dcc-server.com
+  mission_id: MISSION-001
+  request_id: 1
+}
+
+docs {
+  Complete DCC ↔ PMVD integration API. Inbound: DCC sends missions to PMVD via API key. Outbound: PMVD notifies DCC via callback URL.
+  
+  Coordinates (waypoint.coordinates) follow GeoJSON order: [longitude, latitude, altitude]
+}

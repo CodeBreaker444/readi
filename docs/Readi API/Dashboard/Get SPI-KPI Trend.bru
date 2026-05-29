@@ -1,0 +1,15 @@
+meta {
+  name: Get SPI/KPI Trend
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/dashboard/getSPIKPITrend
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

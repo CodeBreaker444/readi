@@ -1,5 +1,7 @@
 'use client';
 
+'use client';
+
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -17,6 +19,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { OwnerData } from '../tables/OwnerColumn';
@@ -36,6 +39,9 @@ export default function EditOwnerModal({ open, onClose, onSuccess, owner }: Edit
     owner_email: '',
     owner_website: '',
     owner_active: 'Y',
+    drone_atc_enabled: false,
+    email_notifications_enabled: false,
+    easa_operator_code: '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -49,6 +55,9 @@ export default function EditOwnerModal({ open, onClose, onSuccess, owner }: Edit
         owner_email: owner.owner_email,
         owner_website: owner.owner_website,
         owner_active: owner.owner_active,
+        drone_atc_enabled: owner.drone_atc_enabled ?? false,
+        email_notifications_enabled: owner.email_notifications_enabled ?? false,
+        easa_operator_code: owner.easa_operator_code ?? '',
       });
       setError('');
     }
@@ -120,7 +129,7 @@ export default function EditOwnerModal({ open, onClose, onSuccess, owner }: Edit
               <Input
                 id={`edit-${field.name}`}
                 name={field.name}
-                value={form[field.name as keyof typeof form]}
+                value={form[field.name as keyof typeof form] as string}
                 onChange={handleChange}
                 className="col-span-3"
               />
@@ -143,6 +152,50 @@ export default function EditOwnerModal({ open, onClose, onSuccess, owner }: Edit
                 <SelectItem value="N">Disabled</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label className="text-right">Drone ATC</Label>
+            <div className="col-span-3 flex items-center gap-3">
+              <Switch
+                checked={form.drone_atc_enabled}
+                onCheckedChange={(checked) =>
+                  setForm((prev) => ({ ...prev, drone_atc_enabled: checked }))
+                }
+              />
+              <span className="text-sm text-muted-foreground">
+                {form.drone_atc_enabled ? 'Enabled for this company' : 'Disabled for this company'}
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label className="text-right">Email Notifications</Label>
+            <div className="col-span-3 flex items-center gap-3">
+              <Switch
+                checked={form.email_notifications_enabled}
+                onCheckedChange={(checked) =>
+                  setForm((prev) => ({ ...prev, email_notifications_enabled: checked }))
+                }
+              />
+              <span className="text-sm text-muted-foreground">
+                {form.email_notifications_enabled
+                  ? 'Notifications sent to user emails'
+                  : 'In-app notifications only'}
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="edit-easa_operator_code" className="text-right">EASA Code</Label>
+            <Input
+              id="edit-easa_operator_code"
+              name="easa_operator_code"
+              value={form.easa_operator_code}
+              onChange={handleChange}
+              placeholder="e.g. ITA-OP-12345"
+              className="col-span-3"
+            />
           </div>
         </div>
         </div>

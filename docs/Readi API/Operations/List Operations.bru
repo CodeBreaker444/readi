@@ -1,0 +1,29 @@
+meta {
+  name: List Operations
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/operation?page=1&pageSize=20&status=PLANNED
+  body: none
+  auth: inherit
+}
+
+params:query {
+  page: 1
+  pageSize: 20
+  status: PLANNED
+  ~search: 
+  ~pilot_id: 
+  ~date_start: 
+  ~date_end: 
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  List operations with pagination and filters. Requires `view_operations` permission.
+}

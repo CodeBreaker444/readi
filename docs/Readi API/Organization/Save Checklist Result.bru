@@ -1,0 +1,31 @@
+meta {
+  name: Save Checklist Result
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{baseUrl}}/api/organization/checklist/result
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "checklist_id": 1,
+    "operation_id": 5,
+    "completed_by": 3,
+    "results": [
+      { "item_id": 1, "passed": true, "notes": "Battery at 95%" },
+      { "item_id": 2, "passed": true, "notes": "GPS lock confirmed" }
+    ]
+  }
+}
+
+settings {
+  encodeUrl: true
+}

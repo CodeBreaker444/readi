@@ -1,11 +1,12 @@
 "use client";
 
 import { OrgNode } from "@/backend/services/organization/organization-service";
+import EditNodeModal from "@/components/organization/EditNodeModal";
 import OrganizationTree, { countDepth, countVisible } from "@/components/organization/OrganizationTree";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTheme } from "@/components/useTheme";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { MdErrorOutline, MdOutlineAccountTree, MdRefresh } from "react-icons/md";
 import { toast } from "sonner";
@@ -14,34 +15,36 @@ export default function OrganizationPage() {
   const { t } = useTranslation();
   const { isDark } = useTheme();
   const [treeData, setTreeData] = useState<OrgNode | null>(null);
+  const [members, setMembers] = useState<OrgNode[]>([]);
   const [loading, setLoading] = useState(true);
   const [errMsg, setErrMsg] = useState<string | null>(null);
+  const [editingNode, setEditingNode] = useState<OrgNode | null>(null);
+
+  const fetchTree = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/organization/chart");
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? `HTTP ${res.status}`);
+      }
+      const json = await res.json();
+      if (json.code !== 1 || !json.data) throw new Error(json.error ?? "Unexpected response");
+      setTreeData(json.data as OrgNode);
+      setMembers((json.members ?? []) as OrgNode[]);
+      setErrMsg(null);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : t('organization.chart.failedToLoad');
+      setErrMsg(msg);
+      toast.error(msg);
+    } finally {
+      setLoading(false);
+    }
+  }, [t]);
 
   useEffect(() => {
-    let cancelled = false;
-    async function fetchTree() {
-      try {
-        const res = await fetch("/api/organization/chart");
-        if (!res.ok) {
-          const body = await res.json().catch(() => ({}));
-          throw new Error(body.error ?? `HTTP ${res.status}`);
-        }
-        const json = await res.json();
-        if (json.code !== 1 || !json.data) throw new Error(json.error ?? "Unexpected response");
-        if (!cancelled) {
-          setTreeData(json.data as OrgNode);
-          setErrMsg(null);
-        }
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : t('organization.chart.failedToLoad');
-        if (!cancelled) { setErrMsg(msg); toast.error(msg); }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
     fetchTree();
-    return () => { cancelled = true; };
-  }, []);
+  }, [fetchTree]);
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${isDark ? 'bg-slate-800' : 'bg-white'}`}>
@@ -120,11 +123,25 @@ export default function OrganizationPage() {
             </div>
           ) : (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-              <OrganizationTree data={treeData} isDark={isDark} />
+              <OrganizationTree
+                data={treeData}
+                isDark={isDark}
+                onEditNode={setEditingNode}
+              />
             </div>
           )}
         </div>
       </div>
+
+      {editingNode && (
+        <EditNodeModal
+          node={editingNode}
+          members={members}
+          isDark={isDark}
+          onClose={() => setEditingNode(null)}
+          onSaved={() => { setEditingNode(null); fetchTree(); }}
+        />
+      )}
     </div>
   );
 }

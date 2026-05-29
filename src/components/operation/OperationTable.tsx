@@ -48,7 +48,7 @@ const OperationTable: React.FC<OperationTableProps> = ({ data, onRowSelect, isDa
       {selectedRows.length > 0 && (
         <div className={`mb-4 p-3 rounded-md ${isDark ? 'bg-slate-700' : 'bg-gray-100'}`}>
           <div className="flex items-center gap-2">
-            <button className={`px-4 py-2 rounded-md text-sm font-medium ${isDark ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}>
+            <button className={`cursor-pointer px-4 py-2 rounded-md text-sm font-medium transition-colors ${isDark ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}>
               Multiple Action
             </button>
             <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>

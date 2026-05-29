@@ -1,4 +1,4 @@
- 
+
 import { getProfile, updateProfile } from '@/backend/services/user/user-profile';
 import { internalError } from '@/lib/api-error';
 import { requireAuth } from '@/lib/auth/api-auth';
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
     const avatarEntry = formData.get('avatar');
     let avatarFile: File | null = null;
     if (avatarEntry && avatarEntry instanceof File && avatarEntry.size > 0) {
-      const maxSize = 10 * 1024 * 1024;  
+      const maxSize = 10 * 1024 * 1024;
       if (avatarEntry.size > maxSize) {
         return NextResponse.json(
           { success: false, message: 'Avatar file must be under 10MB' },

@@ -213,7 +213,7 @@ export function ReportIssueModal({ open, onClose, toolId, toolCode, missionId, i
                       type="button"
                       onClick={() => setPriority(opt.value)}
                       className={cn(
-                        "flex-1 rounded-lg border px-3 py-2 text-xs font-medium transition-all",
+                        "flex-1 rounded-lg cursor-pointer border px-3 py-2 text-xs font-medium transition-all",
                         priority === opt.value
                           ? opt.className + " ring-2 ring-offset-1 ring-current"
                           : isDark
@@ -241,7 +241,7 @@ export function ReportIssueModal({ open, onClose, toolId, toolCode, missionId, i
                           type="button"
                           onClick={() => toggleComponent(comp.component_id)}
                           className={cn(
-                            "w-full text-left rounded-lg border px-3 py-2.5 transition-all",
+                            "w-full text-left cursor-pointer rounded-lg border px-3 py-2.5 transition-all",
                             isSelected
                               ? isDark
                                 ? "border-red-500/50 bg-red-500/10"

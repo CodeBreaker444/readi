@@ -1,0 +1,15 @@
+meta {
+  name: List LUC Procedures
+  type: http
+  seq: 14
+}
+
+get {
+  url: {{baseUrl}}/api/organization/luc-procedures
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

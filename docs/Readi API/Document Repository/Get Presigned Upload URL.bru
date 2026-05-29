@@ -1,0 +1,74 @@
+meta {
+  name: Get Presigned Upload URL
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/document/presign-upload
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "file_name": "safety-manual.pdf",
+    "content_type": "application/pdf",
+    "file_size": 1048576
+  }
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Get S3 presigned URL to upload file directly. Allowed: PDF, DOCX, DOC, XLSX, XLS, JPEG, PNG, TXT. Max 25MB.
+  
+  Step 1: Call this to get upload_url + s3_key
+  Step 2: PUT file to upload_url
+  Step 3: Call /api/document/create with s3_key
+}
+
+example {
+  name: Success
+  
+  request: {
+    url: {{baseUrl}}/api/document/presign-upload
+    method: POST
+    mode: json
+    headers: {
+      Content-Type: application/json
+    }
+  
+    body:json: {
+      {
+        "file_name": "safety-manual.pdf",
+        "content_type": "application/pdf",
+        "file_size": 1048576
+      }
+    }
+  }
+  
+  response: {
+    status: {
+      code: 200
+      text: OK
+    }
+  
+    body: {
+      type: text
+      content: '''
+        {
+          "code": 1,
+          "upload_url": "https://s3.amazonaws.com/bucket/...",
+          "s3_key": "documents/1712345678_safety-manual.pdf"
+        }
+      '''
+    }
+  }
+}

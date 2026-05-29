@@ -1,0 +1,54 @@
+meta {
+  name: List Organizations
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/owner
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  List all organizations. SUPERADMIN role only.
+}
+
+example {
+  name: Success
+  
+  request: {
+    url: {{baseUrl}}/api/owner
+    method: GET
+    mode: none
+  }
+  
+  response: {
+    status: {
+      code: 200
+      text: OK
+    }
+  
+    body: {
+      type: text
+      content: '''
+        {
+          "code": 1,
+          "data": [
+            {
+              "owner_id": 1,
+              "owner_code": "ORG001",
+              "owner_name": "Example Org",
+              "owner_email": "org@example.com",
+              "owner_website": "https://example.com"
+            }
+          ]
+        }
+      '''
+    }
+  }
+}

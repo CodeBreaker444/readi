@@ -1,0 +1,40 @@
+meta {
+  name: Create SPI/KPI
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/safety/spi-kpi/save
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "indicator_code": "SPI_INCIDENT_RATE",
+    "indicator_type": "SPI",
+    "indicator_area": "OPERATION",
+    "indicator_name": "Incident Rate per 100 Flights",
+    "indicator_desc": "Number of safety incidents per 100 flight operations",
+    "target_value": 2.0,
+    "unit": "%",
+    "frequency": "MONTHLY",
+    "is_active": 1
+  }
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Create SPI/KPI. Code: uppercase letters/numbers/underscores only.
+  
+  indicator_type: SPI | KPI
+  frequency: MONTHLY | QUARTERLY | YEARLY
+}

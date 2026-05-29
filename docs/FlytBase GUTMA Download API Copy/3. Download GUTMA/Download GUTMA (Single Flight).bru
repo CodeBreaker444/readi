@@ -1,0 +1,34 @@
+meta {
+  name: Download GUTMA (Single Flight)
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/v2/flight/report/download/gutma?flightIds={{flight_id}}
+  body: none
+  auth: inherit
+}
+
+params:query {
+  flightIds: {{flight_id}}
+}
+
+headers {
+  org-id: {{org_id}}
+  Authorization: Bearer {{api_key}}
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Download GUTMA file for a single flight.
+  
+  1. Get flight_id from 'Get Flight Logs' response
+  2. Set `flight_id` variable
+  3. Send request → Response is JSON (GUTMA format)
+  
+  ⚠️ Note: Single flight returns raw JSON. For ZIP archive, use batch download with 2+ flights.
+}

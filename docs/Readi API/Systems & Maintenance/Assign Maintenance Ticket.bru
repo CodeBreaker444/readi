@@ -1,0 +1,26 @@
+meta {
+  name: Assign Maintenance Ticket
+  type: http
+  seq: 16
+}
+
+post {
+  url: {{baseUrl}}/api/system/maintenance/tickets/assign
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "ticket_id": 1,
+    "assigned_to": 5
+  }
+}
+
+settings {
+  encodeUrl: true
+}

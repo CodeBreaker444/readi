@@ -1,4 +1,4 @@
-import { countNodes, getOrganizationTree } from "@/backend/services/organization/organization-service";
+import { type OrgNode, countNodes, getOrganizationTree, flattenNodes } from "@/backend/services/organization/organization-service";
 import { requirePermission } from "@/lib/auth/api-auth";
 import {  internalError, notFound } from "@/lib/api-error";
 import { E } from "@/lib/error-codes";
@@ -17,12 +17,14 @@ export async function GET(request: Request) {
 
     const tree = await getOrganizationTree(Number(ownerId));
     const totalNodes = countNodes(tree);
+    const members = flattenNodes(tree).filter((n: OrgNode) => n.userId !== undefined);
 
     return NextResponse.json({
       code: 1,
       message:  "Organization chart fetched successfully",
       dataRows: totalNodes,
-      data:     tree, 
+      data:     tree,
+      members,
     });
 
   } catch (error) {

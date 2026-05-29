@@ -1,0 +1,31 @@
+meta {
+  name: Add Training
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/training/add
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "training_name": "Advanced Drone Piloting",
+    "training_type": "TECHNICAL",
+    "trainer": "John Expert",
+    "scheduled_date": "2026-05-01",
+    "duration_hours": 8,
+    "location": "Training Center A",
+    "max_participants": 15
+  }
+}
+
+settings {
+  encodeUrl: true
+}

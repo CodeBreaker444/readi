@@ -13,6 +13,12 @@ import {
 } from '@/config/types/logbook';
 
  
+const STATUS_ID_TO_DESC: Record<number, string> = {
+  1: "PLANNED",
+  2: "IN_PROGRESS",
+  3: "COMPLETED",
+};
+
 export async function getOperationLogbookList(
   params: OperationFilterParams
 ): Promise<{ code: number; message: string; dataRows: number; data: OperationLogbookItem[] }> {
@@ -21,6 +27,10 @@ export async function getOperationLogbookList(
     .select(
       `
       pilot_mission_id,
+      fk_mission_status_id,
+      fk_mission_category_id,
+      fk_mission_result_type_id,
+      fk_client_id,
       mission_code,
       scheduled_start,
       actual_start,
@@ -32,6 +42,8 @@ export async function getOperationLogbookList(
       tool:tool!fk_tool_id (tool_id, tool_code, tool_name),
       mission_type:pilot_mission_type!fk_mission_type_id (mission_type_id, type_name),
       mission_status:pilot_mission_status!fk_mission_status_id (status_id, status_name),
+      mission_category:pilot_mission_category!fk_mission_category_id (category_id, category_name),
+      mission_result:pilot_mission_result_type!fk_mission_result_type_id (result_type_id, result_type_desc),
       planning:planning!fk_planning_id (
         planning_id,
         fk_client_id,
@@ -40,8 +52,7 @@ export async function getOperationLogbookList(
       )
     `
     )
-    .eq('fk_owner_id',params.owner_id)
-    .eq("planning.fk_owner_id", params.owner_id);
+    .eq('fk_owner_id', params.owner_id);
 
   if (params.pic_id && params.pic_id !== 0) {
     query = query.eq("fk_pilot_user_id", params.pic_id);
@@ -55,6 +66,12 @@ export async function getOperationLogbookList(
   if (params.mission_type_id && params.mission_type_id !== 0) {
     query = query.eq("fk_mission_type_id", params.mission_type_id);
   }
+  if (params.mission_category_id && params.mission_category_id !== 0) {
+    query = query.eq("fk_mission_category_id", params.mission_category_id);
+  }
+  if (params.mission_result_id && params.mission_result_id !== 0) {
+    query = query.eq("fk_mission_result_type_id", params.mission_result_id);
+  }
   if (params.date_start) {
     query = query.gte("actual_start", params.date_start);
   }
@@ -62,8 +79,18 @@ export async function getOperationLogbookList(
     query = query.lte("actual_start", params.date_end + "T23:59:59");
   }
 
-  const { data, error } = await query.order("actual_start", { ascending: false });
+  const { data, error } = await query.order("pilot_mission_id", { ascending: false });
   if (error) throw new Error(error.message);
+
+  const clientIds = [...new Set((data || []).map((r: any) => r.fk_client_id).filter(Boolean))];
+  let clientMap: Record<number, string> = {};
+  if (clientIds.length > 0) {
+    const { data: clients } = await supabase
+      .from("client")
+      .select("client_id, client_name")
+      .in("client_id", clientIds);
+    clientMap = Object.fromEntries((clients || []).map((c: any) => [c.client_id, c.client_name]));
+  }
 
   const mapped: OperationLogbookItem[] = (data || []).map((row: any) => {
     const startDT = row.actual_start ? new Date(row.actual_start) : null;
@@ -78,13 +105,13 @@ export async function getOperationLogbookList(
       pic_fullname: row.pilot
         ? `${row.pilot.first_name ?? ""} ${row.pilot.last_name ?? ""}`.trim()
         : "",
-      client_name: row.planning?.client?.client_name ?? "",
-      mission_category_desc: "",
+      client_name: clientMap[row.fk_client_id] ?? row.planning?.client?.client_name ?? "",
+      mission_category_desc: row.mission_category?.category_name ?? "",
       mission_type_desc: row.mission_type?.type_name ?? "",
       vehicle_code: row.tool?.tool_code ?? "",
       vehicle_desc: row.tool?.tool_name ?? "",
-      mission_status_desc: row.mission_status?.status_name ?? "",
-      mission_result_desc: "",
+      mission_status_desc: STATUS_ID_TO_DESC[row.fk_mission_status_id] ?? row.mission_status?.status_name ?? "",
+      mission_result_desc: row.mission_result?.result_type_desc ?? "",
       fk_mission_planning_id: row.planning?.planning_logbook?.[0]?.mission_planning_id ?? 0,
       mission_planning_code: row.planning?.planning_logbook?.[0]?.mission_planning_code ?? "",
       mission_planning_desc: row.planning?.planning_logbook?.[0]?.mission_planning_desc ?? "",
@@ -123,21 +150,25 @@ export async function getOperationLogbookFilters(owner_id: number) {
       supabase
         .from("pilot_mission_type")
         .select("mission_type_id, type_name")
+        .eq("fk_owner_id", owner_id)
         .eq("is_active", true),
 
       supabase
         .from("pilot_mission_category")
         .select("category_id, category_name")
+        .eq("fk_owner_id", owner_id)
         .eq("is_active", true),
 
       supabase
-        .from("pilot_mission_result")          
-        .select("result_id, result_name")
+        .from("pilot_mission_result_type")
+        .select("result_type_id, result_type_desc")
+        .eq("fk_owner_id", owner_id)
         .eq("is_active", true),
 
       supabase
         .from("pilot_mission_status")
         .select("status_id, status_name")
+        .eq("fk_owner_id", owner_id)
         .eq("is_active", true),
 
       supabase
@@ -176,8 +207,8 @@ export async function getOperationLogbookFilters(owner_id: number) {
   }));
 
   const resultOptions: MissionResultOption[] = (missionResults.data || []).map((r: any) => ({
-    mission_result_id: r.result_id,
-    mission_result_desc: r.result_name,
+    mission_result_id: r.result_type_id,
+    mission_result_desc: r.result_type_desc,
   }));
 
   const statusOptions: MissionStatusOption[] = (missionStatuses.data || []).map((s: any) => ({

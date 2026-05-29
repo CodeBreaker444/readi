@@ -144,14 +144,14 @@ export function getSafetyTargetProposalColumns(
           <div className="flex items-center gap-1 justify-end pr-1">
             <button
               onClick={() => onApprove(row.original)}
-              className={`p-1.5 rounded-md transition-colors ${isDark ? 'text-slate-500 hover:text-emerald-400 hover:bg-emerald-500/8' : 'text-slate-400 hover:text-emerald-600 hover:bg-emerald-50'}`}
+              className={`p-1.5 cursor-pointer rounded-md transition-colors ${isDark ? 'text-slate-500 hover:text-emerald-400 hover:bg-emerald-500/8' : 'text-slate-400 hover:text-emerald-600 hover:bg-emerald-50'}`}
               title={t('compliance.safetyTargetReview.table.tooltips.approve')}
             >
               <CheckCircle2 size={14} strokeWidth={2} />
             </button>
             <button
               onClick={() => onReject(row.original)}
-              className={`p-1.5 rounded-md transition-colors ${isDark ? 'text-slate-500 hover:text-red-400 hover:bg-red-500/8' : 'text-slate-400 hover:text-red-500 hover:bg-red-50'}`}
+              className={`p-1.5 cursor-pointer rounded-md transition-colors ${isDark ? 'text-slate-500 hover:text-red-400 hover:bg-red-500/8' : 'text-slate-400 hover:text-red-500 hover:bg-red-50'}`}
               title={t('compliance.safetyTargetReview.table.tooltips.reject')}
             >
               <XCircle size={14} strokeWidth={2} />

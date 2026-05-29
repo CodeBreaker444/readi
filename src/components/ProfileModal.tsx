@@ -145,6 +145,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   const canEditEmail =
     userData?.role === 'ADMIN' || userData?.role === 'SUPERADMIN';
 
+
   const [formData, setFormData] = useState({
     fullName: userData?.fullname || '',
     email: userData?.email || '',
@@ -309,6 +310,40 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
         <div className="p-4 sm:p-6 space-y-6">
           <Card>
             <CardContent className="p-4 sm:p-6">
+              {loading ? (
+                <div className="flex flex-col md:flex-row gap-6 md:gap-8">
+                  <div className="flex flex-row md:flex-col items-center gap-4 md:gap-3 md:pt-2 shrink-0">
+                    <Skeleton className="w-20 h-20 md:w-24 md:h-24 rounded-full" />
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-28" />
+                      <Skeleton className="h-3 w-36" />
+                    </div>
+                  </div>
+
+                  <Separator className="md:hidden" />
+                  <Separator orientation="vertical" className="hidden md:block h-auto" />
+
+                  <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-5 gap-y-4">
+                    {[1, 2, 3, 4, 5, 6].map((n) => (
+                      <div key={n} className="space-y-1.5">
+                        <Skeleton className="h-4 w-20" />
+                        <Skeleton className="h-9 w-full" />
+                      </div>
+                    ))}
+                    <div className="space-y-1.5 sm:col-span-2">
+                      <Skeleton className="h-4 w-20" />
+                      <Skeleton className="h-9 w-full" />
+                    </div>
+                    <div className="space-y-1.5 sm:col-span-2 lg:col-span-1">
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-9 w-full" />
+                    </div>
+                    <div className="flex items-end sm:col-span-2 lg:col-span-1">
+                      <Skeleton className="h-9 w-full" />
+                    </div>
+                  </div>
+                </div>
+              ) : (
               <div className="flex flex-col md:flex-row gap-6 md:gap-8">
                 <div className="flex flex-row md:flex-col items-center gap-4 md:gap-3 md:pt-2 shrink-0">
                   <div className="relative group shrink-0">
@@ -336,7 +371,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md hover:bg-primary/90 transition-colors"
+                      className="cursor-pointer absolute bottom-0 right-0 w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md hover:bg-primary/90 transition-colors"
                     >
                       <Camera className="w-3.5 h-3.5" />
                     </button>
@@ -466,7 +501,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                     </Select>
                   </div>
 
-                  <div className="space-y-1.5 sm:col-span-2 lg:col-span-3">
+                  <div className="space-y-1.5 sm:col-span-2">
                     <Label htmlFor="signature">{t('profile.fields.signature')}</Label>
                     <Input
                       id="signature"
@@ -489,6 +524,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                   </div>
                 </div>
               </div>
+              )}
             </CardContent>
           </Card>
 

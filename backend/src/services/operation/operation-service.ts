@@ -44,11 +44,13 @@ export async function listOperations(
       fk_tool_id,
       fk_mission_status_id,
       fk_planning_id,
+      fk_erp_group_id,
       fk_mission_type_id,
       fk_mission_category_id,
       fk_luc_procedure_id,
       luc_procedure_progress,
       luc_completed_at,
+      mission_metadata,
       fk_owner_id,
       status_name,
       created_at,
@@ -57,7 +59,8 @@ export async function listOperations(
       tool:tool!fk_tool_id ( tool_code, tool_name ),
       category:pilot_mission_category!fk_mission_category_id ( category_name ),
       type_data:pilot_mission_type!fk_mission_type_id ( type_name ),
-      planning:planning!fk_planning_id ( planning_name, client:client!fk_client_id ( client_name ) )
+      planning:planning!fk_planning_id ( planning_name, client:client!fk_client_id ( client_name ) ),
+      direct_client:client!fk_client_id ( client_name )
     `,
       { count: 'exact' }
     )
@@ -97,11 +100,30 @@ export async function listOperations(
       ? `${row.pilot.first_name ?? ''} ${row.pilot.last_name ?? ''}`.trim()
       : null,
     tool_code: row.tool?.tool_code ?? null,
+    tool_name: row.tool?.tool_name ?? null,
     category_name: row.category?.category_name ?? null,
     type_name: row.type_data?.type_name ?? null,
     planning_name: row.planning?.planning_name ?? null,
-    client_name: row.planning?.client?.client_name ?? null,
+    client_name: row.planning?.client?.client_name ?? row.direct_client?.client_name ?? null,
+    visual_observer_ids: row.mission_metadata?.visual_observers ?? null,
   })) as Operation[];
+
+  const toolIds = [...new Set(operations.filter(op => op.fk_tool_id).map(op => op.fk_tool_id as number))];
+  if (toolIds.length > 0) {
+    const { data: primaryComps } = await supabase
+      .from('tool_component')
+      .select('fk_tool_id, component_code, component_name')
+      .in('fk_tool_id', toolIds)
+      .contains('component_metadata', { is_primary: true });
+
+    const primaryMap = new Map<number, string>();
+    (primaryComps ?? []).forEach((c: any) => {
+      if (c.fk_tool_id) primaryMap.set(c.fk_tool_id, c.component_code || c.component_name || '');
+    });
+    operations.forEach(op => {
+      (op as any).primary_component_code = op.fk_tool_id ? (primaryMap.get(op.fk_tool_id) ?? null) : null;
+    });
+  }
 
   return { data: operations, total: count ?? 0, page, pageSize };
 }
@@ -113,7 +135,11 @@ export async function getOperation(id: number): Promise<Operation | null> {
       `
       *,
       pilot:users!fk_pilot_user_id ( first_name, last_name ),
-      tool:tool!fk_tool_id ( tool_code )
+      tool:tool!fk_tool_id ( tool_code ),
+      direct_client:client!fk_client_id ( client_name ),
+      planning:planning!fk_planning_id ( planning_name, client:client!fk_client_id ( client_name ) ),
+      category:pilot_mission_category!fk_mission_category_id ( category_name ),
+      type_data:pilot_mission_type!fk_mission_type_id ( type_name )
     `
     )
     .eq('pilot_mission_id', id)
@@ -132,6 +158,11 @@ export async function getOperation(id: number): Promise<Operation | null> {
       ? `${data.pilot.first_name ?? ''} ${data.pilot.last_name ?? ''}`.trim()
       : null,
     tool_code: data.tool?.tool_code ?? null,
+    client_name: data.planning?.client?.client_name ?? data.direct_client?.client_name ?? null,
+    planning_name: data.planning?.planning_name ?? null,
+    category_name: data.category?.category_name ?? null,
+    type_name: data.type_data?.type_name ?? null,
+    visual_observer_ids: data.mission_metadata?.visual_observers ?? null,
   } as Operation;
 }
 
@@ -172,32 +203,76 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
       assignment: {},
     };
 
-  const { data: inserted, error } = await supabase
-    .from('pilot_mission')
-    .insert({
-      mission_code: codeToChild,
-      mission_name: input.mission_name,
-      mission_description: input.mission_description ?? null,
-      status_name: input.status_name,
-      fk_mission_status_id: STATUS_NAME_TO_ID[input.status_name] ?? 1,
-      scheduled_start: input.scheduled_start || null,
-      actual_end: input.actual_end ?? null,
-      location: input.location ?? null,
-      notes: input.notes ?? null,
-      fk_owner_id: ownerId,
-      fk_pilot_user_id: input.fk_pilot_user_id,
-      fk_tool_id: (input as any).fk_tool_id ?? null,
-      fk_planning_id: input.fk_planning_id ?? null,
-      fk_mission_type_id: (input as any).fk_mission_type_id ?? null,
-      fk_mission_category_id: (input as any).fk_mission_category_id ?? null,
-      fk_luc_procedure_id: fkLuc,
-      luc_procedure_progress,
-      luc_completed_at: null,
-    })
-    .select('pilot_mission_id')
-    .single();
+  const rawObserverIds: number[] | null = (input as any).visual_observer_ids ?? null;
+  let visualObservers: { user_id: number; name: string }[] | null = null;
+  if (rawObserverIds?.length) {
+    const { data: observerUsers } = await supabase
+      .from('users')
+      .select('user_id, first_name, last_name')
+      .in('user_id', rawObserverIds);
+    if (observerUsers?.length) {
+      visualObservers = observerUsers.map((u: any) => ({
+        user_id: u.user_id,
+        name: `${u.first_name ?? ''} ${u.last_name ?? ''}`.trim(),
+      }));
+    }
+  }
+
+  const baseInsert = {
+    mission_code: codeToChild,
+    mission_name: input.mission_name,
+    mission_description: input.mission_description ?? null,
+    status_name: input.status_name,
+    fk_mission_status_id: STATUS_NAME_TO_ID[input.status_name] ?? 1,
+    scheduled_start: input.scheduled_start || null,
+    actual_end: input.actual_end ?? null,
+    location: input.location ?? null,
+    notes: input.notes ?? null,
+    fk_owner_id: ownerId,
+    fk_pilot_user_id: input.fk_pilot_user_id,
+    fk_tool_id: (input as any).fk_tool_id ?? null,
+    fk_client_id: (input as any).fk_client_id ?? null,
+    fk_planning_id: input.fk_planning_id ?? null,
+    fk_mission_type_id: (input as any).fk_mission_type_id ?? null,
+    fk_mission_category_id: (input as any).fk_mission_category_id ?? null,
+    fk_luc_procedure_id: fkLuc,
+    fk_erp_group_id: (input as any).fk_erp_group_id ?? null,
+    luc_procedure_progress,
+    luc_completed_at: null,
+  };
+
+  let inserted: { pilot_mission_id: number } | null = null;
+  let error: any = null;
+
+  if (visualObservers?.length) {
+    const res = await supabase
+      .from('pilot_mission')
+      .insert({ ...baseInsert, mission_metadata: { visual_observers: visualObservers } })
+      .select('pilot_mission_id')
+      .single();
+    inserted = res.data;
+    error = res.error;
+    if (error?.message?.includes('mission_metadata')) {
+      const fallback = await supabase
+        .from('pilot_mission')
+        .insert(baseInsert)
+        .select('pilot_mission_id')
+        .single();
+      inserted = fallback.data;
+      error = fallback.error;
+    }
+  } else {
+    const res = await supabase
+      .from('pilot_mission')
+      .insert(baseInsert)
+      .select('pilot_mission_id')
+      .single();
+    inserted = res.data;
+    error = res.error;
+  }
 
   if (error) throw new Error(`Failed to create operation: ${error.message}`);
+  if (!inserted) throw new Error('Failed to create operation: no row returned');
 
   const full = await getOperation(inserted.pilot_mission_id);
   if (!full) throw new Error('Failed to fetch created operation');
@@ -218,6 +293,7 @@ export async function updateOperation(id: number, input: UpdateOperationSchema):
   if (input.notes !== undefined) updatePayload.notes = input.notes;
   if (input.fk_pilot_user_id !== undefined) updatePayload.fk_pilot_user_id = input.fk_pilot_user_id;
   if (input.fk_tool_id !== undefined) updatePayload.fk_tool_id = input.fk_tool_id;
+  if ((input as any).fk_client_id !== undefined) updatePayload.fk_client_id = (input as any).fk_client_id;
   if (input.fk_planning_id !== undefined) updatePayload.fk_planning_id = input.fk_planning_id;
   if (input.fk_mission_status_id !== undefined) updatePayload.fk_mission_status_id = input.fk_mission_status_id;
   if ((input as any).fk_mission_type_id !== undefined) updatePayload.fk_mission_type_id = (input as any).fk_mission_type_id;
@@ -225,6 +301,7 @@ export async function updateOperation(id: number, input: UpdateOperationSchema):
   if ((input as any).status_name !== undefined) updatePayload.status_name = (input as any).status_name;
   if (input.distance_flown !== undefined) updatePayload.distance_flown = input.distance_flown;
   if (input.max_altitude !== undefined) updatePayload.max_altitude = input.max_altitude;
+  if ((input as any).fk_erp_group_id !== undefined) updatePayload.fk_erp_group_id = (input as any).fk_erp_group_id;
 
   const { error } = await supabase
     .from('pilot_mission')
@@ -361,6 +438,7 @@ export async function createRecurringOperations(
     mission_code?: string;
     mission_description?: string | null;
     scheduled_start: string;
+    actual_end?: string | null;
     fk_pilot_user_id: number;
     fk_tool_id?: number | null;
     fk_mission_type_id?: number | null;
@@ -403,6 +481,18 @@ export async function createRecurringOperations(
   const startMatch = input.scheduled_start.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
   if (!startMatch) throw new Error('Invalid scheduled_start format. Expected YYYY-MM-DDTHH:mm');
   const [, sYear, sMonth, sDay, sHour, sMin] = startMatch.map(Number);
+
+  let durationMs = 0;
+  if (input.actual_end) {
+    const endMatch = input.actual_end.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+    if (endMatch) {
+      const [, eYear, eMonth, eDay, eHour, eMin] = endMatch.map(Number);
+      durationMs = Math.max(
+        Date.UTC(eYear, eMonth - 1, eDay, eHour, eMin) - Date.UTC(sYear, sMonth - 1, sDay, sHour, sMin),
+        0,
+      );
+    }
+  }
 
   const untilMatch = input.recur_until.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (!untilMatch) throw new Error('Invalid recur_until format. Expected YYYY-MM-DD');
@@ -456,7 +546,7 @@ export async function createRecurringOperations(
         notes: input.notes ?? null,
         mission_code: instanceCode,
         scheduled_start: instanceStart.toISOString(),
-        actual_end: null,
+        actual_end: durationMs > 0 ? new Date(instanceStart.getTime() + durationMs).toISOString() : null,
         recurring_group_id: recurringGroupId,
         mission_date_until: input.recur_until,
         mission_group_label: input.mission_group_label ?? null,
@@ -493,10 +583,10 @@ export async function batchSetPilot(
   missionIds: number[],
   pilotId: number,
   ownerId: number,
-): Promise<{ updated: number[]; skipped: number[], pilotName: string}> {
+): Promise<{ updated: number[]; skipped: number[]; pilotName: string; updatedMissions: { id: number; code: string }[] }> {
   const { data: missions, error } = await supabase
     .from('pilot_mission')
-    .select('pilot_mission_id, status_name')
+    .select('pilot_mission_id, status_name, mission_code')
     .in('pilot_mission_id', missionIds)
     .eq('fk_owner_id', ownerId);
 
@@ -507,7 +597,7 @@ export async function batchSetPilot(
     .filter((m: any) => m.status_name !== 'PLANNED')
     .map((m: any) => m.pilot_mission_id);
 
-  if (planned.length === 0) return { updated: [], skipped, pilotName:'' };
+  if (planned.length === 0) return { updated: [], skipped, pilotName: '', updatedMissions: [] };
 
   const ids = planned.map((m: any) => m.pilot_mission_id);
   const { error: updateError } = await supabase
@@ -518,14 +608,15 @@ export async function batchSetPilot(
   if (updateError) throw new Error(`Failed to set pilot: ${updateError.message}`);
 
   const { data: pilotUser } = await supabase
-        .from('users')
-        .select('username')
-        .eq('user_id', pilotId)
-        .single();
-      const pilotName = pilotUser?.username
-        
+    .from('users')
+    .select('username')
+    .eq('user_id', pilotId)
+    .single();
+  const pilotName = pilotUser?.username ?? '';
 
-  return { updated: ids, skipped, pilotName };
+  const updatedMissions = planned.map((m: any) => ({ id: m.pilot_mission_id, code: m.mission_code }));
+
+  return { updated: ids, skipped, pilotName, updatedMissions };
 }
 
 export async function batchAutofill(
@@ -534,13 +625,13 @@ export async function batchAutofill(
 ): Promise<{ processed: number[]; skipped: number[] }> {
   const { data: missions, error } = await supabase
     .from('pilot_mission')
-    .select('pilot_mission_id, status_name, fk_pilot_user_id, actual_end')
+    .select('pilot_mission_id, status_name, fk_pilot_user_id, actual_end, fk_luc_procedure_id, luc_procedure_progress')
     .in('pilot_mission_id', missionIds)
     .eq('fk_owner_id', ownerId);
 
   if (error) throw new Error(`Failed to fetch missions: ${error.message}`);
 
-  //COMPLETED and pilot assigned  
+  //completed and pilot assigned
   const eligible = (missions ?? []).filter(
     (m: any) => m.status_name === 'COMPLETED' && m.fk_pilot_user_id
   );
@@ -553,7 +644,7 @@ export async function batchAutofill(
   const now = new Date().toISOString();
   const ids = eligible.map((m: any) => m.pilot_mission_id);
 
-  // Filling actual_end for missions that completed but have no end timestamp
+  // filling actual_end for missions that completed but have no end timestamp
   const { error: updateError } = await supabase
     .from('pilot_mission')
     .update({ actual_end: now, updated_at: now })
@@ -561,6 +652,68 @@ export async function batchAutofill(
     .is('actual_end', null);
 
   if (updateError) throw new Error(`Failed to autofill missions: ${updateError.message}`);
+
+  // marking all checklist/communication/assignment tasks as completed
+  const uniqueProcedureIds = [...new Set(eligible.map((m: any) => m.fk_luc_procedure_id).filter(Boolean))];
+
+  if (uniqueProcedureIds.length > 0) {
+    const { data: procedures } = await supabase
+      .from('luc_procedure')
+      .select('procedure_id, procedure_steps')
+      .in('procedure_id', uniqueProcedureIds);
+
+    const procedureMap: Record<number, any> = {};
+    for (const proc of procedures ?? []) {
+      procedureMap[proc.procedure_id] = proc.procedure_steps;
+    }
+
+    await Promise.all(
+      eligible.map(async (m: any) => {
+        const steps = procedureMap[m.fk_luc_procedure_id];
+        if (!steps) return;
+
+        const tasksDef = steps.tasks;
+        let checklistCodes: string[] = [];
+        let communicationCodes: string[] = [];
+        let assignmentCodes: string[] = [];
+
+        if (Array.isArray(tasksDef)) {
+          checklistCodes = tasksDef.flatMap((t: any) => (t.checklist ?? []).map((c: any) => c.checklist_code).filter(Boolean));
+          communicationCodes = tasksDef.flatMap((t: any) => (t.communication ?? []).map((c: any) => c.communication_code).filter(Boolean));
+          assignmentCodes = tasksDef.flatMap((t: any) => (t.assignment ?? []).map((a: any) => a.assignment_code).filter(Boolean));
+        } else if (tasksDef && typeof tasksDef === 'object') {
+          checklistCodes = ((tasksDef as any).checklist ?? []).map((c: any) => c.checklist_code).filter(Boolean);
+          communicationCodes = ((tasksDef as any).communication ?? []).map((c: any) => c.communication_code).filter(Boolean);
+          assignmentCodes = ((tasksDef as any).assignment ?? []).map((a: any) => a.assignment_code).filter(Boolean);
+        }
+
+        const existing: Record<string, Record<string, string>> = (m.luc_procedure_progress as any) ?? {
+          checklist: {},
+          communication: {},
+          assignment: {},
+        };
+        const progress: Record<string, Record<string, string>> = {
+          checklist: { ...existing.checklist },
+          communication: { ...existing.communication },
+          assignment: { ...existing.assignment },
+        };
+
+        for (const code of checklistCodes) progress.checklist[code] = 'Y';
+        for (const code of communicationCodes) progress.communication[code] = 'Y';
+        for (const code of assignmentCodes) progress.assignment[code] = 'Y';
+
+        await supabase
+          .from('pilot_mission')
+          .update({
+            luc_procedure_progress: progress,
+            luc_completed_at: now,
+            updated_at: now,
+          })
+          .eq('pilot_mission_id', m.pilot_mission_id)
+          .eq('fk_owner_id', ownerId);
+      })
+    );
+  }
 
   return { processed: ids, skipped };
 }
@@ -593,7 +746,7 @@ export async function getToolOptions(ownerId: number) {
 
   const toolIds = tools.map((t: any) => t.tool_id);
 
-  const [{ data: openTickets }, { data: droneComponents }] = await Promise.all([
+  const [{ data: openTickets }, { data: droneComponents }, { data: maintComps }] = await Promise.all([
     supabase
       .from('maintenance_ticket')
       .select('fk_tool_id')
@@ -605,6 +758,11 @@ export async function getToolOptions(ownerId: number) {
       .in('fk_tool_id', toolIds)
       .eq('component_type', 'DRONE')
       .eq('component_active', 'Y'),
+    supabase
+      .from('tool_component')
+      .select('fk_tool_id, maintenance_cycle_day, maintenance_cycle_hour, maintenance_cycle_flight, current_maintenance_days, current_usage_hours, current_maintenance_flights')
+      .in('fk_tool_id', toolIds)
+      .eq('component_active', 'Y'),
   ]);
 
   const inMaintenanceSet = new Set<number>(
@@ -613,11 +771,20 @@ export async function getToolOptions(ownerId: number) {
   const hasDroneSet = new Set<number>(
     (droneComponents ?? []).map((c: any) => c.fk_tool_id)
   );
+  const maintenanceDueSet = new Set<number>();
+  (maintComps ?? []).forEach((c: any) => {
+    if (inMaintenanceSet.has(c.fk_tool_id)) return;
+    const dayDue = c.maintenance_cycle_day > 0 && Number(c.current_maintenance_days) >= Number(c.maintenance_cycle_day);
+    const hourDue = c.maintenance_cycle_hour > 0 && Number(c.current_usage_hours) >= Number(c.maintenance_cycle_hour);
+    const flightDue = c.maintenance_cycle_flight > 0 && Number(c.current_maintenance_flights) >= Number(c.maintenance_cycle_flight);
+    if (dayDue || hourDue || flightDue) maintenanceDueSet.add(c.fk_tool_id);
+  });
 
   return tools.map((t: any) => ({
     ...t,
     in_maintenance: inMaintenanceSet.has(t.tool_id),
     has_drone_component: hasDroneSet.has(t.tool_id),
+    maintenance_due: maintenanceDueSet.has(t.tool_id),
   }));
 }
 
@@ -660,9 +827,9 @@ export async function getClientOptions(ownerId: number) {
 export async function getPlanningOptions(ownerId: number) {
   const { data, error } = await supabase
     .from('planning')
-    .select('planning_id, planning_name, fk_client_id, client:client!fk_client_id(client_name)')
+    .select('planning_id, planning_name, fk_client_id, planning_active, client:client!fk_client_id(client_name)')
     .eq('fk_owner_id', ownerId)
-    .eq('planning_active', 'Y')
+    .order('planning_active', { ascending: false })
     .order('planning_name');
 
   if (error) throw new Error(`Planning error: ${error.message}`);
@@ -670,6 +837,7 @@ export async function getPlanningOptions(ownerId: number) {
     planning_id: p.planning_id,
     planning_name: p.planning_name,
     fk_client_id: p.fk_client_id,
+    planning_active: (p.planning_active ?? 'Y').trim() as 'Y' | 'N',
     client_name: Array.isArray(p.client) ? p.client[0]?.client_name : p.client?.client_name ?? '',
   }));
 }

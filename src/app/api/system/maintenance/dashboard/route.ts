@@ -1,3 +1,4 @@
+import { sendMaintenanceAlertNotifications } from "@/backend/services/system/maintenance-notification";
 import { getMaintenanceDashboard } from "@/backend/services/system/maintenance-service";
 import { internalError, zodError } from "@/lib/api-error";
 import { requirePermission } from "@/lib/auth/api-auth";
@@ -30,7 +31,12 @@ export async function POST(req: NextRequest) {
     const data = await getMaintenanceDashboard({
       owner_id,
       client_id,
-      threshold_alert: parsed.data.threshold_alert,});
+      threshold_alert: parsed.data.threshold_alert,
+    });
+
+    sendMaintenanceAlertNotifications(owner_id, data).catch((err) =>
+      console.error("[maintenance-alert] notification failed:", err)
+    );
 
     return NextResponse.json({
       code: 1,

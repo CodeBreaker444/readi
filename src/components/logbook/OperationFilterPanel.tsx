@@ -4,22 +4,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import {
-    ClientOption,
-    DroneOption,
-    MissionCategoryOption,
-    MissionPlanOption,
-    MissionResultOption,
-    MissionStatusOption,
-    MissionTypeOption,
-    OperationFilterParams,
-    PilotOption,
+  ClientOption,
+  DroneOption,
+  MissionCategoryOption,
+  MissionPlanOption,
+  MissionResultOption,
+  MissionStatusOption,
+  MissionTypeOption,
+  OperationFilterParams,
+  PilotOption,
 } from "@/config/types/logbook";
 import { Search, SlidersHorizontal, X } from "lucide-react";
 import { useState } from "react";
@@ -196,7 +196,7 @@ export function OperationFilterPanel({
           onClick={handleSearch}
           disabled={loading}
           size="sm"
-          className={`h-8 gap-1.5 text-xs font-medium ${
+          className={`h-8 cursor-pointer gap-1.5 text-xs font-medium ${
             isDark
               ? "bg-violet-600 hover:bg-violet-500 text-white"
               : "bg-violet-600 hover:bg-violet-700 text-white"
@@ -210,7 +210,7 @@ export function OperationFilterPanel({
           disabled={loading}
           variant="outline"
           size="sm"
-          className={`h-8 gap-1.5 text-xs transition-all ${
+          className={`h-8 cursor-pointer gap-1.5 text-xs transition-all ${
             isDark
               ? "border-slate-700 bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700"
               : "border-slate-200 bg-white text-slate-500 hover:text-slate-800 hover:bg-slate-50"
@@ -224,7 +224,6 @@ export function OperationFilterPanel({
   );
 }
 
-// ─── Reusable Select ──────────────────────────────────────────────────────────
 
 function FilterSelect({
   label,

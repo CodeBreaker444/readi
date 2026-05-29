@@ -1,0 +1,28 @@
+meta {
+  name: Report Operation Issue
+  type: http
+  seq: 23
+}
+
+post {
+  url: {{baseUrl}}/api/operation/report-issue
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "operation_id": 1,
+    "issue_type": "EQUIPMENT_FAILURE",
+    "description": "GPS signal lost during mission",
+    "severity": "HIGH"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

@@ -25,7 +25,7 @@ export default function DocViewerClient({ doc }: DocViewerClientProps) {
                 <div className="px-6 h-12 flex items-center gap-2">
                     <Link
                         href="/knowledge-config"
-                        className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg transition-colors ${isDark
+                        className={`flex items-center gap-1.5 font-semibold text-base tracking-tight px-2.5 py-1.5 rounded-lg transition-colors ${isDark
                             ? 'text-slate-400 hover:text-white hover:bg-white/[0.06]'
                             : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
                         }`}

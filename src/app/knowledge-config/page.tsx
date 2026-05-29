@@ -215,7 +215,7 @@ export default function KnowledgeConfigPage() {
                 </div>
                 <button
                     onClick={() => router.back()}
-                    className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors ${isDark ? 'bg-slate-800 hover:bg-slate-700 text-white' : 'bg-white hover:bg-gray-100 text-gray-800 border border-gray-200'}`}
+                    className={`px-5 py-2.5 cursor-pointer rounded-xl text-sm font-semibold transition-colors ${isDark ? 'bg-slate-800 hover:bg-slate-700 text-white' : 'bg-white hover:bg-gray-100 text-gray-800 border border-gray-200'}`}
                 >
                     {t('knowledge.goBack')}
                 </button>
@@ -229,12 +229,12 @@ export default function KnowledgeConfigPage() {
                 <div className="flex items-center gap-4">
                     <button
                         onClick={() => router.back()}
-                        className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-slate-700 text-slate-400 hover:text-white' : 'hover:bg-gray-100 text-gray-500 hover:text-gray-900'}`}
+                        className={`p-2 cursor-pointer rounded-lg transition-colors ${isDark ? 'hover:bg-slate-700 text-slate-400 hover:text-white' : 'hover:bg-gray-100 text-gray-500 hover:text-gray-900'}`}
                     >
                         <ArrowLeft size={18} />
                     </button>
 
-                    <div className={`p-2 rounded-lg ${isDark ? 'bg-violet-500/15' : 'bg-violet-50'}`}>
+                    <div className={`p-2 cursor-pointer rounded-lg ${isDark ? 'bg-violet-500/15' : 'bg-violet-50'}`}>
                         <RefreshCw size={18} className="text-violet-500" />
                     </div>
 
@@ -374,7 +374,7 @@ export default function KnowledgeConfigPage() {
                                                     </div>
                                                     <button
                                                         onClick={() => setDeleteTarget(source)}
-                                                        className={`opacity-0 group-hover:opacity-100 p-2 rounded-lg transition-all ${isDark ? 'hover:bg-red-500/10 text-slate-500 hover:text-red-400' : 'hover:bg-red-50 text-gray-400 hover:text-red-500'}`}
+                                                        className={`opacity-0 cursor-pointer group-hover:opacity-100 p-2 rounded-lg transition-all ${isDark ? 'hover:bg-red-500/10 text-slate-500 hover:text-red-400' : 'hover:bg-red-50 text-gray-400 hover:text-red-500'}`}
                                                         title={t('knowledge.deleteFromBase')}
                                                     >
                                                         <Trash2 size={15} />
@@ -388,7 +388,7 @@ export default function KnowledgeConfigPage() {
                                                             key={doc.doc_key}
                                                             href={`/docs/${doc.doc_key}`}
                                                             target="_blank"
-                                                            className={`group/item flex items-center justify-between px-3 py-2 rounded-lg border text-[11px] transition-colors no-underline ${isDark
+                                                            className={`group/item cursor-pointer flex items-center justify-between px-3 py-2 rounded-lg border text-[11px] transition-colors no-underline ${isDark
                                                                 ? 'bg-slate-800/50 border-slate-700/50 text-slate-400 hover:border-slate-500 hover:text-white'
                                                                 : 'bg-gray-50 border-gray-100 text-gray-500 hover:border-gray-200 hover:text-gray-800'}`}
                                                         >
@@ -431,14 +431,14 @@ export default function KnowledgeConfigPage() {
                         <div className="flex gap-3">
                             <button
                                 onClick={() => setDeleteTarget(null)}
-                                className={`flex-1 py-2.5 rounded-xl border text-sm font-semibold transition-colors ${isDark ? 'border-slate-600 bg-slate-800 hover:bg-slate-700 text-slate-300' : 'border-gray-200 bg-gray-50 hover:bg-gray-100 text-gray-700'}`}
+                                className={`flex-1 py-2.5 cursor-pointer rounded-xl border text-sm font-semibold transition-colors ${isDark ? 'border-slate-600 bg-slate-800 hover:bg-slate-700 text-slate-300' : 'border-gray-200 bg-gray-50 hover:bg-gray-100 text-gray-700'}`}
                             >
                                 {t('common.cancel')}
                             </button>
                             <button
                                 onClick={confirmDelete}
                                 disabled={isDeleting}
-                                className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
+                                className="flex-1 py-2.5 cursor-pointer rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
                             >
                                 {isDeleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
                                 {isDeleting ? t('knowledge.deleting') : t('common.delete')}

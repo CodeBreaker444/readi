@@ -1,0 +1,19 @@
+meta {
+  name: Delete System
+  type: http
+  seq: 4
+}
+
+delete {
+  url: {{baseUrl}}/api/system/:id/delete
+  body: none
+  auth: inherit
+}
+
+params:path {
+  id: 1
+}
+
+settings {
+  encodeUrl: true
+}

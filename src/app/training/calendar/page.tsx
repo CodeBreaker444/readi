@@ -77,7 +77,7 @@ export default function TrainingCalendarPage() {
           <button
             onClick={fetchEvents}
             disabled={loading}
-            className={`h-8 flex items-center gap-1.5 px-3.5 text-xs font-medium rounded-lg border transition-all ${
+            className={`cursor-pointer h-8 flex items-center gap-1.5 px-3.5 text-xs font-medium rounded-lg border transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
               isDark
                 ? 'border-white/[0.1] hover:bg-white/[0.05] text-white'
                 : 'border-gray-200 hover:bg-gray-50 text-gray-700'
@@ -120,13 +120,43 @@ export default function TrainingCalendarPage() {
           }`}
         >
           {loading && events.length === 0 ? (
-            <div className="flex items-center justify-center py-32">
-              <div className="flex flex-col items-center gap-3">
-                <CalendarDays size={32} className={isDark ? 'text-gray-700' : 'text-gray-300'} />
-                <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                {t('training.loading')}
-                </p>
+            <div className="p-4">
+              {/* Calendar header skeleton */}
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className={`h-8 w-8 rounded-lg animate-pulse ${isDark ? 'bg-white/[0.06]' : 'bg-gray-200'}`} />
+                  <div className={`h-8 w-8 rounded-lg animate-pulse ${isDark ? 'bg-white/[0.06]' : 'bg-gray-200'}`} />
+                  <div className={`h-8 w-20 rounded-lg animate-pulse ${isDark ? 'bg-white/[0.06]' : 'bg-gray-200'}`} />
+                </div>
+                <div className={`h-7 w-36 rounded-lg animate-pulse ${isDark ? 'bg-white/[0.06]' : 'bg-gray-200'}`} />
+                <div className="flex gap-1">
+                  <div className={`h-7 w-20 rounded-lg animate-pulse ${isDark ? 'bg-white/[0.06]' : 'bg-gray-200'}`} />
+                  <div className={`h-7 w-20 rounded-lg animate-pulse ${isDark ? 'bg-white/[0.06]' : 'bg-gray-200'}`} />
+                  <div className={`h-7 w-20 rounded-lg animate-pulse ${isDark ? 'bg-white/[0.06]' : 'bg-gray-200'}`} />
+                </div>
               </div>
+              {/* Day-of-week header */}
+              <div className="grid grid-cols-7 gap-1 mb-1">
+                {Array.from({ length: 7 }).map((_, i) => (
+                  <div key={i} className={`h-6 rounded animate-pulse ${isDark ? 'bg-white/[0.04]' : 'bg-gray-100'}`} />
+                ))}
+              </div>
+              {/* Calendar grid cells */}
+              {Array.from({ length: 5 }).map((_, row) => (
+                <div key={row} className="grid grid-cols-7 gap-1 mb-1">
+                  {Array.from({ length: 7 }).map((_, col) => (
+                    <div key={col} className={`rounded-lg p-2 h-24 flex flex-col gap-1.5 ${isDark ? 'bg-white/[0.02]' : 'bg-gray-50'}`}>
+                      <div className={`h-3 w-5 rounded animate-pulse self-end ${isDark ? 'bg-white/[0.06]' : 'bg-gray-200'}`} />
+                      {row < 3 && col % 3 === 0 && (
+                        <div className={`h-5 w-full rounded animate-pulse ${isDark ? 'bg-white/[0.06]' : 'bg-gray-200'}`} />
+                      )}
+                      {row === 1 && col % 4 === 1 && (
+                        <div className={`h-5 w-4/5 rounded animate-pulse ${isDark ? 'bg-white/[0.06]' : 'bg-gray-200'}`} />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ))}
             </div>
           ) : (
             <div className={`p-4 training-calendar ${isDark ? 'dark' : ''}`}>
@@ -206,7 +236,7 @@ export default function TrainingCalendarPage() {
             <div className={`flex justify-end px-6 py-4 border-t ${isDark ? 'border-white/[0.06]' : 'border-gray-100'}`}>
               <button
                 onClick={() => setSelectedEvent(null)}
-                className={`h-8 px-4 text-xs rounded-lg border transition-colors ${
+                className={`cursor-pointer h-8 px-4 text-xs rounded-lg border transition-colors ${
                   isDark ? 'border-white/[0.08] hover:bg-white/[0.05] text-gray-300' : 'border-gray-200 hover:bg-gray-50 text-gray-600'
                 }`}
               >

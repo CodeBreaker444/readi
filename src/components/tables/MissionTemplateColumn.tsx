@@ -1,5 +1,6 @@
 'use client';
 
+import { SystemCell } from '@/components/tables/SystemCell';
 import { formatDateInTz } from '@/lib/utils';
 import { type ColumnDef } from '@tanstack/react-table';
 import { TFunction } from 'i18next';
@@ -116,13 +117,7 @@ export function getMissionTemplateColumns({
       accessorKey: 'tool_code',
       header: t('planning.form.drone'),
       size: 100,
-      cell: ({ getValue }) => {
-        const val = getValue();
-        if (!val) return <span className="opacity-30">—</span>;
-        return (
-          <span className="font-mono text-[11px] tabular-nums">{String(val)}</span>
-        );
-      },
+      cell: ({ getValue }) => <SystemCell code={getValue() as string | null} size="sm" />,
     },
 
     {

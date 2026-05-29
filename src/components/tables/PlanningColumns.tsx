@@ -2,6 +2,7 @@
 
 import { Planning } from "@/config/types/evaluation-planning";
 import { type ColumnDef } from "@tanstack/react-table";
+import { TFunction } from "i18next";
 import { ExternalLink, Trash2 } from "lucide-react";
 import PlanningStatusBadge from "../planning/StatusBadge";
 
@@ -10,6 +11,7 @@ interface ColumnOptions {
   onDelete: (row: Planning) => void;
   onOpen: (row: Planning) => void;
   deleting: boolean;
+  t: TFunction;
 }
 
 export function getPlanningColumns({
@@ -17,11 +19,12 @@ export function getPlanningColumns({
   onDelete,
   onOpen,
   deleting,
+  t,
 }: ColumnOptions): ColumnDef<Planning, any>[] {
   return [
     {
       accessorKey: "planning_year",
-      header: "Year Ref",
+      header: t("planning.columns.yearRef"),
       size: 70,
       cell: ({ getValue }) => (
         <span className="font-mono text-[11px] tabular-nums font-medium">
@@ -32,7 +35,7 @@ export function getPlanningColumns({
 
     {
       accessorKey: "fk_evaluation_id",
-      header: "Evaluation Code",
+      header: t("planning.columns.evaluationCode"),
       size: 110,
       cell: ({ getValue }) => (
         <span className="font-mono text-[11px] tabular-nums">
@@ -43,7 +46,7 @@ export function getPlanningColumns({
 
     {
       accessorKey: "planning_id",
-      header: "Plan Code",
+      header: t("planning.columns.planCode"),
       size: 100,
       cell: ({ getValue }) => (
         <span className="font-mono text-[11px] tabular-nums font-semibold text-violet-500">
@@ -54,7 +57,7 @@ export function getPlanningColumns({
 
     {
       accessorKey: "client_name",
-      header: "Customer",
+      header: t("planning.columns.customer"),
       size: 140,
       cell: ({ getValue }) => (
         <span className="truncate max-w-[130px] inline-block">{String(getValue() ?? "")}</span>
@@ -63,7 +66,7 @@ export function getPlanningColumns({
 
     {
       accessorKey: "user_fullname",
-      header: "Requested By",
+      header: t("planning.columns.requestedBy"),
       size: 150,
       cell: ({ row }) => (
         <span>
@@ -75,7 +78,7 @@ export function getPlanningColumns({
 
     {
       id: "assigned_to",
-      header: "Assigned To",
+      header: t("planning.columns.assignedTo"),
       size: 150,
       cell: ({ row }) => {
         const pic = row.original.pic_data;
@@ -91,7 +94,7 @@ export function getPlanningColumns({
 
     {
       accessorKey: "planning_request_date",
-      header: "Request Date",
+      header: t("planning.form.requestDate"),
       size: 110,
       cell: ({ getValue }) => (
         <span className="tabular-nums text-[11px]">{String(getValue() ?? "")}</span>
@@ -99,7 +102,7 @@ export function getPlanningColumns({
     },
     {
       accessorKey: "last_update",
-      header: "Last Action",
+      header: t("planning.columns.lastAction"),
       size: 110,
       cell: ({ getValue }) => (
         <span className="tabular-nums text-[11px]">{String(getValue() ?? "")}</span>
@@ -107,7 +110,7 @@ export function getPlanningColumns({
     },
     {
       accessorKey: "planning_desc",
-      header: "Description",
+      header: t("planning.form.description"),
       size: 240,
       cell: ({ getValue }) => (
         <span className="truncate max-w-[230px] inline-block" title={String(getValue() ?? "")}>
@@ -117,7 +120,7 @@ export function getPlanningColumns({
     },
     {
       accessorKey: "luc_procedure_code",
-      header: "Procedure Code",
+      header: t("planning.columns.procedureCode"),
       size: 160,
       cell: ({ row }) => (
         <span>
@@ -129,7 +132,7 @@ export function getPlanningColumns({
 
     {
       accessorKey: "planning_status",
-      header: "Status",
+      header: t("common.status"),
       size: 140,
       cell: ({ getValue }) => (
         <PlanningStatusBadge status={String(getValue())} isDark={isDark} />
@@ -138,7 +141,7 @@ export function getPlanningColumns({
 
     {
       accessorKey: "planning_result",
-      header: "Result",
+      header: t("planning.form.result"),
       size: 120,
       cell: ({ getValue }) => (
         <PlanningStatusBadge status={String(getValue())} isDark={isDark} />
@@ -155,18 +158,18 @@ export function getPlanningColumns({
             <button
               onClick={() => onDelete(row.original)}
               disabled={deleting}
-              className="inline-flex items-center gap-1 px-2 py-1 text-[11px] rounded-md bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors disabled:opacity-40"
+              className="inline-flex cursor-pointer items-center gap-1 px-2 py-1 text-[11px] rounded-md bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors disabled:opacity-40"
             >
               <Trash2 className="w-3 h-3" />
-              Delete
+              {t("common.delete")}
             </button>
           )}
           <button
             onClick={() => onOpen(row.original)}
-            className="inline-flex items-center gap-1 px-2 py-1 text-[11px] rounded-md bg-violet-500/10 text-violet-500 hover:bg-violet-500/20 transition-colors"
+            className="inline-flex cursor-pointer items-center gap-1 px-2 py-1 text-[11px] rounded-md bg-violet-500/10 text-violet-500 hover:bg-violet-500/20 transition-colors"
           >
             <ExternalLink className="w-3 h-3" />
-            Open
+            {t("planning.columns.open")}
           </button>
         </div>
       ),

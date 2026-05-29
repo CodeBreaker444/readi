@@ -1,6 +1,7 @@
 'use client';
 
 import { DroneToolData } from '@/components/tables/SystemColumn';
+import { SystemCell } from '@/components/tables/SystemCell';
 import { TablePagination } from '@/components/tables/Pagination';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +11,7 @@ import { getCoreRowModel, getPaginationRowModel, useReactTable } from '@tanstack
 import { ChevronRight, GitBranch } from 'lucide-react';
 import { Fragment } from 'react';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 function formatFlightTime(minutes: number): string {
   if (!minutes) return '0m';
@@ -88,6 +90,7 @@ export default function SystemComponentsTable({
   onOpenRelations,
 }: SystemComponentsTableProps) {
   const { isDark } = useTheme();
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState<Record<number, boolean>>({});
   const [search, setSearch] = useState('');
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 8 });
@@ -170,7 +173,7 @@ export default function SystemComponentsTable({
   return (
     <div className="space-y-4">
       <Input
-        placeholder="Search system/client/component..."
+        placeholder={t('systems.components.systemsTable.searchPlaceholder')}
         value={search}
         onChange={(e) => {
           setSearch(e.target.value);
@@ -184,7 +187,13 @@ export default function SystemComponentsTable({
           <table className="w-full text-sm">
             <thead>
               <tr className={`border-b ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-                {['System / Component', 'Client / Serial', 'Model', 'Status', 'Actions'].map((h) => (
+                {[
+                  t('systems.components.systemsTable.headers.systemComponent'),
+                  t('systems.components.systemsTable.headers.clientSerial'),
+                  t('systems.components.systemsTable.headers.model'),
+                  t('systems.components.systemsTable.headers.status'),
+                  t('systems.components.systemsTable.headers.actions'),
+                ].map((h) => (
                   <th key={h} className={`px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                     {h}
                   </th>
@@ -204,7 +213,7 @@ export default function SystemComponentsTable({
                 ))
               ) : pagedSystems.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="h-24 text-center text-slate-400">No results.</td>
+                  <td colSpan={5} className="h-24 text-center text-slate-400">{t('systems.components.systemsTable.noResults')}</td>
                 </tr>
               ) : (
                 pagedSystems.map((system) => {
@@ -226,10 +235,9 @@ export default function SystemComponentsTable({
                         <td className="px-3 py-3">
                           <div className="flex items-start gap-2">
                             <ChevronRight className={`h-4 w-4 mt-0.5 transition-transform ${isOpen ? 'rotate-90' : ''}`} />
-                            <div>
-                              <p className={`font-semibold ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>{system.tool_code}</p>
-                              <p className="text-xs text-slate-400">{totalComponentCount} component{totalComponentCount === 1 ? '' : 's'}</p>
-                              {system.tool_desc ? <p className="text-xs text-slate-400">{system.tool_desc}</p> : null}
+                            <div className="flex flex-col gap-0.5">
+                              <SystemCell code={system.tool_code} name={system.tool_desc} size="lg" />
+                              <p className="text-[10px] text-slate-400">{t('systems.components.systemsTable.componentCount', { count: totalComponentCount })}</p>
                             </div>
                           </div>
                         </td>
@@ -249,14 +257,14 @@ export default function SystemComponentsTable({
                         </td>
                         <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
                           <div className="flex flex-wrap gap-2">
-                            <Button size="sm" variant="outline" onClick={() => onViewSystem(system.tool_id)}>View</Button>
-                            <Button size="sm" variant="outline" onClick={() => onEditSystem(system)}>Edit</Button>
-                            <Button size="sm" variant="outline" onClick={() => onDuplicateSystem(system)}>Duplicate</Button>
-                            <Button size="sm" variant="outline" onClick={() => onViewFiles(system)}>Files</Button>
+                            <Button size="sm" variant="outline" onClick={() => onViewSystem(system.tool_id)}>{t('systems.components.systemsTable.buttons.view')}</Button>
+                            <Button size="sm" variant="outline" onClick={() => onEditSystem(system)}>{t('systems.components.systemsTable.buttons.edit')}</Button>
+                            <Button size="sm" variant="outline" onClick={() => onDuplicateSystem(system)}>{t('systems.components.systemsTable.buttons.duplicate')}</Button>
+                            <Button size="sm" variant="outline" onClick={() => onViewFiles(system)}>{t('systems.components.systemsTable.buttons.files')}</Button>
                             <Button size="sm" variant="outline" onClick={() => onOpenRelations(system.tool_id, system.tool_code)} className="gap-1">
-                              <GitBranch size={13} /> Relations
+                              <GitBranch size={13} /> {t('systems.components.systemsTable.buttons.relations')}
                             </Button>
-                            <Button size="sm" variant="destructive" onClick={() => onDeleteSystem(system.tool_id)}>Delete</Button>
+                            <Button size="sm" variant="destructive" onClick={() => onDeleteSystem(system.tool_id)}>{t('systems.components.systemsTable.buttons.delete')}</Button>
                           </div>
                         </td>
                       </tr>
@@ -290,23 +298,23 @@ export default function SystemComponentsTable({
                               <td className="px-3 py-2.5"><StatusPill status={comp.component_status} /></td>
                               <td className="px-3 py-2.5">
                                 <div className="flex flex-wrap gap-2">
-                                  <Button size="sm" variant="outline" onClick={() => onViewComponent(comp)}>View</Button>
-                                  <Button size="sm" variant="outline" onClick={() => onEditComponent(comp.tool_component_id)}>Edit</Button>
-                                  <Button size="sm" variant="outline" onClick={() => onLogComponent(comp)}>Log</Button>
+                                  <Button size="sm" variant="outline" onClick={() => onViewComponent(comp)}>{t('systems.components.systemsTable.buttons.view')}</Button>
+                                  <Button size="sm" variant="outline" onClick={() => onEditComponent(comp.tool_component_id)}>{t('systems.components.systemsTable.buttons.edit')}</Button>
+                                  <Button size="sm" variant="outline" onClick={() => onLogComponent(comp)}>{t('systems.components.systemsTable.buttons.log')}</Button>
                                   <Button
                                     size="sm"
                                     variant="outline"
                                     onClick={() => onFlightLogsComponent(comp)}
                                     className="gap-1 text-violet-600 border-violet-200 hover:bg-violet-50 hover:text-violet-700"
                                   >
-                                    Flights
+                                    {t('systems.components.systemsTable.buttons.flights')}
                                   </Button>
                                   <Button
                                     size="sm"
                                     variant="destructive"
                                     onClick={() => onDeleteComponent(comp.tool_component_id, comp.component_code || comp.component_name || `#${comp.tool_component_id}`)}
                                   >
-                                    Delete
+                                    {t('systems.components.systemsTable.buttons.delete')}
                                   </Button>
                                 </div>
                               </td>
@@ -314,7 +322,7 @@ export default function SystemComponentsTable({
                           ))
                         ) : (
                           <tr className={`border-t ${isDark ? 'border-slate-700 bg-slate-800/30' : 'border-slate-100 bg-slate-50/70'}`}>
-                            <td colSpan={5} className="px-10 py-3 text-xs text-slate-400">No components attached to this system.</td>
+                            <td colSpan={5} className="px-10 py-3 text-xs text-slate-400">{t('systems.components.systemsTable.noComponentsAttached')}</td>
                           </tr>
                         ))}
                     </Fragment>

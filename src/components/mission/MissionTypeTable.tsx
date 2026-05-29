@@ -19,6 +19,7 @@ import {
 } from '@tanstack/react-table';
 import { Tag } from 'lucide-react';
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import ExportButtons from '../system/ExportButtons';
 import { getMissionTypeColumns } from '../tables/MissionTypeColumn';
 import { TablePagination } from '../tables/Pagination';
@@ -31,9 +32,10 @@ interface MissionTypeTableProps {
 }
 
 export default function MissionTypeTable({ data, onDelete, onEdit, isDark }: MissionTypeTableProps) {
+  const { t } = useTranslation();
   const columns = useMemo(
-    () => getMissionTypeColumns({ isDark, onEditClick: onEdit, onDelete }),
-    [isDark, onEdit, onDelete]
+    () => getMissionTypeColumns({ isDark, onEditClick: onEdit, onDelete, t }),
+    [isDark, onEdit, onDelete, t]
   );
 
   const table = useReactTable({
@@ -102,10 +104,10 @@ export default function MissionTypeTable({ data, onDelete, onEdit, isDark }: Mis
                       <Tag size={20} className="opacity-50" />
                     </div>
                     <p className={`text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                      No types defined yet
+                      {t('missionType.table.emptyTitle')}
                     </p>
                     <p className={`text-[11px] mt-1 ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>
-                      Create your first mission type to get started
+                      {t('missionType.table.emptySubtitle')}
                     </p>
                   </div>
                 </TableCell>
@@ -117,8 +119,8 @@ export default function MissionTypeTable({ data, onDelete, onEdit, isDark }: Mis
 
       <div className={`border-t flex items-center justify-between px-3 ${isDark ? 'border-white/[0.06]' : 'border-gray-100'}`}>
         <ExportButtons
-          filename="Mission Types"
-          headers={['ID', 'Code', 'Name', 'Description', 'Label']}
+          filename={t('missionType.table.exportFilename')}
+          headers={['ID', t('missionType.table.colCode'), t('missionType.table.colName'), t('missionType.table.colLabel')]}
           rows={data.map(d => [d.id, d.code, d.name, d.description, d.label])}
         />
         <TablePagination table={table} />

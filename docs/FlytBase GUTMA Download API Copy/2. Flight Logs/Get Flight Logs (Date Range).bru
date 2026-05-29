@@ -1,0 +1,36 @@
+meta {
+  name: Get Flight Logs (Date Range)
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}/v2/flight?page={{page}}&limit={{limit}}&archived=false&startDate={{start_date}}&endDate={{end_date}}
+  body: none
+  auth: inherit
+}
+
+params:query {
+  page: {{page}}
+  limit: {{limit}}
+  archived: false
+  startDate: {{start_date}}
+  endDate: {{end_date}}
+}
+
+headers {
+  org-id: {{org_id}}
+  Authorization: Bearer {{api_key}}
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Filter flights by date range. Dates must be Unix milliseconds, NOT ISO strings.
+  
+  Useful timestamps:
+  - Oct 21, 2025 00:00:00 UTC: 1761004800000
+  - March 13, 2026 23:59:59 UTC: 1773446399000
+}

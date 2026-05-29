@@ -1,0 +1,43 @@
+meta {
+  name: Create Operation
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/operation
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "mission_name": "Survey Mission Alpha",
+    "mission_code": "MSN-001",
+    "status_name": "PLANNED",
+    "mission_description": "Aerial survey of zone A",
+    "scheduled_start": "2026-04-15T09:00:00Z",
+    "location": "Zone A, Sector 4",
+    "notes": "Clear weather required",
+    "fk_pilot_user_id": 3,
+    "fk_tool_id": 2,
+    "fk_planning_id": null,
+    "fk_mission_type_id": 1,
+    "fk_mission_category_id": 1,
+    "actual_end": null
+  }
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Create a single operation. Requires session.
+  
+  status_name: PLANNED | IN_PROGRESS | COMPLETED | CANCELLED | ABORTED
+}

@@ -1,0 +1,30 @@
+meta {
+  name: Update System
+  type: http
+  seq: 3
+}
+
+put {
+  url: {{baseUrl}}/api/system/:id/update
+  body: json
+  auth: inherit
+}
+
+params:path {
+  id: 1
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "system_name": "DJI Matrice 300 RTK - Unit 1",
+    "status": "ACTIVE"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

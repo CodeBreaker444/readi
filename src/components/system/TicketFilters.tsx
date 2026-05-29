@@ -1,6 +1,7 @@
 'use client';
 
 import { Search } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface Props {
     search: string;
@@ -11,21 +12,29 @@ interface Props {
 }
 
 export function TicketFilters({ search, statusFilter, onSearch, onStatusChange, isDark }: Props) {
+    const { t } = useTranslation();
+
+    const filterOptions = [
+        { value: 'ALL',    label: t('systems.maintenanceLogbook.filters.all') },
+        { value: 'OPEN',   label: t('systems.maintenanceLogbook.filters.open') },
+        { value: 'CLOSED', label: t('systems.maintenanceLogbook.filters.closed') },
+    ];
+
     return (
         <div className="flex flex-wrap items-center gap-2">
             <div className={`flex items-center rounded-lg border overflow-hidden ${isDark ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'}`}>
-                {['ALL', 'OPEN', 'CLOSED'].map((s) => (
+                {filterOptions.map(({ value, label }) => (
                     <button
-                        key={s}
-                        onClick={() => onStatusChange(s)}
-                        className={`px-3 py-1.5 text-sm font-medium transition-colors ${statusFilter === s
+                        key={value}
+                        onClick={() => onStatusChange(value)}
+                        className={`px-3 py-1.5 text-sm font-medium transition-colors ${statusFilter === value
                                 ? 'bg-violet-600 text-white'
                                 : isDark
                                     ? 'text-slate-400 hover:bg-slate-700'
                                     : 'text-slate-600 hover:bg-slate-50'
                             }`}
                     >
-                        {s}
+                        {label}
                     </button>
                 ))}
             </div>
@@ -35,7 +44,7 @@ export function TicketFilters({ search, statusFilter, onSearch, onStatusChange, 
                 <input
                     value={search}
                     onChange={(e) => onSearch(e.target.value)}
-                    placeholder="Search by drone code, serial, assignee…"
+                    placeholder={t('systems.maintenanceLogbook.filters.searchPlaceholder')}
                     className={`w-full pl-9 pr-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none ${isDark
                             ? 'bg-slate-800 border-slate-700 text-slate-200 placeholder:text-slate-500'
                             : 'bg-white border-slate-200 text-slate-900'

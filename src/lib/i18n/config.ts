@@ -18,6 +18,9 @@ export type LanguageCode = (typeof LANGUAGES)[number]['code'];
 const STORAGE_KEY = 'readi_language';
 
 function getSavedLanguage(): LanguageCode {
+  if (typeof window === 'undefined') return 'en';
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved && LANGUAGES.some((l) => l.code === saved)) return saved as LanguageCode;
   return 'en';
 }
 

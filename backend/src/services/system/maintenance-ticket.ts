@@ -88,6 +88,8 @@ export async function getTicketList(owner_id: number, tool_id?: number): Promise
       reported_at,
       closed_at,
       resolution_notes,
+      location_latitude,
+      location_longitude,
       created_at,
       updated_at,
       tool:fk_tool_id (
@@ -184,8 +186,10 @@ export async function getTicketList(owner_id: number, tool_id?: number): Promise
       assigner_name:  row.assignee
         ? `${row.assignee.first_name ?? ''} ${row.assignee.last_name ?? ''}`.trim()
         : 'Unassigned',
-      assigner_email: row.assignee?.email ?? '',
-      trigger_params: null,
+      assigner_email:     row.assignee?.email ?? '',
+      trigger_params:     null,
+      location_latitude:  row.location_latitude  ?? null,
+      location_longitude: row.location_longitude ?? null,
     };
   });
 }
@@ -209,6 +213,8 @@ export async function createTicket(payload: CreateTicketPayload): Promise<number
     assigned_to_user_id: payload.assigned_to || null,
     resolution_notes:    payload.note ?? null,
     reported_at:         new Date().toISOString(),
+    location_latitude:   payload.latitude  ?? null,
+    location_longitude:  payload.longitude ?? null,
   }));
 
   const { data, error } = await supabase
@@ -459,12 +465,14 @@ export async function getDroneList(ownerId: number): Promise<DroneOption[]> {
 
   if (error) throw new Error(`getDroneList: ${error.message}`);
 
-  return (data ?? []).map((row: any) => ({
-    tool_id:     row.tool_id,
-    tool_code:   row.tool_code ?? '',
-    tool_desc:   row.tool_description ?? row.tool_name ?? '',
-    tool_status: row.tool_metadata?.status ?? 'OPERATIONAL',
-  }));
+  return (data ?? [])
+    .filter((row: any) => row.tool_metadata?.is_warehouse !== true && row.tool_metadata?.deleted !== true)
+    .map((row: any) => ({
+      tool_id:     row.tool_id,
+      tool_code:   row.tool_code ?? '',
+      tool_desc:   row.tool_description ?? row.tool_name ?? '',
+      tool_status: row.tool_metadata?.status ?? 'OPERATIONAL',
+    }));
 }
 
 export async function getComponentList(toolId: number): Promise<ComponentOption[]> {
@@ -636,6 +644,31 @@ async function resetComponentCounters(toolId: number, resetAt: string, component
         .eq('component_id', comp.component_id);
     }).filter(Boolean),
   );
+}
+
+export async function getComponentMissions(componentId: number) {
+  const { data: comp } = await supabase
+    .from('tool_component')
+    .select('fk_tool_id, installation_date, created_at')
+    .eq('component_id', componentId)
+    .maybeSingle();
+
+  if (!comp?.fk_tool_id) return [];
+
+  let query = supabase
+    .from('pilot_mission')
+    .select('pilot_mission_id, mission_code, actual_start, actual_end, flight_duration, distance_flown')
+    .eq('fk_tool_id', comp.fk_tool_id)
+    .not('actual_end', 'is', null)
+    .order('actual_start', { ascending: false, nullsFirst: false });
+
+  const installDate = comp.installation_date ?? new Date().toISOString().split('T')[0];
+  const createdDate = comp.created_at ? comp.created_at.split('T')[0].split(' ')[0] : null;
+  const cutoff = createdDate && createdDate > installDate ? createdDate : installDate;
+  query = query.gte('actual_start', cutoff);
+
+  const { data } = await query;
+  return data ?? [];
 }
 
 export async function getComponentTicketEvents(componentId: number) {

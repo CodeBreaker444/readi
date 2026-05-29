@@ -1,5 +1,5 @@
 import { Toaster } from "@/components/ui/sonner";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Bebas_Neue, Geist, Geist_Mono } from "next/font/google";
 import ClientLayoutWrapper from "../components/ClientLayoutWrapper";
 import { I18nProvider } from "../components/I18nProvider";
 import { ThemeProvider } from "../components/ThemeProvider";
@@ -12,13 +12,20 @@ export const dynamic = 'force-dynamic';
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
-  display: 'swap',  
+  display: 'swap',
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
-  display: 'swap', 
+  display: 'swap',
+});
+
+const bebasNeue = Bebas_Neue({
+  variable: "--font-bebas-neue",
+  subsets: ["latin"],
+  weight: "400",
+  display: 'swap',
 });
 
 
@@ -32,7 +39,7 @@ export default async function RootLayout({
   
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body className={`${geistSans.variable} ${geistMono.variable} ${bebasNeue.variable} antialiased`}>
         <ThemeProvider>
           <I18nProvider>
             <TimezoneProvider userTimezone={session?.user?.timezone}>

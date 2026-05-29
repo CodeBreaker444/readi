@@ -1,7 +1,7 @@
 import { env } from '@/backend/config/env';
 import { supabase } from '@/backend/database/database';
 import bcrypt from 'bcrypt';
-import { sendUserActivationEmail } from '../../../../lib/resend/mail';
+import { sendAdminPasswordChangedEmail, sendUserActivationEmail } from '../../../../lib/resend/mail';
 import { generateActivationToken, generateUniqueCode } from '../user/user-management';
 
 export interface OwnerData {
@@ -13,6 +13,9 @@ export interface OwnerData {
     owner_email: string;
     owner_website: string;
     owner_active: string;
+    drone_atc_enabled: boolean;
+    email_notifications_enabled: boolean;
+    easa_operator_code: string | null;
     created_at: string;
 }
 
@@ -29,6 +32,9 @@ export interface AddOwnerWithAdminPayload {
     owner_email: string;
     owner_website: string;
     owner_active: string;
+    drone_atc_enabled?: boolean;
+    email_notifications_enabled?: boolean;
+    easa_operator_code?: string;
     tax_id?: string;
     registration_number?: string;
     license_number?: string;
@@ -52,11 +58,32 @@ export interface AddOwnerPayload {
 
 export interface UpdateOwnerPayload {
     owner_name: string;
-    owner_address?: string;
-    owner_phone?: string;
+    owner_legal_name?: string | null;
+    owner_type?: string | null;
+    owner_address?: string | null;
+    owner_city?: string | null;
+    owner_state?: string | null;
+    owner_postal_code?: string | null;
+    owner_phone?: string | null;
     owner_email: string;
     owner_website: string;
     owner_active: string;
+    drone_atc_enabled?: boolean;
+    email_notifications_enabled?: boolean;
+    easa_operator_code?: string | null;
+    tax_id?: string | null;
+    registration_number?: string | null;
+    license_number?: string | null;
+    license_expiry?: string | null;
+}
+
+export interface OwnerMetrics {
+    total_users: number;
+    active_users: number;
+    inactive_users: number;
+    users_by_role: Record<string, number>;
+    storage_bytes: number;
+    storage_file_count: number;
 }
 
 export interface OwnerWithAdmin extends OwnerData {
@@ -74,7 +101,7 @@ export interface OwnerWithAdmin extends OwnerData {
 export async function getOwners(): Promise<OwnerWithAdmin[]> {
     const { data: owners, error } = await supabase
         .from('owner')
-        .select('owner_id, owner_code, owner_name, owner_legal_name, owner_type, owner_address, owner_city, owner_state, owner_postal_code, owner_phone, owner_email, owner_website, owner_active, tax_id, registration_number, license_number, license_expiry, created_at')
+        .select('owner_id, owner_code, owner_name, owner_legal_name, owner_type, owner_address, owner_city, owner_state, owner_postal_code, owner_phone, owner_email, owner_website, owner_active, drone_atc_enabled, email_notifications_enabled, easa_operator_code, tax_id, registration_number, license_number, license_expiry, created_at')
         .order('created_at', { ascending: false });
     if (error) throw new Error(error.message);
 
@@ -97,7 +124,6 @@ export async function getOwners(): Promise<OwnerWithAdmin[]> {
         .in('fk_owner_id', ownerIds)
         .eq('relationship_type', 'OWNER_ADMIN')
         .eq('is_primary', true)
-        .eq('is_active', true);
 
     const adminMap = new Map<number, any>();
     if (adminRelations) {
@@ -116,23 +142,190 @@ export async function getOwners(): Promise<OwnerWithAdmin[]> {
 
 
 
+export async function getOwnerById(id: string): Promise<OwnerWithAdmin | null> {
+    const { data: owner, error } = await supabase
+        .from('owner')
+        .select('owner_id, owner_code, owner_name, owner_legal_name, owner_type, owner_address, owner_city, owner_state, owner_postal_code, owner_phone, owner_email, owner_website, owner_active, drone_atc_enabled, email_notifications_enabled, easa_operator_code, tax_id, registration_number, license_number, license_expiry, created_at')
+        .eq('owner_id', id)
+        .single();
+
+    if (error || !owner) return null;
+
+    const { data: adminRel } = await supabase
+        .from('user_owner')
+        .select(`users:fk_user_id (user_id, username, email, first_name, last_name, phone, user_active)`)
+        .eq('fk_owner_id', id)
+        .eq('relationship_type', 'OWNER_ADMIN')
+        .eq('is_primary', true)
+        .maybeSingle();
+
+    return {
+        ...(owner as any),
+        admin_user: (adminRel as any)?.users || null,
+    };
+}
+
+export async function getOwnerMetrics(id: string): Promise<OwnerMetrics> {
+    const { data: users } = await supabase
+        .from('users')
+        .select('user_id, user_active, user_role')
+        .eq('fk_owner_id', id);
+
+    const total_users = users?.length ?? 0;
+    const active_users = users?.filter((u: any) => u.user_active === 'Y').length ?? 0;
+    const inactive_users = total_users - active_users;
+
+    const users_by_role: Record<string, number> = {};
+    users?.forEach((u: any) => {
+        users_by_role[u.user_role] = (users_by_role[u.user_role] ?? 0) + 1;
+    });
+
+    // Tracked file storage: aggregate from all DB tables that record file_size and
+    // can be linked back to this owner. S3 uploads with no file_size in DB (avatars,
+    // flight logs, etc.) are excluded — there is no owner prefix in S3 keys.
+    let storage_bytes = 0;
+    let storage_file_count = 0;
+
+    const sums: { bytes: number; count: number }[] = await Promise.all([
+
+        //  Document repository revisions  → via luc_document.fk_owner_id
+        (async () => {
+            const { data: docs } = await supabase
+                .from('luc_document')
+                .select('document_id')
+                .eq('fk_owner_id', id)
+                .eq('document_active', 'Y');
+            const docIds = (docs ?? []).map((d: any) => d.document_id);
+            if (!docIds.length) return { bytes: 0, count: 0 };
+            const { data: revs } = await supabase
+                .from('luc_document_rev')
+                .select('file_size')
+                .in('fk_document_id', docIds);
+            const rows = revs ?? [];
+            return {
+                bytes: rows.reduce((s: number, r: any) => s + (Number(r.file_size) || 0), 0),
+                count: rows.length,
+            };
+        })(),
+
+        //  Evaluation files  → via evaluation.fk_owner_id
+        (async () => {
+            const { data: evals } = await supabase
+                .from('evaluation')
+                .select('evaluation_id')
+                .eq('fk_owner_id', id);
+            const evalIds = (evals ?? []).map((e: any) => e.evaluation_id);
+            if (!evalIds.length) return { bytes: 0, count: 0 };
+            const { data: files } = await supabase
+                .from('evaluation_file')
+                .select('file_size')
+                .in('fk_evaluation_id', evalIds);
+            const rows = files ?? [];
+            return {
+                bytes: rows.reduce((s: number, r: any) => s + (Number(r.file_size) || 0), 0),
+                count: rows.length,
+            };
+        })(),
+
+        //  Maintenance ticket attachments  → via maintenance_ticket.fk_owner_id
+        (async () => {
+            const { data: tickets } = await supabase
+                .from('maintenance_ticket')
+                .select('ticket_id')
+                .eq('fk_owner_id', id);
+            const ticketIds = (tickets ?? []).map((t: any) => t.ticket_id);
+            if (!ticketIds.length) return { bytes: 0, count: 0 };
+            const { data: attachments } = await supabase
+                .from('maintenance_ticket_attachment')
+                .select('file_size')
+                .in('fk_ticket_id', ticketIds);
+            const rows = attachments ?? [];
+            return {
+                bytes: rows.reduce((s: number, r: any) => s + (Number(r.file_size) || 0), 0),
+                count: rows.length,
+            };
+        })(),
+
+        //  Repository files  → direct fk_owner_id
+        (async () => {
+            const { data: files } = await supabase
+                .from('repository_file')
+                .select('file_size')
+                .eq('fk_owner_id', id);
+            const rows = files ?? [];
+            return {
+                bytes: rows.reduce((s: number, r: any) => s + (Number(r.file_size) || 0), 0),
+                count: rows.length,
+            };
+        })(),
+    ]);
+
+    for (const s of sums) {
+        storage_bytes += s.bytes;
+        storage_file_count += s.count;
+    }
+
+    return { total_users, active_users, inactive_users, users_by_role, storage_bytes, storage_file_count };
+}
+
 export async function updateOwner(id: string, payload: UpdateOwnerPayload) {
+    const { data: current } = await supabase
+        .from('owner')
+        .select('owner_active')
+        .eq('owner_id', id)
+        .single();
+
     const { data, error } = await supabase
         .from('owner')
         .update({
             owner_name: payload.owner_name,
-            owner_address: payload.owner_address || null,
-            owner_phone: payload.owner_phone || null,
+            owner_legal_name: payload.owner_legal_name ?? null,
+            owner_type: payload.owner_type ?? null,
+            owner_address: payload.owner_address ?? null,
+            owner_city: payload.owner_city ?? null,
+            owner_state: payload.owner_state ?? null,
+            owner_postal_code: payload.owner_postal_code ?? null,
+            owner_phone: payload.owner_phone ?? null,
             owner_email: payload.owner_email,
             owner_website: payload.owner_website,
             owner_active: payload.owner_active,
+            drone_atc_enabled: payload.drone_atc_enabled ?? false,
+            email_notifications_enabled: payload.email_notifications_enabled ?? false,
+            easa_operator_code: payload.easa_operator_code ?? null,
+            tax_id: payload.tax_id ?? null,
+            registration_number: payload.registration_number ?? null,
+            license_number: payload.license_number ?? null,
+            license_expiry: payload.license_expiry ?? null,
         })
         .eq('owner_id', id)
         .select()
         .single();
 
     if (error) throw new Error(error.message);
+
+    // Reactivate all company users when transitioning from disabled → active
+    if (current?.owner_active === 'N' && payload.owner_active === 'Y') {
+        await supabase
+            .from('users')
+            .update({ user_active: 'Y' })
+            .eq('fk_owner_id', id);
+
+        await supabase
+            .from('user_owner')
+            .update({ is_active: true })
+            .eq('fk_owner_id', id);
+    }
+
     return data as OwnerData;
+}
+// used for updating just the easa code from admin profile page
+export async function updateCompanyEasaCode(ownerId: number, easaCode: string | null): Promise<void> {
+    const { error } = await supabase
+        .from('owner')
+        .update({ easa_operator_code: easaCode ?? null })
+        .eq('owner_id', ownerId);
+
+    if (error) throw new Error(error.message);
 }
 
 export async function deleteOwner(id: string, deletedByUserId: number) {
@@ -273,6 +466,8 @@ export async function addOwnerWithAdmin(payload: AddOwnerWithAdminPayload) {
             owner_email: payload.owner_email,
             owner_website: payload.owner_website,
             owner_active: payload.owner_active,
+            drone_atc_enabled: payload.drone_atc_enabled ?? false,
+            email_notifications_enabled: payload.email_notifications_enabled ?? false,
             tax_id: payload.tax_id || null,
             registration_number: payload.registration_number || null,
             license_number: payload.license_number || null,
@@ -363,4 +558,44 @@ export async function addOwnerWithAdmin(payload: AddOwnerWithAdminPayload) {
         await supabase.from('owner').delete().eq('owner_id', owner.owner_id);
         throw error;
     }
+}
+
+export async function updateAdminPassword(ownerId: string, adminUserId: number, newPassword: string) {
+    const { data: user, error: userErr } = await supabase
+        .from('users')
+        .select('user_id, email, username, first_name, last_name, fk_owner_id')
+        .eq('user_id', adminUserId)
+        .eq('fk_owner_id', ownerId)
+        .single();
+
+    if (userErr || !user) throw new Error('Admin user not found for this company');
+
+    const { data: owner, error: ownerErr } = await supabase
+        .from('owner')
+        .select('owner_name')
+        .eq('owner_id', ownerId)
+        .single();
+
+    if (ownerErr || !owner) throw new Error('Company not found');
+
+    const password_hash = await bcrypt.hash(newPassword, 10);
+
+    const { error: updateErr } = await supabase
+        .from('users')
+        .update({ password_hash })
+        .eq('user_id', adminUserId);
+
+    if (updateErr) throw new Error(updateErr.message);
+
+    const fullname = [user.first_name, user.last_name].filter(Boolean).join(' ') || user.username;
+
+    await sendAdminPasswordChangedEmail(
+        user.email,
+        fullname,
+        user.username,
+        newPassword,
+        owner.owner_name
+    );
+
+    return { message: 'Password updated successfully' };
 }

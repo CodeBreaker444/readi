@@ -1,7 +1,9 @@
 'use client';
 
+import { SessionUser } from '@/lib/auth/server-session';
+import { ChevronsUpDown, LogOut, User, UserCircle } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { GrSystem } from "react-icons/gr";
 import {
@@ -23,8 +25,10 @@ import {
   HiOutlineTemplate,
   HiOutlineUsers
 } from 'react-icons/hi';
-import { TbLayoutSidebarFilled } from "react-icons/tb";
+import { MdFlightTakeoff } from 'react-icons/md';
+import { TbLayoutSidebarFilled, TbRadar } from "react-icons/tb";
 import { Permission, Role, roleHasPermission, ROUTE_PERMISSIONS, RoutePermissionEntry } from '../lib/auth/roles';
+import { supabase } from '../lib/supabase/client';
 
 interface SubNavItem {
   name: string;
@@ -46,9 +50,10 @@ interface SidebarProps {
   role: Role | null;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
+  userData?: SessionUser | null;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCollapse }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCollapse, userData }) => {
   const { t } = useTranslation();
   const router = useRouter();
   const pathname = usePathname();
@@ -56,6 +61,46 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [tooltipItem, setTooltipItem] = useState<string | null>(null);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [menuPos, setMenuPos] = useState<{ bottom: number; left: number } | null>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  const userMenuPopupRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      const inTrigger = userMenuRef.current?.contains(e.target as Node);
+      const inPopup = userMenuPopupRef.current?.contains(e.target as Node);
+      if (!inTrigger && !inPopup) setShowUserMenu(false);
+    };
+    if (showUserMenu) document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showUserMenu]);
+
+  const handleOpenUserMenu = () => {
+    if (!showUserMenu && userMenuRef.current) {
+      const rect = userMenuRef.current.getBoundingClientRect();
+      const popupWidth = 256;
+      const idealLeft = rect.right + 8;
+      const left = Math.min(idealLeft, window.innerWidth - popupWidth - 8);
+      setMenuPos({ bottom: window.innerHeight - rect.bottom, left: Math.max(left, 8) });
+    }
+    setShowUserMenu((v) => !v);
+  };
+
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      await supabase.auth.signOut();
+      await fetch('/api/auth/logout', { method: 'POST' });
+      setShowUserMenu(false);
+      window.location.href = '/auth/login';
+    } catch {
+      // ignore
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
 
   const navigationItems: NavItem[] = [
     {
@@ -96,6 +141,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
       subItems: [
         { name: t('sidebar.plannedMissionLogbook'), href: '/logbooks/mission-planning-logbook' },
         { name: t('sidebar.flightLogbook'), href: '/logbooks/operation-logbook' },
+        { name: t('sidebar.batteryLogbook'), href: '/logbooks/battery-logbook' },
       ]
     },
     {
@@ -124,13 +170,18 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
     },
     {
       name: t('sidebar.flytbase'),
-      href: '/flytbase',
+      href: '/control-center',
       icon: HiOutlinePaperAirplane,
       subItems: [
-        { name: t('sidebar.settings'), href: '/flytbase' },
-        { name: t('sidebar.recentFlights'), href: '/flytbase/flights' },
+        { name: t('sidebar.settings'), href: '/control-center' },
+        { name: t('sidebar.recentFlights'), href: '/control-center/flights' },
       ],
     },
+    ...(userData?.droneAtcEnabled ? [{
+      name: t('sidebar.droneAtc'),
+      href: '/drone-atc',
+      icon: TbRadar,
+    }] : []),
     {
       name: t('sidebar.training'),
       href: '/training/courses',
@@ -186,7 +237,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
       icon: HiOutlineUsers,
       subItems: [
         { name: t('sidebar.personnel'), href: '/team/personnel' },
-        { name: t('sidebar.crewShift'), href: '/team/crew-shift' },
+        // { name: t('sidebar.crewShift'), href: '/team/crew-shift' },
         { name: t('sidebar.client'), href: '/team/client' },
       ],
     },
@@ -206,6 +257,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
       ],
     },
   ];
+
+  const isClientRole = role === 'CLIENT';
+
+  const clientPortalItems: SubNavItem[] = isClientRole ? [
+    { name: t('clientPortal.dashboard'), href: '/client/dashboard', icon: HiOutlineHome },
+    { name: t('clientPortal.missions'), href: '/client/missions', icon: HiOutlineClipboardList },
+    { name: t('clientPortal.analytics', 'Analytics'), href: '/client/analytics', icon: HiOutlineChartBar },
+    { name: t('clientPortal.requestFlight', 'Request Flight'), href: '/client/request-flight', icon: MdFlightTakeoff  },
+  ] : [];
 
   useEffect(() => {
     setActiveItem(pathname);
@@ -237,7 +297,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
     return false;
   };
 
-  const filteredNavigationItems = navigationItems
+  const filteredNavigationItems = isClientRole ? [] : navigationItems
     .map((item) => {
       const visibleSubItems =
         item.subItems?.filter((sub) => {
@@ -254,7 +314,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
     })
     .filter(Boolean) as typeof navigationItems;
 
-  const filteredConfigurationItems = configurationItems
+  const filteredConfigurationItems = isClientRole ? [] : configurationItems
     .map((configItem) => {
       // Hide Company section for non-superadmins (use stable href, not translated name)
       if (configItem.href === '/company' && role !== 'SUPERADMIN') {
@@ -554,6 +614,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
               renderCollapsedIcon(item.icon, item.href, item.name, item.subItems)
             )}
 
+            {clientPortalItems.length > 0 && (
+              <>
+                <div className={`my-2 mx-2 border-t ${isDark ? 'border-slate-800' : 'border-slate-200'}`} />
+                {clientPortalItems.map((item) =>
+                  renderCollapsedIcon(item.icon || HiOutlineHome, item.href, item.name)
+                )}
+              </>
+            )}
+
             {filteredConfigurationItems.length > 0 && (
               <>
                 <div
@@ -622,6 +691,46 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
                 </div>
               );
             })}
+
+            {clientPortalItems.length > 0 && (
+              <div className={isClientRole ? '' : 'pt-4'}>
+                {!isClientRole && (
+                  <p
+                    className={`px-3 pb-1.5 uppercase ${isDark ? 'text-slate-600' : 'text-slate-400'}`}
+                    style={{ fontSize: '0.6rem', letterSpacing: '0.12em', fontWeight: 600 }}
+                  >
+                    {t('clientPortal.sectionTitle')}
+                  </p>
+                )}
+                <div className="space-y-0.5">
+                  {clientPortalItems.map((item) => {
+                    const ItemIcon = item.icon || HiOutlineHome;
+                    const isActive = isRouteActive(item.href);
+                    return (
+                      <a
+                        key={item.href}
+                        href={item.href}
+                        onClick={(e) => { e.preventDefault(); handleNavigation(item.href, false); }}
+                        onMouseEnter={() => setHoveredItem(item.href)}
+                        onMouseLeave={() => setHoveredItem(null)}
+                        className={`flex items-center justify-between px-3 py-1.5 rounded-r-md transition-all duration-150 cursor-pointer ${getItemClass(item.href, isActive)}`}
+                        style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}
+                      >
+                        <span className="flex items-center gap-2.5">
+                          <ItemIcon
+                            size={16}
+                            className={`shrink-0 transition-colors duration-150 ${getIconClass(item.href, isActive)}`}
+                          />
+                          <span style={{ fontSize: '0.75rem', fontWeight: isActive ? 600 : 500, letterSpacing: '0.01em' }}>
+                            {item.name}
+                          </span>
+                        </span>
+                      </a>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {filteredConfigurationItems.length > 0 && (
               <div className="pt-4">
@@ -702,6 +811,126 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
           background: ${isDark ? '#f59e0b66' : '#f59e0b88'};
         }
       `}</style>
+
+      {/* User section at bottom */}
+      <div
+        ref={userMenuRef}
+        className={`shrink-0 ${isDark ? 'border-t border-slate-800' : 'border-t border-slate-100'} ${isCollapsed ? 'px-2 py-3' : 'px-3 py-3'}`}
+      >
+        {isCollapsed ? (
+          <div className="flex justify-center">
+            <button
+              onClick={handleOpenUserMenu}
+              className={`w-9 h-9 cursor-pointer rounded-full overflow-hidden flex items-center justify-center border-2 transition-all duration-150 ${
+                showUserMenu
+                  ? isDark ? 'border-violet-500 ring-2 ring-violet-500/30' : 'border-violet-400 ring-2 ring-violet-400/20'
+                  : isDark ? 'border-slate-700 hover:border-violet-500/60' : 'border-slate-200 hover:border-violet-400/60'
+              } bg-linear-to-br ${isDark ? 'from-violet-600 to-indigo-600' : 'from-violet-500 to-indigo-500'}`}
+            >
+              {userData?.avatar ? (
+                <img src={userData.avatar} alt="Profile" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+              ) : (
+                <User size={15} className="text-white" />
+              )}
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={handleOpenUserMenu}
+            className={`w-full flex items-center cursor-pointer gap-2.5 px-2 py-2.5 rounded-lg transition-all duration-150 ${
+              showUserMenu
+                ? isDark ? 'bg-slate-800' : 'bg-slate-100'
+                : isDark ? 'hover:bg-slate-800/70' : 'hover:bg-slate-50'
+            }`}
+          >
+            <div className={`w-10 h-10 rounded-full overflow-hidden flex items-center justify-center shrink-0 border bg-linear-to-br ${
+              isDark ? 'border-slate-700 from-violet-600 to-indigo-600' : 'border-slate-200 from-violet-500 to-indigo-500'
+            }`}>
+              {userData?.avatar ? (
+                <img src={userData.avatar} alt="Profile" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+              ) : (
+                <User size={18} className="text-white" />
+              )}
+            </div>
+            <div className="flex-1 min-w-0 text-left">
+              <p className={`text-sm font-semibold truncate ${isDark ? 'text-slate-200' : 'text-slate-700'}`} style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+                {userData?.username || 'User'}
+              </p>
+              <p className={`text-[11px] truncate ${isDark ? 'text-slate-400' : 'text-slate-500'}`} style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+                {userData?.email || ''}
+              </p>
+              <p className={`text-[11px] truncate ${isDark ? 'text-slate-500' : 'text-slate-400'}`} style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+                {userData?.role || ''}
+              </p>
+            </div>
+            <ChevronsUpDown size={14} className={`shrink-0 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
+          </button>
+        )}
+      </div>
+
+      {/* User popup — fixed to viewport right of sidebar */}
+      {showUserMenu && menuPos && (
+        <div
+          ref={userMenuPopupRef}
+          className={`fixed z-[200] w-64 rounded-xl border overflow-hidden ${
+            isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'
+          }`}
+          style={{
+            bottom: menuPos.bottom,
+            left: menuPos.left,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.22)',
+          }}
+        >
+          {/* User info header */}
+          <div className={`flex items-center gap-3 px-4 py-3 border-b ${isDark ? 'border-slate-700' : 'border-slate-100'}`}>
+            <div className={`w-9 h-9 rounded-full overflow-hidden flex items-center justify-center shrink-0 border bg-linear-to-br ${
+              isDark ? 'border-slate-600 from-violet-600 to-indigo-600' : 'border-slate-200 from-violet-500 to-indigo-500'
+            }`}>
+              {userData?.avatar ? (
+                <img src={userData.avatar} alt="Profile" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+              ) : (
+                <User size={14} className="text-white" />
+              )}
+            </div>
+            <div className="min-w-0">
+              <p className={`text-xs font-semibold truncate ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+                {userData?.username || 'User'}
+              </p>
+              <p className={`text-[11px] truncate mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`} style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+                {userData?.email || ''}
+              </p>
+            </div>
+          </div>
+
+          {/* Menu items */}
+          <div className="p-1.5 space-y-0.5">
+            <button
+              onClick={() => { setShowUserMenu(false); router.push('/profile'); }}
+              className={`w-full cursor-pointer flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-colors ${
+                isDark ? 'text-slate-300 hover:bg-slate-700 hover:text-white' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+              }`}
+              style={{ fontSize: '0.78rem', fontFamily: "'DM Sans', system-ui, sans-serif" }}
+            >
+              <UserCircle size={15} />
+              {t('topbar.profile')}
+            </button>
+          </div>
+
+          <div className={`px-1.5 pb-1.5 border-t ${isDark ? 'border-slate-700' : 'border-slate-100'}`}>
+            <button
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              className={`w-full cursor-pointer flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-colors mt-1.5 ${
+                isDark ? 'text-red-400 hover:bg-red-500/10 hover:text-red-300' : 'text-red-500 hover:bg-red-50 hover:text-red-600'
+              } ${isLoggingOut ? 'opacity-50 cursor-not-allowed' : ''}`}
+              style={{ fontSize: '0.78rem', fontFamily: "'DM Sans', system-ui, sans-serif" }}
+            >
+              <LogOut size={15} />
+              {isLoggingOut ? t('topbar.loggingOut') : t('topbar.logout')}
+            </button>
+          </div>
+        </div>
+      )}
     </aside>
   );
 };

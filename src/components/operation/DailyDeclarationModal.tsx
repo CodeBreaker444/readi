@@ -105,7 +105,7 @@ export function DailyDeclarationModal({ open, onClose, onSuccess, isDark }: Prop
           <button
             onClick={handleSubmit}
             disabled={submitting || !allChecked}
-            className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${btnPrimary}`}
+            className={`flex-1 cursor-pointer rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${btnPrimary}`}
           >
             {submitting ? t("operations.declaration.saving", "Saving…") : t("operations.declaration.submit", "Submit Declaration")}
           </button>

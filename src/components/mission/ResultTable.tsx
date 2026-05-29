@@ -96,13 +96,13 @@ export default function ResultTable({ data, onDelete, onEdit, isDark }: ResultTa
                 <td className="px-6 py-4 text-right">
                   <div className="flex justify-end gap-2">
                     <button
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm font-medium"
+                      className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm font-medium"
                       onClick={handleSaveEdit}
                     >
                       <Check size={16} /> Save
                     </button>
                     <button
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors text-sm font-medium"
+                      className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors text-sm font-medium"
                       onClick={handleCancelEdit}
                     >
                       <X size={16} /> Cancel
@@ -128,13 +128,13 @@ export default function ResultTable({ data, onDelete, onEdit, isDark }: ResultTa
                 <td className="px-6 py-4 text-right">
                   <div className="flex justify-end gap-2">
                     <button
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium"
+                      className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium"
                       onClick={() => handleEditClick(result)}
                     >
                       <Pencil size={16} /> Edit
                     </button>
                     <button
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium"
+                      className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium"
                       onClick={() => {
                           onDelete(result.id);
                       }}

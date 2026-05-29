@@ -1,0 +1,29 @@
+meta {
+  name: Mission Flight Log Push
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{dcc_base_url}}/dcc/missions/{{mission_id}}/logging
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "uri": "https://app.flytbase.com/v2/flight/report/download/gutma?flightIds=fb-flight-uuid-here"
+  }
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Sent by PMVD to DCC with the GUTMA flight log URI after the mission ends.
+}

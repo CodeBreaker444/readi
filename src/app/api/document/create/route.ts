@@ -26,6 +26,7 @@ const DocumentCreateSchema = z.object({
   tags:            z.string().max(1000).optional().nullable(),
   version_label:   z.string().max(20).optional().nullable(),
   change_log:      z.string().max(500).optional().nullable(),
+  fk_component_id: z.number().int().positive().optional().nullable(),
 });
 
 export async function POST(req: NextRequest) {
@@ -40,16 +41,17 @@ export async function POST(req: NextRequest) {
       return zodError(E.VL001, parsed.error);
     }
 
-    const { s3_key, file_name, file_size, owner_role, description, keywords, tags, version_label, change_log, ...rest } = parsed.data;
+    const { s3_key, file_name, file_size, owner_role, description, keywords, tags, version_label, change_log, fk_component_id, ...rest } = parsed.data;
 
     const docInput = {
       ...rest,
-      owner_role:    owner_role    ?? undefined,
-      description:   description   ?? undefined,
-      keywords:      keywords      ?? undefined,
-      tags:          tags          ?? undefined,
-      version_label: version_label ?? undefined,
-      change_log:    change_log    ?? undefined,
+      owner_role:       owner_role       ?? undefined,
+      description:      description      ?? undefined,
+      keywords:         keywords         ?? undefined,
+      tags:             tags             ?? undefined,
+      version_label:    version_label    ?? undefined,
+      change_log:       change_log       ?? undefined,
+      fk_component_id:  fk_component_id  ?? null,
     };
 
     const result = await createDocument(docInput, s3_key, file_name, file_size, ownerId);

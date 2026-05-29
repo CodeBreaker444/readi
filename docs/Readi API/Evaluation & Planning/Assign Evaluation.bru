@@ -1,0 +1,30 @@
+meta {
+  name: Assign Evaluation
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{baseUrl}}/api/evaluation/:id/assignment
+  body: json
+  auth: inherit
+}
+
+params:path {
+  id: 1
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "assigned_user_id": 3,
+    "role": "LEAD"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

@@ -20,6 +20,8 @@ export interface NewTicketForm {
   priority: TicketPriority;
   assigned_to: number;
   note: string;
+  latitude: string;
+  longitude: string;
 }
 
 export interface ReportForm {
@@ -36,6 +38,8 @@ export const defaultNewTicket: NewTicketForm = {
   priority: 'MEDIUM',
   assigned_to: 0,
   note: '',
+  latitude: '',
+  longitude: '',
 };
 
 export const defaultReport: ReportForm = {
@@ -186,6 +190,8 @@ export function useMaintenanceLogbook() {
       const res = await axios.post(`/api/system/maintenance/tickets/create`, {
         ...newTicket,
         opened_by: 'web',
+        latitude:  newTicket.latitude  ? Number(newTicket.latitude)  : null,
+        longitude: newTicket.longitude ? Number(newTicket.longitude) : null,
       });
       toast.success('Ticket created successfully');
       closeModal('newTicket');

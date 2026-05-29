@@ -58,19 +58,21 @@ function ProgressBar({ percent, isDark, warn }: { percent: number; isDark: boole
 
 interface Props {
   isDark: boolean;
+  initialData?: UsageData | null;
 }
 
-export default function AiUsageWidget({ isDark }: Props) {
-  const [data, setData] = useState<UsageData | null>(null);
-  const [loading, setLoading] = useState(true);
+export default function AiUsageWidget({ isDark, initialData }: Props) {
+  const [data, setData] = useState<UsageData | null>(initialData ?? null);
+  const [loading, setLoading] = useState(!initialData);
 
   useEffect(() => {
+    if (initialData) return;
     fetch('/api/agent/usage')
       .then((r) => r.json())
       .then((d) => setData(d))
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, []);
+  }, [initialData]);
 
   const card = `rounded-xl border p-4 ${isDark ? 'bg-slate-800/60 border-slate-700/60' : 'bg-white border-gray-100'}`;
   const label = `text-xs font-medium ${isDark ? 'text-slate-400' : 'text-gray-500'}`;
@@ -207,7 +209,7 @@ export default function AiUsageWidget({ isDark }: Props) {
             return (
               <div key={email}>
                 <div className="flex items-center justify-between mb-0.5">
-                  <span className={`text-[11px] truncate max-w-[160px] ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+                  <span className={`text-[11px] truncate max-w-40 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
                     {email}
                   </span>
                   <span className={`text-[11px] font-medium ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>

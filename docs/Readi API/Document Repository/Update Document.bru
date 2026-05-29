@@ -1,0 +1,28 @@
+meta {
+  name: Update Document
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/document/update
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "document_id": 42,
+    "title": "Updated Safety Manual",
+    "status": "IN_REVIEW",
+    "description": "Updated description"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

@@ -1,0 +1,106 @@
+meta {
+  name: External: Create Flight Request (API Key Auth)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/missions
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+  X-API-Key: {{apiKey}}
+}
+
+body:json {
+  {
+    "missionId": "EXT-MISSION-001",
+    "type": "SURVEY",
+    "target": "Bridge inspection",
+    "localization": {
+      "type": "highway",
+      "highway": "NH-44",
+      "carriageway": "North",
+      "kmStart": 120.5,
+      "kmEnd": 121.0
+    },
+    "waypoint": {
+      "type": "Point",
+      "coordinates": [77.5946, 12.9716]
+    },
+    "startDateTime": "2026-04-15T09:00:00Z",
+    "priority": "HIGH",
+    "notes": "Urgent inspection required",
+    "operator": "Field Team Alpha"
+  }
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  External API to create a flight/mission request. Authenticates via X-API-Key header (not session cookie). Get API key from Settings > API Keys.
+}
+
+example {
+  name: Success
+  
+  request: {
+    url: {{baseUrl}}/api/missions
+    method: POST
+    mode: json
+    headers: {
+      Content-Type: application/json
+      X-API-Key: {{apiKey}}
+    }
+  
+    body:json: {
+      {
+        "missionId": "EXT-MISSION-001",
+        "type": "SURVEY",
+        "target": "Bridge inspection",
+        "localization": {
+          "type": "highway",
+          "highway": "NH-44",
+          "carriageway": "North",
+          "kmStart": 120.5,
+          "kmEnd": 121.0
+        },
+        "waypoint": {
+          "type": "Point",
+          "coordinates": [77.5946, 12.9716]
+        },
+        "startDateTime": "2026-04-15T09:00:00Z",
+        "priority": "HIGH",
+        "notes": "Urgent inspection required",
+        "operator": "Field Team Alpha"
+      }
+    }
+  }
+  
+  response: {
+    status: {
+      code: 200
+      text: OK
+    }
+  
+    body: {
+      type: text
+      content: '''
+        {
+          "code": 1,
+          "status": "SUCCESS",
+          "message": "Mission request received",
+          "missionId": "EXT-MISSION-001",
+          "dcc_status": "NEW",
+          "timestamp": 1712345678,
+          "dataRows": 1
+        }
+      '''
+    }
+  }
+}

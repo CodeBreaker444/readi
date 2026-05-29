@@ -1,0 +1,27 @@
+meta {
+  name: Update Audit Plan
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/api/compliance/audit-plan/update
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "plan_id": 1,
+    "status": "IN_PROGRESS",
+    "actual_date": "2026-06-03"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

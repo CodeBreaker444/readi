@@ -1,0 +1,26 @@
+meta {
+  name: Add Mission Communication
+  type: http
+  seq: 22
+}
+
+post {
+  url: {{baseUrl}}/api/evaluation/mission/communication/add
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "mission_id": 1,
+    "message": "Mission approved for execution"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

@@ -1,6 +1,6 @@
 'use client';
 
-import { GutmaPreviewPanel } from '@/components/flytbase/GutmaPreviewPanel';
+import { GutmaPreviewPanel } from '@/components/control-center/GutmaPreviewPanel';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTheme } from '@/components/useTheme';
@@ -129,7 +129,7 @@ export function ComponentFlightLogsModal({ open, onClose, componentId, component
               {selected.mission_code ?? `Mission #${selected.mission_id}`}
             </p>
             <p className={`text-sm ${textSecondary}`}>
-              Manual upload — no FlytBase preview available.
+              Manual upload — no Control Center preview available.
             </p>
             <div className={`flex items-center justify-center gap-6 pt-2 text-sm ${textSecondary}`}>
               {selected.flight_duration != null && (
@@ -241,7 +241,7 @@ export function ComponentFlightLogsModal({ open, onClose, componentId, component
                           : 'bg-slate-100 text-slate-600'
                       }`}
                   >
-                    {log.log_source === 'flytbase' ? 'FlytBase' : 'Manual'}
+                    {log.log_source === 'flytbase' ? 'Control Center' : 'Manual'}
                   </span>
                 </div>
               </button>

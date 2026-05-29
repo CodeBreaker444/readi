@@ -1,0 +1,49 @@
+meta {
+  name: Create Evaluation Request
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/evaluation/new-req/create
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "data": {
+      "client_id": 1,
+      "fk_luc_procedure_id": 2,
+      "evaluation_status": "NEW",
+      "evaluation_request_date": "2026-04-10",
+      "evaluation_year": 2026,
+      "evaluation_description": "Annual site survey evaluation for Client A",
+      "evaluation_offer": "OFFER-2026-001",
+      "evaluation_sale_manager": "Jane Smith",
+      "areas": [
+        {
+          "type": "polygon",
+          "area_sqm": 50000,
+          "center_lat": 12.9716,
+          "center_lng": 77.5946,
+          "geojson": { "type": "Polygon", "coordinates": [[[]]] }
+        }
+      ]
+    }
+  }
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Create new evaluation request. Requires `view_planning_advanced`.
+  
+  evaluation_status: NEW | IN_PROGRESS | COMPLETED | SUSPENDED | DONE
+}

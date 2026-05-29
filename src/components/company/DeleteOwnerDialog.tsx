@@ -32,12 +32,12 @@ export default function DeleteOwnerDialog({ open, onClose, onSuccess, owner }: D
       const data = await res.json();
       if (data.code === 1) {
         onSuccess();
-        toast.success('Company deleted successfully');
+        toast.success('Company deactivated successfully');
         onClose();
       }
     } catch (err) {
       console.error('Delete failed', err);
-      toast.error('Failed to delete company');
+      toast.error('Failed to deactivate company');
     } finally {
       setLoading(false);
     }
@@ -47,13 +47,13 @@ export default function DeleteOwnerDialog({ open, onClose, onSuccess, owner }: D
     <AlertDialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+          <AlertDialogTitle>Deactivate company?</AlertDialogTitle>
           <AlertDialogDescription>
-            This will permanently delete the comapany{' '}
+            This will deactivate{' '}
             <span className="font-semibold text-foreground">
               {owner?.owner_name} ({owner?.owner_code})
             </span>
-            . This action cannot be undone.
+            {' '}and disable all users belonging to this company. The company record will be archived and can be reviewed by a system administrator.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -63,7 +63,7 @@ export default function DeleteOwnerDialog({ open, onClose, onSuccess, owner }: D
             onClick={handleDelete}
             disabled={loading}
           >
-            {loading ? 'Deleting...' : 'Delete'}
+            {loading ? 'Deactivating...' : 'Deactivate'}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

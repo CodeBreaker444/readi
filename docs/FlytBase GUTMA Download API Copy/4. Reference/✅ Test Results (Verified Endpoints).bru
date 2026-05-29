@@ -1,0 +1,29 @@
+meta {
+  name: ✅ Test Results (Verified Endpoints)
+  type: http
+  seq: 1
+}
+
+get {
+  url: http://
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  All endpoints tested successfully on March 13, 2026:
+  
+  | Endpoint | Status | Notes |
+  |---|---|---|
+  | GET /device/bindings | ✅ 200 | Returns paginated list of drone+dock bindings |
+  | GET /v2/flight | ✅ 200 | Returns flight logs with drone_id filter |
+  | GET /v2/flight/report/download/gutma (single) | ✅ 200 | Returns JSON (GUTMA format) |
+  | GET /v2/flight/report/download/gutma (batch) | ✅ 200 | Returns ZIP with .gutma files |
+  
+  Test org: YOUR_ORG_ID
+  Test drone: YOUR_DRONE_NAME (YOUR_DRONE_ID)
+}

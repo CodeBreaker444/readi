@@ -5,13 +5,13 @@ import { useTranslation } from "react-i18next";
 import { useTimezone } from "@/components/TimezoneProvider";
 import { cn, formatDateTimeInTz } from "@/lib/utils";
 import {
-    CheckCircle2,
-    Clock,
-    Download,
-    FileUp,
-    Loader2,
-    RefreshCw,
-    Zap
+  CheckCircle2,
+  Clock,
+  Download,
+  FileUp,
+  Loader2,
+  RefreshCw,
+  Zap
 } from "lucide-react";
 import { Skeleton } from "../ui/skeleton";
 
@@ -162,7 +162,7 @@ export function FlightLogsTab({
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
           className={cn(
-            "w-full flex items-center justify-center gap-2 rounded-lg border-2 border-dashed py-5 text-sm font-medium transition-colors",
+            "w-full flex cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed py-5 text-sm font-medium transition-colors",
             uploading
               ? isDark ? "border-slate-700 text-slate-600 cursor-not-allowed" : "border-slate-200 text-slate-400 cursor-not-allowed"
               : isDark
@@ -196,7 +196,7 @@ export function FlightLogsTab({
                 type="button"
                 onClick={() => onWindowChange(w.minutes)}
                 className={cn(
-                  "px-3 py-1.5 text-xs font-medium transition-colors",
+                  "px-3 py-1.5 cursor-pointer text-xs font-medium transition-colors",
                   fbWindow === w.minutes
                     ? isDark ? "bg-violet-500/20 text-violet-300" : "bg-violet-50 text-violet-700"
                     : isDark ? "text-slate-400 hover:bg-slate-800" : "text-slate-500 hover:bg-slate-50"
@@ -244,7 +244,7 @@ export function FlightLogsTab({
                     type="button"
                     onClick={() => onSelectFlight(f.flight_id)}
                     className={cn(
-                      "w-full text-left px-4 py-3 transition-colors",
+                      "w-full text-left cursor-pointer px-4 py-3 transition-colors",
                       isSelected
                         ? isDark
                           ? "bg-violet-950/40 border-l-2 border-violet-500"

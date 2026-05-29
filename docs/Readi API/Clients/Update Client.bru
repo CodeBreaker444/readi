@@ -1,0 +1,27 @@
+meta {
+  name: Update Client
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/client/update
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "client_id": 1,
+    "client_name": "Acme Corp Updated",
+    "client_phone": "+91-22-99999999"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

@@ -1,39 +1,40 @@
 'use client';
 
 import { Operation } from '@/app/operations/table/page';
+import { SystemCell } from '@/components/tables/SystemCell';
 import { MaintenanceCycleModal } from '@/components/operation/MaintenanceCycleModal';
 import { MissionLucProcedureModal } from '@/components/operation/MissionLucProcedureModal';
 import { ReportIssueModal } from '@/components/operation/ReportIssueModal';
+import { useTimezone } from '@/components/TimezoneProvider';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
 } from '@/components/ui/sheet';
-import { useTimezone } from '@/components/TimezoneProvider';
 import { cn, formatDateTimeInTz } from '@/lib/utils';
 import {
-  Activity,
-  AlertTriangle,
-  Ban,
-  Briefcase,
-  CheckCircle2,
-  ClipboardList,
-  Clock,
-  FileText,
-  Layers,
-  MapPin,
-  Navigation,
-  Pencil,
-  Tag,
-  User,
-  Users,
-  Wrench,
-  XCircle,
+    Activity,
+    AlertTriangle,
+    Ban,
+    Briefcase,
+    CheckCircle2,
+    ClipboardList,
+    Clock,
+    FileText,
+    Layers,
+    MapPin,
+    Navigation,
+    Pencil,
+    Tag,
+    User,
+    Users,
+    Wrench,
+    XCircle,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 const STATUS_BADGE: Record<string, { className: string }> = {
@@ -105,6 +106,22 @@ export function OperationDetailSheet({
   const [maintenanceOpen, setMaintenanceOpen] = useState(false);
   const [reportIssueOpen, setReportIssueOpen] = useState(false);
   const [procedureOperation, setProcedureOperation] = useState<Operation | null>(null);
+  const [primaryComponent, setPrimaryComponent] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!operation?.fk_tool_id) { setPrimaryComponent(null); return; }
+    fetch('/api/system/component/list', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tool_id: operation.fk_tool_id }),
+    })
+      .then(r => r.json())
+      .then(data => {
+        const primary = (data.data ?? []).find((c: any) => c.is_primary);
+        setPrimaryComponent(primary ? (primary.component_code || primary.component_name || null) : null);
+      })
+      .catch(() => setPrimaryComponent(null));
+  }, [operation?.fk_tool_id]);
 
   const { timezone } = useTimezone();
   const isCompleted = operation?.status_name === 'COMPLETED';
@@ -278,11 +295,25 @@ export function OperationDetailSheet({
                       label={t('operations.table.detail.pilotInCommand')}
                       value={operation.pilot_name}
                     />
+                    {operation.visual_observer_ids && operation.visual_observer_ids.length > 0 && (
+                      <DetailRow
+                        icon={<Users className="h-3.5 w-3.5" />}
+                        label={t('operations.table.detail.visualObservers')}
+                        value={operation.visual_observer_ids.map(o => o.name).join(', ')}
+                      />
+                    )}
                     <DetailRow
                       icon={<Wrench className="h-3.5 w-3.5" />}
                       label={t('operations.table.detail.droneSystem')}
-                      value={operation.tool_code}
+                      value={<SystemCell code={operation.tool_code} name={operation.tool_name} />}
                     />
+                    {primaryComponent && (
+                      <DetailRow
+                        icon={<Layers className="h-3.5 w-3.5" />}
+                        label={t('operations.table.detail.primaryComponent')}
+                        value={primaryComponent}
+                      />
+                    )}
                     {operation.location && (
                       <DetailRow
                         icon={<MapPin className="h-3.5 w-3.5" />}

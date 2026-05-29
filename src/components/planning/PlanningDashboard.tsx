@@ -106,8 +106,9 @@ export default function PlanningDashboard({ isDark }: PlanningProps) {
         onDelete: triggerDeleteConfirm,
         onOpen: handleOpen,
         deleting: false,
+        t,
       }),
-    [isDark, triggerDeleteConfirm, handleOpen]
+    [isDark, triggerDeleteConfirm, handleOpen, t]
   );
 
   const bg = isDark ? "bg-slate-900" : "bg-slate-50";

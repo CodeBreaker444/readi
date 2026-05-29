@@ -1,0 +1,23 @@
+meta {
+  name: Get Dashboard Data
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/dashboard/:id
+  body: none
+  auth: inherit
+}
+
+params:path {
+  id: main
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Get dashboard data by ID. Requires `view_dashboard` or `view_pilot_dashboard`.
+}

@@ -1,0 +1,31 @@
+meta {
+  name: Create Checklist
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/api/organization/checklist
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "checklist_name": "Pre-Flight Safety Checklist",
+    "checklist_type": "PRE_FLIGHT",
+    "items": [
+      { "item_name": "Battery level check", "is_required": true },
+      { "item_name": "GPS signal verification", "is_required": true },
+      { "item_name": "Weather assessment", "is_required": true }
+    ]
+  }
+}
+
+settings {
+  encodeUrl: true
+}

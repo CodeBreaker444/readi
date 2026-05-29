@@ -1,0 +1,30 @@
+meta {
+  name: Add Component
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/api/system/component/add
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "component_name": "LiPo Battery Pack",
+    "component_type_id": 2,
+    "serial_number": "BAT-001",
+    "system_id": 1,
+    "acquisition_date": "2025-01-15",
+    "max_cycles": 500
+  }
+}
+
+settings {
+  encodeUrl: true
+}

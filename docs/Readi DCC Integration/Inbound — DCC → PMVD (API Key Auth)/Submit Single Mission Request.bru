@@ -1,0 +1,50 @@
+meta {
+  name: Submit Single Mission Request
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/api/missions
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+  X-API-KEY: {{api_key}}
+}
+
+body:json {
+  {
+    "missionId": "MISSION-001",
+    "type": "INSPECTION",
+    "target": "Bridge A - Sector 3",
+    "localization": {
+      "type": "highway_segment",
+      "highway": "A1",
+      "carriageway": "North",
+      "kmStart": 12.5,
+      "kmEnd": 13.0
+    },
+    "waypoint": {
+      "type": "Point",
+      "coordinates": [9.18951, 45.46427, 120.0]
+    },
+    "startDateTime": "2025-06-01T08:00:00Z",
+    "priority": "HIGH",
+    "notes": "Inspect left deck surface after rainfall",
+    "operator": "Mario Rossi"
+  }
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  DCC sends a single flight mission to PMVD.
+  
+  waypoint.coordinates = [longitude, latitude, altitude_meters]
+  Example: [9.18951, 45.46427, 120.0] → lon=9.18951, lat=45.46427, alt=120m
+}

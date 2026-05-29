@@ -1,0 +1,31 @@
+meta {
+  name: Mission Termination (End)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{dcc_base_url}}/dcc/missions/{{mission_id}}/termination
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "result": 1,
+    "note": "Mission completed successfully. All waypoints covered."
+  }
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Sent by PMVD to DCC when mission ends.
+  result: 1 = success, 0 = failure
+}

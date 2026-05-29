@@ -9,7 +9,8 @@ export type Role =
   | 'RM'
   | 'TM'
   | 'DC'
-  | 'SLA';
+  | 'SLA'
+  | 'CLIENT';
 
 export type Permission =
   | 'view_dashboard'
@@ -28,7 +29,9 @@ export type Permission =
   | 'manage_users'
   | 'add_company'
   | 'view_client'
-  | 'view_erp';
+  | 'view_erp'
+  | 'view_drone_atc'
+  | 'view_client_portal';
 
 type WildcardPermission = '*';
 export type RolePermission = Permission | WildcardPermission;
@@ -39,7 +42,7 @@ export const ROLE_PERMISSIONS: Record<Role, RolePermission[]> = {
     'view_dashboard', 'view_pilot_dashboard', 'view_operations', 'view_compliance',
     'view_training', 'view_safety_mgmt', 'view_config', 'view_repository', 'view_logs',
     'view_planning', 'view_planning_advanced', 'view_logbooks', 'view_notifications',
-    'manage_users', 'view_client', 'add_company', 'view_erp'
+    'manage_users', 'view_client', 'add_company', 'view_erp', 'view_drone_atc'
   ],
   PIC: [
     'view_pilot_dashboard',
@@ -47,8 +50,9 @@ export const ROLE_PERMISSIONS: Record<Role, RolePermission[]> = {
     'view_operations',
     'view_notifications',
     'view_repository',
+    'view_drone_atc',
   ],
-  OPM: ['view_dashboard', 'view_operations', 'view_logs', 'view_repository', 'view_planning', 'view_planning_advanced', 'view_logbooks', 'view_safety_mgmt', 'view_config', 'view_notifications', 'view_client', 'manage_users', 'view_erp'],
+  OPM: ['view_dashboard', 'view_operations', 'view_logs', 'view_repository', 'view_planning', 'view_planning_advanced', 'view_logbooks', 'view_safety_mgmt', 'view_config', 'view_notifications', 'view_client', 'manage_users', 'view_erp', 'view_drone_atc'],
   SM:  ['view_dashboard', 'view_safety_mgmt', 'view_repository', 'view_notifications', 'view_config', 'view_erp'],
   AM:  ['view_dashboard', 'view_logs', 'view_repository', 'view_logbooks', 'view_config', 'view_notifications', 'manage_users', 'view_erp'],
   CMM: ['view_dashboard', 'view_compliance', 'view_repository', 'view_notifications', 'view_erp'],
@@ -56,6 +60,7 @@ export const ROLE_PERMISSIONS: Record<Role, RolePermission[]> = {
   TM:  ['view_dashboard', 'view_training', 'view_repository', 'view_notifications', 'view_erp'],
   DC:  ['view_repository', 'view_config', 'view_notifications', 'view_erp'],
   SLA: ['view_dashboard', 'view_logs', 'view_config', 'view_notifications', 'view_erp'],
+  CLIENT: ['view_client_portal'],
 };
 
 export function roleHasPermission(role: Role | null | undefined, permission: Permission): boolean {
@@ -84,6 +89,7 @@ export const ROUTE_PERMISSIONS: Record<string, RoutePermissionEntry> = {
   '/operations/flight-requests': 'view_operations',
   '/logbooks/mission-planning-logbook': 'view_logbooks',
   '/logbooks/operation-logbook': 'view_logbooks',
+  '/logbooks/battery-logbook': 'view_logbooks',
   '/safety/spi-kpi-definitions': 'view_safety_mgmt',
   '/emergency-contact': 'view_erp',
   '/compliance/general-audit-plan': 'view_compliance',
@@ -108,10 +114,17 @@ export const ROUTE_PERMISSIONS: Record<string, RoutePermissionEntry> = {
   '/team/personnel': 'manage_users',
   '/team/crew-shift': 'manage_users',
   '/team/client': 'view_client',
+  '/client/dashboard': 'view_client_portal',
+  '/client/missions': 'view_client_portal',
+  '/client/request-flight': 'view_client_portal',
+  '/client/analytics': 'view_client_portal',
+  '/client/profile': 'view_client_portal',
   '/company': 'add_company',
+  '/company/new': 'add_company',
   '/audit-logs': 'view_logs',
   '/training/courses': 'view_training',
   '/training/calendar': 'view_training',
+  '/drone-atc': 'view_drone_atc',
 };
 
 export type ApiPermissionEntry = Permission | Permission[] | null;
@@ -145,9 +158,13 @@ export const API_ROUTE_PERMISSIONS: Array<{ prefix: string; permission: ApiPermi
   { prefix: '/api/team/user', permission: 'manage_users' },
   { prefix: '/api/client/list', permission: ['view_client', 'view_config', 'view_planning'] },
   { prefix: '/api/client', permission: 'view_client' },
+  { prefix: '/api/client-portal', permission: 'view_client_portal' },
   { prefix: '/api/audit-logs', permission: 'view_logs' },
   { prefix: '/api/training', permission: 'view_training' },
   { prefix: '/api/integrations/flytbase', permission: null },
+  { prefix: '/api/drone-atc/user-info', permission: null },
+  { prefix: '/api/drone-atc/users', permission: null },
+  { prefix: '/api/drone-atc', permission: 'view_drone_atc' },
 ];
 
 export function getApiRoutePermission(pathname: string): ApiPermissionEntry | undefined {
@@ -162,6 +179,10 @@ export function getApiRoutePermission(pathname: string): ApiPermissionEntry | un
 export function canAccessRoute(role: Role | null | undefined, pathname: string): boolean {
   if (!role) return false;
   if (role === 'SUPERADMIN' || role === 'ADMIN') return true;
+
+  if (role === 'CLIENT') {
+    return pathname.startsWith('/client/');
+  }
 
   const required = ROUTE_PERMISSIONS[pathname];
   if (required === undefined) return true;
@@ -185,6 +206,7 @@ export function getAccessibleRoutes(role: Role | null | undefined): string[] {
 export function getDefaultRoute(role: Role | null | undefined): string {
   if (!role) return '/auth/login';
 
+  if (role === 'CLIENT') return '/client/dashboard';
   if (roleHasPermission(role, 'view_dashboard')) return '/dashboard';
   if (roleHasPermission(role, 'view_pilot_dashboard')) return '/dashboard';
   if (roleHasPermission(role, 'view_operations')) return '/operations/table';

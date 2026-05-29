@@ -1,0 +1,19 @@
+meta {
+  name: Get Flight Logs (Board)
+  type: http
+  seq: 11
+}
+
+get {
+  url: {{baseUrl}}/api/operation/board/flight-logs
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Get flight logs from the operations board.
+}

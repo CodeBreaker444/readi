@@ -1,0 +1,15 @@
+meta {
+  name: Get Import Options
+  type: http
+  seq: 21
+}
+
+get {
+  url: {{baseUrl}}/api/operation/import/options
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

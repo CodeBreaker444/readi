@@ -17,6 +17,7 @@ import {
 } from "@tanstack/react-table";
 import { SlidersHorizontal } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../useTheme";
 import { TablePagination } from "../tables/Pagination";
 import ExportButtons from "./ExportButtons";
@@ -166,6 +167,7 @@ function effectiveStatus(drone: MaintenanceDrone): MaintenanceStatus {
 
 export function SummaryBar({ data, threshold }: { data: MaintenanceDrone[]; threshold: number }) {
   const { isDark } = useTheme();
+  const { t } = useTranslation();
   const counts = useMemo(() => {
     let ok = 0, alert = 0, due = 0, inMaintenance = 0;
     for (const d of data) {
@@ -178,7 +180,11 @@ export function SummaryBar({ data, threshold }: { data: MaintenanceDrone[]; thre
     return { total: data.length, ok, alert, due, inMaintenance };
   }, [data]);
 
-  const thresholdLabel = threshold < 70 ? "Sensitive" : threshold < 85 ? "Normal" : "Lenient";
+  const thresholdLabel = threshold < 70
+    ? t('systems.maintenanceDashboard.threshold.sensitive')
+    : threshold < 85
+    ? t('systems.maintenanceDashboard.threshold.normal')
+    : t('systems.maintenanceDashboard.threshold.lenient');
   const thresholdColor = threshold < 70 ? "text-emerald-500" : threshold < 85 ? "text-amber-500" : "text-rose-500";
 
   const card = isDark ? "bg-slate-800 border-slate-700" : "bg-white border-slate-200";
@@ -187,7 +193,7 @@ export function SummaryBar({ data, threshold }: { data: MaintenanceDrone[]; thre
   return (
     <div className="grid grid-cols-2 sm:grid-cols-6 gap-3 mb-4">
       <div className={`rounded-xl border-2 px-4 py-3 flex flex-col gap-1 ${isDark ? "bg-slate-800 border-violet-700" : "bg-white border-violet-200"}`}>
-        <p className={`text-xs ${label}`}>Alert Threshold</p>
+        <p className={`text-xs ${label}`}>{t('systems.maintenanceDashboard.summary.alertThreshold')}</p>
         <div className="flex items-baseline gap-1.5">
           <p className={`text-2xl font-bold tabular-nums ${thresholdColor}`}>{threshold}%</p>
           <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full border ${
@@ -204,23 +210,23 @@ export function SummaryBar({ data, threshold }: { data: MaintenanceDrone[]; thre
       </div>
 
       <div className={`rounded-xl border px-4 py-3 ${card}`}>
-        <p className={`text-xs mb-0.5 ${label}`}>Total Systems</p>
+        <p className={`text-xs mb-0.5 ${label}`}>{t('systems.maintenanceDashboard.summary.totalSystems')}</p>
         <p className={`text-2xl font-bold tabular-nums ${isDark ? "text-slate-200" : "text-slate-700"}`}>{counts.total}</p>
       </div>
       <div className={`rounded-xl border px-4 py-3 ${card}`}>
-        <p className={`text-xs mb-0.5 ${label}`}>OK</p>
+        <p className={`text-xs mb-0.5 ${label}`}>{t('systems.maintenanceDashboard.summary.ok')}</p>
         <p className="text-2xl font-bold tabular-nums text-emerald-500">{counts.ok}</p>
       </div>
       <div className={`rounded-xl border px-4 py-3 ${card}`}>
-        <p className={`text-xs mb-0.5 ${label}`}>Alert</p>
+        <p className={`text-xs mb-0.5 ${label}`}>{t('systems.maintenanceDashboard.summary.alert')}</p>
         <p className="text-2xl font-bold tabular-nums text-amber-500">{counts.alert}</p>
       </div>
       <div className={`rounded-xl border px-4 py-3 ${card}`}>
-        <p className={`text-xs mb-0.5 ${label}`}>Due</p>
+        <p className={`text-xs mb-0.5 ${label}`}>{t('systems.maintenanceDashboard.summary.due')}</p>
         <p className="text-2xl font-bold tabular-nums text-rose-500">{counts.due}</p>
       </div>
       <div className={`rounded-xl border px-4 py-3 ${card}`}>
-        <p className={`text-xs mb-0.5 ${label}`}>In Maintenance</p>
+        <p className={`text-xs mb-0.5 ${label}`}>{t('systems.maintenanceDashboard.summary.inMaintenance')}</p>
         <p className="text-2xl font-bold tabular-nums text-blue-500">{counts.inMaintenance}</p>
       </div>
     </div>
@@ -246,14 +252,15 @@ function FilterBar({
   onApplyThreshold: (v: number) => void;
 }) {
   const { isDark } = useTheme();
+  const { t } = useTranslation();
   const [localInput, setLocalInput] = useState(String(threshold));
 
   const options: { value: FilterStatus; label: string }[] = [
-    { value: "ALL",            label: "All" },
-    { value: "OK",             label: "OK" },
-    { value: "ALERT",          label: "Alert" },
-    { value: "DUE",            label: "Due" },
-    { value: "IN_MAINTENANCE", label: "In Maintenance" },
+    { value: "ALL",            label: t('systems.maintenanceDashboard.filter.all') },
+    { value: "OK",             label: t('systems.maintenanceDashboard.filter.ok') },
+    { value: "ALERT",          label: t('systems.maintenanceDashboard.filter.alert') },
+    { value: "DUE",            label: t('systems.maintenanceDashboard.filter.due') },
+    { value: "IN_MAINTENANCE", label: t('systems.maintenanceDashboard.filter.inMaintenance') },
   ];
 
   const commit = (raw: string) => {
@@ -302,7 +309,7 @@ function FilterBar({
         </svg>
         <input
           type="text"
-          placeholder="Search by code or serial…"
+          placeholder={t('systems.maintenanceDashboard.filter.searchPlaceholder')}
           value={search}
           onChange={(e) => onSearch(e.target.value)}
           className={`w-full pl-9 pr-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none ${
@@ -313,7 +320,7 @@ function FilterBar({
       <div className={`flex items-center gap-3 px-4 py-2 rounded-xl border ${isDark ? "border-slate-700 bg-slate-800" : "border-slate-200 bg-slate-50"}`}>
         <div className="flex items-center gap-1.5">
           <SlidersHorizontal className={`w-3.5 h-3.5 ${isDark ? "text-slate-400" : "text-slate-500"}`} />
-          <span className={`text-xs font-medium ${isDark ? "text-slate-400" : "text-slate-500"}`}>Alert threshold</span>
+          <span className={`text-xs font-medium ${isDark ? "text-slate-400" : "text-slate-500"}`}>{t('systems.maintenanceDashboard.threshold.label')}</span>
         </div>
 
         <input
@@ -347,7 +354,11 @@ function FilterBar({
         </div>
 
         <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${thresholdColor}`}>
-          {threshold < 70 ? "Sensitive" : threshold < 85 ? "Normal" : "Lenient"}
+          {threshold < 70
+            ? t('systems.maintenanceDashboard.threshold.sensitive')
+            : threshold < 85
+            ? t('systems.maintenanceDashboard.threshold.normal')
+            : t('systems.maintenanceDashboard.threshold.lenient')}
         </span>
       </div>
     </div>
@@ -379,6 +390,8 @@ function ComponentSubRow({ comp, threshold, isDark }: { comp: MaintenanceCompone
       <td className={`px-3 py-2.5 text-xs font-mono ${isDark ? "text-slate-400" : "text-slate-500"}`}>
         {comp.serial_number ?? "—"}
       </td>
+
+      <td className={`px-3 py-2.5 text-xs ${isDark ? "text-slate-600" : "text-slate-300"}`}>—</td>
 
       <td className="px-3 py-2.5">
         <CycleBadge model={model} isDark={isDark} />
@@ -441,11 +454,11 @@ function ComponentSubRow({ comp, threshold, isDark }: { comp: MaintenanceCompone
 }
 
 
-function buildColumns(threshold: number, isDark: boolean): ColumnDef<MaintenanceDrone>[] {
+function buildColumns(threshold: number, isDark: boolean, t: (key: string) => string): ColumnDef<MaintenanceDrone>[] {
   return [
     {
       id: "drone",
-      header: "Drone / Component",
+      header: t('systems.maintenanceDashboard.table.droneComponent'),
       accessorFn: (row) => row.code,
       cell: ({ row }) => {
         const drone = row.original;
@@ -482,7 +495,7 @@ function buildColumns(threshold: number, isDark: boolean): ColumnDef<Maintenance
     },
     {
       id: "serial",
-      header: "Serial",
+      header: t('systems.maintenanceDashboard.table.serial'),
       cell: ({ row }) => (
         <span className={`text-xs font-mono ${isDark ? "text-slate-400" : "text-slate-500"}`}>
           {row.original.serial_number || "—"}
@@ -490,13 +503,24 @@ function buildColumns(threshold: number, isDark: boolean): ColumnDef<Maintenance
       ),
     },
     {
+      id: "model",
+      header: t('systems.maintenanceDashboard.table.model'),
+      cell: ({ row }) => {
+        const m = row.original.model;
+        const label = [m.factory_serie, m.factory_model].filter(Boolean).join(" ").trim();
+        return label
+          ? <span className={`text-xs ${isDark ? "text-slate-300" : "text-slate-600"}`}>{label}</span>
+          : <span className={isDark ? "text-slate-600" : "text-slate-300"}>—</span>;
+      },
+    },
+    {
       id: "cycle",
-      header: "Maint. Cycle",
+      header: t('systems.maintenanceDashboard.table.maintenanceCycle'),
       cell: ({ row }) => <CycleBadge model={row.original.model} isDark={isDark} />,
     },
     {
       id: "last_maintenance",
-      header: "Last Maintenance",
+      header: t('systems.maintenanceDashboard.table.lastMaintenance'),
       accessorFn: (row) => row.last_maintenance,
       cell: ({ getValue }) => {
         const val = getValue() as string | null;
@@ -509,7 +533,7 @@ function buildColumns(threshold: number, isDark: boolean): ColumnDef<Maintenance
     },
     {
       id: "next_maintenance",
-      header: "Next Maint.",
+      header: t('systems.maintenanceDashboard.table.nextMaintenance'),
       cell: ({ row }) => {
         const d = row.original;
         const info = nextMaintenanceInfo(d.last_maintenance, d.model.maintenance_cycle_day, d.activation_date);
@@ -520,7 +544,7 @@ function buildColumns(threshold: number, isDark: boolean): ColumnDef<Maintenance
     },
     {
       id: "hours",
-      header: "Hours",
+      header: t('systems.maintenanceDashboard.table.hours'),
       cell: ({ row }) => {
         const d = row.original;
         const triggers = cleanTrigger(d.trigger);
@@ -538,7 +562,7 @@ function buildColumns(threshold: number, isDark: boolean): ColumnDef<Maintenance
     },
     {
       id: "flights",
-      header: "Flights",
+      header: t('systems.maintenanceDashboard.table.flights'),
       cell: ({ row }) => {
         const d = row.original;
         const triggers = cleanTrigger(d.trigger);
@@ -556,7 +580,7 @@ function buildColumns(threshold: number, isDark: boolean): ColumnDef<Maintenance
     },
     {
       id: "days",
-      header: "Days",
+      header: t('systems.maintenanceDashboard.table.days'),
       cell: ({ row }) => {
         const d = row.original;
         const triggers = cleanTrigger(d.trigger);
@@ -575,7 +599,7 @@ function buildColumns(threshold: number, isDark: boolean): ColumnDef<Maintenance
     },
     {
       id: "status",
-      header: "Status",
+      header: t('systems.maintenanceDashboard.table.status'),
       accessorFn: (row) => row.status,
       cell: ({ row }) => {
         const drone = row.original;
@@ -628,11 +652,12 @@ export default function MaintenanceTable({
   onApplyThreshold?: (v: number) => void;
 }) {
   const { isDark } = useTheme();
+  const { t } = useTranslation();
   const [filter, setFilter] = useState<FilterStatus>("ALL");
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState<ExpandedState>({});
 
-  const columns = useMemo(() => buildColumns(threshold, isDark), [threshold, isDark]);
+  const columns = useMemo(() => buildColumns(threshold, isDark, t), [threshold, isDark, t]);
 
   const filtered = useMemo(() => {
     return data.filter((d) => {
@@ -691,7 +716,7 @@ export default function MaintenanceTable({
               {table.getRowModel().rows.length === 0 ? (
                 <tr>
                   <td colSpan={columns.length} className="py-16 text-center text-slate-400 text-sm">
-                    No results found
+                    {t('systems.maintenanceDashboard.table.noResults')}
                   </td>
                 </tr>
               ) : (
@@ -731,8 +756,16 @@ export default function MaintenanceTable({
 
         <div className={`border-t px-2 flex items-center justify-between ${isDark ? "border-slate-700" : "border-slate-200"}`}>
           <ExportButtons
-            filename="Maintenance Dashboard"
-            headers={['Code', 'Serial', 'Status', 'Total Hours', 'Total Flights', 'Last Maintenance', 'Next Maintenance']}
+            filename={t('systems.maintenanceDashboard.title')}
+            headers={[
+              t('systems.maintenanceDashboard.export.headers.code'),
+              t('systems.maintenanceDashboard.export.headers.serial'),
+              t('systems.maintenanceDashboard.export.headers.status'),
+              t('systems.maintenanceDashboard.export.headers.totalHours'),
+              t('systems.maintenanceDashboard.export.headers.totalFlights'),
+              t('systems.maintenanceDashboard.export.headers.lastMaintenance'),
+              t('systems.maintenanceDashboard.export.headers.nextMaintenance'),
+            ]}
             rows={filtered.map(d => [
               d.code,
               d.serial_number ?? '',

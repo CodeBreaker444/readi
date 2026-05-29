@@ -1,0 +1,19 @@
+meta {
+  name: Get Evaluation Tasks
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{baseUrl}}/api/evaluation/:id/tasks
+  body: none
+  auth: inherit
+}
+
+params:path {
+  id: 1
+}
+
+settings {
+  encodeUrl: true
+}

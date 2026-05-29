@@ -1,4 +1,4 @@
-import { listErp } from '@/backend/services/emergencyContact/erp-service'
+import { listErp } from '@/backend/services/emergency-contact/erp-service'
 import { internalError } from '@/lib/api-error'
 import { requirePermission } from '@/lib/auth/api-auth'
 import { E } from '@/lib/error-codes'

@@ -1,0 +1,25 @@
+meta {
+  name: Delete Document
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{baseUrl}}/api/document/delete
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "document_id": 42
+  }
+}
+
+settings {
+  encodeUrl: true
+}

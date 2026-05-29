@@ -64,7 +64,7 @@ function extractModel(rawModel: Record<string, unknown> | null): MaintenanceMode
 export async function getMaintenanceDashboard(
   params: MaintenanceDashboardQuery
 ): Promise<MaintenanceDrone[]> {
-  const { owner_id, client_id, threshold_alert } = params;
+  const { owner_id, threshold_alert } = params;
 
 let toolQuery = supabase
   .from("tool")
@@ -75,7 +75,7 @@ let toolQuery = supabase
     fk_owner_id,
     fk_model_id,
     tool_metadata,
-    tool_model (
+    tool_model:fk_model_id (
       model_id,
       manufacturer,
       model_name,
@@ -86,27 +86,15 @@ let toolQuery = supabase
 
   if (owner_id > 0) toolQuery = toolQuery.eq("fk_owner_id", owner_id);
 
-  if (client_id > 0) {
-    const { data: clientTools } = await supabase
-      .from("pilot_mission")
-      .select("fk_tool_id, planning:fk_planning_id(fk_client_id)")
-      .eq("planning.fk_client_id", client_id);
-
-    const clientToolIds = [
-      ...new Set(
-        (clientTools ?? [])
-          .map((r: { fk_tool_id: number }) => r.fk_tool_id)
-          .filter(Boolean)
-      ),
-    ];
-
-    if (clientToolIds.length === 0) return [];
-    toolQuery = toolQuery.in("tool_id", clientToolIds);
-  }
-
-  const { data: tools, error: toolError } = await toolQuery;
+  const { data: rawTools, error: toolError } = await toolQuery;
   if (toolError) throw new Error(`Tools fetch failed: ${toolError.message}`);
-  if (!tools || tools.length === 0) return [];
+  if (!rawTools || rawTools.length === 0) return [];
+
+  const tools = rawTools.filter(
+    (t: { tool_metadata?: Record<string, unknown> }) =>
+      t.tool_metadata?.deleted !== true && t.tool_metadata?.is_warehouse !== true
+  );
+  if (tools.length === 0) return [];
 
   const toolIds = tools.map((t: { tool_id: number }) => t.tool_id);
 

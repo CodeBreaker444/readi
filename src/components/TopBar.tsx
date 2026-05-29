@@ -2,15 +2,12 @@
 
 import { Skeleton } from '@/components/ui/skeleton';
 import { SessionUser } from '@/lib/auth/server-session';
-import { AlertTriangle, Check, ChevronDown, FileText, LogOut, Moon, Search, Send, Settings, Sparkles, Sun, User, UserCircle, UserCog, X } from 'lucide-react';
+import { AlertTriangle, Check, ChevronDown, FileText, Moon, Search, Send, Settings, Sparkles, Sun, User, UserCog, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
-import { supabase } from '../lib/supabase/client';
 import { LanguageSelect } from './LanguageSelect';
 import NotificationDropdown from './NotificationDropdown';
-import ProfileModal from './ProfileModal';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -29,19 +26,17 @@ interface TopBarProps {
   isDark: boolean;
   toggleTheme: () => void;
   userData: SessionUser | null;
+  loading?: boolean;
 }
 
 // Only SUPERADMIN has chat fully disabled; ADMIN gets OPM impersonation mode
 const CHAT_RESTRICTED_ROLES = ['SUPERADMIN'];
 
-const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
+const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData, loading }) => {
   const { t } = useTranslation();
   const isChatRestricted = CHAT_RESTRICTED_ROLES.includes(userData?.role ?? '');
   const isAdmin = userData?.role === 'ADMIN';
 
-  const [showUserMenu, setShowUserMenu] = useState(false);
-  const [showProfileModal, setShowProfileModal] = useState(false);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [chatInput, setChatInput] = useState('');
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -140,21 +135,6 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      setIsLoggingOut(true);
-      await supabase.auth.signOut();
-      await fetch('/api/auth/logout', { method: 'POST' });
-      setShowUserMenu(false);
-      window.location.href = '/auth/login';
-    } catch (error) {
-      console.error('Unexpected logout error:', error);
-      toast.error(t('topbar.unexpectedLogoutError'));
-    } finally {
-      setIsLoggingOut(false);
-    }
-  };
-
   const selectOpm = (user: OpmUser) => {
     setImpersonatedOpm(user);
     setShowOpmPicker(false);
@@ -168,6 +148,19 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
 
   return (
     <>
+      <div className="fixed top-0 left-1/2 -translate-x-1/2 h-[69px] flex items-center pointer-events-none select-none z-10">
+        {loading ? (
+          <Skeleton className={`h-5 w-24 sm:w-36 rounded ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
+        ) : userData?.ownerName ? (
+          <span
+            className={`text-base sm:text-xl tracking-wider uppercase font-bold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}
+            style={{ fontFamily: 'var(--font-bebas-neue)' }}
+          >
+            {userData.ownerName}
+          </span>
+        ) : null}
+      </div>
+
       <div className={`h-[69px] ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'} border-b flex items-center justify-between px-3 sm:px-6`}>
         <div />
 
@@ -177,7 +170,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
             className={`sm:hidden flex items-center justify-center w-9 h-9 rounded-xl transition-all duration-200 ${isDark
               ? 'bg-slate-800/80 text-violet-400 hover:bg-slate-800'
               : 'bg-gray-50/80 text-violet-500 hover:bg-gray-100/80'
-            } ${isChatRestricted ? 'cursor-not-allowed opacity-70' : ''}`}
+            } ${isChatRestricted ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}`}
           >
             <Search size={16} />
           </button>
@@ -187,7 +180,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
             className={`group relative hidden sm:flex items-center gap-2.5 px-4 py-2 rounded-xl text-sm transition-all duration-200 w-60 ${isDark
               ? 'bg-slate-800/80 text-slate-400 hover:text-slate-300 hover:bg-slate-800'
               : 'bg-gray-50/80 text-gray-400 hover:text-gray-500 hover:bg-gray-100/80'
-            } ${isChatRestricted ? 'cursor-not-allowed opacity-70' : ''}`}
+            } ${isChatRestricted ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}`}
             style={{ border: '1px solid transparent', backgroundClip: 'padding-box' }}
           >
             <span
@@ -223,7 +216,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
 
           <button
             onClick={toggleTheme}
-            className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-slate-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}
+            className={`cursor-pointer p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-slate-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}
             aria-label={t('topbar.toggleTheme')}
           >
             {isDark ? <Sun size={20} /> : <Moon size={20} />}
@@ -231,80 +224,8 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
 
 
           <NotificationDropdown isDark={isDark} />
-
-          {/* User menu */}
-          <div className="relative">
-            <button
-              onClick={() => setShowUserMenu(!showUserMenu)}
-              className={`flex items-center space-x-3 p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-slate-700' : 'hover:bg-gray-100'}`}
-            >
-              <div className="w-9 h-9 overflow-hidden rounded-full flex items-center justify-center border-2 border-transparent">
-                {userData?.avatar ? (
-                  <img src={userData.avatar} alt={userData?.username || 'Profile'} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-                ) : (
-                  <User size={18} className="text-white" />
-                )}
-              </div>
-              <div className="hidden md:block text-left">
-                <p className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-800'}`}>
-                  {userData?.username ?? <span className={`inline-block h-4 w-24 rounded-md animate-pulse ${isDark ? 'bg-slate-700' : 'bg-gray-300'}`} />}
-                </p>
-                <p className="text-xs text-gray-500">
-                  {userData?.role ?? <span className={`inline-block h-3 w-16 rounded-md animate-pulse ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />}
-                </p>
-              </div>
-              <ChevronDown size={16} className={isDark ? 'text-gray-400' : 'text-gray-600'} />
-            </button>
-
-            {showUserMenu && (
-              <div className={`absolute right-0 mt-2 w-72 rounded-xl shadow-xl border z-50 overflow-hidden backdrop-blur-sm ${isDark ? 'bg-slate-800/95 border-slate-700/80' : 'bg-white/95 border-gray-200/80'}`}>
-                <div className={`px-5 py-4 border-b ${isDark ? 'border-slate-700/60' : 'border-gray-100'}`}>
-                  <div className="flex items-center space-x-3">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-gradient-to-br from-indigo-500 to-purple-600' : 'bg-gradient-to-br from-indigo-400 to-purple-500'}`}>
-                      {userData?.avatar ? (
-                        <img src={userData.avatar} alt={userData?.username || 'Profile'} className="w-full h-full rounded-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-                      ) : (
-                        <User size={18} className="text-white" />
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <p className={`font-semibold text-sm truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{userData?.username || 'User'}</p>
-                      <p className={`text-xs truncate ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{userData?.email || ''}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="px-2 py-2">
-                  <button
-                    onClick={() => { setShowProfileModal(true); setShowUserMenu(false); }}
-                    className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-150 group ${isDark ? 'hover:bg-slate-700/70 text-gray-300 hover:text-white' : 'hover:bg-gray-50 text-gray-600 hover:text-gray-900'}`}
-                  >
-                    <div className={`p-1.5 rounded-md transition-colors ${isDark ? 'bg-slate-700/50 group-hover:bg-slate-600/70' : 'bg-gray-100 group-hover:bg-gray-200'}`}>
-                      <UserCircle size={16} />
-                    </div>
-                    <span className="text-sm font-medium">{t('topbar.profile')}</span>
-                  </button>
-                </div>
-
-                <div className={`px-2 py-2 border-t ${isDark ? 'border-slate-700/60' : 'border-gray-100'}`}>
-                  <button
-                    onClick={handleLogout}
-                    disabled={isLoggingOut}
-                    className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-150 group ${isDark ? 'hover:bg-red-500/10 text-red-400 hover:text-red-300' : 'hover:bg-red-50 text-red-500 hover:text-red-600'} ${isLoggingOut ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  >
-                    <div className={`p-1.5 rounded-md transition-colors ${isDark ? 'bg-red-500/10 group-hover:bg-red-500/20' : 'bg-red-50 group-hover:bg-red-100'}`}>
-                      <LogOut size={16} />
-                    </div>
-                    <span className="text-sm font-medium">{isLoggingOut ? t('topbar.loggingOut') : t('topbar.logout')}</span>
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
         </div>
       </div>
-
-      <ProfileModal isOpen={showProfileModal} onClose={() => setShowProfileModal(false)} isDark={isDark} userData={userData} />
 
       {showSearch && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => setShowSearch(false)}>
@@ -333,7 +254,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
                   <div className="relative ml-2">
                     <button
                       onClick={(e) => { e.stopPropagation(); setShowOpmPicker(!showOpmPicker); }}
-                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-semibold transition-all ${
+                      className={`cursor-pointer flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-semibold transition-all ${
                         impersonatedOpm
                           ? (isDark ? 'bg-amber-500/15 border-amber-500/30 text-amber-400' : 'bg-amber-50 border-amber-200 text-amber-700')
                           : (isDark ? 'bg-slate-700/60 border-slate-600 text-slate-400 hover:text-slate-300' : 'bg-gray-100 border-gray-200 text-gray-500 hover:text-gray-700')
@@ -385,7 +306,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
                                 <button
                                   key={u.userId}
                                   onClick={() => selectOpm(u)}
-                                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${
+                                  className={`cursor-pointer w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${
                                     isActive
                                       ? isDark ? 'bg-amber-500/15 border border-amber-500/25' : 'bg-amber-50 border border-amber-200'
                                       : isDark ? 'hover:bg-slate-800 border border-transparent' : 'hover:bg-gray-50 border border-transparent'
@@ -422,7 +343,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
                           <div className={`border-t px-2 py-1.5 ${isDark ? 'border-slate-700/60' : 'border-gray-100'}`}>
                             <button
                               onClick={(e) => { e.stopPropagation(); clearOpm(); setShowOpmPicker(false); }}
-                              className={`w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-medium transition-colors ${
+                              className={`cursor-pointer w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-medium transition-colors ${
                                 isDark ? 'text-slate-500 hover:text-rose-400 hover:bg-rose-500/10' : 'text-gray-400 hover:text-rose-500 hover:bg-rose-50'
                               }`}
                             >
@@ -487,7 +408,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
                       <button
                         key={key}
                         onClick={() => { setChatInput(t(key)); chatInputRef.current?.focus(); }}
-                        className={`text-left text-[11px] px-3 py-2 rounded-xl border transition-colors leading-snug ${isDark
+                        className={`cursor-pointer text-left text-[11px] px-3 py-2 rounded-xl border transition-colors leading-snug ${isDark
                           ? 'bg-slate-800/60 border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-300'
                           : 'bg-gray-50 border-gray-100 text-gray-500 hover:border-gray-200 hover:text-gray-700'}`}
                       >
@@ -562,7 +483,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData }) => {
               {isAdmin && impersonatedOpm && (
                 <div className={`flex items-center justify-between mb-2 px-3 py-1.5 rounded-lg text-[11px] font-medium ${isDark ? 'bg-amber-500/10 border border-amber-500/20 text-amber-400' : 'bg-amber-50 border border-amber-200 text-amber-700'}`}>
                   <span>{t('chat.actingAs', { name: impersonatedOpm.fullname })}</span>
-                  <button onClick={clearOpm} className="hover:opacity-70 transition-opacity ml-2">
+                  <button onClick={clearOpm} className="cursor-pointer hover:opacity-70 transition-opacity ml-2">
                     <X size={11} />
                   </button>
                 </div>

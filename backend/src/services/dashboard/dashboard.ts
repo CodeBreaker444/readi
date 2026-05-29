@@ -1,4 +1,6 @@
 import { supabase } from "../../database/database";
+import { triggerMaintenanceAlertCheck } from "../system/maintenance-notification";
+import { TOKEN_LIMITS } from "@/lib/token-limits";
 import { getChartReadiTotalMission, getChartReadiTotalMissionResult } from "./chart-queries";
 import { getReadiLastNextMissionList, getReadiTotalMission } from "./mission-queries";
 import { getPilotTotal } from "./pilot-queries";
@@ -95,6 +97,84 @@ const normalizeStatus = (status: string): 'GREEN' | 'YELLOW' | 'RED' => {
   return 'YELLOW';
 };
 
+async function fetchAgentUsage(ownerId: number, role: string): Promise<any> {
+  if (role !== 'ADMIN' && role !== 'SUPERADMIN') return null;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayIso = today.toISOString();
+
+  if (role === 'SUPERADMIN') {
+    const { data: rows } = await supabase
+      .from('ai_token_usage')
+      .select('owner_id, total_tokens')
+      .gte('created_at', todayIso);
+
+    const used = (rows ?? []).reduce((s: number, r: any) => s + r.total_tokens, 0);
+    const byCompany: Record<number, number> = {};
+    for (const r of rows ?? []) {
+      byCompany[r.owner_id] = (byCompany[r.owner_id] ?? 0) + r.total_tokens;
+    }
+    const { data: allTimeRows } = await supabase.from('ai_token_usage').select('total_tokens');
+    const allTime = (allTimeRows ?? []).reduce((s: number, r: any) => s + r.total_tokens, 0);
+
+    return {
+      scope: 'platform',
+      today: {
+        used,
+        limit: TOKEN_LIMITS.PLATFORM_DAILY,
+        remaining: Math.max(0, TOKEN_LIMITS.PLATFORM_DAILY - used),
+        percent: Math.min(100, Math.round((used / TOKEN_LIMITS.PLATFORM_DAILY) * 100)),
+      },
+      allTime,
+      byCompany,
+    };
+  }
+
+  // ADMIN: company-scoped view + platform bar
+  const [{ data: companyRows }, { data: platformRows }, { data: allTimeRows }] = await Promise.all([
+    supabase.from('ai_token_usage').select('user_id, total_tokens').eq('owner_id', ownerId).gte('created_at', todayIso),
+    supabase.from('ai_token_usage').select('total_tokens').gte('created_at', todayIso),
+    supabase.from('ai_token_usage').select('total_tokens').eq('owner_id', ownerId),
+  ]);
+
+  const companyTotal = (companyRows ?? []).reduce((s: number, r: any) => s + r.total_tokens, 0);
+  const platformTotal = (platformRows ?? []).reduce((s: number, r: any) => s + r.total_tokens, 0);
+  const allTime = (allTimeRows ?? []).reduce((s: number, r: any) => s + r.total_tokens, 0);
+
+  const byUserId: Record<number, number> = {};
+  for (const r of companyRows ?? []) {
+    byUserId[r.user_id] = (byUserId[r.user_id] ?? 0) + r.total_tokens;
+  }
+
+  const userIds = Object.keys(byUserId).map(Number);
+  const { data: userRows } = userIds.length
+    ? await supabase.from('users').select('user_id, email').in('user_id', userIds)
+    : { data: [] };
+
+  const idToEmail: Record<number, string> = {};
+  for (const u of userRows ?? []) idToEmail[u.user_id] = u.email;
+
+  const byUser: Record<string, number> = {};
+  for (const [id, tokens] of Object.entries(byUserId)) {
+    byUser[idToEmail[Number(id)] ?? `user_${id}`] = tokens;
+  }
+
+  return {
+    scope: 'company',
+    today: {
+      companyUsed: companyTotal,
+      platformUsed: platformTotal,
+      platformLimit: TOKEN_LIMITS.PLATFORM_DAILY,
+      platformRemaining: Math.max(0, TOKEN_LIMITS.PLATFORM_DAILY - platformTotal),
+      platformPercent: Math.min(100, Math.round((platformTotal / TOKEN_LIMITS.PLATFORM_DAILY) * 100)),
+    },
+    allTime,
+    byUser,
+    perUserLimit: TOKEN_LIMITS.PER_USER_DAILY,
+  };
+}
+
 /**
  * Get complete dashboard data
  */
@@ -105,6 +185,15 @@ export async function getDashboardData(params: DashboardRequestParams) {
   const isPilot = user_profile_code === 'PIC';
   const pilotUserId = isPilot ? user_id : 0;
 
+  // Fire-and-forget: refresh maintenance days and notify managers if any
+  // component has crossed ALERT/DUE threshold today. Runs independently so
+  // it never delays the dashboard response.
+  if (owner_id && user_profile_code !== 'SUPERADMIN') {
+    triggerMaintenanceAlertCheck(owner_id).catch((err) =>
+      console.error('[maintenance-alert] dashboard trigger failed:', err)
+    );
+  }
+
   try {
     const [
       pilotTotal,
@@ -113,18 +202,15 @@ export async function getDashboardData(params: DashboardRequestParams) {
       readiMissionSchedulerPlanned,
       readiMissionChart,
       readiMissionResultChart,
+      agentUsage,
     ] = await Promise.all([
       isPilot ? getPilotTotal(user_id, owner_id) : Promise.resolve(null),
-
       getReadiTotalMission(owner_id, 0, pilotUserId, currentYear),
-
       getReadiLastNextMissionList(owner_id, 0, pilotUserId, 0, 10, user_timezone),
-
       getReadiLastNextMissionList(owner_id, 0, pilotUserId, 1, 10, user_timezone),
-
       getChartReadiTotalMission(owner_id, 0, pilotUserId, currentYear),
-
       getChartReadiTotalMissionResult(owner_id, 0, pilotUserId, currentYear),
+      fetchAgentUsage(owner_id, user_profile_code),
     ]);
 
     return {
@@ -134,6 +220,7 @@ export async function getDashboardData(params: DashboardRequestParams) {
       readi_mission_result_chart: readiMissionResultChart,
       readi_mission_scheduler_executed: readiMissionSchedulerExecuted,
       readi_mission_scheduler_planned: readiMissionSchedulerPlanned,
+      agent_usage: agentUsage,
     };
   } catch (error) {
     console.error('Error in getDashboardData:', error);

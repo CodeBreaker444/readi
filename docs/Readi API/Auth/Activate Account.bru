@@ -1,0 +1,75 @@
+meta {
+  name: Activate Account
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/auth/activate
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "id": "ACTIVATION_KEY_HERE",
+    "email": "user@example.com",
+    "username": "john_doe",
+    "o": "optional_param"
+  }
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Activate a user account using the activation key sent via email. No authentication required.
+}
+
+example {
+  name: Success
+  
+  request: {
+    url: {{baseUrl}}/api/auth/activate
+    method: POST
+    mode: json
+    headers: {
+      Content-Type: application/json
+    }
+  
+    body:json: {
+      {
+        "id": "ACTIVATION_KEY_HERE",
+        "email": "user@example.com",
+        "username": "john_doe",
+        "o": "optional_param"
+      }
+    }
+  }
+  
+  response: {
+    status: {
+      code: 200
+      text: OK
+    }
+  
+    body: {
+      type: text
+      content: '''
+        {
+          "code": 1,
+          "status": "SUCCESS",
+          "message": "Account activated successfully",
+          "title": "activateAccount",
+          "timestamp": 1712345678,
+          "param": [{ "data": { "username": "john_doe", "email": "user@example.com" } }]
+        }
+      '''
+    }
+  }
+}

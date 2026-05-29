@@ -43,6 +43,7 @@ export interface DocumentRevision {
 export interface RepositoryDocument {
   document_id: number;
   doc_type_id: number;
+  fk_component_id?: number | null;
   type_name?: string | null;         
   doc_area?: DocumentArea | null;    
   doc_category?: string | null;      
@@ -111,7 +112,8 @@ export type DocumentCreateInput = {
   tags?: string;
   version_label?: string;
   change_log?: string;
-};  
+  fk_component_id?: number | null;
+};
 
 export type DocumentUpdateInput = {
   document_id: number;
@@ -126,6 +128,7 @@ export type DocumentUpdateInput = {
   description?: string | null;
   keywords?: string | null;
   tags?: string | null;
+  fk_component_id?: number | null;
 };
 
 export type DocumentDeleteInput = {

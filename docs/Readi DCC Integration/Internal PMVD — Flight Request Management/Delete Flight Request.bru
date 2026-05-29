@@ -1,0 +1,19 @@
+meta {
+  name: Delete Flight Request
+  type: http
+  seq: 4
+}
+
+delete {
+  url: {{base_url}}/api/planning/flight-requests/{{request_id}}
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Permanently deletes a flight request record.
+}

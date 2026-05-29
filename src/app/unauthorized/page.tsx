@@ -51,14 +51,14 @@ export default function UnauthorizedPage() {
           <div className="flex gap-3 justify-center">
             <button
               onClick={() => router.back()}
-              className="px-5 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+              className="cursor-pointer px-5 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
               style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.85rem', fontWeight: 500 }}
             >
               Go Back
             </button>
             <button
               onClick={() => router.push('/dashboard')}
-              className="px-5 py-2.5 rounded-lg text-white transition-colors"
+              className="cursor-pointer px-5 py-2.5 rounded-lg text-white transition-colors"
               style={{
                 fontFamily: "'DM Sans', system-ui, sans-serif",
                 fontSize: '0.85rem',

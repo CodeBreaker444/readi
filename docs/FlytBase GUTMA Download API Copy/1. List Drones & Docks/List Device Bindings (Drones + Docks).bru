@@ -1,0 +1,37 @@
+meta {
+  name: List Device Bindings (Drones + Docks)
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/device/bindings?page={{page}}&limit={{limit}}
+  body: none
+  auth: inherit
+}
+
+params:query {
+  page: {{page}}
+  limit: {{limit}}
+}
+
+headers {
+  org-id: {{org_id}}
+  Authorization: Bearer {{api_key}}
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  List all drone and dock device bindings under the organization.
+  
+  Supports pagination via `page` and `limit` query params.
+  
+  From the response, extract:
+  - Drone ID → set to `drone_id` variable for flight log queries
+  - Dock ID → for reference (docking station bindings)
+  
+  Note: This endpoint lists both drones and their dock bindings.
+}

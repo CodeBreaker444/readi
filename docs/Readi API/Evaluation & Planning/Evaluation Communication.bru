@@ -1,0 +1,30 @@
+meta {
+  name: Evaluation Communication
+  type: http
+  seq: 12
+}
+
+post {
+  url: {{baseUrl}}/api/evaluation/:id/communication
+  body: json
+  auth: inherit
+}
+
+params:path {
+  id: 1
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "message": "Evaluation review scheduled",
+    "recipients": [1, 2]
+  }
+}
+
+settings {
+  encodeUrl: true
+}

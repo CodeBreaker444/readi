@@ -14,6 +14,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { TablePagination } from '../tables/Pagination';
 import { Skeleton } from '../ui/skeleton';
 import ExportButtons from './ExportButtons';
@@ -23,8 +24,9 @@ interface DataTableProps<TData, TValue> {
   data: TData[];
   loading?: boolean;
   exportFilename?: string;
-  /** Optional slot rendered at the right end of the search bar row */
   actions?: React.ReactNode;
+  onRowClick?: (row: TData) => void;
+  rowTooltip?: string;
 }
 
 export default function DataTable<TData, TValue>({
@@ -33,7 +35,10 @@ export default function DataTable<TData, TValue>({
   loading = false,
   exportFilename,
   actions,
+  onRowClick,
+  rowTooltip,
 }: DataTableProps<TData, TValue>) {
+  const { t } = useTranslation();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState('');
@@ -82,7 +87,7 @@ export default function DataTable<TData, TValue>({
       {/* Search bar row: input left, actions right, wraps on small screens */}
       <div className="flex flex-wrap items-center gap-2">
         <Input
-          placeholder="Search..."
+          placeholder={t('systems.components.dataTable.searchPlaceholder')}
           value={globalFilter ?? ''}
           onChange={(event) => setGlobalFilter(event.target.value)}
           className="flex-1 min-w-[180px] max-w-sm"
@@ -122,7 +127,13 @@ export default function DataTable<TData, TValue>({
               ))
             ) : table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
+                <TableRow
+                  key={row.id}
+                  data-state={row.getIsSelected() && 'selected'}
+                  onClick={onRowClick ? () => onRowClick(row.original) : undefined}
+                  className={onRowClick ? 'cursor-pointer' : undefined}
+                  title={onRowClick && rowTooltip ? rowTooltip : undefined}
+                >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -133,7 +144,7 @@ export default function DataTable<TData, TValue>({
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No results.
+                  {t('systems.components.dataTable.noResults')}
                 </TableCell>
               </TableRow>
             )}

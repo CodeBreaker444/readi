@@ -1,0 +1,30 @@
+meta {
+  name: Update Mission Status
+  type: http
+  seq: 8
+}
+
+put {
+  url: {{baseUrl}}/api/mission/status/:id/update
+  body: json
+  auth: inherit
+}
+
+params:path {
+  id: 1
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "status_label": "Awaiting Approval",
+    "color": "#FF8C00"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

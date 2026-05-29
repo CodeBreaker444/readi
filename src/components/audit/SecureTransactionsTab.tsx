@@ -144,7 +144,7 @@ export function SecureTransactionsTab({ isDark }: Props) {
           </div>
           <button
             onClick={fetchSigns}
-            className={cn('flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs transition-colors', isDark ? 'border-white/[0.1] text-white hover:bg-white/[0.05]' : 'border-gray-200 hover:bg-gray-50')}
+            className={cn('cursor-pointer flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs transition-colors', isDark ? 'border-white/[0.1] text-white hover:bg-white/[0.05]' : 'border-gray-200 hover:bg-gray-50')}
           >
             <RefreshCw size={12} /> {t('auditLogs.refresh')}
           </button>
@@ -216,7 +216,7 @@ export function SecureTransactionsTab({ isDark }: Props) {
                           <button
                             onClick={() => handleVerify(sign)}
                             className={cn(
-                              'flex items-center gap-1 px-2 py-1 rounded text-[10px] border transition-colors',
+                              'cursor-pointer flex items-center gap-1 px-2 py-1 rounded text-[10px] border transition-colors',
                               isDark ? 'border-violet-500/30 text-violet-400 hover:bg-violet-500/10' : 'border-violet-300 text-violet-600 hover:bg-violet-50'
                             )}
                           >

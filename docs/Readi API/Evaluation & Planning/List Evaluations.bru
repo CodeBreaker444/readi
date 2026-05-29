@@ -1,0 +1,19 @@
+meta {
+  name: List Evaluations
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/evaluation
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  List all evaluations. Requires `view_planning_advanced`.
+}

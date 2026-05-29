@@ -1,17 +1,18 @@
 "use client";
 
 import { useTheme } from "@/components/useTheme";
+import { useTranslation } from "react-i18next";
 
 export default function MapLegend() {
   const { isDark } = useTheme();
+const { t } = useTranslation();
 
   const statusItems = [
-    { color: "#2e7d32", label: "Operational" },
-    { color: "#b71c1c", label: "Not Operational" },
-    { color: "#f57c00", label: "Maintenance" },
-    { color: "#616161", label: "Decommissioned" },
+    { color: "#2e7d32", label: t('systems.map.legend.operational') },
+    { color: "#b71c1c", label: t('systems.map.legend.notOperational') },
+    { color: "#f57c00", label: t('systems.map.legend.maintenance') },
+    { color: "#616161", label: t('systems.map.legend.decommissioned') },
   ];
-
   const textCls = isDark ? "text-slate-400" : "text-gray-600";
   const dividerCls = isDark ? "text-slate-700" : "text-gray-300";
 
@@ -25,7 +26,7 @@ export default function MapLegend() {
           <line x1="15" y1="8" x2="15" y2="3.5" stroke="#3949ab" strokeWidth="1.8"/>
           <circle cx="15" cy="3.2" r="1.2" fill="#3949ab"/>
         </svg>
-        Control Center
+       {t('systems.map.legend.controlCenter')}
       </span>
 
       <span className="flex items-center gap-1.5">
@@ -36,7 +37,7 @@ export default function MapLegend() {
           <line x1="14" y1="6" x2="14" y2="3.4" stroke="#1976d2" strokeWidth="1.4"/>
           <circle cx="14" cy="3.2" r="1.1" fill="#1976d2"/>
         </svg>
-        Dock
+       {t('systems.map.legend.dock')}
       </span>
 
       <span className="flex items-center gap-1.5">
@@ -46,7 +47,7 @@ export default function MapLegend() {
           <line x1="13" y1="5" x2="13" y2="19" stroke="#2e7d32" strokeWidth="2"/>
           <circle cx="13" cy="12" r="2.1" fill="#2e7d32"/>
         </svg>
-        Drone
+      {t('systems.map.legend.drone')}
       </span>
 
       <span className="flex items-center gap-1.5">
@@ -56,7 +57,7 @@ export default function MapLegend() {
         >
           N
         </span>
-        Cluster
+        {t('systems.map.legend.cluster')}
       </span>
 
       <span className={`select-none ${dividerCls}`}>|</span>

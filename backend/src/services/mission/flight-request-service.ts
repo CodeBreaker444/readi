@@ -327,6 +327,53 @@ export async function getLatestFlightLogForMission(
   return data ?? null;
 }
 
+export async function cancelFlightRequestByExternalId(
+  external_mission_id: string,
+  owner_id: number,
+): Promise<'cancelled' | 'not_found' | 'already_cancelled'> {
+  const { data } = await supabase
+    .from('flight_requests')
+    .select('request_id, dcc_status')
+    .eq('external_mission_id', external_mission_id)
+    .eq('fk_owner_id', owner_id)
+    .single();
+
+  if (!data) return 'not_found';
+  if (data.dcc_status === 'CANCELLED') return 'already_cancelled';
+
+  const { error } = await supabase
+    .from('flight_requests')
+    .update({ dcc_status: 'CANCELLED', updated_at: new Date().toISOString() })
+    .eq('request_id', data.request_id)
+    .eq('fk_owner_id', owner_id);
+
+  if (error) throw new Error(`cancelFlightRequestByExternalId: ${error.message}`);
+  return 'cancelled';
+}
+
+export async function verifyFlightRequestOwnership(
+  request_id: number,
+  owner_id: number,
+): Promise<boolean> {
+  const { data } = await supabase
+    .from('flight_requests')
+    .select('request_id')
+    .eq('request_id', request_id)
+    .eq('fk_owner_id', owner_id)
+    .single();
+  return !!data;
+}
+
+export async function deleteFlightRequest(request_id: number, owner_id: number): Promise<void> {
+  const { error } = await supabase
+    .from('flight_requests')
+    .delete()
+    .eq('request_id', request_id)
+    .eq('fk_owner_id', owner_id);
+
+  if (error) throw new Error(`deleteFlightRequest: ${error.message}`);
+}
+
 export async function deleteApiKey(api_key_id: number, owner_id: number): Promise<void> {
   const { error } = await supabase
     .from('api_keys')

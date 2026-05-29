@@ -1,0 +1,30 @@
+meta {
+  name: Mission Acceptance (with droneId)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{dcc_base_url}}/dcc/missions/{{mission_id}}/acceptance
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "droneId": "drone-uuid-1234-abcd-5678"
+  }
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Sent by PMVD to DCC when OPM assigns a flight request to a planning mission.
+  droneId = dcc_drone_id from the DRONE component attached to the assigned tool.
+}

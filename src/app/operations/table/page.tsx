@@ -14,9 +14,10 @@ import { OperationsPageHeader } from '@/components/operation/table/OperationsPag
 import { OperationsStats } from '@/components/operation/table/OperationsStats';
 import { OperationsTable } from '@/components/operation/table/OperationsTable';
 import { getOperationColumns, OperationTableMeta } from '@/components/tables/OperationColumn';
-import { TooltipProvider } from '@/components/ui/tooltip';
 import { useTimezone } from '@/components/TimezoneProvider';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import { useTheme } from '@/components/useTheme';
+import { generateMissionReport } from '@/lib/generateMissionReport';
 import {
   getCoreRowModel,
   getPaginationRowModel,
@@ -44,21 +45,26 @@ export interface Operation {
   max_altitude?: number | null;
   notes?: string | null;
   fk_pilot_user_id: number;
+  fk_client_id?: number | null;
   fk_tool_id?: number | null;
   fk_mission_status_id?: number | null;
   fk_planning_id?: number | null;
   fk_mission_type_id?: number | null;
   fk_mission_category_id?: number | null;
   fk_luc_procedure_id?: number | null;
+  fk_erp_group_id?: number | null;
   luc_procedure_progress?: Record<string, Record<string, string>> | null;
   luc_completed_at?: string | null;
   pilot_name?: string | null;
   tool_code?: string | null;
+  tool_name?: string | null;
+  primary_component_code?: string | null;
   status_name?: string | null;
   client_name?: string | null;
   category_name?: string | null;
   type_name?: string | null;
   planning_name?: string | null;
+  visual_observer_ids?: Array<{ user_id: number; name: string }> | null;
   created_at: string;
   updated_at: string;
 }
@@ -155,8 +161,17 @@ const tableMeta = useMemo<OperationTableMeta>(
     onAttach: (op) => setAttachTarget(op),
     onDelete: (op) => setDeleteTarget(op),
     onViewDetails: (op) => setDetailTarget(op),
+    onDownloadReport: async (op) => {
+      const toastId = toast.loading(`Generating report for ${op.mission_code}…`);
+      try {
+        await generateMissionReport(op, timezone);
+        toast.success('Report downloaded.', { id: toastId });
+      } catch {
+        toast.error('Failed to generate report.', { id: toastId });
+      }
+    },
   }),
-  []
+  [timezone]
 );
 
 const table = useReactTable({
@@ -272,6 +287,7 @@ const table = useReactTable({
         mission_ids: eligible.map((r) => r.pilot_mission_id),
       });
       setRowSelection({});
+      setRefreshKey((k) => k + 1);
       const skipped = selectedRows.length - eligible.length;
       toast.success(
         t('operations.table.toast.autofillSuccess', { count: res.data.processed }) +

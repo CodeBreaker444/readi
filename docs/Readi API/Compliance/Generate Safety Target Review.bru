@@ -1,0 +1,26 @@
+meta {
+  name: Generate Safety Target Review
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/api/compliance/safety-target-review/generate
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "period": "2026-Q1",
+    "include_kpi": true
+  }
+}
+
+settings {
+  encodeUrl: true
+}

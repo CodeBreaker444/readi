@@ -1,4 +1,5 @@
 import { SystemFile } from '@/components/system/FilesDownloadModal';
+import { SystemCell } from '@/components/tables/SystemCell';
 import { Button } from '@/components/ui/button';
 import { ColumnDef } from '@tanstack/react-table';
 import { FileDown, Paperclip } from 'lucide-react';
@@ -38,21 +39,11 @@ export const systemCreateColumns = ({
 
     return [
         {
-            header: () => <span className={isDark ? 'text-gray-100' : ''}>System Code</span>,
+            header: () => <span className={isDark ? 'text-gray-100' : ''}>System</span>,
             accessorKey: 'tool_code',
-            cell: ({ getValue }) => (
-                <span className={textClass}>{getValue() as string}</span>
+            cell: ({ getValue, row }) => (
+                <SystemCell code={getValue() as string} name={row.original.tool_desc} size="lg" />
             ),
-        },
-        {
-            header: () => <span className={isDark ? 'text-gray-100' : ''}>Description</span>,
-            accessorKey: 'tool_desc',
-            cell: ({ getValue }) => {
-                const val = getValue() as string | null;
-                return val
-                    ? <span className={textClass}>{val}</span>
-                    : <span className={isDark ? 'text-slate-600' : 'text-slate-300'}>—</span>;
-            },
         },
         {
             header: () => <span className={isDark ? 'text-gray-100' : ''}>Client</span>,
@@ -210,32 +201,33 @@ export const systemCreateColumns = ({
 
 interface ModelColumnProps {
     isDark: boolean;
+    t: (key: string) => string;
     onEdit: (id: number) => void;
     onDelete: (id: number, name: string) => void;
 }
 
-export const getModelColumns = ({ isDark, onEdit, onDelete }: ModelColumnProps): ColumnDef<any>[] => {
+export const getModelColumns = ({ isDark, t, onEdit, onDelete }: ModelColumnProps): ColumnDef<any>[] => {
     const text = isDark ? 'text-gray-200' : 'text-black';
     const hd = isDark ? 'text-gray-100' : '';
 
     return [
         {
-            header: () => <span className={hd}>Manufacturer</span>,
+            header: () => <span className={hd}>{t('systems.manage.columns.model.manufacturer')}</span>,
             accessorKey: 'factory_type',
             cell: ({ getValue }) => <span className={text}>{getValue() as string}</span>,
         },
         {
-            header: () => <span className={hd}>Model Code</span>,
+            header: () => <span className={hd}>{t('systems.manage.columns.model.modelCode')}</span>,
             accessorKey: 'factory_serie',
             cell: ({ getValue }) => <span className={text}>{getValue() as string}</span>,
         },
         {
-            header: () => <span className={hd}>Model Name</span>,
+            header: () => <span className={hd}>{t('systems.manage.columns.model.modelName')}</span>,
             accessorKey: 'factory_model',
             cell: ({ getValue }) => <span className={text}>{getValue() as string}</span>,
         },
         {
-            header: () => <span className={hd}>Type</span>,
+            header: () => <span className={hd}>{t('systems.manage.columns.model.type')}</span>,
             accessorKey: 'model_type',
             cell: ({ getValue }) => {
                 const val = getValue() as string;
@@ -245,18 +237,33 @@ export const getModelColumns = ({ isDark, onEdit, onDelete }: ModelColumnProps):
             },
         },
         {
+            header: () => <span className={hd}>{t('systems.manage.columns.model.active')}</span>,
+            accessorKey: 'model_active',
+            cell: ({ getValue }) => {
+                const isActive = (getValue() as string) === 'Y';
+                return (
+                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${isActive
+                        ? isDark ? 'bg-green-950 text-green-400 border border-green-800' : 'bg-green-100 text-green-800'
+                        : isDark ? 'bg-red-950 text-red-400 border border-red-800' : 'bg-red-100 text-red-800'
+                    }`}>
+                        {isActive ? t('systems.manage.columns.model.yes') : t('systems.manage.columns.model.no')}
+                    </span>
+                );
+            },
+        },
+        {
             id: 'actions',
-            header: () => <span className={hd}>Actions</span>,
+            header: () => <span className={hd}>{t('systems.manage.columns.model.actions')}</span>,
             cell: ({ row }) => (
                 <div className="flex gap-2">
                     <Button size="sm" variant="outline"
                         className={isDark ? 'border-gray-700 text-gray-300 hover:bg-gray-800' : ''}
                         onClick={() => onEdit(row.original.tool_model_id)}>
-                        Edit
+                        {t('systems.manage.columns.model.edit')}
                     </Button>
                     <Button size="sm" variant="destructive"
                         onClick={() => onDelete(row.original.tool_model_id, `${row.original.factory_type} ${row.original.factory_model}`)}>
-                        Delete
+                        {t('systems.manage.columns.model.delete')}
                     </Button>
                 </div>
             ),
@@ -266,6 +273,7 @@ export const getModelColumns = ({ isDark, onEdit, onDelete }: ModelColumnProps):
 
 interface ComponentColumnProps {
     isDark: boolean;
+    t: (key: string) => string;
     toolCodeMap: Record<number, string>;
     modelMap: Record<number, string>;
     onView: (row: any) => void;
@@ -274,13 +282,13 @@ interface ComponentColumnProps {
     onLog: (row: any) => void;
 }
 
-export const getComponentColumns = ({ isDark, toolCodeMap, modelMap, onView, onEdit, onDelete, onLog }: ComponentColumnProps): ColumnDef<any>[] => {
+export const getComponentColumns = ({ isDark, t, toolCodeMap, modelMap, onView, onEdit, onDelete, onLog }: ComponentColumnProps): ColumnDef<any>[] => {
     const text = isDark ? 'text-gray-200' : 'text-black';
     const hd = isDark ? 'text-gray-100' : '';
 
     return [
         {
-            header: () => <span className={hd}>Type</span>,
+            header: () => <span className={hd}>{t('systems.manage.columns.component.type')}</span>,
             accessorKey: 'component_type',
             cell: ({ getValue }) => (
                 <span className={`px-2 py-0.5 rounded text-xs font-medium ${isDark ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-600'}`}>
@@ -289,7 +297,7 @@ export const getComponentColumns = ({ isDark, toolCodeMap, modelMap, onView, onE
             ),
         },
         {
-            header: () => <span className={hd}>Description</span>,
+            header: () => <span className={hd}>{t('systems.manage.columns.component.description')}</span>,
             accessorKey: 'component_desc',
             cell: ({ getValue }) => {
                 const val = getValue() as string | null;
@@ -299,22 +307,22 @@ export const getComponentColumns = ({ isDark, toolCodeMap, modelMap, onView, onE
             },
         },
         {
-            header: () => <span className={hd}>Code</span>,
+            header: () => <span className={hd}>{t('systems.manage.columns.component.code')}</span>,
             accessorKey: 'component_code',
             cell: ({ getValue }) => <span className={text}>{(getValue() as string) || '—'}</span>,
         },
         {
-            header: () => <span className={hd}>Name</span>,
+            header: () => <span className={hd}>{t('systems.manage.columns.component.name')}</span>,
             accessorKey: 'component_name',
             cell: ({ getValue }) => <span className={text}>{(getValue() as string) || '—'}</span>,
         },
         {
-            header: () => <span className={hd}>Serial No.</span>,
+            header: () => <span className={hd}>{t('systems.manage.columns.component.serialNo')}</span>,
             accessorKey: 'component_sn',
             cell: ({ getValue }) => <span className={text}>{(getValue() as string) || '—'}</span>,
         },
         {
-            header: () => <span className={hd}>Model</span>,
+            header: () => <span className={hd}>{t('systems.manage.columns.component.model')}</span>,
             accessorKey: 'fk_tool_model_id',
             cell: ({ getValue }) => {
                 const label = modelMap[getValue() as number];
@@ -324,7 +332,7 @@ export const getComponentColumns = ({ isDark, toolCodeMap, modelMap, onView, onE
             },
         },
         {
-            header: () => <span className={hd}>System</span>,
+            header: () => <span className={hd}>{t('systems.manage.columns.component.system')}</span>,
             accessorKey: 'fk_tool_id',
             cell: ({ row }) => {
                 if (row.original.system_detached) return <span className="text-slate-400 text-xs">—</span>;
@@ -335,7 +343,7 @@ export const getComponentColumns = ({ isDark, toolCodeMap, modelMap, onView, onE
             },
         },
         {
-            header: () => <span className={hd}>Status</span>,
+            header: () => <span className={hd}>{t('systems.manage.columns.component.status')}</span>,
             accessorKey: 'component_status',
             cell: ({ getValue }) => {
                 const s = getValue() as string;
@@ -349,31 +357,46 @@ export const getComponentColumns = ({ isDark, toolCodeMap, modelMap, onView, onE
             },
         },
         {
+            header: () => <span className={hd}>{t('systems.manage.columns.component.active')}</span>,
+            accessorKey: 'component_active',
+            cell: ({ getValue }) => {
+                const isActive = (getValue() as string) !== 'N';
+                return (
+                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${isActive
+                        ? isDark ? 'bg-green-950 text-green-400 border border-green-800' : 'bg-green-100 text-green-800'
+                        : isDark ? 'bg-red-950 text-red-400 border border-red-800' : 'bg-red-100 text-red-800'
+                    }`}>
+                        {isActive ? t('systems.manage.columns.component.yes') : t('systems.manage.columns.component.no')}
+                    </span>
+                );
+            },
+        },
+        {
             id: 'actions',
-            header: () => <span className={hd}>Actions</span>,
+            header: () => <span className={hd}>{t('systems.manage.columns.component.actions')}</span>,
             cell: ({ row }) => (
                 <div className="flex gap-2">
                     <Button size="sm" variant="outline"
                         className={isDark ? 'border-gray-700 text-gray-300 hover:bg-gray-800' : ''}
                         onClick={() => onView(row.original)}>
-                        View
+                        {t('systems.manage.columns.component.view')}
                     </Button>
                     <Button size="sm" variant="outline"
                         className={isDark ? 'border-gray-700 text-gray-300 hover:bg-gray-800' : ''}
                         onClick={() => onEdit(row.original.tool_component_id)}>
-                        Edit
+                        {t('systems.manage.columns.component.edit')}
                     </Button>
                     <Button size="sm" variant="outline"
                         className={isDark ? 'border-slate-700 text-slate-300 hover:bg-slate-700' : 'border-violet-200 text-violet-700 hover:bg-violet-50'}
                         onClick={() => onLog(row.original)}>
-                        Log
+                        {t('systems.manage.columns.component.log')}
                     </Button>
                     <Button size="sm" variant="destructive"
                         onClick={() => onDelete(
                             row.original.tool_component_id,
                             row.original.component_code || row.original.component_name || `#${row.original.tool_component_id}`
                         )}>
-                        Delete
+                        {t('systems.manage.columns.component.delete')}
                     </Button>
                 </div>
             ),

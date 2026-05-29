@@ -1,0 +1,26 @@
+meta {
+  name: Add Mission Category
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{baseUrl}}/api/mission/category/add
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "category_name": "Infrastructure Inspection",
+    "category_code": "INFRA"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

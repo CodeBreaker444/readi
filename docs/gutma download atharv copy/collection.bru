@@ -1,0 +1,29 @@
+meta {
+  name: gutma download atharv copy
+}
+
+auth {
+  mode: none
+}
+
+vars:pre-request {
+  _meta: 
+}
+
+docs {
+  ## How to use
+  
+  ### Download GUTMA (you know the flight ID)
+  1. Click **Download GUTMA**
+  2. **Headers tab** → fill `Authorization` (Bearer YOUR_TOKEN) and `org-id`
+  3. **Params tab** → fill `flightIds`
+  4. Hit **Send**
+  
+  ### Don't know the flight ID?
+  1. Click **List Flights**, fill Headers, hit Send
+  2. Copy a flight ID from the Console
+  3. Paste into Download GUTMA → Send
+  
+  ## Org IDs
+  Get your org ID from the FlytBase dashboard and paste it into the `org-id` header.
+}

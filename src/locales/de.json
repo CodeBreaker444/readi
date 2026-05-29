@@ -1,4 +1,4 @@
-{
+﻿{
   "common": {
     "save": "Speichern",
     "cancel": "Abbrechen",
@@ -85,7 +85,7 @@
     "team": "Team",
     "reports": "Berichte",
     "settings": "Einstellungen",
-    "flytbase": "FlytBase",
+    "flytbase": "Control Center",
     "maintenance": "Wartung",
     "compliance": "Compliance"
   },
@@ -105,7 +105,7 @@
     "attachFlightLog": "Ausgewähltes Flugprotokoll anhängen",
     "attaching": "Anhängen…",
     "syncingGutma": "GUTMA synchronisieren…",
-    "fetchFromFlytbase": "Von FlytBase abrufen",
+    "fetchFromFlytbase": "Von Control Center abrufen",
     "fetchFlights": "Flüge abrufen",
     "manualUpload": "Manueller Upload",
     "attachedLogs": "Angehängte Protokolle",
@@ -153,13 +153,14 @@
     "planningDashboard": "P02 - Planungsdashboard",
     "missionTemplates": "P04 - Missionsvorlagen",
     "flightRequests": "Fluganfragen",
-    "operations": "Betrieb",
-    "operationsTable": "Betriebstabelle",
+    "operations": "Operationen",
+    "operationsTable": "Missionstabelle",
     "dailyBoard": "Tagesboard",
     "calendar": "Kalender",
     "logbooks": "Logbucher",
     "plannedMissionLogbook": "Logbuch geplanter Missionen",
     "flightLogbook": "Fluglogbuch",
+    "batteryLogbook": "Akkuprotokoll",
     "safetyManagement": "Sicherheitsmanagement",
     "spiKpiDefinitions": "SPI- und KPI-Definitionen",
     "emergencyContactList": "Notfallkontaktliste",
@@ -167,7 +168,7 @@
     "generalAuditPlan": "Allgemeiner Auditplan",
     "safetyTargetReview": "Prufung der Sicherheitsziele",
     "requirementsEvidence": "Anforderungen und Nachweise",
-    "flytbase": "FlytBase",
+    "flytbase": "Control Center",
     "settings": "Einstellungen",
     "recentFlights": "Letzte Fluge",
     "training": "Schulung",
@@ -200,6 +201,7 @@
     "securityApiKeys": "Sicherheit und API-Schlussel",
     "integrations": "Integrationen",
     "configuration": "Konfiguration",
+    "droneAtc": "Drone ATC",
     "collapse": "Seitenleiste einklappen",
     "expand": "Seitenleiste ausklappen",
     "appSubtitle": "Drohnensteuerung"
@@ -294,7 +296,7 @@
     }
   },
   "profile": {
-    "title": "Benutzerprofil",
+    "title": "Profil",
     "unknownUser": "Unbekannter Benutzer",
     "userFallback": "Benutzer",
     "avatarAlt": "Profil",
@@ -305,7 +307,8 @@
       "timezone": "Zeitzone",
       "department": "Abteilung",
       "type": "Typ",
-      "signature": "Signatur"
+      "signature": "Signatur",
+      "easaOperatorCode": "EASA-Betreibercode"
     },
     "placeholders": {
       "fullName": "Vollstandigen Namen eingeben",
@@ -314,7 +317,8 @@
       "timezone": "Zeitzone auswahlen",
       "department": "Abteilung eingeben",
       "type": "Typ auswahlen",
-      "signature": "Signatur eingeben"
+      "signature": "Signatur eingeben",
+      "easaOperatorCode": "EASA-Betreibercode eingeben"
     },
     "types": {
       "admin": "Admin",
@@ -341,6 +345,10 @@
         "status": "Status"
       }
     },
+    "controlCenter": {
+      "title": "Control Center",
+      "subtitle": "Verwalte dein Control Center API-Token für den Import von Flugprotokollen."
+    },
     "errors": {
       "load": "Profildaten konnten nicht geladen werden",
       "avatarSize": "Avatar muss unter 10 MB sein",
@@ -348,7 +356,8 @@
       "update": "Profil konnte nicht aktualisiert werden"
     },
     "success": {
-      "updated": "Profil erfolgreich aktualisiert"
+      "updated": "Profil erfolgreich aktualisiert",
+      "easaUpdated": "EASA-Betreibercode erfolgreich aktualisiert"
     }
   },
   "missionCategory": {
@@ -363,6 +372,28 @@
     "editDescription": "Aktualisieren Sie die Details der Missionskategorie.",
     "deleteTitle": "Kategorie loschen",
     "deleteDescription": "Mochten Sie diese Missionskategorie wirklich loschen? Diese Aktion kann nicht ruckgangig gemacht werden.",
+    "table": {
+      "colCode": "Code",
+      "colName": "Name",
+      "colDescription": "Beschreibung",
+      "colActions": "Aktionen",
+      "emptyTitle": "Keine Kategorien definiert",
+      "emptySubtitle": "Erstellen Sie Ihre erste Kategorie, um zu beginnen",
+      "exportFilename": "Missionskategorien",
+      "noDescription": "Keine Beschreibung"
+    },
+    "form": {
+      "codeLabel": "Kategoriecode",
+      "codePlaceholder": "z.B. COMMERCIAL",
+      "nameLabel": "Kategoriename",
+      "namePlaceholder": "z.B. Commercial",
+      "descriptionLabel": "Beschreibung",
+      "descriptionPlaceholder": "z.B. Kommerzielle Kundenprojekte",
+      "saving": "Speichern...",
+      "adding": "Hinzufugen...",
+      "saveChanges": "Anderungen speichern",
+      "addButton": "Kategorie hinzufugen"
+    },
     "errors": {
       "fetch": "Kategorien konnten nicht geladen werden",
       "add": "Kategorie konnte nicht hinzugefugt werden",
@@ -387,6 +418,30 @@
     "editDescription": "Aktualisieren Sie die Details des Missionstyps.",
     "deleteTitle": "Missionstyp loschen",
     "deleteDescription": "Mochten Sie diesen Missionstyp wirklich loschen? Diese Aktion kann nicht ruckgangig gemacht werden.",
+    "table": {
+      "colName": "Name",
+      "colCode": "Code",
+      "colLabel": "Bezeichnung",
+      "colActions": "Aktionen",
+      "emptyTitle": "Keine Typen definiert",
+      "emptySubtitle": "Erstellen Sie Ihren ersten Missionstyp, um zu beginnen",
+      "exportFilename": "Missionstypen"
+    },
+    "form": {
+      "nameLabel": "Name",
+      "namePlaceholder": "Missionstyp-Name eingeben",
+      "descriptionLabel": "Beschreibung",
+      "descriptionPlaceholder": "Missionstyp-Beschreibung eingeben",
+      "codeLabel": "Code",
+      "codePlaceholder": "z.B. SURV",
+      "labelLabel": "Bezeichnung",
+      "labelPlaceholder": "Missionstyp-Bezeichnung eingeben",
+      "saving": "Speichern...",
+      "adding": "Hinzufugen...",
+      "saveChanges": "Anderungen speichern",
+      "addButton": "Missionstyp hinzufugen",
+      "fillAllFields": "Bitte alle Felder ausfulllen"
+    },
     "errors": {
       "fetch": "Missionstypen konnten nicht geladen werden",
       "add": "Missionstyp konnte nicht hinzugefugt werden",
@@ -411,6 +466,33 @@
     "editDescription": "Aktualisieren Sie die Details der Workflow-Phase.",
     "deleteTitle": "Status loschen",
     "deleteDescription": "Mochten Sie diesen Missionsstatus wirklich loschen? Diese Aktion kann nicht ruckgangig gemacht werden.",
+    "table": {
+      "colCode": "Code",
+      "colName": "Name",
+      "colDescription": "Beschreibung",
+      "colOrder": "Reihenfolge",
+      "colFinal": "Final",
+      "colActions": "Aktionen",
+      "emptyTitle": "Keine Status definiert",
+      "emptySubtitle": "Erstellen Sie Ihren ersten Status zur Missionsverfolgung",
+      "exportFilename": "Missionsstatus",
+      "noDescription": "Keine Beschreibung",
+      "finalBadge": "Final"
+    },
+    "form": {
+      "codeLabel": "Code",
+      "codePlaceholder": "z.B. PLANNED",
+      "nameLabel": "Name",
+      "namePlaceholder": "z.B. Geplant",
+      "descriptionLabel": "Beschreibung",
+      "descriptionPlaceholder": "z.B. Mission befindet sich in der Planungsphase",
+      "orderLabel": "Reihenfolge",
+      "finalStatusLabel": "Endstatus",
+      "saving": "Speichern...",
+      "adding": "Hinzufugen...",
+      "saveChanges": "Anderungen speichern",
+      "addButton": "Status hinzufugen"
+    },
     "errors": {
       "fetch": "Missionsstatus konnten nicht geladen werden",
       "add": "Status konnte nicht hinzugefugt werden",
@@ -435,6 +517,24 @@
     "editDescription": "Aktualisieren Sie die Details des Missionsergebnistyps.",
     "deleteTitle": "Ergebnis loschen",
     "deleteDescription": "Mochten Sie dieses Missionsergebnis wirklich loschen? Diese Aktion kann nicht ruckgangig gemacht werden.",
+    "table": {
+      "colCode": "Code",
+      "colDescription": "Beschreibung",
+      "colActions": "Aktionen",
+      "emptyTitle": "Keine Ergebnisse definiert",
+      "emptySubtitle": "Erstellen Sie Ihren ersten Ergebnistyp, um zu beginnen",
+      "exportFilename": "Missionsergebnisse"
+    },
+    "form": {
+      "codeLabel": "Code",
+      "codePlaceholder": "z.B. SUCCESS",
+      "descriptionLabel": "Beschreibung",
+      "descriptionPlaceholder": "z.B. Mission erfolgreich abgeschlossen",
+      "saving": "Speichern...",
+      "adding": "Hinzufugen...",
+      "saveChanges": "Anderungen speichern",
+      "addButton": "Ergebnis hinzufugen"
+    },
     "errors": {
       "fetch": "Missionsergebnisse konnten nicht geladen werden",
       "add": "Ergebnis konnte nicht hinzugefugt werden",
@@ -752,6 +852,17 @@
       "edit": "Bearbeiten",
       "delete": "Löschen"
     },
+    "columns": {
+      "yearRef": "Jahresreferenz",
+      "evaluationCode": "Bewertungscode",
+      "planCode": "Plancode",
+      "customer": "Kunde",
+      "requestedBy": "Angefragt von",
+      "assignedTo": "Zugewiesen an",
+      "lastAction": "Letzte Aktion",
+      "procedureCode": "Verfahrenscode",
+      "open": "Öffnen"
+    },
     "flightRequests": {
       "title": "Fluganfragen",
       "subtitle": "Eingehende Missionsanfragen von externen Diensten",
@@ -768,11 +879,11 @@
       "checking": "Wird überprüft…",
       "notAssigned": "Diese Anfrage ist noch keiner Planungsmission zugewiesen. Zuerst zuweisen.",
       "noMission": "Die zugewiesene Planung hat keine Mission konfiguriert. Öffnen Sie die Planung und weisen Sie zuerst ein System zu.",
-      "manualLog": "Manuelle Protokolle können nicht an DCC gesendet werden. Archivieren Sie unten einen FlytBase-Flug.",
+      "manualLog": "Manuelle Protokolle können nicht an DCC gesendet werden. Archivieren Sie unten einen Control Center-Flug.",
       "noLogArchived": "Noch kein Protokoll archiviert. Wählen Sie unten einen Flug zum Archivieren aus.",
-      "selectFlightArchive": "FlytBase-Flug zum Archivieren auswählen",
+      "selectFlightArchive": "Control Center-Flug zum Archivieren auswählen",
       "loadingFlights": "Flüge werden geladen…",
-      "noFlights": "Keine aktuellen FlytBase-Flüge gefunden. Überprüfen Sie Ihre FlytBase-Integration.",
+      "noFlights": "Keine aktuellen Control Center-Flüge gefunden. Überprüfen Sie Ihre Control Center-Integration.",
       "archiving": "Wird archiviert…",
       "archiveSelected": "Ausgewählten Flug in S3 archivieren",
       "step2": "Schritt 2 — An DCC senden",
@@ -784,7 +895,7 @@
       "selectPlanning": "Planungsmission auswählen",
       "noPlannings": "Keine Planungsmissionen gefunden.",
       "noDroneId": "Keine Drohne mit DCC-ID",
-      "flightSource": "FlytBase",
+      "flightSource": "Control Center",
       "manual": "manuell",
       "loadError": "Fluganfragen konnten nicht geladen werden",
       "denied": "Anfrage abgelehnt",
@@ -807,7 +918,8 @@
         "IN_PROGRESS": "In Bearbeitung",
         "COMPLETED": "Abgeschlossen",
         "ISSUE": "Problem",
-        "REJECTED": "Abgelehnt"
+        "REJECTED": "Abgelehnt",
+        "CANCELLED": "Storniert"
       },
       "columns": {
         "missionId": "Missions-ID",
@@ -847,7 +959,7 @@
       "denying": "Wird abgelehnt…",
       "denyRequest": "Anfrage ablehnen",
       "log": "Protokoll",
-      "pushFlytbaseLog": "FlytBase-Protokoll senden",
+      "pushFlytbaseLog": "Control Center-Protokoll senden",
       "noActions": "Keine Aktionen für diesen Status verfügbar."
     },
     "missionTemplate": {
@@ -995,6 +1107,58 @@
         "time": "Zeit",
         "distance": "Distanz",
         "notes": "Notizen"
+      }
+    },
+    "batteryLogbook": {
+      "title": "Akkuprotokoll",
+      "subtitle": "Akkuaufzeichnungen aller Systeme durchsuchen, filtern und analysieren",
+      "refresh": "Aktualisieren",
+      "filterError": "Filter konnten nicht geladen werden",
+      "loadError": "Daten konnten nicht geladen werden",
+      "networkError": "Netzwerkfehler",
+      "filter": {
+        "title": "Filter",
+        "installedFrom": "Eingebaut ab",
+        "installedTo": "Eingebaut bis",
+        "droneSystem": "Drohnensystem",
+        "status": "Status",
+        "all": "Alle",
+        "search": "Suchen",
+        "reset": "Zurücksetzen"
+      },
+      "table": {
+        "batteriesFound": "Akkus gefunden",
+        "searchPlaceholder": "Tabelle durchsuchen…",
+        "noBatteries": "Keine Akkus gefunden",
+        "noBatteriesHint": "Filter anpassen und erneut suchen"
+      },
+      "columns": {
+        "id": "#",
+        "battery": "Akku",
+        "snPrefix": "S/N",
+        "droneSystem": "Drohnensystem",
+        "status": "Status",
+        "cycleHealth": "Zyklusgesundheit",
+        "installed": "Eingebaut",
+        "lastMaint": "Letzte Wartung",
+        "maintCycle": "Wartungszyklus",
+        "vendor": "Hersteller",
+        "purchaseDate": "Kaufdatum"
+      },
+      "cycleLog": {
+        "title": "Zyklusprotokoll",
+        "missions": "Missionen",
+        "totalCycles": "Gesamtzyklen",
+        "noMissions": "Keine Missionen für diesen Akku erfasst.",
+        "loadError": "Zyklen konnten nicht geladen werden.",
+        "loading": "Zyklen werden geladen…",
+        "columns": {
+          "mission": "Mission",
+          "date": "Datum",
+          "duration": "Dauer",
+          "cycles": "Zyklen",
+          "pilot": "Pilot"
+        }
       }
     },
     "testLogbook": {
@@ -1172,8 +1336,8 @@
   "operations": {
     "actions": {
       "view": "Details anzeigen",
-      "edit": "Operation bearbeiten",
-      "delete": "Operation löschen"
+      "edit": "Mission bearbeiten",
+      "delete": "Mission löschen"
     },
     "declaration": {
       "title": "Tägliche Pilotenerklärung",
@@ -1189,11 +1353,11 @@
       "error": "Fehler beim Speichern der Erklärung"
     },
     "table": {
-      "title": "Betrieb",
-      "subtitle": "Pilotenmissionen & Flugoperationen",
+      "title": "Missionen",
+      "subtitle": "Missionen verwalten und verfolgen",
       "communication": "Kommunikation",
       "import": "Importieren",
-      "newOperation": "Neue Operation",
+      "newOperation": "Neue Mission",
       "stats": {
         "total": "Gesamt",
         "planned": "Geplant",
@@ -1201,7 +1365,7 @@
         "completed": "Abgeschlossen"
       },
       "filters": {
-        "searchPlaceholder": "Operationen suchen…",
+        "searchPlaceholder": "Missionen suchen…",
         "allStatuses": "Alle Status",
         "allPilots": "Alle Piloten",
         "allDrones": "Alle Drohnen",
@@ -1215,7 +1379,7 @@
         "cancelled": "Abgebrochen",
         "aborted": "Abgebrochen"
       },
-      "counter": "{{count}} Operationen",
+      "counter": "{{count}} Missionen",
       "batch": {
         "selected": "{{count}} ausgewählt",
         "setPilot": "Pilot setzen…",
@@ -1232,7 +1396,7 @@
         "deleteSelected": "Ausgewählte löschen",
         "deleting": "Wird gelöscht…"
       },
-      "empty": "Keine Operationen gefunden",
+      "empty": "Keine Missionen gefunden",
       "detail": {
         "timeline": "Zeitplan",
         "scheduled": "Geplant",
@@ -1240,6 +1404,8 @@
         "personnelEquipment": "Personal & Ausrüstung",
         "pilotInCommand": "Pilot in Command",
         "droneSystem": "Drohnensystem",
+        "primaryComponent": "Primärkomponente",
+        "visualObservers": "Visuelle Beobachter",
         "missionId": "Missions-ID",
         "location": "Standort",
         "flightResults": "Flugergebnisse",
@@ -1269,22 +1435,32 @@
         "type": "Typ"
       },
       "toast": {
-        "deleteSuccess": "{{count}} Operation(en) gelöscht",
-        "deleteError": "Einige Operationen konnten nicht gelöscht werden",
-        "statusSuccess": "{{count}} Operation(en) auf {{status}} aktualisiert",
-        "statusError": "Einige Operationen konnten nicht aktualisiert werden",
-        "pilotWarning": "Keine geplanten Operationen ausgewählt. Pilot kann nur bei geplanten Missionen gesetzt werden.",
-        "pilotSuccess": "Pilot für {{count}} Operation(en) gesetzt",
+        "deleteSuccess": "{{count}} Mission(en) gelöscht",
+        "deleteError": "Einige Missionen konnten nicht gelöscht werden",
+        "statusSuccess": "{{count}} Mission(en) auf {{status}} aktualisiert",
+        "statusError": "Einige Missionen konnten nicht aktualisiert werden",
+        "pilotWarning": "Keine geplanten Missionen ausgewählt. Pilot kann nur bei geplanten Missionen gesetzt werden.",
+        "pilotSuccess": "Pilot für {{count}} Mission(en) gesetzt",
         "pilotSkipped": "{{count}} übersprungen (nicht geplant).",
         "pilotError": "Pilot konnte nicht gesetzt werden",
-        "autofillWarning": "Keine geeigneten Operationen. Autofüllen erfordert abgeschlossene Missionen mit zugewiesenem Piloten.",
-        "autofillSuccess": "{{count}} Operation(en) automatisch ausgefüllt",
+        "autofillWarning": "Keine geeigneten Missionen. Autofüllen erfordert abgeschlossene Missionen mit zugewiesenem Piloten.",
+        "autofillSuccess": "{{count}} Mission(en) automatisch ausgefüllt",
         "autofillSkipped": "{{count}} übersprungen (nicht abgeschlossen oder kein Pilot).",
         "autofillError": "Aufgaben konnten nicht automatisch ausgefüllt werden"
+      },
+      "procedureBadge": {
+        "noLuc": "Kein LUC",
+        "noLucTooltip": "Kein Verfahren zugewiesen",
+        "done": "Erledigt",
+        "pending": "Ausstehend",
+        "assignment": "Zuweisung",
+        "checklist": "Checkliste",
+        "complete": "✓ Abgeschlossen",
+        "incomplete": "✗ Unvollständig"
       }
     },
     "board": {
-      "title": "Operations-Board",
+      "title": "Missions-Board",
       "subtitle": "Echtzeit-Missionsworkflow-Management",
       "refresh": "Aktualisieren",
       "columns": {
@@ -1352,7 +1528,7 @@
     "calendar": {
       "title": "Operations-Kalender",
       "subtitle": "Missionsplanung und Zuweisungen verwalten",
-      "addOperation": "Operation hinzufügen",
+      "addOperation": "Mission hinzufügen",
       "missionOverview": "Missionsübersicht",
       "loading": "Laden…",
       "legend": {
@@ -1394,12 +1570,12 @@
         "manualUpload": "Manueller Upload",
         "chooseFile": "GUTMA-Datei auswählen (.zip, .json, .xml)",
         "uploading": "Wird hochgeladen…",
-        "fetchFromFlytbase": "Von FlytBase abrufen",
+        "fetchFromFlytbase": "Von Control Center abrufen",
         "fetchFlights": "Flüge abrufen",
         "attachFlight": "Ausgewähltes Flugprotokoll anhängen",
         "attaching": "Wird angehängt…",
         "syncingGutma": "GUTMA wird synchronisiert…",
-        "sourceFlytbase": "FlytBase",
+        "sourceFlytbase": "Control Center",
         "sourceManual": "Manuell",
         "timeWindows": {
           "1hr": "Letzte 1 Std",
@@ -1454,7 +1630,7 @@
         "uploadSuccess": "Flugprotokoll hochgeladen",
         "uploadFailed": "Upload fehlgeschlagen",
         "noFlightsFound": "Keine Flüge in diesem Zeitfenster gefunden.",
-        "attachSuccess": "Flugprotokoll von FlytBase angehängt",
+        "attachSuccess": "Flugprotokoll von Control Center angehängt",
         "autoSyncSuccess_one": "Nutzung für {{count}} Komponente aus GUTMA ausgefüllt",
         "autoSyncSuccess_other": "Nutzung für {{count}} Komponenten aus GUTMA ausgefüllt",
         "postFlightSuccess": "Nachflugdaten gespeichert"
@@ -1620,7 +1796,10 @@
         "notes": "Notizen",
         "pilotInCommand": "Verantwortlicher Pilot",
         "selected": "Ausgewählt",
-        "optional": "(optional)"
+        "optional": "(optional)",
+        "flightDate": "Datum",
+        "flightTime": "Uhrzeit",
+        "flightDuration": "Flugzeit"
       },
       "placeholders": {
         "selectClient": "Kunden auswählen…",
@@ -1676,6 +1855,143 @@
         "duplicatesSkipped_one": "{{count}} Duplikat übersprungen",
         "duplicatesSkipped_other": "{{count}} Duplikate übersprungen"
       }
+    },
+    "newOperation": {
+      "title": "Neue Mission",
+      "editTitle": "Mission bearbeiten",
+      "tabs": {
+        "missionData": "Missionsdaten",
+        "missionExecution": "Missionsausführung",
+        "missionLog": "Missionsprotokoll",
+        "postFlight": "Nach dem Flug",
+        "maintenance": "Wartung"
+      },
+      "client": {
+        "sectionTitle": "Kunden auswählen",
+        "loading": "Kunden werden geladen…",
+        "label": "Kunde",
+        "placeholder": "Kunden auswählen…",
+        "selectedLabel": "Ausgewählt"
+      },
+      "drone": {
+        "sectionTitle": "Drohne & Mission",
+        "opTypeLabel": "Vorgangstyp",
+        "opTypeOpenDesc": "Pilot fliegt mit RC — kein Missionsplan erforderlich.",
+        "opTypePdraDesc": "Pilot fliegt unter Risikoanalyse — Missionsplan erforderlich.",
+        "droneLabel": "Drohnensystem",
+        "noDronesAssigned": "Diesem Kunden sind keine Drohnen zugewiesen",
+        "allInMaintenance": "Alle Drohnen befinden sich in der Wartung",
+        "selectDrone": "Drohne auswählen…",
+        "allInMaintenanceWarning": "Alle diesem Kunden zugewiesenen Drohnen befinden sich derzeit in der Wartung.",
+        "maintenanceTag": "WARTUNG",
+        "maintenanceDueTag": "WARTUNG FÄLLIG",
+        "maintenanceDueWarning": "Bei einer oder mehreren Drohnen ist eine Wartung fällig. Vor der Planung prüfen.",
+        "missionPlan": "Missionsplan",
+        "noPlansForClient": "— keine Pläne für diesen Kunden",
+        "noPlansAvailable": "Keine Pläne verfügbar",
+        "selectMissionPlan": "Missionsplan auswählen…",
+        "flightMode": "Flugmodus",
+        "flightModeRC": "RC (Fernsteuerung)",
+        "flightModeDock": "DOCK (Dockingstation)",
+        "erpLabel": "Notfallreaktionsplan",
+        "erpOptional": "(optional)",
+        "erpNoGroups": "Keine ERP-Gruppen verfügbar",
+        "erpPlaceholder": "ERP-Gruppe auswählen…",
+        "erpNone": "Keine",
+        "erpLoading": "Gruppen werden geladen…",
+        "erpSummary": "{{name}} — {{locations}} Standort(e), {{contacts}} Kontakt(e)"
+      },
+      "scheduler": {
+        "sectionTitle": "Planer",
+        "missionIdLabel": "Missions-ID",
+        "missionIdPlaceholder": "Automatisch generiert",
+        "missionIdLocked": "Missions-ID kann nicht geändert werden",
+        "regenerateId": "ID neu generieren",
+        "startDateTime": "Startdatum/-uhrzeit",
+        "recurring": "Wiederkehrend (wöchentlich)",
+        "daysOfWeek": "Wochentage",
+        "repeatUntil": "Wiederholen bis",
+        "groupLabel": "Gruppenbezeichnung",
+        "groupLabelPlaceholder": "z.B. Wöchentliche Patrouille",
+        "optional": "(optional)",
+        "checkingConflicts": "Konflikte werden geprüft…",
+        "conflictsFound_one": "{{count}} Konflikt für diese Drohne gefunden",
+        "conflictsFound_other": "{{count}} Konflikte für diese Drohne gefunden",
+        "noConflicts": "Keine Konflikte erkannt",
+        "missionType": "Missionstyp",
+        "category": "Kategorie",
+        "status": "Status",
+        "scheduled": "Geplant",
+        "procedure": "Verfahren",
+        "procedureNone": "Keine verfügbar",
+        "selectProcedure": "Verfahren auswählen…",
+        "selectType": "Typ auswählen…",
+        "selectCategory": "Kategorie auswählen…",
+        "missionName": "Missionsname",
+        "missionNamePlaceholder": "z.B. Nordzone vermessen",
+        "distanceFlown": "Geflogene Distanz (m)",
+        "distancePlaceholder": "z.B. 1500",
+        "location": "Standort",
+        "locationPlaceholder": "Zone A",
+        "notes": "Notizen",
+        "notesPlaceholder": "Optionale Notizen"
+      },
+      "pilot": {
+        "sectionTitle": "Verantwortlicher Pilot",
+        "pilotLabel": "Pilot",
+        "selectPilot": "Pilot auswählen…",
+        "summaryTitle": "Missionszusammenfassung",
+        "summaryClient": "Kunde",
+        "summaryOpType": "Vorg.-Typ",
+        "summaryDrone": "Drohne",
+        "summaryMissionPlan": "Missionsplan",
+        "summaryFlightMode": "Flugmodus",
+        "summaryMissionId": "Missions-ID",
+        "summaryMissionName": "Missionsname",
+        "summaryStart": "Start",
+        "summaryType": "Typ",
+        "summaryCategory": "Kategorie",
+        "summaryProcedure": "Verfahren",
+        "summaryPilot": "Pilot",
+        "summaryLocation": "Standort",
+        "visualObserversLabel": "Sichtbeobachter",
+        "visualObserversOptional": "(optional)",
+        "visualObserversDisabled": "Zuerst einen Piloten auswählen",
+        "primaryPilotNote": "PIC — bereits zugewiesen",
+        "noPilots": "Keine Piloten verfügbar"
+      },
+      "erp": {
+        "sectionTitle": "Notfallreaktionspläne",
+        "loading": "NRP werden geladen…",
+        "empty": "Für dieses Konto sind keine Notfallreaktionspläne konfiguriert.",
+        "colType": "Typ",
+        "colDescription": "Beschreibung",
+        "colContact": "Kontakt"
+      },
+      "toast": {
+        "loadClientsError": "Kunden konnten nicht geladen werden",
+        "loadOptionsError": "Optionen konnten nicht geladen werden",
+        "loadErpsError": "NRP konnten nicht geladen werden",
+        "loadPostFlightError": "Nach-Flug-Daten konnten nicht geladen werden",
+        "updateSuccess": "Vorgang erfolgreich aktualisiert",
+        "updateError": "Vorgang konnte nicht aktualisiert werden",
+        "createSuccess": "Vorgang erfolgreich erstellt",
+        "createError": "Vorgang konnte nicht erstellt werden",
+        "postFlightSuccess": "Nach-Flug-Daten erfolgreich gespeichert",
+        "postFlightError": "Nach-Flug-Daten konnten nicht gespeichert werden"
+      },
+      "buttons": {
+        "cancel": "Abbrechen",
+        "previous": "Zurück",
+        "next": "Weiter",
+        "saveChanges": "Änderungen speichern",
+        "saving": "Wird gespeichert…",
+        "creating": "Wird erstellt…",
+        "createOperation": "Vorgang erstellen",
+        "close": "Schließen",
+        "savePostFlight": "Nach-Flug speichern",
+        "saveMaintenance": "Wartung speichern"
+      }
     }
   },
   "repository": {
@@ -1685,6 +2001,13 @@
     "searchPlaceholder": "Titel, Code, Beschreibung suchen...",
     "allAreas": "Alle Bereiche",
     "allStatuses": "Alle Status",
+    "allConfidentiality": "Alle Vertraulichkeiten",
+    "confidentiality": {
+      "PUBLIC": "Öffentlich",
+      "INTERNAL": "Intern",
+      "CONFIDENTIAL": "Vertraulich",
+      "RESTRICTED": "Eingeschränkt"
+    },
     "reset": "Zurücksetzen",
     "noDocuments": "Keine Dokumente entsprechen Ihren Suchkriterien.",
     "deleteTitle": "Sind Sie absolut sicher?",
@@ -1735,7 +2058,12 @@
       "errorFile": "Bitte wählen Sie eine Datei aus",
       "errorFileSize": "Datei ist zu groß. Bitte wählen Sie eine Datei unter 25 MB.",
       "saveSuccess": "Dokument erfolgreich gespeichert",
-      "saveError": "Fehler beim Speichern des Dokuments. Bitte versuchen Sie es erneut."
+      "saveError": "Fehler beim Speichern des Dokuments. Bitte versuchen Sie es erneut.",
+      "component": "Komponente",
+      "componentOptional": "(optional)",
+      "componentNone": "Keine — mit einer Komponente verknüpfen",
+      "filterBySystem": "Nach System filtern",
+      "allSystems": "Alle Systeme"
     },
     "toast": {
       "deleteSuccess": "Dokument erfolgreich gelöscht.",
@@ -1884,6 +2212,58 @@
         "time": "Zeit",
         "distance": "Distanz",
         "notes": "Notizen"
+      }
+    },
+    "batteryLogbook": {
+      "title": "Akkuprotokoll",
+      "subtitle": "Akkuaufzeichnungen aller Systeme durchsuchen, filtern und analysieren",
+      "refresh": "Aktualisieren",
+      "filterError": "Filter konnten nicht geladen werden",
+      "loadError": "Daten konnten nicht geladen werden",
+      "networkError": "Netzwerkfehler",
+      "filter": {
+        "title": "Filter",
+        "installedFrom": "Eingebaut ab",
+        "installedTo": "Eingebaut bis",
+        "droneSystem": "Drohnensystem",
+        "status": "Status",
+        "all": "Alle",
+        "search": "Suchen",
+        "reset": "Zurücksetzen"
+      },
+      "table": {
+        "batteriesFound": "Akkus gefunden",
+        "searchPlaceholder": "Tabelle durchsuchen…",
+        "noBatteries": "Keine Akkus gefunden",
+        "noBatteriesHint": "Filter anpassen und erneut suchen"
+      },
+      "columns": {
+        "id": "#",
+        "battery": "Akku",
+        "snPrefix": "S/N",
+        "droneSystem": "Drohnensystem",
+        "status": "Status",
+        "cycleHealth": "Zyklusgesundheit",
+        "installed": "Eingebaut",
+        "lastMaint": "Letzte Wartung",
+        "maintCycle": "Wartungszyklus",
+        "vendor": "Hersteller",
+        "purchaseDate": "Kaufdatum"
+      },
+      "cycleLog": {
+        "title": "Zyklusprotokoll",
+        "missions": "Missionen",
+        "totalCycles": "Gesamtzyklen",
+        "noMissions": "Keine Missionen für diesen Akku erfasst.",
+        "loadError": "Zyklen konnten nicht geladen werden.",
+        "loading": "Zyklen werden geladen…",
+        "columns": {
+          "mission": "Mission",
+          "date": "Datum",
+          "duration": "Dauer",
+          "cycles": "Zyklen",
+          "pilot": "Pilot"
+        }
       }
     }
   },
@@ -2342,35 +2722,38 @@
   },
   "flytbase": {
     "integration": {
-      "title": "FlytBase Integration",
-      "subtitle": "Verbinde dein FlytBase-Konto, um Flugprotokolle und Missionsdaten zu importieren",
+      "title": "Control Center",
+      "subtitle": "Verbinde dein Control Center-Konto, um Flugprotokolle und Missionsdaten zu importieren",
       "viewFlights": "Flüge anzeigen",
-      "needToken": "Benötigst du ein FlytBase API-Token?",
+      "needToken": "Benötigst du ein Control Center API-Token?",
       "viewDocumentation": "Dokumentation anzeigen",
       "tokenNote": "Verwende einen langlebigen API-Schlüssel (RS256 JWT), kein kurzlebiges Sitzungstoken."
     },
     "token": {
-      "title": "FlytBase API-Token",
-      "subtitle": "Wird verwendet, um deine Flugprotokolle und Missionshistorie von FlytBase abzurufen",
+      "title": "Control Center API-Token",
+      "subtitle": "Wird verwendet, um deine Flugprotokolle und Missionshistorie von Control Center abzurufen",
       "connected": "Verbunden",
       "notConnected": "Nicht verbunden",
       "secureNote": "Dein Token wird sicher gespeichert und wird niemals anderen Nutzern zugänglich gemacht oder protokolliert.",
-      "savedNote": "Ein FlytBase API-Token ist derzeit für dein Konto gespeichert.",
+      "savedNote": "Ein Control Center API-Token ist derzeit für dein Konto gespeichert.",
       "replaceToken": "Token ersetzen",
       "removing": "Wird entfernt…",
       "remove": "Entfernen",
-      "removeTitle": "FlytBase-Integration entfernen?",
+      "removeTitle": "Control Center-Integration entfernen?",
       "removeDescription": "Dadurch wird dein gespeichertes API-Token dauerhaft gelöscht. Du kannst keine Flugprotokolle oder Missionsdaten mehr abrufen, bis du dich mit einem neuen Token neu verbindest.",
       "cancel": "Abbrechen",
       "yesRemove": "Ja, Token entfernen",
+      "tokenName": "Name",
+      "optional": "(optional)",
+      "tokenNamePlaceholder": "z.B. Produktion, Testkonto…",
       "apiToken": "API-Token",
-      "apiTokenPlaceholder": "Füge deinen langlebigen FlytBase API-Schlüssel ein",
+      "apiTokenPlaceholder": "Füge deinen langlebigen Control Center API-Schlüssel ein",
       "orgId": "Organisations-ID",
-      "orgIdPlaceholder": "z.B. 684fbfd4c264f8f677beb444",
-      "orgIdHint": "Zu finden in deinem FlytBase-Dashboard unter Organisationseinstellungen.",
+      "orgIdPlaceholder": "z.B. 684fbf23w2xs64f8sbn7beb114",
+      "orgIdHint": "Zu finden in deinem Control Center-Dashboard unter Organisationseinstellungen.",
       "verifying": "Wird verifiziert…",
       "verify": "Token verifizieren",
-      "verifiedTitle": "Token verifiziert — bestätige, dass dies dein FlytBase-Konto ist",
+      "verifiedTitle": "Token verifiziert — bestätige, dass dies dein Control Center-Konto ist",
       "saving": "Wird gespeichert…",
       "saveToken": "Ja, diesen Token speichern",
       "fields": {
@@ -2378,15 +2761,15 @@
         "username": "Benutzername",
         "phone": "Telefon",
         "organization": "Organisation",
-        "flytbaseId": "FlytBase-ID"
+        "flytbaseId": "Control Center-ID"
       },
       "toasts": {
-        "enterToken": "Bitte gib deinen FlytBase API-Token ein.",
-        "enterOrgId": "Bitte gib deine FlytBase Organisations-ID ein.",
+        "enterToken": "Bitte gib deinen Control Center API-Token ein.",
+        "enterOrgId": "Bitte gib deine Control Center Organisations-ID ein.",
         "verifyFailed": "Token-Verifizierung fehlgeschlagen. Bitte überprüfe deinen Token und die Organisations-ID.",
-        "saveSuccess": "FlytBase-Integration erfolgreich gespeichert.",
+        "saveSuccess": "Control Center-Integration erfolgreich gespeichert.",
         "saveFailed": "Token konnte nicht gespeichert werden.",
-        "removed": "FlytBase-Integration entfernt.",
+        "removed": "Control Center-Integration entfernt.",
         "removeFailed": "Token konnte nicht entfernt werden."
       }
     },
@@ -2398,7 +2781,7 @@
       "flightsLabel": "Flüge",
       "shown": "angezeigt",
       "of": "von",
-      "noToken": "Kein FlytBase API-Token für dein Konto konfiguriert.",
+      "noToken": "Kein Control Center API-Token für dein Konto konfiguriert.",
       "setUp": "Jetzt einrichten",
       "noRecentFlights": "Keine aktuellen Flüge gefunden.",
       "noFlightsInWindow": "Keine Flüge in den letzten {{window}} Minuten gefunden.",
@@ -2421,7 +2804,7 @@
         "gutmaLog": "GUTMA-Protokoll",
         "flightInfo": "Fluginformationen"
       },
-      "downloadingLog": "GUTMA-Protokoll wird von FlytBase heruntergeladen…",
+      "downloadingLog": "GUTMA-Protokoll wird von Control Center heruntergeladen…",
       "noGpsCoords": "Keine GPS-Koordinaten in dieser GUTMA-Datei gefunden.",
       "noFlightInfo": "Keine zusätzlichen Fluginformationen in dieser GUTMA-Datei verfügbar.",
       "noWaypointData": "Keine Wegpunktdaten in dieser GUTMA-Datei gefunden.",
@@ -2546,6 +2929,7 @@
       "certificateType": "Zertifikatstyp",
       "certParticipation": "Teilnahmezertifikat",
       "certQualification": "Qualifikation (Prüfungsbestehen)",
+      "sessionDate": "Sitzungsdatum",
       "completionDate": "Abschlussdatum",
       "expiryDate": "Ablaufdatum",
       "cancel": "Abbrechen",
@@ -2596,6 +2980,7 @@
     },
     "form": {
       "title": "Neuer Notfallreaktionsplan",
+      "editTitle": "Notfallreaktionsplan bearbeiten",
       "type": "Typ",
       "contact": "Kontakt",
       "contactPlaceholder": "z.B. +49 555 000 0000",
@@ -2603,6 +2988,7 @@
       "descriptionPlaceholder": "Beschreiben Sie das Reaktionsverfahren und die Eskalationsschritte...",
       "cancel": "Abbrechen",
       "create": "Plan erstellen",
+      "update": "Änderungen speichern",
       "processing": "Speichern..."
     },
     "table": {
@@ -2610,12 +2996,59 @@
       "contact": "Kontakt",
       "description": "Beschreibung",
       "createdAt": "Erstellt",
+      "actions": "Aktionen",
       "noResults": "Keine Notfallreaktionspläne gefunden. Erstellen Sie einen, um zu beginnen."
+    },
+    "deleteDialog": {
+      "title": "Notfallreaktionsplan löschen",
+      "description": "Dies löscht diesen Notfallreaktionsplan dauerhaft. Diese Aktion kann nicht rückgängig gemacht werden."
     },
     "toast": {
       "loadError": "Notfallreaktionspläne konnten nicht geladen werden",
       "created": "Notfallreaktionsplan erfolgreich erstellt",
-      "saveFailed": "Plan konnte nicht gespeichert werden"
+      "updated": "Notfallreaktionsplan erfolgreich aktualisiert",
+      "deleted": "Notfallreaktionsplan gelöscht",
+      "saveFailed": "Plan konnte nicht gespeichert werden",
+      "updateFailed": "Plan konnte nicht aktualisiert werden",
+      "deleteFailed": "Plan konnte nicht gelöscht werden"
+    },
+    "locationGroup": {
+      "editTitle": "Standortgruppe bearbeiten",
+      "newTitle": "Neue Standortgruppe",
+      "groupNameLabel": "Gruppenname",
+      "groupNamePlaceholder": "z.B. Nördliche Operationszone",
+      "notesLabel": "Notizen",
+      "notesOptional": "(optional)",
+      "notesPlaceholder": "Weitere Notizen…",
+      "statusActive": "Aktiv",
+      "statusInactive": "Inaktiv",
+      "locationsTitle": "Standorte",
+      "locationsCount": "{{count}} hinzugefügt",
+      "locationSearchPlaceholder": "Nach einem Standort suchen…",
+      "contactsTitle": "Kontakte",
+      "contactsCount": "{{count}} ausgewählt",
+      "existingContactsLabel": "Aus vorhandenen Kontakten auswählen",
+      "contactSearchPlaceholder": "Kontakte suchen…",
+      "noContactsFound": "Keine Kontakte gefunden",
+      "pendingContactsLabel": "Neue Kontakte (werden beim Speichern erstellt)",
+      "newContactLabel": "Neuer Kontakt",
+      "contactNamePlaceholder": "Kontaktname / Info",
+      "descriptionPlaceholder": "Beschreibung",
+      "addContact": "Hinzufügen",
+      "cancelContact": "Abbrechen",
+      "createNewContact": "Neuen Kontakt erstellen",
+      "mapPreviewTitle": "Standortvorschau",
+      "mapPinsCount": "{{count}} Pin(s)",
+      "mapEmptyHint": "Suchen und fügen Sie Standorte hinzu, um sie auf der Karte zu markieren",
+      "cancel": "Abbrechen",
+      "saving": "Speichern…",
+      "updateGroup": "Gruppe aktualisieren",
+      "createGroup": "Gruppe erstellen",
+      "newGroup": "Neue Gruppe",
+      "deleteDialogTitle": "Standortgruppe löschen",
+      "deleteDialogDescription": "Möchten Sie \"{{name}}\" wirklich löschen? Dabei werden auch alle zugehörigen Standorte und Kontaktverknüpfungen entfernt.",
+      "toastDeleted": "Gruppe gelöscht",
+      "toastDeleteFailed": "Gruppe konnte nicht gelöscht werden"
     }
   },
   "auditLogs": {
@@ -2778,7 +3211,21 @@
       "levels": "Ebenen",
       "active": "Aktiv",
       "failedToLoad": "Diagramm konnte nicht geladen werden",
-      "retry": "Wiederholen"
+      "retry": "Wiederholen",
+      "edit": {
+        "title": "Diagrammknoten bearbeiten",
+        "positionLabel": "Position / Rolle",
+        "positionPlaceholder": "z.B. Betriebsleiter",
+        "reportsToLabel": "Berichtet an",
+        "selectParent": "Übergeordneten wählen…",
+        "companyRoot": "Unternehmenswurzel",
+        "saveChanges": "Änderungen speichern",
+        "toasts": {
+          "positionRequired": "Position darf nicht leer sein",
+          "saveSuccess": "Knoten erfolgreich aktualisiert",
+          "saveFailed": "Speichern fehlgeschlagen"
+        }
+      }
     },
     "communication": {
       "title": "Kommunikationsprotokolle",
@@ -2787,11 +3234,11 @@
       "newCommunication": "Neue Kommunikation",
       "operationalProtocols": "Operative Protokolle",
       "nodesOnline": "Knoten Online",
-      "addModalTitle": "Protokoll-Matrix initialisieren",
-      "editModalTitle": "Protokoll bearbeiten",
-      "protocolCode": "Protokoll-Code",
-      "jsonMatrixSchema": "JSON-Matrix-Schema",
-      "initializeProtocol": "Protokoll initialisieren",
+      "addModalTitle": "Neue Kommunikation",
+      "editModalTitle": "Kommunikation bearbeiten",
+      "protocolCode": "Kommunikationscode",
+      "jsonMatrixSchema": "JSON-Schema",
+      "initializeProtocol": "Speichern",
       "prettify": "Formatieren",
       "noProtocolsFound": "Keine Protokolle gefunden",
       "initializeFirst": "Initialisiere ein neues Protokoll, um zu starten",
@@ -2873,5 +3320,1157 @@
     "export": "Exportieren",
     "exporting": "Exportiere…",
     "downloadAs": "Herunterladen als"
+  },
+  "systems": {
+    "manage": {
+      "title": "Drohnensystemliste",
+      "subtitle": "Systeme, Modelle und Systemkomponenten verwalten",
+      "refresh": "Aktualisieren",
+      "tabs": {
+        "system": "Systeme",
+        "model": "Modelle",
+        "component": "Lager"
+      },
+      "buttons": {
+        "addSystem": "System hinzufügen",
+        "addModel": "Modell hinzufügen",
+        "addComponent": "Komponente hinzufügen",
+        "system": "System",
+        "model": "Modell",
+        "component": "Komponente"
+      },
+      "deleteDialog": {
+        "deleteSystem": "System löschen",
+        "deleteModel": "Modell löschen",
+        "deleteComponent": "Komponente löschen",
+        "attachedToSystem": "Komponente mit System verbunden",
+        "cannotDelete": "Löschen nicht möglich",
+        "warningSystem": "Das Löschen dieses Systems wird es deaktivieren. Verbundene Komponenten bleiben erhalten und werden nicht gelöscht.",
+        "warningModel": "Dieses Modell wird dauerhaft von der Plattform entfernt.",
+        "warningComponent": "Diese Komponente wird dauerhaft gelöscht.",
+        "systemsUsingModel": "Systeme, die dieses Modell verwenden:",
+        "componentsUsingModel": "Komponenten, die dieses Modell verwenden:",
+        "attachedToSystemLabel": "Verbunden mit System:",
+        "detachFirst": "Trennen Sie zuerst die Komponente von diesem System. Sie wird im Lager als zur Neuzuweisung verfügbar aufgelistet.",
+        "detaching": "Trennung läuft...",
+        "detachFrom": "Von {{code}} trennen",
+        "cancel": "Abbrechen",
+        "close": "Schließen",
+        "deleting": "Löschvorgang...",
+        "confirmDelete": "Löschen bestätigen"
+      },
+      "toasts": {
+        "fetchSystemFailed": "Systemdaten konnten nicht geladen werden",
+        "fetchSystemError": "Fehler beim Laden der Systemdaten",
+        "fetchClientsFailed": "Mandanten konnten nicht geladen werden",
+        "componentDetached": "Komponente vom System getrennt",
+        "detachFailed": "Komponente konnte nicht getrennt werden",
+        "detachError": "Fehler beim Trennen der Komponente",
+        "systemDeactivated": "System erfolgreich deaktiviert",
+        "systemSetNonOperational": "System auf nicht betriebsbereit gesetzt. Erneut löschen, um es dauerhaft zu entfernen.",
+        "systemDeleted": "System gelöscht. Komponenten ins Lager verschoben.",
+        "deleteFailed": "Systemlöschung fehlgeschlagen",
+        "modelDeleted": "Modell erfolgreich gelöscht",
+        "componentDeleted": "Komponente erfolgreich gelöscht",
+        "componentDeleteFailed": "Komponente konnte nicht gelöscht werden",
+        "deleteError": "Fehler beim Löschvorgang"
+      },
+      "columns": {
+        "model": {
+          "manufacturer": "Hersteller",
+          "modelCode": "Modellcode",
+          "modelName": "Modellname",
+          "type": "Typ",
+          "active": "Aktiv",
+          "actions": "Aktionen",
+          "yes": "Ja",
+          "no": "Nein",
+          "edit": "Bearbeiten",
+          "delete": "Löschen"
+        },
+        "component": {
+          "type": "Typ",
+          "description": "Beschreibung",
+          "code": "Code",
+          "name": "Name",
+          "serialNo": "Seriennr.",
+          "model": "Modell",
+          "system": "System",
+          "status": "Status",
+          "active": "Aktiv",
+          "actions": "Aktionen",
+          "yes": "Ja",
+          "no": "Nein",
+          "view": "Ansehen",
+          "edit": "Bearbeiten",
+          "log": "Protokoll",
+          "delete": "Löschen"
+        }
+      }
+    },
+    "maintenanceDashboard": {
+      "title": "Wartungs-Dashboard",
+      "subtitle": "Wartungsstatus von Drohnensystemen & Komponenten",
+      "loading": "Laden...",
+      "refresh": "Aktualisieren",
+      "summary": {
+        "alertThreshold": "Warnschwelle",
+        "totalSystems": "Systeme Gesamt",
+        "ok": "OK",
+        "alert": "Warnung",
+        "due": "Fällig",
+        "inMaintenance": "In Wartung"
+      },
+      "threshold": {
+        "sensitive": "Empfindlich",
+        "normal": "Normal",
+        "lenient": "Tolerant",
+        "label": "Warnschwelle"
+      },
+      "filter": {
+        "all": "Alle",
+        "ok": "OK",
+        "alert": "Warnung",
+        "due": "Fällig",
+        "inMaintenance": "In Wartung",
+        "searchPlaceholder": "Suche nach Code oder Seriennummer…"
+      },
+      "table": {
+        "droneComponent": "Drohne / Komponente",
+        "serial": "S/N",
+        "model": "Modell",
+        "maintenanceCycle": "Wartungszyklus",
+        "lastMaintenance": "Letzte Wartung",
+        "nextMaintenance": "Nächste Wartung",
+        "hours": "Stunden",
+        "flights": "Flüge",
+        "days": "Tage",
+        "status": "Status",
+        "noResults": "Keine Ergebnisse gefunden"
+      },
+      "export": {
+        "title": "Wartungs-Dashboard",
+        "filename": "wartungs-dashboard",
+        "sections": {
+          "summary": "Zusammenfassung",
+          "droneSystems": "Drohnensysteme",
+          "componentDetails": "Komponentendetails"
+        },
+        "headers": {
+          "metric": "Metrik",
+          "value": "Wert",
+          "alertThreshold": "Warnschwelle",
+          "totalSystems": "Systeme Gesamt",
+          "ok": "OK",
+          "alert": "Warnung",
+          "due": "Fällig",
+          "inMaintenance": "In Wartung",
+          "systemCode": "Systemcode",
+          "serial": "Seriennummer",
+          "status": "Status",
+          "hours": "Stunden",
+          "flights": "Flüge",
+          "lastMaintenance": "Letzte Wartung",
+          "nextMaintenance": "Nächste Wartung",
+          "triggers": "Auslöser",
+          "system": "System",
+          "component": "Komponente",
+          "type": "Typ",
+          "hoursCurLimit": "Stunden (akt/Limit)",
+          "flightsCurLimit": "Flüge (akt/Limit)",
+          "daysCurLimit": "Tage (akt/Limit)",
+          "code": "Code",
+          "totalHours": "Gesamtstunden",
+          "totalFlights": "Gesamtflüge"
+        }
+      },
+      "toasts": {
+        "loadFailed": "Daten konnten nicht geladen werden",
+        "networkError": "Netzwerkfehler",
+        "exportFailed": "{{format}}-Export fehlgeschlagen",
+        "pdfExportFailed": "PDF-Export fehlgeschlagen"
+      }
+    },
+    "maintenanceLogbook": {
+      "title": "Wartungslogbuch",
+      "subtitle": "Alle Wartungstickets verfolgen und verwalten",
+      "newTicket": "Neues Ticket",
+      "stats": {
+        "total": "Gesamt",
+        "open": "Offen",
+        "closed": "Geschlossen",
+        "highPriority": "Hohe Priorität"
+      },
+      "filters": {
+        "all": "ALLE",
+        "open": "OFFEN",
+        "closed": "GESCHLOSSEN",
+        "searchPlaceholder": "Suche nach Drohnencode, S/N, Bearbeiter…"
+      },
+      "table": {
+        "ticket": "Ticket",
+        "system": "System",
+        "component": "Komponente",
+        "description": "Beschreibung",
+        "location": "Standort",
+        "serial": "Seriennummer",
+        "assignedTo": "Zugewiesen an",
+        "status": "Status",
+        "priority": "Priorität",
+        "opened": "Geöffnet",
+        "closed": "Geschlossen",
+        "actions": "Aktionen",
+        "unassigned": "Nicht zugewiesen",
+        "noTickets": "Keine Tickets gefunden"
+      },
+      "exportFilename": "Wartungstickets",
+      "actions": {
+        "events": "Ereignisse",
+        "assign": "Zuweisen",
+        "report": "Bericht",
+        "upload": "Hochladen",
+        "downloadFiles": "Dateien herunterladen",
+        "closeTicket": "Ticket schließen"
+      },
+      "exportColumns": {
+        "ticketNum": "Ticket #",
+        "type": "Typ",
+        "status": "Status",
+        "priority": "Priorität",
+        "system": "System",
+        "serial": "Seriennummer",
+        "entity": "Entität",
+        "assignedTo": "Zugewiesen an",
+        "opened": "Geöffnet",
+        "closed": "Geschlossen",
+        "notes": "Notizen"
+      },
+      "exportHeaders": {
+        "ticketId": "Ticket-ID",
+        "type": "Typ",
+        "system": "System",
+        "serial": "Seriennummer",
+        "component": "Komponente",
+        "componentSN": "Komponente S/N",
+        "description": "Beschreibung",
+        "assignedTo": "Zugewiesen an",
+        "email": "E-Mail",
+        "status": "Status",
+        "priority": "Priorität",
+        "opened": "Geöffnet",
+        "closed": "Geschlossen",
+        "latitude": "Breitengrad",
+        "longitude": "Längengrad"
+      },
+      "modals": {
+        "newTicket": {
+          "title": "Neues Wartungsticket",
+          "drone": "Drohne",
+          "components": "Komponenten (optional, Mehrfachauswahl)",
+          "type": "Typ",
+          "priority": "Prioritàt",
+          "assignTo": "Zuweisen an",
+          "note": "Notiz",
+          "selectDrone": "Drohne auswählen…",
+          "selectDroneFirst": "Zuerst Drohne auswählen…",
+          "selectTechnician": "Techniker auswählen…",
+          "notePlaceholder": "Problem beschreiben…",
+          "createTicket": "Ticket erstellen",
+          "typeBasic": "Basis",
+          "typeStandard": "Standard",
+          "typeExtraordinary": "Außerordentlich",
+          "location": "Standort (optional)"
+        },
+        "closeTicket": {
+          "title": "Ticket schließen",
+          "subtitle": "Beschreiben Sie die durchgeführten Arbeiten vor dem Schließen",
+          "closingNote": "Abschlussnotiz",
+          "notePlaceholder": "Beschreiben Sie die geleistete Arbeit und die Problemlösung…",
+          "warningMessage": "Das Schließen dieses Tickets markiert das System als einsatzbereit und erstellt einen Wartungseintrag.",
+          "cancel": "Abbrechen",
+          "closing": "Wird geschlossen…",
+          "closeTicket": "Ticket schließen"
+        },
+        "assignTicket": {
+          "title": "Ticket zuweisen",
+          "technician": "Techniker",
+          "selectTechnician": "Techniker auswählen…",
+          "assign": "Zuweisen"
+        },
+        "interventionReport": {
+          "title": "Einsatzbericht",
+          "workStart": "Arbeitsbeginn",
+          "workEnd": "Arbeitsende",
+          "report": "Bericht",
+          "attachment": "Anhang (optional)",
+          "reportPlaceholder": "Durchgeführte Arbeiten beschreiben…",
+          "closeOnSave": "Ticket beim Speichern schließen",
+          "saveReport": "Bericht speichern"
+        },
+        "uploadAttachment": {
+          "title": "Anhang hochladen",
+          "description": "Beschreibung",
+          "file": "Datei",
+          "filePlaceholder": "Kurze Dateibeschreibung",
+          "upload": "Hochladen"
+        },
+        "eventHistory": {
+          "title": "Ereignishistorie",
+          "ticketTitle": "Ticket #{{id}} — Ereignishistorie",
+          "noEvents": "Noch keine Ereignisse aufgezeichnet.",
+          "close": "Schließen"
+        }
+      },
+      "toasts": {
+        "selectDroneSystem": "Bitte wählen Sie eine Drohne/ein System aus",
+        "ticketCreated": "Ticket erfolgreich erstellt",
+        "ticketExists": "Für dieses System existiert bereits ein offenes Ticket",
+        "enterClosingNote": "Bitte geben Sie eine Abschlussnotiz ein",
+        "ticketClosed": "Ticket geschlossen",
+        "ticketAssigned": "Ticket zugewiesen",
+        "enterReportDescription": "Bitte geben Sie eine Berichtsbeschreibung ein",
+        "workEndAfterStart": "Das Arbeitsende muss nach dem Arbeitsbeginn liegen",
+        "reportSaved": "Bericht gespeichert",
+        "fileUploaded": "Datei hochgeladen",
+        "selectFile": "Bitte wählen Sie eine Datei zum Hochladen aus"
+      }
+    },
+    "files": {
+      "systemFiles": "Systemdateien",
+      "componentDocs": "Komponentendokumente",
+      "loadingDocs": "Dokumente werden geladen…",
+      "noComponentDocs": "Keine Komponentendokumente gefunden.",
+      "totalFiles": "Dateien"
+    },
+    "map": {
+      "title": "Drohnensystem-Karte",
+      "subtitle": "Übersicht der installierten Docks & Drohnensysteme",
+      "reload": "Neu laden",
+      "loadingMapData": "Kartendaten werden geladen…",
+      "loadingMap": "Karte wird geladen…",
+      "toolList": {
+        "title": "Geräteliste",
+        "headers": {
+          "codeAndName": "Code / Name",
+          "status": "Status",
+          "actions": "Aktionen"
+        },
+        "noResults": "Keine Ergebnisse gefunden.",
+        "locate": "Lokalisieren",
+        "detail": "Details"
+      },
+      "filters": {
+        "status": "Status",
+        "client": "Mandant",
+        "search": "Suche",
+        "statusAll": "Alle",
+        "statusOperational": "Einsatzbereit",
+        "statusNotOperational": "Nicht einsatzbereit",
+        "statusMaintenance": "Wartung",
+        "statusDecommissioned": "Außer Betrieb",
+        "allClients": "Alle Mandanten",
+        "searchPlaceholder": "z.B. RFI, OVADA, DOCK 2",
+        "docksOnly": "Nur Docks",
+        "installedOnly": "Nur installierte"
+      },
+      "legend": {
+        "controlCenter": "Kontrollzentrum",
+        "dock": "Dock",
+        "drone": "Drohne",
+        "cluster": "Cluster",
+        "operational": "Einsatzbereit",
+        "notOperational": "Nicht einsatzbereit",
+        "maintenance": "Wartung",
+        "decommissioned": "Außer Betrieb"
+      },
+      "toolDetail": {
+        "titleWithCode": "Gerätedetails — {{code}}",
+        "dock": "DOCK",
+        "active": "Aktiv",
+        "inactive": "Inaktiv",
+        "tabs": {
+          "generalInfo": "Allgemeine Info",
+          "specifications": "Spezifikationen",
+          "components": "Komponenten ({{count}})"
+        },
+        "fields": {
+          "toolCode": "Gerätecode",
+          "serialNumber": "Seriennummer",
+          "model": "Modell",
+          "client": "Mandant",
+          "purchaseDate": "Kaufdatum",
+          "activationDate": "Aktivierungsdatum",
+          "description": "Beschreibung",
+          "vendor": "Hersteller",
+          "gcsType": "GCS-Typ",
+          "streamingType": "Streaming-Typ",
+          "c2Platform": "C2-Plattform",
+          "latitude": "Breitengrad",
+          "longitude": "Längengrad",
+          "guaranteeDays": "Garantietage",
+          "streamingUrl": "Streaming-URL",
+          "code": "Code:",
+          "sn": "S/N:",
+          "usage": "Nutzung:",
+          "gcs": "GCS:"
+        },
+        "flightStats": {
+          "title": "Flugstatistik",
+          "totalMissions": "Missionen Gesamt",
+          "flightTime": "Flugzeit",
+          "distance": "Distanz"
+        },
+        "noComponents": "Keine Komponenten für dieses Gerät gefunden.",
+        "close": "Schließen"
+      },
+      "toasts": {
+        "fetchFailed": "Systemdaten konnten nicht geladen werden",
+        "fetchError": "Fehler beim Laden der Systemdaten"
+      }
+    },
+    "components": {
+      "systemsTable": {
+        "searchPlaceholder": "System/Mandant/Komponente suchen...",
+        "headers": {
+          "systemComponent": "System / Komponente",
+          "clientSerial": "Mandant / S/N",
+          "model": "Modell",
+          "status": "Status",
+          "actions": "Aktionen"
+        },
+        "noResults": "Keine Ergebnisse.",
+        "noComponentsAttached": "Keine Komponenten mit diesem System verbunden.",
+        "componentCount_one": "{{count}} Komponente",
+        "componentCount_other": "{{count}} Komponenten",
+        "buttons": {
+          "view": "Anzeigen",
+          "edit": "Bearbeiten",
+          "duplicate": "Duplizieren",
+          "files": "Dateien",
+          "relations": "Beziehungen",
+          "delete": "Löschen",
+          "log": "Log",
+          "flights": "Flüge"
+        }
+      },
+      "statusBadge": {
+        "ok": "OK",
+        "alert": "WARNUNG",
+        "due": "FÄLLIG",
+        "inMaintenance": "IN WARTUNG"
+      },
+      "addSystem": {
+        "title": "Neues System hinzufügen",
+        "sections": {
+          "basicInfo": "Basisinformationen",
+          "location": "Standort",
+          "purchaseActivation": "Kauf & Aktivierung",
+          "statusAssignment": "Status & Zuweisung",
+          "documentation": "Dokumentation"
+        },
+        "fields": {
+          "code": "Code *",
+          "description": "Beschreibung",
+          "latitude": "Breitengrad",
+          "longitude": "Längengrad",
+          "activationDate": "Aktivierungsdatum",
+          "active": "Aktiv",
+          "status": "Status",
+          "client": "Mandant",
+          "location": "Standort",
+          "attachFiles": "Dateien anhängen (Handbuch, Zertifikat, etc.)"
+        },
+        "activeOptions": {
+          "active": "AKTIV",
+          "notActive": "NICHT AKTIV"
+        },
+        "statusOptions": {
+          "operational": "Einsatzbereit",
+          "notOperational": "Nicht einsatzbereit",
+          "maintenance": "Wartung"
+        },
+        "buttons": {
+          "cancel": "Abbrechen",
+          "adding": "Wird hinzugefügt...",
+          "addSystem": "System hinzufügen"
+        },
+        "toasts": {
+          "latitudeRange": "Breitengrad muss zwischen -90 und 90 liegen",
+          "longitudeRange": "Längengrad muss zwischen -180 und 180 liegen",
+          "success": "System erfolgreich hinzugefügt",
+          "failed": "Gerät konnte nicht hinzugefügt werden",
+          "error": "Fehler beim Hinzufügen des Geräts"
+        }
+      },
+      "viewSystem": {
+        "exportSections": {
+          "generalInfo": "Allgemeine Info",
+          "flightStatistics": "Flugstatistik",
+          "components": "Komponenten",
+          "maintenanceHistory": "Wartungshistorie"
+        },
+        "exportHeaders": {
+          "field": "Feld",
+          "value": "Wert",
+          "systemCode": "Systemcode",
+          "status": "Status",
+          "active": "Aktiv",
+          "client": "Mandant",
+          "description": "Beschreibung",
+          "gcsType": "GCS-Typ",
+          "c2Platform": "C2-Plattform",
+          "latitude": "Breitengrad",
+          "longitude": "Längengrad",
+          "metric": "Metrik",
+          "totalMissions": "Missionen Gesamt",
+          "flightTime": "Flugzeit",
+          "modelCode": "Modell / Code",
+          "type": "Typ",
+          "serial": "Seriennummer",
+          "usageHrs": "Nutzung (Std.)",
+          "ticketNum": "Ticket #",
+          "priority": "Priorität",
+          "assignedTo": "Zugewiesen an",
+          "opened": "Geöffnet",
+          "closed": "Geschlossen",
+          "notes": "Notizen"
+        },
+        "toasts": {
+          "fetchError": "Fehler beim Laden der Gerätedetails",
+          "exportFailed": "{{format}}-Dateiexport fehlgeschlagen.",
+          "pdfFailed": "PDF-Export fehlgeschlagen."
+        }
+      },
+      "dataTable": {
+        "searchPlaceholder": "Suchen...",
+        "noResults": "Keine Ergebnisse."
+      },
+      "common": {
+        "statusOptions": {
+          "operational": "Betriebsbereit",
+          "notOperational": "Nicht betriebsbereit",
+          "maintenance": "Wartung",
+          "decommissioned": "Außer Betrieb"
+        },
+        "activeOptions": {
+          "active": "AKTIV",
+          "notActive": "NICHT AKTIV",
+          "yes": "Ja",
+          "no": "Nein"
+        },
+        "maintenanceCycle": {
+          "label": "Wartungszyklus",
+          "cycleType": "Zyklustyp",
+          "hoursLimit": "Stundenlimit",
+          "daysLimit": "Tageslimit",
+          "flightsLimit": "Fluglimit",
+          "cycleRatio": "Zyklusverhältnis",
+          "noCycleRequired": "Kein Wartungszyklus erforderlich",
+          "resetToModel": "Auf Modellvorgaben zurücksetzen",
+          "hours": "Stunden",
+          "days": "Tage",
+          "flights": "Flüge",
+          "mixed": "Gemischt",
+          "none": "Keiner"
+        },
+        "phaseOutOptions": {
+          "no": "Nein",
+          "yes": "Ja"
+        },
+        "select": "Auswählen",
+        "optional": "(optional)",
+        "noneTopLevel": "Keiner (oberste Ebene)",
+        "none": "Keiner",
+        "loading": "Laden...",
+        "droneClasses": "Drohnenklassen",
+        "droneClassesOptional": "Drohnenklassen (optional, Mehrfachauswahl)",
+        "manageClasses": "Klassen verwalten",
+        "location": "Standort",
+        "locationOptional": "Standort (optional)",
+        "defaultCounters": {
+          "label": "Startzähler",
+          "hint": "— für gebrauchte Komponenten, Werte > 0 setzen",
+          "usageHours": "Gesamtstunden",
+          "maintenanceHours": "Stunden seit letzter Wartung",
+          "maintenanceFlights": "Flüge seit letzter Wartung"
+        },
+        "locationUpdated": "Standort aktualisiert →",
+        "locationSearchPlaceholder": "z.B. Piazza Navona, Rom",
+        "useMyLocation": "Meinen Standort verwenden",
+        "latitude": "Breitengrad",
+        "longitude": "Längengrad",
+        "latPlaceholder": "z.B. 41.902782",
+        "lngPlaceholder": "z.B. 12.496366"
+      },
+      "editSystem": {
+        "title": "System bearbeiten",
+        "sections": {
+          "basicInfo": "Grundinformationen",
+          "location": "Standort",
+          "statusAssignment": "Status & Zuweisung",
+          "datesSettings": "Daten & Einstellungen",
+          "attachedComponents": "Verbundene Komponenten ({{count}})"
+        },
+        "fields": {
+          "code": "Code *",
+          "description": "Beschreibung",
+          "latitude": "Breitengrad",
+          "longitude": "Längengrad",
+          "status": "Status",
+          "active": "Aktiv",
+          "client": "Mandant",
+          "location": "Standort",
+          "activationDate": "Aktivierungsdatum",
+          "maintenanceLogbook": "Wartungslogbuch",
+          "logbookEnabled": "Aktiviert",
+          "logbookDisabled": "Deaktiviert"
+        },
+        "componentTable": {
+          "type": "Typ",
+          "code": "Code",
+          "serialNo": "Seriennum.",
+          "status": "Status",
+          "actions": "Aktionen"
+        },
+        "noComponents": "Keine Komponenten mit diesem System verbunden.",
+        "removeDialog": {
+          "title": "Komponente vom System entfernen",
+          "description": "{{name}} von diesem System entfernen?",
+          "note": "Die Komponente verbleibt auf der Plattform und kann einem anderen System zugewiesen werden."
+        },
+        "buttons": {
+          "cancel": "Abbrechen",
+          "saving": "Speichern...",
+          "saveChanges": "Änderungen speichern",
+          "edit": "Bearbeiten",
+          "remove": "Entfernen"
+        },
+        "toasts": {
+          "loadError": "Fehler beim Laden der Gerätedaten",
+          "componentRemoved": "Komponente vom System entfernt",
+          "removeFailed": "Komponente konnte nicht entfernt werden",
+          "removeError": "Fehler beim Entfernen der Komponente",
+          "updateSuccess": "System erfolgreich aktualisiert",
+          "updateFailed": "System konnte nicht aktualisiert werden",
+          "updateError": "Fehler beim Aktualisieren des Systems"
+        }
+      },
+      "addComponent": {
+        "title": "Neue Komponente hinzufügen",
+        "fields": {
+          "system": "System *",
+          "parentComponent": "Übergeordnete Komponente",
+          "componentType": "Komponententyp *",
+          "code": "Code",
+          "serialNumber": "Seriennummer",
+          "name": "Name",
+          "brandModel": "Marke / Modell",
+          "description": "Beschreibung",
+          "c2Platform": "C2-Plattform",
+          "gcs": "GCS",
+          "dccDroneId": "DCC-Drohnen-ID (UUID)",
+          "droneRegCode": "Drohnen-Registrierungscode",
+          "status": "Status *",
+          "activationDate": "Aktivierungsdatum",
+          "purchaseDate": "Kaufdatum",
+          "vendor": "Lieferant",
+          "guarantee": "Garantie (Tage)",
+          "batteryRatio": "Akku-Zyklusverhältnis"
+        },
+        "placeholders": {
+          "selectSystem": "System auswählen",
+          "selectType": "Typ auswählen",
+          "code": "z.B. BATT-01",
+          "componentName": "Komponentenname",
+          "componentDesc": "Komponentenbeschreibung",
+          "dccId": "z.B. e47c7fa4-f6c7-4bc2-9d55-84ad69bf2a95",
+          "regCode": "z.B. UAS-2024-001"
+        },
+        "c2Options": {
+          "flytbase": "Control Center",
+          "votix": "Votix",
+          "flighthub": "DJI FlightHub",
+          "app": "APP auf GCS"
+        },
+        "gcsOptions": {
+          "dock": "Docking-Station",
+          "rc": "Fernbedienung",
+          "gcs": "Bodensteuerstation"
+        },
+        "buttons": {
+          "cancel": "Abbrechen",
+          "adding": "Hinzufügen...",
+          "addComponent": "Komponente hinzufügen"
+        },
+        "toasts": {
+          "selectSystem": "Bitte ein System auswählen",
+          "selectType": "Bitte einen Komponententyp auswählen",
+          "activationBeforePurchase": "Aktivierungsdatum darf nicht vor dem Kaufdatum liegen",
+          "success": "Komponente erfolgreich hinzugefügt",
+          "failed": "Komponente konnte nicht hinzugefügt werden",
+          "error": "Fehler beim Hinzufügen der Komponente",
+          "resetToModel": "Wartungszyklus auf Modellvorgaben zurückgesetzt"
+        }
+      },
+      "editComponent": {
+        "title": "Komponente bearbeiten",
+        "fields": {
+          "system": "System",
+          "componentType": "Komponententyp *"
+        },
+        "noComponents": "Keine Komponenten für dieses System gefunden.",
+        "buttons": {
+          "cancel": "Abbrechen",
+          "close": "Schließen",
+          "saving": "Speichern...",
+          "saveChanges": "Änderungen speichern"
+        },
+        "toasts": {
+          "loadError": "Fehler beim Laden der Komponente",
+          "loadComponentsError": "Fehler beim Laden der Komponenten",
+          "selectComponent": "Bitte eine Komponente auswählen",
+          "success": "Komponente erfolgreich aktualisiert",
+          "failed": "Komponente konnte nicht aktualisiert werden",
+          "error": "Fehler beim Aktualisieren der Komponente",
+          "resetToModel": "Wartungszyklus auf Modellvorgaben zurückgesetzt"
+        }
+      },
+      "addModel": {
+        "title": "Neues Modell hinzufügen",
+        "sections": {
+          "identification": "Identifikation",
+          "classificationWeight": "Klassifikation & Gewicht",
+          "operatingConditions": "Betriebsbedingungen",
+          "performance": "Leistung",
+          "maintenance": "Wartung",
+          "guaranteeNotes": "Garantie & Notizen"
+        },
+        "fields": {
+          "componentType": "Komponententyp *",
+          "subType": "Untertyp *",
+          "brand": "Marke (Hersteller) *",
+          "serie": "Serie (Modellcode) *",
+          "modelName": "Modell (Name) *",
+          "version": "Version",
+          "mtom": "MTOM (kg)",
+          "weight": "Gewicht (kg)",
+          "windMin": "Wind Min (m/s)",
+          "windMax": "Wind Max (m/s)",
+          "tempMin": "Temp Min (°C)",
+          "tempMax": "Temp Max (°C)",
+          "enduranceMin": "Ausdauer Min (min)",
+          "enduranceMax": "Ausdauer Max (min)",
+          "maxSpeed": "Max. Geschwindigkeit (km/h)",
+          "maxAltitude": "Max. Höhe (m)",
+          "phaseOut": "Auslaufen",
+          "active": "Aktiv",
+          "maintenanceCycle": "Wartungszyklus",
+          "guaranteeYears": "Garantie (Jahre)",
+          "maxFlightTime": "Max. Flugzeit (min)",
+          "additionalSpecs": "Zusätzliche Spezifikationen"
+        },
+        "categoryOptions": {
+          "aircraft": "Luftfahrzeug",
+          "dock": "Dock"
+        },
+        "subtypeOptions": {
+          "multirotor": "Multirotor / Drohne",
+          "fixedWing": "Starrflügler",
+          "vtol": "VTOL",
+          "helicopter": "Hubschrauber",
+          "singleRotor": "Einzelrotor",
+          "indoorDock": "Innendock",
+          "outdoorDock": "Außendock",
+          "mobileDock": "Mobiles Dock",
+          "portableDock": "Tragbares Dock"
+        },
+        "placeholders": {
+          "selectType": "Typ auswählen",
+          "selectSubType": "Untertyp auswählen",
+          "selectTypeFirst": "Zuerst Typ auswählen",
+          "additionalNotes": "Zusätzliche Notizen..."
+        },
+        "buttons": {
+          "cancel": "Abbrechen",
+          "adding": "Hinzufügen...",
+          "addModel": "Modell hinzufügen"
+        },
+        "toasts": {
+          "selectType": "Bitte einen Komponententyp auswählen",
+          "selectSubType": "Bitte einen Untertyp auswählen",
+          "modelCodeRequired": "Modellcode (Serie) ist erforderlich",
+          "modelNameRequired": "Modellname ist erforderlich",
+          "manufacturerRequired": "Hersteller (Marke) ist erforderlich",
+          "windMinMax": "Windminimum darf nicht größer als Windmaximum sein",
+          "tempMinMax": "Temperaturminimum darf nicht größer als Temperaturmaximum sein",
+          "enduranceMinMax": "Ausdauerminimum darf nicht größer als Ausdauermaximum sein",
+          "flightTimePositive": "Max. Flugzeit muss größer als 0 sein",
+          "speedPositive": "Max. Geschwindigkeit muss größer als 0 sein",
+          "altitudePositive": "Max. Höhe muss größer als 0 sein",
+          "weightPositive": "Gewicht muss größer als 0 sein",
+          "success": "Modell erfolgreich hinzugefügt",
+          "failed": "Modell konnte nicht hinzugefügt werden",
+          "error": "Fehler beim Hinzufügen des Modells"
+        }
+      },
+      "editModel": {
+        "title": "Modell bearbeiten",
+        "selectModelLabel": "Zu bearbeitendes Modell auswählen",
+        "selectModelPlaceholder": "Modell auswählen...",
+        "buttons": {
+          "cancel": "Abbrechen",
+          "saving": "Speichern...",
+          "saveChanges": "Änderungen speichern"
+        },
+        "toasts": {
+          "selectModel": "Bitte ein Modell auswählen",
+          "selectType": "Bitte einen Komponententyp auswählen",
+          "selectSubType": "Bitte einen Untertyp auswählen",
+          "manufacturerRequired": "Hersteller (Marke) ist erforderlich",
+          "modelCodeRequired": "Modellcode (Serie) ist erforderlich",
+          "modelNameRequired": "Modellname ist erforderlich",
+          "loadError": "Fehler beim Laden der Modelle",
+          "loadModelError": "Fehler beim Laden des Modells",
+          "updateSuccess": "Modell erfolgreich aktualisiert",
+          "updateFailed": "Modell konnte nicht aktualisiert werden",
+          "updateError": "Fehler beim Aktualisieren des Modells"
+        }
+      },
+      "duplicateSystem": {
+        "title": "System duplizieren",
+        "tabs": {
+          "systemDetails": "Systemdetails",
+          "components": "Komponenten ({{count}})"
+        },
+        "systemFields": {
+          "code": "Code *",
+          "description": "Beschreibung",
+          "latitude": "Breitengrad",
+          "longitude": "Längengrad",
+          "status": "Status",
+          "activationDate": "Aktivierungsdatum",
+          "client": "Mandant",
+          "location": "Standort"
+        },
+        "componentFields": {
+          "type": "Typ *",
+          "code": "Code",
+          "name": "Name",
+          "serialNumber": "Seriennummer",
+          "description": "Beschreibung",
+          "model": "Modell",
+          "status": "Status",
+          "parentComponent": "Übergeordnete Komponente",
+          "activationDate": "Aktivierungsdatum",
+          "purchaseDate": "Kaufdatum",
+          "vendor": "Anbieter",
+          "guarantee": "Garantie (Tage)",
+          "maintenanceCycle": "Wartungszyklus",
+          "cycleHours": "Zyklusstunden",
+          "cycleDays": "Zyklustage",
+          "cycleFlights": "Zyklusflüge",
+          "batteryRatio": "Batteriezyklus-Verhältnis",
+          "c2Platform": "C2-Plattform",
+          "gcs": "GCS",
+          "dccDroneId": "DCC-Drohnen-ID"
+        },
+        "noComponents": "Keine Komponenten für dieses System gefunden.",
+        "componentIndex": "Komponente {{index}}",
+        "noType": "Kein Typ",
+        "buttons": {
+          "cancel": "Abbrechen",
+          "savingCopy": "Kopie speichern...",
+          "saveDuplicate": "Duplikat speichern"
+        },
+        "placeholders": {
+          "selectClient": "Mandant auswählen",
+          "noneTopLevel": "Keiner (oberste Ebene)",
+          "toolModelId": "Gerätemodell-ID"
+        },
+        "toasts": {
+          "systemCodeRequired": "Systemcode ist erforderlich",
+          "loadSourceFailed": "Quellsystem konnte nicht geladen werden",
+          "loadComponentsFailed": "Quellkomponenten konnten nicht geladen werden",
+          "sourceNotFound": "Quellsystem nicht gefunden",
+          "prepareDraftError": "Fehler beim Erstellen des Duplikat-Entwurfs",
+          "duplicateSuccess": "System erfolgreich dupliziert",
+          "duplicateFailed": "System konnte nicht dupliziert werden"
+        }
+      },
+      "viewTool": {
+        "titleWithCode": "Systemdetails - {{code}}",
+        "loading": "Laden...",
+        "exporting": "Exportieren…",
+        "export": "Exportieren",
+        "downloadAs": "Herunterladen als",
+        "exportOptions": {
+          "xlsx": "Excel (.xlsx)",
+          "pdf": "PDF (.pdf)",
+          "docx": "Word (.docx)"
+        },
+        "tabs": {
+          "general": "Allgemeine Informationen",
+          "specifications": "Spezifikationen",
+          "components": "Komponenten",
+          "maintenance": "Wartung"
+        },
+        "fields": {
+          "systemCode": "Systemcode",
+          "status": "Status",
+          "active": "Aktiv",
+          "client": "Kunde",
+          "description": "Beschreibung",
+          "latitude": "Breitengrad",
+          "longitude": "Längengrad"
+        },
+        "noDescription": "Keine Beschreibung vorhanden.",
+        "flightStats": {
+          "title": "Flugstatistiken",
+          "totalMissions": "Gesamtmissionen",
+          "totalHours": "Gesamtstunden"
+        },
+        "noComponents": "Keine Komponenten für dieses System gefunden",
+        "inMaintenance": "In Wartung",
+        "componentFields": {
+          "code": "Code:",
+          "serial": "Seriennummer:",
+          "sinceLastMaint": "Seit letzter Wartung",
+          "days": "Tage",
+          "flights": "Flüge"
+        },
+        "noMaintenance": "Keine Wartungshistorie für dieses System",
+        "maintenanceFields": {
+          "type": "Typ:",
+          "assigned": "Zugewiesen:",
+          "closed": "Geschlossen:",
+          "unassigned": "Nicht zugewiesen"
+        },
+        "buttons": {
+          "close": "Schließen"
+        },
+        "toasts": {
+          "loadError": "Fehler beim Abrufen der Systemdetails",
+          "exportFailed": "Export der {{format}}-Datei fehlgeschlagen.",
+          "pdfExportFailed": "PDF-Export fehlgeschlagen."
+        }
+      },
+      "manageTypes": {
+        "title": "Komponententypen verwalten",
+        "subtitle": "Komponententyp-Optionen hinzufügen, umbenennen oder entfernen.",
+        "addNewType": "Neuen Typ hinzufügen",
+        "renameConfirmTitle": "Umbenennung bestätigen",
+        "renameConfirmMessage": "Diese Änderung betrifft {{count}} aktive Komponenten:",
+        "yesRenameAll": "Ja, alle umbenennen",
+        "back": "Zurück",
+        "placeholders": {
+          "label": "Bezeichnung (z.B. Propeller)",
+          "value": "Wert (z.B. PROPELLER)"
+        },
+        "toasts": {
+          "bothRequired": "Bezeichnung und Wert sind erforderlich",
+          "typeAdded": "Typ hinzugefügt",
+          "addFailed": "Typ konnte nicht hinzugefügt werden",
+          "typeUpdated": "Typ aktualisiert",
+          "updateFailed": "Aktualisierung fehlgeschlagen",
+          "typeRemoved": "Typ entfernt",
+          "deleteFailed": "Löschen fehlgeschlagen"
+        }
+      },
+      "relations": {
+        "title": "Komponentenbeziehungen organisieren",
+        "subtitle": "Weisen Sie jeder Komponente einen übergeordneten Eintrag zu, um eine einstufige Hierarchie zu erstellen. Nur Komponenten der obersten Ebene können übergeordnet sein.",
+        "selectSystem": "System auswählen",
+        "componentAssignments": "Komponentenzuweisungen ({{count}})",
+        "livePreview": "Live-Vorschau",
+        "noComponents": "Keine Komponenten in diesem System gefunden.",
+        "allChildren": "Alle Komponenten sind untergeordnet.",
+        "noneTopLevel": "Keiner (oberste Ebene)",
+        "topLevel": "Oberste Ebene",
+        "parent": "übergeordnet",
+        "child": "↳ untergeordnet",
+        "primaryComponent": "Primärkomponente",
+        "primaryComponentPlaceholder": "Primärkomponente auswählen…",
+        "primaryComponentNone": "Keine",
+        "primaryTag": "PRIMÄR",
+        "noChanges": "Keine Änderungen",
+        "chooseSystem": "System auswählen…",
+        "removeChildrenFirst": "Untergeordnete entfernen, um diese Komponente zu verschachteln",
+        "unsavedChanges_one": "{{count}} nicht gespeicherte Änderung",
+        "unsavedChanges_other": "{{count}} nicht gespeicherte Änderungen",
+        "rules": {
+          "selfParent": "Eine Komponente kann nicht ihre eigene übergeordnete Komponente sein.",
+          "hasChildren": "Diese Komponente hat bereits untergeordnete Komponenten. Entfernen Sie diese zuerst, bevor Sie sie unter einer übergeordneten Komponente verschachteln.",
+          "parentIsChild": "Die ausgewählte übergeordnete Komponente ist selbst eine untergeordnete Komponente. Nur eine Verschachtelungsebene ist erlaubt."
+        },
+        "buttons": {
+          "cancel": "Abbrechen",
+          "saving": "Speichern…",
+          "save": "Speichern",
+          "noChangesToSave": "Keine Änderungen zum Speichern."
+        },
+        "toasts": {
+          "loadFailed": "Komponenten konnten nicht geladen werden",
+          "loadError": "Fehler beim Laden der Komponenten",
+          "failedCount": "{{count}} Komponente(n) konnten nicht aktualisiert werden.",
+          "savedCount": "{{count}} Beziehung(en) gespeichert.",
+          "saveError": "Fehler beim Speichern der Beziehungen."
+        }
+      }
+    }
+  },
+  "droneAtc": {
+    "title": "Drone ATC",
+    "subtitle": "Luftverkehrskontrolle",
+    "sync": {
+      "updating": "Aktualisierung…",
+      "updated": "Aktualisiert",
+      "failed": "Fehlgeschlagen",
+      "updateDrones": "Drohnen auf FlytRelay aktualisieren",
+      "syncDrones": "Drohnen mit FlytRelay synchronisieren",
+      "updatingShort": "…",
+      "updatedShort": "Fertig",
+      "failedShort": "Err"
+    },
+    "status": {
+      "live": "Live",
+      "connecting": "Verbinde…",
+      "error": "Fehler",
+      "initialising": "Initialisierung…",
+      "noApiKey": "Kein API-Schlüssel"
+    },
+    "noFlytbaseKey": "Kein Control Center API-Schlüssel konfiguriert.",
+    "configure": "Konfigurieren →",
+    "retry": "Wiederholen",
+    "fleetManagement": "Flottenmanagement",
+    "fleet": "Flotte",
+    "droneList": {
+      "live": "LIVE",
+      "standby": "STANDBY",
+      "offline": "OFFLINE",
+      "noGps": "KEIN GPS",
+      "noActiveDrones": "Keine aktiven Drohnen",
+      "scanningAirspace": "Luftraum wird gescannt"
+    },
+    "layers": {
+      "layers": "Ebenen",
+      "mapLayers": "Kartenebenen",
+      "traffic": "Verkehr",
+      "drones": "Drohnen",
+      "liveFleetTelemetry": "Live-Flotten-Telemetrie",
+      "aircraft": "Flugzeuge",
+      "airspace": "Luftraum",
+      "weather": "Wetter",
+      "wind": "Wind",
+      "animatedFlow": "Animierter Fluss",
+      "temperature": "Temperatur",
+      "surfaceCelsius": "Oberfläche °C",
+      "clouds": "Wolken",
+      "cloudCover": "Wolkenbedeckung %",
+      "precip": "Niederschlag",
+      "rainSnow": "Regen & Schnee mm/h",
+      "pressure": "Luftdruck",
+      "atmosphericHpa": "Atmosphärisch hPa",
+      "classMeta": {
+        "A": {
+          "label": "Klasse A",
+          "desc": "FL180+"
+        },
+        "B": {
+          "label": "Klasse B",
+          "desc": "Oberfläche–10.000 ft"
+        },
+        "C": {
+          "label": "Klasse C",
+          "desc": "Oberfläche–4.000 ft"
+        },
+        "D": {
+          "label": "Klasse D",
+          "desc": "Oberfläche–2.500 ft"
+        }
+      }
+    },
+    "connection": {
+      "failed": "Verbindung fehlgeschlagen"
+    }
+  },
+  "clientPortal": {
+    "sectionTitle": "Client",
+    "dashboard": "Dashboard",
+    "missions": "Missionen",
+    "dashboardTitle": "Client-Dashboard",
+    "dashboardSubtitle": "Übersicht Ihrer Missionen und Systeme",
+    "missionsTitle": "Client-Missionen",
+    "missionsSubtitle": "Zugewiesene Missionen anzeigen und verfolgen",
+    "totalMissions": "Missionen gesamt",
+    "flightHours": "Flugstunden",
+    "distanceKm": "Distanz (km)",
+    "systemsUsed": "Verwendete Systeme",
+    "missionStatus": "Missionsstatus",
+    "systemsDrones": "Systeme / Drohnen",
+    "noSystems": "Noch keine Systeme erfasst.",
+    "noMissions": "Keine Missionen gefunden",
+    "searchPlaceholder": "Missionen suchen…",
+    "statusAll": "Alle",
+    "statusPlanned": "Geplant",
+    "statusInProgress": "In Bearbeitung",
+    "statusCompleted": "Abgeschlossen",
+    "statusCancelled": "Abgebrochen",
+    "statusAborted": "Abgebrochen",
+    "colCode": "Code",
+    "colMission": "Mission",
+    "colStatus": "Status",
+    "colPilot": "Pilot",
+    "colDrone": "Drohne",
+    "colScheduled": "Geplant",
+    "colDuration": "Dauer",
+    "colLocation": "Standort",
+    "detailTitle": "Missionsdetail",
+    "fieldMissionCode": "Missionscode",
+    "fieldStatus": "Status",
+    "fieldPilot": "Pilot",
+    "fieldDrone": "Drohne",
+    "fieldScheduledStart": "Geplanter Start",
+    "fieldActualStart": "Tatsächlicher Start",
+    "fieldActualEnd": "Tatsächliches Ende",
+    "fieldDuration": "Dauer",
+    "fieldLocation": "Standort",
+    "fieldDistance": "Zurückgelegte Distanz",
+    "fieldNotes": "Notizen",
+    "missionCount_one": "{{count}} Mission",
+    "missionCount_other": "{{count}} Missionen",
+    "pageOf": "Seite {{page}} von {{total}}",
+    "requestFlight": "Flug anfragen",
+    "requestFlightTitle": "Neuen Flug anfragen",
+    "requestFlightSubtitle": "Neue Fluganfrage an das Operationsteam senden",
+    "flightDetails": "Flugdetails",
+    "fieldMissionType": "Missionstyp",
+    "missionTypePlaceholder": "z. B. ON_DEMAND, GEPLANT...",
+    "fieldTarget": "Ziel / Bereich",
+    "targetPlaceholder": "Ort oder Gebietsangabe",
+    "fieldStartDatetime": "Gewünschter Startzeitpunkt",
+    "fieldPriority": "Priorität",
+    "priorityHigh": "Hoch",
+    "priorityMedium": "Mittel",
+    "priorityLow": "Niedrig",
+    "notesPlaceholder": "Weitere Informationen oder besondere Anforderungen…",
+    "submitRequest": "Fluganfrage senden",
+    "submitting": "Sende…",
+    "requestSubmitted": "Anfrage gesendet!",
+    "requestSubmittedDesc": "Ihre Fluganfrage wurde empfangen. Das Operationsteam wird sie in Kürze prüfen.",
+    "requestAnother": "Weiteren Flug anfragen",
+    "requestFailed": "Anfrage fehlgeschlagen",
+    "requestValidation": "Bitte mindestens Missionstyp oder Ziel angeben.",
+    "operatorSection": "Betreiber",
+    "fieldOperator": "Betreibername",
+    "operatorPlaceholder": "Unternehmen oder Person, die für diese Anfrage verantwortlich ist",
+    "localizationSection": "Lokalisierung",
+    "fieldHighway": "Autobahn",
+    "fieldCarriageway": "Fahrbahn",
+    "fieldKmStart": "Km Start",
+    "fieldKmEnd": "Km Ende",
+    "waypointSection": "Wegpunkt",
+    "fieldLatitude": "Breitengrad",
+    "fieldLongitude": "Längengrad",
+    "fieldAltitude": "Höhe (m)"
   }
 }

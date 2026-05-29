@@ -1,0 +1,15 @@
+meta {
+  name: Get Training Users
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/api/training/users
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

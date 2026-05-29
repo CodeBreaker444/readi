@@ -1,0 +1,15 @@
+meta {
+  name: Maintenance Dashboard
+  type: http
+  seq: 13
+}
+
+get {
+  url: {{baseUrl}}/api/system/maintenance/dashboard
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

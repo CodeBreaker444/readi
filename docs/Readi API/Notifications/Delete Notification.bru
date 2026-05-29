@@ -1,0 +1,23 @@
+meta {
+  name: Delete Notification
+  type: http
+  seq: 4
+}
+
+delete {
+  url: {{baseUrl}}/api/notification/delete
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  { "notification_id": 1 }
+}
+
+settings {
+  encodeUrl: true
+}

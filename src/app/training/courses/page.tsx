@@ -68,6 +68,7 @@ interface FormState {
   training_type: string;
   certificate_type: string;
   session_code: string;
+  session_date: string;
   completion_date: string;
   expiry_date: string;
 }
@@ -78,6 +79,7 @@ const EMPTY_FORM: FormState = {
   training_type: '',
   certificate_type: '',
   session_code: '',
+  session_date: '',
   completion_date: '',
   expiry_date: '',
 };
@@ -196,6 +198,7 @@ export default function TrainingCoursesPage() {
       training_type: record.training_type ?? '',
       certificate_type: record.certificate_type ?? '',
       session_code: record.session_code ?? '',
+      session_date: record.session_date ?? '',
       completion_date: record.completion_date ?? '',
       expiry_date: record.expiry_date ?? '',
     });
@@ -215,6 +218,7 @@ export default function TrainingCoursesPage() {
           training_type: form.training_type || null,
           certificate_type: form.certificate_type || null,
           session_code: form.session_code.trim() || null,
+          session_date: form.session_date || null,
           completion_date: form.completion_date || null,
           expiry_date: form.expiry_date || null,
         });
@@ -226,6 +230,7 @@ export default function TrainingCoursesPage() {
           training_type: form.training_type || null,
           certificate_type: form.certificate_type || null,
           session_code: form.session_code.trim() || null,
+          session_date: form.session_date || null,
           completion_date: form.completion_date || null,
           expiry_date: form.expiry_date || null,
         });
@@ -468,7 +473,7 @@ export default function TrainingCoursesPage() {
 
 
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
           <div className={`w-full max-w-lg rounded-2xl border shadow-2xl ${isDark ? 'bg-[#0f1320] border-white/8' : 'bg-white border-gray-200'}`}>
 
             <div className={`flex items-center justify-between px-6 py-4 border-b ${borderMuted}`}>
@@ -575,6 +580,16 @@ export default function TrainingCoursesPage() {
                     <SelectItem value="QUALIFICATION">{t('training.courses.certQualification')}</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div>
+                <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>{t('training.courses.sessionDate')}</label>
+                <Input
+                  type="date"
+                  value={form.session_date}
+                  onChange={(e) => setForm((f) => ({ ...f, session_date: e.target.value }))}
+                  className={`h-9 text-xs ${inputCls}`}
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-3">

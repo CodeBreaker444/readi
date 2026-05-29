@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { getApiRoutePermission, Role, roleHasPermission, ROUTE_PERMISSIONS } from './lib/auth/roles'
-import { decodeJwtRole, hasRoutePermission, isJwtExpired } from './lib/utils'
+import { decodeJwtPayload, decodeJwtRole, hasRoutePermission, isJwtExpired } from './lib/utils'
 
 export async function updateSession(request: NextRequest) {
 
@@ -56,6 +56,12 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Server-to-server endpoints called by FlytRelay using RS256 JWT (no session cookie)
+  const FLYTRELAY_ROUTES = ['/api/drone-atc/user-info', '/api/drone-atc/users'];
+  if (FLYTRELAY_ROUTES.some((r) => pathname === r || pathname.startsWith(r + '/'))) {
+    return NextResponse.next();
+  }
+
   const publicRoutes = ['/auth/login', '/auth/activate', '/auth/update-password', '/auth/setup-2fa', '/auth/verify-mfa']
   const authFlowRoutes = [
     '/auth/change-password',
@@ -69,7 +75,12 @@ export async function updateSession(request: NextRequest) {
   const jwtToken = request.cookies.get('readi_auth_token')?.value
 
   if (pathname === '/') {
-    if ((jwtToken && !isJwtExpired(jwtToken)) || user) {
+    if (jwtToken && !isJwtExpired(jwtToken)) {
+      const role = decodeJwtRole(jwtToken)
+      const dest = role === 'CLIENT' ? '/client/dashboard' : '/dashboard'
+      return NextResponse.redirect(new URL(dest, request.url))
+    }
+    if (user) {
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
     return NextResponse.redirect(new URL('/auth/login', request.url))
@@ -95,8 +106,27 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.next()
     }
     if (isPublicRoute || isAuthFlowRoute) {
-      return NextResponse.redirect(new URL('/dashboard', request.url))
+      const role = decodeJwtRole(jwtToken)
+      const dest = role === 'CLIENT' ? '/client/dashboard' : '/dashboard'
+      return NextResponse.redirect(new URL(dest, request.url))
     }
+
+    const roleForCheck = decodeJwtRole(jwtToken)
+    if (roleForCheck === 'CLIENT') {
+      const isClientPortalRoute =
+        pathname.startsWith('/client/') || pathname.startsWith('/api/client-portal')
+      const isAllowedAuthRoute =
+        pathname === '/auth/change-password' || pathname === '/profile'
+      if (!isClientPortalRoute && !isAllowedAuthRoute && !pathname.startsWith('/api/profile')) {
+        return NextResponse.redirect(new URL('/client/dashboard', request.url))
+      }
+    }
+
+    // Block non-CLIENT roles from client portal page routes
+    if (!pathname.startsWith('/api/') && pathname.startsWith('/client/') && roleForCheck !== 'CLIENT') {
+      return NextResponse.redirect(new URL('/unauthorized', request.url))
+    }
+
     if (pathname.startsWith('/api/')) {
       const required = getApiRoutePermission(pathname)
 
@@ -114,6 +144,21 @@ export async function updateSession(request: NextRequest) {
           )
         }
       }
+
+      // Company-level Drone ATC gate for API routes
+      if (pathname.startsWith('/api/drone-atc')) {
+        const role = decodeJwtRole(jwtToken)
+        if (role && role !== 'SUPERADMIN') {
+          const payload = decodeJwtPayload(jwtToken)
+          if (!payload?.droneAtcEnabled) {
+            return NextResponse.json(
+              { error: 'Drone ATC is not enabled for your organization' },
+              { status: 403 }
+            )
+          }
+        }
+      }
+
       return response
     }
 
@@ -122,6 +167,17 @@ export async function updateSession(request: NextRequest) {
       const requiredEntry = ROUTE_PERMISSIONS[pathname]
       if (requiredEntry !== undefined && !hasRoutePermission(role, requiredEntry)) {
         return NextResponse.redirect(new URL('/unauthorized', request.url))
+      }
+    }
+
+    // Company-level Drone ATC gate for page route
+    if (pathname.startsWith('/drone-atc')) {
+      const role = decodeJwtRole(jwtToken)
+      if (role && role !== 'SUPERADMIN') {
+        const payload = decodeJwtPayload(jwtToken)
+        if (!payload?.droneAtcEnabled) {
+          return NextResponse.redirect(new URL('/unauthorized', request.url))
+        }
       }
     }
 

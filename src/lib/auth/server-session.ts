@@ -20,6 +20,9 @@ export interface SessionUser {
   userActive: 'Y' | 'N';
   timezone?: string
   avatar?: string | null;
+  droneAtcEnabled: boolean;
+  companyEasaCode: string | null;
+  ownerName?: string | null;
 }
 
 export interface Session {
@@ -113,6 +116,22 @@ export const getUserSession = cache(async (): Promise<Session | null> => {
 
     const avatarUrl = await resolveAvatarUrl(profileData?.profile_picture);
 
+    let droneAtcEnabled = false;
+    let companyEasaCode: string | null = null;
+    let ownerName: string | null = null;
+    if (userData.user_role !== 'SUPERADMIN' && userData.fk_owner_id) {
+      const { data: ownerData } = await supabase
+        .from('owner')
+        .select('drone_atc_enabled, easa_operator_code, owner_name')
+        .eq('owner_id', userData.fk_owner_id)
+        .single();
+      droneAtcEnabled = ownerData?.drone_atc_enabled ?? false;
+      companyEasaCode = (ownerData as any)?.easa_operator_code ?? null;
+      ownerName = (ownerData as any)?.owner_name ?? null;
+    } else if (userData.user_role === 'SUPERADMIN') {
+      droneAtcEnabled = true;
+    }
+
     const sessionUser: SessionUser = {
       id: userData.auth_user_id,
       userId: userData.user_id,
@@ -126,6 +145,9 @@ export const getUserSession = cache(async (): Promise<Session | null> => {
       userActive: userData.user_active,
       timezone: userData.user_timezone ?? undefined,
       avatar: avatarUrl,
+      droneAtcEnabled,
+      companyEasaCode,
+      ownerName,
     };
 
     return {

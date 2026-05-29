@@ -1,0 +1,27 @@
+meta {
+  name: FlytBase GUTMA Download API Copy
+}
+
+auth {
+  mode: bearer
+}
+
+auth:bearer {
+  token: {{api_key}}
+}
+
+vars:pre-request {
+  base_url: https://api-eu.flytbase.com
+  org_id: YOUR_ORG_ID
+  api_key: YOUR_API_KEY_TOKEN
+  drone_id: YOUR_DRONE_ID
+  start_date: 0
+  end_date: 1773446399000
+  page: 1
+  limit: 100
+  flight_id: a2754933-f523-44b5-a0d9-a2882595900f
+}
+
+docs {
+  Postman collection for FlytBase EU API (api-eu.flytbase.com) - List drones/docks via device/bindings, query flight logs, and bulk-download GUTMA files for any organization
+}

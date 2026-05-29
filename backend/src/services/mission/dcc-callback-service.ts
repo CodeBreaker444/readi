@@ -55,6 +55,23 @@ export async function getExternalMissionIdForMission(missionId: number): Promise
 }
 
 /**
+ * Returns the external_mission_id ONLY if the mission was initiated by a
+ * third-party service (i.e., it has a linked flight_request). Returns null
+ * for client-dashboard / PMVD-initiated missions.
+ */
+async function getExternalMissionIdFromFlightRequest(missionId: number): Promise<string | null> {
+  const { data, error } = await supabase
+    .from('pilot_mission')
+    .select('fk_planning_id')
+    .eq('pilot_mission_id', missionId)
+    .single();
+
+  if (error || !data || !data.fk_planning_id) return null;
+
+  return getExternalMissionIdForPlanning(data.fk_planning_id as number);
+}
+
+/**
  * Returns owner_id for a given pilot_mission — needed to look up DCC URL.
  */
 async function getOwnerIdForMission(missionId: number): Promise<number | null> {
@@ -232,16 +249,23 @@ export async function notifyDccDenial(
 export async function notifyDccExecution(missionId: number): Promise<DccCallbackResult> {
   try {
     const [externalId, ownerId] = await Promise.all([
-      getExternalMissionIdForMission(missionId),
+      getExternalMissionIdFromFlightRequest(missionId),
       getOwnerIdForMission(missionId),
     ]);
     const path = `/dcc/missions/${externalId ?? 'unknown'}/execution`;
-    if (!externalId || !ownerId) {
-      console.warn('[DCC] execution: could not resolve IDs for mission', missionId);
+    if (!externalId) {
       return {
         path,
         outcome: 'skipped',
-        message: 'Could not resolve external mission or owner for this operation',
+        message: 'Mission has no linked flight request — DCC execution not sent',
+      };
+    }
+    if (!ownerId) {
+      console.warn('[DCC] execution: could not resolve owner for mission', missionId);
+      return {
+        path,
+        outcome: 'skipped',
+        message: 'Could not resolve owner for this operation',
       };
     }
     return await dccPost(ownerId, `/dcc/missions/${externalId}/execution`);
@@ -267,16 +291,23 @@ export async function notifyDccTermination(
 ): Promise<DccCallbackResult> {
   try {
     const [externalId, ownerId] = await Promise.all([
-      getExternalMissionIdForMission(missionId),
+      getExternalMissionIdFromFlightRequest(missionId),
       getOwnerIdForMission(missionId),
     ]);
     const path = `/dcc/missions/${externalId ?? 'unknown'}/termination`;
-    if (!externalId || !ownerId) {
-      console.warn('[DCC] termination: could not resolve IDs for mission', missionId);
+    if (!externalId) {
       return {
         path,
         outcome: 'skipped',
-        message: 'Could not resolve external mission or owner for this operation',
+        message: 'Mission has no linked flight request — DCC termination not sent',
+      };
+    }
+    if (!ownerId) {
+      console.warn('[DCC] termination: could not resolve owner for mission', missionId);
+      return {
+        path,
+        outcome: 'skipped',
+        message: 'Could not resolve owner for this operation',
       };
     }
     return await dccPost(ownerId, `/dcc/missions/${externalId}/termination`, { result, note: note ?? '' });

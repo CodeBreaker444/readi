@@ -1,0 +1,29 @@
+meta {
+  name: Create Audit Plan
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/compliance/audit-plan/add
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "plan_name": "Q2 2026 Compliance Audit",
+    "planned_date": "2026-06-01",
+    "auditor": "Jane Smith",
+    "scope": "Operations and Safety procedures",
+    "status": "PLANNED"
+  }
+}
+
+settings {
+  encodeUrl: true
+}
