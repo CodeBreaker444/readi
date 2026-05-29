@@ -24,8 +24,9 @@ interface DataTableProps<TData, TValue> {
   data: TData[];
   loading?: boolean;
   exportFilename?: string;
-  /** Optional slot rendered at the right end of the search bar row */
   actions?: React.ReactNode;
+  onRowClick?: (row: TData) => void;
+  rowTooltip?: string;
 }
 
 export default function DataTable<TData, TValue>({
@@ -34,6 +35,8 @@ export default function DataTable<TData, TValue>({
   loading = false,
   exportFilename,
   actions,
+  onRowClick,
+  rowTooltip,
 }: DataTableProps<TData, TValue>) {
   const { t } = useTranslation();
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -124,7 +127,13 @@ export default function DataTable<TData, TValue>({
               ))
             ) : table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
+                <TableRow
+                  key={row.id}
+                  data-state={row.getIsSelected() && 'selected'}
+                  onClick={onRowClick ? () => onRowClick(row.original) : undefined}
+                  className={onRowClick ? 'cursor-pointer' : undefined}
+                  title={onRowClick && rowTooltip ? rowTooltip : undefined}
+                >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}

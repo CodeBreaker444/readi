@@ -120,6 +120,7 @@ export const ROUTE_PERMISSIONS: Record<string, RoutePermissionEntry> = {
   '/client/analytics': 'view_client_portal',
   '/client/profile': 'view_client_portal',
   '/company': 'add_company',
+  '/company/new': 'add_company',
   '/audit-logs': 'view_logs',
   '/training/courses': 'view_training',
   '/training/calendar': 'view_training',

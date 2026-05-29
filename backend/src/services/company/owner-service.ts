@@ -58,14 +58,30 @@ export interface AddOwnerPayload {
 
 export interface UpdateOwnerPayload {
     owner_name: string;
-    owner_address?: string;
-    owner_phone?: string;
+    owner_legal_name?: string | null;
+    owner_type?: string | null;
+    owner_address?: string | null;
+    owner_city?: string | null;
+    owner_state?: string | null;
+    owner_postal_code?: string | null;
+    owner_phone?: string | null;
     owner_email: string;
     owner_website: string;
     owner_active: string;
     drone_atc_enabled?: boolean;
     email_notifications_enabled?: boolean;
-    easa_operator_code?: string;
+    easa_operator_code?: string | null;
+    tax_id?: string | null;
+    registration_number?: string | null;
+    license_number?: string | null;
+    license_expiry?: string | null;
+}
+
+export interface OwnerMetrics {
+    total_users: number;
+    active_users: number;
+    inactive_users: number;
+    users_by_role: Record<string, number>;
 }
 
 export interface OwnerWithAdmin extends OwnerData {
@@ -124,25 +140,95 @@ export async function getOwners(): Promise<OwnerWithAdmin[]> {
 
 
 
+export async function getOwnerById(id: string): Promise<OwnerWithAdmin | null> {
+    const { data: owner, error } = await supabase
+        .from('owner')
+        .select('owner_id, owner_code, owner_name, owner_legal_name, owner_type, owner_address, owner_city, owner_state, owner_postal_code, owner_phone, owner_email, owner_website, owner_active, drone_atc_enabled, email_notifications_enabled, easa_operator_code, tax_id, registration_number, license_number, license_expiry, created_at')
+        .eq('owner_id', id)
+        .single();
+
+    if (error || !owner) return null;
+
+    const { data: adminRel } = await supabase
+        .from('user_owner')
+        .select(`users:fk_user_id (user_id, username, email, first_name, last_name, phone, user_active)`)
+        .eq('fk_owner_id', id)
+        .eq('relationship_type', 'OWNER_ADMIN')
+        .eq('is_primary', true)
+        .maybeSingle();
+
+    return {
+        ...(owner as any),
+        admin_user: (adminRel as any)?.users || null,
+    };
+}
+
+export async function getOwnerMetrics(id: string): Promise<OwnerMetrics> {
+    const { data: users } = await supabase
+        .from('users')
+        .select('user_id, user_active, user_role')
+        .eq('fk_owner_id', id);
+
+    const total_users = users?.length ?? 0;
+    const active_users = users?.filter((u: any) => u.user_active === 'Y').length ?? 0;
+    const inactive_users = total_users - active_users;
+
+    const users_by_role: Record<string, number> = {};
+    users?.forEach((u: any) => {
+        users_by_role[u.user_role] = (users_by_role[u.user_role] ?? 0) + 1;
+    });
+
+    return { total_users, active_users, inactive_users, users_by_role };
+}
+
 export async function updateOwner(id: string, payload: UpdateOwnerPayload) {
+    const { data: current } = await supabase
+        .from('owner')
+        .select('owner_active')
+        .eq('owner_id', id)
+        .single();
+
     const { data, error } = await supabase
         .from('owner')
         .update({
             owner_name: payload.owner_name,
-            owner_address: payload.owner_address || null,
-            owner_phone: payload.owner_phone || null,
+            owner_legal_name: payload.owner_legal_name ?? null,
+            owner_type: payload.owner_type ?? null,
+            owner_address: payload.owner_address ?? null,
+            owner_city: payload.owner_city ?? null,
+            owner_state: payload.owner_state ?? null,
+            owner_postal_code: payload.owner_postal_code ?? null,
+            owner_phone: payload.owner_phone ?? null,
             owner_email: payload.owner_email,
             owner_website: payload.owner_website,
             owner_active: payload.owner_active,
             drone_atc_enabled: payload.drone_atc_enabled ?? false,
             email_notifications_enabled: payload.email_notifications_enabled ?? false,
             easa_operator_code: payload.easa_operator_code ?? null,
+            tax_id: payload.tax_id ?? null,
+            registration_number: payload.registration_number ?? null,
+            license_number: payload.license_number ?? null,
+            license_expiry: payload.license_expiry ?? null,
         })
         .eq('owner_id', id)
         .select()
         .single();
 
     if (error) throw new Error(error.message);
+
+    // Reactivate all company users when transitioning from disabled → active
+    if (current?.owner_active === 'N' && payload.owner_active === 'Y') {
+        await supabase
+            .from('users')
+            .update({ user_active: 'Y' })
+            .eq('fk_owner_id', id);
+
+        await supabase
+            .from('user_owner')
+            .update({ is_active: true })
+            .eq('fk_owner_id', id);
+    }
+
     return data as OwnerData;
 }
 // used for updating just the easa code from admin profile page

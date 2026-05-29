@@ -1,26 +1,22 @@
 'use client';
 
-import AddOwnerModal from '@/components/company/AddOwnerModal';
 import DeleteOwnerDialog from '@/components/company/DeleteOwnerDialog';
-import EditOwnerModal from '@/components/company/EditOwnerModal';
-import ViewOwnerModal from '@/components/company/ViewOwnerModal';
 import DataTable from '@/components/system/DataTable';
 import { ownerColumns, OwnerData } from '@/components/tables/OwnerColumn';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/components/useTheme';
 import axios from 'axios';
 import { Plus } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 
 export default function OwnersPage() {
- const { isDark } = useTheme();
+  const { isDark } = useTheme();
+  const router = useRouter();
 
   const [data, setData] = useState<OwnerData[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [addOpen, setAddOpen] = useState(false);
-  const [viewOpen, setViewOpen] = useState(false);
-  const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [selectedOwner, setSelectedOwner] = useState<OwnerData | null>(null);
 
@@ -44,20 +40,13 @@ export default function OwnersPage() {
   const columns = useMemo(
     () =>
       ownerColumns({
-        onView: (owner) => {
-          setSelectedOwner(owner);
-          setViewOpen(true);
-        },
-        onEdit: (owner) => {
-          setSelectedOwner(owner);
-          setEditOpen(true);
-        },
+        onOpen: (owner) => router.push(`/company/${owner.owner_id}`),
         onDelete: (owner) => {
           setSelectedOwner(owner);
           setDeleteOpen(true);
         },
       }),
-    []
+    [router]
   );
 
   return (
@@ -91,7 +80,7 @@ export default function OwnersPage() {
           </div>
           <Button
             size="sm"
-            onClick={() => setAddOpen(true)}
+            onClick={() => router.push('/company/new')}
             className={`h-8 gap-1.5 text-xs font-semibold shadow-sm ${
               isDark
                 ? 'bg-white hover:bg-white/90 text-black'
@@ -105,33 +94,13 @@ export default function OwnersPage() {
       </div>
 
       <div className="px-6">
-        <DataTable columns={columns} data={data} loading={loading} exportFilename="companies" />
+        <DataTable
+          columns={columns}
+          data={data}
+          loading={loading}
+          exportFilename="companies"
+        />
       </div>
-
-      <AddOwnerModal
-        open={addOpen}
-        onClose={() => setAddOpen(false)}
-        onSuccess={fetchOwners}
-      />
-
-      <ViewOwnerModal
-        open={viewOpen}
-        onClose={() => {
-          setViewOpen(false);
-          setSelectedOwner(null);
-        }}
-        owner={selectedOwner}
-      />
-
-      <EditOwnerModal
-        open={editOpen}
-        onClose={() => {
-          setEditOpen(false);
-          setSelectedOwner(null);
-        }}
-        onSuccess={fetchOwners}
-        owner={selectedOwner}
-      />
 
       <DeleteOwnerDialog
         open={deleteOpen}
