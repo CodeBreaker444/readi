@@ -97,7 +97,7 @@ export function LocationGroupMap({ locations, isDark, height = 320 }: Props) {
           type="button"
           onClick={() => mapRef.current?.zoomIn()}
           className={cn(
-            'h-7 w-7 rounded-md border flex items-center justify-center shadow-sm transition-colors',
+            'h-7 w-7 cursor-pointer rounded-md border flex items-center justify-center shadow-sm transition-colors',
             isDark ? 'bg-slate-800 border-slate-600 text-slate-200 hover:bg-slate-700' : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-50',
           )}
         >
@@ -107,7 +107,7 @@ export function LocationGroupMap({ locations, isDark, height = 320 }: Props) {
           type="button"
           onClick={() => mapRef.current?.zoomOut()}
           className={cn(
-            'h-7 w-7 rounded-md border flex items-center justify-center shadow-sm transition-colors',
+            'h-7 w-7 cursor-pointer rounded-md border flex items-center justify-center shadow-sm transition-colors',
             isDark ? 'bg-slate-800 border-slate-600 text-slate-200 hover:bg-slate-700' : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-50',
           )}
         >

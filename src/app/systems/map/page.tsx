@@ -267,7 +267,7 @@ export default function DroneToolMapPage() {
                 <button
                   onClick={() => setIsFullscreen(f => !f)}
                   title={isFullscreen ? "Exit fullscreen" : "Fullscreen map"}
-                  className="absolute bottom-9 left-1/2 -translate-x-1/2 z-10 p-2 rounded-full shadow-lg backdrop-blur-sm transition-all hover:scale-105 active:scale-95"
+                  className="cursor-pointer absolute bottom-9 left-1/2 -translate-x-1/2 z-10 p-2 rounded-full shadow-lg backdrop-blur-sm transition-all hover:scale-105 active:scale-95"
                   style={{ background: "rgba(15,15,25,0.70)", color: "#e2e8f0", border: "1px solid rgba(255,255,255,0.15)" }}
                 >
                   {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}

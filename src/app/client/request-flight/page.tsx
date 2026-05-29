@@ -212,7 +212,7 @@ export default function RequestFlightPage() {
             </div>
             <button
               onClick={() => setSubmitted(false)}
-              className="mt-2 px-5 py-2 rounded-lg bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 transition-colors"
+              className="cursor-pointer mt-2 px-5 py-2 rounded-lg bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 transition-colors"
             >
               {t('clientPortal.requestAnother', 'Request Another Flight')}
             </button>
@@ -273,7 +273,7 @@ export default function RequestFlightPage() {
                         type="button"
                         onClick={() => setForm((f) => ({ ...f, priority: f.priority === p ? '' : p }))}
                         className={cn(
-                          'flex-1 rounded-lg border text-xs font-medium transition-colors',
+                          'cursor-pointer flex-1 rounded-lg border text-xs font-medium transition-colors',
                           priorityColor(p),
                         )}
                       >
@@ -453,7 +453,7 @@ export default function RequestFlightPage() {
                 'w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold transition-all',
                 submitting
                   ? 'bg-violet-500/50 text-white/60 cursor-not-allowed'
-                  : 'bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-500/20',
+                  : 'cursor-pointer bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-500/20',
               )}
             >
               {submitting ? (

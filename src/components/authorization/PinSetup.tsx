@@ -122,7 +122,7 @@ export function PinSetup({ isDark, existingFingerprint, onSuccess }: Props) {
                 <p className={cn('text-xs font-medium', isDark ? 'text-slate-400' : 'text-slate-500')}>Public Key (RSA-2048 SPKI)</p>
                 <button
                   onClick={() => handleCopy(publicKey)}
-                  className={cn('flex items-center gap-1 text-xs px-2 py-0.5 rounded transition-colors',
+                  className={cn('cursor-pointer flex items-center gap-1 text-xs px-2 py-0.5 rounded transition-colors',
                     isDark ? 'text-slate-400 hover:text-white hover:bg-slate-700' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
                   )}
                 >

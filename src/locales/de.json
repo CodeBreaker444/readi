@@ -852,6 +852,17 @@
       "edit": "Bearbeiten",
       "delete": "Löschen"
     },
+    "columns": {
+      "yearRef": "Jahresreferenz",
+      "evaluationCode": "Bewertungscode",
+      "planCode": "Plancode",
+      "customer": "Kunde",
+      "requestedBy": "Angefragt von",
+      "assignedTo": "Zugewiesen an",
+      "lastAction": "Letzte Aktion",
+      "procedureCode": "Verfahrenscode",
+      "open": "Öffnen"
+    },
     "flightRequests": {
       "title": "Fluganfragen",
       "subtitle": "Eingehende Missionsanfragen von externen Diensten",

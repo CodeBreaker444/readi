@@ -155,7 +155,7 @@ export function AuthorizationModal({ open, context, onSuccess, onCancel, isDark 
           <button
             onClick={onCancel}
             className={cn(
-              'absolute right-4 top-4 rounded-md p-1 transition-colors',
+              'cursor-pointer absolute right-4 top-4 rounded-md p-1 transition-colors',
               isDark ? 'text-slate-400 hover:text-white hover:bg-slate-700' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'
             )}
           >
@@ -257,7 +257,7 @@ export function AuthorizationModal({ open, context, onSuccess, onCancel, isDark 
           <button
             onClick={onCancel}
             className={cn(
-              'w-full rounded-lg border py-2 text-sm font-medium transition-colors',
+              'cursor-pointer w-full rounded-lg border py-2 text-sm font-medium transition-colors',
               isDark
                 ? 'border-slate-600 text-slate-300 hover:bg-slate-700/50'
                 : 'border-slate-200 text-slate-600 hover:bg-slate-50'

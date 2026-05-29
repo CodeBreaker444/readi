@@ -100,23 +100,23 @@ export function ManageDroneClassesModal({ open, onClose, classes, onReload, isDa
                     <button
                       onClick={() => handleSave(c.class_id)}
                       disabled={savingId === c.class_id}
-                      className="p-1 rounded text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+                      className="cursor-pointer p-1 rounded text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
                     >
                       {savingId === c.class_id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
                     </button>
-                    <button onClick={cancelEdit} className={`p-1 rounded ${muted} hover:text-slate-600`}>
+                    <button onClick={cancelEdit} className={`cursor-pointer p-1 rounded ${muted} hover:text-slate-600`}>
                       <X className="h-3.5 w-3.5" />
                     </button>
                   </>
                 ) : (
                   <>
-                    <button onClick={() => startEdit(c)} className={`p-1 rounded ${muted} hover:text-violet-500`}>
+                    <button onClick={() => startEdit(c)} className={`cursor-pointer p-1 rounded ${muted} hover:text-violet-500`}>
                       <Pencil className="h-3.5 w-3.5" />
                     </button>
                     <button
                       onClick={() => handleDelete(c.class_id)}
                       disabled={deletingId === c.class_id}
-                      className={`p-1 rounded ${muted} hover:text-red-500`}
+                      className={`cursor-pointer p-1 rounded ${muted} hover:text-red-500`}
                     >
                       {deletingId === c.class_id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
                     </button>

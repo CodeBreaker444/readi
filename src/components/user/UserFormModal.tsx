@@ -395,7 +395,7 @@ export function UserFormModal({
               <button
                 type="button"
                 onClick={() => setCcExpanded((v) => !v)}
-                className={`w-full flex items-center justify-between px-4 py-3 text-sm font-medium ${isDark ? 'text-slate-200' : 'text-slate-700'}`}
+                className={`cursor-pointer w-full flex items-center justify-between px-4 py-3 text-sm font-medium ${isDark ? 'text-slate-200' : 'text-slate-700'}`}
               >
                 <span className="flex items-center gap-2">
                   {ccStep === 'confirmed'
@@ -438,7 +438,7 @@ export function UserFormModal({
                           <button
                             type="button"
                             onClick={() => setCcShowToken((v) => !v)}
-                            className={`absolute right-2.5 top-1/2 -translate-y-1/2 ${isDark ? 'text-slate-400' : 'text-slate-400'}`}
+                            className={`cursor-pointer absolute right-2.5 top-1/2 -translate-y-1/2 transition-colors hover:text-violet-500 ${isDark ? 'text-slate-400' : 'text-slate-400'}`}
                           >
                             {ccShowToken ? <EyeOff size={14} /> : <Eye size={14} />}
                           </button>
@@ -495,7 +495,7 @@ export function UserFormModal({
               <button
                 type="button"
                 onClick={() => setCcExpanded((v) => !v)}
-                className={`w-full flex items-center justify-between px-4 py-3 text-sm font-medium ${isDark ? 'text-slate-200' : 'text-slate-700'}`}
+                className={`cursor-pointer w-full flex items-center justify-between px-4 py-3 text-sm font-medium ${isDark ? 'text-slate-200' : 'text-slate-700'}`}
               >
                 <span className="flex items-center gap-2">
                   {ccHasToken === true
@@ -583,7 +583,7 @@ export function UserFormModal({
                           <button
                             type="button"
                             onClick={() => setCcShowToken((v) => !v)}
-                            className={`absolute right-2.5 top-1/2 -translate-y-1/2 ${isDark ? 'text-slate-400' : 'text-slate-400'}`}
+                            className={`cursor-pointer absolute right-2.5 top-1/2 -translate-y-1/2 transition-colors hover:text-violet-500 ${isDark ? 'text-slate-400' : 'text-slate-400'}`}
                           >
                             {ccShowToken ? <EyeOff size={14} /> : <Eye size={14} />}
                           </button>

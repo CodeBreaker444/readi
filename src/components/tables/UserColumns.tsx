@@ -178,7 +178,7 @@ export function getUserColumns({
                     <button
                       onClick={() => onResendInvite(user)}
                       disabled={resendingUserId === user.user_id}
-                      className={`p-1.5 rounded-lg transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed ${
+                      className={`cursor-pointer p-1.5 rounded-lg transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed ${
                         isDark
                           ? 'bg-amber-500/10 hover:bg-amber-500/25 text-amber-400 hover:text-amber-300 border border-amber-700/40 hover:border-amber-500/60'
                           : 'bg-amber-50 hover:bg-amber-100 text-amber-500 hover:text-amber-600 border border-amber-200 hover:border-amber-300'
@@ -200,7 +200,7 @@ export function getUserColumns({
                 <TooltipTrigger asChild>
                   <button
                     onClick={() => onEdit(user)}
-                    className={`p-1.5 rounded-lg transition-all duration-150 ${
+                    className={`cursor-pointer p-1.5 rounded-lg transition-all duration-150 ${
                       isDark
                         ? 'bg-indigo-500/10 hover:bg-indigo-500/25 text-indigo-400 hover:text-indigo-300 border border-indigo-700/40 hover:border-indigo-500/60'
                         : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-500 hover:text-indigo-700 border border-indigo-200 hover:border-indigo-300'
@@ -216,7 +216,7 @@ export function getUserColumns({
                 <TooltipTrigger asChild>
                   <button
                     onClick={() => onDelete(user)}
-                    className={`p-1.5 rounded-lg transition-all duration-150 ${
+                    className={`cursor-pointer p-1.5 rounded-lg transition-all duration-150 ${
                       isDark
                         ? 'bg-rose-500/10 hover:bg-rose-500/25 text-rose-400 hover:text-rose-300 border border-rose-700/40 hover:border-rose-500/60'
                         : 'bg-rose-50 hover:bg-rose-100 text-rose-500 hover:text-rose-600 border border-rose-200 hover:border-rose-300'

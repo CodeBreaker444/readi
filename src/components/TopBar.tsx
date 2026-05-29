@@ -170,7 +170,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData, loading 
             className={`sm:hidden flex items-center justify-center w-9 h-9 rounded-xl transition-all duration-200 ${isDark
               ? 'bg-slate-800/80 text-violet-400 hover:bg-slate-800'
               : 'bg-gray-50/80 text-violet-500 hover:bg-gray-100/80'
-            } ${isChatRestricted ? 'cursor-not-allowed opacity-70' : ''}`}
+            } ${isChatRestricted ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}`}
           >
             <Search size={16} />
           </button>
@@ -180,7 +180,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData, loading 
             className={`group relative hidden sm:flex items-center gap-2.5 px-4 py-2 rounded-xl text-sm transition-all duration-200 w-60 ${isDark
               ? 'bg-slate-800/80 text-slate-400 hover:text-slate-300 hover:bg-slate-800'
               : 'bg-gray-50/80 text-gray-400 hover:text-gray-500 hover:bg-gray-100/80'
-            } ${isChatRestricted ? 'cursor-not-allowed opacity-70' : ''}`}
+            } ${isChatRestricted ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}`}
             style={{ border: '1px solid transparent', backgroundClip: 'padding-box' }}
           >
             <span
@@ -216,7 +216,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData, loading 
 
           <button
             onClick={toggleTheme}
-            className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-slate-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}
+            className={`cursor-pointer p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-slate-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}
             aria-label={t('topbar.toggleTheme')}
           >
             {isDark ? <Sun size={20} /> : <Moon size={20} />}
@@ -254,7 +254,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData, loading 
                   <div className="relative ml-2">
                     <button
                       onClick={(e) => { e.stopPropagation(); setShowOpmPicker(!showOpmPicker); }}
-                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-semibold transition-all ${
+                      className={`cursor-pointer flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-semibold transition-all ${
                         impersonatedOpm
                           ? (isDark ? 'bg-amber-500/15 border-amber-500/30 text-amber-400' : 'bg-amber-50 border-amber-200 text-amber-700')
                           : (isDark ? 'bg-slate-700/60 border-slate-600 text-slate-400 hover:text-slate-300' : 'bg-gray-100 border-gray-200 text-gray-500 hover:text-gray-700')
@@ -306,7 +306,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData, loading 
                                 <button
                                   key={u.userId}
                                   onClick={() => selectOpm(u)}
-                                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${
+                                  className={`cursor-pointer w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${
                                     isActive
                                       ? isDark ? 'bg-amber-500/15 border border-amber-500/25' : 'bg-amber-50 border border-amber-200'
                                       : isDark ? 'hover:bg-slate-800 border border-transparent' : 'hover:bg-gray-50 border border-transparent'
@@ -343,7 +343,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData, loading 
                           <div className={`border-t px-2 py-1.5 ${isDark ? 'border-slate-700/60' : 'border-gray-100'}`}>
                             <button
                               onClick={(e) => { e.stopPropagation(); clearOpm(); setShowOpmPicker(false); }}
-                              className={`w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-medium transition-colors ${
+                              className={`cursor-pointer w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-medium transition-colors ${
                                 isDark ? 'text-slate-500 hover:text-rose-400 hover:bg-rose-500/10' : 'text-gray-400 hover:text-rose-500 hover:bg-rose-50'
                               }`}
                             >
@@ -408,7 +408,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData, loading 
                       <button
                         key={key}
                         onClick={() => { setChatInput(t(key)); chatInputRef.current?.focus(); }}
-                        className={`text-left text-[11px] px-3 py-2 rounded-xl border transition-colors leading-snug ${isDark
+                        className={`cursor-pointer text-left text-[11px] px-3 py-2 rounded-xl border transition-colors leading-snug ${isDark
                           ? 'bg-slate-800/60 border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-300'
                           : 'bg-gray-50 border-gray-100 text-gray-500 hover:border-gray-200 hover:text-gray-700'}`}
                       >
@@ -483,7 +483,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData, loading 
               {isAdmin && impersonatedOpm && (
                 <div className={`flex items-center justify-between mb-2 px-3 py-1.5 rounded-lg text-[11px] font-medium ${isDark ? 'bg-amber-500/10 border border-amber-500/20 text-amber-400' : 'bg-amber-50 border border-amber-200 text-amber-700'}`}>
                   <span>{t('chat.actingAs', { name: impersonatedOpm.fullname })}</span>
-                  <button onClick={clearOpm} className="hover:opacity-70 transition-opacity ml-2">
+                  <button onClick={clearOpm} className="cursor-pointer hover:opacity-70 transition-opacity ml-2">
                     <X size={11} />
                   </button>
                 </div>

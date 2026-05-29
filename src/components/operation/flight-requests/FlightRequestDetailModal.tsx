@@ -164,7 +164,7 @@ export function FlightRequestDetailModal({
               {request.dcc_status}
             </span>
           </div>
-          <button onClick={onClose} className={`p-1.5 rounded-lg transition-colors ${isDark ? 'text-slate-400 hover:text-white hover:bg-slate-700' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}>
+          <button onClick={onClose} className={`cursor-pointer p-1.5 rounded-lg transition-colors ${isDark ? 'text-slate-400 hover:text-white hover:bg-slate-700' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}>
             <X className="h-4 w-4" />
           </button>
         </div>

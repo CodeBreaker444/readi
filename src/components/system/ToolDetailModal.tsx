@@ -108,7 +108,7 @@ const tabs = [
             </div>
           </div>
           <button onClick={onClose}
-            className={`text-2xl leading-none ${isDark ? "text-slate-500 hover:text-slate-300" : "text-gray-400 hover:text-gray-600"}`}>
+            className={`cursor-pointer text-2xl leading-none transition-colors ${isDark ? "text-slate-500 hover:text-slate-300" : "text-gray-400 hover:text-gray-600"}`}>
             &times;
           </button>
         </div>
@@ -116,7 +116,7 @@ const tabs = [
         <div className={`flex border-b px-6 ${borderCls}`}>
           {tabs.map((t) => (
             <button key={t.key} onClick={() => setTab(t.key)}
-              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors
+              className={`cursor-pointer px-4 py-2 text-sm font-medium border-b-2 transition-colors
                 ${tab === t.key
                   ? "border-blue-500 text-blue-500"
                   : isDark
@@ -228,7 +228,7 @@ const tabs = [
 
         <div className={`px-6 py-3 border-t flex justify-end ${borderCls}`}>
           <button onClick={onClose}
-            className={`px-4 py-2 text-sm rounded-lg transition-colors
+            className={`cursor-pointer px-4 py-2 text-sm rounded-lg transition-colors
               ${isDark
                 ? "bg-slate-700 hover:bg-slate-600 text-slate-300"
                 : "bg-gray-100 hover:bg-gray-200 text-gray-700"

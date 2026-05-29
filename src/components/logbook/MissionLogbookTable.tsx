@@ -128,7 +128,7 @@ export function MissionLogbookTable({ data, loading, isDark }: LogbookTableProps
                                     >
                                         {header.isPlaceholder ? null : (
                                             <button
-                                                className={`flex items-center gap-1 transition-colors ${isDark ? "hover:text-slate-200" : "hover:text-slate-800"
+                                                className={`cursor-pointer flex items-center gap-1 transition-colors ${isDark ? "hover:text-slate-200" : "hover:text-slate-800"
                                                     }`}
                                                 onClick={header.column.getToggleSortingHandler()}
                                                 disabled={!header.column.getCanSort()}

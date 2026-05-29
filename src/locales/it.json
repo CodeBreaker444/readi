@@ -852,6 +852,17 @@
       "edit": "Modifica",
       "delete": "Elimina"
     },
+    "columns": {
+      "yearRef": "Anno Rif.",
+      "evaluationCode": "Codice Valutazione",
+      "planCode": "Codice Piano",
+      "customer": "Cliente",
+      "requestedBy": "Richiesto da",
+      "assignedTo": "Assegnato a",
+      "lastAction": "Ultima Azione",
+      "procedureCode": "Codice Procedura",
+      "open": "Apri"
+    },
     "flightRequests": {
       "title": "Richieste di Volo",
       "subtitle": "Richieste di missione in arrivo da servizi esterni",

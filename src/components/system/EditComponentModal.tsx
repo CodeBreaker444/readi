@@ -461,7 +461,7 @@ export default function EditComponentModal({
                   <div className="col-span-1 sm:col-span-3">
                     <div className="flex items-center gap-1.5 pb-2">
                       <Label className={labelCls.replace(' pb-2', '')}>{t('systems.components.editComponent.fields.componentType')}</Label>
-                      <button type="button" onClick={() => setShowManageTypes(true)} className="text-slate-400 hover:text-violet-600 transition-colors" title="Manage types">
+                      <button type="button" onClick={() => setShowManageTypes(true)} className="cursor-pointer text-slate-400 hover:text-violet-600 transition-colors" title="Manage types">
                         <Pencil className="h-3 w-3" />
                       </button>
                     </div>
@@ -537,7 +537,7 @@ export default function EditComponentModal({
                   <div className="space-y-2">
                     <div className="flex items-center gap-1.5">
                       <Label className={`${labelCls} pb-0`}>{t('systems.components.common.droneClasses')} <span className="font-normal opacity-60 text-xs">{t('systems.components.common.optional')}</span></Label>
-                      <button type="button" onClick={() => setShowManageClasses(true)} className="text-slate-400 hover:text-violet-600 transition-colors" title={t('systems.components.common.manageClasses')}>
+                      <button type="button" onClick={() => setShowManageClasses(true)} className="cursor-pointer text-slate-400 hover:text-violet-600 transition-colors" title={t('systems.components.common.manageClasses')}>
                         <Pencil className="h-3 w-3" />
                       </button>
                     </div>

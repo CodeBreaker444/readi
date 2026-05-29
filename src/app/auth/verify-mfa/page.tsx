@@ -156,7 +156,7 @@ export default function VerifyMFAPage() {
               <button
                 type="submit"
                 disabled={loading || code.length !== 6}
-                className="w-full h-10 rounded-lg text-white text-sm font-semibold transition-all duration-150 active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="cursor-pointer w-full h-10 rounded-lg text-white text-sm font-semibold transition-all duration-150 active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 style={{ background: 'linear-gradient(135deg, #7c3aed, #6d28d9)', boxShadow: '0 2px 12px rgba(124,58,237,0.25)' }}
               >
                 {loading ? <><Loader2Icon className="h-4 w-4 animate-spin" /> Verifying…</> : 'Verify & sign in'}
@@ -166,9 +166,9 @@ export default function VerifyMFAPage() {
                 type="button"
                 onClick={handleCancel}
                 disabled={loading}
-                className="w-full h-10 rounded-lg text-sm font-medium text-slate-500 border border-slate-200 hover:bg-slate-50 transition-all duration-150 disabled:opacity-50"
+                className="cursor-pointer w-full h-10 rounded-lg text-sm font-medium text-slate-500 border border-slate-200 hover:bg-slate-50 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Cancel  
+                Cancel
               </button>
             </form>
 

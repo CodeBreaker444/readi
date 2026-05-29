@@ -244,7 +244,7 @@ export default function LocationPicker({ lat, lng, onChange, isDark = false }: L
             className={`w-full h-9 rounded-md border pl-8 pr-8 text-sm outline-none focus:ring-2 focus:ring-violet-500/30 ${inputCls}`}
           />
           {(query || lat) && (
-            <button type="button" onClick={clearAll} className="absolute right-2.5 text-muted-foreground hover:text-foreground">
+            <button type="button" onClick={clearAll} className="cursor-pointer absolute right-2.5 text-muted-foreground hover:text-foreground transition-colors">
               <X className="h-3.5 w-3.5" />
             </button>
           )}

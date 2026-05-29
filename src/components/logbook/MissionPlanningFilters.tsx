@@ -199,7 +199,7 @@ export default function MissionPlanningFilters({
       <div className="flex items-end gap-3 col-span-full md:col-span-2">
         <button
           type="button"
-          className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200 shadow-sm"
+          className="cursor-pointer flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200 shadow-sm"
           onClick={handleSearch}
         >
           <Search className="w-4 h-4" />
@@ -207,7 +207,7 @@ export default function MissionPlanningFilters({
         </button>
         <button
           type="button"
-          className="px-4 py-2.5 bg-gray-200 hover:bg-gray-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 font-medium rounded-lg transition-colors duration-200"
+          className="cursor-pointer px-4 py-2.5 bg-gray-200 hover:bg-gray-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 font-medium rounded-lg transition-colors duration-200"
           onClick={handleReset}
         >
           Reset

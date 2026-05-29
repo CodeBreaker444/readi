@@ -81,7 +81,7 @@ export function getMissionCategoryColumns({
                 <TooltipTrigger asChild>
                   <button
                     onClick={() => onEditClick(category)}
-                    className={`inline-flex items-center justify-center w-7 h-7 rounded-lg transition-all ${
+                    className={`cursor-pointer inline-flex items-center justify-center w-7 h-7 rounded-lg transition-all ${
                       isDark
                         ? 'hover:bg-white/[0.08] text-gray-500 hover:text-gray-300'
                         : 'hover:bg-gray-100 text-gray-400 hover:text-gray-600'
@@ -97,7 +97,7 @@ export function getMissionCategoryColumns({
                 <TooltipTrigger asChild>
                   <button
                     onClick={() => onDelete(category.id)}
-                    className={`inline-flex items-center justify-center w-7 h-7 rounded-lg transition-all ${
+                    className={`cursor-pointer inline-flex items-center justify-center w-7 h-7 rounded-lg transition-all ${
                       isDark
                         ? 'hover:bg-rose-500/15 text-gray-500 hover:text-rose-400'
                         : 'hover:bg-rose-50 text-gray-400 hover:text-rose-500'

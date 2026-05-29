@@ -147,7 +147,7 @@ export default function ChangePasswordPage() {
                     value={formData.newPassword}
                     onChange={handleChange}
                   />
-                  <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-violet-500 transition-colors" disabled={loading}>
+                  <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="cursor-pointer absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-violet-500 transition-colors disabled:cursor-not-allowed" disabled={loading}>
                     {showNewPassword ? <EyeOffIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
                   </button>
                 </div>
@@ -167,7 +167,7 @@ export default function ChangePasswordPage() {
                     value={formData.confirmPassword}
                     onChange={handleChange}
                   />
-                  <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-violet-500 transition-colors" disabled={loading}>
+                  <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="cursor-pointer absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-violet-500 transition-colors disabled:cursor-not-allowed" disabled={loading}>
                     {showConfirmPassword ? <EyeOffIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
                   </button>
                 </div>

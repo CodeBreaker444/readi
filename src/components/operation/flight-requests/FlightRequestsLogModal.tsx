@@ -65,7 +65,7 @@ export function FlightRequestsLogModal({
             <h2 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('planning.flightRequests.pushLogDcc')}</h2>
             <p className={`text-xs mt-0.5 font-mono ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{logModal.mission_id}</p>
           </div>
-          <button onClick={onClose} className={`p-1 rounded-lg transition-colors ${isDark ? 'text-slate-400 hover:text-white hover:bg-slate-700' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}>
+          <button onClick={onClose} className={`cursor-pointer p-1 rounded-lg transition-colors ${isDark ? 'text-slate-400 hover:text-white hover:bg-slate-700' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}>
             <X className="h-4 w-4" />
           </button>
         </div>

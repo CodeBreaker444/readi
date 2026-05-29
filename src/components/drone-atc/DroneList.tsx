@@ -398,7 +398,7 @@ export default function DroneList({
             className={`flex-1 text-[11px] bg-transparent outline-none ${isDark ? 'text-slate-200 placeholder:text-slate-600' : 'text-slate-700 placeholder:text-slate-400'}`}
           />
           {userFilter && (
-            <button onClick={() => setUserFilter('')} className={`text-[9px] px-1.5 py-0.5 rounded ${isDark ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600'}`}>✕</button>
+            <button onClick={() => setUserFilter('')} className={`cursor-pointer text-[9px] px-1.5 py-0.5 rounded transition-colors ${isDark ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600'}`}>✕</button>
           )}
         </div>
       )}

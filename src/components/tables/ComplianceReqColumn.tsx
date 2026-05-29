@@ -155,7 +155,7 @@ export function getComplianceRequirementsColumns(
                 <div className="flex items-center gap-1 justify-end pr-1">
                     <button
                         onClick={() => onEdit(row.original)}
-                        className={`p-1.5 rounded-md transition-colors ${isDark
+                        className={`cursor-pointer p-1.5 rounded-md transition-colors ${isDark
                             ? 'text-slate-500 hover:text-violet-400 hover:bg-white/6'
                             : 'text-slate-400 hover:text-violet-600 hover:bg-violet-50'
                         }`}
@@ -165,7 +165,7 @@ export function getComplianceRequirementsColumns(
                     </button>
                     <button
                         onClick={() => onDelete(row.original)}
-                        className={`p-1.5 rounded-md transition-colors ${isDark
+                        className={`cursor-pointer p-1.5 rounded-md transition-colors ${isDark
                             ? 'text-slate-500 hover:text-red-400 hover:bg-red-500/8'
                             : 'text-slate-400 hover:text-red-500 hover:bg-red-50'
                         }`}

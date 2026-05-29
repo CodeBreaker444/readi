@@ -121,7 +121,7 @@ export default function ClientMissionsPage() {
               onChange={(e) => handleSearch(e.target.value)}
             />
             {search && (
-              <button onClick={() => handleSearch('')} className={cn('shrink-0', textSub)}>
+              <button onClick={() => handleSearch('')} className={cn('cursor-pointer shrink-0 transition-opacity hover:opacity-70', textSub)}>
                 <X className="h-4 w-4" />
               </button>
             )}
@@ -133,7 +133,7 @@ export default function ClientMissionsPage() {
                 key={s}
                 onClick={() => handleStatus(s)}
                 className={cn(
-                  'px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors whitespace-nowrap',
+                  'cursor-pointer px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors whitespace-nowrap',
                   statusFilter === s
                     ? 'bg-violet-600 border-violet-600 text-white'
                     : isDark

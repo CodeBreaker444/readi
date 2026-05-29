@@ -146,7 +146,7 @@ export function GutmaPreviewPanel({
     return (
       <button
         onClick={() => setTab(id)}
-        className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${
+        className={`cursor-pointer flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${
           active
             ? 'border-violet-500 text-violet-500'
             : `border-transparent ${textSecondary} hover:${textPrimary}`
@@ -562,7 +562,7 @@ export function GutmaPreviewPanel({
                         type="button"
                         onClick={() => setWaypointPage((p) => Math.max(1, p - 1))}
                         disabled={safeWaypointPage <= 1}
-                        className={`h-7 rounded border px-2.5 text-[11px] ${
+                        className={`cursor-pointer h-7 rounded border px-2.5 text-[11px] disabled:cursor-not-allowed ${
                           isDark ? 'border-slate-700 bg-slate-900 text-slate-200 disabled:text-slate-600' : 'border-slate-300 bg-white text-slate-700 disabled:text-slate-400'
                         }`}
                       >
@@ -572,7 +572,7 @@ export function GutmaPreviewPanel({
                         type="button"
                         onClick={() => setWaypointPage((p) => Math.min(totalWaypointPages, p + 1))}
                         disabled={safeWaypointPage >= totalWaypointPages}
-                        className={`h-7 rounded border px-2.5 text-[11px] ${
+                        className={`cursor-pointer h-7 rounded border px-2.5 text-[11px] disabled:cursor-not-allowed ${
                           isDark ? 'border-slate-700 bg-slate-900 text-slate-200 disabled:text-slate-600' : 'border-slate-300 bg-white text-slate-700 disabled:text-slate-400'
                         }`}
                       >

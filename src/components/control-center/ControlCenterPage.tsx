@@ -131,7 +131,7 @@ export default function ControlCenterPage({user}:{user: SessionUser}) {
                                         {isAdmin && (
                                             <button
                                                 onClick={() => router.push('/profile')}
-                                                className={`text-xs mt-2 underline underline-offset-2 ${isDark ? 'text-emerald-400 hover:text-emerald-300' : 'text-emerald-700 hover:text-emerald-900'}`}
+                                                className={`cursor-pointer text-xs mt-2 underline underline-offset-2 ${isDark ? 'text-emerald-400 hover:text-emerald-300' : 'text-emerald-700 hover:text-emerald-900'}`}
                                             >
                                                 Edit in Profile →
                                             </button>

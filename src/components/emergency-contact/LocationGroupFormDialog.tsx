@@ -201,7 +201,7 @@ export function LocationGroupFormDialog({ open, onClose, onSubmit, loading, isDa
                   <div className={cn('absolute z-50 w-full mt-1 rounded-md border shadow-lg max-h-44 overflow-y-auto', isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200')}>
                     {locationResults.map(r => (
                       <button key={r.place_id} type="button" onMouseDown={() => handleAddLocation(r)}
-                        className={cn('w-full text-left px-3 py-2 text-xs flex items-start gap-2 transition-colors', isDark ? 'hover:bg-slate-700 text-slate-200' : 'hover:bg-violet-50 text-slate-700')}>
+                        className={cn('cursor-pointer w-full text-left px-3 py-2 text-xs flex items-start gap-2 transition-colors', isDark ? 'hover:bg-slate-700 text-slate-200' : 'hover:bg-violet-50 text-slate-700')}>
                         <MapPin className="h-3 w-3 text-violet-500 shrink-0 mt-0.5" />
                         <span className="leading-relaxed">{r.display_name}</span>
                       </button>
@@ -217,7 +217,7 @@ export function LocationGroupFormDialog({ open, onClose, onSubmit, loading, isDa
                       <span className="shrink-0 h-4 w-4 rounded-full bg-violet-500 flex items-center justify-center text-[9px] font-bold text-white">{idx + 1}</span>
                       <span className="flex-1 leading-relaxed line-clamp-2">{loc.name}</span>
                       {loc.lat != null && <span className={`font-mono text-[10px] shrink-0 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{loc.lat.toFixed(3)}, {loc.lng?.toFixed(3)}</span>}
-                      <button type="button" onClick={() => setLocations(p => p.filter((_, i) => i !== idx))} className="shrink-0 text-red-400 hover:text-red-500"><X className="h-3 w-3" /></button>
+                      <button type="button" onClick={() => setLocations(p => p.filter((_, i) => i !== idx))} className="cursor-pointer shrink-0 text-red-400 hover:text-red-500 transition-colors"><X className="h-3 w-3" /></button>
                     </div>
                   ))}
                 </div>
@@ -246,7 +246,7 @@ export function LocationGroupFormDialog({ open, onClose, onSubmit, loading, isDa
                           const checked = selectedErpIds.includes(erp.id)
                           return (
                             <button key={erp.id} type="button" onClick={() => setSelectedErpIds(p => p.includes(erp.id) ? p.filter(x => x !== erp.id) : [...p, erp.id])}
-                              className={cn('w-full flex items-center gap-2.5 px-3 py-2 text-xs text-left transition-colors border-b last:border-b-0', isDark ? 'border-slate-700 hover:bg-slate-700/50' : 'border-slate-100 hover:bg-slate-50', checked && (isDark ? 'bg-violet-900/20' : 'bg-violet-50'))}>
+                              className={cn('cursor-pointer w-full flex items-center gap-2.5 px-3 py-2 text-xs text-left transition-colors border-b last:border-b-0', isDark ? 'border-slate-700 hover:bg-slate-700/50' : 'border-slate-100 hover:bg-slate-50', checked && (isDark ? 'bg-violet-900/20' : 'bg-violet-50'))}>
                               <span className={cn('h-3.5 w-3.5 rounded border flex items-center justify-center shrink-0', checked ? 'bg-violet-600 border-violet-600' : isDark ? 'border-slate-600' : 'border-slate-300')}>
                                 {checked && <span className="text-white text-[8px] font-bold">✓</span>}
                               </span>
@@ -264,7 +264,7 @@ export function LocationGroupFormDialog({ open, onClose, onSubmit, loading, isDa
                   {selectedErpObjects.map(c => (
                     <span key={c.id} className={cn('inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium', isDark ? 'bg-violet-900/30 text-violet-300 border border-violet-700/50' : 'bg-violet-100 text-violet-700 border border-violet-200')}>
                       {c.contact}
-                      <button type="button" onClick={() => setSelectedErpIds(p => p.filter(x => x !== c.id))} className="ml-0.5 hover:text-red-400"><X className="h-2.5 w-2.5" /></button>
+                      <button type="button" onClick={() => setSelectedErpIds(p => p.filter(x => x !== c.id))} className="cursor-pointer ml-0.5 hover:text-red-400 transition-colors"><X className="h-2.5 w-2.5" /></button>
                     </span>
                   ))}
                 </div>
@@ -277,7 +277,7 @@ export function LocationGroupFormDialog({ open, onClose, onSubmit, loading, isDa
                     <div key={c._key} className={cn('flex items-center gap-2 px-3 py-2 rounded-md text-xs', isDark ? 'bg-slate-700/60 text-slate-300' : 'bg-white text-slate-600 border border-slate-200')}>
                       <span className="font-medium">{c.contact}</span>
                       <span className={isDark ? 'text-slate-500' : 'text-slate-400'}>{c.type}</span>
-                      <button type="button" onClick={() => setPendingNewContacts(p => p.filter(x => x._key !== c._key))} className="ml-auto text-red-400 hover:text-red-500"><Trash2 className="h-3 w-3" /></button>
+                      <button type="button" onClick={() => setPendingNewContacts(p => p.filter(x => x._key !== c._key))} className="cursor-pointer ml-auto text-red-400 hover:text-red-500 transition-colors"><Trash2 className="h-3 w-3" /></button>
                     </div>
                   ))}
                 </div>

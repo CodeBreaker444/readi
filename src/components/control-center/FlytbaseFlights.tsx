@@ -320,7 +320,7 @@ export function FlytbaseFlights({ token }: Props) {
                       <button
                         key={flight.flight_id}
                         onClick={() => handleSelectFlight(flight)}
-                        className={`w-full text-left px-4 py-3 transition-colors ${rowHover} ${isSelected ? rowSelected : ''}`}
+                        className={`cursor-pointer w-full text-left px-4 py-3 transition-colors ${rowHover} ${isSelected ? rowSelected : ''}`}
                       >
                         <div className="flex items-center justify-between gap-2">
                           <div className="min-w-0 flex-1">

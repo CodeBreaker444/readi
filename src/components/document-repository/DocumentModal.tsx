@@ -295,7 +295,7 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
                     type="button"
                     onClick={() => setManageTypesOpen(true)}
                     title={t('repository.form.manageTypes')}
-                    className={`flex items-center gap-1 text-[10px] font-medium transition-colors ${isDark ? 'text-slate-500 hover:text-violet-400' : 'text-slate-400 hover:text-violet-600'}`}
+                    className={`flex cursor-pointer items-center gap-1 text-[10px] font-medium transition-colors ${isDark ? 'text-slate-500 hover:text-violet-400' : 'text-slate-400 hover:text-violet-600'}`}
                   >
                     <Settings2 className="h-3 w-3" /> {t('repository.form.manage')}
                   </button>

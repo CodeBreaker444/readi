@@ -151,7 +151,7 @@ export async function POST(req: NextRequest) {
 }
 
 const DeleteSchema = z.object({
-  missionIds: z.array(z.string().min(1)).min(1, 'missionIds must have at least 1 entry').max(4, 'Maximum 4 missions can be deleted at once'),
+  missionIds: z.array(z.string().min(1)).min(1, 'missionIds must have at least 1 entry').max(10, 'Maximum 10 missions can be deleted at once'),
 });
 
 export async function DELETE(req: NextRequest) {

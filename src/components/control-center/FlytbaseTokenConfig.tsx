@@ -20,6 +20,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useTheme } from '@/components/useTheme';
 import axios from 'axios';
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   HiCheckCircle,
   HiEye,
@@ -28,7 +29,6 @@ import {
   HiTrash,
   HiUser,
 } from 'react-icons/hi';
-import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 interface FlytbaseUserInfo {
@@ -356,7 +356,7 @@ export function FlytbaseTokenConfig() {
                 <button
                   type="button"
                   onClick={() => setShowToken((v) => !v)}
-                  className={`absolute right-3 top-1/2 -translate-y-1/2 ${textSecondary} hover:opacity-80 transition-opacity`}
+                  className={`absolute cursor-pointer right-3 top-1/2 -translate-y-1/2 ${textSecondary} hover:opacity-80 transition-opacity`}
                 >
                   {showToken ? (
                     <HiEyeOff className="w-4 h-4" />

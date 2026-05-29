@@ -30,7 +30,7 @@ function CopyButton({ value }: { value: string }) {
     setTimeout(() => setCopied(false), 2000);
   }
   return (
-    <button onClick={copy} className="ml-1 text-slate-400 hover:text-violet-500 transition-colors">
+    <button onClick={copy} className="cursor-pointer ml-1 text-slate-400 hover:text-violet-500 transition-colors">
       {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
     </button>
   );

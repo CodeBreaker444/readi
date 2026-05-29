@@ -852,6 +852,17 @@
       "edit": "Edit",
       "delete": "Delete"
     },
+    "columns": {
+      "yearRef": "Year Ref",
+      "evaluationCode": "Evaluation Code",
+      "planCode": "Plan Code",
+      "customer": "Customer",
+      "requestedBy": "Requested By",
+      "assignedTo": "Assigned To",
+      "lastAction": "Last Action",
+      "procedureCode": "Procedure Code",
+      "open": "Open"
+    },
     "flightRequests": {
       "title": "Flight Requests",
       "subtitle": "Incoming mission requests from external services",

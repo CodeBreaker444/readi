@@ -168,7 +168,7 @@ export default function DashboardClient({ ownerId, userProfileCode, userId, init
   const trCls = cn('border-b transition-colors', isDark ? 'border-slate-700/40 hover:bg-slate-700/30' : 'border-gray-50 hover:bg-gray-50/80');
 
   const btnCls = cn(
-    'text-xs px-2.5 py-1 rounded-lg border transition-colors',
+    'cursor-pointer text-xs px-2.5 py-1 rounded-lg border transition-colors',
     isDark ? 'text-slate-400 border-slate-700 hover:bg-slate-700 hover:text-slate-200' : 'text-gray-500 border-gray-200 hover:bg-gray-50 hover:text-gray-700'
   );
 

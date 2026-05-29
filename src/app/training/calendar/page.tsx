@@ -77,7 +77,7 @@ export default function TrainingCalendarPage() {
           <button
             onClick={fetchEvents}
             disabled={loading}
-            className={`h-8 flex items-center gap-1.5 px-3.5 text-xs font-medium rounded-lg border transition-all ${
+            className={`cursor-pointer h-8 flex items-center gap-1.5 px-3.5 text-xs font-medium rounded-lg border transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
               isDark
                 ? 'border-white/[0.1] hover:bg-white/[0.05] text-white'
                 : 'border-gray-200 hover:bg-gray-50 text-gray-700'
@@ -236,7 +236,7 @@ export default function TrainingCalendarPage() {
             <div className={`flex justify-end px-6 py-4 border-t ${isDark ? 'border-white/[0.06]' : 'border-gray-100'}`}>
               <button
                 onClick={() => setSelectedEvent(null)}
-                className={`h-8 px-4 text-xs rounded-lg border transition-colors ${
+                className={`cursor-pointer h-8 px-4 text-xs rounded-lg border transition-colors ${
                   isDark ? 'border-white/[0.08] hover:bg-white/[0.05] text-gray-300' : 'border-gray-200 hover:bg-gray-50 text-gray-600'
                 }`}
               >

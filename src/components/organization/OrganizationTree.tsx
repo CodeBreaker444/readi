@@ -290,13 +290,19 @@ export default function OrganizationTree({ data, isDark = false, onEditNode }: O
         padding: 4,
         boxShadow: "0 2px 8px rgba(0,0,0,.1)",
       }}>
-        <button style={btnStyle} onClick={zoomIn} title="Zoom in">
+        <button style={btnStyle} onClick={zoomIn} title="Zoom in"
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = isDark ? "#334155" : "#f1f5f9"; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = toolbar; }}>
           <Plus size={14} />
         </button>
-        <button style={btnStyle} onClick={zoomOut} title="Zoom out">
+        <button style={btnStyle} onClick={zoomOut} title="Zoom out"
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = isDark ? "#334155" : "#f1f5f9"; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = toolbar; }}>
           <Minus size={14} />
         </button>
-        <button style={btnStyle} onClick={fitToScreen} title="Fit to screen">
+        <button style={btnStyle} onClick={fitToScreen} title="Fit to screen"
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = isDark ? "#334155" : "#f1f5f9"; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = toolbar; }}>
           <Maximize2 size={13} />
         </button>
         <div style={{

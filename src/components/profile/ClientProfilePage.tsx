@@ -199,7 +199,7 @@ export default function ClientProfilePage({ user }: { user: SessionUser }) {
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-violet-600 text-white flex items-center justify-center shadow-md hover:bg-violet-700 transition-colors"
+                      className="cursor-pointer absolute bottom-0 right-0 w-7 h-7 rounded-full bg-violet-600 text-white flex items-center justify-center shadow-md hover:bg-violet-700 transition-colors"
                     >
                       <Camera className="w-3.5 h-3.5" />
                     </button>

@@ -160,7 +160,7 @@ export default function CommunicationSection({
                 {dropdownOpen && userSearch && (
                   <div className="absolute z-50 mt-1 w-full border bg-popover rounded-md shadow-md">
                     {availableUsers.filter(u => u.first_name.toLowerCase().includes(userSearch.toLowerCase())).map(user => (
-                      <button key={user.user_id} className="w-full text-left px-3 py-2 text-sm hover:bg-accent" onClick={() => addUser(user)}>
+                      <button key={user.user_id} className="cursor-pointer w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors" onClick={() => addUser(user)}>
                         {user.first_name} ({user.email})
                       </button>
                     ))}
