@@ -27,7 +27,11 @@ interface MissionData {
 }
 
 const PIE_COLORS = ['#ef4444', '#10b981', '#f59e0b'];
-const BAR_COLORS = ['#6366f1', '#10b981', '#f59e0b'];
+const BAR_COLORS = [
+  '#6366f1', '#10b981', '#f59e0b', '#ef4444',
+  '#3b82f6', '#8b5cf6', '#ec4899', '#06b6d4',
+  '#f97316', '#84cc16',
+];
 
 const STATS = (data: any, t: any) => [
   {
@@ -93,6 +97,7 @@ export default function DashboardClient({ ownerId, userProfileCode, userId, init
   const { t } = useTranslation();
   const [data, setData] = useState<any>(initialData || null);
   const [loading, setLoading] = useState(!initialData);
+  const [activeBar, setActiveBar] = useState<string | null>(null);
 
   useEffect(() => {
     if (initialData) return;
@@ -152,6 +157,30 @@ export default function DashboardClient({ ownerId, userProfileCode, userId, init
   const axisColor   = isDark ? '#475569' : '#94a3b8';
   const tooltipBg   = isDark ? '#0f172a' : '#ffffff';
   const tooltipBdr  = isDark ? '#1e293b' : '#e2e8f0';
+
+  const CustomBarTooltip = ({ active, payload, label }: any) => {
+    if (!active || !payload?.length) return null;
+    const item = payload.find((p: any) => p.dataKey === activeBar);
+    if (!item) return null;
+    return (
+      <div style={{
+        backgroundColor: tooltipBg,
+        border: `1px solid ${tooltipBdr}`,
+        borderRadius: '10px',
+        fontSize: 12,
+        padding: '10px 14px',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+        minWidth: 140,
+      }}>
+        <p style={{ color: axisColor, marginBottom: 6, fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ width: 10, height: 10, borderRadius: 3, backgroundColor: item.fill, display: 'inline-block', flexShrink: 0 }} />
+          <span style={{ color: isDark ? '#cbd5e1' : '#374151', flex: 1 }}>{item.dataKey}</span>
+          <strong style={{ color: isDark ? '#f1f5f9' : '#111827', marginLeft: 8 }}>{item.value}</strong>
+        </div>
+      </div>
+    );
+  };
 
   const card = cn('rounded-xl border', isDark ? 'bg-slate-800/80 border-slate-700/60' : 'bg-white border-gray-200');
   const cardHeader = cn('flex items-center justify-between px-5 py-4 border-b', isDark ? 'border-slate-700/60' : 'border-gray-100');
@@ -261,17 +290,25 @@ export default function DashboardClient({ ownerId, userProfileCode, userId, init
           </div>
           <div className="p-5 h-72">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={barChartData} barCategoryGap="30%">
+              <BarChart data={barChartData} barCategoryGap="18%" barGap={4}>
                 <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
                 <XAxis dataKey="month" stroke={axisColor} tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis stroke={axisColor} tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                 <Tooltip
-                  contentStyle={{ backgroundColor: tooltipBg, border: `1px solid ${tooltipBdr}`, borderRadius: '10px', fontSize: 12 }}
-                  cursor={{ fill: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)' }}
+                  content={<CustomBarTooltip />}
+                  cursor={{ fill: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)' }}
                 />
                 <Legend wrapperStyle={{ fontSize: 11, paddingTop: 12 }} />
                 {data?.readi_mission_chart?.series?.map((drone: any, i: number) => (
-                  <Bar key={drone.name} dataKey={drone.name} fill={BAR_COLORS[i % BAR_COLORS.length]} radius={[5, 5, 0, 0]} maxBarSize={28} />
+                  <Bar
+                    key={drone.name}
+                    dataKey={drone.name}
+                    fill={BAR_COLORS[i % BAR_COLORS.length]}
+                    radius={[5, 5, 0, 0]}
+                    maxBarSize={64}
+                    onMouseEnter={() => setActiveBar(drone.name)}
+                    onMouseLeave={() => setActiveBar(null)}
+                  />
                 ))}
               </BarChart>
             </ResponsiveContainer>
