@@ -1,7 +1,7 @@
 import { env } from '@/backend/config/env';
 import { supabase } from '@/backend/database/database';
 import bcrypt from 'bcrypt';
-import { sendUserActivationEmail } from '../../../../lib/resend/mail';
+import { sendAdminPasswordChangedEmail, sendUserActivationEmail } from '../../../../lib/resend/mail';
 import { generateActivationToken, generateUniqueCode } from '../user/user-management';
 
 export interface OwnerData {
@@ -82,6 +82,8 @@ export interface OwnerMetrics {
     active_users: number;
     inactive_users: number;
     users_by_role: Record<string, number>;
+    storage_bytes: number;
+    storage_file_count: number;
 }
 
 export interface OwnerWithAdmin extends OwnerData {
@@ -178,7 +180,92 @@ export async function getOwnerMetrics(id: string): Promise<OwnerMetrics> {
         users_by_role[u.user_role] = (users_by_role[u.user_role] ?? 0) + 1;
     });
 
-    return { total_users, active_users, inactive_users, users_by_role };
+    // Tracked file storage: aggregate from all DB tables that record file_size and
+    // can be linked back to this owner. S3 uploads with no file_size in DB (avatars,
+    // flight logs, etc.) are excluded — there is no owner prefix in S3 keys.
+    let storage_bytes = 0;
+    let storage_file_count = 0;
+
+    const sums: { bytes: number; count: number }[] = await Promise.all([
+
+        //  Document repository revisions  → via luc_document.fk_owner_id
+        (async () => {
+            const { data: docs } = await supabase
+                .from('luc_document')
+                .select('document_id')
+                .eq('fk_owner_id', id)
+                .eq('document_active', 'Y');
+            const docIds = (docs ?? []).map((d: any) => d.document_id);
+            if (!docIds.length) return { bytes: 0, count: 0 };
+            const { data: revs } = await supabase
+                .from('luc_document_rev')
+                .select('file_size')
+                .in('fk_document_id', docIds);
+            const rows = revs ?? [];
+            return {
+                bytes: rows.reduce((s: number, r: any) => s + (Number(r.file_size) || 0), 0),
+                count: rows.length,
+            };
+        })(),
+
+        //  Evaluation files  → via evaluation.fk_owner_id
+        (async () => {
+            const { data: evals } = await supabase
+                .from('evaluation')
+                .select('evaluation_id')
+                .eq('fk_owner_id', id);
+            const evalIds = (evals ?? []).map((e: any) => e.evaluation_id);
+            if (!evalIds.length) return { bytes: 0, count: 0 };
+            const { data: files } = await supabase
+                .from('evaluation_file')
+                .select('file_size')
+                .in('fk_evaluation_id', evalIds);
+            const rows = files ?? [];
+            return {
+                bytes: rows.reduce((s: number, r: any) => s + (Number(r.file_size) || 0), 0),
+                count: rows.length,
+            };
+        })(),
+
+        //  Maintenance ticket attachments  → via maintenance_ticket.fk_owner_id
+        (async () => {
+            const { data: tickets } = await supabase
+                .from('maintenance_ticket')
+                .select('ticket_id')
+                .eq('fk_owner_id', id);
+            const ticketIds = (tickets ?? []).map((t: any) => t.ticket_id);
+            if (!ticketIds.length) return { bytes: 0, count: 0 };
+            const { data: attachments } = await supabase
+                .from('maintenance_ticket_attachment')
+                .select('file_size')
+                .in('fk_ticket_id', ticketIds);
+            const rows = attachments ?? [];
+            return {
+                bytes: rows.reduce((s: number, r: any) => s + (Number(r.file_size) || 0), 0),
+                count: rows.length,
+            };
+        })(),
+
+        //  Repository files  → direct fk_owner_id
+        (async () => {
+            const { data: files } = await supabase
+                .from('repository_file')
+                .select('file_size')
+                .eq('fk_owner_id', id);
+            const rows = files ?? [];
+            return {
+                bytes: rows.reduce((s: number, r: any) => s + (Number(r.file_size) || 0), 0),
+                count: rows.length,
+            };
+        })(),
+    ]);
+
+    for (const s of sums) {
+        storage_bytes += s.bytes;
+        storage_file_count += s.count;
+    }
+
+    return { total_users, active_users, inactive_users, users_by_role, storage_bytes, storage_file_count };
 }
 
 export async function updateOwner(id: string, payload: UpdateOwnerPayload) {
@@ -471,4 +558,44 @@ export async function addOwnerWithAdmin(payload: AddOwnerWithAdminPayload) {
         await supabase.from('owner').delete().eq('owner_id', owner.owner_id);
         throw error;
     }
+}
+
+export async function updateAdminPassword(ownerId: string, adminUserId: number, newPassword: string) {
+    const { data: user, error: userErr } = await supabase
+        .from('users')
+        .select('user_id, email, username, first_name, last_name, fk_owner_id')
+        .eq('user_id', adminUserId)
+        .eq('fk_owner_id', ownerId)
+        .single();
+
+    if (userErr || !user) throw new Error('Admin user not found for this company');
+
+    const { data: owner, error: ownerErr } = await supabase
+        .from('owner')
+        .select('owner_name')
+        .eq('owner_id', ownerId)
+        .single();
+
+    if (ownerErr || !owner) throw new Error('Company not found');
+
+    const password_hash = await bcrypt.hash(newPassword, 10);
+
+    const { error: updateErr } = await supabase
+        .from('users')
+        .update({ password_hash })
+        .eq('user_id', adminUserId);
+
+    if (updateErr) throw new Error(updateErr.message);
+
+    const fullname = [user.first_name, user.last_name].filter(Boolean).join(' ') || user.username;
+
+    await sendAdminPasswordChangedEmail(
+        user.email,
+        fullname,
+        user.username,
+        newPassword,
+        owner.owner_name
+    );
+
+    return { message: 'Password updated successfully' };
 }

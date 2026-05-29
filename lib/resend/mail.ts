@@ -1,4 +1,5 @@
 import { env } from '@/backend/config/env';
+import { AdminPasswordChangedEmail } from '@/components/email-template/AdminPasswordChangedEmail';
 import { NotificationEmail } from '@/components/email-template/NotificationEmail';
 import { TicketClosedEmail } from '@/components/email-template/TicketClosedEmail';
 import { UserActivationEmail } from '@/components/email-template/UserActivationEmail';
@@ -82,6 +83,37 @@ export const sendTicketClosedEmail = async (
     if (error) console.error('sendTicketClosedEmail error:', error);
   } catch (err) {
     console.error('sendTicketClosedEmail exception:', err);
+  }
+};
+
+export const sendAdminPasswordChangedEmail = async (
+  email: string,
+  fullname: string,
+  username: string,
+  newPassword: string,
+  organization: string
+) => {
+  try {
+    const emailHtml = await render(
+      AdminPasswordChangedEmail({ organization, fullname, username, newPassword })
+    );
+
+    const { data, error } = await resend.emails.send({
+      from: 'ReADI <no-reply@readi.theun1t.com>',
+      to: [email],
+      subject: `Your admin password has been updated — ${organization}`,
+      html: emailHtml,
+    });
+
+    if (error) {
+      console.error('Resend API error:', error);
+      return { data: null, error, message: 'Email sending failed' };
+    }
+
+    return { data, error: null, message: `Email sent successfully to ${email}` };
+  } catch (error) {
+    console.error('Email sending error:', error);
+    return { data: null, error, message: 'Email sending failed' };
   }
 };
 

@@ -2,8 +2,6 @@ import {
   Body,
   Container,
   Head,
-  Heading,
-  Hr,
   Html,
   Img,
   Preview,
@@ -11,6 +9,8 @@ import {
   Tailwind,
   Text,
 } from '@react-email/components';
+
+import { LOGO_BASE64 as LOGO_URL } from './logo-base64';
 
 interface NotificationEmailProps {
   title: string;
@@ -30,77 +30,59 @@ export const NotificationEmail = ({
     <Tailwind>
       <Body style={main}>
         <Preview>{title}</Preview>
-        <Container style={container}>
-          <div className="flex flex-row items-center gap-3 mb-6">
-            <Img
-              src="https://demo.ai-inspection.com/api/utils/imgs/logo_circle.png"
-              width={60}
-              height={60}
-              alt="ReADI Control Center"
-              style={{ borderRadius: '50%' }}
-            />
-            <Heading as="h1" className="text-3xl font-bold text-gray-700">
-              ReADI Control Center
-            </Heading>
+
+        <div style={outer}>
+          {/* Header */}
+          <div style={header}>
+            <Img src={LOGO_URL} alt="ReADI" width={36} height={36} style={logoImg} />
+            <span style={headerTitle}>ReADI Control Center</span>
           </div>
 
-          <Heading style={heading}>{title}</Heading>
-
-          <Section style={body}>
-            <div style={messageBox}>
+          {/* Card body */}
+          <Container style={card}>
+            <Section style={section}>
+              {/* Type badge */}
               {notificationType && (
-                <Text style={typeLabel}>
-                  {notificationType.replace(/_/g, ' ').toUpperCase()}
-                </Text>
+                <div style={badgeWrap}>
+                  <span style={typeBadge}>
+                    {notificationType.replace(/_/g, ' ')}
+                  </span>
+                </div>
               )}
-              <Text style={messageText}>{message}</Text>
-            </div>
 
-            {actionUrl && (
-              <div style={actionBox}>
-                <Text style={actionText}>
-                  View details:{' '}
-                  <a href={actionUrl} style={actionLink}>
-                    {actionUrl}
-                  </a>
-                </Text>
+              <Text style={titleStyle}>{title}</Text>
+
+              {/* Message card */}
+              <div style={messageCard}>
+                <Text style={messageText}>{message}</Text>
               </div>
-            )}
 
-            <Hr style={divider} />
+              {/* Action link */}
+              {actionUrl && (
+                <div style={actionCard}>
+                  <Text style={actionLabel}>View details</Text>
+                  <a href={actionUrl} style={actionLink}>{actionUrl}</a>
+                </div>
+              )}
 
-            <Text style={paragraph}>
-              This notification was sent because your organisation has email notifications enabled.
-              Log in to ReADI Control Center to view and manage your notifications.
+              <div style={divider} />
+
+              <Text style={cautionText}>
+                This notification was sent because your organisation has email notifications enabled.
+                Log in to ReADI Control Center to view and manage all notifications.
+              </Text>
+            </Section>
+          </Container>
+
+          {/* Footer */}
+          <div style={footer}>
+            <Text style={footerText}>ReADI Control Center</Text>
+            <Text style={footerText}>This is an automated message — please do not reply.</Text>
+            <Text style={footerText}>
+              &copy; {new Date().getFullYear()} ReADI Control Center. All rights reserved.
             </Text>
-          </Section>
-
-          <Text style={paragraph}>
-            Best regards,
-            <br />
-            <strong>ReADI Control Center Team</strong>
-          </Text>
-
-          <Hr style={hr} />
-
-          <Img
-            src="https://demo.ai-inspection.com/api/utils/imgs/logo_circle.png"
-            width={48}
-            height={48}
-            style={{
-              WebkitFilter: 'grayscale(100%)',
-              filter: 'grayscale(100%)',
-              margin: '20px 0',
-              borderRadius: '50%',
-            }}
-          />
-
-          <Text style={footer}>ReADI Control Center</Text>
-          <Text style={footer}>This is an automated message. Please do not reply to this email.</Text>
-          <Text style={footer}>
-            &copy; {new Date().getFullYear()} ReADI Control Center. All rights reserved.
-          </Text>
-        </Container>
+          </div>
+        </div>
       </Body>
     </Tailwind>
   </Html>
@@ -108,104 +90,146 @@ export const NotificationEmail = ({
 
 NotificationEmail.PreviewProps = {
   title: 'New Mission Assignment',
-  message: 'You have been assigned to mission MSSN-2024-001. Please review and confirm.',
+  message: 'You have been assigned to mission MSSN-2024-001. Please review and confirm your availability.',
   notificationType: 'MISSION',
   actionUrl: null,
 } as NotificationEmailProps;
 
 export default NotificationEmail;
 
+/* ── Styles ──────────────────────────────────────────────── */
+
+const fontStack =
+  '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif';
+
 const main = {
-  backgroundColor: '#f4f4f4',
-  fontFamily:
-    '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",sans-serif',
+  backgroundColor: '#f6f8fc',
+  fontFamily: fontStack,
 };
 
-const container = {
-  margin: '0 auto',
-  padding: '40px 30px',
-  backgroundColor: '#ffffff',
-  borderRadius: '8px',
+const outer = {
   maxWidth: '600px',
+  margin: '32px auto',
 };
 
-const heading = {
+const header = {
+  backgroundColor: '#7c3aed',
+  borderRadius: '8px 8px 0 0',
+  padding: '20px 32px',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '12px',
+};
+
+const logoImg = {
+  objectFit: 'contain' as const,
+  filter: 'brightness(0) invert(1)',
+  display: 'block',
+};
+
+const headerTitle = {
+  color: '#ffffff',
+  fontSize: '18px',
+  fontWeight: '600',
+  letterSpacing: '-0.2px',
+};
+
+const card = {
+  backgroundColor: '#ffffff',
+  borderRadius: '0 0 8px 8px',
+  border: '1px solid #e0e0e0',
+  borderTop: 'none',
+};
+
+const section = {
+  padding: '32px 32px 24px',
+};
+
+const badgeWrap = {
+  marginBottom: '12px',
+};
+
+const typeBadge = {
+  backgroundColor: '#ede9fe',
+  color: '#5b21b6',
+  fontSize: '11px',
+  fontWeight: '700',
+  letterSpacing: '0.5px',
+  textTransform: 'uppercase' as const,
+  padding: '4px 10px',
+  borderRadius: '20px',
+  display: 'inline-block',
+};
+
+const titleStyle = {
   fontSize: '22px',
-  fontWeight: 'bold' as const,
-  color: '#667eea',
-  marginTop: '24px',
-  marginBottom: '16px',
+  fontWeight: '600',
+  color: '#202124',
+  margin: '0 0 16px',
+  lineHeight: '1.3',
 };
 
-const body = {
-  margin: '24px 0',
-};
-
-const paragraph = {
-  fontSize: '15px',
-  lineHeight: '26px',
-  color: '#555555',
-  margin: '16px 0',
-};
-
-const messageBox = {
+const messageCard = {
   backgroundColor: '#f8f9fa',
-  borderLeft: '4px solid #667eea',
-  padding: '20px',
-  margin: '24px 0',
-  borderRadius: '4px',
-};
-
-const typeLabel = {
-  fontSize: '12px',
-  fontWeight: '600' as const,
-  color: '#667eea',
-  letterSpacing: '1px',
-  margin: '0 0 8px 0',
+  border: '1px solid #e0e0e0',
+  borderRadius: '6px',
+  padding: '18px',
+  margin: '0 0 16px',
 };
 
 const messageText = {
   fontSize: '15px',
-  color: '#333333',
+  color: '#202124',
   lineHeight: '24px',
   margin: '0',
 };
 
-const actionBox = {
-  backgroundColor: '#d1ecf1',
-  borderLeft: '4px solid #17a2b8',
-  padding: '15px',
-  margin: '20px 0',
-  borderRadius: '4px',
+const actionCard = {
+  backgroundColor: '#eff6ff',
+  border: '1px solid #bfdbfe',
+  borderRadius: '6px',
+  padding: '14px 18px',
+  margin: '0 0 16px',
 };
 
-const actionText = {
-  margin: '0',
-  color: '#0c5460',
-  fontSize: '14px',
-  lineHeight: '22px',
+const actionLabel = {
+  fontSize: '11px',
+  fontWeight: '700',
+  color: '#1e40af',
+  textTransform: 'uppercase' as const,
+  letterSpacing: '0.5px',
+  margin: '0 0 6px',
 };
 
 const actionLink = {
-  color: '#0c5460',
-  fontWeight: '600' as const,
+  fontSize: '13px',
+  color: '#7c3aed',
+  textDecoration: 'none',
+  wordBreak: 'break-all' as const,
+  fontWeight: '500',
 };
 
 const divider = {
   height: '1px',
-  backgroundColor: '#e9ecef',
+  backgroundColor: '#e8eaed',
   margin: '24px 0',
-  border: 'none',
 };
 
-const hr = {
-  borderColor: '#dddddd',
-  marginTop: '32px',
-  marginBottom: '32px',
+const cautionText = {
+  fontSize: '13px',
+  color: '#5f6368',
+  margin: '0',
+  lineHeight: '20px',
 };
 
 const footer = {
-  color: '#8898aa',
+  textAlign: 'center' as const,
+  padding: '16px 32px 8px',
+};
+
+const footerText = {
   fontSize: '12px',
-  margin: '4px 0',
+  color: '#9aa0a6',
+  margin: '2px 0',
+  lineHeight: '18px',
 };

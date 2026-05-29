@@ -3,8 +3,6 @@ import {
   Button,
   Container,
   Head,
-  Heading,
-  Hr,
   Html,
   Img,
   Link,
@@ -13,6 +11,8 @@ import {
   Tailwind,
   Text,
 } from '@react-email/components';
+
+import { LOGO_BASE64 as LOGO_URL } from './logo-base64';
 
 interface UserActivationEmailProps {
   organization: string;
@@ -34,109 +34,96 @@ export const UserActivationEmail = ({
     <Tailwind>
       <Body style={main}>
         <Preview>Activate your {organization} account</Preview>
-        <Container style={container}>
-          <div className="flex flex-row items-center gap-3 mb-6">
-            <Img
-              src="https://demo.ai-inspection.com/api/utils/imgs/logo_circle.png"
-              width={60}
-              height={60}
-              alt={organization}
-              style={{ borderRadius: '50%' }}
-            />
-            <Heading as="h1" className="text-3xl font-bold text-gray-700">
-              {organization}
-            </Heading>
+
+        {/* Outer wrapper */}
+        <div style={outer}>
+          {/* Header */}
+          <div style={header}>
+            <Img src={LOGO_URL} alt="ReADI" width={36} height={36} style={logoImg} />
+            <span style={headerTitle}>{organization}</span>
           </div>
 
-          <Heading style={heading}>🎉 Your Account Has Been Created!</Heading>
-
-          <Section style={body}>
-            <Text style={paragraph}>Hello {fullname},</Text>
-
-            <Text style={paragraph}>
-              We&apos;re excited to have you on board! Your account has been successfully created in
-              the {organization} system. To get started, you&apos;ll need to activate your account
-              and set up your password.
-            </Text>
-
-            <div style={credentialsBox}>
-              <Text style={credentialsLabel}>👤 Username:</Text>
-              <Text style={credentialsValue}>{username}</Text>
-
-              <Text style={{ ...credentialsLabel, marginTop: '16px' }}>🔑 Temporary Passcode:</Text>
-              <Text style={passcodeStyle}>{passcode}</Text>
-            </div>
-
-            <div style={infoBox}>
-              <Text style={infoText}>
-                📌 <strong>Important:</strong> You&apos;ll use your username and this temporary
-                passcode to complete the activation process.
+          {/* Card body */}
+          <Container style={card}>
+            <Section style={section}>
+              <Text style={title}>Activate your account</Text>
+              <Text style={paragraph}>Hello {fullname},</Text>
+              <Text style={paragraph}>
+                Your account has been created in <strong>{organization}</strong>. Use the
+                credentials below to complete activation and set up your password.
               </Text>
-            </div>
 
-            <div style={{ textAlign: 'center', margin: '32px 0' }}>
-              <Button href={loginlink} style={buttonStyle}>
-                ✨ Activate Your Account Now
-              </Button>
-            </div>
+              {/* Credentials table */}
+              <div style={dataCard}>
+                <div style={dataRow}>
+                  <span style={dataLabel}>USERNAME</span>
+                  <span style={dataValue}>{username}</span>
+                </div>
+                <div style={dataRowBorder} />
+                <div style={dataRow}>
+                  <span style={dataLabel}>TEMPORARY PASSCODE</span>
+                  <span style={monoValue}>{passcode}</span>
+                </div>
+              </div>
 
-            <Hr style={divider} />
+              <Text style={hintText}>
+                You will need both your username and this passcode to complete activation.
+              </Text>
 
-            <Text style={smallText}>Having trouble with the button? Copy and paste this link:</Text>
+              {/* CTA */}
+              <div style={buttonWrap}>
+                <Button href={loginlink} style={cta}>
+                  Activate Account
+                </Button>
+              </div>
 
-            <div style={linkBox}>
-              <Link href={loginlink} style={linkStyle}>
-                {loginlink}
-              </Link>
-            </div>
+              {/* Divider */}
+              <div style={divider} />
 
+              {/* Fallback link */}
+              <Text style={smallText}>
+                If the button does not work, copy and paste this link into your browser:
+              </Text>
+              <div style={linkBox}>
+                <Link href={loginlink} style={linkStyle}>{loginlink}</Link>
+              </div>
 
-            <Hr style={divider} />
+              <div style={divider} />
 
-            <Text style={paragraph}>
-              <strong>What&apos;s Next?</strong>
+              {/* Steps */}
+              <Text style={stepsTitle}>Next steps</Text>
+              <div style={stepsList}>
+                {[
+                  'Click the activation button above',
+                  'Enter your username and temporary passcode',
+                  'Create a new secure password',
+                  `Start using ${organization}`,
+                ].map((step, i) => (
+                  <div key={i} style={stepRow}>
+                    <span style={stepNum}>{i + 1}</span>
+                    <span style={stepText}>{step}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div style={divider} />
+
+              <Text style={cautionText}>
+                If you did not request this account, please contact your system administrator
+                immediately.
+              </Text>
+            </Section>
+          </Container>
+
+          {/* Footer */}
+          <div style={footer}>
+            <Text style={footerText}>{organization}</Text>
+            <Text style={footerText}>This is an automated message — please do not reply.</Text>
+            <Text style={footerText}>
+              &copy; {new Date().getFullYear()} {organization}. All rights reserved.
             </Text>
-            <ol style={listStyle}>
-              <li style={listItem}>Click the activation button above</li>
-              <li style={listItem}>Use your username and temporary passcode to log in</li>
-              <li style={listItem}>Set up a secure password</li>
-              <li style={listItem}>Start using {organization}!</li>
-            </ol>
-
-            <Hr style={divider} />
-
-            <Text style={paragraph}>
-              If you didn&apos;t request this account or if you have any questions, please contact
-              your system administrator immediately.
-            </Text>
-          </Section>
-
-          <Text style={paragraph}>
-            Best regards,
-            <br />
-            <strong>{organization} Team</strong>
-          </Text>
-
-          <Hr style={hr} />
-
-          <Img
-            src="https://demo.ai-inspection.com/api/utils/imgs/logo_circle.png"
-            width={48}
-            height={48}
-            style={{
-              WebkitFilter: 'grayscale(100%)',
-              filter: 'grayscale(100%)',
-              margin: '20px 0',
-              borderRadius: '50%',
-            }}
-          />
-
-          <Text style={footer}>{organization}</Text>
-          <Text style={footer}>This is an automated message. Please do not reply to this email.</Text>
-          <Text style={footer}>
-            &copy; {new Date().getFullYear()} {organization}. All rights reserved.
-          </Text>
-        </Container>
+          </div>
+        </div>
       </Body>
     </Tailwind>
   </Html>
@@ -146,167 +133,224 @@ UserActivationEmail.PreviewProps = {
   organization: 'ReADI Control Center',
   username: 'johndoe',
   passcode: 'ABC123XYZ',
-  loginlink: 'https://app.ai-inspection.com/activate?o=1&email=john@example.com&id=abc123',
+  loginlink: 'https://app.readi.ai/activate?o=1&email=john@example.com&id=abc123',
   fullname: 'John Doe',
 } as UserActivationEmailProps;
 
-export { UserActivationEmail as default };
+export default UserActivationEmail;
+
+/* ── Shared styles ─────────────────────────────────────── */
+
+const fontStack =
+  '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif';
 
 const main = {
-  backgroundColor: '#f4f4f4',
-  fontFamily:
-    '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",sans-serif',
+  backgroundColor: '#f6f8fc',
+  fontFamily: fontStack,
 };
 
-const container = {
-  margin: '0 auto',
-  padding: '40px 30px',
-  backgroundColor: '#ffffff',
-  borderRadius: '8px',
+const outer = {
   maxWidth: '600px',
+  margin: '32px auto',
 };
 
-const heading = {
-  fontSize: '24px',
-  fontWeight: 'bold',
-  color: '#667eea',
-  marginTop: '24px',
-  marginBottom: '16px',
+const header = {
+  backgroundColor: '#7c3aed',
+  borderRadius: '8px 8px 0 0',
+  padding: '20px 32px',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '12px',
 };
 
-const body = {
-  margin: '24px 0',
+const logoImg = {
+  objectFit: 'contain' as const,
+  filter: 'brightness(0) invert(1)',
+  display: 'block',
+};
+
+const headerTitle = {
+  color: '#ffffff',
+  fontSize: '18px',
+  fontWeight: '600',
+  letterSpacing: '-0.2px',
+};
+
+const card = {
+  backgroundColor: '#ffffff',
+  borderRadius: '0 0 8px 8px',
+  border: '1px solid #e0e0e0',
+  borderTop: 'none',
+  padding: '0',
+};
+
+const section = {
+  padding: '32px 32px 24px',
+};
+
+const title = {
+  fontSize: '22px',
+  fontWeight: '600',
+  color: '#202124',
+  margin: '0 0 20px',
+  lineHeight: '1.3',
 };
 
 const paragraph = {
-  fontSize: '16px',
-  lineHeight: '26px',
-  color: '#555555',
-  margin: '16px 0',
+  fontSize: '15px',
+  lineHeight: '24px',
+  color: '#3c4043',
+  margin: '0 0 16px',
 };
 
-const credentialsBox = {
+const dataCard = {
   backgroundColor: '#f8f9fa',
-  borderLeft: '4px solid #667eea',
-  padding: '20px',
-  margin: '24px 0',
-  borderRadius: '4px',
-};
-
-const credentialsLabel = {
-  fontSize: '15px',
-  fontWeight: '600',
-  color: '#333333',
-  margin: '8px 0',
-};
-
-const credentialsValue = {
-  fontSize: '15px',
-  color: '#555555',
-  marginLeft: '20px',
-  margin: '4px 0 4px 20px',
-};
-
-const passcodeStyle = {
-  fontFamily: '"Courier New", monospace',
-  backgroundColor: '#ffffff',
-  padding: '8px 12px',
-  borderRadius: '4px',
-  display: 'inline-block',
-  marginTop: '8px',
-  fontSize: '18px',
-  letterSpacing: '1px',
-  color: '#667eea',
-  fontWeight: 'bold',
-  marginLeft: '20px',
-};
-
-const infoBox = {
-  backgroundColor: '#d1ecf1',
-  borderLeft: '4px solid #17a2b8',
-  padding: '15px',
-  margin: '20px 0',
-  borderRadius: '4px',
-};
-
-const infoText = {
-  margin: '0',
-  color: '#0c5460',
-  fontSize: '14px',
-  lineHeight: '22px',
-};
-
-const buttonStyle = {
-  display: 'inline-block',
-  padding: '14px 32px',
-  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-  color: '#ffffff',
-  textDecoration: 'none',
+  border: '1px solid #e0e0e0',
   borderRadius: '6px',
-  fontSize: '16px',
+  margin: '20px 0',
+  overflow: 'hidden',
+};
+
+const dataRow = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  padding: '14px 18px',
+};
+
+const dataRowBorder = {
+  height: '1px',
+  backgroundColor: '#e0e0e0',
+  margin: '0 18px',
+};
+
+const dataLabel = {
+  fontSize: '11px',
   fontWeight: '600',
+  color: '#5f6368',
+  letterSpacing: '0.6px',
+  textTransform: 'uppercase' as const,
+};
+
+const dataValue = {
+  fontSize: '14px',
+  color: '#202124',
+  fontWeight: '500',
+};
+
+const monoValue = {
+  fontFamily: '"Roboto Mono","Courier New",monospace',
+  fontSize: '16px',
+  fontWeight: '700',
+  color: '#7c3aed',
+  letterSpacing: '1px',
+};
+
+const hintText = {
+  fontSize: '13px',
+  color: '#5f6368',
+  margin: '0 0 24px',
+  lineHeight: '20px',
+};
+
+const buttonWrap = {
+  textAlign: 'center' as const,
+  margin: '28px 0',
+};
+
+const cta = {
+  backgroundColor: '#7c3aed',
+  color: '#ffffff',
+  padding: '12px 28px',
+  borderRadius: '6px',
+  fontSize: '14px',
+  fontWeight: '600',
+  textDecoration: 'none',
+  display: 'inline-block',
 };
 
 const divider = {
   height: '1px',
-  backgroundColor: '#e9ecef',
+  backgroundColor: '#e8eaed',
   margin: '24px 0',
-  border: 'none',
 };
 
 const smallText = {
-  fontSize: '14px',
-  color: '#6c757d',
-  margin: '12px 0',
+  fontSize: '13px',
+  color: '#5f6368',
+  margin: '0 0 10px',
 };
 
 const linkBox = {
   backgroundColor: '#f8f9fa',
-  padding: '15px',
+  border: '1px solid #e0e0e0',
   borderRadius: '4px',
-  margin: '16px 0',
+  padding: '10px 14px',
+  margin: '0 0 24px',
+  wordBreak: 'break-all' as const,
 };
 
 const linkStyle = {
-  color: '#667eea',
+  color: '#7c3aed',
+  fontSize: '12px',
   textDecoration: 'none',
-  fontSize: '13px',
 };
 
-const alertBox = {
-  backgroundColor: '#fff3cd',
-  borderLeft: '4px solid #ffc107',
-  padding: '15px',
-  margin: '20px 0',
-  borderRadius: '4px',
-};
-
-const alertText = {
-  margin: '0',
-  color: '#856404',
+const stepsTitle = {
   fontSize: '14px',
-  lineHeight: '22px',
+  fontWeight: '600',
+  color: '#202124',
+  margin: '0 0 14px',
 };
 
-const listStyle = {
-  marginLeft: '20px',
-  color: '#555555',
-  fontSize: '16px',
-  lineHeight: '26px',
+const stepsList = {
+  margin: '0 0 8px',
 };
 
-const listItem = {
-  margin: '8px 0',
+const stepRow = {
+  display: 'flex',
+  alignItems: 'flex-start',
+  gap: '12px',
+  marginBottom: '10px',
 };
 
-const hr = {
-  borderColor: '#dddddd',
-  marginTop: '32px',
-  marginBottom: '32px',
+const stepNum = {
+  backgroundColor: '#7c3aed',
+  color: '#ffffff',
+  borderRadius: '50%',
+  width: '20px',
+  height: '20px',
+  fontSize: '11px',
+  fontWeight: '700',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  flexShrink: 0,
+  textAlign: 'center' as const,
+  lineHeight: '20px',
+};
+
+const stepText = {
+  fontSize: '14px',
+  color: '#3c4043',
+  lineHeight: '20px',
+};
+
+const cautionText = {
+  fontSize: '13px',
+  color: '#5f6368',
+  margin: '0',
+  lineHeight: '20px',
 };
 
 const footer = {
-  color: '#8898aa',
+  textAlign: 'center' as const,
+  padding: '16px 32px 8px',
+};
+
+const footerText = {
   fontSize: '12px',
-  margin: '4px 0',
+  color: '#9aa0a6',
+  margin: '2px 0',
+  lineHeight: '18px',
 };

@@ -12,89 +12,79 @@ import {
 
 import { LOGO_BASE64 as LOGO_URL } from './logo-base64';
 
-interface TicketClosedEmailProps {
-  systemCode: string;
-  ticketTitle: string;
-  note?: string | null;
+interface AdminPasswordChangedEmailProps {
+  organization: string;
+  fullname: string;
+  username: string;
+  newPassword: string;
 }
 
-export const TicketClosedEmail = ({
-  systemCode,
-  ticketTitle,
-  note,
-}: TicketClosedEmailProps) => (
+export const AdminPasswordChangedEmail = ({
+  organization,
+  fullname,
+  username,
+  newPassword,
+}: AdminPasswordChangedEmailProps) => (
   <Html>
     <Head />
     <Tailwind>
       <Body style={main}>
-        <Preview>Maintenance complete — {systemCode} is now operational</Preview>
+        <Preview>Your admin password has been updated — {organization}</Preview>
 
         <div style={outer}>
           {/* Header */}
           <div style={header}>
             <Img src={LOGO_URL} alt="ReADI" width={36} height={36} style={logoImg} />
-            <span style={headerTitle}>ReADI Control Center</span>
+            <span style={headerTitle}>{organization}</span>
           </div>
 
           {/* Card body */}
           <Container style={card}>
             <Section style={section}>
-              {/* Status badge */}
-              <div style={badgeWrap}>
-                <span style={badge}>Ticket Closed</span>
-              </div>
-
-              <Text style={title}>Maintenance ticket resolved</Text>
+              <Text style={title}>Your password has been reset</Text>
+              <Text style={paragraph}>Hello {fullname},</Text>
               <Text style={paragraph}>
-                The following maintenance ticket has been closed and the system is back online.
+                Your admin account password for <strong>{organization}</strong> has been reset by a
+                Super Administrator. Use the credentials below to log in.
               </Text>
 
-              {/* Ticket details */}
+              {/* Credentials */}
               <div style={dataCard}>
                 <div style={dataRow}>
-                  <span style={dataLabel}>SYSTEM</span>
-                  <span style={dataValue}>{systemCode}</span>
+                  <span style={dataLabel}>USERNAME</span>
+                  <span style={dataValue}>{username}</span>
                 </div>
                 <div style={dataRowBorder} />
                 <div style={dataRow}>
-                  <span style={dataLabel}>TICKET</span>
-                  <span style={dataValue}>{ticketTitle}</span>
-                </div>
-                <div style={dataRowBorder} />
-                <div style={dataRow}>
-                  <span style={dataLabel}>STATUS</span>
-                  <span style={statusChip}>Operational</span>
+                  <span style={dataLabel}>NEW PASSWORD</span>
+                  <span style={monoValue}>{newPassword}</span>
                 </div>
               </div>
 
-              {/* Optional resolution note */}
-              {note && (
-                <div style={noteCard}>
-                  <Text style={noteTitle}>Resolution note</Text>
-                  <Text style={noteBody}>{note}</Text>
-                </div>
-              )}
-
-              <div style={infoCard}>
-                <Text style={infoText}>
-                  This system has been marked as operational and can now be assigned to operations.
+              {/* Warning notice */}
+              <div style={warningCard}>
+                <Text style={warningTitle}>Security notice</Text>
+                <Text style={warningBody}>
+                  Please log in immediately and change this password from your profile settings. Do
+                  not share this password with anyone.
                 </Text>
               </div>
 
               <div style={divider} />
 
               <Text style={cautionText}>
-                If you have any questions, please contact your system administrator.
+                If you did not expect this change or believe it was made in error, contact your
+                Super Administrator immediately.
               </Text>
             </Section>
           </Container>
 
           {/* Footer */}
           <div style={footer}>
-            <Text style={footerText}>ReADI Control Center</Text>
+            <Text style={footerText}>{organization}</Text>
             <Text style={footerText}>This is an automated message — please do not reply.</Text>
             <Text style={footerText}>
-              &copy; {new Date().getFullYear()} ReADI Control Center. All rights reserved.
+              &copy; {new Date().getFullYear()} {organization}. All rights reserved.
             </Text>
           </div>
         </div>
@@ -103,13 +93,14 @@ export const TicketClosedEmail = ({
   </Html>
 );
 
-TicketClosedEmail.PreviewProps = {
-  systemCode: 'DRN-001',
-  ticketTitle: 'Motor replacement — System #42',
-  note: 'Replaced motor and recalibrated sensors.',
-} as TicketClosedEmailProps;
+AdminPasswordChangedEmail.PreviewProps = {
+  organization: 'ReADI Control Center',
+  fullname: 'Jane Admin',
+  username: 'jane.admin',
+  newPassword: 'Temp@1234',
+} as AdminPasswordChangedEmailProps;
 
-export default TicketClosedEmail;
+export default AdminPasswordChangedEmail;
 
 /* ── Styles ──────────────────────────────────────────────── */
 
@@ -159,27 +150,11 @@ const section = {
   padding: '32px 32px 24px',
 };
 
-const badgeWrap = {
-  marginBottom: '12px',
-};
-
-const badge = {
-  backgroundColor: '#d1fae5',
-  color: '#065f46',
-  fontSize: '11px',
-  fontWeight: '700',
-  letterSpacing: '0.5px',
-  textTransform: 'uppercase' as const,
-  padding: '4px 10px',
-  borderRadius: '20px',
-  display: 'inline-block',
-};
-
 const title = {
   fontSize: '22px',
   fontWeight: '600',
   color: '#202124',
-  margin: '0 0 16px',
+  margin: '0 0 20px',
   lineHeight: '1.3',
 };
 
@@ -225,51 +200,35 @@ const dataValue = {
   fontWeight: '500',
 };
 
-const statusChip = {
-  backgroundColor: '#d1fae5',
-  color: '#065f46',
-  fontSize: '12px',
-  fontWeight: '600',
-  padding: '3px 10px',
-  borderRadius: '12px',
+const monoValue = {
+  fontFamily: '"Roboto Mono","Courier New",monospace',
+  fontSize: '16px',
+  fontWeight: '700',
+  color: '#7c3aed',
+  letterSpacing: '1px',
 };
 
-const noteCard = {
-  backgroundColor: '#f8f9fa',
-  border: '1px solid #e0e0e0',
+const warningCard = {
+  backgroundColor: '#fef9ec',
+  border: '1px solid #fbbf24',
   borderRadius: '6px',
   padding: '16px 18px',
-  margin: '16px 0',
+  margin: '20px 0',
 };
 
-const noteTitle = {
-  fontSize: '11px',
-  fontWeight: '700',
-  color: '#5f6368',
-  letterSpacing: '0.5px',
-  textTransform: 'uppercase' as const,
-  margin: '0 0 8px',
-};
-
-const noteBody = {
-  fontSize: '14px',
-  color: '#3c4043',
-  lineHeight: '22px',
-  margin: '0',
-};
-
-const infoCard = {
-  backgroundColor: '#eff6ff',
-  border: '1px solid #bfdbfe',
-  borderRadius: '6px',
-  padding: '14px 18px',
-  margin: '16px 0',
-};
-
-const infoText = {
+const warningTitle = {
   fontSize: '13px',
-  color: '#1e40af',
-  lineHeight: '20px',
+  fontWeight: '700',
+  color: '#92400e',
+  margin: '0 0 6px',
+  textTransform: 'uppercase' as const,
+  letterSpacing: '0.4px',
+};
+
+const warningBody = {
+  fontSize: '14px',
+  color: '#78350f',
+  lineHeight: '22px',
   margin: '0',
 };
 
