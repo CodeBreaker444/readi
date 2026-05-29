@@ -1,0 +1,19 @@
+meta {
+  name: List Maintenance Tickets
+  type: http
+  seq: 14
+}
+
+get {
+  url: {{baseUrl}}/api/system/maintenance/tickets?status=OPEN
+  body: none
+  auth: inherit
+}
+
+params:query {
+  status: OPEN
+}
+
+settings {
+  encodeUrl: true
+}

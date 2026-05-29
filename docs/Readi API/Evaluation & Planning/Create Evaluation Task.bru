@@ -1,0 +1,32 @@
+meta {
+  name: Create Evaluation Task
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/api/evaluation/:id/tasks
+  body: json
+  auth: inherit
+}
+
+params:path {
+  id: 1
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "task_name": "Site reconnaissance",
+    "task_description": "Initial site visit",
+    "assigned_to": 3,
+    "due_date": "2026-04-20"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

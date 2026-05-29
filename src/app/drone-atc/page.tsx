@@ -283,7 +283,7 @@ export default function DroneATCPage() {
             {status === 'error' && (
               <button
                 onClick={reconnect}
-                className="flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-lg bg-red-600 text-white hover:bg-red-500 transition-colors"
+                className="flex cursor-pointer items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-lg bg-red-600 text-white hover:bg-red-500 transition-colors"
               >
                 <MdRefresh className="w-3 h-3" />
                 <span className="hidden sm:inline">{t('droneAtc.retry')}</span>
@@ -378,7 +378,7 @@ export default function DroneATCPage() {
               <button
                 type="button"
                 onClick={() => setShowFleet(true)}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl transition-all ${glassPanel} ${
+                className={`flex cursor-pointer items-center gap-1.5 px-2.5 py-1.5 rounded-xl transition-all ${glassPanel} ${
                   isDark ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
@@ -416,7 +416,7 @@ export default function DroneATCPage() {
                 <button
                   type="button"
                   onClick={() => setShowFleet(false)}
-                  className={`w-5 h-5 rounded-md flex items-center justify-center transition-colors ${
+                  className={`w-5 h-5 cursor-pointer rounded-md flex items-center justify-center transition-colors ${
                     isDark ? 'text-slate-500 hover:text-slate-300 hover:bg-slate-700/60' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
                   }`}
                 >
@@ -469,7 +469,7 @@ export default function DroneATCPage() {
                   <button
                     type="button"
                     onClick={() => setShowVideoPanel(false)}
-                    className="absolute top-2 right-2 z-10 w-6 h-6 rounded-full bg-black/60 flex items-center justify-center text-white hover:bg-black/80 transition-colors"
+                    className="absolute cursor-pointer top-2 right-2 z-10 w-6 h-6 rounded-full bg-black/60 flex items-center justify-center text-white hover:bg-black/80 transition-colors"
                   >
                     <X className="w-3 h-3" />
                   </button>

@@ -1,0 +1,23 @@
+meta {
+  name: Mark Notification Read
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/notification/mark-read
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  { "notification_id": 1 }
+}
+
+settings {
+  encodeUrl: true
+}

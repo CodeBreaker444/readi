@@ -1,0 +1,27 @@
+meta {
+  name: Approve Safety Target Review
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{baseUrl}}/api/compliance/safety-target-review/approve
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "review_id": 1,
+    "approved_by": 3,
+    "approval_notes": "Targets met for Q1"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

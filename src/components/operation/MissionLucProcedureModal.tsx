@@ -694,7 +694,7 @@ export function MissionLucProcedureModal({ mission, isDark, onClose }: Props) {
               )}
               <button
                 onClick={onClose}
-                className={`p-1.5 rounded-lg ${isDark ? 'text-slate-400 hover:bg-slate-700' : 'text-gray-400 hover:bg-gray-100'}`}
+                className={`p-1.5 cursor-pointer rounded-lg ${isDark ? 'text-slate-400 hover:bg-slate-700' : 'text-gray-400 hover:bg-gray-100'}`}
               >
                 <X className="h-4 w-4" />
               </button>

@@ -1,0 +1,38 @@
+meta {
+  name: Create Scheduled Operation
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/api/operation/calendar/create
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "mission_name": "Weekly Pipeline Inspection",
+    "is_recurring": true,
+    "scheduled_start": "2025-06-01T08:00:00Z",
+    "days_of_week": [1],
+    "recur_until": "2025-08-31T23:59:59Z",
+    "fk_pilot_user_id": 12,
+    "fk_tool_id": 3,
+    "fk_luc_procedure_id": 5,
+    "location": "Zone A",
+    "notes": "Summer schedule"
+  }
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Creates a scheduled or recurring operation. Triggers POST /dcc/missions callback. If DCC returns 409 or 422 the operation is rolled back and Readi returns 502. is_recurring: true enables days_of_week and recur_until.
+}

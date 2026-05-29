@@ -1,0 +1,28 @@
+meta {
+  name: 📋 Key Findings & Gotchas
+  type: http
+  seq: 4
+}
+
+get {
+  url: http://
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  | Topic | Finding |
+  |---|---|
+  | Auth token | Use long-lived API key, NOT 1-hour session token |
+  | Date filter | Unix **milliseconds** (e.g., 1773446399000), not ISO strings |
+  | Device filter | `drone_id` (not `droneId`, `deviceId`, `device_id`) |
+  | Multiple drones | Repeat param: `&drone_id=id1&drone_id=id2` |
+  | GUTMA single | Returns **JSON** (not ZIP) for single flight |
+  | GUTMA batch | Returns **ZIP** with .gutma files for 2+ flights |
+  | Max batch size | **50 flight IDs** per request (414 error above) |
+  | Archived flights | `archived=true` is separate; old flights may be archived |
+}

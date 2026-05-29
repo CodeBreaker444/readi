@@ -1,0 +1,28 @@
+meta {
+  name: Log Measurement
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/safety/spi-kpi/log-measurement
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "indicator_id": 1,
+    "measured_value": 1.8,
+    "measurement_date": "2026-04-01",
+    "notes": "April measurement"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

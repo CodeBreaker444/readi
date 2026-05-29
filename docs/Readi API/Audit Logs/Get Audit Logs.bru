@@ -1,0 +1,30 @@
+meta {
+  name: Get Audit Logs
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/audit-logs?page=1&page_size=50
+  body: none
+  auth: inherit
+}
+
+params:query {
+  page: 1
+  page_size: 50
+  ~user_id: 
+  ~event_type: 
+  ~entity_type: 
+  ~date_from: 
+  ~date_to: 
+  ~owner_id: 
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Get paginated audit logs. Requires `view_logs`. SUPERADMIN can filter by `owner_id`.
+}

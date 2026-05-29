@@ -1,0 +1,125 @@
+meta {
+  name: Download GUTMA
+  type: http
+  seq: 2
+}
+
+get {
+  url: https://api-eu.flytbase.com/v2/flight/report/download/gutma?flightIds=7feb9cbe-aae5-4153-9275-74cff51e5b0e
+  body: none
+  auth: inherit
+}
+
+params:query {
+  flightIds: 7feb9cbe-aae5-4153-9275-74cff51e5b0e
+}
+
+headers {
+  Authorization: Bearer {token}
+  org-id: {id}
+}
+
+script:pre-request {
+  const authHeader = req.getHeaders().get("Authorization") || "";
+  const token      = authHeader.replace(/^Bearer\s+/i, "").trim();
+  const orgId      = (req.getHeaders().get("org-id") || "").trim();
+  const flightId   = (req.getUrl().query.get("flightIds") || "").trim();
+  
+  if (!token || token === "PASTE_TOKEN_HERE")
+      throw new Error("❌ In the Headers tab, set Authorization to: Bearer YOUR_TOKEN");
+  if (!orgId || orgId === "ENTER_ORG_ID_HERE")
+      throw new Error("❌ In the Headers tab, set org-id to your org ID");
+  if (!flightId || flightId === "ENTER_FLIGHT_ID_HERE")
+      throw new Error("❌ In the Params tab, set flightIds to your flight ID");
+  
+  const orgName = orgId;
+  console.log("🔍 Validating — Org: " + orgName + " | Flight: " + flightId);
+  
+  await bru.sendRequest({
+      url: "https://api-eu.flytbase.com/v2/flight/" + flightId,
+      method: "GET",
+      headers: {
+          "Authorization": "Bearer " + token,
+          "org-id": orgId
+      }
+  }, async function(err, res) {
+      if (err)
+          throw new Error("❌ Validation failed: " + err.message);
+      if (res.status === 401 || res.status === 403)
+          throw new Error("❌ Token invalid or expired — update the Authorization header.");
+      if (res.status === 500 || res.status === 404)
+          throw new Error("❌ Flight \"" + flightId + "\" not found for " + orgName + ". Check your flightIds param.");
+      if (res.status !== 200)
+          throw new Error("❌ Unexpected error " + res.status + " during validation.");
+  
+      const data      = res.data;
+      const flightOrg = data.organization_id;
+  
+      if (flightOrg !== orgId) {
+          const actual = flightOrg;
+          throw new Error("❌ Flight belongs to \"" + actual + "\", not \"" + orgName + "\". Wrong org-id or flightIds.");
+      }
+  
+      const site  = (data.site_details  && data.site_details.site_name)   || "?";
+      const drone = (data.drone_details && data.drone_details.drone_name) || "?";
+      pm.collectionVariables.set("_meta", JSON.stringify({ orgName, site, drone, ts: data.timestamp }));
+      console.log("✅ Validated — " + orgName + " | " + site + " | " + drone);
+  });
+}
+
+script:post-response {
+  test("GUTMA downloaded (HTTP 200)", function () {
+      expect(res.getStatus()).to.equal(200);
+  });
+  
+  if (res.getStatus() === 200) {
+      const body = JSON.stringify(res.getBody());
+      let meta = {};
+      try { meta = JSON.parse(bru.getCollectionVar("_meta") || "{}"); } catch(e) {}
+  
+      let format = "Unknown", telemetry = 0;
+      if (body.charAt(0) === "{") {
+          format = "Raw JSON (GUTMA)";
+          try {
+              const items = JSON.parse(body).exchange.message.flight_logging.flight_logging_items || [];
+              telemetry = items.length;
+          } catch(e) {}
+      } else if (body.charCodeAt(0) === 80 && body.charCodeAt(1) === 75) {
+          format = "ZIP Archive";
+      }
+  
+      console.log("\n✅ GUTMA Downloaded Successfully");
+      console.log("────────────────────────────────────");
+      console.log("Org       : " + (meta.orgName || "?"));
+      console.log("Site      : " + (meta.site    || "?"));
+      console.log("Drone     : " + (meta.drone   || "?"));
+      console.log("Timestamp : " + (meta.ts      || "?"));
+      console.log("Format    : " + format);
+      console.log("Size      : " + Math.round(body.length / 102.4) / 10 + " KB");
+      if (telemetry > 0) console.log("Telemetry : " + telemetry + " points");
+      console.log("\n💾 Save file: Send → Save Response → Save to a file");
+  
+      test("Response has content", function () {
+          expect(body.length).to.be.above(100);
+      });
+  }
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  **Fill in 3 fields then hit Send:**
+  
+  **Headers tab:**
+  - `Authorization` → `Bearer YOUR_TOKEN`
+  - `org-id` → your org ID
+  
+  **Params tab:**
+  - `flightIds` → your flight ID
+  
+  Validation runs automatically before download. Wrong org or bad flight ID will show a clear error.
+  
+  To save: **Send → Save Response → Save to a file**
+}

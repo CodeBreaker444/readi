@@ -1,0 +1,27 @@
+meta {
+  name: List Compliance Requirements
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/compliance/audit-plan/list?page=1&limit=20
+  body: none
+  auth: inherit
+}
+
+params:query {
+  page: 1
+  limit: 20
+  ~requirement_type: 
+  ~requirement_status: COMPLIANT
+  ~q: 
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  List compliance requirements. Requires `view_compliance`.
+}

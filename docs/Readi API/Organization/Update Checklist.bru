@@ -1,0 +1,29 @@
+meta {
+  name: Update Checklist
+  type: http
+  seq: 9
+}
+
+put {
+  url: {{baseUrl}}/api/organization/checklist/:id
+  body: json
+  auth: inherit
+}
+
+params:path {
+  id: 1
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "checklist_name": "Updated Pre-Flight Checklist"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

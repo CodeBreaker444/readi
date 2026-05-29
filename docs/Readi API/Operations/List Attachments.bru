@@ -1,0 +1,19 @@
+meta {
+  name: List Attachments
+  type: http
+  seq: 24
+}
+
+get {
+  url: {{baseUrl}}/api/operation/:id/attachment
+  body: none
+  auth: inherit
+}
+
+params:path {
+  id: 1
+}
+
+settings {
+  encodeUrl: true
+}

@@ -1,0 +1,27 @@
+meta {
+  name: Add Mission Status
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/api/mission/status/add
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "status_name": "PENDING_APPROVAL",
+    "status_label": "Pending Approval",
+    "color": "#FFA500"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

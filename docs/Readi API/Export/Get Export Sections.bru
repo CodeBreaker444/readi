@@ -1,0 +1,15 @@
+meta {
+  name: Get Export Sections
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/export/sections
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

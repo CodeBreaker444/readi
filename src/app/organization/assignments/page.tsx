@@ -345,7 +345,7 @@ export default function AssignmentPage() {
         <div className="flex gap-3 justify-end">
           <button
             onClick={() => setConfirmDelete(null)}
-            className={`px-4 py-2 rounded-lg border text-sm transition-colors ${isDark
+            className={`px-4 cursor-pointer py-2 rounded-lg border text-sm transition-colors ${isDark
               ? 'border-slate-700 text-slate-400 hover:bg-slate-800'
               : 'border-slate-200 text-slate-500 hover:bg-slate-50'
               }`}
@@ -355,7 +355,7 @@ export default function AssignmentPage() {
           <button
             onClick={handleDelete}
             disabled={submitting}
-            className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-medium transition-colors disabled:opacity-50"
+            className="px-4 cursor-pointer py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-medium transition-colors disabled:opacity-50"
           >
             {submitting ? t('organization.common.deleting') : t('organization.common.delete')}
           </button>

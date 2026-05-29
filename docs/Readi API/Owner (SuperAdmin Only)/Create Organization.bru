@@ -1,0 +1,79 @@
+meta {
+  name: Create Organization
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/owner
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "owner_code": "ORG001",
+    "owner_name": "My Organization",
+    "owner_email": "admin@myorg.com",
+    "owner_website": "https://myorg.com"
+  }
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Create a new organization with admin user. SUPERADMIN only.
+  
+  - owner_code: min 2 chars (required)
+  - owner_name: min 2 chars (required)
+  - owner_email: valid email (required)
+  - owner_website: valid URL (required)
+}
+
+example {
+  name: Success
+  
+  request: {
+    url: {{baseUrl}}/api/owner
+    method: POST
+    mode: json
+    headers: {
+      Content-Type: application/json
+    }
+  
+    body:json: {
+      {
+        "owner_code": "ORG001",
+        "owner_name": "My Organization",
+        "owner_email": "admin@myorg.com",
+        "owner_website": "https://myorg.com"
+      }
+    }
+  }
+  
+  response: {
+    status: {
+      code: 200
+      text: OK
+    }
+  
+    body: {
+      type: text
+      content: '''
+        {
+          "code": 1,
+          "message": "Organization and admin created",
+          "data": { "owner_id": 2, "owner_code": "ORG001", "owner_name": "My Organization" },
+          "newCode": "ORG001",
+          "admin": { "userId": 5, "emailSent": true }
+        }
+      '''
+    }
+  }
+}

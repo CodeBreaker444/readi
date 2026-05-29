@@ -1,0 +1,15 @@
+meta {
+  name: Get Audit Plan Stats
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/api/compliance/audit-plan/stats
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

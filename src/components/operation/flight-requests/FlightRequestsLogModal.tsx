@@ -133,7 +133,7 @@ export function FlightRequestsLogModal({
                     <button
                       key={flight.flight_id}
                       onClick={() => onSelectFlight(flight.flight_id)}
-                      className={`w-full text-left px-4 py-2.5 flex items-center gap-3 text-xs transition-colors ${
+                      className={`w-full cursor-pointer text-left px-4 py-2.5 flex items-center gap-3 text-xs transition-colors ${
                         isSelected
                           ? isDark ? 'bg-violet-600/20 text-violet-300' : 'bg-violet-50 text-violet-700'
                           : isDark ? 'hover:bg-slate-800 text-slate-300' : 'hover:bg-gray-50 text-gray-700'

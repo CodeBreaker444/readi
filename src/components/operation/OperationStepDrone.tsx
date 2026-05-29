@@ -6,7 +6,7 @@ import { LocationGroup } from '@/config/types/erp'
 import { cn } from '@/lib/utils'
 import { AlertTriangle, Shield } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { inputCls, labelCls, scCls, siCls, SectionTitle } from './OperationModalHelpers'
+import { inputCls, labelCls, scCls, SectionTitle, siCls } from './OperationModalHelpers'
 import { Drone, FlightMode, OpType, PlanningOption } from './OperationModalTypes'
 
 interface Props {
@@ -67,7 +67,7 @@ export function OperationStepDrone({
                             type="button"
                             onClick={() => onOpTypeChange(type)}
                             className={cn(
-                                'px-4 py-2 rounded-md text-sm font-semibold border transition-colors',
+                                'px-4 py-2 cursor-pointer rounded-md text-sm font-semibold border transition-colors',
                                 opType === type
                                     ? 'bg-violet-600 border-violet-600 text-white'
                                     : isDark
@@ -189,7 +189,7 @@ export function OperationStepDrone({
                                     type="button"
                                     onClick={() => onFlightModeChange(fm.value)}
                                     className={cn(
-                                        'px-3 py-1.5 rounded-md text-xs font-semibold border transition-colors',
+                                        'px-3 py-1.5 cursor-pointer rounded-md text-xs font-semibold border transition-colors',
                                         flightMode === fm.value
                                             ? 'bg-sky-600 border-sky-600 text-white'
                                             : isDark

@@ -1,0 +1,28 @@
+meta {
+  name: Add Model
+  type: http
+  seq: 12
+}
+
+post {
+  url: {{baseUrl}}/api/system/model/add
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "model_name": "Matrice 300 RTK",
+    "manufacturer": "DJI",
+    "max_flight_time_min": 55,
+    "max_payload_kg": 2.7
+  }
+}
+
+settings {
+  encodeUrl: true
+}

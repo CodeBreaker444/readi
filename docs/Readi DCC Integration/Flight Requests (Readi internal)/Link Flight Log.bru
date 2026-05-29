@@ -1,0 +1,31 @@
+meta {
+  name: Link Flight Log
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{base_url}}/api/planning/flight-requests/logs
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "action": "link",
+    "request_id": 42,
+    "flight_id": "flytbase-flight-abc123"
+  }
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Links a FlytBase flight log to a flight request and archives it to S3. action must be 'link'.
+}

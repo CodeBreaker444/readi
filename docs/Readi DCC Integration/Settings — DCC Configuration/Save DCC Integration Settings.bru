@@ -1,0 +1,30 @@
+meta {
+  name: Save DCC Integration Settings
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/api/settings/dcc
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "display_name": "My DCC Server",
+    "callback_url": "https://your-dcc-server.com"
+  }
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Saves (upserts) the DCC callback URL for the organization. All outbound callbacks will be posted to this base URL.
+}

@@ -1,13 +1,13 @@
 'use client'
 
 import { useTimezone } from '@/components/TimezoneProvider'
-import { nowAsLocalInput } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { nowAsLocalInput } from '@/lib/utils'
 import { zodResolver } from '@hookform/resolvers/zod'
 import axios from 'axios'
 import { Loader2, Plus, RefreshCw } from 'lucide-react'
@@ -371,7 +371,7 @@ export function AddOperationModal({ open, onClose, onSuccess, isDark }: AddOpera
                                                             : [...daysOfWeek, day.value]
                                                         setValue('days_of_week', next, { shouldValidate: true })
                                                     }}
-                                                    className={`px-3 py-1.5 rounded-md text-xs font-semibold border transition-colors ${
+                                                    className={`px-3 cursor-pointer py-1.5 rounded-md text-xs font-semibold border transition-colors ${
                                                         checked
                                                             ? 'bg-sky-600 border-sky-600 text-white'
                                                             : isDark

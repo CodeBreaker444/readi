@@ -5,12 +5,12 @@ import { Badge } from "@/components/ui/badge";
 import { useTimezone } from "@/components/TimezoneProvider";
 import { cn, formatDateInTz } from "@/lib/utils";
 import {
-    AlertTriangle,
-    CalendarDays,
-    CheckCircle2,
-    Clock,
-    Plane,
-    Sparkles,
+  AlertTriangle,
+  CalendarDays,
+  CheckCircle2,
+  Clock,
+  Plane,
+  Sparkles,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Skeleton } from "../ui/skeleton";
@@ -315,7 +315,7 @@ export function MaintenanceTab({
                           type="button"
                           onClick={() => onToggleFlight(comp.component_id)}
                           className={cn(
-                            "h-7 px-3 rounded-md text-xs font-semibold border transition-colors",
+                            "h-7 px-3 cursor-pointer rounded-md text-xs font-semibold border transition-colors",
                             inp?.add_flights === 1
                               ? isDark ? "border-violet-500 bg-violet-500/20 text-violet-300" : "border-violet-500 bg-violet-50 text-violet-700"
                               : isDark ? "border-slate-600 bg-slate-700 text-slate-200 hover:bg-slate-600" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
@@ -359,7 +359,7 @@ export function MaintenanceTab({
                             <button
                               type="button"
                               onClick={() => onResetHours(comp.component_id)}
-                              className={cn("h-5 w-5 rounded flex items-center justify-center text-[10px] border transition-colors", isDark ? "border-slate-600 bg-slate-700 text-slate-400 hover:text-rose-400 hover:border-rose-500/40" : "border-slate-200 bg-white text-slate-400 hover:text-rose-500 hover:border-rose-300")}
+                              className={cn("h-5 w-5 cursor-pointer rounded flex items-center justify-center text-[10px] border transition-colors", isDark ? "border-slate-600 bg-slate-700 text-slate-400 hover:text-rose-400 hover:border-rose-500/40" : "border-slate-200 bg-white text-slate-400 hover:text-rose-500 hover:border-rose-300")}
                               title="Reset hours"
                             >×</button>
                           </>

@@ -220,7 +220,7 @@ export default function OrgDataTable<T extends { id: string }>({
               <button
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all
+                className={`flex items-center cursor-pointer gap-2 px-4 py-2 rounded-lg border transition-all
                   ${currentPage === 1 
                     ? 'opacity-50 cursor-not-allowed' 
                     : 'hover:shadow-md'}
@@ -249,7 +249,7 @@ export default function OrgDataTable<T extends { id: string }>({
                     <button
                       key={pageNum}
                       onClick={() => setCurrentPage(pageNum)}
-                      className={`w-10 h-10 rounded-lg border transition-all font-medium
+                      className={`w-10 h-10 cursor-pointer rounded-lg border transition-all font-medium
                         ${currentPage === pageNum
                           ? 'bg-blue-600 text-white border-blue-600 shadow-md'
                           : isDark
@@ -265,7 +265,7 @@ export default function OrgDataTable<T extends { id: string }>({
               <button
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all
+                className={`flex items-center cursor-pointer gap-2 px-4 py-2 rounded-lg border transition-all
                   ${currentPage === totalPages 
                     ? 'opacity-50 cursor-not-allowed' 
                     : 'hover:shadow-md'}

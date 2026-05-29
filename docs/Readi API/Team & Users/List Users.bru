@@ -1,0 +1,29 @@
+meta {
+  name: List Users
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/team/user/list
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "user_profile": null
+  }
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  List users. Requires `manage_users` or `view_logs`. SUPERADMIN sees all orgs.
+}

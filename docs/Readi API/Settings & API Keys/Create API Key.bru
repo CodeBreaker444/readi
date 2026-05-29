@@ -1,0 +1,72 @@
+meta {
+  name: Create API Key
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/settings/api-keys
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "key_name": "External Integration Key",
+    "expires_at": "2027-01-01T00:00:00Z"
+  }
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Create a new API key. Requires `view_config`.
+  
+  key_name: required, max 100 chars
+  expires_at: optional ISO datetime
+}
+
+example {
+  name: Success
+  
+  request: {
+    url: {{baseUrl}}/api/settings/api-keys
+    method: POST
+    mode: json
+    headers: {
+      Content-Type: application/json
+    }
+  
+    body:json: {
+      {
+        "key_name": "External Integration Key",
+        "expires_at": "2027-01-01T00:00:00Z"
+      }
+    }
+  }
+  
+  response: {
+    status: {
+      code: 201
+      text: Created
+    }
+  
+    body: {
+      type: text
+      content: '''
+        {
+          "code": 1,
+          "key": "rdi_live_xxxxxxxxxxxxxxxxxxxx",
+          "key_id": 3,
+          "key_name": "External Integration Key"
+        }
+      '''
+    }
+  }
+}

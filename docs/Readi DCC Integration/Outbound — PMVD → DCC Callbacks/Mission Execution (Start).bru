@@ -1,0 +1,23 @@
+meta {
+  name: Mission Execution (Start)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{dcc_base_url}}/dcc/missions/{{mission_id}}/execution
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Sent by PMVD to DCC when a mission moves to IN_PROGRESS. No body required.
+}

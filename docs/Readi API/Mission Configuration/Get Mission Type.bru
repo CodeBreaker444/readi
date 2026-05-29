@@ -1,0 +1,19 @@
+meta {
+  name: Get Mission Type
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/mission/type/:typeId/edit
+  body: none
+  auth: inherit
+}
+
+params:path {
+  typeId: 1
+}
+
+settings {
+  encodeUrl: true
+}

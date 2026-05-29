@@ -1,0 +1,27 @@
+meta {
+  name: Close Maintenance Ticket
+  type: http
+  seq: 17
+}
+
+post {
+  url: {{baseUrl}}/api/system/maintenance/tickets/close
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "ticket_id": 1,
+    "resolution": "Battery replaced with new unit",
+    "closed_at": "2026-04-10T16:00:00Z"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

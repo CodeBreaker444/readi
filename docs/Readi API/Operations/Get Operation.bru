@@ -1,0 +1,23 @@
+meta {
+  name: Get Operation
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/api/operation/:id
+  body: none
+  auth: inherit
+}
+
+params:path {
+  id: 1
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Get a single operation by ID. Requires `view_operations`.
+}

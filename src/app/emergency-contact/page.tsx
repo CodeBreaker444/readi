@@ -287,7 +287,7 @@ export default function EmergencyContactPage() {
                 type="button"
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  'flex items-center gap-1.5 px-4 py-2 text-xs font-medium border-b-2 transition-colors',
+                  'flex items-center cursor-pointer gap-1.5 px-4 py-2 text-xs font-medium border-b-2 transition-colors',
                   activeTab === tab.id
                     ? 'border-violet-600 text-violet-600'
                     : isDark

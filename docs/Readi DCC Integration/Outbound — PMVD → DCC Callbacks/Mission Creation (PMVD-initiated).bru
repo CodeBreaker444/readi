@@ -1,0 +1,44 @@
+meta {
+  name: Mission Creation (PMVD-initiated)
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{dcc_base_url}}/dcc/missions
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "type": "INSPECTION",
+    "target": "Viaduct B2",
+    "localization": {
+      "type": "highway_segment",
+      "highway": "A4",
+      "carriageway": "South",
+      "kmStart": 22.0,
+      "kmEnd": 22.5
+    },
+    "missions": [
+      { "missionId": "PM-2025-001", "startDateTime": "2025-06-10T09:00:00Z" },
+      { "missionId": "PM-2025-002", "startDateTime": "2025-06-17T09:00:00Z" }
+    ],
+    "priority": "LOW",
+    "notes": "Scheduled from PMVD dashboard",
+    "operator": "Giulia Verdi"
+  }
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Sent by PMVD to DCC when PMVD creates a scheduled/on-demand mission. DCC should persist these IDs. On DCC failure the caller rolls back.
+}

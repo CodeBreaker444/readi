@@ -1,0 +1,15 @@
+meta {
+  name: List Components
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/api/system/component/list
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

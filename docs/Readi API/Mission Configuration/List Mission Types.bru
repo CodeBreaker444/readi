@@ -1,0 +1,15 @@
+meta {
+  name: List Mission Types
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/mission/type/list
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

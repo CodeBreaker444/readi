@@ -1,0 +1,35 @@
+meta {
+  name: Update Operation
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{baseUrl}}/api/operation/:id
+  body: json
+  auth: inherit
+}
+
+params:path {
+  id: 1
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "mission_name": "Updated Mission",
+    "status_name": "IN_PROGRESS",
+    "notes": "Updated notes"
+  }
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Update an operation. Requires `view_operations`.
+}

@@ -1,0 +1,30 @@
+meta {
+  name: Update Flight Request Status
+  type: http
+  seq: 3
+}
+
+patch {
+  url: {{base_url}}/api/planning/flight-requests/{{request_id}}
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "dcc_status": "IN_PROGRESS"
+  }
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Manually update a flight request's status.
+  Allowed values: IN_PROGRESS, COMPLETED, ISSUE
+}

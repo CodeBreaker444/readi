@@ -199,7 +199,7 @@ export default function GeneralCommunicationDialog({
                         {r.role && <span className="opacity-70">— {r.role}</span>}
                         <button
                           onClick={() => toggleRecipient(r)}
-                          className="hover:text-violet-500 transition-colors"
+                          className="hover:text-violet-500 cursor-pointer transition-colors"
                         >
                           <X className="h-3 w-3" />
                         </button>
@@ -260,7 +260,7 @@ export default function GeneralCommunicationDialog({
                       key={opt.value}
                       onClick={() => setLevel(opt.value as typeof level)}
                       className={cn(
-                        'flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm font-medium transition-all',
+                        'flex items-center cursor-pointer gap-1.5 px-3 py-1.5 rounded-lg border text-sm font-medium transition-all',
                         level === opt.value
                           ? cn('bg-muted border-foreground/30 shadow-sm', opt.color)
                           : 'text-muted-foreground hover:text-foreground border-transparent'
@@ -304,7 +304,7 @@ export default function GeneralCommunicationDialog({
                         e.stopPropagation();
                         setFile(null);
                       }}
-                      className="text-muted-foreground hover:text-foreground"
+                      className="text-muted-foreground cursor-pointer hover:text-foreground"
                     >
                       <X className="h-4 w-4" />
                     </button>

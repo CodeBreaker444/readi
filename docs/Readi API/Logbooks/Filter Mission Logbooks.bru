@@ -1,0 +1,21 @@
+meta {
+  name: Filter Mission Logbooks
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/logbooks/mission/filter?pilot_id=3&date_from=2026-01-01&date_to=2026-04-30
+  body: none
+  auth: inherit
+}
+
+params:query {
+  pilot_id: 3
+  date_from: 2026-01-01
+  date_to: 2026-04-30
+}
+
+settings {
+  encodeUrl: true
+}

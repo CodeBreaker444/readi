@@ -1,0 +1,15 @@
+meta {
+  name: List Models
+  type: http
+  seq: 11
+}
+
+get {
+  url: {{baseUrl}}/api/system/model/list
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

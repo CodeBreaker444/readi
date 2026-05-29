@@ -1,0 +1,15 @@
+meta {
+  name: Get Maintenance Ticket Report
+  type: http
+  seq: 19
+}
+
+get {
+  url: {{baseUrl}}/api/system/maintenance/tickets/report
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

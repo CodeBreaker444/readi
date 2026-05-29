@@ -1,0 +1,26 @@
+meta {
+  name: Update Planning
+  type: http
+  seq: 17
+}
+
+post {
+  url: {{baseUrl}}/api/evaluation/planning/update-planning
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "planning_id": 1,
+    "status": "APPROVED"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

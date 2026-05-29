@@ -38,7 +38,7 @@ export default function FlightLogbookOffcanvas({
           </h2>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+            className="p-2 cursor-pointer rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
           >
             <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
           </button>

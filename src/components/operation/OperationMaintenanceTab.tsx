@@ -1,7 +1,7 @@
 'use client'
 
-import { Badge } from '@/components/ui/badge'
 import { useTimezone } from '@/components/TimezoneProvider'
+import { Badge } from '@/components/ui/badge'
 import { cn, formatDateInTz } from '@/lib/utils'
 import axios from 'axios'
 import { AlertTriangle, CalendarDays, CheckCircle2, Clock, Loader2, Plane } from 'lucide-react'
@@ -360,7 +360,7 @@ export const OperationMaintenanceTab = forwardRef<OperationMaintenanceTabHandle,
                                                         type="button"
                                                         onClick={() => handleToggleFlight(comp.component_id)}
                                                         className={cn(
-                                                            'h-7 px-3 rounded-md text-xs font-semibold border transition-colors',
+                                                            'h-7 px-3 rounded-md cursor-pointer text-xs font-semibold border transition-colors',
                                                             inp?.add_flights === 1
                                                                 ? isDark ? 'border-violet-500 bg-violet-500/20 text-violet-300' : 'border-violet-500 bg-violet-50 text-violet-700'
                                                                 : isDark ? 'border-slate-600 bg-slate-700 text-slate-200 hover:bg-slate-600' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'

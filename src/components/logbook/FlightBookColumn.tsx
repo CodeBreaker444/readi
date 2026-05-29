@@ -29,7 +29,7 @@ import { Mission } from "./FlightLogbookTable";
       accessorKey: 'id',
       header: ({ column }) => (
         <button
-          className="flex items-center gap-2 font-semibold hover:text-slate-700 dark:hover:text-slate-300"
+          className="flex cursor-pointer items-center gap-2 font-semibold hover:text-slate-700 dark:hover:text-slate-300"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
           #
@@ -46,7 +46,7 @@ import { Mission } from "./FlightLogbookTable";
       accessorKey: 'startDate',
       header: ({ column }) => (
         <button
-          className="flex items-center gap-2 font-semibold hover:text-slate-700 dark:hover:text-slate-300"
+          className="flex cursor-pointer items-center gap-2 font-semibold hover:text-slate-700 dark:hover:text-slate-300"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
           Start Time

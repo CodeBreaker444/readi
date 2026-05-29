@@ -4,11 +4,10 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { formatDateTimeInTz } from '@/lib/utils'
-import { cn } from '@/lib/utils'
+import { cn, formatDateTimeInTz } from '@/lib/utils'
 import { AlertTriangle, CheckCircle2, Loader2, RefreshCw } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { inputCls, labelCls, scCls, siCls, SectionTitle } from './OperationModalHelpers'
+import { inputCls, labelCls, scCls, SectionTitle, siCls } from './OperationModalHelpers'
 import { ConflictEvent, DAYS_OF_WEEK, GenericOption, LucOption, SchedulerFormData } from './OperationModalTypes'
 
 interface Props {
@@ -56,7 +55,7 @@ export function OperationStepScheduler({
                         disabled={generatingId || isEdit}
                         title={isEdit ? t('operations.newOperation.scheduler.missionIdLocked') : t('operations.newOperation.scheduler.regenerateId')}
                         className={cn(
-                            'shrink-0 p-2 rounded-md border transition-colors',
+                            'shrink-0 p-2 cursor-pointer rounded-md border transition-colors',
                             isDark
                                 ? 'bg-slate-700 border-slate-600 text-slate-300 hover:bg-slate-600'
                                 : 'bg-white border-slate-300 text-slate-500 hover:bg-slate-50'
@@ -108,7 +107,7 @@ export function OperationStepScheduler({
                                                     ? form.daysOfWeek.filter(d => d !== day.value)
                                                     : [...form.daysOfWeek, day.value]
                                                 )}
-                                                className={cn('px-2.5 py-1 rounded-md text-xs font-semibold border transition-colors',
+                                                className={cn('px-2.5 py-1 cursor-pointer rounded-md text-xs font-semibold border transition-colors',
                                                     checked ? 'bg-sky-600 border-sky-600 text-white'
                                                         : isDark ? 'bg-slate-600 border-slate-500 text-slate-300 hover:bg-slate-500'
                                                             : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-100'

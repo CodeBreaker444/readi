@@ -1,0 +1,23 @@
+meta {
+  name: Delete API Key
+  type: http
+  seq: 3
+}
+
+delete {
+  url: {{baseUrl}}/api/settings/api-keys/:id
+  body: none
+  auth: inherit
+}
+
+params:path {
+  id: 1
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Delete an API key. Requires `view_config`.
+}

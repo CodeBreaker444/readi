@@ -1,0 +1,19 @@
+meta {
+  name: Delete Shift
+  type: http
+  seq: 11
+}
+
+delete {
+  url: {{baseUrl}}/api/team/shift/:id
+  body: none
+  auth: inherit
+}
+
+params:path {
+  id: 1
+}
+
+settings {
+  encodeUrl: true
+}

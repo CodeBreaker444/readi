@@ -1,0 +1,15 @@
+meta {
+  name: List Checklists
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/api/organization/checklist
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

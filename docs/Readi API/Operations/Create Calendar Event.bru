@@ -1,0 +1,28 @@
+meta {
+  name: Create Calendar Event
+  type: http
+  seq: 14
+}
+
+post {
+  url: {{baseUrl}}/api/operation/calendar/create
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "title": "Team Briefing",
+    "start_date": "2026-04-15T09:00:00Z",
+    "end_date": "2026-04-15T10:00:00Z",
+    "description": "Pre-mission briefing"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

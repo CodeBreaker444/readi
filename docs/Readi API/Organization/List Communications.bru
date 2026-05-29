@@ -1,0 +1,15 @@
+meta {
+  name: List Communications
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/organization/communication
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

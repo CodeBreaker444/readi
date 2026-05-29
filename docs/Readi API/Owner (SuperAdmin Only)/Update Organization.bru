@@ -1,0 +1,35 @@
+meta {
+  name: Update Organization
+  type: http
+  seq: 3
+}
+
+put {
+  url: {{baseUrl}}/api/owner/:id
+  body: json
+  auth: inherit
+}
+
+params:path {
+  id: 1
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "owner_name": "Updated Org Name",
+    "owner_email": "new@myorg.com",
+    "owner_website": "https://myorg-new.com"
+  }
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Update organization details. SUPERADMIN only.
+}

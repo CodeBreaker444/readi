@@ -1,0 +1,20 @@
+meta {
+  name: Upload Ticket Attachment
+  type: http
+  seq: 18
+}
+
+post {
+  url: {{baseUrl}}/api/system/maintenance/tickets/upload
+  body: multipartForm
+  auth: inherit
+}
+
+body:multipart-form {
+  file: @file()
+  ticket_id: 1
+}
+
+settings {
+  encodeUrl: true
+}

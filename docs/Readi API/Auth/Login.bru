@@ -1,0 +1,76 @@
+meta {
+  name: Login
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/auth/login
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "admin@example.com",
+    "password": "your_password"
+  }
+}
+
+script:post-response {
+  // Cookie readi_auth_token is set automatically by the server (httpOnly)
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Login with email and password. Sets httpOnly cookie `readi_auth_token` on success.
+}
+
+example {
+  name: Success
+  
+  request: {
+    url: {{baseUrl}}/api/auth/login
+    method: POST
+    mode: json
+    headers: {
+      Content-Type: application/json
+    }
+  
+    body:json: {
+      {
+        "email": "admin@example.com",
+        "password": "your_password"
+      }
+    }
+  }
+  
+  response: {
+    status: {
+      code: 200
+      text: OK
+    }
+  
+    body: {
+      type: text
+      content: '''
+        {
+          "success": true,
+          "data": {
+            "userId": 1,
+            "username": "admin",
+            "email": "admin@example.com",
+            "role": "ADMIN"
+          }
+        }
+      '''
+    }
+  }
+}

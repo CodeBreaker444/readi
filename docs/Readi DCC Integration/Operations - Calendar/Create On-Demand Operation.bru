@@ -1,0 +1,36 @@
+meta {
+  name: Create On-Demand Operation
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/api/operation/calendar/create
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "mission_name": "Emergency Survey",
+    "is_recurring": false,
+    "scheduled_start": "2025-06-10T09:00:00Z",
+    "fk_pilot_user_id": 12,
+    "fk_tool_id": 3,
+    "fk_luc_procedure_id": 5,
+    "location": "Site B",
+    "notes": "Urgent inspection"
+  }
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Creates a single on-demand operation. Triggers POST /dcc/missions callback with type ON-DEMAND.
+}

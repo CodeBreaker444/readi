@@ -1,0 +1,27 @@
+meta {
+  name: Pilot Flight Declaration
+  type: http
+  seq: 22
+}
+
+post {
+  url: {{baseUrl}}/api/operation/pilot/declaration
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "operation_id": 1,
+    "declaration_text": "I confirm the pre-flight checklist is complete.",
+    "declared_at": "2026-04-15T08:45:00Z"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

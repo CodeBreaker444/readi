@@ -1,0 +1,32 @@
+meta {
+  name: Get All Flight Logs
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/v2/flight?page={{page}}&limit={{limit}}&archived=false
+  body: none
+  auth: inherit
+}
+
+params:query {
+  page: {{page}}
+  limit: {{limit}}
+  archived: false
+}
+
+headers {
+  org-id: {{org_id}}
+  Authorization: Bearer {{api_key}}
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Fetch all flight logs with pagination. Returns flightLogs[] array + total.value
+  
+  Tip: Increment `page` to get more results.
+}

@@ -1,0 +1,15 @@
+meta {
+  name: Get Maintenance Lookups
+  type: http
+  seq: 20
+}
+
+get {
+  url: {{baseUrl}}/api/system/maintenance/lookups
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

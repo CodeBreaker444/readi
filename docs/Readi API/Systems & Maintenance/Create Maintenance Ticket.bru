@@ -1,0 +1,30 @@
+meta {
+  name: Create Maintenance Ticket
+  type: http
+  seq: 15
+}
+
+post {
+  url: {{baseUrl}}/api/system/maintenance/tickets/create
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "system_id": 1,
+    "component_id": 2,
+    "issue_title": "Battery degradation detected",
+    "issue_description": "Battery capacity dropped below 80% threshold",
+    "priority": "HIGH",
+    "reported_by": 3
+  }
+}
+
+settings {
+  encodeUrl: true
+}

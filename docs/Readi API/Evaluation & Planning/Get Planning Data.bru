@@ -1,0 +1,15 @@
+meta {
+  name: Get Planning Data
+  type: http
+  seq: 14
+}
+
+get {
+  url: {{baseUrl}}/api/evaluation/planning
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

@@ -1,0 +1,69 @@
+meta {
+  name: New Request
+  type: http
+  seq: 1
+}
+
+get {
+  url: 
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}
+
+example {
+  name: New Request
+  
+  request: {
+    url: https://api-eu.flytbase.com/v2/flight/report/download/gutma?flightIds=c4ee90c0-99c9-4cd1-9a29-17db09ed6472
+    method: GET
+    mode: none
+    params:query: {
+      flightIds: c4ee90c0-99c9-4cd1-9a29-17db09ed6472
+    }
+  
+    headers: {
+      org-id: {{org_id}}
+      Authorization: Bearer {{api_key}}
+    }
+  }
+  
+  response: {
+    headers: {
+      Date: Mon, 30 Mar 2026 09:43:21 GMT
+      Content-Type: application/octet-stream
+      Content-Length: 5440
+      Connection: keep-alive
+      Content-Security-Policy: default-src 'self'
+      X-Content-Security-Policy: default-src 'self'
+      X-WebKit-CSP: default-src 'self'
+      X-DNS-Prefetch-Control: off
+      X-Frame-Options: SAMEORIGIN
+      Strict-Transport-Security: max-age=15552000; includeSubDomains
+      X-Download-Options: noopen
+      X-Content-Type-Options: nosniff
+      X-XSS-Protection: 1; mode=block
+      Vary: Origin
+      Access-Control-Allow-Credentials: true
+      Access-Control-Allow-Headers: content-disposition, content-type
+      content-filename: FlytBase_Export_c4ee90c0-99c9-4cd1-9a29-17db09ed6472.gutma
+      Content-Disposition: attachment; filename="FlytBase_Export_c4ee90c0-99c9-4cd1-9a29-17db09ed6472.gutma"
+      ETag: W/"1540-WNv87IxqiIk5dlvvpnQR8IaKdRc"
+    }
+  
+    status: {
+      code: 200
+      text: OK
+    }
+  
+    body: {
+      type: text
+      content: '''
+        {"exchange":{"exchange_type":"flight_logging","message":{"flight_data":{"aircraft":{"serial_number":"1581F6Q8D247400GM319","product_name":"GOLF","firmware_version":"14.03.09.06","model":"M3TD","manufacturer":"DJI"},"gcs":{"type":"Docking Station","name":"GOLF","serial_number":"7CTXM8M00B00NE"},"payload":[{"cycle_count":"232","design_capacity":7811,"model":"DJI Matrice 3D/3TD Intelligent Flight Battery","serial_number":"6Q7PLBLDA00183","firmware_version":"26.03.00.50","type":"battery"}],"flight_id":"c4ee90c0-99c9-4cd1-9a29-17db09ed6472","pilot_in_command":"Giovanni Carmine Fabiano"},"file":{"version":"1.0","ZZZZZ_version":"1.0.3","logging_type":"GUTMA_DX_JSON","filename":"FlytBase_Export_c4ee90c0-99c9-4cd1-9a29-17db09ed6472.gutma","creation_dtg":"1774863801776"},"flight_logging":{"uom_system":"Metric","altitude_system":"WGS84","logging_start_dtg":"2026-03-27T07:08:04.436Z","events":[{"event_type":"CONTROLLER_GCS","event_info":"CONNECTION","event_timestamp":"0.000","controller_name":"N/A","controller_type":"N/A"},{"event_type":"CONTROLLER_EVENT","event_info":"FLIGHTDATE","event_timestamp":"0.000"},{"event_type":"CONTROLLER_EVENT","event_info":"TOF","event_timestamp":"0.000"},{"event_type":"CONTROLLER_EVENT","event_info":"LND","event_timestamp":"64.036"}],"flight_logging_keys":["timestamp","gps_lon","gps_lat","gps_altitude","speed_vx","speed_vy","speed_vz","battery_percent","product_gps_available","product_gps_position_error","product_gps_sv_number","angle_phi","angle_psi","angle_theta"],"flight_logging_items":[[0,10.7709968225117,45.42376817896361,3.8,0.01132316308855195,-0.1996792076748855,0.2,89,1,0,17,null,105.3,null],[0,10.770996330747625,45.42376848316689,7,0.008006685404396295,-0.14119452180886846,0.14142135623730953,89,1,0,17,null,105.3,null],[0,10.7709971280722,45.4237692981276,15.3,-0.004334031549141325,-0.09990603670715323,0.1,89,1,0,17,null,105.2,null],[0,10.770997016483555,45.42376921190392,25.2,0.005661581544275975,-0.09983960383744275,0.1,89,1,0,17,null,105.3,null],[0,10.77099721993271,45.4237694182091,35.3,0,0,0,89,1,0,17,null,105.2,null],[3.001,10.770996871953528,45.423769224316125,45.3,0,0,0,88,1,0,17,null,105.3,null],[4.001,10.77099699407127,45.42376986160507,55.1,0,0,0,88,1,0,17,null,105.7,null],[7.003,10.770997665154423,45.42376943197808,63.2,0,0,0,88,1,0,20,null,104.9,null],[8.004,10.770996937066565,45.42376769816478,65,-1.2982694125256986,-0.21094201217438405,1.3152946437965907,88,1,0,20,null,116.4,null],[11.005,10.770985703690826,45.42372929559418,65,0.6353929852532917,-1.9381113885148373,2.039607805437114,88,1,0,20,null,-170.9,null],[14.008,10.770980642764089,45.423716962931714,65,0.058492941776252805,0.08110841979942587,0.1,88,1,0,22,null,-168.7,null],[15.008,10.770979558300546,45.423716149335,65,0.10761166315384046,0.16858152316687727,0.2,87,1,0,22,null,114.1,null],[16.008,10.770978357742294,45.42371648792028,65,-0.294536000637983,0.05699600273863132,0.3,87,1,0,22,null,21.8,null],[19.01,10.770977649587593,45.42371657535724,64.6,0,0,0,87,1,0,22,null,13.5,null],[20.011,10.770978500787592,45.423719091834975,63.4,0,0,0,87,1,0,22,null,12.8,null],[23.013,10.770979959056238,45.42372316163899,61.1,0.19988691710020096,0.006724609444227339,0.2,87,1,0,22,null,12.6,null],[24.014,10.77098254134616,45.423728458987064,57.3,0.29732546154427597,0.03996961242598266,0.3,87,1,0,22,null,12.7,null],[27.015,10.770985266281636,45.423736500946525,52.5,0.4120774361916047,0.013863137514787694,0.412310562561766,87,1,0,22,null,12.6,null],[28.016,10.770989024772211,45.42374591752685,46.2,0.6320979325058944,0.02126508221883742,0.632455532033676,87,1,0,22,null,12.6,null],[31.017,10.770993815554768,45.4237566864501,38.5,0.8057699230873026,0.027107767298001736,0.806225774829855,87,1,0,23,null,12.6,null],[32.018,10.770997876836631,45.42376715996524,31.7,0.49309615113943184,-0.0828020877241547,0.5,87,1,0,23,null,12.4,null],[35.019,10.77099874175299,45.42377021256186,29.7,0.19955965583571614,-0.013264379470240138,0.2,87,1,0,23,null,12.5,null],[36.02,10.770999619651638,45.423769000172186,29.6,-0.09973688542609233,0.0072493920781354915,0.1,86,1,0,23,null,103.6,null],[39.022,10.770997518044473,45.42376982987635,27.9,0.02538379413049674,-0.09672467624934478,0.1,86,1,0,23,null,105.5,null],[40.023,10.770997984067968,45.42377045310987,22.6,0.02538379413049674,-0.09672467624934478,0.1,86,1,0,23,null,105.5,null],[43.024,10.770997764197903,45.42376994844502,17.2,0,0,0,86,1,0,23,null,105.3,null],[44.025,10.770997577064582,45.42376982766505,13.1,0,0,0,86,1,0,23,null,105.3,null],[47.026,10.770997757280218,45.4237701798121,9.9,0,0,0,86,1,0,22,null,105.4,null],[48.027,10.770997442256249,45.42377014922597,7.3,0.04409403494792907,-0.08975364105155184,0.1,86,1,0,23,null,105.7,null],[51.029,10.770997597865879,45.42376973366914,5.2,0,0,0,86,1,0,23,null,105.5,null],[54.031,10.770997236702254,45.423769883684365,3.7,0,0,0,86,1,0,23,null,105.4,null],[55.031,10.770997942442671,45.42377033963254,2.4,0,0,0,86,1,0,23,null,103.6,null],[56.032,10.770997569334824,45.42377035898385,1.5,0,0,0,85,1,0,23,null,103.8,null],[59.034,10.770997633420276,45.42377016156536,0.8,0,0,0,85,1,0,23,null,103.8,null],[60.034,10.770997775043972,45.42377052821064,0.6,0,0,0,85,1,0,24,null,103.9,null],[63.036,10.770997840012061,45.42377023955475,0.4,0,0,0,85,1,0,23,null,104,null],[64.036,10.77099785080435,45.4237702573164,0.1,0,0,0,85,1,0,23,null,104.1,null]]},"message_type":"flight_logging_submission"}}}
+      '''
+    }
+  }
+}

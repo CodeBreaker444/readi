@@ -1,0 +1,27 @@
+meta {
+  name: ⚙️ Set Org ID Variable
+  type: http
+  seq: 1
+}
+
+get {
+  url: http://
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Before using this collection:
+  
+  1. Set the `org_id` variable to your organization ID
+  2. Set the `api_key` variable to your FlytBase API key token
+  3. Optionally adjust `start_date` and `end_date` (Unix milliseconds)
+  
+  To find your Org ID:
+  - Check your FlytBase dashboard URL
+  - Or use the 'Get Organization Info' request below
+}

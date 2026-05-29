@@ -1,0 +1,29 @@
+meta {
+  name: Add User Qualification
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/api/team/user/qualifications
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "user_id": 15,
+    "qualification_type": "DRONE_PILOT_LICENSE",
+    "issue_date": "2025-01-01",
+    "expiry_date": "2027-01-01",
+    "certificate_number": "DPL-2025-001"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

@@ -1,0 +1,30 @@
+meta {
+  name: Deny Flight Request
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{base_url}}/api/planning/flight-requests/deny
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "request_id": 42,
+    "note": "Airspace closed for maintenance"
+  }
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Rejects a DCC flight request. Triggers denial callback to DCC. note is optional, max 500 chars. Returns 422 if already rejected.
+}

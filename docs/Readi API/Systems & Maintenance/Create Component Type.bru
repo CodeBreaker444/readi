@@ -1,0 +1,26 @@
+meta {
+  name: Create Component Type
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{baseUrl}}/api/system/component-types
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "type_name": "Battery",
+    "type_code": "BATTERY"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

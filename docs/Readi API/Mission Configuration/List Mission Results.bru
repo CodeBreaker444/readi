@@ -1,0 +1,15 @@
+meta {
+  name: List Mission Results
+  type: http
+  seq: 12
+}
+
+get {
+  url: {{baseUrl}}/api/mission/result/list
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

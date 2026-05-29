@@ -1,0 +1,54 @@
+meta {
+  name: Get Profile
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/profile
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Get current authenticated user profile. Requires auth.
+}
+
+example {
+  name: Success
+  
+  request: {
+    url: {{baseUrl}}/api/profile
+    method: GET
+    mode: none
+  }
+  
+  response: {
+    status: {
+      code: 200
+      text: OK
+    }
+  
+    body: {
+      type: text
+      content: '''
+        {
+          "success": true,
+          "user": {
+            "user_id": 1,
+            "fullname": "John Doe",
+            "email": "john@example.com",
+            "phone": "+1234567890",
+            "timezone": "IST",
+            "avatar_url": null,
+            "role": "ADMIN"
+          }
+        }
+      '''
+    }
+  }
+}

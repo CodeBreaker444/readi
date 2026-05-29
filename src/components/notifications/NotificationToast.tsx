@@ -87,7 +87,7 @@ export const NotificationToast: React.FC<NotificationToastProps> = ({ notificati
 
       <button
         onClick={dismiss}
-        className={`shrink-0 p-0.5 rounded-md transition-colors ${closeBtn}`}
+        className={`shrink-0 cursor-pointer p-0.5 rounded-md transition-colors ${closeBtn}`}
         aria-label="Dismiss"
       >
         <X size={13} />

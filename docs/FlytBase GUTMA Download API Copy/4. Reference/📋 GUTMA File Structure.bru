@@ -1,0 +1,44 @@
+meta {
+  name: 📋 GUTMA File Structure
+  type: http
+  seq: 3
+}
+
+get {
+  url: http://
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  GUTMA JSON structure inside the downloaded ZIP:
+  
+  ```json
+  {
+    "exchange": {
+      "message": {
+        "flight_data": {
+          "aircraft": {
+            "serial_number": "1581F6Q8D247200GFS3H",
+            "product_name": "ECHO",
+            "firmware_version": "14.03.09.06",
+            "model": "M3TD",
+            "manufacturer": "DJI"
+          },
+          "gcs": {
+            "type": "Docking Station",
+            "name": "ECHO",
+            "serial_number": "7CTXM8Q00B00RT"
+          }
+        }
+      }
+    }
+  }
+  ```
+  
+  Dock serial: `exchange.message.flight_data.gcs.serial_number`
+}

@@ -168,7 +168,7 @@ export function LocationGroupFormDialog({ open, onClose, onSubmit, loading, isDa
 
             <div className="flex items-center gap-3">
               <button type="button" onClick={() => setIsActive(v => !v)}
-                className={cn('relative inline-flex h-5 w-9 items-center rounded-full transition-colors shrink-0', isActive ? 'bg-emerald-500' : isDark ? 'bg-slate-600' : 'bg-slate-300')}>
+                className={cn('relative cursor-pointer inline-flex h-5 w-9 items-center rounded-full transition-colors shrink-0', isActive ? 'bg-emerald-500' : isDark ? 'bg-slate-600' : 'bg-slate-300')}>
                 <span className={cn('inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform', isActive ? 'translate-x-4' : 'translate-x-0.5')} />
               </button>
               <span className={`text-sm font-medium ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{isActive ? t('erp.locationGroup.statusActive') : t('erp.locationGroup.statusInactive')}</span>
@@ -305,7 +305,7 @@ export function LocationGroupFormDialog({ open, onClose, onSubmit, loading, isDa
                 </div>
               ) : (
                 <button type="button" onClick={() => setShowNewContactForm(true)}
-                  className={cn('flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-md border border-dashed transition-colors w-full', isDark ? 'border-slate-600 text-slate-400 hover:border-violet-500 hover:text-violet-400' : 'border-slate-300 text-slate-500 hover:border-violet-400 hover:text-violet-600')}>
+                  className={cn('flex cursor-pointer items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-md border border-dashed transition-colors w-full', isDark ? 'border-slate-600 text-slate-400 hover:border-violet-500 hover:text-violet-400' : 'border-slate-300 text-slate-500 hover:border-violet-400 hover:text-violet-600')}>
                   <Plus className="h-3.5 w-3.5" /> {t('erp.locationGroup.createNewContact')}
                 </button>
               )}

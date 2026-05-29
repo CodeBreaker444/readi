@@ -1,0 +1,30 @@
+meta {
+  name: Upload Revision
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/api/document/upload-revision
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "document_id": 42,
+    "s3_key": "documents/1712345678_safety-manual-v2.pdf",
+    "file_name": "safety-manual-v2.pdf",
+    "file_size": 1100000,
+    "version_label": "v2.0",
+    "change_log": "Added emergency procedures section"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

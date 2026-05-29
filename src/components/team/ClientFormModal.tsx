@@ -331,7 +331,7 @@ export function ClientFormModal({ isOpen, onClose, mode, clientData, onSubmit, i
                     <button
                       type="button"
                       onClick={() => setShowPassword((v) => !v)}
-                      className={`h-9 w-9 flex items-center justify-center rounded-md border ${isDark ? 'border-slate-700 hover:bg-slate-700 text-slate-400' : 'border-slate-200 hover:bg-slate-100 text-slate-500'}`}
+                      className={`h-9 cursor-pointer w-9 flex items-center justify-center rounded-md border ${isDark ? 'border-slate-700 hover:bg-slate-700 text-slate-400' : 'border-slate-200 hover:bg-slate-100 text-slate-500'}`}
                     >
                       {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
                     </button>
@@ -339,7 +339,7 @@ export function ClientFormModal({ isOpen, onClose, mode, clientData, onSubmit, i
                       type="button"
                       onClick={handleCopy}
                       title="Copy password"
-                      className={`h-9 w-9 flex items-center justify-center rounded-md border transition-colors ${
+                      className={`h-9 cursor-pointer w-9 flex items-center justify-center rounded-md border transition-colors ${
                         copied
                           ? 'border-emerald-500 bg-emerald-500 text-white'
                           : isDark ? 'border-slate-700 hover:bg-slate-700 text-slate-400' : 'border-slate-200 hover:bg-slate-100 text-slate-500'
@@ -351,7 +351,7 @@ export function ClientFormModal({ isOpen, onClose, mode, clientData, onSubmit, i
                       type="button"
                       onClick={() => { setCopied(false); setGeneratedPassword(makePassword()); }}
                       title="Regenerate password"
-                      className={`h-9 w-9 flex items-center justify-center rounded-md border ${isDark ? 'border-slate-700 hover:bg-slate-700 text-slate-400' : 'border-slate-200 hover:bg-slate-100 text-slate-500'}`}
+                      className={`h-9 cursor-pointer w-9 flex items-center justify-center rounded-md border ${isDark ? 'border-slate-700 hover:bg-slate-700 text-slate-400' : 'border-slate-200 hover:bg-slate-100 text-slate-500'}`}
                     >
                       <RefreshCw size={14} />
                     </button>

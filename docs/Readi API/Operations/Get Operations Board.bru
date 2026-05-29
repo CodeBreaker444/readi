@@ -1,0 +1,19 @@
+meta {
+  name: Get Operations Board
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{baseUrl}}/api/operation/board
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Get kanban-style board data. Requires `view_operations`.
+}

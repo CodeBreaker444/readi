@@ -1,0 +1,23 @@
+meta {
+  name: Delete Audit Plan
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{baseUrl}}/api/compliance/audit-plan/delete
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  { "plan_id": 1 }
+}
+
+settings {
+  encodeUrl: true
+}

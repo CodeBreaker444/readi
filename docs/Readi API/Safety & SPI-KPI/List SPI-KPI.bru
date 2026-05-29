@@ -1,0 +1,19 @@
+meta {
+  name: List SPI/KPI
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/safety/spi-kpi/list
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  List all SPI/KPI definitions. Requires `view_safety_mgmt`.
+}

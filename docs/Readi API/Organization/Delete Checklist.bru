@@ -1,0 +1,19 @@
+meta {
+  name: Delete Checklist
+  type: http
+  seq: 10
+}
+
+delete {
+  url: {{baseUrl}}/api/organization/checklist/:id
+  body: none
+  auth: inherit
+}
+
+params:path {
+  id: 1
+}
+
+settings {
+  encodeUrl: true
+}

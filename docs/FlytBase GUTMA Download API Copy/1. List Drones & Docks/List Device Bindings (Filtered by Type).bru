@@ -1,0 +1,36 @@
+meta {
+  name: List Device Bindings (Filtered by Type)
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}/device/bindings?page={{page}}&limit={{limit}}&type=drone
+  body: none
+  auth: inherit
+}
+
+params:query {
+  page: {{page}}
+  limit: {{limit}}
+  type: drone
+}
+
+headers {
+  org-id: {{org_id}}
+  Authorization: Bearer {{api_key}}
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  List device bindings filtered by type.
+  
+  Set `type` query param to:
+  - `drone` → List only drones
+  - `dock` → List only docking stations
+  
+  Leave empty or remove param to get all bindings.
+}

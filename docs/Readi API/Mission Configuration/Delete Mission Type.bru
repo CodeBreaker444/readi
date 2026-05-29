@@ -1,0 +1,19 @@
+meta {
+  name: Delete Mission Type
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{baseUrl}}/api/mission/type/:typeId/delete
+  body: none
+  auth: inherit
+}
+
+params:path {
+  typeId: 1
+}
+
+settings {
+  encodeUrl: true
+}

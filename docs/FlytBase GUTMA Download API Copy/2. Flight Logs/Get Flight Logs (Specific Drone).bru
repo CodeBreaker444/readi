@@ -1,0 +1,35 @@
+meta {
+  name: Get Flight Logs (Specific Drone)
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{base_url}}/v2/flight?page={{page}}&limit={{limit}}&archived=false&startDate={{start_date}}&endDate={{end_date}}&drone_id={{drone_id}}
+  body: none
+  auth: inherit
+}
+
+params:query {
+  page: {{page}}
+  limit: {{limit}}
+  archived: false
+  startDate: {{start_date}}
+  endDate: {{end_date}}
+  drone_id: {{drone_id}}
+}
+
+headers {
+  org-id: {{org_id}}
+  Authorization: Bearer {{api_key}}
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Filter flights by a specific drone. Set `drone_id` variable from the 'List All Drones' response.
+  
+  ⚠️ Use `drone_id` param (not `droneId`, `deviceId`, or `device_id`).
+}

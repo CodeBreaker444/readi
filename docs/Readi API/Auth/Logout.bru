@@ -1,0 +1,43 @@
+meta {
+  name: Logout
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/auth/logout
+  body: text
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Logout the current user. Clears `readi_auth_token` and `mfa_verified` cookies.
+}
+
+example {
+  name: Success
+  
+  request: {
+    url: {{baseUrl}}/api/auth/logout
+    method: POST
+    mode: text
+  }
+  
+  response: {
+    status: {
+      code: 200
+      text: OK
+    }
+  
+    body: {
+      type: text
+      content: '''
+        { "success": true }
+      '''
+    }
+  }
+}

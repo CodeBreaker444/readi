@@ -136,7 +136,7 @@ const MissionTemplateFilters: React.FC<MissionTemplateFiltersProps> = ({
                     </label>
                     <button
                         onClick={onSearch}
-                        className={`w-full px-4 py-2 rounded-md font-medium ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-100' : 'bg-gray-800 hover:bg-gray-900 text-white'}`}
+                        className={`w-full cursor-pointer px-4 py-2 rounded-md font-medium ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-100' : 'bg-gray-800 hover:bg-gray-900 text-white'}`}
                     >
                         Search
                     </button>

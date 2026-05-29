@@ -1,0 +1,30 @@
+meta {
+  name: Update Evaluation
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{baseUrl}}/api/evaluation/:id
+  body: json
+  auth: inherit
+}
+
+params:path {
+  id: 1
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "evaluation_status": "IN_PROGRESS",
+    "evaluation_description": "Updated description"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

@@ -1,0 +1,30 @@
+meta {
+  name: Ask AI Agent
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/agent/ask
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "question": "What operations are scheduled for next week?",
+    "context": "dashboard"
+  }
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Ask a question to the AI agent. Requires auth.
+}

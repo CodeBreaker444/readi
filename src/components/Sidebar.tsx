@@ -821,7 +821,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
           <div className="flex justify-center">
             <button
               onClick={handleOpenUserMenu}
-              className={`w-9 h-9 rounded-full overflow-hidden flex items-center justify-center border-2 transition-all duration-150 ${
+              className={`w-9 h-9 cursor-pointer rounded-full overflow-hidden flex items-center justify-center border-2 transition-all duration-150 ${
                 showUserMenu
                   ? isDark ? 'border-violet-500 ring-2 ring-violet-500/30' : 'border-violet-400 ring-2 ring-violet-400/20'
                   : isDark ? 'border-slate-700 hover:border-violet-500/60' : 'border-slate-200 hover:border-violet-400/60'
@@ -837,7 +837,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
         ) : (
           <button
             onClick={handleOpenUserMenu}
-            className={`w-full flex items-center gap-2.5 px-2 py-2.5 rounded-lg transition-all duration-150 ${
+            className={`w-full flex items-center cursor-pointer gap-2.5 px-2 py-2.5 rounded-lg transition-all duration-150 ${
               showUserMenu
                 ? isDark ? 'bg-slate-800' : 'bg-slate-100'
                 : isDark ? 'hover:bg-slate-800/70' : 'hover:bg-slate-50'
@@ -906,7 +906,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
           <div className="p-1.5 space-y-0.5">
             <button
               onClick={() => { setShowUserMenu(false); router.push('/profile'); }}
-              className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-colors ${
+              className={`w-full cursor-pointer flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-colors ${
                 isDark ? 'text-slate-300 hover:bg-slate-700 hover:text-white' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
               }`}
               style={{ fontSize: '0.78rem', fontFamily: "'DM Sans', system-ui, sans-serif" }}
@@ -920,7 +920,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
             <button
               onClick={handleLogout}
               disabled={isLoggingOut}
-              className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-colors mt-1.5 ${
+              className={`w-full cursor-pointer flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-colors mt-1.5 ${
                 isDark ? 'text-red-400 hover:bg-red-500/10 hover:text-red-300' : 'text-red-500 hover:bg-red-50 hover:text-red-600'
               } ${isLoggingOut ? 'opacity-50 cursor-not-allowed' : ''}`}
               style={{ fontSize: '0.78rem', fontFamily: "'DM Sans', system-ui, sans-serif" }}

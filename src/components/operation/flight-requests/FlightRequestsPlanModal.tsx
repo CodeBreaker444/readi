@@ -71,7 +71,7 @@ export function FlightRequestsPlanModal({
                     disabled={disabled}
                     onClick={() => !disabled && onSelectPlanning(String(planning.planning_id))}
                     title={disabled ? t('planning.flightRequests.noDroneId') : undefined}
-                    className={`w-full text-left px-4 py-2.5 flex items-center gap-3 transition-colors text-xs
+                    className={`w-full cursor-pointer text-left px-4 py-2.5 flex items-center gap-3 transition-colors text-xs
                       ${disabled
                         ? isDark ? 'opacity-40 cursor-not-allowed text-slate-500' : 'opacity-40 cursor-not-allowed text-gray-400'
                         : isSelected

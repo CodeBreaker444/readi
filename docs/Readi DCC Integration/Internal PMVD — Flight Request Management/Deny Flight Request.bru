@@ -1,0 +1,30 @@
+meta {
+  name: Deny Flight Request
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/api/planning/flight-requests/deny
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "request_id": 1,
+    "note": "No available drone for this time slot."
+  }
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Denies a DCC flight request. Triggers DCC denial callback automatically.
+}

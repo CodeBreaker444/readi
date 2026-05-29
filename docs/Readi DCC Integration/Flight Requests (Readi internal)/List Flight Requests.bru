@@ -1,0 +1,29 @@
+meta {
+  name: List Flight Requests
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/api/planning/flight-requests
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "status": "ALL"
+  }
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Returns all flight requests. status can be ALL or a specific status value. Requires view_planning_advanced permission.
+}

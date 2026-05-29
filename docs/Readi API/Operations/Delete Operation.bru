@@ -1,0 +1,23 @@
+meta {
+  name: Delete Operation
+  type: http
+  seq: 6
+}
+
+delete {
+  url: {{baseUrl}}/api/operation/:id
+  body: none
+  auth: inherit
+}
+
+params:path {
+  id: 1
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Delete an operation. Requires session.
+}

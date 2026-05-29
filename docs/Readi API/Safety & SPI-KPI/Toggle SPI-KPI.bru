@@ -1,0 +1,26 @@
+meta {
+  name: Toggle SPI/KPI
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/safety/spi-kpi/toggle
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "id": 1,
+    "is_active": 0
+  }
+}
+
+settings {
+  encodeUrl: true
+}

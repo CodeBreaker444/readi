@@ -1,0 +1,97 @@
+meta {
+  name: Add User
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/team/user/add
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "username": "john_doe",
+    "fullname": "John Doe",
+    "email": "john@example.com",
+    "phone": "+1234567890",
+    "profile": 2,
+    "user_type": "PILOT",
+    "user_viewer": false,
+    "user_manager": false,
+    "timezone": "IST",
+    "fk_client_id": 0,
+    "ownerTerritorialUnit": 0,
+    "owner_id": 1
+  }
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Create a new user. Requires `manage_users`. SUPERADMIN must include `owner_id`.
+  
+  user_type roles: SUPERADMIN | ADMIN | PIC | OPM | SM | AM | CMM | RM | TM | DC | SLA
+}
+
+example {
+  name: Success
+  
+  request: {
+    url: {{baseUrl}}/api/team/user/add
+    method: POST
+    mode: json
+    headers: {
+      Content-Type: application/json
+    }
+  
+    body:json: {
+      {
+        "username": "john_doe",
+        "fullname": "John Doe",
+        "email": "john@example.com",
+        "phone": "+1234567890",
+        "profile": 2,
+        "user_type": "PILOT",
+        "user_viewer": false,
+        "user_manager": false,
+        "timezone": "IST",
+        "fk_client_id": 0,
+        "ownerTerritorialUnit": 0,
+        "owner_id": 1
+      }
+    }
+  }
+  
+  response: {
+    status: {
+      code: 200
+      text: OK
+    }
+  
+    body: {
+      type: text
+      content: '''
+        {
+          "code": 1,
+          "status": "SUCCESS",
+          "message": "success",
+          "title": "userDataAdd",
+          "timestamp": 1712345678,
+          "newId": 15,
+          "new_user_owner_id": 1,
+          "send_mail_to_new_user": true,
+          "x_api_token": "ACTIVATION_KEY",
+          "error_list": []
+        }
+      '''
+    }
+  }
+}

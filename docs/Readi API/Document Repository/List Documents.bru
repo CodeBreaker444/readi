@@ -1,0 +1,38 @@
+meta {
+  name: List Documents
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/document/list
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "area": "SAFETY",
+    "category": "Procedures",
+    "status": "APPROVED",
+    "owner_role": "SM",
+    "search": "emergency"
+  }
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Filter and list documents. All fields optional.
+  
+  area: BOARD | COMPLIANCE | DATACONTROLLER | MAINTENANCE | OPERATION | SAFETY | SECURITY | TRAINING | VENDOR
+  status: DRAFT | IN_REVIEW | APPROVED | OBSOLETE
+  
+  Requires `view_repository`.
+}

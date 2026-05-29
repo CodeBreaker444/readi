@@ -1,0 +1,28 @@
+meta {
+  name: Create LUC Procedure
+  type: http
+  seq: 15
+}
+
+post {
+  url: {{baseUrl}}/api/organization/luc-procedures
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "procedure_name": "Urban Zone Operations",
+    "procedure_code": "LUC-URBAN-01",
+    "description": "Procedures for operating in urban controlled airspace",
+    "risk_level": "MEDIUM"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

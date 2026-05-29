@@ -176,7 +176,7 @@ export function FlightRequestDetailModal({
               <button
                 key={id}
                 onClick={() => setTab(id)}
-                className={`px-4 py-1.5 rounded-md text-xs font-medium transition-all ${tab === id ? tabActive : tabInactive}`}
+                className={`px-4 py-1.5 cursor-pointer rounded-md text-xs font-medium transition-all ${tab === id ? tabActive : tabInactive}`}
               >
                 {label}
               </button>

@@ -1,0 +1,28 @@
+meta {
+  name: Create Shift
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/api/team/shift
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "shift_name": "Morning Shift",
+    "start_time": "06:00",
+    "end_time": "14:00",
+    "days": [1, 2, 3, 4, 5]
+  }
+}
+
+settings {
+  encodeUrl: true
+}

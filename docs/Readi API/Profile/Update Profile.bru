@@ -1,0 +1,62 @@
+meta {
+  name: Update Profile
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/profile
+  body: multipartForm
+  auth: inherit
+}
+
+body:multipart-form {
+  fullname: John Doe
+  email: john@example.com
+  phone: +1234567890
+  timezone: IST
+  avatar: @file()
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Update current user's profile. Multipart form data. Avatar: JPEG, PNG, WebP, GIF (max 10MB).
+}
+
+example {
+  name: Success
+  
+  request: {
+    url: {{baseUrl}}/api/profile
+    method: POST
+    mode: multipartForm
+    body:multipart-form: {
+      fullname: John Doe
+      email: john@example.com
+      phone: +1234567890
+      timezone: IST
+      avatar: @file()
+    }
+  }
+  
+  response: {
+    status: {
+      code: 200
+      text: OK
+    }
+  
+    body: {
+      type: text
+      content: '''
+        {
+          "success": true,
+          "updateResult": true,
+          "avatarUrl": "https://cdn.example.com/avatars/user1.jpg"
+        }
+      '''
+    }
+  }
+}

@@ -1,0 +1,19 @@
+meta {
+  name: Get Org Chart
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/organization/chart
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Requires `view_config`.
+}

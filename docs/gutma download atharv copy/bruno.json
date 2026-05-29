@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "gutma download atharv copy",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}

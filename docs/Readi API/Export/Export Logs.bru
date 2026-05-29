@@ -1,0 +1,27 @@
+meta {
+  name: Export Logs
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/export/logs
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "date_from": "2026-01-01",
+    "date_to": "2026-04-30",
+    "event_type": "CREATE"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

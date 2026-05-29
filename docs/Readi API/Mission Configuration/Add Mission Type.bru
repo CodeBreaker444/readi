@@ -1,0 +1,27 @@
+meta {
+  name: Add Mission Type
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/mission/type/add
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "type_name": "Aerial Survey",
+    "type_code": "SURVEY",
+    "description": "Topographic and infrastructure survey missions"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

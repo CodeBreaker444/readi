@@ -1,0 +1,28 @@
+meta {
+  name: Update User
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/team/user/update
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "user_id": 15,
+    "fullname": "John Updated Doe",
+    "phone": "+9876543210",
+    "user_type": "SM"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

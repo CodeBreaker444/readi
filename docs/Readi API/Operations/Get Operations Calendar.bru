@@ -1,0 +1,23 @@
+meta {
+  name: Get Operations Calendar
+  type: http
+  seq: 13
+}
+
+get {
+  url: {{baseUrl}}/api/operation/calendar?month=2026-04
+  body: none
+  auth: inherit
+}
+
+params:query {
+  month: 2026-04
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Get operations in calendar view. Requires `view_operations`.
+}

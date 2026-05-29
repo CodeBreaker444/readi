@@ -1,0 +1,19 @@
+meta {
+  name: List Trainings
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/training/list
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  List all training courses. Requires `view_training`.
+}

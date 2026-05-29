@@ -1,0 +1,27 @@
+meta {
+  name: Detach Component
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/api/system/component/:id/detach
+  body: json
+  auth: inherit
+}
+
+params:path {
+  id: 1
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {}
+}
+
+settings {
+  encodeUrl: true
+}
