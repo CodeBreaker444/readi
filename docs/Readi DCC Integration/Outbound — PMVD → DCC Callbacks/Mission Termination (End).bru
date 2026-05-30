@@ -28,4 +28,13 @@ settings {
 docs {
   Sent by PMVD to DCC when mission ends.
   result: 1 = success, 0 = failure
+
+
+**Caller:** Readi server — automatically triggered when a mission is completed or aborted.
+
+  **Target:** DCC server at `{dcc_base_url}/dcc/missions/{missionId}/termination`
+
+  **Body fields:**
+  - `result` — 1 = success, 0 = failure
+  - `note` — completion or failure note
 }

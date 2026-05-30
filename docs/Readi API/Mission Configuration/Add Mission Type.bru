@@ -25,3 +25,18 @@ body:json {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Creates a new mission type that can be assigned to operations. Mission types categorize the nature of drone flights (e.g. Inspection, Patrol, Survey).
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires admin/config permissions.
+
+  **Body fields:**
+  - `mission_type_name` (required) — display name
+  - `mission_type_code` — short identifier code
+  - `mission_type_desc` — description
+  - `mission_type_label` — UI label
+
+  **Used in:**
+  - `src/app/mission/type/page.tsx` — "Add Mission Type" form on the Mission Types configuration page
+}

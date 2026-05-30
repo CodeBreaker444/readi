@@ -13,3 +13,12 @@ get {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Returns historical trend data for SPI/KPI metrics over time. Used to render trend charts showing how safety performance indicators have evolved across periods.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_dashboard` or `view_pilot_dashboard` permission.
+
+  **Used in:**
+  - `src/components/dashboard/SHIIndex.tsx` — Safety Health Index page; renders the SPI/KPI trend line charts
+}

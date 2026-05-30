@@ -27,3 +27,19 @@ body:json {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Creates a new compliance audit plan entry tracking the scheduled audit, auditor, and scope.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_compliance` permission.
+
+  **Body fields:**
+  - `plan_name` (required) — audit plan title
+  - `planned_date` — scheduled audit date
+  - `auditor` — assigned auditor name/ID
+  - `scope` — what is being audited
+  - `status` — PLANNED | IN_PROGRESS | COMPLETED
+
+  **Used in:**
+  - `src/app/compliance/general-audit-plan/page.tsx` — "Add Audit Plan" form
+}

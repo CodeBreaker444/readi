@@ -29,3 +29,17 @@ body:json {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Exports any entity type (operations, logbooks, compliance) to XLSX or DOCX format. Returns a downloadable file with filtered data.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires appropriate view permission for the entity type.
+
+  **Body fields:**
+  - `entity_type` (required) — data to export (e.g. `operations`, `logbooks`)
+  - `format` — `xlsx` or `docx`
+  - `filters` — date range, status, and other entity-specific filters
+
+  **Used in:**
+  - Various export buttons throughout the application
+}

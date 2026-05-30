@@ -26,3 +26,18 @@ body:json {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Records or updates a user's attendance for a training session. Stores attendance status (PRESENT/ABSENT) and optional score.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_training` permission.
+
+  **Body fields:**
+  - `training_id` (required) — training session ID
+  - `user_id` (required) — user to record attendance for
+  - `status` — PRESENT or ABSENT
+  - `score` (optional) — numeric score (0–100)
+
+  **Used in:**
+  - `src/app/training/courses/page.tsx` — attendance recording form on individual training records
+}

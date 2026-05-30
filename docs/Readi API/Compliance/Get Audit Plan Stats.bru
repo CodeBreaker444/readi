@@ -13,3 +13,16 @@ get {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Returns aggregate compliance statistics: total requirements, counts by status (compliant/non-compliant/in-progress), and overall compliance percentage for the given period.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_compliance` permission.
+
+  **Query params:**
+  - `period` (optional) — filter stats by period (e.g. `2026-Q1`)
+
+  **Used in:**
+  - `src/app/compliance/general-audit-plan/page.tsx` — compliance stats summary cards
+  - `src/app/compliance/requirements-evidences/page.tsx` — summary stats header
+}

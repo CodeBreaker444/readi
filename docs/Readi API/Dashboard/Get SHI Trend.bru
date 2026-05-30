@@ -13,3 +13,12 @@ get {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Returns Safety Health Index (SHI) trend data over time. Used to render the SHI trend chart showing safety score evolution across reporting periods.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_dashboard` or `view_pilot_dashboard` permission.
+
+  **Used in:**
+  - `src/components/dashboard/SHIIndex.tsx` — Safety Health Index dashboard component; fetches SHI trend on mount
+}

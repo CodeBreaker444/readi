@@ -21,3 +21,16 @@ body:json {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Permanently deletes a notification by its ID. The notification is removed from the user's notification list.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_notifications` permission.
+
+  **Body fields:**
+  - `notification_id` (required) — ID of the notification to delete
+
+  **Used in:**
+  - `src/app/notifications/page.tsx` — delete action on individual notification items
+  - `src/components/NotificationDropdown.tsx` — dismiss/delete action in the notification bell dropdown
+}

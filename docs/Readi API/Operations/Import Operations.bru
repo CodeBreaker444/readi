@@ -17,3 +17,15 @@ body:multipart-form {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Imports operations in bulk from an Excel (.xlsx) or CSV file. Validates each row against the operation schema and creates records for valid entries. Returns an import summary with success/error counts.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_operations` permission.
+
+  **Body (multipart/form-data):**
+  - `file` (required) — Excel or CSV file following the Readi import template
+
+  **Used in:**
+  - Operations table view — "Import" button that opens the file upload dialog
+}

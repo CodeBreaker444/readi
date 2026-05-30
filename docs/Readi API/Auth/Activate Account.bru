@@ -28,7 +28,18 @@ settings {
 }
 
 docs {
-  Activate a user account using the activation key sent via email. No authentication required.
+  **Purpose:** Activates a new user account using the one-time key sent in the invitation email. Sets the username and marks the account as active in the database.
+
+  **Auth:** None required. This endpoint is publicly accessible.
+
+  **Body fields:**
+  - `id` (required) — activation key from the invitation email
+  - `email` (required) — user's email address
+  - `username` (required) — chosen username for the account
+  - `o` (optional) — additional parameter for special activation flows
+
+  **Used in:**
+  - `src/app/auth/activate/page.tsx` — account activation page that processes the invite link
 }
 
 example {

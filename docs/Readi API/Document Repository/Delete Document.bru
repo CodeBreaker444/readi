@@ -23,3 +23,12 @@ body:json {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Permanently deletes a document and all its revisions from the repository and S3.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_repository` permission.
+
+  **Used in:**
+  - `src/app/document-repository/page.tsx` — delete confirmation on document items
+}

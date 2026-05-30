@@ -25,5 +25,14 @@ settings {
 }
 
 docs {
-  List users. Requires `manage_users` or `view_logs`. SUPERADMIN sees all orgs.
+  **Purpose:** Returns users in the organization with profile details, role, and active status. SUPERADMIN can see users across all organizations. Supports optional `user_profile` filter to restrict to specific profile types (e.g. PIC, OPM).
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `manage_users` or `view_logs` permission.
+
+  **Body fields:**
+  - `user_profile` (optional) — filter by user profile type; `null` returns all
+
+  **Used in:**
+  - `src/components/user/UserManagement.tsx` — Team Management user table
+  - `src/app/audit-logs/page.tsx` — populates the user filter dropdown in the Audit Logs page
 }

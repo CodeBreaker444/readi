@@ -29,3 +29,12 @@ body:json {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Saves a completed checklist submission for a specific operation or mission. Records all item responses.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_operations` permission.
+
+  **Used in:**
+  - Operation checklist execution flow — "Submit Checklist" action
+}

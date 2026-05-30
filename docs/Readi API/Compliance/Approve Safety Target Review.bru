@@ -25,3 +25,17 @@ body:json {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Approves a generated Safety Performance Target review proposal, marking it as officially accepted and creating an audit record.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_compliance` permission.
+
+  **Body fields:**
+  - `proposal_id` (required) — review proposal to approve
+  - `approved_by` — approving user ID
+  - `approval_notes` — optional approval notes
+
+  **Used in:**
+  - `src/app/compliance/safety-target-review/page.tsx` — "Approve" action on review proposals
+}

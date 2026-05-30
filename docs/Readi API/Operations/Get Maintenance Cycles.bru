@@ -15,5 +15,10 @@ settings {
 }
 
 docs {
-  Get drone maintenance cycle data for the board.
+  **Purpose:** Returns maintenance cycle status for each drone — showing which drones are due for maintenance based on flight hours or date intervals. Displayed as a warning indicator on the operations board.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_operations` permission.
+
+  **Used in:**
+  - Operations board view — maintenance warning badges on drone/system entries
 }

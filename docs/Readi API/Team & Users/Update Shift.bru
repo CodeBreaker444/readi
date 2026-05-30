@@ -29,3 +29,15 @@ body:json {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Updates a crew shift's name, hours, or working days.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `manage_users` permission.
+
+  **Path params:**
+  - `:id` — shift ID to update
+
+  **Used in:**
+  - `src/components/team/AddShiftModal.tsx` — save button when editing an existing shift
+}

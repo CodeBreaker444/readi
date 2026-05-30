@@ -13,3 +13,12 @@ get {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Returns all component type categories (e.g. BATTERY, CAMERA, PROPELLER, SENSOR). Used to classify components when adding them.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_config` permission.
+
+  **Used in:**
+  - `src/app/systems/manage/page.tsx` — component type dropdown
+}

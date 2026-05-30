@@ -26,3 +26,18 @@ body:json {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Reports an issue or safety event that occurred during an operation. Logged for compliance and safety tracking.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_operations` permission.
+
+  **Body fields:**
+  - `operation_id` (required) — affected operation
+  - `issue_type` — category (e.g. EQUIPMENT_FAILURE, WEATHER, AIRSPACE)
+  - `description` — detailed description
+  - `severity` — LOW | MEDIUM | HIGH | CRITICAL
+
+  **Used in:**
+  - Operations board — "Report Issue" action on mission cards
+}

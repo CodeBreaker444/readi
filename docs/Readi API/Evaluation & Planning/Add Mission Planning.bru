@@ -25,3 +25,12 @@ body:json {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Adds a new mission to a planning record (links an operation to the planning workflow).
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_planning` permission.
+
+  **Used in:**
+  - `src/components/planning/PlanningMissionContent.tsx` — "Add Mission" form in the planning detail view
+}

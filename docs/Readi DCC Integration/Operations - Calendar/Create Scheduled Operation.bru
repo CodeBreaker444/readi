@@ -35,4 +35,10 @@ settings {
 
 docs {
   Creates a scheduled or recurring operation. Triggers POST /dcc/missions callback. If DCC returns 409 or 422 the operation is rolled back and Readi returns 502. is_recurring: true enables days_of_week and recur_until.
+
+
+**Auth:** Session cookie (`readi_auth_token`). Requires `view_operations` permission.
+
+  **Used in:**
+  - `src/components/operation/AddOperationModal.tsx` — recurring operation creation with DCC integration
 }

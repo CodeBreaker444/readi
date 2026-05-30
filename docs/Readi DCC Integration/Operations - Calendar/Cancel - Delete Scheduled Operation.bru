@@ -16,4 +16,10 @@ settings {
 
 docs {
   Deletes a scheduled operation. Triggers POST /dcc/missions/cancel callback with the affected mission IDs. Replace 123 with the actual operation ID.
+
+
+**Auth:** Session cookie (`readi_auth_token`). Requires `view_operations` permission.
+
+  **Used in:**
+  - `src/components/operation/DeleteOperationDialog.tsx` — delete confirmation for calendar operations; triggers DCC cancellation callback
 }

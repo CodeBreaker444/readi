@@ -25,3 +25,16 @@ body:json {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Exports audit/activity logs to XLSX or DOCX format with optional date range and event type filters.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_logs` permission.
+
+  **Body fields:**
+  - `date_from`, `date_to` — date range for the logs
+  - `event_type` — filter by event category
+
+  **Used in:**
+  - `src/components/ExportButton.tsx` — export button component used across log views
+}

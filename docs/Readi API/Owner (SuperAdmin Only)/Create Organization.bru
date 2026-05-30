@@ -28,12 +28,18 @@ settings {
 }
 
 docs {
-  Create a new organization with admin user. SUPERADMIN only.
-  
-  - owner_code: min 2 chars (required)
-  - owner_name: min 2 chars (required)
-  - owner_email: valid email (required)
-  - owner_website: valid URL (required)
+  **Purpose:** Creates a new organization (tenant) in the platform along with its initial admin user account. Sends an activation email to the admin. SUPERADMIN only.
+
+  **Auth:** Session cookie (`readi_auth_token`). SUPERADMIN role required.
+
+  **Body fields:**
+  - `owner_code` (required, min 2 chars) — unique org identifier
+  - `owner_name` (required, min 2 chars) — display name
+  - `owner_email` (required) — admin user's email — receives activation link
+  - `owner_website` (required) — organization website URL
+
+  **Used in:**
+  - `src/app/company/new/page.tsx` — Create Organization form in the SuperAdmin company management section
 }
 
 example {

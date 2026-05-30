@@ -13,3 +13,12 @@ get {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Returns current Safety Performance Indicator (SPI) and Key Performance Indicator (KPI) values. Provides the latest measurements for all active SPI/KPI metrics in the organization.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_dashboard` or `view_pilot_dashboard` permission.
+
+  **Used in:**
+  - `src/components/dashboard/SHIIndex.tsx` — Safety Health Index page; renders the SPI/KPI gauge widgets
+}

@@ -15,7 +15,14 @@ settings {
 }
 
 docs {
-  Get current authenticated user profile. Requires auth.
+  **Purpose:** Returns the authenticated user's profile including fullname, email, phone, timezone, avatar URL, role, and training curriculum data.
+
+  **Auth:** Session cookie (`readi_auth_token`). No specific permission required beyond being logged in.
+
+  **Used in:**
+  - `src/components/ProfileModal.tsx` — top-bar profile modal; loads profile and training curriculum on open
+  - `src/components/profile/ProfilePage.tsx` — full profile settings page
+  - `src/components/profile/ClientProfilePage.tsx` — client portal profile page
 }
 
 example {

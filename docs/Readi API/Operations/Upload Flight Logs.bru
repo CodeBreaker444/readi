@@ -19,5 +19,14 @@ settings {
 }
 
 docs {
-  Upload flight log file.
+  **Purpose:** Uploads a flight log file (GUTMA, KML, or GPX) for a mission. The file is stored in S3 and linked to the mission record.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_operations` permission.
+
+  **Body (multipart/form-data):**
+  - `file` (required) — log file to upload
+  - `mission_id` — mission to attach the log to
+
+  **Used in:**
+  - `src/components/operation/EditMissionLogTab.tsx` — file upload input in the Flight Logs tab
 }

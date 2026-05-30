@@ -17,3 +17,15 @@ params:path {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Returns details of a single crew shift by its ID, including all assigned users and working hours.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `manage_users` permission.
+
+  **Path params:**
+  - `:id` — shift ID
+
+  **Used in:**
+  - `src/components/team/AddShiftModal.tsx` — pre-populates the edit form when editing an existing shift
+}

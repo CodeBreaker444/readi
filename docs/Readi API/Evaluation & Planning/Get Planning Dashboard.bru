@@ -13,3 +13,12 @@ get {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Returns the planning dashboard overview: active planning missions grouped by status, assigned pilots, and linked evaluations.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_planning` permission.
+
+  **Used in:**
+  - `src/components/planning/PlanningDashboard.tsx` — Planning Dashboard; loads on mount
+}

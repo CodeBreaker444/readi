@@ -17,3 +17,13 @@ body:text {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Marks all unread notifications as read for the authenticated user in a single operation.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_notifications` permission.
+
+  **Used in:**
+  - `src/app/notifications/page.tsx` — "Mark all read" button on the Notifications page
+  - `src/components/NotificationDropdown.tsx` — "Mark all read" action in the notification bell dropdown
+}

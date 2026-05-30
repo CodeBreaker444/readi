@@ -26,3 +26,18 @@ body:json {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Adds a new evidence record to a compliance requirement to demonstrate conformance (e.g. linking a document, recording an audit finding).
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_compliance` permission.
+
+  **Body fields:**
+  - `requirement_id` (required) — compliance requirement to attach evidence to
+  - `evidence_type` — DOCUMENT | AUDIT_NOTE | TEST_RESULT
+  - `description` — evidence description
+  - `document_id` — linked document from the Document Repository
+
+  **Used in:**
+  - `src/app/compliance/requirements-evidences/page.tsx` — "Add Evidence" form
+}

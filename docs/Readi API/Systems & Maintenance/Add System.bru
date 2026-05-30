@@ -27,3 +27,12 @@ body:json {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Registers a new drone system in the organization. Associates it with a model, client, and initial configuration.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_config` permission.
+
+  **Used in:**
+  - `src/app/systems/manage/page.tsx` — "Add System" form
+}

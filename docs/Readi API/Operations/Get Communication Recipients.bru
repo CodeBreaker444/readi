@@ -13,3 +13,15 @@ get {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Returns the list of users/roles eligible to receive operational communications for a given LUC procedure. Used to populate the "To" field in the communication dialog.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_operations` permission.
+
+  **Query params:**
+  - `procedure` — LUC procedure name to resolve recipient roles
+
+  **Used in:**
+  - `src/components/operation/GeneralCommunicationDialog.tsx` — populates the recipients dropdown when sending an operation communication
+}

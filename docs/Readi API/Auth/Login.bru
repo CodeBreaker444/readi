@@ -30,7 +30,18 @@ settings {
 }
 
 docs {
-  Login with email and password. Sets httpOnly cookie `readi_auth_token` on success.
+  **Purpose:** Authenticates a user with email and password. On success, sets an httpOnly `readi_auth_token` JWT cookie. Also enforces account active status, MFA requirements, and first-login password change redirection.
+
+  **Auth:** None required.
+
+  **Body fields:**
+  - `email` (required) — registered email address
+  - `password` (required) — account password
+
+  **Response:** Returns user data including userId, role, and company info. Sets `readi_auth_token` cookie (httpOnly, secure).
+
+  **Used in:**
+  - `src/components/login-form.tsx` — main login form component
 }
 
 example {

@@ -36,5 +36,19 @@ settings {
 }
 
 docs {
-  Create recurring operations. Set `is_recurring: true`. `days_of_week`: 0=Sun, 1=Mon...6=Sat.
+  **Purpose:** Creates a series of recurring operations from a single request. Generates individual operation records for each occurrence based on the specified days of week and recurrence end date. Triggers DCC callbacks if integration is active.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_operations` permission.
+
+  **Body fields:**
+  - `is_recurring: true` (required) — flag to create recurring series
+  - `mission_name`, `mission_code`, `location`, `notes` — shared across all occurrences
+  - `scheduled_start` — first occurrence start time
+  - `days_of_week` — array of day numbers (0=Sun, 1=Mon … 6=Sat)
+  - `recur_until` — YYYY-MM-DD end date for the series
+  - `mission_group_label` — label to group the recurring series
+  - `fk_pilot_user_id`, `fk_tool_id` — pilot and drone assignment
+
+  **Used in:**
+  - `src/components/operation/AddOperationModal.tsx` — recurring toggle in the "Add Operation" modal
 }

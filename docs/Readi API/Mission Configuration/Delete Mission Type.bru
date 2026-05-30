@@ -17,3 +17,15 @@ params:path {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Permanently deletes a mission type. Will fail if operations are currently assigned to this type.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires admin/config permissions.
+
+  **Path params:**
+  - `:typeId` — mission type ID to delete
+
+  **Used in:**
+  - `src/app/mission/type/page.tsx` — delete confirmation on the Mission Types configuration page
+}

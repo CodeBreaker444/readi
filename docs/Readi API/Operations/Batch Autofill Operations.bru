@@ -25,3 +25,15 @@ body:json {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Automatically fills in missing fields (e.g. pilot, drone) for a batch of operations using intelligent assignment logic based on availability and shift schedules.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_operations` permission.
+
+  **Body fields:**
+  - `mission_ids` (required) — array of operation IDs to autofill
+
+  **Used in:**
+  - `src/app/operations/table/page.tsx` — "Autofill" button in the Operations Table batch actions toolbar
+}

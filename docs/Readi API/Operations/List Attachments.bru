@@ -17,3 +17,15 @@ params:path {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Returns all file attachments linked to a specific operation (e.g. checklists, reports, photos).
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_operations` permission.
+
+  **Path params:**
+  - `:id` — operation ID
+
+  **Used in:**
+  - `src/components/operation/` — Attachments tab in the operation detail view
+}

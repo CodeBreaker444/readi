@@ -15,5 +15,10 @@ settings {
 }
 
 docs {
-  Get overall AI agent usage stats. Requires auth.
+  **Purpose:** Returns aggregated AI agent usage statistics across all users in the organization (total queries, per-user breakdown, monthly trends). Used by admins to monitor consumption.
+
+  **Auth:** Session cookie (`readi_auth_token`).
+
+  **Used in:**
+  - `src/components/ai/AiUsageWidget.tsx` — usage dashboard widget showing org-wide AI consumption
 }

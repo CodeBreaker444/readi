@@ -26,3 +26,16 @@ body:json {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Updates a user's profile fields and role. Only send the fields to change alongside `user_id`.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `manage_users` permission.
+
+  **Body fields:**
+  - `user_id` (required) — target user ID
+  - `fullname`, `phone`, `timezone`, `user_type`, `profile`, `fk_client_id` — fields to update
+
+  **Used in:**
+  - `src/components/user/UserManagement.tsx` — "Edit User" form in Team Management
+}

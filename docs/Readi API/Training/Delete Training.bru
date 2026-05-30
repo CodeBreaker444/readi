@@ -21,3 +21,15 @@ body:json {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Deletes a training attendance record by its ID. Removes the user's enrollment from the training session.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_training` permission.
+
+  **Body fields:**
+  - `attendance_id` (required) — ID of the attendance record to delete
+
+  **Used in:**
+  - `src/app/training/courses/page.tsx` — delete button on individual training records in the Courses table
+}

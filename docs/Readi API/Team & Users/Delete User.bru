@@ -23,3 +23,15 @@ body:json {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Deactivates or removes a user account. The user loses access to the platform immediately.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `manage_users` permission.
+
+  **Body fields:**
+  - `user_id` (required) — ID of the user to delete
+
+  **Used in:**
+  - `src/components/user/UserManagement.tsx` — delete confirmation in Team Management
+}

@@ -13,3 +13,12 @@ get {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Returns all evidence records attached to a specific compliance requirement (documents, audit notes, test results).
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_compliance` permission.
+
+  **Used in:**
+  - `src/app/compliance/requirements-evidences/page.tsx` — evidence list panel for a selected requirement
+}

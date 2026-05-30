@@ -13,3 +13,12 @@ get {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Returns all drone model definitions used to classify systems (e.g. DJI Matrice 300, Parrot ANAFI).
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_config` permission.
+
+  **Used in:**
+  - `src/app/systems/manage/page.tsx` — model dropdown when adding/editing a system
+}

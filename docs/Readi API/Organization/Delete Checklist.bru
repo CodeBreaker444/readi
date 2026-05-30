@@ -17,3 +17,12 @@ params:path {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Permanently deletes a checklist template.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires admin/config permission.
+
+  **Used in:**
+  - `src/app/organization/checklists/page.tsx` — delete confirmation on checklist items
+}

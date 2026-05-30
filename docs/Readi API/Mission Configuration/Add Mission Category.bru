@@ -24,3 +24,16 @@ body:json {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Creates a new mission category for classifying operations.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires admin/config permissions.
+
+  **Body fields:**
+  - `category_name` (required) — display name
+  - `category_code` — short identifier code
+
+  **Used in:**
+  - Mission categories configuration page (admin settings)
+}

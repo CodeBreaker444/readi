@@ -15,7 +15,17 @@ settings {
 }
 
 docs {
-  Logout the current user. Clears `readi_auth_token` and `mfa_verified` cookies.
+  **Purpose:** Ends the current user session by clearing the `readi_auth_token` and `mfa_verified` cookies. Also signs out the Supabase session.
+
+  **Auth:** Session cookie (`readi_auth_token`).
+
+  **Used in:**
+  - `src/components/Sidebar.tsx` — logout button in the main navigation sidebar
+  - `src/components/ClientLayoutWrapper.tsx` — logout handler in client portal layout
+  - `src/app/profile/page.tsx` — server redirect when session is missing
+  - `src/app/dashboard/page.tsx` — server redirect when session is missing
+  - `src/app/control-center/page.tsx` — server redirect when session is missing
+  - `src/app/dashboard/safety-health/page.tsx` — server redirect when session is missing
 }
 
 example {

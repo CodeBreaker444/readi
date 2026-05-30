@@ -25,3 +25,16 @@ body:json {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Updates an existing client record. Send only the fields to change alongside `client_id`.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_client` permission.
+
+  **Body fields:**
+  - `client_id` (required) — ID of the client to update
+  - Any other client fields (same as Add Client) are optional
+
+  **Used in:**
+  - `src/components/team/ClientManagement.tsx` — "Edit Client" form in the Client Management section
+}

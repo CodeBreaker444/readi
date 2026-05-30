@@ -15,5 +15,10 @@ settings {
 }
 
 docs {
-  Get operation board status summary. Requires `view_operations`.
+  **Purpose:** Returns a count summary of operations by status for the board header. Used to show how many operations are in each workflow stage without fetching full operation data.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_operations` permission.
+
+  **Used in:**
+  - `src/app/operations/board/page.tsx` — board header status counters
 }

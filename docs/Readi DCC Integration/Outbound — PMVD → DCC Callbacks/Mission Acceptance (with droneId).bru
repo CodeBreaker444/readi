@@ -27,4 +27,9 @@ settings {
 docs {
   Sent by PMVD to DCC when OPM assigns a flight request to a planning mission.
   droneId = dcc_drone_id from the DRONE component attached to the assigned tool.
+
+
+**Caller:** Readi server (not the frontend) — automatically triggered when OPM assigns a flight request to a planning mission via POST /api/planning/flight-requests/assign.
+
+  **Target:** DCC server at `{dcc_base_url}/dcc/missions/{missionId}/acceptance`
 }

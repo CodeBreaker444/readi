@@ -18,3 +18,12 @@ params:query {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Returns filtered/searched operation logbook entries. Supports filtering by pilot, drone, date range, and mission type.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_logbooks` permission.
+
+  **Used in:**
+  - `src/app/logbooks/page.tsx` — Logbooks filter/search in the operations tab
+}

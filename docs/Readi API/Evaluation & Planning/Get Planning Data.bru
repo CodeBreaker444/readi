@@ -13,3 +13,12 @@ get {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Returns detailed data for a specific planning mission: logbook, drone options, repository files, and mission configuration.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_planning` permission.
+
+  **Used in:**
+  - `src/components/planning/PlanningMissionContent.tsx` — loads all planning data on mission open
+}

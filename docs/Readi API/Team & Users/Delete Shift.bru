@@ -17,3 +17,15 @@ params:path {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Deletes a crew shift definition. Shifts with active user assignments may not be deletable.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `manage_users` permission.
+
+  **Path params:**
+  - `:id` — shift ID to delete
+
+  **Used in:**
+  - `src/components/team/DeleteShiftDialog.tsx` — delete confirmation dialog in the Crew Shift section
+}

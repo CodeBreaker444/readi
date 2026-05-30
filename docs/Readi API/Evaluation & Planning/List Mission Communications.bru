@@ -17,3 +17,12 @@ params:query {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Returns all communications sent for a specific mission/planning record.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_planning` permission.
+
+  **Used in:**
+  - Planning mission detail — communications history tab
+}

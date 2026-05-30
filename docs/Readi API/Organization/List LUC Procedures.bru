@@ -13,3 +13,13 @@ get {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Returns all LUC (Light UAS Operator Certificate) procedures defined for the organization. These procedures govern how missions are authorized and what communication steps are required.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_planning` permission.
+
+  **Used in:**
+  - Operation creation forms — LUC procedure selection dropdown
+  - Planning mission configuration
+}

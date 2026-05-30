@@ -27,3 +27,18 @@ body:json {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Adds a certification or qualification record to a user's profile (e.g. drone pilot licence, EASA A2 category). Tracks issue date, expiry date, and certificate number.
+
+  **Auth:** Session cookie (`readi_auth_token`). No specific permission required (users can manage their own qualifications).
+
+  **Body fields:**
+  - `user_id` (required) — target user
+  - `qualification_type` — type identifier (e.g. DRONE_PILOT_LICENSE)
+  - `issue_date`, `expiry_date` — validity period
+  - `certificate_number` — licence number
+
+  **Used in:**
+  - `src/components/profile/ProfilePage.tsx` — Add Qualification form in the Qualifications tab
+}

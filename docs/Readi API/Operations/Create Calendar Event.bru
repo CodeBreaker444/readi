@@ -26,3 +26,19 @@ body:json {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Creates a calendar event for an operation or standalone briefing. Supports both single (on-demand) and scheduled/recurring operations. Triggers DCC mission creation callback if DCC is configured.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_operations` permission.
+
+  **Body fields:**
+  - `mission_name`, `scheduled_start` — event details
+  - `is_recurring` — enables recurring schedule fields
+  - `fk_pilot_user_id`, `fk_tool_id`, `fk_luc_procedure_id` — assignment
+  - `days_of_week`, `recur_until` — recurring schedule (if `is_recurring: true`)
+
+  **Used in:**
+  - `src/components/operation/AddOperationModal.tsx` — "Add to Calendar" flow from the calendar view
+  - `src/app/operations/calendar/page.tsx` — calendar operation creation
+}

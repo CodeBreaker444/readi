@@ -47,4 +47,19 @@ docs {
   
   waypoint.coordinates = [longitude, latitude, altitude_meters]
   Example: [9.18951, 45.46427, 120.0] â†’ lon=9.18951, lat=45.46427, alt=120m
+
+
+**Auth:** X-API-Key header. No session cookie required. Get the API key from Settings > API Keys in Readi.
+
+  **Caller:** DCC (Drone Command Center) system — not called from Readi frontend.
+
+  **Body fields:**
+  - `missionId` (required) — unique mission identifier from DCC
+  - `type` — mission type (e.g. INSPECTION, PATROL)
+  - `target` — target description
+  - `localization` — geographic context (highway, segment, km markers)
+  - `waypoint` — GeoJSON Point with coordinates [longitude, latitude, altitude_meters]
+  - `startDateTime` — planned start in ISO 8601 UTC
+  - `priority` — HIGH | NORMAL | LOW
+  - `notes`, `operator` — optional metadata
 }

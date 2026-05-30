@@ -13,3 +13,13 @@ get {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Returns all checklists defined for the organization (pre-flight, post-flight, maintenance, safety). Used as templates for mission checklist execution.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_operations` or `view_planning` permission.
+
+  **Used in:**
+  - `src/app/organization/checklists/page.tsx` — Checklists management page
+  - Operation forms — checklist selection dropdown
+}

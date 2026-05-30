@@ -19,5 +19,13 @@ settings {
 }
 
 docs {
-  Delete/deactivate organization. SUPERADMIN only.
+  **Purpose:** Deletes or deactivates an organization and all associated data. This is a destructive operation. SUPERADMIN only.
+
+  **Auth:** Session cookie (`readi_auth_token`). SUPERADMIN role required.
+
+  **Path params:**
+  - `:id` — organization owner ID to delete
+
+  **Used in:**
+  - `src/components/company/DeleteOwnerDialog.tsx` — delete confirmation dialog in the SuperAdmin company management section
 }

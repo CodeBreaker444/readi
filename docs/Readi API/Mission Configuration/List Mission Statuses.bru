@@ -13,3 +13,13 @@ get {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Returns all mission status definitions for the organization (e.g. PLANNED, IN_PROGRESS, COMPLETED). Status values determine how operations appear on the board and in reports.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_operations` permission.
+
+  **Used in:**
+  - `src/app/mission/status/page.tsx` — Mission Statuses configuration page; loads full list on mount
+  - `src/components/operation/AddOperationModal.tsx` — populates status dropdown when creating/updating operations
+}

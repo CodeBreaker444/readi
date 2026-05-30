@@ -26,5 +26,14 @@ settings {
 }
 
 docs {
-  Ask a question to the AI agent. Requires auth.
+  **Purpose:** Submits a natural language question to the AI assistant. The agent answers based on ingested knowledge documents and Readi operational context. Increments the user's usage counter.
+
+  **Auth:** Session cookie (`readi_auth_token`).
+
+  **Body fields:**
+  - `question` (required) — the user's natural language query
+  - `context` (optional) — page context hint (e.g. `dashboard`)
+
+  **Used in:**
+  - `src/components/TopBar.tsx` — AI chat input in the top navigation bar
 }

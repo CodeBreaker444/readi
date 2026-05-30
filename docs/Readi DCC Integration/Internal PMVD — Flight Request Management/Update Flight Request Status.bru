@@ -27,4 +27,13 @@ settings {
 docs {
   Manually update a flight request's status.
   Allowed values: IN_PROGRESS, COMPLETED, ISSUE
+
+
+**Auth:** Session cookie (`readi_auth_token`). Requires `view_planning_advanced` permission.
+
+  **Body fields:**
+  - `dcc_status` — new status: IN_PROGRESS | COMPLETED | ISSUE
+
+  **Used in:**
+  - `src/components/operation/FlightRequestsTable.tsx` — status update dropdown on flight requests
 }

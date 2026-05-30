@@ -31,5 +31,14 @@ settings {
 }
 
 docs {
-  Update organization details. SUPERADMIN only.
+  **Purpose:** Updates an organization's general settings, security configuration, and feature flags (e.g. Drone ATC enable/disable). Supports updating admin password separately via `/api/owner/:id/admin-password`.
+
+  **Auth:** Session cookie (`readi_auth_token`). SUPERADMIN role required.
+
+  **Path params:**
+  - `:id` — organization owner ID
+
+  **Used in:**
+  - `src/app/company/[id]/page.tsx` — Organization detail/edit page; save button submits general, security, and features forms
+  - `src/components/company/EditOwnerModal.tsx` — quick-edit modal for org details
 }

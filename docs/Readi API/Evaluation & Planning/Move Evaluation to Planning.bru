@@ -25,3 +25,12 @@ body:json {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Promotes an approved evaluation into a planning mission, creating the planning record and linking it to the evaluation.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_planning_advanced` permission.
+
+  **Used in:**
+  - Evaluation detail — "Move to Planning" action after evaluation is approved
+}

@@ -13,3 +13,12 @@ get {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Returns a list of operation logbook entries with summary data including mission details, pilot, drone, and outcome.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_logbooks` permission.
+
+  **Used in:**
+  - `src/app/logbooks/page.tsx` — Logbooks page — operations tab
+}

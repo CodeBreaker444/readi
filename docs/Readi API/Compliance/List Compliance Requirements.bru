@@ -23,5 +23,17 @@ settings {
 }
 
 docs {
-  List compliance requirements. Requires `view_compliance`.
+  **Purpose:** Returns a paginated list of compliance audit plan items. Each item represents a regulatory or internal requirement that needs to be tracked and evidenced.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_compliance` permission.
+
+  **Query params:**
+  - `page`, `limit` — pagination
+  - `requirement_type` — filter by type
+  - `requirement_status` — filter by status (e.g. COMPLIANT, NON_COMPLIANT)
+  - `q` — text search
+
+  **Used in:**
+  - `src/app/compliance/general-audit-plan/page.tsx` — General Audit Plan table
+  - `src/app/compliance/requirements-evidences/page.tsx` — Requirements & Evidences page
 }

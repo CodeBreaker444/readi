@@ -13,3 +13,12 @@ get {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Returns all crew shift schedules for the organization, including shift name, working days, and start/end times.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `manage_users` permission.
+
+  **Used in:**
+  - `src/components/team/CrewShiftCalendar.tsx` — Crew Shift Calendar; loads all shifts to display on the calendar
+}

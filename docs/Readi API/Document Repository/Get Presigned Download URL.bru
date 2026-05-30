@@ -23,3 +23,12 @@ body:json {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Returns a presigned S3 URL for downloading a specific document revision. The URL is time-limited.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_repository` permission.
+
+  **Used in:**
+  - `src/app/document-repository/page.tsx` — "Download" button on document items and revisions
+}

@@ -28,3 +28,12 @@ body:json {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Opens a new maintenance ticket for a drone system. Captures the issue description, affected component, and initial severity.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_config` permission.
+
+  **Used in:**
+  - `src/components/system/useMaintenance.tsx` — "Create Ticket" form in the Maintenance section
+}

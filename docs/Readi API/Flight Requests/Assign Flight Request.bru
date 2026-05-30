@@ -26,3 +26,18 @@ body:json {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Assigns a DCC flight request to a planning mission, accepting the mission. Triggers an acceptance callback to DCC with the assigned drone ID.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_planning_advanced` permission.
+
+  **Body fields:**
+  - `request_id` (required) — flight request to assign
+  - `assigned_to` — user/planning ID to assign to
+  - `status` — new status (e.g. APPROVED)
+  - `notes` — optional approval notes
+
+  **Used in:**
+  - `src/components/operation/FlightRequestsTable.tsx` — "Assign" action on pending flight requests
+}

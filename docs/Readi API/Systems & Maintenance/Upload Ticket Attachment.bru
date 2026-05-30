@@ -18,3 +18,12 @@ body:multipart-form {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Uploads a file attachment to a maintenance ticket (e.g. photos, inspection reports, part receipts).
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_config` permission.
+
+  **Used in:**
+  - `src/components/system/useMaintenance.tsx` — file upload in the maintenance ticket detail view
+}

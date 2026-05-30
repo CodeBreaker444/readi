@@ -15,5 +15,10 @@ settings {
 }
 
 docs {
-  List API keys for current organization. Requires `view_config`.
+  **Purpose:** Returns all API keys for the authenticated organization, including key name, creation date, expiry, and active status. The raw key value is never returned after creation.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_config` permission.
+
+  **Used in:**
+  - `src/components/settings/ApiKeyManager.tsx` — API Keys settings panel; loads all keys on mount for display and management
 }

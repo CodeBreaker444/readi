@@ -15,7 +15,12 @@ settings {
 }
 
 docs {
-  List all organizations. SUPERADMIN role only.
+  **Purpose:** Returns all registered organizations (tenants) with their configuration, admin details, and feature flags. Used by SUPERADMIN to manage the full platform.
+
+  **Auth:** Session cookie (`readi_auth_token`). SUPERADMIN role required.
+
+  **Used in:**
+  - `src/app/company/page.tsx` (or similar) — SuperAdmin company list page
 }
 
 example {

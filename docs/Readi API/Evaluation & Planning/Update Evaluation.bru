@@ -28,3 +28,12 @@ body:json {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Updates an evaluation request's fields (status, notes, mission data, assigned evaluator).
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_planning_advanced` permission.
+
+  **Used in:**
+  - `src/components/planning/EvaluationEditSheet.tsx` — evaluation edit side panel
+}

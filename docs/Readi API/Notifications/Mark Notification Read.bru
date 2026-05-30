@@ -21,3 +21,16 @@ body:json {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Marks a single notification as read by its ID.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_notifications` permission.
+
+  **Body fields:**
+  - `notification_id` (required) — ID of the notification to mark as read
+
+  **Used in:**
+  - `src/app/notifications/page.tsx` — mark-read action on individual notification items
+  - `src/components/NotificationDropdown.tsx` — clicking a notification in the dropdown marks it read
+}

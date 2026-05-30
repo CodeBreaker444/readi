@@ -24,3 +24,12 @@ body:json {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Updates the status of a planning mission (e.g. PENDING ? IN_REVIEW ? APPROVED).
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_planning` permission.
+
+  **Used in:**
+  - Planning mission status workflow controls
+}

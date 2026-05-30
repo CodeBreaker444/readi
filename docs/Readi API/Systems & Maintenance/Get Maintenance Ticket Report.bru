@@ -13,3 +13,12 @@ get {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Returns the full maintenance report data for a ticket — all events, notes, parts used, and time tracking. Used for PDF/DOCX generation.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_config` permission.
+
+  **Used in:**
+  - `src/components/system/useMaintenance.tsx` — "Generate Report" action that creates a maintenance PDF
+}

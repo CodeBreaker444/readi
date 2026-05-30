@@ -37,7 +37,20 @@ settings {
 }
 
 docs {
-  Create a single operation. Requires session.
-  
-  status_name: PLANNED | IN_PROGRESS | COMPLETED | CANCELLED | ABORTED
+  **Purpose:** Creates a single flight operation record. Associates it with a pilot, drone system, mission type, and optional planning mission. Triggers DCC callbacks if the DCC integration is active.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_operations` permission.
+
+  **Body fields:**
+  - `mission_name`, `mission_code` — identifiers
+  - `status_name` — PLANNED | IN_PROGRESS | COMPLETED | CANCELLED | ABORTED
+  - `scheduled_start`, `actual_end` — timing
+  - `fk_pilot_user_id` — assigned pilot
+  - `fk_tool_id` — drone system
+  - `fk_planning_id` — linked planning mission (optional)
+  - `fk_mission_type_id`, `fk_mission_category_id` — classification
+  - `location`, `notes` — context info
+
+  **Used in:**
+  - `src/components/operation/AddOperationModal.tsx` — "Add Operation" modal
 }

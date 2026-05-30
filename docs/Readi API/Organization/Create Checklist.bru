@@ -29,3 +29,12 @@ body:json {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Creates a new checklist template with items. Checklists can be assigned to operations and mission types.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires admin/config permission.
+
+  **Used in:**
+  - `src/app/organization/checklists/page.tsx` — "Create Checklist" form
+}

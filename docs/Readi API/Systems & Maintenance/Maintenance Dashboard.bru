@@ -13,3 +13,12 @@ get {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Returns an aggregate maintenance overview: systems due for maintenance, open tickets summary, component health status, and maintenance schedule calendar.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_config` permission.
+
+  **Used in:**
+  - `src/app/systems/maintenance-dashboard/page.tsx` — Maintenance Dashboard page
+}
