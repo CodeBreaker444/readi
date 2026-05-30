@@ -4,7 +4,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import '@/lib/i18n/config';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FiAlertTriangle, FiArrowUp, FiClock, FiCompass, FiCrosshair, FiNavigation, FiSearch, FiWifi, FiZap } from 'react-icons/fi';
+import { FiAlertTriangle, FiArrowUp, FiClock, FiCompass, FiCrosshair, FiDroplet, FiNavigation, FiSearch, FiThermometer, FiWifi, FiWind, FiZap } from 'react-icons/fi';
 import { GiDeliveryDrone } from 'react-icons/gi';
 import { MdDock } from 'react-icons/md';
 import { TbSatellite } from 'react-icons/tb';
@@ -306,7 +306,15 @@ function DroneCard({
   );
 }
 
-function DockCard({ dock, isDark, showUser }: { dock: TelemetryData; isDark: boolean; showUser: boolean }) {
+function DockCard({
+  dock, isDark, showUser, isSelected, onSelect,
+}: {
+  dock: TelemetryData;
+  isDark: boolean;
+  showUser: boolean;
+  isSelected: boolean;
+  onSelect: () => void;
+}) {
   const online  = dock.status === 'online' || !dock.status;
   const standby = dock.status === 'standby';
   const ownerLabel = dock.user_details?.fullname || dock.user_details?.email;
@@ -316,20 +324,41 @@ function DockCard({ dock, isDark, showUser }: { dock: TelemetryData; isDark: boo
     : null;
   const hasLocation = dock.latitude !== 0 && dock.longitude !== 0;
 
-  const borderColor = online ? 'border-l-cyan-500' : standby ? 'border-l-amber-400' : 'border-l-slate-500';
-  const cardBg = isDark
-    ? 'bg-slate-800/30 border border-l-0 border-slate-700/40'
-    : 'bg-white border border-l-0 border-slate-200';
+  const borderColor = isSelected
+    ? 'border-l-cyan-400'
+    : online ? 'border-l-cyan-500' : standby ? 'border-l-amber-400' : 'border-l-slate-500';
+
+  const cardBg = isSelected
+    ? isDark
+      ? 'bg-cyan-900/15 border border-l-0 border-cyan-500/30 shadow-sm shadow-cyan-900/20'
+      : 'bg-cyan-50/80 border border-l-0 border-cyan-200 shadow-sm'
+    : isDark
+      ? 'bg-slate-800/30 border border-l-0 border-slate-700/40 hover:bg-slate-800/50 hover:border-slate-600/50'
+      : 'bg-white border border-l-0 border-slate-200 hover:bg-slate-50 hover:border-slate-300';
+
+  const chargingColor = dock.dock_charging_status === 'Charging'
+    ? 'text-emerald-500' : dock.dock_charging_status === 'Idle' ? 'text-slate-400' : 'text-amber-500';
 
   return (
-    <div className={`p-3 rounded-xl border-l-[3px] ${borderColor} ${cardBg}`}>
+    <button
+      onClick={onSelect}
+      className={`w-full text-left p-3 rounded-xl border-l-[3px] transition-all duration-150 cursor-pointer ${borderColor} ${cardBg}`}
+    >
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
-          <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isDark ? 'bg-cyan-500/10 ring-1 ring-cyan-500/20' : 'bg-cyan-50 ring-1 ring-cyan-200'}`}>
-            <MdDock className={`w-4 h-4 ${isDark ? 'text-cyan-400' : 'text-cyan-500'}`} />
+          <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+            isSelected
+              ? isDark ? 'bg-cyan-500/15 ring-1 ring-cyan-500/30' : 'bg-cyan-100 ring-1 ring-cyan-200'
+              : isDark ? 'bg-cyan-500/10 ring-1 ring-cyan-500/20' : 'bg-cyan-50 ring-1 ring-cyan-200'
+          }`}>
+            <MdDock className={`w-4 h-4 ${isSelected ? (isDark ? 'text-cyan-300' : 'text-cyan-600') : isDark ? 'text-cyan-400' : 'text-cyan-500'}`} />
           </div>
           <div className="min-w-0">
-            <span className={`text-[12px] font-semibold truncate block leading-tight ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>
+            <span className={`text-[12px] font-semibold truncate block leading-tight ${
+              isSelected
+                ? isDark ? 'text-cyan-200' : 'text-cyan-700'
+                : isDark ? 'text-slate-100' : 'text-slate-800'
+            }`}>
               {dock.tool_code ?? dock.name ?? dock.drone_id}
             </span>
             {dock.model && (
@@ -344,18 +373,45 @@ function DockCard({ dock, isDark, showUser }: { dock: TelemetryData; isDark: boo
             )}
           </div>
         </div>
-        <StatusBadge status={dock.status} isDark={isDark} />
+        <div className="flex flex-col items-end gap-1">
+          <StatusBadge status={dock.status} isDark={isDark} />
+          {dock.dock_drone_present != null && (
+            <span className={`inline-flex items-center gap-1 text-[9px] font-bold tracking-wide px-1.5 py-0.5 rounded-full ${
+              dock.dock_drone_present
+                ? isDark ? 'bg-violet-500/10 text-violet-400 ring-1 ring-violet-500/20' : 'bg-violet-50 text-violet-600 ring-1 ring-violet-200'
+                : isDark ? 'bg-slate-700/40 text-slate-400 ring-1 ring-slate-600/30' : 'bg-slate-100 text-slate-400 ring-1 ring-slate-200'
+            }`}>
+              <GiDeliveryDrone className="w-2.5 h-2.5" />
+              {dock.dock_drone_present ? 'Docked' : 'Empty'}
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-3 gap-1.5 mt-2">
         <MetricCell
-          icon={<FiWifi className="w-2.5 h-2.5" />}
-          value={dock.signal_strength != null ? `${Math.round(dock.signal_strength)}%` : '—'}
+          icon={<FiThermometer className="w-2.5 h-2.5" />}
+          value={dock.dock_temperature != null ? `${dock.dock_temperature.toFixed(1)}°` : '—'}
           isDark={isDark}
         />
         <MetricCell
-          icon={<FiZap className={`w-2.5 h-2.5 ${dock.battery_percentage > 50 ? 'text-emerald-500' : dock.battery_percentage > 20 ? 'text-amber-500' : 'text-red-500'}`} />}
-          value={`${Math.round(dock.battery_percentage)}%`}
+          icon={<FiDroplet className="w-2.5 h-2.5" />}
+          value={dock.dock_humidity != null ? `${dock.dock_humidity}%` : '—'}
+          isDark={isDark}
+        />
+        <MetricCell
+          icon={<FiWind className="w-2.5 h-2.5" />}
+          value={dock.dock_wind_speed != null ? `${dock.dock_wind_speed}m/s` : '—'}
+          isDark={isDark}
+        />
+        <MetricCell
+          icon={<FiZap className={`w-2.5 h-2.5 ${chargingColor}`} />}
+          value={dock.dock_charging_status ?? '—'}
+          isDark={isDark}
+        />
+        <MetricCell
+          icon={<FiWifi className="w-2.5 h-2.5" />}
+          value={dock.dock_power_mode ?? '—'}
           isDark={isDark}
         />
         <MetricCell
@@ -373,22 +429,7 @@ function DockCard({ dock, isDark, showUser }: { dock: TelemetryData; isDark: boo
           </span>
         </div>
       )}
-
-      {dock.hms_flags && dock.hms_flags.length > 0 && (
-        <div className={`mt-1.5 flex items-center gap-1 flex-wrap p-1.5 rounded-lg ${isDark ? 'bg-red-900/20' : 'bg-red-50'}`}>
-          <FiAlertTriangle className="w-2.5 h-2.5 text-red-400 shrink-0" />
-          <span className="text-[9px] font-bold text-red-400 mr-0.5">{dock.hms_flags.length}</span>
-          {dock.hms_flags.slice(0, 2).map((flag, i) => (
-            <span key={i} className={`text-[9px] px-1 py-0.5 rounded truncate max-w-20 ${isDark ? 'bg-red-900/40 text-red-300' : 'bg-red-100 text-red-600'}`}>
-              {flag}
-            </span>
-          ))}
-          {dock.hms_flags.length > 2 && (
-            <span className="text-[9px] text-red-400">+{dock.hms_flags.length - 2}</span>
-          )}
-        </div>
-      )}
-    </div>
+    </button>
   );
 }
 
@@ -538,7 +579,14 @@ export default function DroneList({
                   <PilotHeader pilotName={pilotName} isDark={isDark} />
                   <div className="flex flex-col gap-2">
                     {items.map(dock => (
-                      <DockCard key={dock.drone_id} dock={dock} isDark={isDark} showUser={isAdmin} />
+                      <DockCard
+                        key={dock.drone_id}
+                        dock={dock}
+                        isDark={isDark}
+                        showUser={isAdmin}
+                        isSelected={dock.drone_id === selectedDroneId}
+                        onSelect={() => onSelect(dock.drone_id)}
+                      />
                     ))}
                   </div>
                 </div>

@@ -30,6 +30,25 @@ export interface TelemetryData {
     email?: string;
     company_id?: number;
   };
+  // Dock-specific fields
+  attached_dock_id?: string | null;
+  attached_drone_id?: string | null;
+  binding_key?: string;
+  dock_charging_status?: string;
+  dock_drone_present?: boolean;
+  dock_humidity?: number;
+  dock_power_mode?: string;
+  dock_rainfall?: number;
+  dock_temperature?: number;
+  dock_total_flights?: number;
+  dock_wind_speed?: number;
+  fix_state?: number;
+  gps_quality?: number;
+  gps_satellites?: number;
+  land_height?: number;
+  last_live_at?: number;
+  rtk_satellites?: number;
+  serial_no?: string;
 }
 
 export type DroneMap = Record<string, TelemetryData>;
@@ -126,7 +145,7 @@ export function useDroneATCSocket(): UseDroneATCSocketReturn {
 
       socket.on('telemetry', (payload: { droneId: string; data: TelemetryData; timestamp: number }) => {
         const incoming = payload.data ?? (payload as unknown as TelemetryData);
-        // console.log('tele:',incoming);
+        console.log('tele:',incoming);
 
         const id = incoming.drone_id ?? payload.droneId;
         if (!id) return;

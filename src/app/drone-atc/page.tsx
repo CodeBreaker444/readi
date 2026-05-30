@@ -108,6 +108,30 @@ export default function DroneATCPage() {
     if (!selectedDroneId) return;
     if (showVideoPanel) { setShowVideoPanel(false); return; }
 
+    const currentDock = docks[selectedDroneId];
+    if (currentDock) {
+      const attachedDroneId = currentDock.attached_drone_id;
+      if (!attachedDroneId) {
+        setStreamingData({ hasCredentials: true, statusMessage: 'No drone attached to this dock.' });
+        setShowVideoPanel(true);
+        return;
+      }
+      setStreamingLoading(true);
+      try {
+        const res = await fetch(`/api/drone-atc/stream?droneId=${encodeURIComponent(attachedDroneId)}`);
+        if (!res.ok) return;
+        const data: StreamingResponse = await res.json();
+        if (!data.hasCredentials) return;
+        setStreamingData(data);
+        setShowVideoPanel(true);
+      } catch {
+        // silently ignore
+      } finally {
+        setStreamingLoading(false);
+      }
+      return;
+    }
+
     const currentDrone = drones[selectedDroneId];
 
     if (currentDrone?.armed === false) {
@@ -135,7 +159,7 @@ export default function DroneATCPage() {
     } finally {
       setStreamingLoading(false);
     }
-  }, [selectedDroneId, showVideoPanel, drones]);
+  }, [selectedDroneId, showVideoPanel, drones, docks]);
 
   const handleUpdateDrones = useCallback(async () => {
     if (syncState === 'loading') return;
@@ -209,6 +233,8 @@ export default function DroneATCPage() {
 
   const droneList = Object.values(drones);
   const selectedDrone = selectedDroneId ? drones[selectedDroneId] ?? null : null;
+  const selectedDock  = selectedDroneId ? docks[selectedDroneId] ?? null : null;
+  const selectedItem  = selectedDrone ?? selectedDock;
   const isLoading = status === 'idle' || status === 'connecting';
 
   const panelClass = isDark
@@ -448,7 +474,7 @@ export default function DroneATCPage() {
             </div>
           )}
 
-          {selectedDrone && (
+          {selectedItem && (
             <div className="absolute bottom-3 right-3 z-400 flex flex-col gap-2 w-68">
               {showVideoPanel && streamingData && (
                 <div className="relative rounded-2xl overflow-hidden bg-black" style={{ aspectRatio: '16/9' }}>
@@ -482,8 +508,9 @@ export default function DroneATCPage() {
                 </div>
               )}
               <LiveFeedPanel
-                drone={selectedDrone}
+                drone={selectedItem}
                 isDark={isDark}
+                isDock={!!selectedDock}
                 wrapperClassName=""
                 onCameraClick={handleCameraClick}
                 cameraActive={showVideoPanel}
