@@ -4,9 +4,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import '@/lib/i18n/config';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FiArrowUp, FiNavigation, FiSearch, FiWifi, FiZap } from 'react-icons/fi';
+import { FiAlertTriangle, FiArrowUp, FiClock, FiCompass, FiCrosshair, FiNavigation, FiSearch, FiWifi, FiZap } from 'react-icons/fi';
 import { GiDeliveryDrone } from 'react-icons/gi';
 import { MdDock } from 'react-icons/md';
+import { TbSatellite } from 'react-icons/tb';
 import type { DroneMap, TelemetryData } from './useDroneATCSocket';
 
 interface DroneListProps {
@@ -75,6 +76,11 @@ function MetricCell({ icon, value, isDark }: { icon: React.ReactNode; value: str
       </span>
     </div>
   );
+}
+
+function headingLabel(deg: number): string {
+  const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+  return dirs[Math.round(deg / 45) % 8];
 }
 
 function DroneCardSkeleton({ isDark }: { isDark: boolean }) {
@@ -192,6 +198,10 @@ function DroneCard({
 
   const speedKts = drone.velocity != null ? Math.round(drone.velocity * 1.944) : null;
   const ownerLabel = drone.user_details?.fullname || drone.user_details?.email;
+  const lbl = isDark ? 'text-slate-500' : 'text-slate-400';
+  const lastSeen = drone.timestamp
+    ? new Date(drone.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    : null;
 
   return (
     <button
@@ -234,6 +244,16 @@ function DroneCard({
         </div>
         <div className="flex flex-col items-end gap-1">
           <StatusBadge status={drone.status} isDark={isDark} />
+          {drone.armed != null && (
+            <span className={`inline-flex items-center gap-1 text-[9px] font-bold tracking-wide px-1.5 py-0.5 rounded-full ${
+              drone.armed
+                ? isDark ? 'bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20' : 'bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200'
+                : isDark ? 'bg-slate-700/40 text-slate-400 ring-1 ring-slate-600/30' : 'bg-slate-100 text-slate-400 ring-1 ring-slate-200'
+            }`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${drone.armed ? 'bg-emerald-400' : 'bg-slate-400'}`} />
+              {drone.armed ? 'Armed' : 'Disarmed'}
+            </span>
+          )}
           {noGps && (
             <span className={`inline-flex items-center gap-1 text-[9px] font-bold tracking-wide px-1.5 py-0.5 rounded-full ${
               isDark ? 'bg-slate-700/60 text-slate-400 ring-1 ring-slate-600/30' : 'bg-slate-100 text-slate-400 ring-1 ring-slate-200'
@@ -244,20 +264,44 @@ function DroneCard({
         </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-1.5">
-        <MetricCell icon={<FiArrowUp className="w-2.5 h-2.5" />}     value={`${Math.round(drone.altitude)}m`} isDark={isDark} />
-        <MetricCell icon={<FiNavigation className="w-2.5 h-2.5" />}  value={speedKts != null ? `${speedKts}kt` : '—'} isDark={isDark} />
+      <div className="grid grid-cols-3 gap-1.5">
+        <MetricCell icon={<FiArrowUp className="w-2.5 h-2.5" />} value={`${Math.round(drone.altitude)}m`} isDark={isDark} />
+        <MetricCell icon={<FiNavigation className="w-2.5 h-2.5" />} value={speedKts != null ? `${speedKts}kt` : '—'} isDark={isDark} />
         <MetricCell
           icon={<FiZap className={`w-2.5 h-2.5 ${drone.battery_percentage > 50 ? 'text-emerald-500' : drone.battery_percentage > 20 ? 'text-amber-500' : 'text-red-500'}`} />}
           value={`${Math.round(drone.battery_percentage)}%`}
           isDark={isDark}
         />
+        <MetricCell icon={<FiCompass className="w-2.5 h-2.5" />} value={drone.heading != null ? headingLabel(drone.heading) : '—'} isDark={isDark} />
+        <MetricCell icon={<TbSatellite className="w-2.5 h-2.5" />} value={drone.satellites != null ? String(drone.satellites) : '—'} isDark={isDark} />
         <MetricCell icon={<FiWifi className="w-2.5 h-2.5" />} value={drone.signal_strength != null ? `${Math.round(drone.signal_strength)}%` : '—'} isDark={isDark} />
       </div>
 
       <div className="mt-2">
         <BatteryBar pct={drone.battery_percentage} isDark={isDark} />
       </div>
+
+      {drone.hms_flags && drone.hms_flags.length > 0 && (
+        <div className={`mt-1.5 flex items-center gap-1 flex-wrap p-1.5 rounded-lg ${isDark ? 'bg-red-900/20' : 'bg-red-50'}`}>
+          <FiAlertTriangle className="w-2.5 h-2.5 text-red-400 shrink-0" />
+          <span className="text-[9px] font-bold text-red-400 mr-0.5">{drone.hms_flags.length}</span>
+          {drone.hms_flags.slice(0, 2).map((flag, i) => (
+            <span key={i} className={`text-[9px] px-1 py-0.5 rounded truncate max-w-20 ${isDark ? 'bg-red-900/40 text-red-300' : 'bg-red-100 text-red-600'}`}>
+              {flag}
+            </span>
+          ))}
+          {drone.hms_flags.length > 2 && (
+            <span className="text-[9px] text-red-400">+{drone.hms_flags.length - 2}</span>
+          )}
+        </div>
+      )}
+
+      {lastSeen && (
+        <div className={`mt-1.5 flex items-center gap-1 ${lbl}`}>
+          <FiClock className="w-2.5 h-2.5 shrink-0" />
+          <span className="text-[9px] font-mono">{lastSeen}</span>
+        </div>
+      )}
     </button>
   );
 }
@@ -266,6 +310,11 @@ function DockCard({ dock, isDark, showUser }: { dock: TelemetryData; isDark: boo
   const online  = dock.status === 'online' || !dock.status;
   const standby = dock.status === 'standby';
   const ownerLabel = dock.user_details?.fullname || dock.user_details?.email;
+  const lbl = isDark ? 'text-slate-500' : 'text-slate-400';
+  const lastSeen = dock.timestamp
+    ? new Date(dock.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    : null;
+  const hasLocation = dock.latitude !== 0 && dock.longitude !== 0;
 
   const borderColor = online ? 'border-l-cyan-500' : standby ? 'border-l-amber-400' : 'border-l-slate-500';
   const cardBg = isDark
@@ -297,6 +346,48 @@ function DockCard({ dock, isDark, showUser }: { dock: TelemetryData; isDark: boo
         </div>
         <StatusBadge status={dock.status} isDark={isDark} />
       </div>
+
+      <div className="grid grid-cols-3 gap-1.5 mt-2">
+        <MetricCell
+          icon={<FiWifi className="w-2.5 h-2.5" />}
+          value={dock.signal_strength != null ? `${Math.round(dock.signal_strength)}%` : '—'}
+          isDark={isDark}
+        />
+        <MetricCell
+          icon={<FiZap className={`w-2.5 h-2.5 ${dock.battery_percentage > 50 ? 'text-emerald-500' : dock.battery_percentage > 20 ? 'text-amber-500' : 'text-red-500'}`} />}
+          value={`${Math.round(dock.battery_percentage)}%`}
+          isDark={isDark}
+        />
+        <MetricCell
+          icon={<FiClock className="w-2.5 h-2.5" />}
+          value={lastSeen ?? '—'}
+          isDark={isDark}
+        />
+      </div>
+
+      {hasLocation && (
+        <div className={`mt-2 flex items-center gap-1 ${lbl}`}>
+          <FiCrosshair className="w-2.5 h-2.5 shrink-0" />
+          <span className="text-[9px] font-mono">
+            {dock.latitude.toFixed(4)}, {dock.longitude.toFixed(4)}
+          </span>
+        </div>
+      )}
+
+      {dock.hms_flags && dock.hms_flags.length > 0 && (
+        <div className={`mt-1.5 flex items-center gap-1 flex-wrap p-1.5 rounded-lg ${isDark ? 'bg-red-900/20' : 'bg-red-50'}`}>
+          <FiAlertTriangle className="w-2.5 h-2.5 text-red-400 shrink-0" />
+          <span className="text-[9px] font-bold text-red-400 mr-0.5">{dock.hms_flags.length}</span>
+          {dock.hms_flags.slice(0, 2).map((flag, i) => (
+            <span key={i} className={`text-[9px] px-1 py-0.5 rounded truncate max-w-20 ${isDark ? 'bg-red-900/40 text-red-300' : 'bg-red-100 text-red-600'}`}>
+              {flag}
+            </span>
+          ))}
+          {dock.hms_flags.length > 2 && (
+            <span className="text-[9px] text-red-400">+{dock.hms_flags.length - 2}</span>
+          )}
+        </div>
+      )}
     </div>
   );
 }
