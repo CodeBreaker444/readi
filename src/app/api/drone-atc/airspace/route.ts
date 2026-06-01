@@ -1,9 +1,16 @@
 import { env } from '@/backend/config/env';
 import { fetchFromOpenAIP, filterByBounds, ITALY_BOUNDS } from '@/lib/airspace-classification';
 import { requireAuth } from '@/lib/auth/api-auth';
+import { unstable_cache } from 'next/cache';
 import { NextRequest, NextResponse } from 'next/server';
 
- 
+// persist across Vercel lambda invocations — in-memory cache dies on cold starts
+const getCachedAirspaces = unstable_cache(
+  () => fetchFromOpenAIP(),
+  ['openaip-airspace-zones'],
+  { revalidate: 86400 },
+);
+
 export async function GET(req: NextRequest) {
   const { error } = await requireAuth();
   if (error) return error;
@@ -26,7 +33,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const allZones = await fetchFromOpenAIP();
+    const allZones = await getCachedAirspaces();
     if(!allZones) {
       return NextResponse.json(
         {
