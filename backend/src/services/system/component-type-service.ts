@@ -1,5 +1,3 @@
-'use server';
-
 import { supabase } from '@/backend/database/database';
 
 export interface ComponentTypeRow {
