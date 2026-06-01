@@ -11,23 +11,21 @@ export async function listNotifications(
   input: NotificationListFilters,
   userId: number
 ): Promise<Notification[]> {
+  // For unread-only polls (no secondary filters) use a lean column set to reduce payload size
+  const isLightweightPoll =
+    input.status === "UNREAD" &&
+    !input.search &&
+    !input.procedure_name &&
+    !input.date_from &&
+    !input.date_to;
+
+  const columns = isLightweightPoll
+    ? "notification_id, notification_message, notification_type, notification_data, is_read, created_at, action_url"
+    : "notification_id, notification_message, notification_type, notification_title, notification_data, priority, is_read, created_at, read_at, action_url";
+
   let query = supabase
     .from("notification")
-    .select(
-      `
-      notification_id,
-      notification_message,
-      notification_type,
-      notification_title,
-      notification_data,
-      priority,
-      is_read,
-      created_at,
-      read_at,
-      action_url,
-      fk_user_id
-      `
-    )
+    .select(columns)
     .eq("fk_user_id", userId)
     .order("created_at", { ascending: false })
     .limit(input.limit ?? 100);

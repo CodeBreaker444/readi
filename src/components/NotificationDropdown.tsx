@@ -29,7 +29,7 @@ function timeAgo(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString();
 }
 
-const POLL_INTERVAL = 2_000;
+const POLL_INTERVAL = 10_000;
 
 const NotificationItem: React.FC<ItemProps> = ({ notif, isUnread, isDark, subtext }) => (
   <div className="flex items-start gap-3">
@@ -87,6 +87,8 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isDark }) =
   const dropdownRef = useRef<HTMLDivElement>(null);
   const knownIdsRef = useRef<Set<number> | null>(null);
 
+  const lastFullFetchRef = useRef<number>(0);
+
   const fetchNotifications = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
@@ -103,6 +105,10 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isDark }) =
         const read = all.filter((n) => n.is_read === 'Y').slice(0, 5);
         setNotifications([...unread, ...read]);
         setUnreadCount(unread.length);
+        lastFullFetchRef.current = Date.now();
+        if (knownIdsRef.current === null) {
+          knownIdsRef.current = new Set(all.map((n) => n.notification_id));
+        }
       }
     } catch {
     } finally {
@@ -142,13 +148,16 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isDark }) =
   }, []);
 
   useEffect(() => {
-    fetchUnreadCount();
+    fetchNotifications(true);
     const timer = setInterval(fetchUnreadCount, POLL_INTERVAL);
     return () => clearInterval(timer);
-  }, [fetchUnreadCount]);
+  }, [fetchNotifications, fetchUnreadCount]);
 
   useEffect(() => {
-    if (isOpen) fetchNotifications();
+    if (!isOpen) return;
+    // Skip if a full fetch happened within the last poll interval
+    if (Date.now() - lastFullFetchRef.current < POLL_INTERVAL) return;
+    fetchNotifications();
   }, [isOpen, fetchNotifications]);
 
   useEffect(() => {
