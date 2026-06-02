@@ -1,4 +1,4 @@
-# Readi — Drone Operations Management Platform
+# Readi — Drone Operations Management Platform - build-1
 
 Readi is a full-stack platform for managing drone operations, missions, compliance, safety, and logistics. It serves operators, pilots, and clients across the entire drone mission lifecycle.
 
