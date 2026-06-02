@@ -23,3 +23,15 @@ body:json {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Permanently deletes a client record from the organization. This is a destructive operation — associated data such as operations and evaluations linked to the client may be affected.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_client` permission.
+
+  **Body fields:**
+  - `client_id` (required) — ID of the client to delete
+
+  **Used in:**
+  - `src/components/team/ClientManagement.tsx` — delete confirmation in the Client Management section
+}

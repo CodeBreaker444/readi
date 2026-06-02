@@ -26,10 +26,16 @@ settings {
 }
 
 docs {
-  Create a new API key. Requires `view_config`.
-  
-  key_name: required, max 100 chars
-  expires_at: optional ISO datetime
+  **Purpose:** Generates a new API key for the organization. The raw key (prefixed `rdi_live_`) is returned only in this response — it cannot be retrieved again. Used to authenticate external integrations (e.g. DCC flight request submissions).
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_config` permission.
+
+  **Body fields:**
+  - `key_name` (required) — descriptive label for the key (max 100 chars)
+  - `expires_at` (optional) — ISO 8601 expiry datetime
+
+  **Used in:**
+  - `src/components/settings/ApiKeyManager.tsx` — "Create API Key" form in the Settings panel
 }
 
 example {

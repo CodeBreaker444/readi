@@ -29,3 +29,19 @@ body:json {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Creates a new training session or adds a user to an existing session. When `attendance_id` is provided, it updates an existing attendance record; otherwise it creates a new training session and enrolls the specified `user_ids`.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_training` permission.
+
+  **Body fields:**
+  - `training_name` (required) — session name
+  - `training_type` — type (e.g. TECHNICAL, REGULATORY)
+  - `trainer`, `scheduled_date`, `duration_hours`, `location`, `max_participants` — session metadata
+  - `user_ids` (array) — users to enroll when creating
+  - `attendance_id` — ID to update an existing attendance record
+
+  **Used in:**
+  - `src/app/training/courses/page.tsx` — "Add Training" and enrol-user forms on the Courses page
+}

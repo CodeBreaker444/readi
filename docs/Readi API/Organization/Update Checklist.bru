@@ -27,3 +27,12 @@ body:json {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Updates a checklist's title, items, or assignment rules.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires admin/config permission.
+
+  **Used in:**
+  - `src/app/organization/checklists/page.tsx` — "Edit Checklist" form
+}

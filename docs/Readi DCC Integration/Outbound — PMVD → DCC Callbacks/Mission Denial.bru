@@ -26,4 +26,9 @@ settings {
 
 docs {
   Sent by PMVD to DCC when OPM denies a flight request.
+
+
+**Caller:** Readi server — automatically triggered when OPM denies a flight request via POST /api/planning/flight-requests/deny.
+
+  **Target:** DCC server at `{dcc_base_url}/dcc/missions/{missionId}/denial`
 }

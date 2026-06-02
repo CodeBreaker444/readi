@@ -18,3 +18,13 @@ params:path {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Returns metadata for a single attachment (filename, size, S3 URL, description, upload date).
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_operations` permission.
+
+  **Path params:**
+  - `:id` — operation ID
+  - `:attachmentId` — attachment ID
+}

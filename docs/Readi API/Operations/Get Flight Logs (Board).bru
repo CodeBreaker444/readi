@@ -15,5 +15,13 @@ settings {
 }
 
 docs {
-  Get flight logs from the operations board.
+  **Purpose:** Returns uploaded flight log files for a specific mission on the operations board. Used to list GUTMA/KML log files that have been attached to a mission.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_operations` permission.
+
+  **Query params:**
+  - `mission_id` (required) — ID of the mission to fetch logs for
+
+  **Used in:**
+  - `src/components/operation/EditMissionLogTab.tsx` — Flight Logs tab in the mission detail view; loads on open and after each upload
 }

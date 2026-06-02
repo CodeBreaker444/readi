@@ -17,3 +17,15 @@ params:path {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Returns details for a single mission type by its ID. Used to pre-populate the edit form.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_operations` or `view_planning` permission.
+
+  **Path params:**
+  - `:typeId` — mission type ID
+
+  **Used in:**
+  - `src/app/mission/type/page.tsx` — Mission Types page; loads type details when clicking "Edit"
+}

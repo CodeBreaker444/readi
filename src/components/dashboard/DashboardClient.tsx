@@ -1,12 +1,20 @@
 'use client';
 
 import AiUsageWidget from '@/components/ai/AiUsageWidget';
+import {
+  ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from '@/components/ui/chart';
 import { cn } from '@/lib/utils';
 import { Clock, Navigation, Plane, TrendingUp, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  Bar, BarChart, CartesianGrid, Cell, Legend,
+  Bar, BarChart, CartesianGrid, Cell,
   Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis
 } from 'recharts';
 import { useTheme } from '../useTheme';
@@ -97,7 +105,6 @@ export default function DashboardClient({ ownerId, userProfileCode, userId, init
   const { t } = useTranslation();
   const [data, setData] = useState<any>(initialData || null);
   const [loading, setLoading] = useState(!initialData);
-  const [activeBar, setActiveBar] = useState<string | null>(null);
 
   useEffect(() => {
     if (initialData) return;
@@ -140,11 +147,24 @@ export default function DashboardClient({ ownerId, userProfileCode, userId, init
     status: 'Waiting',
   }));
 
+  const sanitizeKey = (name: string) => name.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+
+  const droneKeys: string[] = (data?.readi_mission_chart?.series || []).map((drone: any) => sanitizeKey(drone.name));
+
+  const chartConfig: ChartConfig = (data?.readi_mission_chart?.series || []).reduce(
+    (acc: ChartConfig, drone: any, i: number) => {
+      const key = sanitizeKey(drone.name);
+      acc[key] = { label: drone.name, color: BAR_COLORS[i % BAR_COLORS.length] };
+      return acc;
+    },
+    {} as ChartConfig
+  );
+
   const barChartData = data?.readi_mission_chart?.labels?.map((month: string, i: number) => ({
     month,
     ...data.readi_mission_chart.series.reduce((acc: any, drone: any) => ({
       ...acc,
-      [drone.name]: drone.data[i],
+      [sanitizeKey(drone.name)]: drone.data[i],
     }), {}),
   })) || [];
 
@@ -157,30 +177,6 @@ export default function DashboardClient({ ownerId, userProfileCode, userId, init
   const axisColor   = isDark ? '#475569' : '#94a3b8';
   const tooltipBg   = isDark ? '#0f172a' : '#ffffff';
   const tooltipBdr  = isDark ? '#1e293b' : '#e2e8f0';
-
-  const CustomBarTooltip = ({ active, payload, label }: any) => {
-    if (!active || !payload?.length) return null;
-    const item = payload.find((p: any) => p.dataKey === activeBar);
-    if (!item) return null;
-    return (
-      <div style={{
-        backgroundColor: tooltipBg,
-        border: `1px solid ${tooltipBdr}`,
-        borderRadius: '10px',
-        fontSize: 12,
-        padding: '10px 14px',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-        minWidth: 140,
-      }}>
-        <p style={{ color: axisColor, marginBottom: 6, fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</p>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ width: 10, height: 10, borderRadius: 3, backgroundColor: item.fill, display: 'inline-block', flexShrink: 0 }} />
-          <span style={{ color: isDark ? '#cbd5e1' : '#374151', flex: 1 }}>{item.dataKey}</span>
-          <strong style={{ color: isDark ? '#f1f5f9' : '#111827', marginLeft: 8 }}>{item.value}</strong>
-        </div>
-      </div>
-    );
-  };
 
   const card = cn('rounded-xl border', isDark ? 'bg-slate-800/80 border-slate-700/60' : 'bg-white border-gray-200');
   const cardHeader = cn('flex items-center justify-between px-5 py-4 border-b', isDark ? 'border-slate-700/60' : 'border-gray-100');
@@ -282,36 +278,28 @@ export default function DashboardClient({ ownerId, userProfileCode, userId, init
               <p className={eyebrow}>{t('dashboard.analytics')}</p>
               <h2 className={cardTitle}>{t('dashboard.missionOverview')}</h2>
             </div>
-            <select className={selectCls}>
+            {/* <select className={selectCls}>
               <option>{t('dashboard.filters.thisYear')}</option>
               <option>{t('dashboard.filters.thisMonth')}</option>
               <option>{t('dashboard.filters.thisWeek')}</option>
-            </select>
+            </select> */}
           </div>
-          <div className="p-5 h-72">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="px-5 pb-5">
+            <ChartContainer config={chartConfig} className="h-72 w-full">
               <BarChart data={barChartData} barCategoryGap="18%" barGap={4}>
                 <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
                 <XAxis dataKey="month" stroke={axisColor} tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis stroke={axisColor} tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
-                <Tooltip
-                  content={<CustomBarTooltip />}
+                <ChartTooltip
                   cursor={{ fill: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)' }}
+                  content={<ChartTooltipContent indicator="dot" />}
                 />
-                <Legend wrapperStyle={{ fontSize: 11, paddingTop: 12 }} />
-                {data?.readi_mission_chart?.series?.map((drone: any, i: number) => (
-                  <Bar
-                    key={drone.name}
-                    dataKey={drone.name}
-                    fill={BAR_COLORS[i % BAR_COLORS.length]}
-                    radius={[5, 5, 0, 0]}
-                    maxBarSize={64}
-                    onMouseEnter={() => setActiveBar(drone.name)}
-                    onMouseLeave={() => setActiveBar(null)}
-                  />
+                <ChartLegend content={<ChartLegendContent />} />
+                {droneKeys.map((key) => (
+                  <Bar key={key} dataKey={key} fill={`var(--color-${key})`} radius={[5, 5, 0, 0]} maxBarSize={64} />
                 ))}
               </BarChart>
-            </ResponsiveContainer>
+            </ChartContainer>
           </div>
         </div>
 
@@ -322,7 +310,7 @@ export default function DashboardClient({ ownerId, userProfileCode, userId, init
             <p className={eyebrow}>{t('dashboard.breakdown')}</p>
             <h2 className={cardTitle}>{t('dashboard.missionResults.title')}</h2>
             </div>
-          <select className={selectCls}><option>{t('dashboard.all')}</option></select>
+          {/* <select className={selectCls}><option>{t('dashboard.all')}</option></select> */}
           </div>
           <div className="p-5 flex flex-col gap-4">
             <div className="h-44">

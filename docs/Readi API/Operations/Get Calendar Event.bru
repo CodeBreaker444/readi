@@ -17,3 +17,15 @@ params:path {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Returns details for a single calendar operation event by its ID, including pilot, drone, LUC procedure, and scheduling information.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_operations` permission.
+
+  **Path params:**
+  - `:id` — calendar operation ID
+
+  **Used in:**
+  - `src/app/operations/calendar/page.tsx` — event detail popup when clicking a calendar entry
+}

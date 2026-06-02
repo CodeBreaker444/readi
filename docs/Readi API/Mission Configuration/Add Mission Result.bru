@@ -25,3 +25,17 @@ body:json {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Creates a new mission result option. Results describe the outcome of a completed operation.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires admin/config permissions.
+
+  **Body fields:**
+  - `result_name` — unique code identifier
+  - `result_label` — display label
+  - `color` (optional) — hex badge color
+
+  **Used in:**
+  - Mission results configuration page (admin settings)
+}

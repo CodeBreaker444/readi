@@ -51,4 +51,15 @@ docs {
   
   waypoint.coordinates = [longitude, latitude, altitude_meters]
   All missions share the same location, localization, and metadata.
+
+
+**Auth:** X-API-Key header. No session cookie required.
+
+  **Caller:** DCC system — not called from Readi frontend.
+
+  **Body fields:**
+  - `type`, `target`, `localization`, `waypoint` — shared mission metadata (same as single mission)
+  - `missions` (required) — array of `{ missionId, startDateTime }` for each occurrence
+  - `user_timezone` — timezone for scheduling
+  - `priority`, `notes`, `operator` — optional metadata
 }

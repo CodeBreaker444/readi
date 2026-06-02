@@ -27,4 +27,14 @@ settings {
 
 docs {
   Saves (upserts) the DCC callback URL for the organization. All outbound callbacks will be posted to this base URL.
+
+
+**Auth:** Session cookie (`readi_auth_token`). Requires `view_config` permission.
+
+  **Body fields:**
+  - `display_name` — human-readable DCC server name
+  - `callback_url` — base URL for all outbound callbacks (e.g. https://your-dcc-server.com)
+
+  **Used in:**
+  - Settings page — DCC Integration configuration form "Save" button
 }

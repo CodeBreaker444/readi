@@ -13,3 +13,13 @@ get {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Returns all components attached to systems (batteries, propellers, cameras, sensors, etc.) with their status and maintenance history.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_config` permission.
+
+  **Used in:**
+  - `src/components/system/ViewToolModal.tsx` — Components tab in the system detail modal
+  - `src/components/document-repository/DocumentModal.tsx` — component linkage dropdown
+}

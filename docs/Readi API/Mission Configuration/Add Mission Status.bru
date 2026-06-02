@@ -25,3 +25,17 @@ body:json {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Creates a new mission status that can be assigned to operations. Statuses define the workflow stages of a drone mission.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires admin/config permissions.
+
+  **Body fields:**
+  - `mission_status_code` — unique code identifier
+  - `mission_status_name` — display name
+  - `color` (optional) — hex color for UI badge
+
+  **Used in:**
+  - `src/app/mission/status/page.tsx` — "Add Status" form on the Mission Statuses configuration page
+}

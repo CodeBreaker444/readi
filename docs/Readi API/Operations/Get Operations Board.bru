@@ -15,5 +15,11 @@ settings {
 }
 
 docs {
-  Get kanban-style board data. Requires `view_operations`.
+  **Purpose:** Returns operations grouped by status for the kanban board view. Each column contains operations in a specific status with full mission details.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_operations` permission.
+
+  **Used in:**
+  - `src/app/operations/board/page.tsx` — Operations Board (kanban) page
+  - `src/components/operation/` — board column and card components
 }

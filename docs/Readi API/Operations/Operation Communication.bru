@@ -25,3 +25,17 @@ body:json {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Sends an operational communication message to a list of recipients. Messages are stored and can trigger email/in-app notifications depending on configuration.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_operations` permission.
+
+  **Body fields:**
+  - `operation_id` — associated operation
+  - `message` (required) — communication text
+  - `recipients` — array of user IDs to notify
+
+  **Used in:**
+  - `src/components/operation/GeneralCommunicationDialog.tsx` — "Send" button in the operation communication dialog
+}

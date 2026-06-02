@@ -17,3 +17,15 @@ params:path {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Permanently deletes a mission status definition. Will fail if active operations are assigned to this status.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires admin/config permissions.
+
+  **Path params:**
+  - `:id` — mission status ID to delete
+
+  **Used in:**
+  - `src/app/mission/status/page.tsx` — delete confirmation on the Mission Statuses configuration page
+}

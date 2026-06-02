@@ -25,5 +25,17 @@ settings {
 }
 
 docs {
-  List operations with pagination and filters. Requires `view_operations` permission.
+  **Purpose:** Returns a paginated list of operations with optional filters for status, pilot, date range, and search query. Used for the tabular operations view.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_operations` permission.
+
+  **Query params:**
+  - `page`, `pageSize` — pagination
+  - `status` — filter by operation status (e.g. PLANNED, IN_PROGRESS)
+  - `search` — text search on mission name/code
+  - `pilot_id` — filter by assigned pilot
+  - `date_start`, `date_end` — date range filter
+
+  **Used in:**
+  - `src/app/operations/table/page.tsx` — Operations Table view; loads on mount and re-fetches on filter changes
 }

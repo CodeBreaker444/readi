@@ -18,3 +18,16 @@ params:path {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Returns a presigned S3 download URL for an attachment, allowing the user to download the file directly from S3.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_operations` permission.
+
+  **Path params:**
+  - `:id` — operation ID
+  - `:attachmentId` — attachment ID to download
+
+  **Used in:**
+  - `src/components/operation/` — "Download" button on attachment items
+}

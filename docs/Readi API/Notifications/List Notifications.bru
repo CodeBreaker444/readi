@@ -13,3 +13,13 @@ get {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Returns notifications for the authenticated user. Supports optional filters for read/unread status and notification type.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_notifications` permission.
+
+  **Used in:**
+  - `src/app/notifications/page.tsx` — full Notifications page; loads and filters notifications
+  - `src/components/NotificationDropdown.tsx` — top-bar notification bell dropdown; fetches on open and polls for new notifications
+}

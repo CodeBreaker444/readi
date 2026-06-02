@@ -13,3 +13,12 @@ get {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Returns all mission result options (e.g. SUCCESS, PARTIAL, FAILED, ABORTED). Results are assigned to completed operations to indicate the mission outcome.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_operations` permission.
+
+  **Used in:**
+  - Operations form dropdowns when closing/completing a mission
+}

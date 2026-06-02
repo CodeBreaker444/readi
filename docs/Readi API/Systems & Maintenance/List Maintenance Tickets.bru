@@ -17,3 +17,13 @@ params:query {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Returns all maintenance tickets for the organization or a specific drone system. Each ticket includes status, assigned technician, description, and resolution notes.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_config` permission.
+
+  **Used in:**
+  - `src/components/system/ViewToolModal.tsx` — Maintenance tab in the system detail modal
+  - `src/components/system/useMaintenance.tsx` — maintenance ticket list
+}

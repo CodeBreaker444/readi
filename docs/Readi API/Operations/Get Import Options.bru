@@ -13,3 +13,12 @@ get {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Returns reference data needed to validate and map import file columns: available pilots, drone systems, mission types, categories, and status values.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_operations` permission.
+
+  **Used in:**
+  - Operations import dialog — loads before showing the file mapping UI
+}

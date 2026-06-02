@@ -24,3 +24,15 @@ body:json {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Generates a Safety Performance Target review proposal for a given period. Uses SPI/KPI measurements to produce a draft review document for approval.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_compliance` permission.
+
+  **Query params:**
+  - `months` — number of months to include in the review window
+
+  **Used in:**
+  - `src/app/compliance/safety-target-review/page.tsx` — "Generate Review" action
+}

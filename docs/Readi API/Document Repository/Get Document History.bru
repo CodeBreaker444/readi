@@ -17,3 +17,12 @@ params:query {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Returns the version history of a document — all previous revisions with upload dates and file details.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_repository` permission.
+
+  **Used in:**
+  - `src/app/document-repository/page.tsx` — version history panel when expanding a document
+}

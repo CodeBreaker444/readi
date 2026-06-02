@@ -19,5 +19,13 @@ settings {
 }
 
 docs {
-  Delete an API key. Requires `view_config`.
+  **Purpose:** Permanently deletes (revokes) an API key by its ID. Any integrations using the key will immediately lose access.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_config` permission.
+
+  **Path params:**
+  - `:id` — API key ID to delete
+
+  **Used in:**
+  - `src/components/settings/ApiKeyManager.tsx` — "Revoke" / delete button on each key in the API Keys settings panel
 }

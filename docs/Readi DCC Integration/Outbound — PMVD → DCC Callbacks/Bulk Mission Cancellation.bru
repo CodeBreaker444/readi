@@ -30,4 +30,12 @@ settings {
 
 docs {
   Sent by PMVD to DCC when a scheduled program is cancelled. Sends all mission IDs so DCC can remove them.
+
+
+**Caller:** Readi server — automatically triggered when a scheduled operation (or series) is deleted via DELETE /api/operation/calendar/{id}.
+
+  **Target:** DCC server at `{dcc_base_url}/dcc/missions/cancel`
+
+  **Body fields:**
+  - `missionIds` — array of all mission IDs belonging to the cancelled program
 }

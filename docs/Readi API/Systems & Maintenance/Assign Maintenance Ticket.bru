@@ -24,3 +24,12 @@ body:json {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Assigns a maintenance ticket to a specific technician/user for resolution.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_config` permission.
+
+  **Used in:**
+  - `src/components/system/useMaintenance.tsx` — "Assign" action on maintenance tickets
+}

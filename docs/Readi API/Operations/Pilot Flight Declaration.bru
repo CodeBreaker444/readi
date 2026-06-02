@@ -25,3 +25,17 @@ body:json {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Records a pilot's pre-flight or post-flight declaration confirming checklist completion. Creates a timestamped audit record for compliance purposes.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_operations` permission.
+
+  **Body fields:**
+  - `operation_id` (required) — target operation
+  - `declaration_text` — declaration statement
+  - `declared_at` — ISO timestamp
+
+  **Used in:**
+  - `src/components/operation/DailyDeclarationModal.tsx` — pilot daily declaration modal
+}

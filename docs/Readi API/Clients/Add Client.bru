@@ -38,7 +38,17 @@ settings {
 }
 
 docs {
-  Create a client. Requires session.
-  
-  client_name is required. All other fields optional.
+  **Purpose:** Creates a new client record for the organization. Stores company details, contact information, contract dates, and financial terms.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_client` permission.
+
+  **Body fields:**
+  - `client_name` (required) — display name
+  - `client_code`, `client_legal_name`, `client_address`, `client_city`, `client_state`, `client_postal_code` — identification/address fields
+  - `client_phone`, `client_email`, `client_website` — contact details
+  - `contract_start_date`, `contract_end_date` — contract validity period
+  - `payment_terms`, `credit_limit` — financial terms
+
+  **Used in:**
+  - `src/components/team/ClientManagement.tsx` — "Add Client" form in the Client Management section
 }

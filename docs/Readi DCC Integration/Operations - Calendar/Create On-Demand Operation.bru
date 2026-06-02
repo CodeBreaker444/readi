@@ -33,4 +33,10 @@ settings {
 
 docs {
   Creates a single on-demand operation. Triggers POST /dcc/missions callback with type ON-DEMAND.
+
+
+**Auth:** Session cookie (`readi_auth_token`). Requires `view_operations` permission.
+
+  **Used in:**
+  - `src/components/operation/AddOperationModal.tsx` — on-demand operation creation with DCC integration
 }

@@ -15,5 +15,10 @@ settings {
 }
 
 docs {
-  List all training courses. Requires `view_training`.
+  **Purpose:** Returns all training sessions for the organization including session name, type, trainer, scheduled date, duration, and participant counts.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_training` permission.
+
+  **Used in:**
+  - `src/app/training/courses/page.tsx` — Training Courses page; loads all training records on mount
 }

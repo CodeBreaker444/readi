@@ -13,3 +13,12 @@ get {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Returns all mission category options (e.g. INFRASTRUCTURE, ENVIRONMENTAL, SECURITY). Categories classify operations at a high level for reporting and filtering.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_operations` permission.
+
+  **Used in:**
+  - Operation creation and filter forms where category selection is required
+}

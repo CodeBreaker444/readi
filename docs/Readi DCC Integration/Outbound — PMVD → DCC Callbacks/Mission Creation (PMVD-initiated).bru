@@ -41,4 +41,11 @@ settings {
 
 docs {
   Sent by PMVD to DCC when PMVD creates a scheduled/on-demand mission. DCC should persist these IDs. On DCC failure the caller rolls back.
+
+
+**Caller:** Readi server — automatically triggered when PMVD creates a new scheduled or on-demand operation via POST /api/operation/calendar/create.
+
+  **Target:** DCC server at `{dcc_base_url}/dcc/missions`
+
+  **Note:** If DCC returns 409 or 422, the operation creation is rolled back.
 }

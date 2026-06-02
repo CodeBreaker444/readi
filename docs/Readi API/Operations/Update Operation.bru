@@ -31,5 +31,14 @@ settings {
 }
 
 docs {
-  Update an operation. Requires `view_operations`.
+  **Purpose:** Updates an existing operation's fields. Commonly used to change status, update notes, set actual end time, or reassign pilot/drone.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_operations` permission.
+
+  **Path params:**
+  - `:id` — operation ID
+
+  **Used in:**
+  - `src/app/operations/table/page.tsx` — bulk status update on selected rows
+  - `src/components/operation/` — edit operation form and status transition buttons on the board
 }

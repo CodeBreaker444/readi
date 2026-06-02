@@ -25,3 +25,12 @@ body:json {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Detaches a component from a system without deleting it. The component becomes unassigned and can be attached to another system.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_config` permission.
+
+  **Used in:**
+  - `src/components/system/ToolDetailModal.tsx` — "Detach" action on components
+}

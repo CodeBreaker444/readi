@@ -17,3 +17,12 @@ params:path {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Removes a drone system record from the organization. Will fail if the system has active operations.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_config` permission.
+
+  **Used in:**
+  - `src/app/systems/manage/page.tsx` — delete confirmation on system items
+}

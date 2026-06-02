@@ -13,3 +13,13 @@ get {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Returns all document type categories (e.g. SOP, Manual, Certificate, Report). Used to populate the type filter and creation form.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_repository` permission.
+
+  **Used in:**
+  - `src/components/document-repository/DocumentModal.tsx` — type dropdown in document create/edit form
+  - `src/components/document-repository/ManageDocTypesModal.tsx` — document type management
+}

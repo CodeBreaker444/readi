@@ -19,5 +19,13 @@ settings {
 }
 
 docs {
-  Get a single operation by ID. Requires `view_operations`.
+  **Purpose:** Returns full details for a single operation including pilot info, drone system, status history, mission type, and linked planning data.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_operations` permission.
+
+  **Path params:**
+  - `:id` — operation ID
+
+  **Used in:**
+  - `src/components/operation/` — operation detail view/modal when clicking a card on the board
 }

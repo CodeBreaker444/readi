@@ -13,3 +13,13 @@ get {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Returns available export sections for a specific entity (e.g. a drone system or maintenance report). Used to configure what data is included in a generated document.
+
+  **Auth:** Session cookie (`readi_auth_token`).
+
+  **Used in:**
+  - `src/app/systems/maintenance-dashboard/page.tsx` — configures which sections to include in maintenance reports
+  - `src/components/system/ViewToolModal.tsx` — configures export sections for drone system detail reports
+}

@@ -19,5 +19,13 @@ settings {
 }
 
 docs {
-  Get operations in calendar view. Requires `view_operations`.
+  **Purpose:** Returns operations for a given month formatted for calendar display. Each event includes mission name, pilot, status, and scheduled times for rendering in a monthly/weekly calendar grid.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_operations` permission.
+
+  **Query params:**
+  - `month` (required) — target month in YYYY-MM format (e.g. `2026-04`)
+
+  **Used in:**
+  - `src/app/operations/calendar/page.tsx` — Operations Calendar page; re-fetches on month navigation
 }

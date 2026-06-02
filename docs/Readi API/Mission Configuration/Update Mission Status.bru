@@ -28,3 +28,15 @@ body:json {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Updates the label or color of an existing mission status.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires admin/config permissions.
+
+  **Path params:**
+  - `:id` — mission status ID to update
+
+  **Used in:**
+  - `src/app/mission/status/page.tsx` — "Save" button in the Edit Mission Status form
+}

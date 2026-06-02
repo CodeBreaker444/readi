@@ -13,3 +13,12 @@ get {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Returns AI agent usage stats for the currently authenticated user — total queries made, remaining allowance, and current period usage.
+
+  **Auth:** Session cookie (`readi_auth_token`).
+
+  **Used in:**
+  - `src/components/TopBar.tsx` — displays the user's personal AI query usage count when the chat panel is opened
+}

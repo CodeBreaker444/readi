@@ -13,3 +13,12 @@ get {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Returns the authenticated user's certifications and qualifications (e.g. drone pilot licence, EASA A2 category). Used in the profile view to show licence status.
+
+  **Auth:** Session cookie (`readi_auth_token`). No specific permission required beyond authentication.
+
+  **Used in:**
+  - `src/components/profile/ProfilePage.tsx` — Qualifications tab in the user profile settings
+}

@@ -28,3 +28,15 @@ body:json {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Updates an existing mission type's name, code, description, or label.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires admin/config permissions.
+
+  **Path params:**
+  - `:typeId` — mission type ID to update
+
+  **Used in:**
+  - `src/app/mission/type/page.tsx` — "Save" button in the Edit Mission Type form
+}

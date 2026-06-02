@@ -26,3 +26,17 @@ body:json {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Creates a new crew shift pattern with name, working days (Mon=1 … Sun=7), and start/end times.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `manage_users` permission.
+
+  **Body fields:**
+  - `shift_name` (required) — descriptive shift name
+  - `start_time`, `end_time` — HH:MM format
+  - `days` — array of weekday numbers (1–7)
+
+  **Used in:**
+  - `src/components/team/AddShiftModal.tsx` — "Create Shift" form in the Team & Crew section
+}

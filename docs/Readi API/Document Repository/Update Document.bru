@@ -26,3 +26,12 @@ body:json {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Updates document metadata (title, type, description, linked system/component).
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_repository` permission.
+
+  **Used in:**
+  - `src/components/document-repository/DocumentModal.tsx` — "Edit Document" form
+}

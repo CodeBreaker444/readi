@@ -24,3 +24,16 @@ body:json {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Assigns the same pilot to multiple operations in a single request. Used for bulk assignment when scheduling a batch of planned missions.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_operations` permission.
+
+  **Body fields:**
+  - `mission_ids` (required) — array of operation IDs
+  - `pilot_id` (required) — user ID of pilot to assign
+
+  **Used in:**
+  - `src/app/operations/table/page.tsx` — "Set Pilot" dialog in the Operations Table batch actions toolbar
+}

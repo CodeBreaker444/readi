@@ -17,3 +17,12 @@ params:path {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Returns a single checklist with all its items/questions for rendering a fillable checklist form.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_operations` or `view_planning` permission.
+
+  **Used in:**
+  - `src/app/organization/checklists/page.tsx` — checklist detail/edit view
+}

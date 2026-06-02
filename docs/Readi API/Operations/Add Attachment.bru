@@ -22,3 +22,19 @@ body:multipart-form {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Uploads a file attachment to an operation. Files are stored in S3.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_operations` permission.
+
+  **Path params:**
+  - `:id` — operation ID
+
+  **Body (multipart/form-data):**
+  - `file` (required) — file to attach
+  - `description` (optional) — label for the attachment
+
+  **Used in:**
+  - `src/components/operation/` — file upload input in the Attachments tab
+}

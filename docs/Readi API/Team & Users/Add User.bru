@@ -36,9 +36,20 @@ settings {
 }
 
 docs {
-  Create a new user. Requires `manage_users`. SUPERADMIN must include `owner_id`.
-  
-  user_type roles: SUPERADMIN | ADMIN | PIC | OPM | SM | AM | CMM | RM | TM | DC | SLA
+  **Purpose:** Creates a new user account and sends an activation email. The user must activate their account to log in. If Control Center access is enabled for the organization, a CC token can be issued immediately after creation.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `manage_users` permission.
+
+  **Body fields:**
+  - `username`, `fullname`, `email` (required)
+  - `phone`, `timezone` — contact / locale
+  - `profile` — profile/permission set ID
+  - `user_type` — role: SUPERADMIN | ADMIN | PIC | OPM | SM | AM | CMM | RM | TM | DC | SLA
+  - `fk_client_id` — link to a client for CLIENT role users
+  - `owner_id` (SUPERADMIN only) — target organization
+
+  **Used in:**
+  - `src/components/user/UserManagement.tsx` — "Add User" form in Team Management
 }
 
 example {

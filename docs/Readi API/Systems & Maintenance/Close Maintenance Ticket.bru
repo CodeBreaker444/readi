@@ -25,3 +25,12 @@ body:json {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Closes a maintenance ticket, marking the issue as resolved. Records resolution notes and completion timestamp.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_config` permission.
+
+  **Used in:**
+  - `src/components/system/useMaintenance.tsx` — "Close Ticket" action with resolution notes
+}

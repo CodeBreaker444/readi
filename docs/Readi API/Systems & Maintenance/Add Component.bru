@@ -28,3 +28,12 @@ body:json {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Adds a new component to a drone system (e.g. attaches a battery or camera). Links the component to a specific system.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_config` permission.
+
+  **Used in:**
+  - `src/components/system/ToolDetailModal.tsx` — "Add Component" form in the Components tab
+}

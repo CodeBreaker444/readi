@@ -28,3 +28,12 @@ body:json {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Uploads a new revision of an existing document. Creates a new revision entry and increments the version number.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_repository` permission.
+
+  **Used in:**
+  - `src/app/document-repository/page.tsx` — "Upload New Revision" action on document items
+}

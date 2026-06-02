@@ -21,3 +21,12 @@ body:json {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Permanently deletes a compliance audit plan record.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_compliance` permission.
+
+  **Used in:**
+  - `src/app/compliance/general-audit-plan/page.tsx` — delete confirmation on audit plan records
+}

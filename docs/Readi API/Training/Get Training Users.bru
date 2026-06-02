@@ -13,3 +13,12 @@ get {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Returns all users eligible to be enrolled in training sessions (active team members with the OPERATOR or ADMIN role).
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_training` permission.
+
+  **Used in:**
+  - `src/app/training/courses/page.tsx` — populates the user dropdown when adding participants to a training session
+}

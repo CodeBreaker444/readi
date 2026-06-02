@@ -13,3 +13,12 @@ get {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Returns training events formatted for calendar display. Each event includes training name, date, duration, and enrolled user count for use in monthly/weekly calendar views.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_training` permission.
+
+  **Used in:**
+  - `src/app/training/calendar/page.tsx` — Training Calendar page; loads events on mount and renders them in FullCalendar
+}

@@ -15,5 +15,14 @@ settings {
 }
 
 docs {
-  List clients. Requires `view_client`, `view_config`, or `view_planning`.
+  **Purpose:** Returns all clients for the authenticated organization. Used as a reference list when creating operations, evaluations, or user accounts that need to be linked to a client.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_client`, `view_config`, or `view_planning` permission.
+
+  **Used in:**
+  - `src/components/team/ClientManagement.tsx` — Client Management table; loads client list on mount
+  - `src/components/user/UserManagement.tsx` — User Management; populates client dropdown when adding/editing users
+  - `src/components/planning/EvaluationForm.tsx` — Evaluation creation form; populates the client selector
+  - `src/app/systems/map/page.tsx` — Systems map page; filters systems by client
+  - `src/app/systems/manage/page.tsx` — Systems management page; loads client list for system assignment
 }

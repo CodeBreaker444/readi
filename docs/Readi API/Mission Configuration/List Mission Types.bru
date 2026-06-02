@@ -13,3 +13,13 @@ get {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Returns all mission type definitions configured for the organization (e.g. INSPECTION, PATROL, SURVEY). Used as reference data when creating or filtering operations.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_operations` or `view_planning` permission.
+
+  **Used in:**
+  - `src/app/mission/type/page.tsx` — Mission Types configuration page; loads the full list on mount
+  - `src/components/operation/AddOperationModal.tsx` — populates the mission type dropdown when creating an operation
+}

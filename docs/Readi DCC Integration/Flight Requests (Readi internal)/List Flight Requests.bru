@@ -26,4 +26,10 @@ settings {
 
 docs {
   Returns all flight requests. status can be ALL or a specific status value. Requires view_planning_advanced permission.
+
+
+**Auth:** Session cookie (`readi_auth_token`). Requires `view_planning_advanced` permission.
+
+  **Used in:**
+  - `src/components/operation/FlightRequestsTable.tsx` — main Flight Requests table; loads on mount and filter change
 }

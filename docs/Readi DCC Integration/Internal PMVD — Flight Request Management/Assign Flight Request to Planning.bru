@@ -28,4 +28,10 @@ settings {
 docs {
   Assigns a DCC flight request to a PMVD planning mission. Triggers DCC acceptance callback automatically.
   planning_id is optional â€” omit to acknowledge without assigning.
+
+
+**Auth:** Session cookie (`readi_auth_token`). Requires `view_planning_advanced` permission.
+
+  **Used in:**
+  - `src/components/operation/FlightRequestsTable.tsx` — "Assign to Planning" action on flight requests
 }

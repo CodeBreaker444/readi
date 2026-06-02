@@ -19,5 +19,14 @@ settings {
 }
 
 docs {
-  Delete an operation. Requires session.
+  **Purpose:** Permanently deletes an operation. If DCC integration is active, triggers a cancellation callback for the associated mission.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_operations` permission.
+
+  **Path params:**
+  - `:id` — operation ID to delete
+
+  **Used in:**
+  - `src/app/operations/table/page.tsx` — bulk delete selected operations
+  - `src/components/operation/DeleteOperationDialog.tsx` — delete confirmation dialog on the calendar view
 }

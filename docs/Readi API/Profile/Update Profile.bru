@@ -23,7 +23,21 @@ settings {
 }
 
 docs {
-  Update current user's profile. Multipart form data. Avatar: JPEG, PNG, WebP, GIF (max 10MB).
+  **Purpose:** Updates the authenticated user's profile fields. Accepts multipart/form-data to allow simultaneous avatar image upload alongside text fields. Avatar is stored in S3 and the public URL is returned.
+
+  **Auth:** Session cookie (`readi_auth_token`).
+
+  **Body (multipart/form-data):**
+  - `fullname` — display name
+  - `email` — email address
+  - `phone` — phone number
+  - `timezone` — IANA timezone (e.g. `IST`, `Europe/Rome`)
+  - `avatar` — image file (JPEG, PNG, WebP, GIF — max 10 MB)
+
+  **Used in:**
+  - `src/components/ProfileModal.tsx` — save button in top-bar profile modal
+  - `src/components/profile/ProfilePage.tsx` — save button on full profile settings page
+  - `src/components/profile/ClientProfilePage.tsx` — save button on client portal profile page
 }
 
 example {

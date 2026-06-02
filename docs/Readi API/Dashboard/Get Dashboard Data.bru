@@ -19,5 +19,13 @@ settings {
 }
 
 docs {
-  Get dashboard data by ID. Requires `view_dashboard` or `view_pilot_dashboard`.
+  **Purpose:** Returns the main dashboard summary data for a specific owner/organization. Includes active operations count, fleet status, upcoming missions, and key performance metrics.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_dashboard` or `view_pilot_dashboard` permission.
+
+  **Path params:**
+  - `:id` — dashboard context ID (e.g. `main` for the primary org dashboard, or an owner ID for SUPERADMIN cross-org view)
+
+  **Used in:**
+  - `src/components/dashboard/DashboardClient.tsx` — main dashboard page; fetches on load and when the selected owner changes
 }

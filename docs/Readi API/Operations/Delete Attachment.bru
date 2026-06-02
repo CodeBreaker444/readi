@@ -18,3 +18,16 @@ params:path {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Permanently deletes an attachment and removes the file from S3.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_operations` permission.
+
+  **Path params:**
+  - `:id` — operation ID
+  - `:attachmentId` — attachment ID to delete
+
+  **Used in:**
+  - `src/components/operation/` — delete button on attachment items
+}

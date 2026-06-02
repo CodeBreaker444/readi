@@ -15,5 +15,11 @@ settings {
 }
 
 docs {
-  Get filter options (pilots, types, categories). Requires `view_operations`.
+  **Purpose:** Returns dropdown options needed to create or filter operations: list of active pilots, drone systems, mission types, categories, and statuses.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_operations` permission.
+
+  **Used in:**
+  - `src/components/operation/AddOperationModal.tsx` — populates all dropdowns when the add-operation modal opens
+  - `src/app/operations/table/page.tsx` — populates filter dropdowns in the Operations Table view
 }

@@ -26,4 +26,12 @@ settings {
 
 docs {
   Sent by PMVD to DCC with the GUTMA flight log URI after the mission ends.
+
+
+**Caller:** Readi server — automatically triggered when a flight log is pushed via POST /api/planning/flight-requests/logs with action=push.
+
+  **Target:** DCC server at `{dcc_base_url}/dcc/missions/{missionId}/logging`
+
+  **Body fields:**
+  - `uri` — presigned URL to the archived GUTMA flight log in S3
 }

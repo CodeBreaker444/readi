@@ -25,3 +25,16 @@ body:json {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Updates an existing compliance audit plan fields such as status, actual completion date, and notes.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_compliance` permission.
+
+  **Body fields:**
+  - `plan_id` (required) — audit plan to update
+  - `status`, `actual_date`, `auditor`, `scope` — fields to update
+
+  **Used in:**
+  - `src/app/compliance/general-audit-plan/page.tsx` — "Edit" form for audit plan records
+}

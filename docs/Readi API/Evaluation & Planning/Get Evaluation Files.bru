@@ -17,3 +17,12 @@ params:path {
 settings {
   encodeUrl: true
 }
+
+docs {
+  **Purpose:** Returns files attached to an evaluation request (documents, site surveys, maps).
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_planning_advanced` permission.
+
+  **Used in:**
+  - `src/components/planning/RepositoryFilesCard.tsx` — files tab in evaluation detail
+}
