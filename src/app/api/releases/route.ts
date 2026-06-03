@@ -9,7 +9,7 @@ export const GET = async () => {
     const session = await getUserSession();
     if (!session) return unauthorized(E.AU001);
 
-    if (session.user.role !== 'SUPERADMIN') {
+    if (session.user.role !== 'SUPERADMIN' && session.user.role !== 'ADMIN') {
       return forbidden(E.PX004);
     }
 
