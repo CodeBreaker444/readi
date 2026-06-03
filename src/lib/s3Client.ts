@@ -7,19 +7,32 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
- 
-const BUCKET   = env.AWS_BUCKET_NAME!;
-const REGION   = env.AWS_REGION!;
+export const BUCKET = env.AWS_BUCKET_NAME ?? '';
+export const REGION = env.AWS_REGION ?? '';
 
-if (!BUCKET || !REGION) {
-  throw new Error('Missing AWS_BUCKET_NAME or AWS_REGION in environment variables');
+// Lazy singleton — defer validation until first use so missing S3 env vars
+// don't crash unrelated routes at cold-start module evaluation time.
+let _s3: S3Client | null = null;
+
+function getS3(): S3Client {
+  if (_s3) return _s3;
+  if (!BUCKET || !REGION) {
+    throw new Error('Missing AWS_BUCKET_NAME or AWS_REGION in environment variables');
+  }
+  _s3 = new S3Client({
+    region: REGION,
+    credentials: {
+      accessKeyId: env.AWS_ACCESS_KEY_ID!,
+      secretAccessKey: env.AWS_SECRET_ACCESS_KEY!,
+    },
+  });
+  return _s3;
 }
 
-export const s3 = new S3Client({
-  region: REGION,
-  credentials: {
-    accessKeyId:     env.AWS_ACCESS_KEY_ID!,
-    secretAccessKey: env.AWS_SECRET_ACCESS_KEY!,
+// Exported for any callers that hold a direct reference to the client
+export const s3: S3Client = new Proxy({} as S3Client, {
+  get(_target, prop) {
+    return (getS3() as any)[prop];
   },
 });
 
@@ -60,15 +73,10 @@ export async function getPresignedUploadUrl(
     Key:         key,
     ContentType: contentType,
   });
-  return getSignedUrl(s3, command, { expiresIn });
+  return getSignedUrl(getS3(), command, { expiresIn });
 }
 
 
-/**
- *
- * @param key       S3 object key
- * @param expiresIn Seconds until URL expires (default 15 min)
- */
 export async function getPresignedDownloadUrl(
   key: string,
   expiresIn = 900,
@@ -81,22 +89,18 @@ export async function getPresignedDownloadUrl(
       ResponseContentDisposition: `attachment; filename="${encodeURIComponent(fileName)}"`,
     }),
   });
-  return getSignedUrl(s3, command, { expiresIn });
+  return getSignedUrl(getS3(), command, { expiresIn });
 }
 
- 
-/**
- * Upload a File/Buffer directly from the server to S3.
- * 
- */
+
 export async function uploadFileToS3(
   key: string,
   file: File,
 ): Promise<void> {
   const buffer = Buffer.from(await file.arrayBuffer());
- const contentType = file.type || 'application/octet-stream';
+  const contentType = file.type || 'application/octet-stream';
 
-  await s3.send(
+  await getS3().send(
     new PutObjectCommand({
       Bucket:      BUCKET,
       Key:         key,
@@ -110,7 +114,5 @@ export async function uploadFileToS3(
 
 
 export async function deleteFileFromS3(key: string): Promise<void> {
-  await s3.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key }));
+  await getS3().send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key }));
 }
-
-export { BUCKET, REGION };
