@@ -316,8 +316,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
 
   const filteredConfigurationItems = isClientRole ? [] : configurationItems
     .map((configItem) => {
-      // Hide Company section for non-superadmins (use stable href, not translated name)
-      if (configItem.href === '/company' && role !== 'SUPERADMIN') {
+      // Hide Company and Release Logs sections for non-superadmins
+      if ((configItem.href === '/company' || configItem.href === '/releases') && role !== 'SUPERADMIN') {
         return null;
       }
 
