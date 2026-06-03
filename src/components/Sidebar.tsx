@@ -812,6 +812,42 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
         }
       `}</style>
 
+      {/* Release Logs — SUPERADMIN only */}
+      {role === 'SUPERADMIN' && (
+        <div className={`shrink-0 border-t ${isDark ? 'border-slate-800' : 'border-slate-100'} ${isCollapsed ? 'px-2 py-2' : 'px-3 py-2'}`}>
+          {isCollapsed ? (
+            <button
+              title="Release Logs"
+              onClick={() => { setActiveItem('/releases'); router.push('/releases'); }}
+              className={`w-full flex justify-center items-center p-2 rounded-lg transition-all duration-150 ${
+                activeItem === '/releases'
+                  ? isDark ? 'bg-amber-500/10 text-amber-400' : 'bg-amber-50 text-amber-600'
+                  : isDark ? 'text-slate-500 hover:bg-slate-800 hover:text-slate-300' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'
+              }`}
+            >
+              <HiOutlineDocumentText size={16} />
+            </button>
+          ) : (
+            <a
+              href="/releases"
+              onClick={(e) => { e.preventDefault(); setActiveItem('/releases'); router.push('/releases'); }}
+              className={`flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all duration-150 cursor-pointer ${
+                activeItem === '/releases'
+                  ? isDark ? 'bg-amber-500/10 text-amber-400' : 'bg-amber-50 text-amber-600'
+                  : isDark ? 'text-slate-500 hover:bg-slate-800 hover:text-slate-300' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'
+              }`}
+              style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}
+            >
+              <HiOutlineDocumentText size={15} className="shrink-0" />
+              <span style={{ fontSize: '0.72rem', fontWeight: 500 }}>Release Logs</span>
+              <span className={`ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
+                isDark ? 'bg-amber-500/15 text-amber-400' : 'bg-amber-100 text-amber-600'
+              }`}>v1.0</span>
+            </a>
+          )}
+        </div>
+      )}
+
       {/* User section at bottom */}
       <div
         ref={userMenuRef}

@@ -198,6 +198,7 @@
     "client": "Cliente",
     "company": "Azienda",
     "companyDirectory": "Directory aziendale",
+    "releaseLogs": "Log delle versioni",
     "securityApiKeys": "Sicurezza e chiavi API",
     "integrations": "Integrazioni",
     "configuration": "Configurazione",

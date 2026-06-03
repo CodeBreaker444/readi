@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
       return zodError(E.VL001, parsed.error);
     }
 
-    // Resolve flight_request → planning_id → pilot_mission_id
+    // Resolve flight_request to planning_id to pilot_mission_id
     const fr = await getFlightRequestById(parsed.data.request_id, session!.user.ownerId);
 
     if (!fr) return apiError(E.NF021, 404);

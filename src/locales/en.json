@@ -198,6 +198,7 @@
     "client": "Client",
     "company": "Company",
     "companyDirectory": "Company Directory",
+    "releaseLogs": "Release Logs",
     "securityApiKeys": "Security & API Keys",
     "integrations": "Integrations",
     "configuration": "Configuration",
