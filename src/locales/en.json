@@ -46,7 +46,7 @@
     "unexpectedLogoutError": "An unexpected error occurred. Please try again."
   },
   "chat": {
-    "title": "READI AI Agent",
+    "title": "ReADI AI Agent",
     "howCanIHelp": "How can I help you?",
     "placeholder": "Type a message…",
     "placeholderAs": "Ask as {{name}}…",
@@ -198,6 +198,7 @@
     "client": "Client",
     "company": "Company",
     "companyDirectory": "Company Directory",
+    "releaseLogs": "Release Logs",
     "securityApiKeys": "Security & API Keys",
     "integrations": "Integrations",
     "configuration": "Configuration",

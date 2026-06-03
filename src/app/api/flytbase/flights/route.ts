@@ -2,6 +2,7 @@ import {
   fetchLatestFlights,
   fetchRecentFlights,
   getFlytbaseCredentials,
+  getFlytbaseCredentialsForCompany,
 } from '@/backend/services/integrations/flytbase-service';
 import { requireAuth } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
@@ -11,7 +12,9 @@ export async function GET(req: NextRequest) {
     const { session, error } = await requireAuth();
     if (error) return error;
 
-    const creds = await getFlytbaseCredentials(session!.user.userId);
+    const creds =
+      (await getFlytbaseCredentials(session!.user.userId)) ??
+      (await getFlytbaseCredentialsForCompany(session!.user.ownerId, session!.user.userId));
     if (!creds) {
       return NextResponse.json(
         { success: false, message: 'No FlytBase integration configured. Please add your API token first.' },

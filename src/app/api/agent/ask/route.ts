@@ -89,7 +89,7 @@ async function handleDatabase(
     const pickerRes = await groq.chat.completions.create({
         model: GROQ_MODEL,
         temperature: 0,
-        max_tokens: 30,
+        max_tokens: 60,
         messages: [{ role: "user", content: tablePickerPrompt }],
     });
 
@@ -119,11 +119,22 @@ async function handleDatabase(
                             ${userIdNote ? `Role Access Rules: ${userIdNote}\n` : ""}
 
                             Planning Rules:
+                            - Use aggregation "COUNT" when the question asks "how many", "count", or a number of records.
+                            - Use aggregation "LIST" when the question asks to show, list, or detail records.
+                            - Set date_filter to null for all-time questions (e.g. "total", "ever", "all", "completed").
+                            - Set date_filter.range to "today" for "today" questions.
+                            - Set date_filter.range to "this_week" for "recent" or "this week" questions.
+                            - Set date_filter.range to "this_month" for "this month" questions.
+                            - Set date_filter.range to "this_year" for "this year" or "annual" questions.
+                            - Set date_filter.range to "last_month" for "last month" questions.
+                            - Set extra_filter to null unless the question asks for a specific status, type, or severity.
                             - MANDATORY: Always set "extra_filter" to null for compliance audits.
-                            - For compliance/audit: set aggregation: "LIST".
-                            - For "recent": set date_filter.range to "this_week".
+                            - For "last", "most recent", "latest" questions: set order_by to the primary date column desc and row_limit to 1.
+                            - For "first" questions: set order_by to the primary date column asc and row_limit to 1.
+                            - For list/show questions without "last"/"first": leave order_by null and row_limit null (default 15 applies).
 
-                            Output format: {"table":"${table}","select_columns":["*"],"aggregation":"LIST","date_filter":{"column":"${table === 'pilot_mission' ? 'scheduled_start' : 'created_at'}","range":"this_week"},"extra_filter":null}
+                            Output format (replace placeholders with actual values):
+                            {"table":"${table}","select_columns":["*"],"aggregation":"<COUNT or LIST>","date_filter":<null or {"column":"<col>","range":"<today|this_week|this_month|this_year|last_month>"}>,"extra_filter":<null or {"column":"<col>","value":"<val}">>,"order_by":<null or {"column":"<col>","direction":"<asc|desc}">>,"row_limit":<null or number>}
 
                             Question: "${question}"
                             Output ONLY valid JSON.`;
@@ -281,13 +292,20 @@ export async function POST(req: NextRequest) {
             webResult = await handleWebSearch(question);
         }
 
+        // Cap data fed to synthesizer to stay within Groq's 12k TPM limit
+        const MAX_DATA_CHARS = 8_000;
+        const rawData = dbResult?.data || "No data found.";
+        const cappedData = typeof rawData === "string" && rawData.length > MAX_DATA_CHARS
+            ? rawData.slice(0, MAX_DATA_CHARS) + "\n... [data truncated for length]"
+            : rawData;
+
         const synthesizerPrompt = `You are the READI Compliance Auditor. Be CONCISE and DIRECT.
 
                                     USER ROLE: ${user.role}
                                     QUESTION: "${question}"
 
                                     PLATFORM DATA (EVIDENCE):
-                                    ${dbResult?.data || "No data found."}
+                                    ${cappedData}
 
                                     COMPANY PROCEDURES (THE LAW):
                                     ${procResult || "No specific rules found."}
@@ -313,7 +331,7 @@ export async function POST(req: NextRequest) {
         const finalRes = await groq.chat.completions.create({
             model: GROQ_MODEL,
             temperature: 0,
-            max_tokens: 300,
+            max_tokens: 700,
             messages: [{ role: "user", content: synthesizerPrompt }],
         });
 

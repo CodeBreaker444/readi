@@ -64,7 +64,7 @@ function extractModel(rawModel: Record<string, unknown> | null): MaintenanceMode
 export async function getMaintenanceDashboard(
   params: MaintenanceDashboardQuery
 ): Promise<MaintenanceDrone[]> {
-  const { owner_id, threshold_alert } = params;
+  const { owner_id, client_id, threshold_alert } = params;
 
 let toolQuery = supabase
   .from("tool")
@@ -85,6 +85,7 @@ let toolQuery = supabase
   .eq("tool_active", "Y");
 
   if (owner_id > 0) toolQuery = toolQuery.eq("fk_owner_id", owner_id);
+  if (client_id > 0) toolQuery = toolQuery.eq("assigned_client_id", client_id);
 
   const { data: rawTools, error: toolError } = await toolQuery;
   if (toolError) throw new Error(`Tools fetch failed: ${toolError.message}`);
