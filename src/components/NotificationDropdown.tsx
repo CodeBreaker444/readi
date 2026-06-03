@@ -1,18 +1,19 @@
 'use client';
 
-import { NotificationToast } from '@/components/notifications/NotificationToast';
+import { GroupedNotificationToast, type GroupedToast } from '@/components/notifications/GroupedNotificationToast';
 import type { Notification } from '@/config/types/notification';
 import { Bell, BellOff, CheckCheck, Loader2 } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import {
+  HiOutlineAdjustments,
   HiOutlineBell,
   HiOutlineInformationCircle,
   HiOutlinePaperAirplane,
   HiOutlineUsers,
-  HiOutlineAdjustments,
 } from 'react-icons/hi';
 
 
@@ -53,7 +54,6 @@ function timeAgo(dateStr: string): string {
 
 const POLL_INTERVAL = 10_000;
 
-// ─── Component ────────────────────────────────────────────────────────────────
 
 interface NotificationDropdownProps { isDark: boolean }
 
@@ -64,7 +64,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isDark }) =
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading]         = useState(false);
   const [markingAll, setMarkingAll]   = useState(false);
-  const [toasts, setToasts]           = useState<Notification[]>([]);
+  const [groupedToasts, setGroupedToasts] = useState<GroupedToast[]>([]);
   const dropdownRef     = useRef<HTMLDivElement>(null);
   const knownIdsRef     = useRef<Set<number> | null>(null);
   const lastFullFetchRef = useRef<number>(0);
@@ -111,7 +111,23 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isDark }) =
           const newNotifs = incoming.filter((n) => !knownIdsRef.current!.has(n.notification_id));
           if (newNotifs.length > 0) {
             newNotifs.forEach((n) => knownIdsRef.current!.add(n.notification_id));
-            setToasts((prev) => [...prev, ...newNotifs]);
+
+            // Group into one toast per category instead of one per notification
+            const catMap: Record<string, Notification[]> = {};
+            for (const n of newNotifs) {
+              const cat = normalizeCategory(n.procedure_name);
+              if (!catMap[cat]) catMap[cat] = [];
+              catMap[cat].push(n);
+            }
+            const batched: GroupedToast[] = Object.entries(catMap).map(([cat, notifs]) => ({
+              id: `${cat}-${Date.now()}-${Math.random()}`,
+              category: cat,
+              count: notifs.length,
+              latestMessage: notifs[0].message,
+              tabKey: CATEGORY_CONFIG[cat]?.tabKey ?? 'all',
+            }));
+            setGroupedToasts((prev) => [...prev, ...batched]);
+
             setNotifications((prev) => {
               const existingIds = new Set(prev.map((n) => n.notification_id));
               const fresh = newNotifs.filter((n) => !existingIds.has(n.notification_id));
@@ -159,20 +175,30 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isDark }) =
     finally { setMarkingAll(false); }
   };
 
-  // ── Group notifications by category ──
-  const grouped = useMemo(() => {
-    const map: Record<string, { unread: number; total: number; latest: Notification; key: string }> = {};
-    for (const n of notifications) {
-      const key = normalizeCategory(n.procedure_name);
-      if (!map[key]) map[key] = { unread: 0, total: 0, latest: n, key };
-      map[key].total++;
-      if (n.is_read === 'N') map[key].unread++;
-    }
-    return Object.values(map).sort((a, b) => b.unread - a.unread);
-  }, [notifications]);
+  const recentFive = useMemo(() => notifications.slice(0, 5), [notifications]);
 
-  const dismissToast = (id: number) =>
-    setToasts((prev) => prev.filter((t) => t.notification_id !== id));
+  const handleMarkRead = async (notif: Notification, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (notif.is_read === 'Y') return;
+    setNotifications((prev) =>
+      prev.map((n) =>
+        n.notification_id === notif.notification_id
+          ? { ...n, is_read: 'Y', read_at: new Date().toISOString() }
+          : n
+      )
+    );
+    setUnreadCount((c) => Math.max(0, c - 1));
+    try {
+      await fetch('/api/notification/mark-read', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notification_id: notif.notification_id }),
+      });
+    } catch { fetchNotifications(true); }
+  };
+
+  const dismissGroupedToast = (id: string) =>
+    setGroupedToasts((prev) => prev.filter((t) => t.id !== id));
 
   const bg     = isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200';
   const subtext = isDark ? 'text-gray-400' : 'text-gray-500';
@@ -228,68 +254,96 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isDark }) =
               )}
             </div>
 
-            {/* Group cards */}
+            {/* Recent 5 notifications */}
             <div className="overflow-y-auto flex-1">
               {loading ? (
-                <div className="flex items-center justify-center py-10">
-                  <Loader2 size={22} className={`animate-spin ${subtext}`} />
-                </div>
-              ) : grouped.length === 0 ? (
+                <ul>
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <li
+                      key={i}
+                      className={`flex items-start gap-3 px-4 py-3 ${
+                        i !== 0 ? `border-t ${divider}` : ''
+                      }`}
+                    >
+                      <Skeleton className="mt-0.5 w-7 h-7 rounded-lg shrink-0" />
+                      <div className="flex-1 space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <Skeleton className="h-3.5 w-20 rounded" />
+                          <Skeleton className="h-3 w-8 rounded" />
+                        </div>
+                        <Skeleton className="h-3 w-full rounded" />
+                        <Skeleton className="h-3 w-2/3 rounded" />
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : recentFive.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-10 gap-2">
                   <BellOff size={28} className={subtext} />
                   <p className={`text-sm ${subtext}`}>{t('notifications.empty')}</p>
                 </div>
               ) : (
-                <div className="p-2 space-y-1.5">
-                  {grouped.map((group) => {
-                    const cfg = CATEGORY_CONFIG[group.key] ?? CATEGORY_CONFIG.OTHER;
-                    const Icon = cfg.icon;
+                <ul>
+                  {recentFive.map((notif, idx) => {
+                    const isUnread = notif.is_read === 'N';
+                    const cfg = CATEGORY_CONFIG[normalizeCategory(notif.procedure_name)] ?? CATEGORY_CONFIG.OTHER;
+                    const CatIcon = cfg.icon;
                     return (
-                      <Link
-                        key={group.key}
-                        href={`/notifications?tab=${cfg.tabKey}`}
-                        onClick={() => setIsOpen(false)}
-                        className={`flex items-center gap-3 px-3 py-3 rounded-xl border transition-all cursor-pointer ${
-                          isDark
-                            ? 'hover:bg-slate-700/60 border-slate-700/50 hover:border-slate-600'
-                            : 'hover:bg-slate-50 border-slate-100 hover:border-slate-200'
-                        }`}
+                      <li
+                        key={notif.notification_id}
+                        className={`relative flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors ${
+                          idx !== 0 ? `border-t ${divider}` : ''
+                        } ${isDark ? 'hover:bg-slate-700/50' : 'hover:bg-slate-50'}`}
+                        onClick={() => handleMarkRead(notif)}
                       >
-                        {/* Icon */}
-                        <span className={`shrink-0 p-2.5 rounded-xl ${cfg.bg}`}>
-                          <Icon size={16} className={cfg.text} />
+                        {/* Unread dot */}
+                        {isUnread && (
+                          <span className="absolute left-1.5 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-blue-500 rounded-full shrink-0" />
+                        )}
+
+                        {/* Category icon */}
+                        <span className={`mt-0.5 shrink-0 p-1.5 rounded-lg ${cfg.bg}`}>
+                          <CatIcon size={13} className={cfg.text} />
                         </span>
 
-                        {/* Info */}
+                        {/* Content */}
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className={`text-[13px] font-semibold ${isDark ? 'text-white' : 'text-slate-800'}`}>
+                          <div className="flex items-center gap-1.5 mb-0.5">
+                            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${cfg.bg} ${cfg.text}`}>
                               {cfg.label}
                             </span>
-                            {group.unread > 0 && (
-                              <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
-                                {group.unread} new
-                              </span>
-                            )}
+                            <span className={`text-[10px] ml-auto ${subtext}`}>
+                              {timeAgo(notif.created_at)}
+                            </span>
                           </div>
-                          <p className={`text-[11px] mt-0.5 leading-snug line-clamp-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                            {group.latest.message}
+                          <p className={`text-xs leading-snug line-clamp-2 ${
+                            isUnread
+                              ? isDark ? 'text-white font-medium' : 'text-gray-900 font-medium'
+                              : subtext
+                          }`}>
+                            {notif.message}
                           </p>
+                          {notif.sender_fullname && (
+                            <p className={`text-[10px] mt-0.5 ${subtext}`}>{notif.sender_fullname}</p>
+                          )}
                         </div>
 
-                        {/* Total count + time */}
-                        <div className="shrink-0 text-right">
-                          <p className={`text-[11px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                            {group.total} total
-                          </p>
-                          <p className={`text-[10px] ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>
-                            {timeAgo(group.latest.created_at)}
-                          </p>
-                        </div>
-                      </Link>
+                        {/* Mark-read button */}
+                        {isUnread && (
+                          <button
+                            title={t('notifications.markAsRead')}
+                            onClick={(e) => handleMarkRead(notif, e)}
+                            className={`shrink-0 mt-0.5 p-1 rounded cursor-pointer transition-colors ${
+                              isDark ? 'hover:bg-slate-600 text-slate-400' : 'hover:bg-gray-200 text-gray-500'
+                            }`}
+                          >
+                            <CheckCheck size={12} />
+                          </button>
+                        )}
+                      </li>
                     );
                   })}
-                </div>
+                </ul>
               )}
             </div>
 
@@ -298,29 +352,29 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isDark }) =
               <Link
                 href="/notifications"
                 onClick={() => setIsOpen(false)}
-                className={`flex items-center justify-center gap-1.5 text-sm font-medium py-3 transition-colors cursor-pointer ${
+                className={`flex items-center justify-center gap-2 text-xs font-semibold py-3 transition-colors cursor-pointer ${
                   isDark
-                    ? 'text-blue-400 hover:text-blue-300 hover:bg-slate-700'
-                    : 'text-blue-600 hover:text-blue-700 hover:bg-gray-50'
+                    ? 'text-blue-400 hover:text-blue-300 hover:bg-slate-700/50'
+                    : 'text-blue-600 hover:text-blue-700 hover:bg-blue-50/60'
                 }`}
               >
-                {t('notifications.viewAll')}
+                <Bell size={12} />
+                {t('notifications.viewAll')} ({unreadCount > 0 ? `${unreadCount} unread` : 'all read'})
               </Link>
             </div>
           </div>
         )}
       </div>
 
-      {/* Toasts */}
-      {toasts.length > 0 &&
+      {groupedToasts.length > 0 &&
         createPortal(
           <div className="fixed top-6 right-6 z-9999 flex flex-col gap-2 items-end pointer-events-none">
-            {toasts.map((notif) => (
-              <div key={notif.notification_id} className="pointer-events-auto">
-                <NotificationToast
-                  notification={notif}
+            {groupedToasts.map((toast) => (
+              <div key={toast.id} className="pointer-events-auto">
+                <GroupedNotificationToast
+                  toast={toast}
                   isDark={isDark}
-                  onDismiss={() => dismissToast(notif.notification_id)}
+                  onDismiss={() => dismissGroupedToast(toast.id)}
                 />
               </div>
             ))}
