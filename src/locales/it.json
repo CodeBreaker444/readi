@@ -46,7 +46,7 @@
     "unexpectedLogoutError": "Si e verificato un errore imprevisto. Riprova."
   },
   "chat": {
-    "title": "Agente AI READI",
+    "title": "Agente AI ReADI",
     "howCanIHelp": "Come posso aiutarti?",
     "placeholder": "Scrivi un messaggio…",
     "placeholderAs": "Chiedi come {{name}}…",

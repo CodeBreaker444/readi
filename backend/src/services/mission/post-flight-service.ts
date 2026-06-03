@@ -42,6 +42,20 @@ export async function updatePostFlightData(
   if (error) throw error;
 }
 
+function computeQualityScore(flags: {
+  incident_flag?: boolean | null;
+  rth_unplanned?: boolean | null;
+  link_loss?: boolean | null;
+  deviation_flag?: boolean | null;
+}): number {
+  let score = 100;
+  if (flags.incident_flag) score -= 30;
+  if (flags.rth_unplanned) score -= 20;
+  if (flags.link_loss) score -= 20;
+  if (flags.deviation_flag) score -= 10;
+  return Math.max(0, score);
+}
+
 export async function upsertMissionResult(
   missionId: number,
   resultTypeId: number,
@@ -51,6 +65,10 @@ export async function upsertMissionResult(
     battery_charge_start?: number | null;
     battery_charge_end?: number | null;
     notes?: string | null;
+    incident_flag?: boolean | null;
+    rth_unplanned?: boolean | null;
+    link_loss?: boolean | null;
+    deviation_flag?: boolean | null;
   }
 ): Promise<void> {
   const { data: resultType } = await supabase
@@ -64,6 +82,12 @@ export async function upsertMissionResult(
     result_type: resultType?.result_type_desc ?? null,
     result_description: metadata.notes ?? null,
     processing_status: 'completed',
+    quality_score: computeQualityScore({
+      incident_flag: metadata.incident_flag,
+      rth_unplanned: metadata.rth_unplanned,
+      link_loss: metadata.link_loss,
+      deviation_flag: metadata.deviation_flag,
+    }),
     result_metadata: {
       flight_duration_min: metadata.flight_duration ?? null,
       distance_flown_m: metadata.distance_flown ?? null,

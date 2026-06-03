@@ -94,6 +94,10 @@ export async function POST(req: NextRequest) {
         battery_charge_start: fields.battery_charge_start ?? null,
         battery_charge_end: fields.battery_charge_end ?? null,
         notes: fields.notes ?? null,
+        incident_flag: fields.incident_flag ?? null,
+        rth_unplanned: fields.rth_unplanned ?? null,
+        link_loss: fields.link_loss ?? null,
+        deviation_flag: fields.deviation_flag ?? null,
       });
     }
 
