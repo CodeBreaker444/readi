@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ code: 0, message: 'flight_id is required' }, { status: 400 });
     }
 
-    await attachFlytbaseFlightLog(missionId, session!.user.userId, flightId);
+    await attachFlytbaseFlightLog(missionId, session!.user.userId, session!.user.ownerId, flightId);
     return NextResponse.json({ code: 1, message: 'Flight log attached from FlytBase' });
   } catch (err: any) {
     console.error('[flight-logs/flytbase] POST error:', err);

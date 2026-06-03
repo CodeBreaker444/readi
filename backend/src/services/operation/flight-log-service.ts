@@ -2,7 +2,7 @@
 
 import { env } from '@/backend/config/env';
 import { supabase } from '@/backend/database/database';
-import { getFlytbaseCredentials } from '@/backend/services/integrations/flytbase-service';
+import { getFlytbaseCredentials, getFlytbaseCredentialsForCompany } from '@/backend/services/integrations/flytbase-service';
 import { BUCKET, getPresignedDownloadUrl, s3 } from '@/lib/s3Client';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 
@@ -80,9 +80,12 @@ export async function uploadManualFlightLog(
 export async function attachFlytbaseFlightLog(
   missionId: number,
   userId: number,
+  ownerId: number,
   flightId: string,
 ): Promise<void> {
-  const creds = await getFlytbaseCredentials(userId);
+  const creds =
+    (await getFlytbaseCredentials(userId)) ??
+    (await getFlytbaseCredentialsForCompany(ownerId, userId));
   if (!creds) throw new Error('No FlytBase integration configured. Please add your API token first.');
 
   const gutmaUrl = `${env.FLYTBASE_URL}/v2/flight/report/download/gutma?${new URLSearchParams({ flightIds: flightId })}`;
