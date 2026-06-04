@@ -568,9 +568,9 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
                 <Input type="date" value={formData.component_purchase_date} onChange={(e) => handleChange('component_purchase_date', e.target.value)} />
               </div>
               <div className="col-span-1 sm:col-span-3">
-                <Label className="pb-2">Expiration Date <span className="text-muted-foreground font-normal">{t('systems.components.common.optional')}</span></Label>
+                <Label className="pb-2">{t('systems.components.addComponent.fields.expirationDate')} <span className="text-muted-foreground font-normal">{t('systems.components.common.optional')}</span></Label>
                 <Input type="date" value={formData.expiration_date} onChange={(e) => handleChange('expiration_date', e.target.value)} />
-                <p className="text-[10px] text-muted-foreground mt-1">Component auto-decommissions on this date</p>
+                <p className="text-[10px] text-muted-foreground mt-1">{t('systems.components.common.autoDecommissionHint')}</p>
               </div>
               <div className="col-span-1 sm:col-span-3">
                 <Label className="pb-2">{t('systems.components.addComponent.fields.vendor')}</Label>

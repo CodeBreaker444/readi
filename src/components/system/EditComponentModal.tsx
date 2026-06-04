@@ -706,9 +706,9 @@ export default function EditComponentModal({
                     <Input type="date" className={inputCls} value={formData.component_purchase_date} onChange={e => handleChange('component_purchase_date', e.target.value)} />
                   </div>
                   <div className="col-span-1 sm:col-span-3">
-                    <Label className={labelCls}>Expiration Date <span className="font-normal opacity-60">{t('systems.components.common.optional')}</span></Label>
+                    <Label className={labelCls}>{t('systems.components.addComponent.fields.expirationDate')} <span className="font-normal opacity-60">{t('systems.components.common.optional')}</span></Label>
                     <Input type="date" className={inputCls} value={formData.expiration_date} onChange={e => handleChange('expiration_date', e.target.value)} />
-                    <p className={`text-[10px] mt-1 ${isDark ? 'text-slate-500' : 'text-muted-foreground'}`}>Component auto-decommissions on this date</p>
+                    <p className={`text-[10px] mt-1 ${isDark ? 'text-slate-500' : 'text-muted-foreground'}`}>{t('systems.components.common.autoDecommissionHint')}</p>
                   </div>
                   <div className="col-span-1 sm:col-span-3">
                     <Label className={labelCls}>{t('systems.components.addComponent.fields.vendor')}</Label>

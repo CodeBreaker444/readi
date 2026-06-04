@@ -4037,6 +4037,7 @@
         "manageClasses": "Gestisci classi",
         "location": "Posizione",
         "locationOptional": "Posizione (opzionale)",
+        "autoDecommissionHint": "Il componente viene automaticamente dismesso in questa data",
         "defaultCounters": {
           "label": "Contatori iniziali",
           "hint": "— per componenti usati, imposta valori > 0",
@@ -4125,7 +4126,8 @@
           "purchaseDate": "Data di acquisto",
           "vendor": "Fornitore",
           "guarantee": "Garanzia (giorni)",
-          "batteryRatio": "Rapporto cicli batteria"
+          "batteryRatio": "Rapporto cicli batteria",
+          "expirationDate": "Data di Scadenza"
         },
         "placeholders": {
           "selectSystem": "Seleziona Sistema",

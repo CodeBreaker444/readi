@@ -3958,6 +3958,7 @@
         "manageClasses": "Klassen verwalten",
         "location": "Standort",
         "locationOptional": "Standort (optional)",
+        "autoDecommissionHint": "Komponente wird an diesem Datum automatisch außer Betrieb genommen",
         "defaultCounters": {
           "label": "Startzähler",
           "hint": "— für gebrauchte Komponenten, Werte > 0 setzen",
@@ -4046,7 +4047,8 @@
           "purchaseDate": "Kaufdatum",
           "vendor": "Lieferant",
           "guarantee": "Garantie (Tage)",
-          "batteryRatio": "Akku-Zyklusverhältnis"
+          "batteryRatio": "Akku-Zyklusverhältnis",
+          "expirationDate": "Ablaufdatum"
         },
         "placeholders": {
           "selectSystem": "System auswählen",

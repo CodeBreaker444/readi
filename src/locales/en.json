@@ -4045,6 +4045,7 @@
         "manageClasses": "Manage classes",
         "location": "Location",
         "locationOptional": "Location (optional)",
+        "autoDecommissionHint": "Component auto-decommissions on this date",
         "defaultCounters": {
           "label": "Starting Counters",
           "hint": "— for used components, set values > 0",
@@ -4133,7 +4134,8 @@
           "purchaseDate": "Purchase Date",
           "vendor": "Vendor",
           "guarantee": "Guarantee (days)",
-          "batteryRatio": "Battery Cycle Ratio"
+          "batteryRatio": "Battery Cycle Ratio",
+          "expirationDate": "Expiration Date"
         },
         "placeholders": {
           "selectSystem": "Select System",
