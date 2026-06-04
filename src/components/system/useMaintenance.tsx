@@ -123,15 +123,35 @@ export function useMaintenanceLogbook() {
     }
   }, [openModal]);
 
-  const handleDroneChange = useCallback(async (toolId: number) => {
+  const handleDroneChange = useCallback(async (toolId: number, ticketType?: string) => {
     setNewTicket((p) => ({ ...p, fk_tool_id: toolId, components: [] }));
     if (!toolId) return;
     try {
-      const { data } = await axios.get(`/api/system/maintenance/lookups?type=components&tool_id=${toolId}`);
+      const typeParam = ticketType ? `&ticket_type=${ticketType}` : '';
+      const { data } = await axios.get(`/api/system/maintenance/lookups?type=components&tool_id=${toolId}${typeParam}`);
       setComponents(data.data);
     } catch (e: any) {
       toast.error(e.response?.data?.message ?? e.message);
     }
+  }, []);
+
+  const handleTicketTypeChange = useCallback(async (ticketType: string) => {
+    setNewTicket((p) => ({ ...p, type: ticketType as typeof p.type, components: [] }));
+    setComponents((prev) => {
+      // Will be replaced by the fetch below; clear immediately so stale list is gone
+      return prev.length ? [] : prev;
+    });
+    setNewTicket((p) => {
+      const toolId = p.fk_tool_id;
+      if (toolId) {
+        const typeParam = `&ticket_type=${ticketType}`;
+        axios
+          .get(`/api/system/maintenance/lookups?type=components&tool_id=${toolId}${typeParam}`)
+          .then(({ data }) => setComponents(data.data))
+          .catch((e: any) => toast.error(e.response?.data?.message ?? e.message));
+      }
+      return p;
+    });
   }, []);
 
   const openCloseModal = useCallback((id: number) => {
@@ -332,6 +352,7 @@ export function useMaintenanceLogbook() {
     loadTickets,
     openNewTicketModal,
     handleDroneChange,
+    handleTicketTypeChange,
     openCloseModal,
     openAssignModal,
     openReportModal,

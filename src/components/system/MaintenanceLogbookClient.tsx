@@ -48,6 +48,7 @@ export default function MaintenanceLogbookClient({ canClose }: Props) {
     loadTickets,
     openNewTicketModal,
     handleDroneChange,
+    handleTicketTypeChange,
     openCloseModal,
     openAssignModal,
     openReportModal,
@@ -188,7 +189,8 @@ export default function MaintenanceLogbookClient({ canClose }: Props) {
         users={users}
         form={newTicket}
         onFormChange={(u) => setNewTicket((p) => ({ ...p, ...u }))}
-        onDroneChange={handleDroneChange}
+        onDroneChange={(toolId) => handleDroneChange(toolId, newTicket.type)}
+        onTicketTypeChange={handleTicketTypeChange}
         onSubmit={handleCreateTicket}
         isDark={isDark}
         loading={modalLoading}

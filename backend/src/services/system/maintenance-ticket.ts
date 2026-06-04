@@ -238,7 +238,7 @@ export async function createTicket(payload: CreateTicketPayload): Promise<number
 export async function closeTicket(payload: CloseTicketPayload): Promise<void> {
   const { data: ticket, error: fetchErr } = await supabase
     .from('maintenance_ticket')
-    .select('ticket_id, fk_tool_id, fk_component_id, ticket_status, fk_owner_id, reported_by_user_id, ticket_title')
+    .select('ticket_id, fk_tool_id, fk_component_id, ticket_status, fk_owner_id, reported_by_user_id, ticket_title, ticket_type')
     .eq('ticket_id', payload.ticket_id)
     .single();
 
@@ -273,7 +273,7 @@ export async function closeTicket(payload: CloseTicketPayload): Promise<void> {
 
   if (maintErr) throw new Error(`closeTicket tool_maintenance insert: ${maintErr.message}`);
 
-  await resetComponentCounters(ticket.fk_tool_id, now.toISOString(), ticket.fk_component_id ?? null);
+  await resetComponentCounters(ticket.fk_tool_id, now.toISOString(), ticket.fk_component_id ?? null, ticket.ticket_type ?? undefined);
 
   await setSystemOperationalStatus(ticket.fk_tool_id, 'OPERATIONAL');
 
@@ -475,18 +475,32 @@ export async function getDroneList(ownerId: number): Promise<DroneOption[]> {
     }));
 }
 
-export async function getComponentList(toolId: number): Promise<ComponentOption[]> {
+export async function getComponentList(toolId: number, ticketType?: string): Promise<ComponentOption[]> {
   await refreshMaintenanceDaysForTool(toolId);
 
   const { data, error } = await supabase
     .from('tool_component')
-    .select('component_id, component_name, component_type, serial_number')
+    .select('component_id, component_name, component_type, serial_number, maintenance_cycle, maintenance_cycle_day')
     .eq('fk_tool_id', toolId)
     .eq('component_active', 'Y');
 
   if (error) throw new Error(`getComponentList: ${error.message}`);
 
-  return (data ?? []).map((row: any) => ({
+  let rows = data ?? [];
+
+  if (ticketType === 'BASIC') {
+    // Basic ticket (every 31 days): only show components with no cycle OR a 31-day day-based cycle.
+    // Components with any other interval stay tied to their system activation date and must not appear here.
+    rows = rows.filter((row: any) => {
+      const cycle = row.maintenance_cycle ?? 'NONE';
+      const cycleDay = Number(row.maintenance_cycle_day ?? 0);
+      if (cycle === 'NONE') return true;
+      if ((cycle === 'DAYS' || cycle === 'MIXED') && cycleDay === 31) return true;
+      return false;
+    });
+  }
+
+  return rows.map((row: any) => ({
     tool_component_id: row.component_id,
     component_type:    row.component_type ?? row.component_name ?? '',
     component_sn:      row.serial_number ?? '',
@@ -612,11 +626,20 @@ async function setAllComponentsOperational(toolId: number): Promise<void> {
 /**
  * Reset component maintenance counters to 0 after a maintenance is completed.
  * Called when a ticket is closed.
+ *
+ * For BASIC tickets: only resets components with no maintenance cycle (NONE) or a
+ * 31-day cycle. Components on any other interval keep their counters intact so they
+ * stay tied to the activation date of their reference system.
  */
-async function resetComponentCounters(toolId: number, resetAt: string, componentId?: number | null): Promise<void> {
+async function resetComponentCounters(
+  toolId: number,
+  resetAt: string,
+  componentId?: number | null,
+  ticketType?: string,
+): Promise<void> {
   let query = supabase
     .from('tool_component')
-    .select('component_id, maintenance_cycle')
+    .select('component_id, maintenance_cycle, maintenance_cycle_day')
     .eq('fk_tool_id', toolId)
     .eq('component_active', 'Y');
 
@@ -625,11 +648,20 @@ async function resetComponentCounters(toolId: number, resetAt: string, component
   }
 
   const { data: components } = await query;
-
   if (!components || components.length === 0) return;
 
+  const eligible = ticketType === 'BASIC'
+    ? components.filter((comp) => {
+        const cycle = comp.maintenance_cycle ?? 'NONE';
+        const cycleDay = Number((comp as any).maintenance_cycle_day ?? 0);
+        if (cycle === 'NONE') return true;
+        if ((cycle === 'DAYS' || cycle === 'MIXED') && cycleDay === 31) return true;
+        return false;
+      })
+    : components;
+
   await Promise.all(
-    components.map((comp) => {
+    eligible.map((comp) => {
       const cycleType = comp.maintenance_cycle ?? 'NONE';
       if (cycleType === 'NONE') return null;
 

@@ -151,7 +151,8 @@ interface NewTicketProps {
   users: UserOption[];
   form: NewTicketForm;
   onFormChange: (updates: Partial<NewTicketForm>) => void;
-  onDroneChange: (toolId: number) => void;
+  onDroneChange: (toolId: number, ticketType?: string) => void;
+  onTicketTypeChange: (ticketType: string) => void;
   onSubmit: () => void;
   isDark?: boolean;
   loading?: boolean;
@@ -159,7 +160,7 @@ interface NewTicketProps {
 
 export function NewTicketModal({
   open, onClose, drones, components, users,
-  form, onFormChange, onDroneChange, onSubmit, isDark, loading,
+  form, onFormChange, onDroneChange, onTicketTypeChange, onSubmit, isDark, loading,
 }: NewTicketProps) {
   const { t } = useTranslation();
   return (
@@ -212,7 +213,7 @@ export function NewTicketModal({
               <select
                 className={inputCls}
                 value={form.type}
-                onChange={(e) => onFormChange({ type: e.target.value as TicketType })}
+                onChange={(e) => onTicketTypeChange(e.target.value)}
               >
                 <option value="BASIC">{t('systems.maintenanceLogbook.modals.newTicket.typeBasic')}</option>
                 <option value="STANDARD">{t('systems.maintenanceLogbook.modals.newTicket.typeStandard')}</option>
