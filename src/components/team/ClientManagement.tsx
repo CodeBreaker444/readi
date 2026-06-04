@@ -1,5 +1,6 @@
 'use client';
 
+import '@/lib/i18n/config';
 import { useTimezone } from '@/components/TimezoneProvider';
 import { useTheme } from '@/components/useTheme';
 import { Session } from '@/lib/auth/server-session';
@@ -12,6 +13,7 @@ import {
 } from '@tanstack/react-table';
 import axios from 'axios';
 import { Building2, Filter, Plus, Search } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { ClientData, getClientColumns } from '../tables/ClientColumn';
@@ -44,31 +46,28 @@ interface ClientManagementProps {
 const STAT_CONFIG = [
   {
     key: 'total' as const,
-    label: 'Total Clients',
     accent: { dark: 'from-slate-800 to-slate-900 border-slate-700', light: 'from-white to-slate-50 border-slate-200' },
     valueColor: { dark: 'text-white', light: 'text-slate-800' },
   },
   {
     key: 'active' as const,
-    label: 'Active',
     accent: { dark: 'from-emerald-900/40 to-emerald-900/10 border-emerald-900/30', light: 'from-emerald-50 to-white border-emerald-100' },
     valueColor: { dark: 'text-emerald-400', light: 'text-emerald-600' },
   },
   {
     key: 'inactive' as const,
-    label: 'Inactive',
     accent: { dark: 'from-rose-900/40 to-rose-900/10 border-rose-900/30', light: 'from-rose-50 to-white border-rose-100' },
     valueColor: { dark: 'text-rose-400', light: 'text-rose-600' },
   },
   {
     key: 'expiringSoon' as const,
-    label: 'Expiring Soon',
     accent: { dark: 'from-amber-900/40 to-amber-900/10 border-amber-900/30', light: 'from-amber-50 to-white border-amber-100' },
     valueColor: { dark: 'text-amber-400', light: 'text-amber-600' },
   },
 ] as const;
 
 export default function ClientManagement({ session }: ClientManagementProps) {
+  const { t } = useTranslation();
   const { isDark } = useTheme();
   const { timezone } = useTimezone();
   const isSuperAdmin = session.user.role === 'SUPERADMIN';
@@ -106,11 +105,11 @@ export default function ClientManagement({ session }: ClientManagementProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ client_id: clientId }),
       });
-      toast.success('Client deleted');
+      toast.success(t('team.client.toast.deleted'));
       fetchClients();
     } catch (e) {
       console.error(e);
-      toast.error('Failed to delete client');
+      toast.error(t('team.client.toast.deleteFailed'));
     }
   };
 
@@ -121,14 +120,14 @@ export default function ClientManagement({ session }: ClientManagementProps) {
       });
       const data = res.data;
       if (data.code === 1) {
-        toast.success('Client added successfully');
+        toast.success(t('team.client.toast.added'));
         setShowAddModal(false);
         fetchClients();
       } else {
-        toast.error(data.error || 'Failed to add client');
+        toast.error(data.error || t('team.client.toast.addFailed'));
       }
     } catch (err: any) {
-      const msg = err?.response?.data?.error || 'Error adding client';
+      const msg = err?.response?.data?.error || t('team.client.toast.addError');
       toast.error(msg);
     }
   };
@@ -141,15 +140,15 @@ export default function ClientManagement({ session }: ClientManagementProps) {
       });
       const data = res.data;
       if (data.code === 1) {
-        toast.success('Client updated successfully');
+        toast.success(t('team.client.toast.updated'));
         setShowEditModal(false);
         setSelectedClient(null);
         fetchClients();
       } else {
-        toast.error(data.error || 'Failed to update client');
+        toast.error(data.error || t('team.client.toast.updateFailed'));
       }
     } catch {
-      toast.error('Error updating client');
+      toast.error(t('team.client.toast.updateError'));
     }
   };
 
@@ -193,8 +192,8 @@ export default function ClientManagement({ session }: ClientManagementProps) {
   );
 
   const columns = useMemo(
-    () => getClientColumns({ isDark, onEdit: handleEdit, onDelete: handleDelete, timezone }),
-    [isDark, timezone]
+    () => getClientColumns({ isDark, onEdit: handleEdit, onDelete: handleDelete, timezone, t }),
+    [isDark, timezone, t]
   );
 
   const table = useReactTable({
@@ -221,8 +220,8 @@ export default function ClientManagement({ session }: ClientManagementProps) {
           <div className="flex items-center gap-3">
             <div className="w-1 h-6 rounded-full bg-violet-600" />
             <div>
-              <h1 className={`font-semibold text-base tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>Client Management</h1>
-              <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Manage clients and their contracts</p>
+              <h1 className={`font-semibold text-base tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('team.client.title')}</h1>
+              <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t('team.client.subtitle')}</p>
             </div>
           </div>
           <Button
@@ -234,7 +233,7 @@ export default function ClientManagement({ session }: ClientManagementProps) {
             }`}
           >
             <Plus size={14} />
-            <span>Add New Client</span>
+            <span>{t('team.client.addNew')}</span>
           </Button>
         </div>
       </div>
@@ -250,7 +249,7 @@ export default function ClientManagement({ session }: ClientManagementProps) {
                 className={`relative overflow-hidden rounded-2xl border bg-gradient-to-br p-5 shadow-sm ${isDark ? cfg.accent.dark : cfg.accent.light}`}
               >
                 <div className="absolute -right-4 -bottom-4 w-20 h-20 rounded-full opacity-10 bg-current" />
-                <p className={`text-[10px] font-bold uppercase tracking-widest ${isDark ? 'text-gray-400' : 'text-gray-400'}`}>{cfg.label}</p>
+                <p className={`text-[10px] font-bold uppercase tracking-widest ${isDark ? 'text-gray-400' : 'text-gray-400'}`}>{t(`team.client.stats.${cfg.key}`)}</p>
                 <p className={`text-4xl font-black mt-2 tabular-nums leading-none ${isDark ? cfg.valueColor.dark : cfg.valueColor.light}`}>
                   {stats[cfg.key]}
                 </p>
@@ -266,7 +265,7 @@ export default function ClientManagement({ session }: ClientManagementProps) {
                 <Search size={13} /> Search
               </Label>
               <Input
-                placeholder="Search by name, email, code, city…"
+                placeholder={t('team.client.searchPlaceholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className={`h-8 text-sm ${isDark ? 'bg-gray-900 border-gray-700 text-gray-200 placeholder:text-gray-600' : ''}`}
@@ -278,12 +277,12 @@ export default function ClientManagement({ session }: ClientManagementProps) {
               </Label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className={`h-8 text-sm ${isDark ? 'bg-gray-900 border-gray-700 text-gray-200' : ''}`}>
-                  <SelectValue placeholder="All Status" />
+                  <SelectValue placeholder={t('team.client.allStatus')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ALL">All Status</SelectItem>
-                  <SelectItem value="ACTIVE">Active</SelectItem>
-                  <SelectItem value="INACTIVE">Inactive</SelectItem>
+                  <SelectItem value="ALL">{t('team.client.allStatus')}</SelectItem>
+                  <SelectItem value="ACTIVE">{t('common.active')}</SelectItem>
+                  <SelectItem value="INACTIVE">{t('common.inactive')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -294,10 +293,10 @@ export default function ClientManagement({ session }: ClientManagementProps) {
                 </Label>
                 <Select value={companyFilter} onValueChange={setCompanyFilter}>
                   <SelectTrigger className={`h-8 text-sm ${isDark ? 'bg-gray-900 border-gray-700 text-gray-200' : ''}`}>
-                    <SelectValue placeholder="All Companies" />
+                    <SelectValue placeholder={t('team.client.allCompanies')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ALL">All Companies</SelectItem>
+                    <SelectItem value="ALL">{t('team.client.allCompanies')}</SelectItem>
                     {uniqueCompanies.map((name) => (
                       <SelectItem key={name} value={name!}>{name}</SelectItem>
                     ))}
@@ -330,8 +329,8 @@ export default function ClientManagement({ session }: ClientManagementProps) {
                   <TableCell colSpan={columns.length}>
                     <div className={`text-center py-14 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
                       <Building2 size={40} className="mx-auto mb-3 opacity-30" />
-                      <p className="text-sm font-medium">No clients found</p>
-                      <p className="text-xs mt-1 opacity-60">Try adjusting your filters or add a new client</p>
+                      <p className="text-sm font-medium">{t('team.client.noFound')}</p>
+                      <p className="text-xs mt-1 opacity-60">{t('team.client.noFoundHint')}</p>
                     </div>
                   </TableCell>
                 </TableRow>

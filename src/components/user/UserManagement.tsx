@@ -1,5 +1,6 @@
 'use client';
 
+import '@/lib/i18n/config';
 import { useTheme } from '@/components/useTheme';
 import { Session } from '@/lib/auth/server-session';
 import {
@@ -11,6 +12,7 @@ import {
 } from '@tanstack/react-table';
 import axios from 'axios';
 import { Building2, Filter, Plus, Search, User } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import ExportButtons from '../system/ExportButtons';
@@ -52,13 +54,14 @@ interface UserManagementProps {
 }
 
 const STAT_CONFIG = [
-  { key: 'total', label: 'Total Users', accent: { dark: 'from-slate-800 to-slate-900 border-slate-700', light: 'from-white to-slate-50 border-slate-200' }, valueColor: { dark: 'text-white', light: 'text-slate-800' } },
-  { key: 'active', label: 'Active', accent: { dark: 'from-emerald-900/40 to-emerald-900/10 border-emerald-900/30', light: 'from-emerald-50 to-white border-emerald-100' }, valueColor: { dark: 'text-emerald-400', light: 'text-emerald-600' } },
-  { key: 'inactive', label: 'Inactive', accent: { dark: 'from-rose-900/40 to-rose-900/10 border-rose-900/30', light: 'from-rose-50 to-white border-rose-100' }, valueColor: { dark: 'text-rose-400', light: 'text-rose-600' } },
-  { key: 'managers', label: 'Managers', accent: { dark: 'from-violet-900/40 to-violet-900/10 border-violet-900/30', light: 'from-violet-50 to-white border-violet-100' }, valueColor: { dark: 'text-violet-400', light: 'text-violet-600' } },
+  { key: 'total', accent: { dark: 'from-slate-800 to-slate-900 border-slate-700', light: 'from-white to-slate-50 border-slate-200' }, valueColor: { dark: 'text-white', light: 'text-slate-800' } },
+  { key: 'active', accent: { dark: 'from-emerald-900/40 to-emerald-900/10 border-emerald-900/30', light: 'from-emerald-50 to-white border-emerald-100' }, valueColor: { dark: 'text-emerald-400', light: 'text-emerald-600' } },
+  { key: 'inactive', accent: { dark: 'from-rose-900/40 to-rose-900/10 border-rose-900/30', light: 'from-rose-50 to-white border-rose-100' }, valueColor: { dark: 'text-rose-400', light: 'text-rose-600' } },
+  { key: 'managers', accent: { dark: 'from-violet-900/40 to-violet-900/10 border-violet-900/30', light: 'from-violet-50 to-white border-violet-100' }, valueColor: { dark: 'text-violet-400', light: 'text-violet-600' } },
 ] as const;
 
 export default function UserManagement({ session }: UserManagementProps) {
+  const { t } = useTranslation();
   const { isDark } = useTheme();
   const isSuperAdmin = session.user.role === 'SUPERADMIN';
   const canEditEmail = session.user.role === 'ADMIN' || isSuperAdmin;
@@ -135,12 +138,12 @@ export default function UserManagement({ session }: UserManagementProps) {
       });
       const data = await res.json();
       if (data.code === 1) {
-        toast.success(`Activation email resent to ${user.email}`);
+        toast.success(t('team.personnel.toast.inviteResent', { email: user.email }));
       } else {
-        toast.error(data.message || 'Failed to resend invite');
+        toast.error(data.message || t('team.personnel.toast.inviteResendFailed'));
       }
     } catch {
-      toast.error('Error resending invite');
+      toast.error(t('team.personnel.toast.inviteResendError'));
     } finally {
       setResendingUserId(null);
     }
@@ -161,10 +164,10 @@ export default function UserManagement({ session }: UserManagementProps) {
       });
       const data = await res.json();
       if (data.code === 1) {
-        toast.success('User deleted successfully');
+        toast.success(t('team.personnel.toast.deleted'));
         setUsers((prev) => prev.filter((u) => u.user_id !== userId));
       } else {
-        toast.error(data.error || 'Failed to delete user');
+        toast.error(data.error || t('team.personnel.toast.deleteFailed'));
       }
     } catch (e) {
       console.error(e);
@@ -198,13 +201,13 @@ export default function UserManagement({ session }: UserManagementProps) {
               tokenName: formData.ccTokenName || undefined,
             });
           } catch {
-            toast.warning('User created but Control Center token could not be saved');
+            toast.warning(t('team.personnel.toast.ccTokenWarning'));
           }
         }
-        toast.success('User created successfully');
+        toast.success(t('team.personnel.toast.created'));
         setShowAddModal(false);
         fetchUsers();
-      } else toast.error(data.error || 'Failed to create user');
+      } else toast.error(data.error || t('team.personnel.toast.createFailed'));
     } catch (err: any) {
       const responseData = err?.response?.data;
       if (responseData?.status === 'PENDING_ACTIVATION') {
@@ -214,7 +217,7 @@ export default function UserManagement({ session }: UserManagementProps) {
         });
         return;
       }
-      const msg = responseData?.error_list?.[0] || responseData?.message || 'Error creating user';
+      const msg = responseData?.error_list?.[0] || responseData?.message || t('team.personnel.toast.createError');
       toast.error(msg);
     }
   };
@@ -235,13 +238,13 @@ export default function UserManagement({ session }: UserManagementProps) {
       });
       const data = res.data;
       if (data.code === 1) {
-        toast.success('User updated successfully');
+        toast.success(t('team.personnel.toast.updated'));
         setShowEditModal(false);
         setSelectedUser(null);
         fetchUsers();
-      } else toast.error(data.error || 'Failed to update user');
+      } else toast.error(data.error || t('team.personnel.toast.updateFailed'));
     } catch {
-      toast.error('Error updating user');
+      toast.error(t('team.personnel.toast.updateError'));
     }
   };
 
@@ -267,7 +270,7 @@ export default function UserManagement({ session }: UserManagementProps) {
     return matchesSearch && matchesRole && matchesStatus && matchesCompany;
   }), [users, searchTerm, roleFilter, statusFilter, companyFilter, isSuperAdmin]);
 
-  const columns = useMemo(() => getUserColumns({ isDark, onEdit: handleEdit, onDelete: handleDelete, onResendInvite: handleResendInvite, resendingUserId }), [isDark, handleEdit, handleDelete, handleResendInvite, resendingUserId]);
+  const columns = useMemo(() => getUserColumns({ isDark, onEdit: handleEdit, onDelete: handleDelete, onResendInvite: handleResendInvite, resendingUserId, t }), [isDark, handleEdit, handleDelete, handleResendInvite, resendingUserId, t]);
 
   const table = useReactTable({
     data: filteredData,
@@ -290,8 +293,8 @@ export default function UserManagement({ session }: UserManagementProps) {
           <div className="flex items-center gap-3">
             <div className="w-1 h-6 rounded-full bg-violet-600" />
             <div>
-              <h1 className={`font-semibold text-base tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>Team Management</h1>
-              <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Manage users and roles within your organization</p>
+              <h1 className={`font-semibold text-base tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('team.personnel.title')}</h1>
+              <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t('team.personnel.subtitle')}</p>
             </div>
           </div>
           <Button
@@ -300,7 +303,7 @@ export default function UserManagement({ session }: UserManagementProps) {
             className={`h-8 gap-1.5 text-xs font-semibold shadow-sm ${isDark ? 'bg-white hover:bg-white/90 text-black' : 'bg-violet-600 hover:bg-violet-700 text-white'}`}
           >
             <Plus size={14} />
-            <span>Add New User</span>
+            <span>{t('team.personnel.addNew')}</span>
           </Button>
         </div>
       </div>
@@ -313,7 +316,7 @@ export default function UserManagement({ session }: UserManagementProps) {
             : STAT_CONFIG.map((cfg) => (
               <div key={cfg.key} className={`relative overflow-hidden rounded-2xl border bg-gradient-to-br p-5 shadow-sm   ${isDark ? cfg.accent.dark : cfg.accent.light}`}>
                 <div className="absolute -right-4 -bottom-4 w-20 h-20 rounded-full opacity-10 bg-current" />
-                <p className={`text-[10px] font-bold uppercase tracking-widest ${isDark ? 'text-gray-400' : 'text-gray-400'}`}>{cfg.label}</p>
+                <p className={`text-[10px] font-bold uppercase tracking-widest ${isDark ? 'text-gray-400' : 'text-gray-400'}`}>{t(`team.personnel.stats.${cfg.key}`)}</p>
                 <p className={`text-4xl font-black mt-2 tabular-nums leading-none ${isDark ? cfg.valueColor.dark : cfg.valueColor.light}`}>
                   {stats[cfg.key]}
                 </p>
@@ -330,7 +333,7 @@ export default function UserManagement({ session }: UserManagementProps) {
                 <Search size={13} /> Search
               </Label>
               <Input
-                placeholder="Search by name, email, username…"
+                placeholder={t('team.personnel.searchPlaceholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className={`h-8 text-sm ${isDark ? 'bg-gray-900 border-gray-700 text-gray-200 placeholder:text-gray-600' : ''}`}
@@ -343,10 +346,10 @@ export default function UserManagement({ session }: UserManagementProps) {
               </Label>
               <Select value={roleFilter} onValueChange={setRoleFilter}>
                 <SelectTrigger className={`h-8 text-sm ${isDark ? 'bg-gray-900 border-gray-700 text-gray-200' : ''}`}>
-                  <SelectValue placeholder="All Roles" />
+                  <SelectValue placeholder={t('team.personnel.allRoles')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ALL">All Roles</SelectItem>
+                  <SelectItem value="ALL">{t('team.personnel.allRoles')}</SelectItem>
                   {uniqueRoles.map((role) => <SelectItem key={role} value={role}>{role}</SelectItem>)}
                 </SelectContent>
               </Select>
@@ -356,13 +359,13 @@ export default function UserManagement({ session }: UserManagementProps) {
               <Label className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Status</Label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className={`h-8 text-sm ${isDark ? 'bg-gray-900 border-gray-700 text-gray-200' : ''}`}>
-                  <SelectValue placeholder="All Status" />
+                  <SelectValue placeholder={t('team.personnel.allStatus')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ALL">All Status</SelectItem>
-                  <SelectItem value="ACTIVE">Active</SelectItem>
-                  <SelectItem value="PENDING">Pending Activation</SelectItem>
-                  <SelectItem value="INACTIVE">Inactive</SelectItem>
+                  <SelectItem value="ALL">{t('team.personnel.allStatus')}</SelectItem>
+                  <SelectItem value="ACTIVE">{t('common.active')}</SelectItem>
+                  <SelectItem value="PENDING">{t('team.pendingActivation')}</SelectItem>
+                  <SelectItem value="INACTIVE">{t('common.inactive')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -374,10 +377,10 @@ export default function UserManagement({ session }: UserManagementProps) {
                 </Label>
                 <Select value={companyFilter} onValueChange={setCompanyFilter}>
                   <SelectTrigger className={`h-8 text-sm ${isDark ? 'bg-gray-900 border-gray-700 text-gray-200' : ''}`}>
-                    <SelectValue placeholder="All Companies" />
+                    <SelectValue placeholder={t('team.personnel.allCompanies')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ALL">All Companies</SelectItem>
+                    <SelectItem value="ALL">{t('team.personnel.allCompanies')}</SelectItem>
                     {uniqueCompanies.map((name) => (
                       <SelectItem key={name} value={name}>{name}</SelectItem>
                     ))}
@@ -411,8 +414,8 @@ export default function UserManagement({ session }: UserManagementProps) {
                   <TableCell colSpan={columns.length}>
                     <div className={`text-center py-14 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
                       <User size={40} className="mx-auto mb-3 opacity-30" />
-                      <p className="text-sm font-medium">No users found</p>
-                      <p className="text-xs mt-1 opacity-60">Try adjusting your filters</p>
+                      <p className="text-sm font-medium">{t('team.personnel.noFound')}</p>
+                      <p className="text-xs mt-1 opacity-60">{t('team.personnel.noFoundHint')}</p>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -451,15 +454,15 @@ export default function UserManagement({ session }: UserManagementProps) {
       <AlertDialog open={showDeleteDialog} onOpenChange={(open) => { if (!open) { setShowDeleteDialog(false); setUserToDelete(null); } }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete User</AlertDialogTitle>
+            <AlertDialogTitle>{t('team.personnel.deleteTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete <strong>{userToDelete?.fullname}</strong>? This will also remove their authentication account. This action cannot be undone.
+              {t('team.personnel.deleteDescriptionPrefix')} <strong>{userToDelete?.fullname}</strong>{t('team.personnel.deleteDescriptionSuffix')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete} className="bg-rose-600 hover:bg-rose-700 text-white">
-              Delete
+              {t('common.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

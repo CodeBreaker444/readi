@@ -1,10 +1,12 @@
 'use client';
 
+import '@/lib/i18n/config';
 import { PinSetup } from '@/components/authorization/PinSetup';
 import ApiKeyManager from '@/components/settings/ApiKeyManager';
 import { useTheme } from '@/components/useTheme';
 import axios from 'axios';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface KeyInfo {
   key_fingerprint: string | null;
@@ -13,6 +15,7 @@ interface KeyInfo {
 }
 
 export default function SecuritySettingsPage() {
+  const { t } = useTranslation();
   const { isDark } = useTheme();
   const [keyInfo, setKeyInfo] = useState<KeyInfo | null>(null);
   const [hasPin, setHasPin]   = useState<boolean | null>(null);
@@ -36,10 +39,10 @@ export default function SecuritySettingsPage() {
           <div className="w-1 h-6 rounded-full bg-violet-600" />
           <div>
             <h1 className={`font-semibold text-base ${isDark ? 'text-white' : 'text-slate-900'}`}>
-              Security Settings
+              {t('settings.security.title')}
             </h1>
             <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-              Manage API keys and authorization PIN
+              {t('settings.security.subtitle')}
             </p>
           </div>
         </div>
@@ -50,11 +53,10 @@ export default function SecuritySettingsPage() {
         <section>
           <div className="mb-3">
             <h2 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-              Authorization PIN
+              {t('settings.security.pin.title')}
             </h2>
             <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-              Required to sign authorized actions (status changes, component moves, mission sign-offs).
-              Your 6-digit PIN encrypts your RSA private key — it never leaves your browser.
+              {t('settings.security.pin.description')}
             </p>
           </div>
 
@@ -70,13 +72,13 @@ export default function SecuritySettingsPage() {
             <div className={`mt-3 rounded-lg border px-4 py-3 text-xs ${isDark ? 'bg-slate-800/40 border-slate-700/60' : 'bg-slate-50 border-slate-200'}`}>
               <div className="flex items-center justify-between gap-4 flex-wrap">
                 <div>
-                  <span className={isDark ? 'text-slate-500' : 'text-slate-400'}>Public key fingerprint: </span>
+                  <span className={isDark ? 'text-slate-500' : 'text-slate-400'}>{t('settings.security.pin.publicKeyFingerprint')}</span>
                   <span className={`font-mono ${isDark ? 'text-violet-400' : 'text-violet-700'}`}>
                     {keyInfo.key_fingerprint ?? '—'}
                   </span>
                 </div>
                 <div>
-                  <span className={isDark ? 'text-slate-500' : 'text-slate-400'}>Created: </span>
+                  <span className={isDark ? 'text-slate-500' : 'text-slate-400'}>{t('settings.security.pin.created')}</span>
                   <span className={isDark ? 'text-slate-300' : 'text-slate-600'}>
                     {new Date(keyInfo.created_at).toLocaleDateString()}
                   </span>
@@ -90,10 +92,10 @@ export default function SecuritySettingsPage() {
         <section>
           <div className="mb-3">
             <h2 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-              API Keys
+              {t('settings.security.apiKeys.title')}
             </h2>
             <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-              Manage API keys for third-party integrations
+              {t('settings.security.apiKeys.subtitle')}
             </p>
           </div>
           <ApiKeyManager />

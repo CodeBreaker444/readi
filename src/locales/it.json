@@ -141,7 +141,77 @@
     "viewer": "Visualizzatore",
     "username": "Nome utente",
     "code": "Codice",
-    "permissions": "Permessi"
+    "permissions": "Permessi",
+    "client": {
+      "title": "Gestione Clienti",
+      "subtitle": "Gestisci clienti e i loro contratti",
+      "addNew": "Aggiungi Nuovo Cliente",
+      "columns": {
+        "client": "Cliente",
+        "contact": "Contatto",
+        "location": "Posizione",
+        "website": "Sito web",
+        "paymentTerms": "Termini di pagamento",
+        "contractEnd": "Fine contratto",
+        "editClient": "Modifica cliente",
+        "deleteClient": "Elimina cliente"
+      },
+      "stats": {
+        "total": "Clienti Totali",
+        "active": "Attivi",
+        "inactive": "Inattivi",
+        "expiringSoon": "In Scadenza"
+      },
+      "searchPlaceholder": "Cerca per nome, email, codice, città…",
+      "allStatus": "Tutti gli stati",
+      "allCompanies": "Tutte le aziende",
+      "noFound": "Nessun cliente trovato",
+      "noFoundHint": "Prova a modificare i filtri o aggiungi un nuovo cliente",
+      "toast": {
+        "deleted": "Cliente eliminato",
+        "deleteFailed": "Eliminazione cliente non riuscita",
+        "added": "Cliente aggiunto con successo",
+        "addFailed": "Aggiunta cliente non riuscita",
+        "addError": "Errore durante l'aggiunta del cliente",
+        "updated": "Cliente aggiornato con successo",
+        "updateFailed": "Aggiornamento cliente non riuscito",
+        "updateError": "Errore durante l'aggiornamento del cliente"
+      }
+    },
+    "personnel": {
+      "title": "Gestione Team",
+      "subtitle": "Gestisci utenti e ruoli nella tua organizzazione",
+      "addNew": "Aggiungi Nuovo Utente",
+      "stats": {
+        "total": "Utenti Totali",
+        "active": "Attivi",
+        "inactive": "Inattivi",
+        "managers": "Manager"
+      },
+      "searchPlaceholder": "Cerca per nome, email, nome utente…",
+      "allRoles": "Tutti i ruoli",
+      "allStatus": "Tutti gli stati",
+      "allCompanies": "Tutte le aziende",
+      "noFound": "Nessun utente trovato",
+      "noFoundHint": "Prova a modificare i filtri",
+      "deleteTitle": "Elimina Utente",
+      "deleteDescriptionPrefix": "Sei sicuro di voler eliminare",
+      "deleteDescriptionSuffix": "? Verrà rimosso anche l'account di autenticazione. Questa azione non può essere annullata.",
+      "toast": {
+        "inviteResent": "Email di attivazione inviata nuovamente a {{email}}",
+        "inviteResendFailed": "Reinvio invito non riuscito",
+        "inviteResendError": "Errore nel reinvio dell'invito",
+        "deleted": "Utente eliminato con successo",
+        "deleteFailed": "Eliminazione utente non riuscita",
+        "created": "Utente creato con successo",
+        "createFailed": "Creazione utente non riuscita",
+        "createError": "Errore durante la creazione dell'utente",
+        "ccTokenWarning": "Utente creato ma il token Control Center non è stato salvato",
+        "updated": "Utente aggiornato con successo",
+        "updateFailed": "Aggiornamento utente non riuscito",
+        "updateError": "Errore durante l'aggiornamento dell'utente"
+      }
+    }
   },
   "sidebar": {
     "dashboard": "Dashboard",
@@ -4477,5 +4547,113 @@
     "fieldLatitude": "Latitudine",
     "fieldLongitude": "Longitudine",
     "fieldAltitude": "Altitudine (m)"
+  },
+  "settings": {
+    "integrations": {
+      "title": "Integrazioni",
+      "subtitle": "Configura connessioni a sistemi esterni",
+      "dcc": {
+        "title": "Configurazione Server DCC",
+        "subtitle": "Readi invierà aggiornamenti sullo stato delle missioni a questo server",
+        "displayName": "Nome visualizzato",
+        "displayNamePlaceholder": "es. AI View Group DCC",
+        "callbackUrl": "URL di callback",
+        "callbackUrlPlaceholder": "http://pmvd-controlcenter.example.com",
+        "saved": "Salvato",
+        "save": "Salva",
+        "statusEndpoints": "Endpoint di stato",
+        "statusEndpointsSubtitle": "Questi percorsi vengono chiamati sul server DCC quando lo stato delle missioni cambia in Readi",
+        "tableHeaders": {
+          "method": "Metodo",
+          "path": "Percorso",
+          "triggeredWhen": "Attivato quando",
+          "requestBody": "Corpo della richiesta",
+          "responses": "Risposte"
+        },
+        "noBody": "— nessuno —",
+        "required": "obbligatorio",
+        "toast": {
+          "loadFailed": "Impossibile caricare le impostazioni di integrazione DCC",
+          "validationError": "Nome visualizzato e URL sono obbligatori",
+          "saved": "Integrazione DCC salvata",
+          "saveFailed": "Salvataggio non riuscito"
+        }
+      }
+    },
+    "security": {
+      "title": "Impostazioni di sicurezza",
+      "subtitle": "Gestisci chiavi API e PIN di autorizzazione",
+      "pin": {
+        "title": "PIN di autorizzazione",
+        "description": "Necessario per firmare azioni autorizzate (modifiche di stato, spostamenti di componenti, approvazioni missioni). Il tuo PIN a 6 cifre cripta la tua chiave privata RSA — non lascia mai il tuo browser.",
+        "publicKeyFingerprint": "Impronta chiave pubblica: ",
+        "created": "Creato: ",
+        "configured": "PIN di autorizzazione configurato",
+        "configuredDescription": "La tua coppia di chiavi RSA è stata generata. La tua chiave privata è criptata con il tuo PIN e non lascia mai il browser in chiaro.",
+        "keyFingerprint": "Impronta della chiave",
+        "publicKey": "Chiave pubblica (RSA-2048 SPKI)",
+        "copied": "Copiato",
+        "copy": "Copia",
+        "changePin": "Cambia PIN (genera nuova coppia di chiavi)",
+        "changePinTitle": "Cambia PIN di autorizzazione",
+        "setupPinTitle": "Configura PIN di autorizzazione",
+        "enterDescription": "Scegli un PIN a 6 cifre per proteggere la tua firma digitale",
+        "confirmDescription": "Conferma il tuo PIN per generare la coppia di chiavi",
+        "changePinWarning": "Cambiare il PIN genererà una nuova coppia di chiavi RSA. Le firme delle transazioni precedenti rimangono verificabili usando lo snapshot della chiave pubblica memorizzato con ogni record.",
+        "enterPin": "Inserisci PIN",
+        "confirmPin": "Conferma PIN",
+        "next": "Avanti",
+        "back": "Indietro",
+        "generatingKeypair": "Generazione coppia di chiavi…",
+        "confirmGenerate": "Conferma e genera chiave",
+        "error": {
+          "mismatch": "I PIN non corrispondono. Riprova.",
+          "setupFailed": "Configurazione non riuscita. Riprova.",
+          "toast": "Impossibile configurare il PIN di autorizzazione. Riprova."
+        }
+      },
+      "apiKeys": {
+        "title": "Chiavi API",
+        "subtitle": "Gestisci chiavi API per integrazioni di terze parti",
+        "headerSubtitle": "Le chiavi consentono ai servizi di terze parti di inviare richieste di missioni di volo.",
+        "newKey": "Nuova chiave",
+        "newApiKey": "Nuova chiave API",
+        "keyName": "Nome chiave",
+        "expiresAt": "Scade il (opzionale)",
+        "keyNamePlaceholder": "es. App di volo esterna",
+        "creating": "Creazione...",
+        "createKey": "Crea chiave",
+        "cancel": "Annulla",
+        "revealedKeyNote": "La tua nuova chiave API — copiala ora, non verrà mostrata di nuovo:",
+        "revealedKeyUsage": "Usa questa chiave nell'intestazione X-API-KEY quando chiami POST /api/missions",
+        "noKeys": "Nessuna chiave API. Creane una per consentire ai servizi esterni di inviare missioni.",
+        "tableHeaders": {
+          "name": "Nome",
+          "keyPrefix": "Prefisso chiave",
+          "scope": "Ambito",
+          "status": "Stato",
+          "lastUsed": "Ultimo utilizzo",
+          "expires": "Scadenza",
+          "actions": "Azioni"
+        },
+        "active": "Attiva",
+        "revoked": "Revocata",
+        "revokeKey": "Revoca chiave",
+        "deleteKey": "Elimina chiave",
+        "howToUse": "Come utilizzare",
+        "howToUseSend": "Invia richieste di missioni di volo a:",
+        "howToUseHeader": "Includi la tua chiave nell'intestazione della richiesta:",
+        "toast": {
+          "loadFailed": "Impossibile caricare le chiavi API",
+          "nameRequired": "Il nome della chiave è obbligatorio",
+          "created": "Chiave API creata — copiala ora, non verrà mostrata di nuovo.",
+          "createFailed": "Creazione chiave non riuscita",
+          "revoked": "Chiave API revocata",
+          "revokeFailed": "Revoca chiave non riuscita",
+          "deleted": "Chiave API eliminata",
+          "deleteFailed": "Eliminazione chiave non riuscita"
+        }
+      }
+    }
   }
 }

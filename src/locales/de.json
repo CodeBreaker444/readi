@@ -141,7 +141,77 @@
     "viewer": "Betrachter",
     "username": "Benutzername",
     "code": "Code",
-    "permissions": "Berechtigungen"
+    "permissions": "Berechtigungen",
+    "client": {
+      "title": "Kundenverwaltung",
+      "subtitle": "Kunden und ihre Verträge verwalten",
+      "addNew": "Neuen Kunden hinzufügen",
+      "columns": {
+        "client": "Kunde",
+        "contact": "Kontakt",
+        "location": "Standort",
+        "website": "Webseite",
+        "paymentTerms": "Zahlungsbedingungen",
+        "contractEnd": "Vertragsende",
+        "editClient": "Kunden bearbeiten",
+        "deleteClient": "Kunden löschen"
+      },
+      "stats": {
+        "total": "Kunden gesamt",
+        "active": "Aktiv",
+        "inactive": "Inaktiv",
+        "expiringSoon": "Bald ablaufend"
+      },
+      "searchPlaceholder": "Nach Name, E-Mail, Code, Stadt suchen…",
+      "allStatus": "Alle Status",
+      "allCompanies": "Alle Unternehmen",
+      "noFound": "Keine Kunden gefunden",
+      "noFoundHint": "Passen Sie Ihre Filter an oder fügen Sie einen neuen Kunden hinzu",
+      "toast": {
+        "deleted": "Kunde gelöscht",
+        "deleteFailed": "Fehler beim Löschen des Kunden",
+        "added": "Kunde erfolgreich hinzugefügt",
+        "addFailed": "Fehler beim Hinzufügen des Kunden",
+        "addError": "Fehler beim Hinzufügen des Kunden",
+        "updated": "Kunde erfolgreich aktualisiert",
+        "updateFailed": "Fehler beim Aktualisieren des Kunden",
+        "updateError": "Fehler beim Aktualisieren des Kunden"
+      }
+    },
+    "personnel": {
+      "title": "Teamverwaltung",
+      "subtitle": "Benutzer und Rollen in Ihrer Organisation verwalten",
+      "addNew": "Neuen Benutzer hinzufügen",
+      "stats": {
+        "total": "Benutzer gesamt",
+        "active": "Aktiv",
+        "inactive": "Inaktiv",
+        "managers": "Manager"
+      },
+      "searchPlaceholder": "Nach Name, E-Mail, Benutzername suchen…",
+      "allRoles": "Alle Rollen",
+      "allStatus": "Alle Status",
+      "allCompanies": "Alle Unternehmen",
+      "noFound": "Keine Benutzer gefunden",
+      "noFoundHint": "Passen Sie Ihre Filter an",
+      "deleteTitle": "Benutzer löschen",
+      "deleteDescriptionPrefix": "Möchten Sie",
+      "deleteDescriptionSuffix": "wirklich löschen? Dadurch wird auch das Authentifizierungskonto entfernt. Diese Aktion kann nicht rückgängig gemacht werden.",
+      "toast": {
+        "inviteResent": "Aktivierungs-E-Mail erneut gesendet an {{email}}",
+        "inviteResendFailed": "Fehler beim erneuten Senden der Einladung",
+        "inviteResendError": "Fehler beim erneuten Senden der Einladung",
+        "deleted": "Benutzer erfolgreich gelöscht",
+        "deleteFailed": "Fehler beim Löschen des Benutzers",
+        "created": "Benutzer erfolgreich erstellt",
+        "createFailed": "Fehler beim Erstellen des Benutzers",
+        "createError": "Fehler beim Erstellen des Benutzers",
+        "ccTokenWarning": "Benutzer erstellt, aber Control Center Token konnte nicht gespeichert werden",
+        "updated": "Benutzer erfolgreich aktualisiert",
+        "updateFailed": "Fehler beim Aktualisieren des Benutzers",
+        "updateError": "Fehler beim Aktualisieren des Benutzers"
+      }
+    }
   },
   "sidebar": {
     "dashboard": "Dashboard",
@@ -4473,5 +4543,113 @@
     "fieldLatitude": "Breitengrad",
     "fieldLongitude": "Längengrad",
     "fieldAltitude": "Höhe (m)"
+  },
+  "settings": {
+    "integrations": {
+      "title": "Integrationen",
+      "subtitle": "Externe Systemverbindungen konfigurieren",
+      "dcc": {
+        "title": "DCC-Server-Konfiguration",
+        "subtitle": "Readi sendet Missionsstatusaktualisierungen an diesen Server",
+        "displayName": "Anzeigename",
+        "displayNamePlaceholder": "z.B. AI View Group DCC",
+        "callbackUrl": "Callback-URL",
+        "callbackUrlPlaceholder": "http://pmvd-controlcenter.example.com",
+        "saved": "Gespeichert",
+        "save": "Speichern",
+        "statusEndpoints": "Status-Endpunkte",
+        "statusEndpointsSubtitle": "Diese Pfade werden auf dem DCC-Server aufgerufen, wenn sich Missionszustände in Readi ändern",
+        "tableHeaders": {
+          "method": "Methode",
+          "path": "Pfad",
+          "triggeredWhen": "Ausgelöst wenn",
+          "requestBody": "Anfragekörper",
+          "responses": "Antworten"
+        },
+        "noBody": "— keine —",
+        "required": "erforderlich",
+        "toast": {
+          "loadFailed": "DCC-Integrationseinstellungen konnten nicht geladen werden",
+          "validationError": "Anzeigename und URL sind erforderlich",
+          "saved": "DCC-Integration gespeichert",
+          "saveFailed": "Speichern fehlgeschlagen"
+        }
+      }
+    },
+    "security": {
+      "title": "Sicherheitseinstellungen",
+      "subtitle": "API-Schlüssel und Autorisierungs-PIN verwalten",
+      "pin": {
+        "title": "Autorisierungs-PIN",
+        "description": "Erforderlich zum Signieren autorisierter Aktionen (Statusänderungen, Komponentenbewegungen, Missionsabzeichnungen). Ihr 6-stelliger PIN verschlüsselt Ihren privaten RSA-Schlüssel — er verlässt niemals Ihren Browser.",
+        "publicKeyFingerprint": "Öffentlicher Schlüssel-Fingerabdruck: ",
+        "created": "Erstellt: ",
+        "configured": "Autorisierungs-PIN konfiguriert",
+        "configuredDescription": "Ihr RSA-Schlüsselpaar wurde generiert. Ihr privater Schlüssel wird mit Ihrem PIN verschlüsselt und verlässt Ihren Browser niemals unverschlüsselt.",
+        "keyFingerprint": "Schlüssel-Fingerabdruck",
+        "publicKey": "Öffentlicher Schlüssel (RSA-2048 SPKI)",
+        "copied": "Kopiert",
+        "copy": "Kopieren",
+        "changePin": "PIN ändern (generiert neues Schlüsselpaar)",
+        "changePinTitle": "Autorisierungs-PIN ändern",
+        "setupPinTitle": "Autorisierungs-PIN einrichten",
+        "enterDescription": "Wählen Sie einen 6-stelligen PIN zum Schutz Ihrer digitalen Signatur",
+        "confirmDescription": "Bestätigen Sie Ihren PIN, um das Schlüsselpaar zu generieren",
+        "changePinWarning": "Das Ändern Ihres PINs generiert ein neues RSA-Schlüsselpaar. Frühere Transaktionssignaturen bleiben anhand des bei jedem Datensatz gespeicherten öffentlichen Schlüssel-Snapshots verifizierbar.",
+        "enterPin": "PIN eingeben",
+        "confirmPin": "PIN bestätigen",
+        "next": "Weiter",
+        "back": "Zurück",
+        "generatingKeypair": "Schlüsselpaar wird generiert…",
+        "confirmGenerate": "Bestätigen & Schlüssel generieren",
+        "error": {
+          "mismatch": "PINs stimmen nicht überein. Bitte versuchen Sie es erneut.",
+          "setupFailed": "Einrichtung fehlgeschlagen. Bitte versuchen Sie es erneut.",
+          "toast": "Autorisierungs-PIN konnte nicht eingerichtet werden. Bitte versuchen Sie es erneut."
+        }
+      },
+      "apiKeys": {
+        "title": "API-Schlüssel",
+        "subtitle": "API-Schlüssel für Drittanbieter-Integrationen verwalten",
+        "headerSubtitle": "Schlüssel ermöglichen Drittanbieter-Diensten das Einreichen von Flugmissionsanfragen.",
+        "newKey": "Neuer Schlüssel",
+        "newApiKey": "Neuer API-Schlüssel",
+        "keyName": "Schlüsselname",
+        "expiresAt": "Läuft ab am (optional)",
+        "keyNamePlaceholder": "z.B. Externe Flug-App",
+        "creating": "Erstellen...",
+        "createKey": "Schlüssel erstellen",
+        "cancel": "Abbrechen",
+        "revealedKeyNote": "Ihr neuer API-Schlüssel — kopieren Sie ihn jetzt, er wird nicht erneut angezeigt:",
+        "revealedKeyUsage": "Verwenden Sie diesen Schlüssel im X-API-KEY-Header beim Aufruf von POST /api/missions",
+        "noKeys": "Noch keine API-Schlüssel. Erstellen Sie einen, damit externe Dienste Missionen einreichen können.",
+        "tableHeaders": {
+          "name": "Name",
+          "keyPrefix": "Schlüsselpräfix",
+          "scope": "Bereich",
+          "status": "Status",
+          "lastUsed": "Zuletzt verwendet",
+          "expires": "Läuft ab",
+          "actions": "Aktionen"
+        },
+        "active": "Aktiv",
+        "revoked": "Widerrufen",
+        "revokeKey": "Schlüssel widerrufen",
+        "deleteKey": "Schlüssel löschen",
+        "howToUse": "Verwendung",
+        "howToUseSend": "Senden Sie Flugmissionsanfragen an:",
+        "howToUseHeader": "Fügen Sie Ihren Schlüssel in den Anfrage-Header ein:",
+        "toast": {
+          "loadFailed": "API-Schlüssel konnten nicht geladen werden",
+          "nameRequired": "Schlüsselname ist erforderlich",
+          "created": "API-Schlüssel erstellt — kopieren Sie ihn jetzt, er wird nicht erneut angezeigt.",
+          "createFailed": "Schlüssel konnte nicht erstellt werden",
+          "revoked": "API-Schlüssel widerrufen",
+          "revokeFailed": "Schlüssel konnte nicht widerrufen werden",
+          "deleted": "API-Schlüssel gelöscht",
+          "deleteFailed": "Schlüssel konnte nicht gelöscht werden"
+        }
+      }
+    }
   }
 }

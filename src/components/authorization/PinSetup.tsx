@@ -1,10 +1,12 @@
 'use client';
 
+import '@/lib/i18n/config';
 import { encryptPrivateKey, generateKeyPair } from '@/lib/crypto/keyManagement';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
 import { CheckCircle2, Copy, KeyRound, Loader2, RefreshCw, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { PinInput } from './PinInput';
 
@@ -19,6 +21,7 @@ const EMPTY_PIN = Array(6).fill('') as string[];
 type Step = 'enter' | 'confirm' | 'done';
 
 export function PinSetup({ isDark, existingFingerprint, onSuccess }: Props) {
+  const { t } = useTranslation();
   const [step, setStep]           = useState<Step>('enter');
   const [pin, setPin]             = useState<string[]>(EMPTY_PIN);
   const [confirmPin, setConfirmPin] = useState<string[]>(EMPTY_PIN);
@@ -41,7 +44,7 @@ export function PinSetup({ isDark, existingFingerprint, onSuccess }: Props) {
   const handleConfirmComplete = async () => {
     if (!confirmPinFull) return;
     if (pin.join('') !== confirmPin.join('')) {
-      setError('PINs do not match. Please try again.');
+      setError(t('settings.security.pin.error.mismatch'));
       setConfirmPin(EMPTY_PIN);
       return;
     }
@@ -66,8 +69,8 @@ export function PinSetup({ isDark, existingFingerprint, onSuccess }: Props) {
       setStep('done');
       onSuccess?.();
     } catch {
-      toast.error('Failed to set up authorization PIN. Please try again.');
-      setError('Setup failed. Please try again.');
+      toast.error(t('settings.security.pin.error.toast'));
+      setError(t('settings.security.pin.error.setupFailed'));
     } finally {
       setLoading(false);
     }
@@ -100,16 +103,16 @@ export function PinSetup({ isDark, existingFingerprint, onSuccess }: Props) {
           </div>
           <div>
             <h3 className={cn('font-semibold text-base', isDark ? 'text-white' : 'text-slate-900')}>
-              Authorization PIN configured
+              {t('settings.security.pin.configured')}
             </h3>
             <p className={cn('text-sm mt-1', isDark ? 'text-slate-400' : 'text-slate-500')}>
-              Your RSA keypair has been generated. Your private key is encrypted with your PIN and never leaves your browser unencrypted.
+              {t('settings.security.pin.configuredDescription')}
             </p>
           </div>
 
           {fingerprint && (
             <div className={cn('w-full rounded-lg border p-3 text-left', isDark ? 'bg-slate-900/60 border-slate-700' : 'bg-slate-50 border-slate-200')}>
-              <p className={cn('text-xs font-medium mb-1', isDark ? 'text-slate-400' : 'text-slate-500')}>Key Fingerprint</p>
+              <p className={cn('text-xs font-medium mb-1', isDark ? 'text-slate-400' : 'text-slate-500')}>{t('settings.security.pin.keyFingerprint')}</p>
               <p className={cn('text-xs font-mono break-all', isDark ? 'text-violet-400' : 'text-violet-700')}>
                 {fingerprint}
               </p>
@@ -119,7 +122,7 @@ export function PinSetup({ isDark, existingFingerprint, onSuccess }: Props) {
           {publicKey && (
             <div className={cn('w-full rounded-lg border p-3 text-left', isDark ? 'bg-slate-900/60 border-slate-700' : 'bg-slate-50 border-slate-200')}>
               <div className="flex items-center justify-between mb-1">
-                <p className={cn('text-xs font-medium', isDark ? 'text-slate-400' : 'text-slate-500')}>Public Key (RSA-2048 SPKI)</p>
+                <p className={cn('text-xs font-medium', isDark ? 'text-slate-400' : 'text-slate-500')}>{t('settings.security.pin.publicKey')}</p>
                 <button
                   onClick={() => handleCopy(publicKey)}
                   className={cn('cursor-pointer flex items-center gap-1 text-xs px-2 py-0.5 rounded transition-colors',
@@ -127,7 +130,7 @@ export function PinSetup({ isDark, existingFingerprint, onSuccess }: Props) {
                   )}
                 >
                   <Copy className="h-3 w-3" />
-                  {copied ? 'Copied' : 'Copy'}
+                  {copied ? t('settings.security.pin.copied') : t('settings.security.pin.copy')}
                 </button>
               </div>
               <p className={cn('text-[10px] font-mono break-all leading-relaxed', isDark ? 'text-slate-400' : 'text-slate-600')}>
@@ -144,7 +147,7 @@ export function PinSetup({ isDark, existingFingerprint, onSuccess }: Props) {
             )}
           >
             <RefreshCw className="h-3.5 w-3.5" />
-            Change PIN (generates new keypair)
+            {t('settings.security.pin.changePin')}
           </button>
         </div>
       </div>
@@ -159,25 +162,25 @@ export function PinSetup({ isDark, existingFingerprint, onSuccess }: Props) {
         </div>
         <div>
           <h3 className={cn('font-semibold text-sm', isDark ? 'text-white' : 'text-slate-900')}>
-            {existingFingerprint ? 'Change Authorization PIN' : 'Set Up Authorization PIN'}
+            {existingFingerprint ? t('settings.security.pin.changePinTitle') : t('settings.security.pin.setupPinTitle')}
           </h3>
           <p className={cn('text-xs', isDark ? 'text-slate-400' : 'text-slate-500')}>
             {step === 'enter'
-              ? 'Choose a 6-digit PIN to protect your digital signature'
-              : 'Confirm your PIN to generate the keypair'}
+              ? t('settings.security.pin.enterDescription')
+              : t('settings.security.pin.confirmDescription')}
           </p>
         </div>
       </div>
 
       {existingFingerprint && step === 'enter' && (
         <div className={cn('mb-4 rounded-lg border px-3 py-2 text-xs', isDark ? 'bg-amber-500/10 border-amber-500/30 text-amber-300' : 'bg-amber-50 border-amber-200 text-amber-700')}>
-          Changing your PIN will generate a new RSA keypair. Previous transaction signs remain verifiable using the public key snapshot stored with each record.
+          {t('settings.security.pin.changePinWarning')}
         </div>
       )}
 
       <div className="space-y-4">
         <p className={cn('text-sm text-center', isDark ? 'text-slate-400' : 'text-slate-500')}>
-          {step === 'enter' ? 'Enter PIN' : 'Confirm PIN'}
+          {step === 'enter' ? t('settings.security.pin.enterPin') : t('settings.security.pin.confirmPin')}
         </p>
 
         {step === 'enter' ? (
@@ -201,7 +204,7 @@ export function PinSetup({ isDark, existingFingerprint, onSuccess }: Props) {
                 : isDark ? 'bg-slate-700 text-slate-500 cursor-not-allowed' : 'bg-slate-100 text-slate-400 cursor-not-allowed'
             )}
           >
-            Next
+            {t('settings.security.pin.next')}
           </button>
         ) : (
           <div className="flex gap-2">
@@ -213,7 +216,7 @@ export function PinSetup({ isDark, existingFingerprint, onSuccess }: Props) {
                 isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700/50' : 'border-slate-200 text-slate-600 hover:bg-slate-50'
               )}
             >
-              Back
+              {t('settings.security.pin.back')}
             </button>
             <button
               onClick={handleConfirmComplete}
@@ -226,8 +229,8 @@ export function PinSetup({ isDark, existingFingerprint, onSuccess }: Props) {
               )}
             >
               {loading
-                ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Generating keypair…</>
-                : 'Confirm & Generate Key'
+                ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> {t('settings.security.pin.generatingKeypair')}</>
+                : t('settings.security.pin.confirmGenerate')
               }
             </button>
           </div>
