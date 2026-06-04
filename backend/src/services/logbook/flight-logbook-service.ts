@@ -72,6 +72,19 @@ export async function getOperationLogbookList(
   if (params.mission_result_id && params.mission_result_id !== 0) {
     query = query.eq("fk_mission_result_type_id", params.mission_result_id);
   }
+  if (params.client_id && params.client_id !== 0) {
+    query = query.eq("fk_client_id", params.client_id);
+  }
+  if (params.mission_plan_id && params.mission_plan_id !== 0) {
+    const { data: planLookup } = await supabase
+      .from("planning_logbook")
+      .select("fk_planning_id")
+      .eq("mission_planning_id", params.mission_plan_id)
+      .single();
+    if (planLookup?.fk_planning_id) {
+      query = query.eq("fk_planning_id", planLookup.fk_planning_id);
+    }
+  }
   if (params.date_start) {
     query = query.gte("actual_start", params.date_start);
   }

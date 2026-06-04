@@ -1,0 +1,2930 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["partialIndexes"]
+}
+
+datasource db {
+  provider = "postgresql"
+  schemas  = ["auth", "public"]
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model audit_log_entries {
+  instance_id String?   @db.Uuid
+  id          String    @id @db.Uuid
+  payload     Json?     @db.Json
+  created_at  DateTime? @db.Timestamptz(6)
+  ip_address  String    @default("") @db.VarChar(64)
+
+  @@index([instance_id], map: "audit_logs_instance_id_idx")
+  @@schema("auth")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model custom_oauth_providers {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  provider_type         String
+  identifier            String    @unique
+  name                  String
+  client_id             String
+  client_secret         String
+  acceptable_client_ids String[]  @default([])
+  scopes                String[]  @default([])
+  pkce_enabled          Boolean   @default(true)
+  attribute_mapping     Json      @default("{}")
+  authorization_params  Json      @default("{}")
+  enabled               Boolean   @default(true)
+  email_optional        Boolean   @default(false)
+  issuer                String?
+  discovery_url         String?
+  skip_nonce_check      Boolean   @default(false)
+  cached_discovery      Json?
+  discovery_cached_at   DateTime? @db.Timestamptz(6)
+  authorization_url     String?
+  token_url             String?
+  userinfo_url          String?
+  jwks_uri              String?
+  created_at            DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@index([created_at])
+  @@index([enabled])
+  @@index([identifier])
+  @@index([provider_type])
+  @@schema("auth")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model flow_state {
+  id                     String                 @id @db.Uuid
+  user_id                String?                @db.Uuid
+  auth_code              String?
+  code_challenge_method  code_challenge_method?
+  code_challenge         String?
+  provider_type          String
+  provider_access_token  String?
+  provider_refresh_token String?
+  created_at             DateTime?              @db.Timestamptz(6)
+  updated_at             DateTime?              @db.Timestamptz(6)
+  authentication_method  String
+  auth_code_issued_at    DateTime?              @db.Timestamptz(6)
+  invite_token           String?
+  referrer               String?
+  oauth_client_state_id  String?                @db.Uuid
+  linking_target_id      String?                @db.Uuid
+  email_optional         Boolean                @default(false)
+  saml_relay_states      saml_relay_states[]
+
+  @@index([created_at(sort: Desc)])
+  @@index([auth_code], map: "idx_auth_code")
+  @@index([user_id, authentication_method], map: "idx_user_id_auth_method")
+  @@schema("auth")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model identities {
+  provider_id     String
+  user_id         String     @db.Uuid
+  identity_data   Json
+  provider        String
+  last_sign_in_at DateTime?  @db.Timestamptz(6)
+  created_at      DateTime?  @db.Timestamptz(6)
+  updated_at      DateTime?  @db.Timestamptz(6)
+  email           String?    @default(dbgenerated("lower((identity_data ->> 'email'::text))"))
+  id              String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  users           auth_users @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([provider_id, provider], map: "identities_provider_id_provider_unique")
+  @@index([email])
+  @@index([user_id])
+  @@schema("auth")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model instances {
+  id              String    @id @db.Uuid
+  uuid            String?   @db.Uuid
+  raw_base_config String?
+  created_at      DateTime? @db.Timestamptz(6)
+  updated_at      DateTime? @db.Timestamptz(6)
+
+  @@schema("auth")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model mfa_amr_claims {
+  session_id            String   @db.Uuid
+  created_at            DateTime @db.Timestamptz(6)
+  updated_at            DateTime @db.Timestamptz(6)
+  authentication_method String
+  id                    String   @id(map: "amr_id_pk") @db.Uuid
+  sessions              sessions @relation(fields: [session_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([session_id, authentication_method], map: "mfa_amr_claims_session_id_authentication_method_pkey")
+  @@schema("auth")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model mfa_challenges {
+  id                     String      @id @db.Uuid
+  factor_id              String      @db.Uuid
+  created_at             DateTime    @db.Timestamptz(6)
+  verified_at            DateTime?   @db.Timestamptz(6)
+  ip_address             String      @db.Inet
+  otp_code               String?
+  web_authn_session_data Json?
+  mfa_factors            mfa_factors @relation(fields: [factor_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "mfa_challenges_auth_factor_id_fkey")
+
+  @@index([created_at(sort: Desc)], map: "mfa_challenge_created_at_idx")
+  @@schema("auth")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model mfa_factors {
+  id                           String           @id @db.Uuid
+  user_id                      String           @db.Uuid
+  friendly_name                String?
+  factor_type                  factor_type
+  status                       factor_status
+  created_at                   DateTime         @db.Timestamptz(6)
+  updated_at                   DateTime         @db.Timestamptz(6)
+  secret                       String?
+  phone                        String?
+  last_challenged_at           DateTime?        @unique @db.Timestamptz(6)
+  web_authn_credential         Json?
+  web_authn_aaguid             String?          @db.Uuid
+  last_webauthn_challenge_data Json?
+  mfa_challenges               mfa_challenges[]
+  users                        auth_users       @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([friendly_name, user_id], map: "mfa_factors_user_friendly_name_unique", where: raw("(TRIM(BOTH FROM friendly_name) <> ''::text)"))
+  @@unique([user_id, phone], map: "unique_phone_factor_per_user")
+  @@index([user_id, created_at], map: "factor_id_created_at_idx")
+  @@index([user_id])
+  @@schema("auth")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model oauth_authorizations {
+  id                    String                     @id @db.Uuid
+  authorization_id      String                     @unique
+  client_id             String                     @db.Uuid
+  user_id               String?                    @db.Uuid
+  redirect_uri          String
+  scope                 String
+  state                 String?
+  resource              String?
+  code_challenge        String?
+  code_challenge_method code_challenge_method?
+  response_type         oauth_response_type        @default(code)
+  status                oauth_authorization_status @default(pending)
+  authorization_code    String?                    @unique
+  created_at            DateTime                   @default(now()) @db.Timestamptz(6)
+  expires_at            DateTime                   @default(dbgenerated("(now() + '00:03:00'::interval)")) @db.Timestamptz(6)
+  approved_at           DateTime?                  @db.Timestamptz(6)
+  nonce                 String?
+  oauth_clients         oauth_clients              @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users                 auth_users?                @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([expires_at], map: "oauth_auth_pending_exp_idx", where: raw("(status = 'pending'::auth.oauth_authorization_status)"))
+  @@schema("auth")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model oauth_client_states {
+  id            String   @id @db.Uuid
+  provider_type String
+  code_verifier String?
+  created_at    DateTime @db.Timestamptz(6)
+
+  @@index([created_at], map: "idx_oauth_client_states_created_at")
+  @@schema("auth")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model oauth_clients {
+  id                         String                  @id @db.Uuid
+  client_secret_hash         String?
+  registration_type          oauth_registration_type
+  redirect_uris              String
+  grant_types                String
+  client_name                String?
+  client_uri                 String?
+  logo_uri                   String?
+  created_at                 DateTime                @default(now()) @db.Timestamptz(6)
+  updated_at                 DateTime                @default(now()) @db.Timestamptz(6)
+  deleted_at                 DateTime?               @db.Timestamptz(6)
+  client_type                oauth_client_type       @default(confidential)
+  token_endpoint_auth_method String
+  oauth_authorizations       oauth_authorizations[]
+  oauth_consents             oauth_consents[]
+  sessions                   sessions[]
+
+  @@index([deleted_at])
+  @@schema("auth")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model oauth_consents {
+  id            String        @id @db.Uuid
+  user_id       String        @db.Uuid
+  client_id     String        @db.Uuid
+  scopes        String
+  granted_at    DateTime      @default(now()) @db.Timestamptz(6)
+  revoked_at    DateTime?     @db.Timestamptz(6)
+  oauth_clients oauth_clients @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users         auth_users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user_id, client_id], map: "oauth_consents_user_client_unique")
+  @@index([client_id], map: "oauth_consents_active_client_idx", where: raw("(revoked_at IS NULL)"))
+  @@index([user_id, client_id], map: "oauth_consents_active_user_client_idx", where: raw("(revoked_at IS NULL)"))
+  @@index([user_id, granted_at(sort: Desc)], map: "oauth_consents_user_order_idx")
+  @@schema("auth")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model one_time_tokens {
+  id         String              @id @db.Uuid
+  user_id    String              @db.Uuid
+  token_type one_time_token_type
+  token_hash String
+  relates_to String
+  created_at DateTime            @default(now()) @db.Timestamp(6)
+  updated_at DateTime            @default(now()) @db.Timestamp(6)
+  users      auth_users          @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user_id, token_type])
+  @@index([relates_to], map: "one_time_tokens_relates_to_hash_idx", type: Hash)
+  @@index([token_hash], map: "one_time_tokens_token_hash_hash_idx", type: Hash)
+  @@schema("auth")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model refresh_tokens {
+  instance_id String?   @db.Uuid
+  id          BigInt    @id @default(autoincrement())
+  token       String?   @unique(map: "refresh_tokens_token_unique") @db.VarChar(255)
+  user_id     String?   @db.VarChar(255)
+  revoked     Boolean?
+  created_at  DateTime? @db.Timestamptz(6)
+  updated_at  DateTime? @db.Timestamptz(6)
+  parent      String?   @db.VarChar(255)
+  session_id  String?   @db.Uuid
+  sessions    sessions? @relation(fields: [session_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([instance_id])
+  @@index([instance_id, user_id])
+  @@index([parent])
+  @@index([session_id, revoked])
+  @@index([updated_at(sort: Desc)])
+  @@schema("auth")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model saml_providers {
+  id                String        @id @db.Uuid
+  sso_provider_id   String        @db.Uuid
+  entity_id         String        @unique
+  metadata_xml      String
+  metadata_url      String?
+  attribute_mapping Json?
+  created_at        DateTime?     @db.Timestamptz(6)
+  updated_at        DateTime?     @db.Timestamptz(6)
+  name_id_format    String?
+  sso_providers     sso_providers @relation(fields: [sso_provider_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([sso_provider_id])
+  @@schema("auth")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model saml_relay_states {
+  id              String        @id @db.Uuid
+  sso_provider_id String        @db.Uuid
+  request_id      String
+  for_email       String?
+  redirect_to     String?
+  created_at      DateTime?     @db.Timestamptz(6)
+  updated_at      DateTime?     @db.Timestamptz(6)
+  flow_state_id   String?       @db.Uuid
+  flow_state      flow_state?   @relation(fields: [flow_state_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  sso_providers   sso_providers @relation(fields: [sso_provider_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([created_at(sort: Desc)])
+  @@index([for_email])
+  @@index([sso_provider_id])
+  @@schema("auth")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model schema_migrations {
+  version String @id @db.VarChar(255)
+
+  @@schema("auth")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model sessions {
+  id                     String           @id @db.Uuid
+  user_id                String           @db.Uuid
+  created_at             DateTime?        @db.Timestamptz(6)
+  updated_at             DateTime?        @db.Timestamptz(6)
+  factor_id              String?          @db.Uuid
+  aal                    aal_level?
+  not_after              DateTime?        @db.Timestamptz(6)
+  refreshed_at           DateTime?        @db.Timestamp(6)
+  user_agent             String?
+  ip                     String?          @db.Inet
+  tag                    String?
+  oauth_client_id        String?          @db.Uuid
+  refresh_token_hmac_key String?
+  refresh_token_counter  BigInt?
+  scopes                 String?
+  mfa_amr_claims         mfa_amr_claims[]
+  refresh_tokens         refresh_tokens[]
+  oauth_clients          oauth_clients?   @relation(fields: [oauth_client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users                  auth_users       @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([not_after(sort: Desc)])
+  @@index([oauth_client_id])
+  @@index([user_id])
+  @@index([user_id, created_at], map: "user_id_created_at_idx")
+  @@schema("auth")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
+model sso_domains {
+  id              String        @id @db.Uuid
+  sso_provider_id String        @db.Uuid
+  domain          String
+  created_at      DateTime?     @db.Timestamptz(6)
+  updated_at      DateTime?     @db.Timestamptz(6)
+  sso_providers   sso_providers @relation(fields: [sso_provider_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([sso_provider_id])
+  @@schema("auth")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
+model sso_providers {
+  id                String              @id @db.Uuid
+  resource_id       String?
+  created_at        DateTime?           @db.Timestamptz(6)
+  updated_at        DateTime?           @db.Timestamptz(6)
+  disabled          Boolean?
+  saml_providers    saml_providers[]
+  saml_relay_states saml_relay_states[]
+  sso_domains       sso_domains[]
+
+  @@index([resource_id], map: "sso_providers_resource_id_pattern_idx")
+  @@schema("auth")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
+model auth_users {
+  instance_id                 String?                @db.Uuid
+  id                          String                 @id @db.Uuid
+  aud                         String?                @db.VarChar(255)
+  role                        String?                @db.VarChar(255)
+  email                       String?                @unique(map: "users_email_partial_key", where: raw("(is_sso_user = false)")) @db.VarChar(255)
+  encrypted_password          String?                @db.VarChar(255)
+  email_confirmed_at          DateTime?              @db.Timestamptz(6)
+  invited_at                  DateTime?              @db.Timestamptz(6)
+  confirmation_token          String?                @unique(map: "confirmation_token_idx", where: raw("((confirmation_token)::text !~ '^[0-9 ]*$'::text)")) @db.VarChar(255)
+  confirmation_sent_at        DateTime?              @db.Timestamptz(6)
+  recovery_token              String?                @unique(map: "recovery_token_idx", where: raw("((recovery_token)::text !~ '^[0-9 ]*$'::text)")) @db.VarChar(255)
+  recovery_sent_at            DateTime?              @db.Timestamptz(6)
+  email_change_token_new      String?                @unique(map: "email_change_token_new_idx", where: raw("((email_change_token_new)::text !~ '^[0-9 ]*$'::text)")) @db.VarChar(255)
+  email_change                String?                @db.VarChar(255)
+  email_change_sent_at        DateTime?              @db.Timestamptz(6)
+  last_sign_in_at             DateTime?              @db.Timestamptz(6)
+  raw_app_meta_data           Json?
+  raw_user_meta_data          Json?
+  is_super_admin              Boolean?
+  created_at                  DateTime?              @db.Timestamptz(6)
+  updated_at                  DateTime?              @db.Timestamptz(6)
+  phone                       String?                @unique
+  phone_confirmed_at          DateTime?              @db.Timestamptz(6)
+  phone_change                String?                @default("")
+  phone_change_token          String?                @default("") @db.VarChar(255)
+  phone_change_sent_at        DateTime?              @db.Timestamptz(6)
+  confirmed_at                DateTime?              @default(dbgenerated("LEAST(email_confirmed_at, phone_confirmed_at)")) @db.Timestamptz(6)
+  email_change_token_current  String?                @unique(map: "email_change_token_current_idx", where: raw("((email_change_token_current)::text !~ '^[0-9 ]*$'::text)")) @default("") @db.VarChar(255)
+  email_change_confirm_status Int?                   @default(0) @db.SmallInt
+  banned_until                DateTime?              @db.Timestamptz(6)
+  reauthentication_token      String?                @unique(map: "reauthentication_token_idx", where: raw("((reauthentication_token)::text !~ '^[0-9 ]*$'::text)")) @default("") @db.VarChar(255)
+  reauthentication_sent_at    DateTime?              @db.Timestamptz(6)
+  is_sso_user                 Boolean                @default(false)
+  deleted_at                  DateTime?              @db.Timestamptz(6)
+  is_anonymous                Boolean                @default(false)
+  identities                  identities[]
+  mfa_factors                 mfa_factors[]
+  oauth_authorizations        oauth_authorizations[]
+  oauth_consents              oauth_consents[]
+  one_time_tokens             one_time_tokens[]
+  sessions                    sessions[]
+  webauthn_challenges         webauthn_challenges[]
+  webauthn_credentials        webauthn_credentials[]
+  users                       public_users?
+
+  @@index([instance_id])
+  @@index([is_anonymous])
+  @@map("users")
+  @@schema("auth")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model webauthn_challenges {
+  id             String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id        String?     @db.Uuid
+  challenge_type String
+  session_data   Json
+  created_at     DateTime    @default(now()) @db.Timestamptz(6)
+  expires_at     DateTime    @db.Timestamptz(6)
+  users          auth_users? @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([expires_at])
+  @@index([user_id])
+  @@schema("auth")
+}
+
+model webauthn_credentials {
+  id               String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id          String     @db.Uuid
+  credential_id    Bytes      @unique
+  public_key       Bytes
+  attestation_type String     @default("")
+  aaguid           String?    @db.Uuid
+  sign_count       BigInt     @default(0)
+  transports       Json       @default("[]")
+  backup_eligible  Boolean    @default(false)
+  backed_up        Boolean    @default(false)
+  friendly_name    String     @default("")
+  created_at       DateTime   @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime   @default(now()) @db.Timestamptz(6)
+  last_used_at     DateTime?  @db.Timestamptz(6)
+  users            auth_users @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id])
+  @@schema("auth")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model ai_token_usage {
+  id            BigInt   @id @default(autoincrement())
+  user_id       Int
+  owner_id      Int
+  input_tokens  Int      @default(0)
+  output_tokens Int      @default(0)
+  total_tokens  Int      @default(0)
+  model         String   @default("llama-3.3-70b-versatile")
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([created_at], map: "idx_atu_created_at")
+  @@index([owner_id], map: "idx_atu_owner_id")
+  @@index([user_id], map: "idx_atu_user_id")
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model alert_log {
+  alert_id                                       Int           @id @default(autoincrement())
+  alert_type                                     String        @db.VarChar(50)
+  alert_severity                                 String?       @db.VarChar(20)
+  alert_source                                   String?       @db.VarChar(100)
+  alert_message                                  String
+  alert_data                                     Json?
+  related_entity_type                            String?       @db.VarChar(50)
+  related_entity_id                              Int?
+  triggered_by_user_id                           Int?
+  assigned_to_user_id                            Int?
+  alert_status                                   String?       @db.VarChar(50)
+  acknowledged_at                                DateTime?     @db.Timestamp(6)
+  acknowledged_by_user_id                        Int?
+  resolved_at                                    DateTime?     @db.Timestamp(6)
+  resolved_by_user_id                            Int?
+  resolution_notes                               String?
+  created_at                                     DateTime?     @default(now()) @db.Timestamp(6)
+  users_alert_log_acknowledged_by_user_idTousers public_users? @relation("alert_log_acknowledged_by_user_idTousers", fields: [acknowledged_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users_alert_log_assigned_to_user_idTousers     public_users? @relation("alert_log_assigned_to_user_idTousers", fields: [assigned_to_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users_alert_log_resolved_by_user_idTousers     public_users? @relation("alert_log_resolved_by_user_idTousers", fields: [resolved_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users_alert_log_triggered_by_user_idTousers    public_users? @relation("alert_log_triggered_by_user_idTousers", fields: [triggered_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model api_keys {
+  api_key_id         Int               @id @default(autoincrement())
+  fk_owner_id        Int
+  key_name           String            @db.VarChar(100)
+  key_value          String            @unique @db.VarChar(100)
+  key_scope          String            @default("mission_request") @db.VarChar(50)
+  is_active          Boolean           @default(true)
+  created_by_user_id Int?
+  last_used_at       DateTime?         @db.Timestamp(6)
+  expires_at         DateTime?         @db.Timestamp(6)
+  created_at         DateTime          @default(now()) @db.Timestamp(6)
+  key_prefix         String?
+  users              public_users?     @relation(fields: [created_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  owner              owner             @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
+  flight_requests    flight_requests[]
+
+  @@index([key_value], map: "idx_api_keys_value")
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model assignment {
+  assignment_id     Int          @id @default(autoincrement())
+  fk_user_id        Int
+  fk_owner_id       Int
+  assignment_code   String?      @db.VarChar(50)
+  assignment_desc   String?
+  assignment_json   Json?
+  assignment_ver    Decimal?     @db.Decimal(5, 2)
+  assignment_active String?      @default("Y") @db.Char(1)
+  due_date          DateTime?    @db.Date
+  completed_date    DateTime?    @db.Date
+  created_at        DateTime?    @default(now()) @db.Timestamp(6)
+  updated_at        DateTime?    @default(now()) @db.Timestamp(6)
+  owner             owner        @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
+  users             public_users @relation(fields: [fk_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model audit_logs {
+  id          BigInt   @id @default(autoincrement())
+  event_type  String   @db.VarChar(50)
+  entity_type String   @db.VarChar(100)
+  entity_id   String?  @db.VarChar(255)
+  description String?
+  user_id     Int?
+  user_name   String?  @db.VarChar(255)
+  user_email  String?  @db.VarChar(255)
+  user_role   String?  @db.VarChar(50)
+  owner_id    Int
+  metadata    Json?
+  ip_address  String?  @db.VarChar(45)
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([created_at(sort: Desc)], map: "idx_audit_logs_created_at")
+  @@index([entity_type], map: "idx_audit_logs_entity_type")
+  @@index([event_type], map: "idx_audit_logs_event_type")
+  @@index([owner_id, created_at(sort: Desc)], map: "idx_audit_logs_owner_created")
+  @@index([owner_id], map: "idx_audit_logs_owner_id")
+  @@index([user_id], map: "idx_audit_logs_user_id")
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model backup_log {
+  backup_id            Int           @id @default(autoincrement())
+  backup_type          String?       @db.VarChar(50)
+  backup_name          String?       @db.VarChar(255)
+  backup_path          String?
+  backup_size          BigInt?
+  backup_status        String?       @db.VarChar(50)
+  backup_start_time    DateTime?     @db.Timestamp(6)
+  backup_end_time      DateTime?     @db.Timestamp(6)
+  backup_duration      Int?
+  error_message        String?
+  performed_by_user_id Int?
+  backup_metadata      Json?
+  created_at           DateTime?     @default(now()) @db.Timestamp(6)
+  users                public_users? @relation(fields: [performed_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model calendar_shift {
+  shift_id           Int           @id @default(autoincrement())
+  fk_owner_id        Int?
+  fk_client_id       Int?
+  fk_pic_id          Int?
+  shift_date_start   DateTime      @db.Date
+  shift_date_end     DateTime      @db.Date
+  shift_time_start   DateTime      @db.Time(6)
+  shift_time_end     DateTime      @db.Time(6)
+  shift_recurring    String?       @db.VarChar(50)
+  shift_date_until   DateTime?     @db.Date
+  shift_desc         String?
+  shift_group_label  String?       @db.VarChar(100)
+  shift_category     String?       @db.VarChar(50)
+  recurring_group_id String?       @db.VarChar(100)
+  created_at         DateTime?     @default(now()) @db.Timestamp(6)
+  updated_at         DateTime?     @default(now()) @db.Timestamp(6)
+  client             client?       @relation(fields: [fk_client_id], references: [client_id], onDelete: NoAction, onUpdate: NoAction)
+  owner              owner?        @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
+  users              public_users? @relation(fields: [fk_pic_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model checklist {
+  checklist_id     Int           @id @default(autoincrement())
+  fk_user_id       Int?
+  fk_owner_id      Int?
+  checklist_code   String?       @db.VarChar(50)
+  checklist_desc   String?
+  checklist_json   Json?
+  checklist_ver    Decimal?      @db.Decimal(5, 2)
+  checklist_active String?       @default("Y") @db.Char(1)
+  created_at       DateTime?     @default(now()) @db.Timestamp(6)
+  updated_at       DateTime?     @default(now()) @db.Timestamp(6)
+  fk_planning_id   Int?
+  owner            owner?        @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
+  planning         planning?     @relation(fields: [fk_planning_id], references: [planning_id], onDelete: NoAction, onUpdate: NoAction)
+  users            public_users? @relation(fields: [fk_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([fk_planning_id], map: "idx_checklist_fk_planning_id")
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model client {
+  client_id           Int                @id @default(autoincrement())
+  fk_owner_id         Int
+  client_code         String?            @db.VarChar(50)
+  client_name         String             @db.VarChar(255)
+  client_legal_name   String?            @db.VarChar(255)
+  client_address      String?
+  client_city         String?            @db.VarChar(100)
+  client_state        String?            @db.VarChar(100)
+  client_postal_code  String?            @db.VarChar(20)
+  fk_country_id       Int?
+  client_phone        String?            @db.VarChar(50)
+  client_email        String?            @db.VarChar(255)
+  client_website      String?            @db.VarChar(255)
+  client_logo         String?
+  client_active       String?            @default("Y") @db.Char(1)
+  client_unique_code  String?            @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  contract_start_date DateTime?          @db.Date
+  contract_end_date   DateTime?          @db.Date
+  payment_terms       String?            @db.VarChar(100)
+  credit_limit        Decimal?           @db.Decimal(15, 2)
+  created_at          DateTime?          @default(now()) @db.Timestamp(6)
+  updated_at          DateTime?          @default(now()) @db.Timestamp(6)
+  username            String?            @db.VarChar(100)
+  calendar_shift      calendar_shift[]
+  countries           countries?         @relation(fields: [fk_country_id], references: [country_id], onDelete: NoAction, onUpdate: NoAction)
+  owner               owner              @relation(fields: [fk_owner_id], references: [owner_id], onDelete: Cascade, onUpdate: NoAction)
+  evaluation          evaluation[]
+  pilot_mission       pilot_mission[]
+  planning            planning[]
+  planning_logbook    planning_logbook[]
+  tool                tool[]
+  users               public_users[]
+
+  @@unique([fk_owner_id, client_code])
+  @@index([client_active], map: "idx_client_active")
+  @@index([fk_owner_id], map: "idx_client_owner")
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model code_index {
+  id                    Int           @id @default(autoincrement())
+  owner_code_index      Int?
+  property_code_index   Int?
+  inspection_code_index Int?
+  date_update           DateTime?     @db.Date
+  user_id               Int?
+  users                 public_users? @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model communication {
+  communication_id     Int          @id @default(autoincrement())
+  fk_user_id           Int
+  fk_owner_id          Int?
+  communication_code   String?      @db.VarChar(50)
+  communication_desc   String?
+  communication_json   Json?
+  communication_ver    Decimal?     @db.Decimal(5, 2)
+  communication_active String?      @default("Y") @db.Char(1)
+  created_at           DateTime?    @default(now()) @db.Timestamp(6)
+  updated_at           DateTime?    @default(now()) @db.Timestamp(6)
+  owner                owner?       @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
+  users                public_users @relation(fields: [fk_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model communication_general {
+  communication_id        Int           @id @default(autoincrement())
+  fk_owner_id             Int?
+  subject                 String?       @db.VarChar(255)
+  message                 String?
+  communication_type      String?       @db.VarChar(50)
+  priority                String?       @db.VarChar(20)
+  status                  String?       @db.VarChar(50)
+  sent_by_user_id         Int?
+  recipients              Json?
+  attachments             Json?
+  sent_at                 DateTime?     @default(now()) @db.Timestamp(6)
+  read_at                 DateTime?     @db.Timestamp(6)
+  communication_level     String?       @default("info") @db.VarChar(20)
+  fk_client_id            Int?
+  fk_planning_id          Int?
+  fk_evaluation_id        Int?
+  communication_to        Json?
+  communication_file_name String?       @db.VarChar(255)
+  communication_file_key  String?       @db.VarChar(500)
+  communication_file_url  String?
+  owner                   owner?        @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
+  users                   public_users? @relation(fields: [sent_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model compliance_evidence {
+  evidence_id                                           Int                    @id @default(autoincrement())
+  fk_requirement_id                                     Int
+  evidence_type                                         String?                @db.VarChar(50)
+  evidence_description                                  String?
+  file_path                                             String?
+  submitted_by_user_id                                  Int?
+  submitted_at                                          DateTime?              @default(now()) @db.Timestamp(6)
+  verified_by_user_id                                   Int?
+  verified_at                                           DateTime?              @db.Timestamp(6)
+  verification_status                                   String?                @db.VarChar(50)
+  notes                                                 String?
+  compliance_requirement                                compliance_requirement @relation(fields: [fk_requirement_id], references: [requirement_id], onDelete: NoAction, onUpdate: NoAction)
+  users_compliance_evidence_submitted_by_user_idTousers public_users?          @relation("compliance_evidence_submitted_by_user_idTousers", fields: [submitted_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users_compliance_evidence_verified_by_user_idTousers  public_users?          @relation("compliance_evidence_verified_by_user_idTousers", fields: [verified_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model compliance_requirement {
+  requirement_id          Int                     @id @default(autoincrement())
+  fk_owner_id             Int?
+  requirement_code        String?                 @db.VarChar(50)
+  requirement_title       String                  @db.VarChar(255)
+  requirement_description String?
+  requirement_type        String?                 @db.VarChar(50)
+  regulatory_body         String?                 @db.VarChar(255)
+  requirement_status      String?                 @db.VarChar(50)
+  effective_date          DateTime?               @db.Date
+  review_frequency        Int?
+  next_review_date        DateTime?               @db.Date
+  created_at              DateTime?               @default(now()) @db.Timestamp(6)
+  updated_at              DateTime?               @default(now()) @db.Timestamp(6)
+  compliance_evidence     compliance_evidence[]
+  owner                   owner?                  @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
+  compliance_status_log   compliance_status_log[]
+
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model compliance_status_log {
+  log_id                 Int                    @id @default(autoincrement())
+  fk_requirement_id      Int
+  status_from            String?                @db.VarChar(50)
+  status_to              String                 @db.VarChar(50)
+  changed_by_user_id     Int?
+  change_reason          String?
+  changed_at             DateTime?              @default(now()) @db.Timestamp(6)
+  users                  public_users?          @relation(fields: [changed_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  compliance_requirement compliance_requirement @relation(fields: [fk_requirement_id], references: [requirement_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model component_type_config {
+  type_id     Int    @id @default(autoincrement())
+  type_value  String @db.VarChar(50)
+  type_label  String @db.VarChar(100)
+  fk_owner_id BigInt
+
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model controlroom_drone {
+  controlroom_drone_id Int                   @id @default(autoincrement())
+  fk_tool_id           Int
+  fk_pilot_mission_id  Int?
+  current_status       String?               @db.VarChar(50)
+  current_location     Unsupported("point")?
+  current_altitude     Decimal?              @db.Decimal(10, 2)
+  current_speed        Decimal?              @db.Decimal(10, 2)
+  battery_level        Decimal?              @db.Decimal(5, 2)
+  signal_strength      Decimal?              @db.Decimal(5, 2)
+  telemetry_data       Json?
+  last_heartbeat       DateTime?             @db.Timestamp(6)
+  is_active            Boolean?              @default(true)
+  updated_at           DateTime?             @default(now()) @db.Timestamp(6)
+  pilot_mission        pilot_mission?        @relation(fields: [fk_pilot_mission_id], references: [pilot_mission_id], onDelete: NoAction, onUpdate: NoAction)
+  tool                 tool                  @relation(fields: [fk_tool_id], references: [tool_id], onDelete: SetNull, onUpdate: NoAction)
+
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model controlroom_meta {
+  meta_id          Int       @id @default(autoincrement())
+  fk_owner_id      Int?
+  meta_key         String    @db.VarChar(100)
+  meta_value       String?
+  meta_type        String?   @db.VarChar(50)
+  meta_description String?
+  updated_at       DateTime? @default(now()) @db.Timestamp(6)
+  owner            owner?    @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([fk_owner_id, meta_key])
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model countries {
+  country_id             Int                      @id @default(autoincrement())
+  country_code           String?                  @unique @db.VarChar(10)
+  country_name           String                   @db.VarChar(255)
+  country_region         String?                  @db.VarChar(100)
+  country_active         String?                  @default("Y") @db.Char(1)
+  created_at             DateTime?                @default(now()) @db.Timestamp(6)
+  updated_at             DateTime?                @default(now()) @db.Timestamp(6)
+  client                 client[]
+  owner                  owner[]
+  owner_territorial_unit owner_territorial_unit[]
+  users_profile          users_profile[]
+
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model dcc_integrations {
+  id           Int       @id @default(autoincrement())
+  fk_owner_id  Int       @unique
+  display_name String
+  callback_url String
+  created_at   DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model deleted_owner {
+  deleted_id          Int           @id @default(autoincrement())
+  owner_id            Int
+  owner_code          String?       @db.VarChar(50)
+  owner_name          String?       @db.VarChar(255)
+  owner_legal_name    String?       @db.VarChar(255)
+  owner_type          String?       @db.VarChar(50)
+  owner_address       String?
+  owner_city          String?       @db.VarChar(100)
+  owner_state         String?       @db.VarChar(100)
+  owner_postal_code   String?       @db.VarChar(20)
+  fk_country_id       Int?
+  owner_phone         String?       @db.VarChar(50)
+  owner_email         String?       @db.VarChar(255)
+  owner_website       String?       @db.VarChar(255)
+  owner_logo          String?
+  owner_active        String?       @db.Char(1)
+  tax_id              String?       @db.VarChar(50)
+  registration_number String?       @db.VarChar(100)
+  license_number      String?       @db.VarChar(100)
+  license_expiry      DateTime?     @db.Date
+  original_created_at DateTime?     @db.Timestamp(6)
+  deleted_at          DateTime?     @default(now()) @db.Timestamp(6)
+  deleted_by_user_id  Int?
+  deletion_reason     String?
+  users               public_users? @relation(fields: [deleted_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model deleted_user {
+  deleted_id          Int           @id @default(autoincrement())
+  user_id             Int
+  username            String?       @db.VarChar(100)
+  email               String?       @db.VarChar(255)
+  first_name          String?       @db.VarChar(100)
+  last_name           String?       @db.VarChar(100)
+  phone               String?       @db.VarChar(50)
+  user_role           String?       @db.VarChar(50)
+  user_type           String?       @db.VarChar(50)
+  fk_owner_id         Int?
+  owner_code          String?       @db.VarChar(50)
+  owner_name          String?       @db.VarChar(255)
+  original_created_at DateTime?     @db.Timestamp(6)
+  deleted_at          DateTime?     @default(now()) @db.Timestamp(6)
+  deleted_by_user_id  Int?
+  deletion_reason     String?
+  users               public_users? @relation(fields: [deleted_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model drone_class_config {
+  class_id    Int      @id @default(autoincrement())
+  fk_owner_id Int
+  class_value String
+  class_label String
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  owner       owner    @relation(fields: [fk_owner_id], references: [owner_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([fk_owner_id, class_value])
+  @@schema("public")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model emergency_response_plan {
+  erp_id                     BigInt                       @id @default(autoincrement())
+  description                String
+  contact                    String
+  erp_type                   String                       @default("GENERAL")
+  fk_owner_id                Int
+  created_at                 DateTime                     @default(now()) @db.Timestamptz(6)
+  updated_at                 DateTime                     @default(now()) @db.Timestamptz(6)
+  owner                      owner                        @relation(fields: [fk_owner_id], references: [owner_id], onDelete: Cascade, onUpdate: NoAction)
+  erp_location_group_contact erp_location_group_contact[]
+
+  @@index([fk_owner_id], map: "idx_erp_owner")
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model erp_location_group {
+  group_id                    Int                           @id @default(autoincrement())
+  name                        String                        @db.VarChar(255)
+  notes                       String?
+  is_active                   Boolean?                      @default(true)
+  fk_owner_id                 Int
+  created_at                  DateTime?                     @default(now()) @db.Timestamptz(6)
+  updated_at                  DateTime?                     @default(now()) @db.Timestamptz(6)
+  erp_location_group_contact  erp_location_group_contact[]
+  erp_location_group_location erp_location_group_location[]
+  pilot_mission               pilot_mission[]
+
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model erp_location_group_contact {
+  id                      Int                     @id @default(autoincrement())
+  fk_group_id             Int
+  fk_erp_id               BigInt
+  emergency_response_plan emergency_response_plan @relation(fields: [fk_erp_id], references: [erp_id], onDelete: Cascade, onUpdate: NoAction)
+  erp_location_group      erp_location_group      @relation(fields: [fk_group_id], references: [group_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([fk_group_id, fk_erp_id])
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model erp_location_group_location {
+  location_id        Int                @id @default(autoincrement())
+  fk_group_id        Int
+  location_name      String
+  lat                Float?
+  lng                Float?
+  created_at         DateTime?          @default(now()) @db.Timestamptz(6)
+  erp_location_group erp_location_group @relation(fields: [fk_group_id], references: [group_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model evaluation {
+  evaluation_id          Int                     @id @default(autoincrement())
+  fk_owner_id            Int
+  fk_client_id           Int?
+  evaluation_code        String?                 @db.VarChar(50)
+  evaluation_name        String                  @db.VarChar(255)
+  evaluation_description String?
+  evaluation_type        String?                 @db.VarChar(50)
+  evaluation_status      String?                 @db.VarChar(50)
+  scheduled_date         DateTime?               @db.Date
+  coordinates            Unsupported("point")?
+  created_by_user_id     Int?
+  evaluation_active      String?                 @default("Y") @db.Char(1)
+  evaluation_metadata    Json?
+  created_at             DateTime?               @default(now()) @db.Timestamp(6)
+  updated_at             DateTime?               @default(now()) @db.Timestamp(6)
+  fk_luc_procedure_id    Int?
+  evaluation_year        Int?
+  evaluation_result      String?
+  users                  public_users?           @relation(fields: [created_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  client                 client?                 @relation(fields: [fk_client_id], references: [client_id], onDelete: NoAction, onUpdate: NoAction)
+  luc_procedure          luc_procedure?          @relation(fields: [fk_luc_procedure_id], references: [procedure_id], onDelete: NoAction, onUpdate: NoAction)
+  owner                  owner                   @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
+  evaluation_action      evaluation_action[]
+  evaluation_file        evaluation_file[]
+  kanban                 kanban[]
+  planning               planning[]
+  planning_logbook       planning_logbook[]
+  planning_test_logbook  planning_test_logbook[]
+
+  @@unique([fk_owner_id, evaluation_code])
+  @@index([fk_client_id], map: "idx_evaluation_client")
+  @@index([scheduled_date], map: "idx_evaluation_date")
+  @@index([evaluation_metadata], map: "idx_evaluation_metadata_gin", type: Gin)
+  @@index([fk_owner_id], map: "idx_evaluation_owner")
+  @@index([evaluation_status], map: "idx_evaluation_status")
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model evaluation_action {
+  action_id           Int           @id @default(autoincrement())
+  fk_evaluation_id    Int
+  action_code         String?       @db.VarChar(50)
+  action_title        String        @db.VarChar(255)
+  action_description  String?
+  action_type         String?       @db.VarChar(50)
+  action_status       String?       @db.VarChar(50)
+  action_priority     String?       @db.VarChar(20)
+  assigned_to_user_id Int?
+  due_date            DateTime?     @db.Date
+  completed_date      DateTime?     @db.Date
+  estimated_hours     Decimal?      @db.Decimal(8, 2)
+  actual_hours        Decimal?      @db.Decimal(8, 2)
+  action_order        Int?
+  dependencies        Json?
+  created_at          DateTime?     @default(now()) @db.Timestamp(6)
+  updated_at          DateTime?     @default(now()) @db.Timestamp(6)
+  users               public_users? @relation(fields: [assigned_to_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  evaluation          evaluation    @relation(fields: [fk_evaluation_id], references: [evaluation_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model evaluation_file {
+  file_id             Int           @id @default(autoincrement())
+  fk_evaluation_id    Int
+  file_name           String        @db.VarChar(255)
+  file_path           String?
+  file_type           String?       @db.VarChar(100)
+  file_category       String?       @db.VarChar(50)
+  file_size           BigInt?
+  file_description    String?
+  uploaded_by_user_id Int?
+  uploaded_at         DateTime?     @default(now()) @db.Timestamp(6)
+  file_version        Int?          @default(1)
+  is_latest           Boolean?      @default(true)
+  file_url            String?
+  evaluation          evaluation    @relation(fields: [fk_evaluation_id], references: [evaluation_id], onDelete: Cascade, onUpdate: NoAction)
+  users               public_users? @relation(fields: [uploaded_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model flight_requests {
+  request_id          Int           @id @default(autoincrement())
+  fk_owner_id         Int
+  fk_api_key_id       Int?
+  external_mission_id String        @db.VarChar(100)
+  mission_type        String?       @db.VarChar(50)
+  target              String?       @db.VarChar(255)
+  localization        Json?
+  waypoint            Json?
+  start_datetime      DateTime?     @db.Timestamp(6)
+  priority            String?       @db.VarChar(20)
+  notes               String?
+  operator            String?       @db.VarChar(100)
+  dcc_status          String        @default("NEW") @db.VarChar(20)
+  fk_planning_id      Int?
+  assigned_by_user_id Int?
+  assigned_at         DateTime?     @db.Timestamp(6)
+  created_at          DateTime      @default(now()) @db.Timestamp(6)
+  updated_at          DateTime      @default(now()) @db.Timestamp(6)
+  users               public_users? @relation(fields: [assigned_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  api_keys            api_keys?     @relation(fields: [fk_api_key_id], references: [api_key_id], onDelete: NoAction, onUpdate: NoAction)
+  owner               owner         @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([fk_owner_id], map: "idx_flight_requests_owner")
+  @@index([dcc_status], map: "idx_flight_requests_status")
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model flytbase_mission {
+  flytbase_mission_id     Int                       @id @default(autoincrement())
+  fk_planning_id          Int?
+  flytbase_mission_code   String?                   @db.VarChar(100)
+  flytbase_mission_data   Json?
+  sync_status             String?                   @db.VarChar(50)
+  last_sync_at            DateTime?                 @db.Timestamp(6)
+  created_at              DateTime?                 @default(now()) @db.Timestamp(6)
+  updated_at              DateTime?                 @default(now()) @db.Timestamp(6)
+  planning                planning?                 @relation(fields: [fk_planning_id], references: [planning_id], onDelete: NoAction, onUpdate: NoAction)
+  flytbase_mission_log    flytbase_mission_log[]
+  flytbase_mission_status flytbase_mission_status[]
+
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model flytbase_mission_log {
+  log_id                 Int               @id @default(autoincrement())
+  fk_flytbase_mission_id Int?
+  log_type               String?           @db.VarChar(50)
+  log_data               Json?
+  log_timestamp          DateTime?         @db.Timestamp(6)
+  is_active              String?           @default("Y") @db.Char(1)
+  created_at             DateTime?         @default(now()) @db.Timestamp(6)
+  flytbase_mission       flytbase_mission? @relation(fields: [fk_flytbase_mission_id], references: [flytbase_mission_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model flytbase_mission_status {
+  status_id              Int               @id @default(autoincrement())
+  fk_flytbase_mission_id Int?
+  status_data            Json?
+  status_timestamp       DateTime?         @db.Timestamp(6)
+  is_managed             String?           @default("N") @db.Char(1)
+  created_at             DateTime?         @default(now()) @db.Timestamp(6)
+  flytbase_mission       flytbase_mission? @relation(fields: [fk_flytbase_mission_id], references: [flytbase_mission_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model kanban {
+  kanban_id        Int           @id @default(autoincrement())
+  fk_owner_id      Int?
+  fk_user_id       Int?
+  fk_evaluation_id Int?
+  board_name       String?       @db.VarChar(255)
+  column_name      String?       @db.VarChar(100)
+  card_title       String        @db.VarChar(255)
+  card_description String?
+  card_order       Int?
+  card_priority    String?       @db.VarChar(20)
+  card_labels      Json?
+  assigned_users   Json?
+  due_date         DateTime?     @db.Date
+  card_metadata    Json?
+  created_at       DateTime?     @default(now()) @db.Timestamp(6)
+  updated_at       DateTime?     @default(now()) @db.Timestamp(6)
+  evaluation       evaluation?   @relation(fields: [fk_evaluation_id], references: [evaluation_id], onDelete: NoAction, onUpdate: NoAction)
+  owner            owner?        @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
+  users            public_users? @relation(fields: [fk_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model luc_doc_type {
+  doc_type_id          Int            @id @default(autoincrement())
+  doc_type_code        String?        @unique @db.VarChar(50)
+  doc_type_name        String         @db.VarChar(255)
+  doc_type_description String?
+  doc_type_category    String?        @db.VarChar(100)
+  doc_type_active      String?        @default("Y") @db.Char(1)
+  created_at           DateTime?      @default(now()) @db.Timestamp(6)
+  fk_owner_id          Int?
+  luc_document         luc_document[]
+
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model luc_document {
+  document_id                                   Int                @id @default(autoincrement())
+  fk_owner_id                                   Int?
+  fk_doc_type_id                                Int?
+  document_code                                 String?            @db.VarChar(50)
+  document_title                                String             @db.VarChar(255)
+  document_description                          String?
+  document_status                               String?            @db.VarChar(50)
+  effective_date                                DateTime?          @db.Date
+  expiry_date                                   DateTime?          @db.Date
+  version_number                                String?            @db.VarChar(20)
+  is_current_version                            Boolean?           @default(true)
+  created_by_user_id                            Int?
+  approved_by_user_id                           Int?
+  approved_at                                   DateTime?          @db.Timestamp(6)
+  document_active                               String?            @default("Y") @db.Char(1)
+  created_at                                    DateTime?          @default(now()) @db.Timestamp(6)
+  updated_at                                    DateTime?          @default(now()) @db.Timestamp(6)
+  owner_role                                    String?            @db.VarChar(150)
+  keywords                                      String?
+  tags                                          String?
+  fk_component_id                               Int?
+  users_luc_document_approved_by_user_idTousers public_users?      @relation("luc_document_approved_by_user_idTousers", fields: [approved_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users_luc_document_created_by_user_idTousers  public_users?      @relation("luc_document_created_by_user_idTousers", fields: [created_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  tool_component                                tool_component?    @relation(fields: [fk_component_id], references: [component_id], onUpdate: NoAction)
+  luc_doc_type                                  luc_doc_type?      @relation(fields: [fk_doc_type_id], references: [doc_type_id], onDelete: NoAction, onUpdate: NoAction)
+  owner                                         owner?             @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
+  luc_document_rev                              luc_document_rev[]
+  luc_procedure                                 luc_procedure[]
+
+  @@unique([fk_owner_id, document_code])
+  @@index([fk_owner_id], map: "idx_document_owner")
+  @@index([document_status], map: "idx_document_status")
+  @@index([fk_doc_type_id], map: "idx_document_type")
+  @@index([fk_component_id], map: "idx_luc_document_fk_component_id")
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model luc_document_rev {
+  revision_id          Int           @id @default(autoincrement())
+  fk_document_id       Int
+  revision_number      String        @db.VarChar(20)
+  revision_date        DateTime?     @db.Date
+  revision_description String?
+  file_path            String?
+  file_size            BigInt?
+  revised_by_user_id   Int?
+  changes_summary      String?
+  created_at           DateTime?     @default(now()) @db.Timestamp(6)
+  luc_document         luc_document  @relation(fields: [fk_document_id], references: [document_id], onDelete: Cascade, onUpdate: NoAction)
+  users                public_users? @relation(fields: [revised_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([fk_document_id, revision_number])
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model luc_procedure {
+  procedure_id                                   Int             @id @default(autoincrement())
+  fk_owner_id                                    Int?
+  fk_document_id                                 Int?
+  procedure_code                                 String?         @db.VarChar(50)
+  procedure_name                                 String          @db.VarChar(255)
+  procedure_description                          String?
+  procedure_steps                                Json?
+  procedure_version                              String?         @db.VarChar(20)
+  procedure_status                               String?         @db.VarChar(50)
+  effective_date                                 DateTime?       @db.Date
+  review_date                                    DateTime?       @db.Date
+  created_by_user_id                             Int?
+  approved_by_user_id                            Int?
+  procedure_active                               String?         @default("Y") @db.Char(1)
+  created_at                                     DateTime?       @default(now()) @db.Timestamp(6)
+  updated_at                                     DateTime?       @default(now()) @db.Timestamp(6)
+  procedure_sector                               String?         @db.VarChar(50)
+  evaluation                                     evaluation[]
+  users_luc_procedure_approved_by_user_idTousers public_users?   @relation("luc_procedure_approved_by_user_idTousers", fields: [approved_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users_luc_procedure_created_by_user_idTousers  public_users?   @relation("luc_procedure_created_by_user_idTousers", fields: [created_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  luc_document                                   luc_document?   @relation(fields: [fk_document_id], references: [document_id], onDelete: NoAction, onUpdate: NoAction)
+  owner                                          owner?          @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
+  pilot_mission                                  pilot_mission[]
+
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model maintenance_ticket {
+  ticket_id                                           Int                             @id @default(autoincrement())
+  fk_owner_id                                         Int?
+  fk_tool_id                                          Int?
+  ticket_number                                       String?                         @unique @db.VarChar(50)
+  ticket_title                                        String                          @db.VarChar(255)
+  ticket_type                                         String?                         @db.VarChar(50)
+  ticket_priority                                     String?                         @db.VarChar(20)
+  ticket_status                                       String?                         @db.VarChar(50)
+  reported_by_user_id                                 Int?
+  assigned_to_user_id                                 Int?
+  reported_at                                         DateTime?                       @default(now()) @db.Timestamp(6)
+  closed_at                                           DateTime?                       @db.Timestamp(6)
+  resolution_notes                                    String?
+  created_at                                          DateTime?                       @default(now()) @db.Timestamp(6)
+  updated_at                                          DateTime?                       @default(now()) @db.Timestamp(6)
+  fk_component_id                                     Int?
+  location_latitude                                   Decimal?                        @db.Decimal(10, 7)
+  location_longitude                                  Decimal?                        @db.Decimal(10, 7)
+  users_maintenance_ticket_assigned_to_user_idTousers public_users?                   @relation("maintenance_ticket_assigned_to_user_idTousers", fields: [assigned_to_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  tool_component                                      tool_component?                 @relation(fields: [fk_component_id], references: [component_id], onUpdate: NoAction)
+  owner                                               owner?                          @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
+  tool                                                tool?                           @relation(fields: [fk_tool_id], references: [tool_id], onUpdate: NoAction)
+  users_maintenance_ticket_reported_by_user_idTousers public_users?                   @relation("maintenance_ticket_reported_by_user_idTousers", fields: [reported_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  maintenance_ticket_attachment                       maintenance_ticket_attachment[]
+  maintenance_ticket_event                            maintenance_ticket_event[]
+  maintenance_ticket_item                             maintenance_ticket_item[]
+  maintenance_ticket_report                           maintenance_ticket_report[]
+  ticket_attachment                                   ticket_attachment[]
+
+  @@index([assigned_to_user_id], map: "idx_maintenance_ticket_assigned")
+  @@index([fk_component_id], map: "idx_maintenance_ticket_component")
+  @@index([fk_owner_id], map: "idx_maintenance_ticket_owner")
+  @@index([ticket_status], map: "idx_maintenance_ticket_status")
+  @@index([fk_tool_id], map: "idx_maintenance_ticket_tool")
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model maintenance_ticket_attachment {
+  attachment_id       Int                @id @default(autoincrement())
+  fk_ticket_id        Int
+  file_name           String             @db.VarChar(255)
+  file_path           String?
+  file_type           String?            @db.VarChar(100)
+  file_size           BigInt?
+  uploaded_by_user_id Int?
+  uploaded_at         DateTime?          @default(now()) @db.Timestamp(6)
+  maintenance_ticket  maintenance_ticket @relation(fields: [fk_ticket_id], references: [ticket_id], onDelete: Cascade, onUpdate: NoAction)
+  users               public_users?      @relation(fields: [uploaded_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model maintenance_ticket_event {
+  event_id           Int                @id @default(autoincrement())
+  fk_ticket_id       Int
+  event_type         String             @db.VarChar(50)
+  event_description  String?
+  event_data         Json?
+  created_by_user_id Int?
+  created_at         DateTime?          @default(now()) @db.Timestamp(6)
+  users              public_users?      @relation(fields: [created_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  maintenance_ticket maintenance_ticket @relation(fields: [fk_ticket_id], references: [ticket_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model maintenance_ticket_item {
+  item_id            Int                @id @default(autoincrement())
+  fk_ticket_id       Int
+  fk_component_id    Int?
+  item_description   String             @db.VarChar(255)
+  item_type          String?            @db.VarChar(50)
+  quantity           Int?
+  unit_cost          Decimal?           @db.Decimal(15, 2)
+  total_cost         Decimal?           @db.Decimal(15, 2)
+  supplier           String?            @db.VarChar(255)
+  part_number        String?            @db.VarChar(100)
+  created_at         DateTime?          @default(now()) @db.Timestamp(6)
+  tool_component     tool_component?    @relation(fields: [fk_component_id], references: [component_id], onDelete: NoAction, onUpdate: NoAction)
+  maintenance_ticket maintenance_ticket @relation(fields: [fk_ticket_id], references: [ticket_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model maintenance_ticket_report {
+  report_id            Int                @id @default(autoincrement())
+  fk_ticket_id         Int
+  report_title         String?            @db.VarChar(255)
+  report_content       String?
+  report_type          String?            @db.VarChar(50)
+  findings             String?
+  recommendations      String?
+  generated_by_user_id Int?
+  generated_at         DateTime?          @default(now()) @db.Timestamp(6)
+  maintenance_ticket   maintenance_ticket @relation(fields: [fk_ticket_id], references: [ticket_id], onDelete: Cascade, onUpdate: NoAction)
+  users                public_users?      @relation(fields: [generated_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model messages {
+  message_id                         Int          @id @default(autoincrement())
+  from_user_id                       Int
+  to_user_id                         Int
+  message_subject                    String?      @db.VarChar(255)
+  message_body                       String?
+  message_type                       String?      @db.VarChar(50)
+  is_read                            Boolean?     @default(false)
+  read_at                            DateTime?    @db.Timestamp(6)
+  parent_message_id                  Int?
+  attachments                        Json?
+  created_at                         DateTime?    @default(now()) @db.Timestamp(6)
+  deleted_by_sender                  Boolean?     @default(false)
+  deleted_by_recipient               Boolean?     @default(false)
+  users_messages_from_user_idTousers public_users @relation("messages_from_user_idTousers", fields: [from_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  messages                           messages?    @relation("messagesTomessages", fields: [parent_message_id], references: [message_id], onDelete: NoAction, onUpdate: NoAction)
+  other_messages                     messages[]   @relation("messagesTomessages")
+  users_messages_to_user_idTousers   public_users @relation("messages_to_user_idTousers", fields: [to_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([from_user_id], map: "idx_messages_from")
+  @@index([is_read], map: "idx_messages_read")
+  @@index([to_user_id], map: "idx_messages_to")
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model mission_component {
+  component_id     Int       @id @default(autoincrement())
+  fk_planning_id   Int?
+  fk_tool_id       Int?
+  component_role   String?   @db.VarChar(100)
+  component_config Json?
+  is_primary       Boolean?  @default(false)
+  created_at       DateTime? @default(now()) @db.Timestamp(6)
+  planning         planning? @relation(fields: [fk_planning_id], references: [planning_id], onDelete: Cascade, onUpdate: NoAction)
+  tool             tool?     @relation(fields: [fk_tool_id], references: [tool_id], onUpdate: NoAction)
+
+  @@schema("public")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model mission_flight_logs {
+  log_id             BigInt    @id @default(autoincrement())
+  fk_mission_id      BigInt
+  log_source         String    @db.VarChar(20)
+  s3_key             String
+  original_filename  String?
+  flytbase_flight_id String?
+  uploaded_at        DateTime? @default(now()) @db.Timestamptz(6)
+  uploaded_by        BigInt?
+
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model notification {
+  notification_id      Int          @id @default(autoincrement())
+  fk_user_id           Int
+  notification_type    String?      @db.VarChar(50)
+  notification_title   String?      @db.VarChar(255)
+  notification_message String?
+  notification_data    Json?
+  priority             String?      @db.VarChar(20)
+  is_read              Boolean?     @default(false)
+  read_at              DateTime?    @db.Timestamp(6)
+  action_url           String?
+  expires_at           DateTime?    @db.Timestamp(6)
+  created_at           DateTime?    @default(now()) @db.Timestamp(6)
+  users                public_users @relation(fields: [fk_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([is_read], map: "idx_notification_read")
+  @@index([fk_user_id], map: "idx_notification_user")
+  @@index([fk_user_id, is_read, created_at(sort: Desc)], map: "idx_notification_user_read_created")
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model operation_attachment {
+  attachment_id       Int           @id @default(autoincrement())
+  fk_operation_id     Int
+  file_name           String        @db.VarChar(255)
+  file_key            String
+  file_type           String?       @db.VarChar(100)
+  file_size           BigInt?
+  file_description    String?
+  s3_region           String        @db.VarChar(100)
+  s3_url              String
+  uploaded_by         String?       @db.VarChar(100)
+  uploaded_by_user_id Int?
+  uploaded_at         DateTime?     @default(now()) @db.Timestamp(6)
+  pilot_mission       pilot_mission @relation(fields: [fk_operation_id], references: [pilot_mission_id], onDelete: Cascade, onUpdate: NoAction)
+  users               public_users? @relation(fields: [uploaded_by_user_id], references: [user_id], onUpdate: NoAction)
+
+  @@index([fk_operation_id], map: "idx_operation_attachment_operation")
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model org_chart_overrides {
+  id             Int       @id @default(autoincrement())
+  owner_id       Int
+  user_id        Int
+  parent_user_id Int?
+  created_at     DateTime? @default(now()) @db.Timestamp(6)
+  updated_at     DateTime? @default(now()) @db.Timestamp(6)
+
+  @@unique([owner_id, user_id])
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model owner {
+  owner_id                    Int                         @id @default(autoincrement())
+  owner_code                  String?                     @unique @db.VarChar(50)
+  owner_name                  String                      @db.VarChar(255)
+  owner_legal_name            String?                     @db.VarChar(255)
+  owner_type                  String?                     @db.VarChar(50)
+  owner_address               String?
+  owner_city                  String?                     @db.VarChar(100)
+  owner_state                 String?                     @db.VarChar(100)
+  owner_postal_code           String?                     @db.VarChar(20)
+  fk_country_id               Int?
+  owner_phone                 String?                     @db.VarChar(50)
+  owner_email                 String?                     @db.VarChar(255)
+  owner_website               String?                     @db.VarChar(255)
+  owner_logo                  String?
+  owner_active                String?                     @default("Y") @db.Char(1)
+  tax_id                      String?                     @db.VarChar(50)
+  registration_number         String?                     @db.VarChar(100)
+  license_number              String?                     @db.VarChar(100)
+  license_expiry              DateTime?                   @db.Date
+  created_at                  DateTime?                   @default(now()) @db.Timestamp(6)
+  updated_at                  DateTime?                   @default(now()) @db.Timestamp(6)
+  drone_atc_enabled           Boolean                     @default(false)
+  easa_operator_code          String?
+  email_notifications_enabled Boolean                     @default(false)
+  api_keys                    api_keys[]
+  assignment                  assignment[]
+  calendar_shift              calendar_shift[]
+  checklist                   checklist[]
+  client                      client[]
+  communication               communication[]
+  communication_general       communication_general[]
+  compliance_requirement      compliance_requirement[]
+  controlroom_meta            controlroom_meta[]
+  drone_class_config          drone_class_config[]
+  emergency_response_plan     emergency_response_plan[]
+  evaluation                  evaluation[]
+  flight_requests             flight_requests[]
+  kanban                      kanban[]
+  luc_document                luc_document[]
+  luc_procedure               luc_procedure[]
+  maintenance_ticket          maintenance_ticket[]
+  countries                   countries?                  @relation(fields: [fk_country_id], references: [country_id], onDelete: NoAction, onUpdate: NoAction)
+  owner_territorial_unit      owner_territorial_unit[]
+  payload                     payload[]
+  pilot_mission               pilot_mission[]
+  pilot_mission_result_type   pilot_mission_result_type[]
+  pilot_mission_status        pilot_mission_status[]
+  planning                    planning[]
+  planning_logbook            planning_logbook[]
+  planning_test_logbook       planning_test_logbook[]
+  repository_file             repository_file[]
+  safety_report               safety_report[]
+  spi_kpi                     spi_kpi[]
+  spi_kpi_definition          spi_kpi_definition[]
+  team                        team[]
+  tool                        tool[]
+  training                    training[]
+  turns                       turns[]
+  user_owner                  user_owner[]
+  user_qualification          user_qualification[]
+  users                       public_users[]
+
+  @@index([owner_active], map: "idx_owner_active")
+  @@index([owner_code], map: "idx_owner_code")
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model owner_territorial_unit {
+  unit_id                                                 Int            @id @default(autoincrement())
+  fk_owner_id                                             Int
+  unit_code                                               String?        @db.VarChar(50)
+  unit_name                                               String         @db.VarChar(255)
+  unit_type                                               String?        @db.VarChar(50)
+  unit_address                                            String?
+  unit_city                                               String?        @db.VarChar(100)
+  unit_state                                              String?        @db.VarChar(100)
+  unit_postal_code                                        String?        @db.VarChar(20)
+  fk_country_id                                           Int?
+  unit_phone                                              String?        @db.VarChar(50)
+  unit_email                                              String?        @db.VarChar(255)
+  unit_manager_id                                         Int?
+  unit_active                                             String?        @default("Y") @db.Char(1)
+  created_at                                              DateTime?      @default(now()) @db.Timestamp(6)
+  updated_at                                              DateTime?      @default(now()) @db.Timestamp(6)
+  countries                                               countries?     @relation(fields: [fk_country_id], references: [country_id], onDelete: NoAction, onUpdate: NoAction)
+  owner                                                   owner          @relation(fields: [fk_owner_id], references: [owner_id], onDelete: Cascade, onUpdate: NoAction)
+  users_owner_territorial_unit_unit_manager_idTousers     public_users?  @relation("owner_territorial_unit_unit_manager_idTousers", fields: [unit_manager_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users_users_fk_territorial_unitToowner_territorial_unit public_users[] @relation("users_fk_territorial_unitToowner_territorial_unit")
+
+  @@unique([fk_owner_id, unit_code])
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model payload {
+  payload_id          Int       @id @default(autoincrement())
+  fk_owner_id         Int?
+  fk_tool_id          Int?
+  payload_code        String?   @db.VarChar(50)
+  payload_name        String    @db.VarChar(255)
+  payload_type        String?   @db.VarChar(100)
+  payload_description String?
+  manufacturer        String?   @db.VarChar(255)
+  model               String?   @db.VarChar(255)
+  specifications      Json?
+  weight              Decimal?  @db.Decimal(10, 3)
+  power_requirements  String?   @db.VarChar(100)
+  compatibility       Json?
+  payload_active      String?   @default("Y") @db.Char(1)
+  created_at          DateTime? @default(now()) @db.Timestamp(6)
+  updated_at          DateTime? @default(now()) @db.Timestamp(6)
+  owner               owner?    @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
+  tool                tool?     @relation(fields: [fk_tool_id], references: [tool_id], onUpdate: NoAction)
+
+  @@unique([fk_owner_id, payload_code])
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model pilot_declaration {
+  declaration_id      Int          @id @default(autoincrement())
+  fk_user_id          Int
+  fk_tool_id          Int?
+  declaration_type    String?      @db.VarChar(50)
+  declaration_date    DateTime?    @db.Date
+  declaration_data    Json?
+  checklist_completed Boolean?     @default(false)
+  declared_at         DateTime?    @default(now()) @db.Timestamp(6)
+  tool                tool?        @relation(fields: [fk_tool_id], references: [tool_id], onDelete: NoAction, onUpdate: NoAction)
+  users               public_users @relation(fields: [fk_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([fk_user_id, declaration_date, declaration_type], map: "pilot_declaration_user_date_type_key")
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model pilot_mission {
+  pilot_mission_id          Int                        @id @default(autoincrement())
+  fk_planning_id            Int?
+  fk_pilot_user_id          Int
+  fk_tool_id                Int?
+  fk_mission_type_id        Int?
+  fk_mission_category_id    Int?
+  fk_mission_status_id      Int?
+  mission_code              String?                    @unique @db.VarChar(50)
+  mission_name              String?                    @db.VarChar(255)
+  mission_description       String?
+  scheduled_start           DateTime?                  @db.Timestamp(6)
+  actual_start              DateTime?                  @db.Timestamp(6)
+  actual_end                DateTime?                  @db.Timestamp(6)
+  flight_duration           Int?
+  location                  String?
+  notes                     String?
+  created_at                DateTime?                  @default(now()) @db.Timestamp(6)
+  updated_at                DateTime?                  @default(now()) @db.Timestamp(6)
+  fk_owner_id               Int
+  status_name               String?                    @db.VarChar(100)
+  distance_flown            Decimal?                   @db.Decimal(10, 2)
+  recurring_group_id        String?
+  mission_date_until        DateTime?                  @db.Date
+  mission_group_label       String?
+  fk_luc_procedure_id       Int?
+  luc_procedure_progress    Json?
+  luc_completed_at          DateTime?                  @db.Timestamp(6)
+  fk_mission_result_type_id Int?
+  battery_charge_start      Decimal?                   @db.Decimal(5, 2)
+  battery_charge_end        Decimal?                   @db.Decimal(5, 2)
+  incident_flag             Boolean?                   @default(false)
+  rth_unplanned             Boolean?                   @default(false)
+  link_loss                 Boolean?                   @default(false)
+  deviation_flag            Boolean?                   @default(false)
+  weather_temperature       Decimal?                   @db.Decimal(6, 2)
+  fk_client_id              Int?
+  mission_metadata          Json?                      @default("{}")
+  fk_erp_group_id           Int?
+  controlroom_drone         controlroom_drone[]
+  operation_attachment      operation_attachment[]
+  client                    client?                    @relation(fields: [fk_client_id], references: [client_id], onDelete: NoAction, onUpdate: NoAction)
+  erp_location_group        erp_location_group?        @relation(fields: [fk_erp_group_id], references: [group_id], onDelete: NoAction, onUpdate: NoAction)
+  luc_procedure             luc_procedure?             @relation(fields: [fk_luc_procedure_id], references: [procedure_id], onUpdate: NoAction)
+  pilot_mission_category    pilot_mission_category?    @relation(fields: [fk_mission_category_id], references: [category_id], onDelete: NoAction, onUpdate: NoAction)
+  pilot_mission_result_type pilot_mission_result_type? @relation(fields: [fk_mission_result_type_id], references: [result_type_id], onDelete: NoAction, onUpdate: NoAction)
+  pilot_mission_status      pilot_mission_status?      @relation(fields: [fk_mission_status_id], references: [status_id], onDelete: NoAction, onUpdate: NoAction)
+  pilot_mission_type        pilot_mission_type?        @relation(fields: [fk_mission_type_id], references: [mission_type_id], onDelete: NoAction, onUpdate: NoAction)
+  owner                     owner                      @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
+  users                     public_users               @relation(fields: [fk_pilot_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  planning                  planning?                  @relation(fields: [fk_planning_id], references: [planning_id], onDelete: NoAction, onUpdate: NoAction)
+  tool                      tool?                      @relation(fields: [fk_tool_id], references: [tool_id], onUpdate: NoAction)
+  pilot_mission_result      pilot_mission_result[]
+  safety_report             safety_report[]
+
+  @@index([actual_start], map: "idx_pilot_mission_actual_start")
+  @@index([scheduled_start], map: "idx_pilot_mission_date")
+  @@index([fk_pilot_user_id], map: "idx_pilot_mission_fk_pilot_user_id")
+  @@index([fk_planning_id], map: "idx_pilot_mission_fk_planning_id")
+  @@index([fk_tool_id], map: "idx_pilot_mission_fk_tool_id")
+  @@index([fk_luc_procedure_id], map: "idx_pilot_mission_luc", where: raw("(fk_luc_procedure_id IS NOT NULL)"))
+  @@index([fk_owner_id], map: "idx_pilot_mission_owner")
+  @@index([fk_pilot_user_id], map: "idx_pilot_mission_pilot")
+  @@index([fk_planning_id], map: "idx_pilot_mission_planning")
+  @@index([recurring_group_id], map: "idx_pilot_mission_recurring_group", where: raw("(recurring_group_id IS NOT NULL)"))
+  @@index([fk_mission_status_id], map: "idx_pilot_mission_status")
+  @@index([status_name], map: "idx_pilot_mission_status_name")
+  @@index([fk_tool_id], map: "idx_pilot_mission_tool")
+  @@index([actual_start], map: "idx_pilot_mission_year", where: raw("(actual_start >= '2020-01-01 00:00:00'::timestamp without time zone)"))
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model pilot_mission_category {
+  category_id          Int             @id @default(autoincrement())
+  category_code        String          @db.VarChar(50)
+  category_name        String          @db.VarChar(100)
+  category_description String?
+  is_active            Boolean?        @default(true)
+  fk_owner_id          Int
+  pilot_mission        pilot_mission[]
+
+  @@unique([category_code, fk_owner_id], map: "pilot_mission_category_code_owner_key")
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model pilot_mission_planned_template_logbook {
+  template_id          Int           @id @default(autoincrement())
+  template_code        String?       @unique @db.VarChar(50)
+  template_name        String        @db.VarChar(255)
+  template_description String?
+  template_data        Json?
+  created_by_user_id   Int?
+  is_active            Boolean?      @default(true)
+  created_at           DateTime?     @default(now()) @db.Timestamp(6)
+  updated_at           DateTime?     @default(now()) @db.Timestamp(6)
+  users                public_users? @relation(fields: [created_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model pilot_mission_result {
+  result_id           Int           @id @default(autoincrement())
+  fk_pilot_mission_id Int
+  result_type         String?       @db.VarChar(50)
+  result_description  String?
+  file_path           String?
+  file_count          Int?
+  data_size           BigInt?
+  quality_score       Decimal?      @db.Decimal(5, 2)
+  processing_status   String?       @db.VarChar(50)
+  result_metadata     Json?
+  created_at          DateTime?     @default(now()) @db.Timestamp(6)
+  pilot_mission       pilot_mission @relation(fields: [fk_pilot_mission_id], references: [pilot_mission_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model pilot_mission_result_type {
+  result_type_id   Int             @id @default(autoincrement())
+  fk_owner_id      Int?
+  result_type_code String          @db.VarChar(50)
+  result_type_desc String?
+  is_active        Boolean?        @default(true)
+  created_at       DateTime?       @default(now()) @db.Timestamp(6)
+  updated_at       DateTime?       @default(now()) @db.Timestamp(6)
+  pilot_mission    pilot_mission[]
+  owner            owner?          @relation(fields: [fk_owner_id], references: [owner_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([result_type_code, fk_owner_id], map: "pilot_mission_result_type_code_owner_key")
+  @@unique([fk_owner_id, result_type_code])
+  @@index([result_type_code], map: "idx_mission_result_type_code")
+  @@index([fk_owner_id], map: "idx_mission_result_type_owner")
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model pilot_mission_status {
+  status_id          Int             @id @default(autoincrement())
+  status_code        String          @db.VarChar(50)
+  status_name        String          @db.VarChar(100)
+  status_description String?
+  status_order       Int?
+  is_final_status    Boolean?        @default(false)
+  is_active          Boolean?        @default(true)
+  fk_owner_id        Int?
+  pilot_mission      pilot_mission[]
+  owner              owner?          @relation(fields: [fk_owner_id], references: [owner_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_owner")
+
+  @@unique([status_code, fk_owner_id], map: "pilot_mission_status_status_code_owner_key")
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model pilot_mission_type {
+  mission_type_id         Int             @id @default(autoincrement())
+  type_code               String          @db.VarChar(50)
+  type_name               String          @db.VarChar(100)
+  type_description        String?
+  required_certifications Json?
+  is_active               Boolean?        @default(true)
+  fk_owner_id             Int
+  pilot_mission           pilot_mission[]
+
+  @@unique([type_code, fk_owner_id], map: "pilot_mission_type_code_owner_key")
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model pilot_status {
+  status_id          Int      @id @default(autoincrement())
+  status_code        String   @unique @db.VarChar(50)
+  status_name        String   @db.VarChar(100)
+  status_description String?
+  status_color       String?  @db.VarChar(20)
+  is_active          Boolean? @default(true)
+
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model pilot_vehicle_status {
+  vehicle_status_id  Int      @id @default(autoincrement())
+  status_code        String   @unique @db.VarChar(50)
+  status_name        String   @db.VarChar(100)
+  status_description String?
+  is_operational     Boolean? @default(true)
+  is_active          Boolean? @default(true)
+
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model planning {
+  planning_id                               Int                     @id @default(autoincrement())
+  fk_owner_id                               Int
+  fk_client_id                              Int?
+  fk_evaluation_id                          Int?
+  planning_code                             String?                 @db.VarChar(50)
+  planning_name                             String                  @db.VarChar(255)
+  planning_description                      String?
+  planning_type                             String?                 @db.VarChar(50)
+  planning_status                           String?                 @db.VarChar(50)
+  planned_date                              DateTime?               @db.Date
+  created_by_user_id                        Int?
+  planning_active                           String?                 @default("Y") @db.Char(1)
+  created_at                                DateTime?               @default(now()) @db.Timestamp(6)
+  updated_at                                DateTime?               @default(now()) @db.Timestamp(6)
+  assigned_to_user_id                       Int?
+  planning_json                             Json?                   @default("{}")
+  checklist                                 checklist[]
+  flytbase_mission                          flytbase_mission[]
+  mission_component                         mission_component[]
+  pilot_mission                             pilot_mission[]
+  users_planning_assigned_to_user_idTousers public_users?           @relation("planning_assigned_to_user_idTousers", fields: [assigned_to_user_id], references: [user_id], onUpdate: NoAction)
+  users_planning_created_by_user_idTousers  public_users?           @relation("planning_created_by_user_idTousers", fields: [created_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  client                                    client?                 @relation(fields: [fk_client_id], references: [client_id], onDelete: NoAction, onUpdate: NoAction)
+  evaluation                                evaluation?             @relation(fields: [fk_evaluation_id], references: [evaluation_id], onDelete: NoAction, onUpdate: NoAction)
+  owner                                     owner                   @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
+  planning_logbook                          planning_logbook[]
+  planning_test_logbook                     planning_test_logbook[]
+
+  @@index([assigned_to_user_id], map: "idx_planning_assigned_to")
+  @@index([planned_date], map: "idx_planning_date")
+  @@index([fk_evaluation_id], map: "idx_planning_evaluation")
+  @@index([fk_client_id], map: "idx_planning_fk_client_id")
+  @@index([fk_owner_id], map: "idx_planning_owner")
+  @@index([planning_id], map: "idx_planning_planning_id")
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model planning_logbook {
+  mission_planning_id         Int                     @id @default(autoincrement())
+  fk_planning_id              Int
+  fk_evaluation_id            Int?
+  fk_client_id                Int?
+  fk_owner_id                 Int?
+  fk_user_id                  Int?
+  fk_tool_id                  Int?
+  mission_planning_code       String?                 @db.VarChar(50)
+  mission_planning_desc       String?
+  mission_planning_active     String?                 @default("Y") @db.Char(1)
+  mission_planning_ver        Int?                    @default(1)
+  mission_planning_folder     String?
+  mission_planning_filename   String?                 @db.VarChar(255)
+  mission_planning_filesize   BigInt?
+  mission_planning_limit_json Json?
+  waypoints                   Json?
+  flight_parameters           Json?
+  created_at                  DateTime?               @default(now()) @db.Timestamp(6)
+  updated_at                  DateTime?               @default(now()) @db.Timestamp(6)
+  mission_planning_s3_key     String?
+  mission_planning_s3_url     String?
+  client                      client?                 @relation(fields: [fk_client_id], references: [client_id], onDelete: NoAction, onUpdate: NoAction)
+  evaluation                  evaluation?             @relation(fields: [fk_evaluation_id], references: [evaluation_id], onDelete: NoAction, onUpdate: NoAction)
+  owner                       owner?                  @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
+  planning                    planning                @relation(fields: [fk_planning_id], references: [planning_id], onDelete: Cascade, onUpdate: NoAction)
+  tool                        tool?                   @relation(fields: [fk_tool_id], references: [tool_id], onUpdate: NoAction)
+  users                       public_users?           @relation(fields: [fk_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  planning_test_logbook       planning_test_logbook[]
+
+  @@index([waypoints], map: "idx_mission_planning_waypoints_gin", type: Gin)
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model planning_test_logbook {
+  test_id                                              Int               @id @default(autoincrement())
+  fk_planning_id                                       Int
+  test_code                                            String?           @db.VarChar(50)
+  test_description                                     String?
+  test_date                                            DateTime?         @db.Date
+  test_status                                          String?           @db.VarChar(50)
+  test_results                                         Json?
+  tested_by_user_id                                    Int?
+  test_notes                                           String?
+  created_at                                           DateTime?         @default(now()) @db.Timestamp(6)
+  fk_owner_id                                          Int?
+  fk_mission_planning_id                               Int?
+  fk_evaluation_id                                     Int?
+  fk_pic_id                                            Int?
+  fk_observer_id                                       Int?
+  fk_user_id                                           Int?
+  mission_test_date_start                              DateTime?         @db.Date
+  mission_test_date_end                                DateTime?         @db.Date
+  mission_test_result                                  String?           @db.VarChar(50)
+  mission_test_folder                                  String?
+  mission_test_filename                                String?           @db.VarChar(255)
+  mission_test_filesize                                Decimal?          @db.Decimal(10, 2)
+  mission_test_s3_key                                  String?
+  mission_test_s3_url                                  String?
+  evaluation                                           evaluation?       @relation(fields: [fk_evaluation_id], references: [evaluation_id], onDelete: NoAction, onUpdate: NoAction)
+  planning_logbook                                     planning_logbook? @relation(fields: [fk_mission_planning_id], references: [mission_planning_id], onDelete: Cascade, onUpdate: NoAction)
+  users_planning_test_logbook_fk_observer_idTousers    public_users?     @relation("planning_test_logbook_fk_observer_idTousers", fields: [fk_observer_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  owner                                                owner?            @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
+  users_planning_test_logbook_fk_pic_idTousers         public_users?     @relation("planning_test_logbook_fk_pic_idTousers", fields: [fk_pic_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  planning                                             planning          @relation(fields: [fk_planning_id], references: [planning_id], onDelete: Cascade, onUpdate: NoAction)
+  users_planning_test_logbook_fk_user_idTousers        public_users?     @relation("planning_test_logbook_fk_user_idTousers", fields: [fk_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users_planning_test_logbook_tested_by_user_idTousers public_users?     @relation("planning_test_logbook_tested_by_user_idTousers", fields: [tested_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([fk_mission_planning_id], map: "idx_planning_test_logbook_mission_planning")
+  @@index([fk_owner_id], map: "idx_planning_test_logbook_owner")
+  @@index([fk_planning_id], map: "idx_planning_test_logbook_planning")
+  @@index([mission_test_s3_key], map: "idx_planning_test_logbook_s3_key", where: raw("(mission_test_s3_key IS NOT NULL)"))
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model procedure_document {
+  id             Int       @id @default(autoincrement())
+  doc_key        String    @unique
+  source_file    String
+  section_title  String
+  section_number String?
+  html_content   String
+  plain_text     String
+  created_at     DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@index([doc_key], map: "idx_procedure_doc_key")
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model repository_file {
+  file_id              Int                   @id @default(autoincrement())
+  fk_owner_id          Int?
+  fk_file_type_id      Int?
+  file_name            String                @db.VarChar(255)
+  file_path            String
+  file_size            BigInt?
+  file_hash            String?               @db.VarChar(64)
+  mime_type            String?               @db.VarChar(100)
+  file_description     String?
+  file_category        String?               @db.VarChar(100)
+  tags                 Json?
+  uploaded_by_user_id  Int?
+  is_public            Boolean?              @default(false)
+  download_count       Int?                  @default(0)
+  file_metadata        Json?
+  created_at           DateTime?             @default(now()) @db.Timestamp(6)
+  updated_at           DateTime?             @default(now()) @db.Timestamp(6)
+  repository_file_type repository_file_type? @relation(fields: [fk_file_type_id], references: [file_type_id], onDelete: NoAction, onUpdate: NoAction)
+  owner                owner?                @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
+  users                public_users?         @relation(fields: [uploaded_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model repository_file_type {
+  file_type_id          Int               @id @default(autoincrement())
+  file_type_code        String?           @unique @db.VarChar(50)
+  file_type_name        String            @db.VarChar(100)
+  file_type_description String?
+  allowed_extensions    Json?
+  max_file_size         BigInt?
+  is_active             Boolean?          @default(true)
+  repository_file       repository_file[]
+
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model safety_action {
+  action_id                                      Int           @id @default(autoincrement())
+  fk_report_id                                   Int
+  action_type                                    String?       @db.VarChar(50)
+  action_description                             String?
+  action_priority                                String?       @db.VarChar(20)
+  action_status                                  String?       @db.VarChar(50)
+  assigned_to_user_id                            Int?
+  due_date                                       DateTime?     @db.Date
+  completed_date                                 DateTime?     @db.Date
+  completion_notes                               String?
+  verification_required                          Boolean?      @default(false)
+  verified_by_user_id                            Int?
+  verified_at                                    DateTime?     @db.Timestamp(6)
+  created_at                                     DateTime?     @default(now()) @db.Timestamp(6)
+  updated_at                                     DateTime?     @default(now()) @db.Timestamp(6)
+  users_safety_action_assigned_to_user_idTousers public_users? @relation("safety_action_assigned_to_user_idTousers", fields: [assigned_to_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  safety_report                                  safety_report @relation(fields: [fk_report_id], references: [report_id], onDelete: Cascade, onUpdate: NoAction)
+  users_safety_action_verified_by_user_idTousers public_users? @relation("safety_action_verified_by_user_idTousers", fields: [verified_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model safety_report {
+  report_id                                          Int             @id @default(autoincrement())
+  fk_owner_id                                        Int?
+  fk_pilot_mission_id                                Int?
+  report_code                                        String?         @db.VarChar(50)
+  report_type                                        String?         @db.VarChar(50)
+  incident_date                                      DateTime?       @db.Date
+  incident_time                                      DateTime?       @db.Time(6)
+  location                                           String?
+  severity                                           String?         @db.VarChar(20)
+  description                                        String?
+  immediate_actions                                  String?
+  reported_by_user_id                                Int?
+  investigated_by_user_id                            Int?
+  investigation_findings                             String?
+  root_cause                                         String?
+  report_status                                      String?         @db.VarChar(50)
+  attachments                                        Json?
+  created_at                                         DateTime?       @default(now()) @db.Timestamp(6)
+  updated_at                                         DateTime?       @default(now()) @db.Timestamp(6)
+  safety_action                                      safety_action[]
+  owner                                              owner?          @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
+  pilot_mission                                      pilot_mission?  @relation(fields: [fk_pilot_mission_id], references: [pilot_mission_id], onDelete: NoAction, onUpdate: NoAction)
+  users_safety_report_investigated_by_user_idTousers public_users?   @relation("safety_report_investigated_by_user_idTousers", fields: [investigated_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users_safety_report_reported_by_user_idTousers     public_users?   @relation("safety_report_reported_by_user_idTousers", fields: [reported_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model schema_chunks {
+  id          String                @id
+  content     String
+  table_name  String?
+  column_name String?
+  kind        String?
+  embedding   Unsupported("vector")
+
+  @@index([embedding], map: "idx_schema_chunks_embedding")
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model spi_kpi {
+  kpi_id              Int                @id @default(autoincrement())
+  fk_definition_id    Int
+  fk_owner_id         Int?
+  measurement_date    DateTime           @db.Date
+  actual_value        Decimal?           @db.Decimal(15, 4)
+  target_value        Decimal?           @db.Decimal(15, 4)
+  threshold_min       Decimal?           @db.Decimal(15, 4)
+  threshold_max       Decimal?           @db.Decimal(15, 4)
+  status              String?            @db.VarChar(50)
+  variance            Decimal?           @db.Decimal(15, 4)
+  trend               String?            @db.VarChar(20)
+  notes               String?
+  recorded_by_user_id Int?
+  created_at          DateTime?          @default(now()) @db.Timestamp(6)
+  spi_kpi_definition  spi_kpi_definition @relation(fields: [fk_definition_id], references: [definition_id], onDelete: NoAction, onUpdate: NoAction)
+  owner               owner?             @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
+  users               public_users?      @relation(fields: [recorded_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  spi_kpi_log         spi_kpi_log[]
+
+  @@unique([fk_definition_id, measurement_date])
+  @@index([fk_definition_id], map: "idx_spi_kpi_fk_definition_id")
+  @@index([fk_owner_id], map: "idx_spi_kpi_fk_owner_id")
+  @@index([measurement_date], map: "idx_spi_kpi_measurement_date")
+  @@index([fk_owner_id, measurement_date], map: "idx_spi_kpi_owner_date")
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model spi_kpi_definition {
+  definition_id           Int                       @id @default(autoincrement())
+  fk_owner_id             Int?
+  kpi_code                String?                   @unique @db.VarChar(50)
+  kpi_name                String                    @db.VarChar(255)
+  kpi_description         String?
+  kpi_category            String?                   @db.VarChar(100)
+  kpi_type                String?                   @db.VarChar(50)
+  measurement_unit        String?                   @db.VarChar(50)
+  calculation_formula     String?
+  data_source             String?                   @db.VarChar(255)
+  frequency               String?                   @db.VarChar(50)
+  target_direction        String?                   @db.VarChar(20)
+  is_active               Boolean?                  @default(true)
+  created_at              DateTime?                 @default(now()) @db.Timestamp(6)
+  updated_at              DateTime?                 @default(now()) @db.Timestamp(6)
+  target_value            Decimal?                  @default(0) @db.Decimal(15, 4)
+  spi_kpi                 spi_kpi[]
+  owner                   owner?                    @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
+  spi_kpi_target_proposal spi_kpi_target_proposal[]
+
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model spi_kpi_log {
+  log_id             Int           @id @default(autoincrement())
+  fk_kpi_id          Int
+  log_type           String?       @db.VarChar(50)
+  log_description    String?
+  previous_value     Decimal?      @db.Decimal(15, 4)
+  new_value          Decimal?      @db.Decimal(15, 4)
+  changed_by_user_id Int?
+  changed_at         DateTime?     @default(now()) @db.Timestamp(6)
+  users              public_users? @relation(fields: [changed_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  spi_kpi            spi_kpi       @relation(fields: [fk_kpi_id], references: [kpi_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model spi_kpi_target_proposal {
+  proposal_id                                              Int                @id @default(autoincrement())
+  fk_definition_id                                         Int
+  proposal_year                                            Int?
+  proposal_period                                          String?            @db.VarChar(50)
+  proposed_target                                          Decimal?           @db.Decimal(15, 4)
+  proposed_by_user_id                                      Int?
+  justification                                            String?
+  proposal_status                                          String?            @db.VarChar(50)
+  approved_by_user_id                                      Int?
+  approved_at                                              DateTime?          @db.Timestamp(6)
+  created_at                                               DateTime?          @default(now()) @db.Timestamp(6)
+  users_spi_kpi_target_proposal_approved_by_user_idTousers public_users?      @relation("spi_kpi_target_proposal_approved_by_user_idTousers", fields: [approved_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  spi_kpi_definition                                       spi_kpi_definition @relation(fields: [fk_definition_id], references: [definition_id], onDelete: NoAction, onUpdate: NoAction)
+  users_spi_kpi_target_proposal_proposed_by_user_idTousers public_users?      @relation("spi_kpi_target_proposal_proposed_by_user_idTousers", fields: [proposed_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model team {
+  team_id          Int            @id @default(autoincrement())
+  fk_owner_id      Int
+  team_code        String?        @db.VarChar(50)
+  team_name        String         @db.VarChar(255)
+  team_description String?
+  team_leader_id   Int?
+  team_type        String?        @db.VarChar(50)
+  team_active      String?        @default("Y") @db.Char(1)
+  created_at       DateTime?      @default(now()) @db.Timestamp(6)
+  updated_at       DateTime?      @default(now()) @db.Timestamp(6)
+  owner            owner          @relation(fields: [fk_owner_id], references: [owner_id], onDelete: Cascade, onUpdate: NoAction)
+  users            public_users?  @relation(fields: [team_leader_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  team_members     team_members[]
+
+  @@unique([fk_owner_id, team_code])
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model team_members {
+  team_member_id Int          @id @default(autoincrement())
+  fk_team_id     Int
+  fk_user_id     Int
+  role_in_team   String?      @db.VarChar(100)
+  joined_date    DateTime?    @default(dbgenerated("CURRENT_DATE")) @db.Date
+  left_date      DateTime?    @db.Date
+  is_active      Boolean?     @default(true)
+  team           team         @relation(fields: [fk_team_id], references: [team_id], onDelete: Cascade, onUpdate: NoAction)
+  users          public_users @relation(fields: [fk_user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([fk_team_id, fk_user_id])
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model ticket_attachment {
+  attachment_id       Int                @id @default(autoincrement())
+  fk_ticket_id        Int
+  file_name           String             @db.VarChar(255)
+  file_key            String
+  file_type           String?            @db.VarChar(100)
+  file_size           BigInt?
+  file_description    String?
+  s3_region           String             @db.VarChar(100)
+  s3_url              String
+  uploaded_by         String?            @db.VarChar(100)
+  uploaded_by_user_id Int?
+  uploaded_at         DateTime?          @default(now()) @db.Timestamp(6)
+  maintenance_ticket  maintenance_ticket @relation(fields: [fk_ticket_id], references: [ticket_id], onDelete: Cascade, onUpdate: NoAction)
+  users               public_users?      @relation(fields: [uploaded_by_user_id], references: [user_id], onUpdate: NoAction)
+
+  @@index([fk_ticket_id], map: "idx_ticket_attachment_ticket")
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model tool {
+  tool_id            Int                  @id @default(autoincrement())
+  fk_owner_id        Int
+  fk_model_id        Int?
+  fk_status_id       Int?
+  tool_code          String?              @db.VarChar(50)
+  tool_name          String?              @db.VarChar(255)
+  tool_description   String?
+  location           String?              @db.VarChar(255)
+  tool_active        String?              @default("Y") @db.Char(1)
+  tool_metadata      Json?
+  created_at         DateTime?            @default(now()) @db.Timestamp(6)
+  updated_at         DateTime?            @default(now()) @db.Timestamp(6)
+  assigned_client_id Int?
+  filekey            String?
+  fileurl            String?
+  controlroom_drone  controlroom_drone[]
+  maintenance_ticket maintenance_ticket[]
+  mission_component  mission_component[]
+  payload            payload[]
+  pilot_declaration  pilot_declaration[]
+  pilot_mission      pilot_mission[]
+  planning_logbook   planning_logbook[]
+  client             client?              @relation(fields: [assigned_client_id], references: [client_id], onUpdate: NoAction)
+  tool_model         tool_model?          @relation(fields: [fk_model_id], references: [model_id], onDelete: NoAction, onUpdate: NoAction)
+  owner              owner                @relation(fields: [fk_owner_id], references: [owner_id], onDelete: Cascade, onUpdate: NoAction)
+  tool_status        tool_status?         @relation(fields: [fk_status_id], references: [status_id], onDelete: NoAction, onUpdate: NoAction)
+  tool_component     tool_component[]
+  tool_erp           tool_erp[]
+  tool_maintenance   tool_maintenance[]
+
+  @@unique([fk_owner_id, tool_code])
+  @@index([tool_active], map: "idx_tool_active")
+  @@index([assigned_client_id], map: "idx_tool_assigned_client")
+  @@index([tool_metadata], map: "idx_tool_metadata_gin", type: Gin)
+  @@index([fk_owner_id], map: "idx_tool_owner")
+  @@index([fk_owner_id, tool_active], map: "idx_tool_owner_active")
+  @@index([fk_status_id], map: "idx_tool_status")
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model tool_component {
+  component_id                Int                       @id @default(autoincrement())
+  fk_tool_id                  Int
+  component_code              String?                   @db.VarChar(50)
+  component_name              String                    @db.VarChar(255)
+  component_type              String?                   @db.VarChar(100)
+  component_description       String?
+  serial_number               String?                   @db.VarChar(100)
+  installation_date           DateTime?                 @db.Date
+  component_active            String?                   @default("Y") @db.Char(1)
+  created_at                  DateTime?                 @default(now()) @db.Timestamp(6)
+  updated_at                  DateTime?                 @default(now()) @db.Timestamp(6)
+  component_metadata          Json?
+  current_usage_hours         Decimal?                  @db.Decimal
+  expected_lifespan_hours     Int?
+  maintenance_cycle           String?                   @db.VarChar(20)
+  maintenance_cycle_hour      Decimal?                  @db.Decimal
+  maintenance_cycle_day       Decimal?                  @db.Decimal
+  maintenance_cycle_flight    Decimal?                  @db.Decimal
+  current_maintenance_hours   Decimal?                  @default(0) @db.Decimal
+  current_maintenance_days    Decimal?                  @default(0) @db.Decimal
+  current_maintenance_flights Decimal?                  @default(0) @db.Decimal
+  last_maintenance_date       DateTime?                 @db.Timestamp(6)
+  dcc_drone_id                String?                   @db.Uuid
+  drone_registration_code     String?
+  drc_synced_at               DateTime?                 @db.Timestamptz(6)
+  luc_document                luc_document[]
+  maintenance_ticket          maintenance_ticket[]
+  maintenance_ticket_item     maintenance_ticket_item[]
+  tool                        tool                      @relation(fields: [fk_tool_id], references: [tool_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([fk_tool_id, component_active], map: "idx_tool_component_tool")
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model tool_erp {
+  erp_id           Int       @id @default(autoincrement())
+  fk_tool_id       Int
+  erp_system       String?   @db.VarChar(100)
+  erp_reference_id String?   @db.VarChar(100)
+  erp_data         Json?
+  sync_status      String?   @db.VarChar(50)
+  last_sync_at     DateTime? @db.Timestamp(6)
+  created_at       DateTime? @default(now()) @db.Timestamp(6)
+  updated_at       DateTime? @default(now()) @db.Timestamp(6)
+  tool             tool      @relation(fields: [fk_tool_id], references: [tool_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([fk_tool_id, erp_system])
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model tool_maintenance {
+  maintenance_id          Int           @id @default(autoincrement())
+  fk_tool_id              Int
+  maintenance_type        String        @db.VarChar(100)
+  maintenance_description String?
+  scheduled_date          DateTime?     @db.Date
+  completed_date          DateTime?     @db.Date
+  performed_by_user_id    Int?
+  maintenance_status      String?       @db.VarChar(50)
+  maintenance_cost        Decimal?      @db.Decimal(15, 2)
+  maintenance_notes       String?
+  next_maintenance_date   DateTime?     @db.Date
+  created_at              DateTime?     @default(now()) @db.Timestamp(6)
+  updated_at              DateTime?     @default(now()) @db.Timestamp(6)
+  tool                    tool          @relation(fields: [fk_tool_id], references: [tool_id], onDelete: Cascade, onUpdate: NoAction)
+  users                   public_users? @relation(fields: [performed_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model tool_model {
+  model_id          Int       @id @default(autoincrement())
+  model_code        String?   @db.VarChar(50)
+  model_name        String    @db.VarChar(255)
+  manufacturer      String?   @db.VarChar(255)
+  model_description String?
+  specifications    Json?
+  model_active      String?   @default("Y") @db.Char(1)
+  created_at        DateTime? @default(now()) @db.Timestamp(6)
+  tool              tool[]
+
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model tool_status {
+  status_id          Int      @id @default(autoincrement())
+  status_code        String   @unique @db.VarChar(50)
+  status_name        String   @db.VarChar(100)
+  status_description String?
+  status_color       String?  @db.VarChar(20)
+  status_icon        String?  @db.VarChar(50)
+  status_order       Int?
+  is_active          Boolean? @default(true)
+  tool               tool[]
+
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model training {
+  training_id            Int                   @id @default(autoincrement())
+  fk_owner_id            Int?
+  training_code          String?               @db.VarChar(50)
+  training_name          String                @db.VarChar(255)
+  training_description   String?
+  training_type          String?               @db.VarChar(50)
+  training_duration      Int?
+  training_cost          Decimal?              @db.Decimal(15, 2)
+  trainer_user_id        Int?
+  training_materials     Json?
+  certifications_awarded Json?
+  training_active        String?               @default("Y") @db.Char(1)
+  created_at             DateTime?             @default(now()) @db.Timestamp(6)
+  updated_at             DateTime?             @default(now()) @db.Timestamp(6)
+  certificate_type       String?               @db.VarChar(50)
+  owner                  owner?                @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
+  users                  public_users?         @relation(fields: [trainer_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  training_attendance    training_attendance[]
+
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model training_attendance {
+  attendance_id         Int          @id @default(autoincrement())
+  fk_training_id        Int
+  fk_user_id            Int
+  training_session_date DateTime?    @db.Date
+  attendance_status     String?      @db.VarChar(50)
+  completion_status     String?      @db.VarChar(50)
+  score                 Decimal?     @db.Decimal(5, 2)
+  feedback              String?
+  certification_issued  Boolean?     @default(false)
+  certification_number  String?      @db.VarChar(100)
+  certification_date    DateTime?    @db.Date
+  certification_expiry  DateTime?    @db.Date
+  created_at            DateTime?    @default(now()) @db.Timestamp(6)
+  training              training     @relation(fields: [fk_training_id], references: [training_id], onDelete: Cascade, onUpdate: NoAction)
+  users                 public_users @relation(fields: [fk_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([fk_training_id, fk_user_id, training_session_date])
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model transaction_signs {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id             Int
+  owner_id            Int
+  user_name           String?
+  action_type         String
+  entity_type         String
+  entity_id           String?
+  jwt_token           String
+  payload_preview     Json?
+  public_key_snapshot String
+  created_at          DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([created_at(sort: Desc)], map: "idx_transaction_signs_created")
+  @@index([entity_type, entity_id], map: "idx_transaction_signs_entity")
+  @@index([owner_id], map: "idx_transaction_signs_owner")
+  @@index([user_id], map: "idx_transaction_signs_user")
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model turn_users {
+  turn_user_id    Int          @id @default(autoincrement())
+  fk_turn_id      Int
+  fk_user_id      Int
+  assignment_date DateTime?    @db.Date
+  is_active       Boolean?     @default(true)
+  created_at      DateTime?    @default(now()) @db.Timestamp(6)
+  turns           turns        @relation(fields: [fk_turn_id], references: [turn_id], onDelete: Cascade, onUpdate: NoAction)
+  users           public_users @relation(fields: [fk_user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([fk_turn_id, fk_user_id, assignment_date])
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model turns {
+  turn_id          Int          @id @default(autoincrement())
+  fk_owner_id      Int?
+  turn_code        String?      @db.VarChar(50)
+  turn_name        String       @db.VarChar(255)
+  turn_description String?
+  turn_start_time  DateTime?    @db.Time(6)
+  turn_end_time    DateTime?    @db.Time(6)
+  turn_type        String?      @db.VarChar(50)
+  turn_active      String?      @default("Y") @db.Char(1)
+  created_at       DateTime?    @default(now()) @db.Timestamp(6)
+  turn_users       turn_users[]
+  owner            owner?       @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model user_authorization_keys {
+  id                    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id               Int      @unique
+  owner_id              Int
+  encrypted_private_key String
+  public_key            String
+  salt                  String
+  iv                    String
+  key_fingerprint       String?
+  created_at            DateTime @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([owner_id], map: "idx_user_auth_keys_owner")
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model user_device {
+  device_id     Int          @id @default(autoincrement())
+  fk_user_id    Int
+  device_name   String?      @db.VarChar(255)
+  device_type   String?      @db.VarChar(50)
+  device_token  String?
+  device_os     String?      @db.VarChar(50)
+  device_model  String?      @db.VarChar(100)
+  last_active   DateTime?    @db.Timestamp(6)
+  registered_at DateTime?    @default(now()) @db.Timestamp(6)
+  is_active     Boolean?     @default(true)
+  users         public_users @relation(fields: [fk_user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model user_owner {
+  user_owner_id        Int          @id @default(autoincrement())
+  fk_user_id           Int
+  fk_owner_id          Int
+  relationship_type    String?      @db.VarChar(50)
+  role_in_organization String?      @db.VarChar(100)
+  is_primary           Boolean?     @default(false)
+  start_date           DateTime?    @db.Date
+  end_date             DateTime?    @db.Date
+  is_active            Boolean?     @default(true)
+  created_at           DateTime?    @default(now()) @db.Timestamp(6)
+  owner                owner        @relation(fields: [fk_owner_id], references: [owner_id], onDelete: Cascade, onUpdate: NoAction)
+  users                public_users @relation(fields: [fk_user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([fk_user_id, fk_owner_id])
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model user_permessi {
+  permission_id                         Int           @id @default(autoincrement())
+  fk_user_id                            Int
+  permission_code                       String        @db.VarChar(100)
+  permission_desc                       String?
+  permission_active                     String?       @default("Y") @db.Char(1)
+  granted_at                            DateTime?     @default(now()) @db.Timestamp(6)
+  granted_by                            Int?
+  expires_at                            DateTime?     @db.Timestamp(6)
+  users_user_permessi_fk_user_idTousers public_users  @relation("user_permessi_fk_user_idTousers", fields: [fk_user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+  users_user_permessi_granted_byTousers public_users? @relation("user_permessi_granted_byTousers", fields: [granted_by], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([fk_user_id, permission_code])
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model user_qualification {
+  qualification_id   Int          @id @default(autoincrement())
+  fk_user_id         Int
+  fk_owner_id        Int
+  qualification_name String       @db.VarChar(255)
+  qualification_type String       @db.VarChar(50)
+  description        String?
+  start_date         DateTime?    @db.Date
+  expiry_date        DateTime?    @db.Date
+  status             String       @default("Active") @db.VarChar(20)
+  created_at         DateTime?    @default(now()) @db.Timestamp(6)
+  updated_at         DateTime?    @default(now()) @db.Timestamp(6)
+  owner              owner        @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
+  users              public_users @relation(fields: [fk_user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([fk_owner_id], map: "idx_user_qualification_owner")
+  @@index([fk_user_id], map: "idx_user_qualification_user")
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model user_session {
+  session_id    Int          @id @default(autoincrement())
+  fk_user_id    Int
+  session_token String       @unique @db.VarChar(255)
+  device_info   Json?
+  ip_address    String?      @db.Inet
+  user_agent    String?
+  login_at      DateTime?    @default(now()) @db.Timestamp(6)
+  logout_at     DateTime?    @db.Timestamp(6)
+  expires_at    DateTime     @db.Timestamp(6)
+  is_active     Boolean?     @default(true)
+  users         public_users @relation(fields: [fk_user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([is_active], map: "idx_session_active")
+  @@index([session_token], map: "idx_session_token")
+  @@index([fk_user_id], map: "idx_session_user")
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model user_settings {
+  setting_id    Int          @id @default(autoincrement())
+  fk_user_id    Int
+  setting_key   String       @db.VarChar(100)
+  setting_value String?
+  setting_type  String?      @default("string") @db.VarChar(50)
+  created_at    DateTime?    @default(now()) @db.Timestamp(6)
+  updated_at    DateTime?    @default(now()) @db.Timestamp(6)
+  users         public_users @relation(fields: [fk_user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([fk_user_id, setting_key])
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model public_users {
+  user_id                                                                    Int                                      @id @default(autoincrement())
+  username                                                                   String?                                  @unique @db.VarChar(100)
+  email                                                                      String?                                  @unique @db.VarChar(255)
+  password_hash                                                              String?                                  @db.VarChar(255)
+  first_name                                                                 String?                                  @db.VarChar(100)
+  last_name                                                                  String?                                  @db.VarChar(100)
+  phone                                                                      String?                                  @db.VarChar(50)
+  user_active                                                                String?                                  @default("Y") @db.Char(1)
+  user_role                                                                  String?                                  @db.VarChar(50)
+  last_login                                                                 DateTime?                                @db.Timestamp(6)
+  created_at                                                                 DateTime?                                @default(now()) @db.Timestamp(6)
+  updated_at                                                                 DateTime?                                @default(now()) @db.Timestamp(6)
+  auth_user_id                                                               String?                                  @unique @db.Uuid
+  fk_owner_id                                                                Int?
+  fk_client_id                                                               Int?
+  fk_user_profile_id                                                         Int?
+  user_type                                                                  String?                                  @db.VarChar(100)
+  key_                                                                       String?                                  @map("_key_")
+  user_unique_code                                                           String?                                  @db.VarChar(255)
+  fk_territorial_unit                                                        Int?
+  is_root                                                                    String?                                  @default("N") @db.Char(1)
+  is_viewer                                                                  String?                                  @default("N") @db.Char(1)
+  is_default_user                                                            String?                                  @default("N") @db.Char(1)
+  is_manager                                                                 String?                                  @default("N") @db.Char(1)
+  user_timezone                                                              String?                                  @default("IST") @db.VarChar(64)
+  last_logout_at                                                             DateTime?                                @db.Timestamptz(6)
+  flytbase_api_token                                                         String?
+  flytbase_org_id                                                            String?
+  flytbase_token_name                                                        String?
+  alert_log_alert_log_acknowledged_by_user_idTousers                         alert_log[]                              @relation("alert_log_acknowledged_by_user_idTousers")
+  alert_log_alert_log_assigned_to_user_idTousers                             alert_log[]                              @relation("alert_log_assigned_to_user_idTousers")
+  alert_log_alert_log_resolved_by_user_idTousers                             alert_log[]                              @relation("alert_log_resolved_by_user_idTousers")
+  alert_log_alert_log_triggered_by_user_idTousers                            alert_log[]                              @relation("alert_log_triggered_by_user_idTousers")
+  api_keys                                                                   api_keys[]
+  assignment                                                                 assignment[]
+  backup_log                                                                 backup_log[]
+  calendar_shift                                                             calendar_shift[]
+  checklist                                                                  checklist[]
+  code_index                                                                 code_index[]
+  communication                                                              communication[]
+  communication_general                                                      communication_general[]
+  compliance_evidence_compliance_evidence_submitted_by_user_idTousers        compliance_evidence[]                    @relation("compliance_evidence_submitted_by_user_idTousers")
+  compliance_evidence_compliance_evidence_verified_by_user_idTousers         compliance_evidence[]                    @relation("compliance_evidence_verified_by_user_idTousers")
+  compliance_status_log                                                      compliance_status_log[]
+  deleted_owner                                                              deleted_owner[]
+  deleted_user                                                               deleted_user[]
+  evaluation                                                                 evaluation[]
+  evaluation_action                                                          evaluation_action[]
+  evaluation_file                                                            evaluation_file[]
+  flight_requests                                                            flight_requests[]
+  kanban                                                                     kanban[]
+  luc_document_luc_document_approved_by_user_idTousers                       luc_document[]                           @relation("luc_document_approved_by_user_idTousers")
+  luc_document_luc_document_created_by_user_idTousers                        luc_document[]                           @relation("luc_document_created_by_user_idTousers")
+  luc_document_rev                                                           luc_document_rev[]
+  luc_procedure_luc_procedure_approved_by_user_idTousers                     luc_procedure[]                          @relation("luc_procedure_approved_by_user_idTousers")
+  luc_procedure_luc_procedure_created_by_user_idTousers                      luc_procedure[]                          @relation("luc_procedure_created_by_user_idTousers")
+  maintenance_ticket_maintenance_ticket_assigned_to_user_idTousers           maintenance_ticket[]                     @relation("maintenance_ticket_assigned_to_user_idTousers")
+  maintenance_ticket_maintenance_ticket_reported_by_user_idTousers           maintenance_ticket[]                     @relation("maintenance_ticket_reported_by_user_idTousers")
+  maintenance_ticket_attachment                                              maintenance_ticket_attachment[]
+  maintenance_ticket_event                                                   maintenance_ticket_event[]
+  maintenance_ticket_report                                                  maintenance_ticket_report[]
+  messages_messages_from_user_idTousers                                      messages[]                               @relation("messages_from_user_idTousers")
+  messages_messages_to_user_idTousers                                        messages[]                               @relation("messages_to_user_idTousers")
+  notification                                                               notification[]
+  operation_attachment                                                       operation_attachment[]
+  owner_territorial_unit_owner_territorial_unit_unit_manager_idTousers       owner_territorial_unit[]                 @relation("owner_territorial_unit_unit_manager_idTousers")
+  pilot_declaration                                                          pilot_declaration[]
+  pilot_mission                                                              pilot_mission[]
+  pilot_mission_planned_template_logbook                                     pilot_mission_planned_template_logbook[]
+  planning_planning_assigned_to_user_idTousers                               planning[]                               @relation("planning_assigned_to_user_idTousers")
+  planning_planning_created_by_user_idTousers                                planning[]                               @relation("planning_created_by_user_idTousers")
+  planning_logbook                                                           planning_logbook[]
+  planning_test_logbook_planning_test_logbook_fk_observer_idTousers          planning_test_logbook[]                  @relation("planning_test_logbook_fk_observer_idTousers")
+  planning_test_logbook_planning_test_logbook_fk_pic_idTousers               planning_test_logbook[]                  @relation("planning_test_logbook_fk_pic_idTousers")
+  planning_test_logbook_planning_test_logbook_fk_user_idTousers              planning_test_logbook[]                  @relation("planning_test_logbook_fk_user_idTousers")
+  planning_test_logbook_planning_test_logbook_tested_by_user_idTousers       planning_test_logbook[]                  @relation("planning_test_logbook_tested_by_user_idTousers")
+  repository_file                                                            repository_file[]
+  safety_action_safety_action_assigned_to_user_idTousers                     safety_action[]                          @relation("safety_action_assigned_to_user_idTousers")
+  safety_action_safety_action_verified_by_user_idTousers                     safety_action[]                          @relation("safety_action_verified_by_user_idTousers")
+  safety_report_safety_report_investigated_by_user_idTousers                 safety_report[]                          @relation("safety_report_investigated_by_user_idTousers")
+  safety_report_safety_report_reported_by_user_idTousers                     safety_report[]                          @relation("safety_report_reported_by_user_idTousers")
+  spi_kpi                                                                    spi_kpi[]
+  spi_kpi_log                                                                spi_kpi_log[]
+  spi_kpi_target_proposal_spi_kpi_target_proposal_approved_by_user_idTousers spi_kpi_target_proposal[]                @relation("spi_kpi_target_proposal_approved_by_user_idTousers")
+  spi_kpi_target_proposal_spi_kpi_target_proposal_proposed_by_user_idTousers spi_kpi_target_proposal[]                @relation("spi_kpi_target_proposal_proposed_by_user_idTousers")
+  team                                                                       team[]
+  team_members                                                               team_members[]
+  ticket_attachment                                                          ticket_attachment[]
+  tool_maintenance                                                           tool_maintenance[]
+  training                                                                   training[]
+  training_attendance                                                        training_attendance[]
+  turn_users                                                                 turn_users[]
+  user_device                                                                user_device[]
+  user_owner                                                                 user_owner[]
+  user_permessi_user_permessi_fk_user_idTousers                              user_permessi[]                          @relation("user_permessi_fk_user_idTousers")
+  user_permessi_user_permessi_granted_byTousers                              user_permessi[]                          @relation("user_permessi_granted_byTousers")
+  user_qualification                                                         user_qualification[]
+  user_session                                                               user_session[]
+  user_settings                                                              user_settings[]
+  users                                                                      auth_users?                              @relation(fields: [auth_user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_users_auth_user")
+  client                                                                     client?                                  @relation(fields: [fk_client_id], references: [client_id], onUpdate: NoAction)
+  owner                                                                      owner?                                   @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
+  owner_territorial_unit_users_fk_territorial_unitToowner_territorial_unit   owner_territorial_unit?                  @relation("users_fk_territorial_unitToowner_territorial_unit", fields: [fk_territorial_unit], references: [unit_id], onUpdate: NoAction)
+  users_profile                                                              users_profile?
+
+  @@index([user_active], map: "idx_users_active")
+  @@index([auth_user_id], map: "idx_users_auth_user_id")
+  @@index([fk_client_id], map: "idx_users_client")
+  @@index([email], map: "idx_users_email")
+  @@index([fk_owner_id], map: "idx_users_owner")
+  @@index([fk_user_profile_id], map: "idx_users_profile_id")
+  @@index([fk_territorial_unit], map: "idx_users_territorial_unit")
+  @@index([user_unique_code], map: "idx_users_unique_code")
+  @@index([user_active], map: "idx_users_user_active", where: raw("(user_active = 'Y'::bpchar)"))
+  @@index([user_id], map: "idx_users_user_id")
+  @@index([username], map: "idx_users_username")
+  @@map("users")
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model users_profile {
+  profile_id                 Int          @id @default(autoincrement())
+  fk_user_id                 Int          @unique
+  profile_picture            String?
+  bio                        String?
+  address                    String?
+  city                       String?      @db.VarChar(100)
+  state                      String?      @db.VarChar(100)
+  postal_code                String?      @db.VarChar(20)
+  fk_country_id              Int?
+  date_of_birth              DateTime?    @db.Date
+  emergency_contact          String?      @db.VarChar(255)
+  emergency_phone            String?      @db.VarChar(50)
+  certifications             Json?
+  skills                     Json?
+  created_at                 DateTime?    @default(now()) @db.Timestamp(6)
+  updated_at                 DateTime?    @default(now()) @db.Timestamp(6)
+  user_signature             String?
+  user_primary_certification String?      @db.VarChar(300)
+  countries                  countries?   @relation(fields: [fk_country_id], references: [country_id], onDelete: NoAction, onUpdate: NoAction)
+  users                      public_users @relation(fields: [fk_user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([fk_user_id], map: "idx_users_profile_fk_user_id")
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model v_training_session_stats {
+  stat_id            Int     @id @default(autoincrement())
+  placeholder_column String? @db.VarChar(1)
+
+  @@schema("public")
+}
+
+enum aal_level {
+  aal1
+  aal2
+  aal3
+
+  @@schema("auth")
+}
+
+enum code_challenge_method {
+  s256
+  plain
+
+  @@schema("auth")
+}
+
+enum factor_status {
+  unverified
+  verified
+
+  @@schema("auth")
+}
+
+enum factor_type {
+  totp
+  webauthn
+  phone
+
+  @@schema("auth")
+}
+
+enum oauth_authorization_status {
+  pending
+  approved
+  denied
+  expired
+
+  @@schema("auth")
+}
+
+enum oauth_client_type {
+  public
+  confidential
+
+  @@schema("auth")
+}
+
+enum oauth_registration_type {
+  dynamic
+  manual
+
+  @@schema("auth")
+}
+
+enum oauth_response_type {
+  code
+
+  @@schema("auth")
+}
+
+enum one_time_token_type {
+  confirmation_token
+  reauthentication_token
+  recovery_token
+  email_change_token_new
+  email_change_token_current
+  phone_change_token
+
+  @@schema("auth")
+}

@@ -10,7 +10,7 @@ import { decryptPrivateKey } from '@/lib/crypto/keyManagement';
 import { signTransactionJWT } from '@/lib/crypto/transactionSign';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
-import { AlertTriangle, Loader2, ShieldCheck, X } from 'lucide-react';
+import { AlertTriangle, Loader2, ShieldCheck } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Skeleton } from '../ui/skeleton';
 import { PinInput } from './PinInput';
@@ -19,6 +19,7 @@ export interface AuthContext {
   actionType: string;
   entityType: string;
   entityId?: string;
+  title?: string;
   label: string;
   details?: Record<string, unknown>;
 }
@@ -152,16 +153,6 @@ export function AuthorizationModal({ open, context, onSuccess, onCancel, isDark 
             isDark ? 'bg-slate-800/60' : 'bg-slate-50'
           )}
         >
-          <button
-            onClick={onCancel}
-            className={cn(
-              'cursor-pointer absolute right-4 top-4 rounded-md p-1 transition-colors',
-              isDark ? 'text-slate-400 hover:text-white hover:bg-slate-700' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'
-            )}
-          >
-            <X className="h-4 w-4" />
-          </button>
-
           <div className="flex items-center gap-3">
             <div className={cn(
               'flex h-10 w-10 items-center justify-center rounded-xl',
@@ -171,7 +162,7 @@ export function AuthorizationModal({ open, context, onSuccess, onCancel, isDark 
             </div>
             <div>
               <DialogTitle className={cn('text-base font-bold', isDark ? 'text-white' : 'text-slate-900')}>
-                Authorization Required
+                {context.title ?? 'Authorization Required'}
               </DialogTitle>
               <p className={cn('text-xs mt-0.5', isDark ? 'text-slate-400' : 'text-slate-500')}>
                 {context.label}

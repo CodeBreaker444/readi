@@ -115,8 +115,17 @@ export async function executeQueryPlan(plan: QueryPlan, userId: number, ownerID:
         q = q.eq(plan.extra_filter.column, val);
     }
 
-    // Removed strict limit to ensure accurate record counting for local models
-    // q = q.limit(20);
+    if (plan.order_by && isValidColumn(plan.order_by.column)) {
+        q = q.order(plan.order_by.column, { ascending: plan.order_by.direction === "asc" });
+    }
+
+    // COUNT queries need no row cap; LIST queries use the LLM-requested limit or default to 15
+    if (plan.aggregation !== "COUNT") {
+        const cap = (plan.row_limit && plan.row_limit > 0 && plan.row_limit <= 50)
+            ? plan.row_limit
+            : 15;
+        q = q.limit(cap);
+    }
 
     const { data: rawData, error, count } = await q;
 

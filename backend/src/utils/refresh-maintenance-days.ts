@@ -46,12 +46,14 @@ export async function refreshMaintenanceDays(toolIds: number[]): Promise<void> {
     updates.push({ id: comp.component_id, days: newValue });
   }
 
-  for (const upd of updates) {
-    await supabase
-      .from('tool_component')
-      .update({ current_maintenance_days: upd.days })
-      .eq('component_id', upd.id);
-  }
+  await Promise.all(
+    updates.map((upd) =>
+      supabase
+        .from('tool_component')
+        .update({ current_maintenance_days: upd.days })
+        .eq('component_id', upd.id),
+    ),
+  );
 }
 
 export async function refreshMaintenanceDaysForTool(toolId: number): Promise<void> {

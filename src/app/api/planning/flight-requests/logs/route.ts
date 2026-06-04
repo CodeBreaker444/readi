@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
       return zodError(E.VL001, parsed.error);
     }
 
-    // Resolve flight_request → planning_id → pilot_mission_id
+    // Resolve flight_request to planning_id to pilot_mission_id
     const fr = await getFlightRequestById(parsed.data.request_id, session!.user.ownerId);
 
     if (!fr) return apiError(E.NF021, 404);
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
 
     // LINK: archive GUTMA to S3, record in mission_flight_logs
     if (parsed.data.action === 'link') {
-      await attachFlytbaseFlightLog(missionId, session!.user.userId, parsed.data.flight_id);
+      await attachFlytbaseFlightLog(missionId, session!.user.userId, session!.user.ownerId, parsed.data.flight_id);
       return NextResponse.json({ code: 1, message: 'Flight log archived to S3' });
     }
 

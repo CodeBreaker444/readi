@@ -123,7 +123,13 @@ export function FilesDownloadModal({
                             .catch(() => [])
                     )
                 );
-                setComponentDocs(docResults.flat());
+                const seen = new Set<number>();
+                const unique = docResults.flat().filter((doc) => {
+                    if (seen.has(doc.document_id)) return false;
+                    seen.add(doc.document_id);
+                    return true;
+                });
+                setComponentDocs(unique);
             })
             .catch(() => {})
             .finally(() => setDocsLoading(false));

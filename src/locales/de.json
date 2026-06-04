@@ -46,7 +46,7 @@
     "unexpectedLogoutError": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut."
   },
   "chat": {
-    "title": "READI KI-Agent",
+    "title": "ReADI KI-Agent",
     "howCanIHelp": "Wie kann ich helfen?",
     "placeholder": "Nachricht eingeben…",
     "placeholderAs": "Fragen als {{name}}…",
@@ -198,6 +198,7 @@
     "client": "Kunde",
     "company": "Unternehmen",
     "companyDirectory": "Unternehmensverzeichnis",
+    "releaseLogs": "Release-Protokolle",
     "securityApiKeys": "Sicherheit und API-Schlussel",
     "integrations": "Integrationen",
     "configuration": "Konfiguration",

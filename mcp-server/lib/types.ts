@@ -29,6 +29,8 @@ export interface QueryPlan {
         column: string;
         value: string;
     } | null;
+    order_by?: { column: string; direction: "asc" | "desc" } | null;
+    row_limit?: number | null;
 }
 
 export interface ExecutionResult {

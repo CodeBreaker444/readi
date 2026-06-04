@@ -54,10 +54,17 @@ export async function getUsersWithDroneAtc(): Promise<DroneAtcUser[]> {
   // collecting distinct owner IDs and fetch their systems
   const ownerIds = [...new Set(users.map((u) => u.fk_owner_id))];
 
-  const { data: owners } = await supabase
-    .from('owner')
-    .select('owner_id, owner_name, owner_code')
-    .in('owner_id', ownerIds);
+  const [{ data: owners }, { data: tools, error: toolsError }] = await Promise.all([
+    supabase
+      .from('owner')
+      .select('owner_id, owner_name, owner_code')
+      .in('owner_id', ownerIds),
+    supabase
+      .from('tool')
+      .select('tool_id, fk_owner_id, tool_code, tool_name, tool_active, location, tool_description')
+      .in('fk_owner_id', ownerIds)
+      .eq('tool_active', 'Y'),
+  ]);
 
   const ownerNameById = new Map<number, string>();
   const ownerCodeById = new Map<number, string>();
@@ -65,12 +72,6 @@ export async function getUsersWithDroneAtc(): Promise<DroneAtcUser[]> {
     ownerNameById.set(o.owner_id, o.owner_name ?? null);
     ownerCodeById.set(o.owner_id, o.owner_code ?? null);
   }
-
-  const { data: tools, error: toolsError } = await supabase
-    .from('tool')
-    .select('tool_id, fk_owner_id, tool_code, tool_name, tool_active, location, tool_description')
-    .in('fk_owner_id', ownerIds)
-    .eq('tool_active', 'Y');
 
   if (toolsError) throw new Error(`getUsersWithDroneAtc tools: ${toolsError.message}`);
 
