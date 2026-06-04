@@ -66,6 +66,7 @@ const EMPTY_FORM = {
   drone_registration_code: '',
   component_activation_date: '',
   component_purchase_date: '',
+  expiration_date: '',
   component_vendor: '',
   component_guarantee_day: '',
   component_status: 'OPERATIONAL',
@@ -167,6 +168,7 @@ export default function EditComponentModal({
       drone_registration_code: comp.drone_registration_code || '',
       component_activation_date: comp.component_activation_date?.split('T')[0] || '',
       component_purchase_date: comp.component_purchase_date?.split('T')[0] || '',
+      expiration_date: comp.expiration_date?.split('T')[0] || '',
       component_vendor: comp.component_vendor || '',
       component_guarantee_day: comp.component_guarantee_day ? String(comp.component_guarantee_day) : '',
       component_status: comp.component_status || 'OPERATIONAL',
@@ -292,6 +294,7 @@ export default function EditComponentModal({
         drone_registration_code: formData.drone_registration_code || null,
         component_activation_date: formData.component_activation_date || null,
         component_purchase_date: formData.component_purchase_date || null,
+        expiration_date: formData.expiration_date || null,
         component_vendor: formData.component_vendor || null,
         component_guarantee_day: formData.component_guarantee_day ? Number(formData.component_guarantee_day) : null,
         component_status: formData.component_status,
@@ -701,6 +704,11 @@ export default function EditComponentModal({
                   <div className="col-span-1 sm:col-span-3">
                     <Label className={labelCls}>{t('systems.components.addComponent.fields.purchaseDate')}</Label>
                     <Input type="date" className={inputCls} value={formData.component_purchase_date} onChange={e => handleChange('component_purchase_date', e.target.value)} />
+                  </div>
+                  <div className="col-span-1 sm:col-span-3">
+                    <Label className={labelCls}>Expiration Date <span className="font-normal opacity-60">{t('systems.components.common.optional')}</span></Label>
+                    <Input type="date" className={inputCls} value={formData.expiration_date} onChange={e => handleChange('expiration_date', e.target.value)} />
+                    <p className={`text-[10px] mt-1 ${isDark ? 'text-slate-500' : 'text-muted-foreground'}`}>Component auto-decommissions on this date</p>
                   </div>
                   <div className="col-span-1 sm:col-span-3">
                     <Label className={labelCls}>{t('systems.components.addComponent.fields.vendor')}</Label>
