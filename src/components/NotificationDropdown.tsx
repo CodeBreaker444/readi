@@ -1,9 +1,9 @@
 'use client';
 
 import { GroupedNotificationToast, type GroupedToast } from '@/components/notifications/GroupedNotificationToast';
+import { Skeleton } from '@/components/ui/skeleton';
 import type { Notification } from '@/config/types/notification';
 import { Bell, BellOff, CheckCheck, Loader2 } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
