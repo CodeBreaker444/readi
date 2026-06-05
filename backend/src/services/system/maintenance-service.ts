@@ -9,6 +9,21 @@ import {
 } from "@/config/types/maintenance";
 
 
+function parseComponentMeta(raw: unknown): Record<string, unknown> {
+  if (!raw) return {};
+  if (typeof raw === 'object') return raw as Record<string, unknown>;
+  if (typeof raw === 'string') {
+    try {
+      const parsed = JSON.parse(raw);
+      if (typeof parsed === 'string') return JSON.parse(parsed);
+      return parsed as Record<string, unknown>;
+    } catch {
+      return {};
+    }
+  }
+  return {};
+}
+
 function computeStatus(
   currentHours: number,
   currentFlights: number,
@@ -64,7 +79,7 @@ function extractModel(rawModel: Record<string, unknown> | null): MaintenanceMode
 export async function getMaintenanceDashboard(
   params: MaintenanceDashboardQuery
 ): Promise<MaintenanceDrone[]> {
-  const { owner_id, client_id, threshold_alert } = params;
+  const { owner_id, threshold_alert } = params;
 
 let toolQuery = supabase
   .from("tool")
@@ -85,7 +100,6 @@ let toolQuery = supabase
   .eq("tool_active", "Y");
 
   if (owner_id > 0) toolQuery = toolQuery.eq("fk_owner_id", owner_id);
-  if (client_id > 0) toolQuery = toolQuery.eq("assigned_client_id", client_id);
 
   const { data: rawTools, error: toolError } = await toolQuery;
   if (toolError) throw new Error(`Tools fetch failed: ${toolError.message}`);
@@ -93,7 +107,8 @@ let toolQuery = supabase
 
   const tools = rawTools.filter(
     (t: { tool_metadata?: Record<string, unknown> }) =>
-      t.tool_metadata?.deleted !== true && t.tool_metadata?.is_warehouse !== true
+      t.tool_metadata?.deleted !== true &&
+      t.tool_metadata?.is_warehouse !== true
   );
   if (tools.length === 0) return [];
 
@@ -164,7 +179,8 @@ let toolQuery = supabase
       current_maintenance_hours,
       current_maintenance_days,
       current_maintenance_flights,
-      last_maintenance_date
+      last_maintenance_date,
+      component_metadata
     `)
     .in("fk_tool_id", toolIds)
     .eq("component_active", "Y");
@@ -187,7 +203,12 @@ let toolQuery = supabase
       current_maintenance_days: number | null;
       current_maintenance_flights: number | null;
       last_maintenance_date: string | null;
+      component_metadata: unknown;
     };
+
+    const meta = parseComponentMeta(comp.component_metadata);
+    if (meta.system_detached === true) continue;
+    if (meta.component_status === "DECOMMISSIONED") continue;
 
     const compModel: MaintenanceModel = {
       factory_serie: null,
