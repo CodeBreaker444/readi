@@ -225,12 +225,15 @@ export async function createTicket(payload: CreateTicketPayload): Promise<number
   if (error) throw new Error(`createTicket: ${error.message}`);
   if (!data || data.length === 0) throw new Error('createTicket: no rows returned');
 
-  const ticketId: number = data[0].ticket_id;
   const reporter = payload.reporter_name ?? `User #${payload.fk_user_id}`;
   const issueDetail = payload.note?.trim() ? `${payload.note.trim()}` : 'No description provided.';
-  await addTicketEvent(ticketId, 'CREATED', `Reported by ${reporter}: ${issueDetail}`, payload.reporter_email, payload.fk_user_id);
+  await Promise.all(
+    (data as { ticket_id: number }[]).map((row) =>
+      addTicketEvent(row.ticket_id, 'CREATED', `Reported by ${reporter}: ${issueDetail}`, payload.reporter_email, payload.fk_user_id)
+    )
+  );
 
-  return ticketId;
+  return data[0].ticket_id;
 }
 
 
