@@ -1,9 +1,9 @@
-import { supabase } from "../../database/database";
-import { triggerMaintenanceAlertCheck } from "../system/maintenance-notification";
-import { TOKEN_LIMITS } from "@/lib/token-limits";
-import { getChartReadiTotalMission, getChartReadiTotalMissionResult } from "./chart-queries";
-import { getReadiLastNextMissionList, getReadiTotalMission } from "./mission-queries";
-import { getPilotTotal } from "./pilot-queries";
+import { prisma } from '@/lib/prisma';
+import { triggerMaintenanceAlertCheck } from '../system/maintenance-notification';
+import { TOKEN_LIMITS } from '@/lib/token-limits';
+import { getChartReadiTotalMission, getChartReadiTotalMissionResult } from './chart-queries';
+import { getReadiLastNextMissionList, getReadiTotalMission } from './mission-queries';
+import { getPilotTotal } from './pilot-queries';
 
 export interface DashboardRequestParams {
   owner_id: number;
@@ -102,21 +102,23 @@ async function fetchAgentUsage(ownerId: number, role: string): Promise<any> {
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const todayIso = today.toISOString();
 
   if (role === 'SUPERADMIN') {
-    const { data: rows } = await supabase
-      .from('ai_token_usage')
-      .select('owner_id, total_tokens')
-      .gte('created_at', todayIso);
+    const rows = await prisma.ai_token_usage.findMany({
+      where: { created_at: { gte: today } },
+      select: { owner_id: true, total_tokens: true },
+    });
 
-    const used = (rows ?? []).reduce((s: number, r: any) => s + r.total_tokens, 0);
+    const used = rows.reduce((s, r) => s + r.total_tokens, 0);
     const byCompany: Record<number, number> = {};
-    for (const r of rows ?? []) {
+    for (const r of rows) {
       byCompany[r.owner_id] = (byCompany[r.owner_id] ?? 0) + r.total_tokens;
     }
-    const { data: allTimeRows } = await supabase.from('ai_token_usage').select('total_tokens');
-    const allTime = (allTimeRows ?? []).reduce((s: number, r: any) => s + r.total_tokens, 0);
+
+    const allTimeRows = await prisma.ai_token_usage.findMany({
+      select: { total_tokens: true },
+    });
+    const allTime = allTimeRows.reduce((s, r) => s + r.total_tokens, 0);
 
     return {
       scope: 'platform',
@@ -132,28 +134,40 @@ async function fetchAgentUsage(ownerId: number, role: string): Promise<any> {
   }
 
   // ADMIN: company-scoped view + platform bar
-  const [{ data: companyRows }, { data: platformRows }, { data: allTimeRows }] = await Promise.all([
-    supabase.from('ai_token_usage').select('user_id, total_tokens').eq('owner_id', ownerId).gte('created_at', todayIso),
-    supabase.from('ai_token_usage').select('total_tokens').gte('created_at', todayIso),
-    supabase.from('ai_token_usage').select('total_tokens').eq('owner_id', ownerId),
+  const [companyRows, platformRows, allTimeRows] = await Promise.all([
+    prisma.ai_token_usage.findMany({
+      where: { owner_id: ownerId, created_at: { gte: today } },
+      select: { user_id: true, total_tokens: true },
+    }),
+    prisma.ai_token_usage.findMany({
+      where: { created_at: { gte: today } },
+      select: { total_tokens: true },
+    }),
+    prisma.ai_token_usage.findMany({
+      where: { owner_id: ownerId },
+      select: { total_tokens: true },
+    }),
   ]);
 
-  const companyTotal = (companyRows ?? []).reduce((s: number, r: any) => s + r.total_tokens, 0);
-  const platformTotal = (platformRows ?? []).reduce((s: number, r: any) => s + r.total_tokens, 0);
-  const allTime = (allTimeRows ?? []).reduce((s: number, r: any) => s + r.total_tokens, 0);
+  const companyTotal = companyRows.reduce((s, r) => s + r.total_tokens, 0);
+  const platformTotal = platformRows.reduce((s, r) => s + r.total_tokens, 0);
+  const allTime = allTimeRows.reduce((s, r) => s + r.total_tokens, 0);
 
   const byUserId: Record<number, number> = {};
-  for (const r of companyRows ?? []) {
+  for (const r of companyRows) {
     byUserId[r.user_id] = (byUserId[r.user_id] ?? 0) + r.total_tokens;
   }
 
   const userIds = Object.keys(byUserId).map(Number);
-  const { data: userRows } = userIds.length
-    ? await supabase.from('users').select('user_id, email').in('user_id', userIds)
-    : { data: [] };
+  const userRows = userIds.length
+    ? await prisma.public_users.findMany({
+        where: { user_id: { in: userIds } },
+        select: { user_id: true, email: true },
+      })
+    : [];
 
   const idToEmail: Record<number, string> = {};
-  for (const u of userRows ?? []) idToEmail[u.user_id] = u.email;
+  for (const u of userRows) idToEmail[u.user_id] = u.email ?? '';
 
   const byUser: Record<string, number> = {};
   for (const [id, tokens] of Object.entries(byUserId)) {
@@ -237,25 +251,11 @@ interface SPIKPIDataInput {
 
 export async function getSPIKPIData(input: SPIKPIDataInput) {
   try {
-    const { data: latestPeriodData, error: periodError } = await supabase
-      .from('spi_kpi')
-      .select('measurement_date')
-      .eq('fk_owner_id', input.owner_id)
-      .order('measurement_date', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (periodError) {
-      return {
-        code: 0,
-        status: 'ERROR',
-        message: `Database error: ${periodError.message}`,
-        period: null,
-        safety_index: 0,
-        indexes: {},
-        data: {},
-      };
-    }
+    const latestPeriodData = await prisma.spi_kpi.findFirst({
+      where: { fk_owner_id: input.owner_id },
+      orderBy: { measurement_date: 'desc' },
+      select: { measurement_date: true },
+    });
 
     if (!latestPeriodData) {
       return {
@@ -271,20 +271,20 @@ export async function getSPIKPIData(input: SPIKPIDataInput) {
 
     const latestPeriod = latestPeriodData.measurement_date;
 
-    const { data: kpiRecords, error: kpiError } = await supabase
-      .from('spi_kpi')
-      .select(`
-        kpi_id,
-        fk_definition_id,
-        actual_value,
-        target_value,
-        status,
-        created_at
-      `)
-      .eq('fk_owner_id', input.owner_id)
-      .eq('measurement_date', latestPeriod);
-
-    if (kpiError) throw new Error(kpiError.message);
+    const kpiRecords = await prisma.spi_kpi.findMany({
+      where: {
+        fk_owner_id: input.owner_id,
+        measurement_date: latestPeriod,
+      },
+      select: {
+        kpi_id: true,
+        fk_definition_id: true,
+        actual_value: true,
+        target_value: true,
+        status: true,
+        created_at: true,
+      },
+    });
 
     if (!kpiRecords || kpiRecords.length === 0) {
       return {
@@ -300,19 +300,24 @@ export async function getSPIKPIData(input: SPIKPIDataInput) {
 
     const definitionIds = [...new Set(kpiRecords.map(k => k.fk_definition_id))];
 
-    const { data: definitions, error: defError } = await supabase
-      .from('spi_kpi_definition')
-      .select('definition_id, kpi_code, kpi_name, kpi_type, kpi_category, measurement_unit')
-      .in('definition_id', definitionIds);
+    const definitions = await prisma.spi_kpi_definition.findMany({
+      where: { definition_id: { in: definitionIds } },
+      select: {
+        definition_id: true,
+        kpi_code: true,
+        kpi_name: true,
+        kpi_type: true,
+        kpi_category: true,
+        measurement_unit: true,
+      },
+    });
 
-    if (defError) throw new Error(defError.message);
+    const defMap = new Map(definitions.map(d => [d.definition_id, d]));
 
-    const defMap = new Map(definitions?.map(d => [d.definition_id, d]) || []);
-
-    const latestRecords = new Map();
+    const latestRecords = new Map<number, typeof kpiRecords[number]>();
     kpiRecords.forEach(record => {
       const existing = latestRecords.get(record.fk_definition_id);
-      if (!existing || new Date(record.created_at) > new Date(existing.created_at)) {
+      if (!existing || new Date(record.created_at!) > new Date(existing.created_at!)) {
         latestRecords.set(record.fk_definition_id, record);
       }
     });
@@ -324,10 +329,10 @@ export async function getSPIKPIData(input: SPIKPIDataInput) {
         indicator_type: def?.kpi_type || '',
         indicator_area: def?.kpi_category || 'OTHER',
         indicator_name: def?.kpi_name || '',
-        value: parseFloat(record.actual_value || 0),
-        target: parseFloat(record.target_value || 0),
+        value: parseFloat(String(record.actual_value ?? 0)),
+        target: parseFloat(String(record.target_value ?? 0)),
         unit: def?.measurement_unit || '',
-        status: normalizeStatus(record.status),
+        status: normalizeStatus(record.status || ''),
         raw_status: record.status,
       };
     });
@@ -401,29 +406,33 @@ interface SPIKPITrendInput {
 
 export async function getSPIKPITrend(input: SPIKPITrendInput) {
   try {
-    const { data: definition, error: defError } = await supabase
-      .from('spi_kpi_definition')
-      .select('definition_id')
-      .eq('fk_owner_id', input.owner_id)
-      .eq('kpi_name', input.name)
-      .limit(1)
-      .single();
+    const definition = await prisma.spi_kpi_definition.findFirst({
+      where: {
+        fk_owner_id: input.owner_id,
+        kpi_name: input.name,
+      },
+      select: { definition_id: true },
+    });
 
-    if (defError || !definition) throw new Error('Indicator not found');
+    if (!definition) throw new Error('Indicator not found');
 
-    const { data: kpiData, error: kpiError } = await supabase
-      .from('spi_kpi')
-      .select('measurement_date, actual_value, target_value')
-      .eq('fk_definition_id', definition.definition_id)
-      .eq('fk_owner_id', input.owner_id)
-      .order('measurement_date', { ascending: true })
-      .limit(12);
-
-    if (kpiError) throw new Error(kpiError.message);
+    const kpiData = await prisma.spi_kpi.findMany({
+      where: {
+        fk_definition_id: definition.definition_id,
+        fk_owner_id: input.owner_id,
+      },
+      orderBy: { measurement_date: 'asc' },
+      take: 12,
+      select: {
+        measurement_date: true,
+        actual_value: true,
+        target_value: true,
+      },
+    });
 
     const periodMap = new Map<string, { sum: number; count: number; targets: number[] }>();
 
-    (kpiData || []).forEach(record => {
+    kpiData.forEach(record => {
       const date = new Date(record.measurement_date);
       const label = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 
@@ -432,10 +441,10 @@ export async function getSPIKPITrend(input: SPIKPITrendInput) {
       }
 
       const period = periodMap.get(label)!;
-      period.sum += parseFloat(record.actual_value || 0);
+      period.sum += parseFloat(String(record.actual_value ?? 0));
       period.count += 1;
       if (record.target_value) {
-        period.targets.push(parseFloat(record.target_value));
+        period.targets.push(parseFloat(String(record.target_value)));
       }
     });
 
@@ -469,13 +478,14 @@ interface SHITrendInput {
 
 export async function getSHITrend(input: SHITrendInput) {
   try {
-    const { data: kpiData, error: kpiError } = await supabase
-      .from('spi_kpi')
-      .select('measurement_date, status')
-      .eq('fk_owner_id', input.owner_id)
-      .order('measurement_date', { ascending: true });
-
-    if (kpiError) throw new Error(kpiError.message);
+    const kpiData = await prisma.spi_kpi.findMany({
+      where: { fk_owner_id: input.owner_id },
+      orderBy: { measurement_date: 'asc' },
+      select: {
+        measurement_date: true,
+        status: true,
+      },
+    });
 
     if (!kpiData || kpiData.length === 0) {
       return { code: 0, status: 'ERROR', message: 'No data available', labels: [], values: [] };
@@ -494,7 +504,7 @@ export async function getSHITrend(input: SHITrendInput) {
       const period = periodMap.get(label)!;
       period.total += 1;
 
-      const normalizedStatus = normalizeStatus(record.status);
+      const normalizedStatus = normalizeStatus(record.status || '');
       if (normalizedStatus === 'GREEN') {
         period.green += 1;
       } else if (normalizedStatus === 'YELLOW') {

@@ -6,7 +6,6 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '../useTheme';
 import AreaGauges from './AreaGauges';
 import IndicatorCards from './IndicatorCards';
-import IndicatorTrendChart from './IndicatorTrendChart';
 import SafetyHealthGauge from './SafetyHealthGauge';
 import SHITrendChart from './SHITrendChart';
 
@@ -22,6 +21,9 @@ const SHIIndex: React.FC<shiIndexProps> = (user) => {
   const [selectedIndicator, setSelectedIndicator] = useState<string>('');
   const [indicatorTrend, setIndicatorTrend] = useState<TrendData | null>(null);
   const [allIndicators, setAllIndicators] = useState<string[]>([]);
+  const [isLoadingSHI, setIsLoadingSHI] = useState(true);
+  const [isLoadingTrend, setIsLoadingTrend] = useState(true);
+  const [isLoadingIndicatorTrend, setIsLoadingIndicatorTrend] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -37,7 +39,7 @@ const SHIIndex: React.FC<shiIndexProps> = (user) => {
         const sorted = Array.from(indicators).sort();
         setAllIndicators(sorted);
         if (sorted.length > 0) setSelectedIndicator(sorted[0]);
-      } catch (e) { console.error(e); }
+      } catch (e) { console.error(e); } finally { setIsLoadingSHI(false); }
     };
     load();
   }, []);
@@ -51,7 +53,7 @@ const SHIIndex: React.FC<shiIndexProps> = (user) => {
         });
         const data = await res.json();
         if (data.code === 1) setSHITrend(data);
-      } catch (e) { console.error(e); }
+      } catch (e) { console.error(e); } finally { setIsLoadingTrend(false); }
     };
     load();
   }, []);
@@ -59,6 +61,8 @@ const SHIIndex: React.FC<shiIndexProps> = (user) => {
   useEffect(() => {
     if (!selectedIndicator) return;
     const load = async () => {
+      setIsLoadingIndicatorTrend(true);
+      setIndicatorTrend(null);
       try {
         const res = await fetch('/api/dashboard/getSPIKPITrend', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -66,23 +70,14 @@ const SHIIndex: React.FC<shiIndexProps> = (user) => {
         });
         const data = await res.json();
         if (data.code === 1) setIndicatorTrend(data);
-      } catch (e) { console.error(e); }
+      } catch (e) { console.error(e); } finally { setIsLoadingIndicatorTrend(false); }
     };
     load();
   }, [selectedIndicator]);
 
-  const card        = cn('rounded-xl border', isDark ? 'bg-slate-800/80 border-slate-700/60' : 'bg-white border-gray-200');
-  const cardHeader  = cn('px-5 py-4 border-b', isDark ? 'border-slate-700/60' : 'border-gray-100');
-  const cardTitle   = cn('text-sm font-semibold mt-0.5', isDark ? 'text-white' : 'text-gray-800');
-  const eyebrow     = cn('text-xs font-semibold uppercase tracking-widest', isDark ? 'text-slate-500' : 'text-gray-400');
-  const selectCls   = cn(
-    'text-xs border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-violet-500/40',
-    isDark ? 'bg-slate-700 border-slate-600 text-slate-200' : 'bg-gray-50 border-gray-200 text-gray-700'
-  );
 
   return (
     <div className={`min-h-screen ${isDark ? 'text-white' : 'text-gray-900'}`}>
-
       <div className={cn(
         ' top-0 z-10 backdrop-blur-md px-6 py-4 mb-6 transition-colors',
         isDark
@@ -127,7 +122,7 @@ const SHIIndex: React.FC<shiIndexProps> = (user) => {
         {shiData && <IndicatorCards dataByArea={shiData.data} isDark={isDark} />}
 
         {/* Indicator trend */}
-        <div className={cn(card)}>
+        {/* <div className={cn(card)}>
           <div className={cn(cardHeader, 'flex items-start justify-between gap-4')}>
             <div>
               <p className={eyebrow}>{t('shi.trendAnalysis')}</p>
@@ -158,7 +153,7 @@ const SHIIndex: React.FC<shiIndexProps> = (user) => {
               </div>
             )}
           </div>
-        </div>
+        </div> */}
 
       </div>
     </div>
