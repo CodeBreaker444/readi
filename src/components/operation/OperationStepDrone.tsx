@@ -110,7 +110,7 @@ export function OperationStepDrone({
                                     <span>{d.tool_code} — {d.tool_name}</span>
                                     {d.is_non_operational && (
                                         <span className="text-[10px] font-semibold text-red-600 bg-red-50 border border-red-200 rounded px-1.5 py-0.5 leading-none">
-                                            Not Operational
+                                            {t('operations.newOperation.drone.notOperationalTag')}
                                         </span>
                                     )}
                                     {!d.is_non_operational && d.in_maintenance && (
@@ -135,20 +135,22 @@ export function OperationStepDrone({
                     )}>
                         <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-red-500" />
                         <p className={cn('text-xs leading-snug', isDark ? 'text-red-400' : 'text-red-700')}>
-                            The selected system is <span className="font-semibold">Not Operational</span> — one of its components has expired. Mission creation will be blocked.
+                            {t('operations.newOperation.drone.selectedNonOpWarningPre')}{' '}
+                            <span className="font-semibold">{t('operations.newOperation.drone.notOperationalTag')}</span>{' '}
+                            {t('operations.newOperation.drone.selectedNonOpWarningPost')}
                         </p>
                     </div>
                 )}
                 {!selectedIsNonOp && allNonOperational && (
                     <p className="mt-1.5 text-xs text-red-600 flex items-center gap-1">
                         <AlertTriangle className="h-3 w-3 shrink-0" />
-                        All systems are not operational due to expired components and cannot be used for missions.
+                        {t('operations.newOperation.drone.allNonOperationalWarning')}
                     </p>
                 )}
                 {!selectedIsNonOp && anyNonOperational && !allNonOperational && (
                     <p className="mt-1.5 text-xs text-red-600 flex items-center gap-1">
                         <AlertTriangle className="h-3 w-3 shrink-0" />
-                        Some systems are not operational due to expired components and cannot be used for missions.
+                        {t('operations.newOperation.drone.anyNonOperationalWarning')}
                     </p>
                 )}
                 {allInMaintenance && !anyNonOperational && (
