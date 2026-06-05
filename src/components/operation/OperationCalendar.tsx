@@ -51,16 +51,20 @@ export function OperationCalendar() {
     if (operation) setDeleteDialog({ open: true, operation })
   }
 
-  const fcEvents = events.map((e) => ({
-    id: e.id,
-    title: e.title,
-    start: e.start,
-    end: e.end,
-    backgroundColor: e.color,
-    borderColor: 'transparent',
-    textColor: '#fff',
-    extendedProps: { operation: e.operation },
-  }))
+  const fcEvents = events.map((e) => {
+    const isNonOp = e.tool_status === 'NOT_OPERATIONAL' || e.operation?.tool_status === 'NOT_OPERATIONAL'
+    return {
+      id: e.id,
+      title: isNonOp ? `⚠ ${e.title}` : e.title,
+      start: e.start,
+      end: e.end,
+      backgroundColor: isNonOp ? '#6b7280' : e.color,
+      borderColor: isNonOp ? '#ef4444' : 'transparent',
+      textColor: '#fff',
+      classNames: isNonOp ? ['fc-event-non-operational'] : [],
+      extendedProps: { operation: e.operation, tool_status: e.tool_status },
+    }
+  })
 
   return (
     <div className={`min-h-screen ${isDark ? 'bg-slate-900' : 'bg-gray-50'}`}>
@@ -253,6 +257,8 @@ export function OperationCalendar() {
                 .fc-dark .fc-list-empty { color: #475569; }
                 .fc-dark .fc-theme-standard td,
                 .fc-dark .fc-theme-standard th { border-color: #1e293b; }
+                .fc-event-non-operational { opacity: 0.6 !important; }
+                .fc-event-non-operational .fc-event-title { text-decoration: line-through; }
               `}</style>
 
             <FullCalendar

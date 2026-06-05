@@ -43,12 +43,13 @@ interface FormData {
     mission_group_label: string
 }
 
-type OptionItem = { 
-    id: number; 
-    label: string; 
-    in_maintenance?: boolean; 
-    has_drone_component?: boolean; 
-    steps?: any 
+type OptionItem = {
+    id: number;
+    label: string;
+    in_maintenance?: boolean;
+    has_drone_component?: boolean;
+    is_non_operational?: boolean;
+    steps?: any
 }
 
 const createOperationCalendarSchema = z.object({
@@ -143,6 +144,7 @@ export function AddOperationModal({ open, onClose, onSuccess, isDark }: AddOpera
                     label: `${t.tool_code} — ${t.tool_name}`,
                     in_maintenance: t.in_maintenance ?? false,
                     has_drone_component: t.has_drone_component,
+                    is_non_operational: t.is_non_operational ?? false,
                 })))
                 setMissionTypes((d.types ?? []).map((t: any) => ({
                     id: t.mission_type_id,
@@ -214,6 +216,10 @@ export function AddOperationModal({ open, onClose, onSuccess, isDark }: AddOpera
                     <Select
                         onValueChange={(v) => {
                             const selected = options.find(o => o.id === Number(v))
+                            if (selected?.is_non_operational) {
+                                toast.error(`System "${selected.label}" is not operational due to an expired component and cannot be used for missions.`)
+                                return
+                            }
                             if (selected?.in_maintenance) {
                                 toast.error(t('operations.table.detail.logFlightsHours', { code: selected.label }))
                                 return
@@ -230,12 +236,17 @@ export function AddOperationModal({ open, onClose, onSuccess, isDark }: AddOpera
                                 <SelectItem
                                     key={o.id}
                                     value={String(o.id)}
-                                    disabled={o.in_maintenance || o.has_drone_component === false}
+                                    disabled={!!o.is_non_operational || !!o.in_maintenance || o.has_drone_component === false}
                                     className={isDark ? 'text-white focus:bg-slate-600' : ''}
                                 >
                                     <span className="flex items-center gap-2">
                                         <span className={o.has_drone_component === false ? 'opacity-40' : ''}>{o.label}</span>
-                                        {o.in_maintenance && (
+                                        {o.is_non_operational && (
+                                            <span className="text-[10px] font-semibold text-red-600 bg-red-50 border border-red-200 rounded px-1.5 py-0.5 leading-none">
+                                                Not Operational
+                                            </span>
+                                        )}
+                                        {!o.is_non_operational && o.in_maintenance && (
                                             <span className="text-[10px] font-semibold text-blue-600 bg-blue-50 border border-blue-200 rounded px-1.5 py-0.5 leading-none">
                                                 {t('operations.table.detail.maintenance').toUpperCase()}
                                             </span>

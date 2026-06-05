@@ -19,7 +19,6 @@ interface Props {
     planId: string
     onPlanChange: (id: string) => void
     clientPlannings: PlanningOption[]
-    /** Fallback plan name to display while plannings are loading (from editOperation.planning_name) */
     selectedPlanName?: string
     flightMode: FlightMode
     onFlightModeChange: (m: FlightMode) => void
@@ -39,13 +38,15 @@ export function OperationStepDrone({
     const { t } = useTranslation()
     const allInMaintenance = drones.length > 0 && drones.every(d => d.in_maintenance)
     const anyMaintenanceDue = drones.some(d => d.maintenance_due && !d.in_maintenance)
+    const allNonOperational = drones.length > 0 && drones.every(d => d.is_non_operational)
+    const anyNonOperational = drones.some(d => d.is_non_operational)
+    const selectedDrone = drones.find(d => String(d.tool_id) === droneId)
+    const selectedIsNonOp = selectedDrone?.is_non_operational ?? false
 
-    // Resolve plan label: use loaded data if available, else the fallback name from editOperation
     const planLabel = planId
         ? (clientPlannings.find(p => String(p.planning_id) === planId)?.planning_name ?? selectedPlanName)
         : undefined
 
-    // Resolve ERP group label from loaded data
     const erpGroupLabel = (erpGroupId && erpGroupId !== 'none')
         ? erpGroups.find(g => String(g.group_id) === erpGroupId)?.name
         : undefined
@@ -99,15 +100,25 @@ export function OperationStepDrone({
                     </SelectTrigger>
                     <SelectContent className={scCls(isDark)}>
                         {drones.map(d => (
-                            <SelectItem key={d.tool_id} value={String(d.tool_id)} disabled={d.in_maintenance} className={siCls(isDark)}>
+                            <SelectItem
+                                key={d.tool_id}
+                                value={String(d.tool_id)}
+                                disabled={!!d.is_non_operational || !!d.in_maintenance}
+                                className={cn(siCls(isDark), d.is_non_operational ? 'opacity-50' : '')}
+                            >
                                 <span className="flex items-center gap-2">
                                     <span>{d.tool_code} — {d.tool_name}</span>
-                                    {d.in_maintenance && (
+                                    {d.is_non_operational && (
+                                        <span className="text-[10px] font-semibold text-red-600 bg-red-50 border border-red-200 rounded px-1.5 py-0.5 leading-none">
+                                            Not Operational
+                                        </span>
+                                    )}
+                                    {!d.is_non_operational && d.in_maintenance && (
                                         <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 leading-none">
                                             {t('operations.newOperation.drone.maintenanceTag')}
                                         </span>
                                     )}
-                                    {!d.in_maintenance && d.maintenance_due && (
+                                    {!d.is_non_operational && !d.in_maintenance && d.maintenance_due && (
                                         <span className="text-[10px] font-semibold text-orange-600 bg-orange-50 border border-orange-200 rounded px-1.5 py-0.5 leading-none">
                                             {t('operations.newOperation.drone.maintenanceDueTag')}
                                         </span>
@@ -117,13 +128,36 @@ export function OperationStepDrone({
                         ))}
                     </SelectContent>
                 </Select>
-                {allInMaintenance && (
+                {selectedIsNonOp && (
+                    <div className={cn(
+                        'mt-2 flex items-start gap-2 rounded-lg border px-3 py-2.5',
+                        isDark ? 'border-red-800 bg-red-950/40' : 'border-red-200 bg-red-50'
+                    )}>
+                        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-red-500" />
+                        <p className={cn('text-xs leading-snug', isDark ? 'text-red-400' : 'text-red-700')}>
+                            The selected system is <span className="font-semibold">Not Operational</span> — one of its components has expired. Mission creation will be blocked.
+                        </p>
+                    </div>
+                )}
+                {!selectedIsNonOp && allNonOperational && (
+                    <p className="mt-1.5 text-xs text-red-600 flex items-center gap-1">
+                        <AlertTriangle className="h-3 w-3 shrink-0" />
+                        All systems are not operational due to expired components and cannot be used for missions.
+                    </p>
+                )}
+                {!selectedIsNonOp && anyNonOperational && !allNonOperational && (
+                    <p className="mt-1.5 text-xs text-red-600 flex items-center gap-1">
+                        <AlertTriangle className="h-3 w-3 shrink-0" />
+                        Some systems are not operational due to expired components and cannot be used for missions.
+                    </p>
+                )}
+                {allInMaintenance && !anyNonOperational && (
                     <p className="mt-1.5 text-xs text-amber-600 flex items-center gap-1">
                         <AlertTriangle className="h-3 w-3 shrink-0" />
                         {t('operations.newOperation.drone.allInMaintenanceWarning')}
                     </p>
                 )}
-                {anyMaintenanceDue && !allInMaintenance && (
+                {anyMaintenanceDue && !allInMaintenance && !anyNonOperational && (
                     <p className="mt-1.5 text-xs text-orange-600 flex items-center gap-1">
                         <AlertTriangle className="h-3 w-3 shrink-0" />
                         {t('operations.newOperation.drone.maintenanceDueWarning')}
@@ -146,7 +180,6 @@ export function OperationStepDrone({
                             disabled={loadingOptions || (clientPlannings.length === 0 && !planLabel)}
                         >
                             <SelectTrigger className={inputCls(isDark)}>
-                                {/* Explicit label bypasses Radix's async item-lookup so pre-filled values show correctly */}
                                 <SelectValue placeholder={
                                     loadingOptions
                                         ? t('operations.newOperation.scheduler.missionIdPlaceholder')
