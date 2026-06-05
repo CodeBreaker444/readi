@@ -52,25 +52,25 @@ const HIGHLIGHT_ICON: Record<string, React.ElementType> = {
 };
 
 const HIGHLIGHT_COLOR: Record<string, { bg: string; text: string }> = {
-  red:    { bg: 'bg-red-500/10',    text: 'text-red-500' },
+  red: { bg: 'bg-red-500/10', text: 'text-red-500' },
   orange: { bg: 'bg-orange-500/10', text: 'text-orange-500' },
-  green:  { bg: 'bg-emerald-500/10',text: 'text-emerald-600' },
+  green: { bg: 'bg-emerald-500/10', text: 'text-emerald-600' },
   purple: { bg: 'bg-purple-500/10', text: 'text-purple-600' },
-  blue:   { bg: 'bg-blue-500/10',   text: 'text-blue-600' },
-  amber:  { bg: 'bg-amber-500/10',  text: 'text-amber-600' },
+  blue: { bg: 'bg-blue-500/10', text: 'text-blue-600' },
+  amber: { bg: 'bg-amber-500/10', text: 'text-amber-600' },
 };
 
 const SECTION_META: Record<string, {
   icon: React.ElementType;
   bg: string; text: string; border: string;
 }> = {
-  "What's New":       { icon: HiOutlineLightningBolt,   bg: 'bg-blue-500/10',    text: 'text-blue-600',    border: 'border-blue-500/20' },
-  'Improvements':     { icon: HiOutlineTrendingUp,       bg: 'bg-emerald-500/10', text: 'text-emerald-600', border: 'border-emerald-500/20' },
-  'Bug Fixes':        { icon: TbBug,                     bg: 'bg-red-500/10',     text: 'text-red-500',     border: 'border-red-500/20' },
-  'Security':         { icon: HiOutlineShieldCheck,      bg: 'bg-purple-500/10',  text: 'text-purple-600',  border: 'border-purple-500/20' },
-  'Breaking Changes': { icon: HiOutlineExclamationCircle,bg: 'bg-amber-500/10',   text: 'text-amber-600',   border: 'border-amber-500/20' },
-  'Documentation':    { icon: HiOutlineBookOpen,         bg: 'bg-slate-500/10',   text: 'text-slate-500',   border: 'border-slate-500/20' },
-  'Known Issues':     { icon: HiOutlineInformationCircle,bg: 'bg-orange-500/10',  text: 'text-orange-500',  border: 'border-orange-500/20' },
+  "What's New": { icon: HiOutlineLightningBolt, bg: 'bg-blue-500/10', text: 'text-blue-600', border: 'border-blue-500/20' },
+  'Improvements': { icon: HiOutlineTrendingUp, bg: 'bg-emerald-500/10', text: 'text-emerald-600', border: 'border-emerald-500/20' },
+  'Bug Fixes': { icon: TbBug, bg: 'bg-red-500/10', text: 'text-red-500', border: 'border-red-500/20' },
+  'Security': { icon: HiOutlineShieldCheck, bg: 'bg-purple-500/10', text: 'text-purple-600', border: 'border-purple-500/20' },
+  'Breaking Changes': { icon: HiOutlineExclamationCircle, bg: 'bg-amber-500/10', text: 'text-amber-600', border: 'border-amber-500/20' },
+  'Documentation': { icon: HiOutlineBookOpen, bg: 'bg-slate-500/10', text: 'text-slate-500', border: 'border-slate-500/20' },
+  'Known Issues': { icon: HiOutlineInformationCircle, bg: 'bg-orange-500/10', text: 'text-orange-500', border: 'border-orange-500/20' },
 };
 const FALLBACK_META = { icon: HiOutlineInformationCircle, bg: 'bg-slate-500/10', text: 'text-slate-500', border: 'border-slate-500/20' };
 
@@ -138,19 +138,19 @@ function downloadMd(log: ReleaseLog) {
 export default function ReleasesPage() {
   const { isDark } = useTheme();
 
-  const [logs, setLogs]               = useState<ReleaseLog[]>([]);
-  const [loading, setLoading]         = useState(true);
-  const [selected, setSelected]       = useState<ReleaseLog | null>(null);
-  const [search, setSearch]           = useState('');
-  const [typeFilter, setTypeFilter]   = useState<string>('all');
-  const [activeTab, setActiveTab]     = useState<TabKey>("What's New");
-  const [helpful, setHelpful]         = useState<boolean | null>(null);
+  const [logs, setLogs] = useState<ReleaseLog[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<ReleaseLog | null>(null);
+  const [search, setSearch] = useState('');
+  const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [activeTab, setActiveTab] = useState<TabKey>("What's New");
+  const [helpful, setHelpful] = useState<boolean | null>(null);
   const [showVersionDrop, setShowVersionDrop] = useState(false);
   const [showFilterPanel, setShowFilterPanel] = useState(false);
   const [mobileView, setMobileView] = useState<'list' | 'detail'>('list');
 
-  const versionDropRef  = useRef<HTMLDivElement>(null);
-  const filterPanelRef  = useRef<HTMLDivElement>(null);
+  const versionDropRef = useRef<HTMLDivElement>(null);
+  const filterPanelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     axios.get('/api/releases').then((res) => {
@@ -188,7 +188,7 @@ export default function ReleasesPage() {
     return matchType && (!q || l.title.toLowerCase().includes(q) || l.version.toLowerCase().includes(q));
   }), [logs, search, typeFilter]);
 
-  const sections   = useMemo(() => selected ? parseBody(selected.body) : [], [selected]);
+  const sections = useMemo(() => selected ? parseBody(selected.body) : [], [selected]);
   const tabSections = useMemo(() => {
     const map: Record<TabKey, BodySection[]> = { "What's New": [], Improvements: [], 'Bug Fixes': [], Details: [] };
     for (const sec of sections) map[getTab(sec.heading)].push(sec);
@@ -222,9 +222,8 @@ export default function ReleasesPage() {
         }
       `}</style>
 
-      <div className={`shrink-0 border-b px-6 py-4 flex items-center justify-between ${
-        isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-[0_1px_3px_rgba(0,0,0,0.05)]'
-      }`}>
+      <div className={`shrink-0 border-b px-6 py-4 flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-[0_1px_3px_rgba(0,0,0,0.05)]'
+        }`}>
         <div className="flex items-center gap-3">
           <div className="w-1 h-6 rounded-full bg-amber-500" />
           <div>
@@ -237,30 +236,26 @@ export default function ReleasesPage() {
           </div>
         </div>
         {!loading && logs.length > 0 && (
-          <span className={`text-[11px] font-medium px-2.5 py-1 rounded-full border ${
-            isDark ? 'bg-slate-800 border-slate-700 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-500'
-          }`}>
+          <span className={`text-[11px] font-medium px-2.5 py-1 rounded-full border ${isDark ? 'bg-slate-800 border-slate-700 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-500'
+            }`}>
             {logs.length} release{logs.length !== 1 ? 's' : ''}
           </span>
         )}
       </div>
 
       <div className="flex flex-1 overflow-hidden">
-        <aside className={`shrink-0 flex-col border-r w-full md:w-64 lg:w-72 ${
-          mobileView === 'list' ? 'flex' : 'hidden'
-        } md:flex ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+        <aside className={`shrink-0 flex-col border-r w-full md:w-64 lg:w-72 ${mobileView === 'list' ? 'flex' : 'hidden'
+          } md:flex ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
           <div className={`p-3 border-b shrink-0 ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
-            <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border ${
-              isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'
-            }`}>
+            <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'
+              }`}>
               <Search size={13} className={isDark ? 'text-slate-500' : 'text-slate-400'} />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search releases..."
-                className={`flex-1 bg-transparent text-[12px] outline-none placeholder:text-slate-400 cursor-text ${
-                  isDark ? 'text-slate-200' : 'text-slate-700'
-                }`}
+                className={`flex-1 bg-transparent text-[12px] outline-none placeholder:text-slate-400 cursor-text ${isDark ? 'text-slate-200' : 'text-slate-700'
+                  }`}
               />
               {search && (
                 <button onClick={() => setSearch('')} className="cursor-pointer">
@@ -282,37 +277,32 @@ export default function ReleasesPage() {
                 <button
                   key={log.version}
                   onClick={() => { setSelected(log); setMobileView('detail'); }}
-                  className={`w-full text-left px-3 py-3 rounded-xl mb-1 transition-all duration-150 border cursor-pointer ${
-                    isActive
+                  className={`w-full text-left px-3 py-3 rounded-xl mb-1 transition-all duration-150 border cursor-pointer ${isActive
                       ? isDark ? 'bg-violet-500/10 border-violet-500/25' : 'bg-violet-50 border-violet-200'
                       : isDark ? 'hover:bg-slate-800/80 border-transparent' : 'hover:bg-slate-50 border-transparent'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center gap-2 mb-1">
-                    <span className={`w-3 h-3 rounded-full border-2 shrink-0 flex items-center justify-center ${
-                      isActive
+                    <span className={`w-3 h-3 rounded-full border-2 shrink-0 flex items-center justify-center ${isActive
                         ? isDark ? 'border-violet-500 bg-violet-500' : 'border-violet-600 bg-violet-600'
                         : isDark ? 'border-slate-600' : 'border-slate-300'
-                    }`}>
+                      }`}>
                       {isActive && <span className="w-1 h-1 rounded-full bg-white" />}
                     </span>
-                    <span className={`text-[12px] font-bold ${
-                      isActive ? isDark ? 'text-violet-400' : 'text-violet-700' : isDark ? 'text-slate-200' : 'text-slate-800'
-                    }`}>
+                    <span className={`text-[12px] font-bold ${isActive ? isDark ? 'text-violet-400' : 'text-violet-700' : isDark ? 'text-slate-200' : 'text-slate-800'
+                      }`}>
                       {vDisplay(log.version)}
                     </span>
                     {isLatest && (
-                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full tracking-wider ${
-                        isDark ? 'bg-emerald-500/15 text-emerald-400' : 'bg-emerald-50 text-emerald-600'
-                      }`}>Latest</span>
+                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full tracking-wider ${isDark ? 'bg-emerald-500/15 text-emerald-400' : 'bg-emerald-50 text-emerald-600'
+                        }`}>Latest</span>
                     )}
                     <span className={`ml-auto text-[10px] tabular-nums ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>
                       {new Date(log.date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                     </span>
                   </div>
-                  <p className={`text-[12px] font-semibold mb-0.5 truncate ${
-                    isActive ? isDark ? 'text-white' : 'text-slate-900' : isDark ? 'text-slate-300' : 'text-slate-700'
-                  }`}>
+                  <p className={`text-[12px] font-semibold mb-0.5 truncate ${isActive ? isDark ? 'text-white' : 'text-slate-900' : isDark ? 'text-slate-300' : 'text-slate-700'
+                    }`}>
                     {log.title}
                   </p>
                   <p className={`text-[11px] line-clamp-2 leading-relaxed ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
@@ -325,126 +315,115 @@ export default function ReleasesPage() {
 
           {/* Footer count */}
           {!loading && (
-            <div className={`shrink-0 px-4 py-2.5 border-t text-[11px] ${
-              isDark ? 'border-slate-800 text-slate-600' : 'border-slate-100 text-slate-400'
-            }`}>
+            <div className={`shrink-0 px-4 py-2.5 border-t text-[11px] ${isDark ? 'border-slate-800 text-slate-600' : 'border-slate-100 text-slate-400'
+              }`}>
               Showing {filteredLogs.length} of {logs.length} release{logs.length !== 1 ? 's' : ''}
             </div>
           )}
         </aside>
 
-        <main className={`flex-1 overflow-y-auto releases-scroll flex-col w-full ${
-          mobileView === 'detail' ? 'flex' : 'hidden'
-        } md:flex`}>
+        <main className={`flex-1 overflow-y-auto releases-scroll flex-col w-full ${mobileView === 'detail' ? 'flex' : 'hidden'
+          } md:flex`}>
 
-          <div className={`shrink-0 flex items-center gap-2 px-4 py-3 border-b ${
-            isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-100'
-          }`}>
+          <div className={`shrink-0 flex items-center gap-2 px-4 py-3 border-b ${isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-100'
+            }`}>
             {/* Mobile back button */}
             <button
               onClick={() => setMobileView('list')}
-              className={`md:hidden flex items-center gap-1.5 text-[12px] font-medium mr-auto cursor-pointer ${
-                isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-700'
-              }`}
+              className={`md:hidden flex items-center gap-1.5 text-[12px] font-medium mr-auto cursor-pointer ${isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-700'
+                }`}
             >
               <ArrowLeft size={14} />
               Releases
             </button>
             <div className="ml-auto flex items-center gap-2">
 
-            <div className="relative" ref={versionDropRef}>
-              <button
-                onClick={() => { setShowVersionDrop((p) => !p); setShowFilterPanel(false); }}
-                className={`flex items-center gap-1.5 text-[12px] font-medium px-3 py-1.5 rounded-lg border transition-colors cursor-pointer ${
-                  isDark ? 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                }`}
-              >
-                {activeTypeLabel}
-                <ChevronDown size={13} className={`transition-transform ${showVersionDrop ? 'rotate-180' : ''}`} />
-              </button>
-              {showVersionDrop && (
-                <div className={`absolute right-0 mt-1.5 w-44 rounded-xl border shadow-lg z-30 overflow-hidden ${
-                  isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'
-                }`}>
-                  {TYPE_OPTIONS.map((t) => (
-                    <button
-                      key={t}
-                      onClick={() => { setTypeFilter(t); setShowVersionDrop(false); }}
-                      className={`w-full text-left px-3 py-2.5 text-[12px] flex items-center justify-between transition-colors cursor-pointer ${
-                        typeFilter === t
-                          ? isDark ? 'bg-violet-500/15 text-violet-400' : 'bg-violet-50 text-violet-700'
-                          : isDark ? 'text-slate-300 hover:bg-slate-700' : 'text-slate-600 hover:bg-slate-50'
-                      }`}
-                    >
-                      {t === 'all' ? 'All Versions' : `${t.charAt(0).toUpperCase() + t.slice(1)} only`}
-                      {typeFilter === t && <span className="w-1.5 h-1.5 rounded-full bg-violet-500" />}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Filters panel */}
-            <div className="relative" ref={filterPanelRef}>
-              <button
-                onClick={() => { setShowFilterPanel((p) => !p); setShowVersionDrop(false); }}
-                className={`flex items-center gap-1.5 text-[12px] font-medium px-3 py-1.5 rounded-lg border transition-colors cursor-pointer ${
-                  hasActiveFilter
-                    ? isDark ? 'bg-violet-500/15 border-violet-500/30 text-violet-400' : 'bg-violet-50 border-violet-200 text-violet-700'
-                    : isDark ? 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                }`}
-              >
-                <SlidersHorizontal size={13} />
-                Filters
-                {hasActiveFilter && <span className="w-1.5 h-1.5 rounded-full bg-violet-500" />}
-              </button>
-
-              {showFilterPanel && (
-                <div className={`absolute right-0 mt-1.5 w-52 rounded-xl border shadow-lg z-30 overflow-hidden ${
-                  isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'
-                }`}>
-                  <div className={`flex items-center justify-between px-3 py-2.5 border-b ${isDark ? 'border-slate-700' : 'border-slate-100'}`}>
-                    <span className={`text-[11px] font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                      Filter by Type
-                    </span>
-                    {hasActiveFilter && (
+              <div className="relative" ref={versionDropRef}>
+                <button
+                  onClick={() => { setShowVersionDrop((p) => !p); setShowFilterPanel(false); }}
+                  className={`flex items-center gap-1.5 text-[12px] font-medium px-3 py-1.5 rounded-lg border transition-colors cursor-pointer ${isDark ? 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                    }`}
+                >
+                  {activeTypeLabel}
+                  <ChevronDown size={13} className={`transition-transform ${showVersionDrop ? 'rotate-180' : ''}`} />
+                </button>
+                {showVersionDrop && (
+                  <div className={`absolute right-0 mt-1.5 w-44 rounded-xl border shadow-lg z-30 overflow-hidden ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'
+                    }`}>
+                    {TYPE_OPTIONS.map((t) => (
                       <button
-                        onClick={() => setTypeFilter('all')}
-                        className={`text-[10px] cursor-pointer font-medium ${isDark ? 'text-violet-400 hover:text-violet-300' : 'text-violet-600 hover:text-violet-700'}`}
-                      >
-                        Clear
-                      </button>
-                    )}
-                  </div>
-                  <div className="p-1.5 space-y-0.5">
-                    {TYPE_OPTIONS.filter((t) => t !== 'all').map((t) => {
-                      const active = typeFilter === t;
-                      return (
-                        <button
-                          key={t}
-                          onClick={() => { setTypeFilter(active ? 'all' : t); }}
-                          className={`w-full text-left flex items-center justify-between px-3 py-2 rounded-lg text-[12px] transition-colors cursor-pointer ${
-                            active
-                              ? isDark ? 'bg-violet-500/15 text-violet-400' : 'bg-violet-50 text-violet-700'
-                              : isDark ? 'text-slate-300 hover:bg-slate-700' : 'text-slate-600 hover:bg-slate-50'
+                        key={t}
+                        onClick={() => { setTypeFilter(t); setShowVersionDrop(false); }}
+                        className={`w-full text-left px-3 py-2.5 text-[12px] flex items-center justify-between transition-colors cursor-pointer ${typeFilter === t
+                            ? isDark ? 'bg-violet-500/15 text-violet-400' : 'bg-violet-50 text-violet-700'
+                            : isDark ? 'text-slate-300 hover:bg-slate-700' : 'text-slate-600 hover:bg-slate-50'
                           }`}
-                        >
-                          <span className="capitalize">{t} release</span>
-                          <span className={`w-4 h-4 rounded border flex items-center justify-center ${
-                            active
-                              ? 'bg-violet-500 border-violet-500'
-                              : isDark ? 'border-slate-600' : 'border-slate-300'
-                          }`}>
-                            {active && <span className="w-2 h-2 rounded-sm bg-white" />}
-                          </span>
-                        </button>
-                      );
-                    })}
+                      >
+                        {t === 'all' ? 'All Versions' : `${t.charAt(0).toUpperCase() + t.slice(1)} only`}
+                        {typeFilter === t && <span className="w-1.5 h-1.5 rounded-full bg-violet-500" />}
+                      </button>
+                    ))}
                   </div>
-                </div>
-              )}
+                )}
+              </div>
+
+              {/* Filters panel */}
+              <div className="relative" ref={filterPanelRef}>
+                <button
+                  onClick={() => { setShowFilterPanel((p) => !p); setShowVersionDrop(false); }}
+                  className={`flex items-center gap-1.5 text-[12px] font-medium px-3 py-1.5 rounded-lg border transition-colors cursor-pointer ${hasActiveFilter
+                      ? isDark ? 'bg-violet-500/15 border-violet-500/30 text-violet-400' : 'bg-violet-50 border-violet-200 text-violet-700'
+                      : isDark ? 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                    }`}
+                >
+                  <SlidersHorizontal size={13} />
+                  Filters
+                  {hasActiveFilter && <span className="w-1.5 h-1.5 rounded-full bg-violet-500" />}
+                </button>
+
+                {showFilterPanel && (
+                  <div className={`absolute right-0 mt-1.5 w-52 rounded-xl border shadow-lg z-30 overflow-hidden ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'
+                    }`}>
+                    <div className={`flex items-center justify-between px-3 py-2.5 border-b ${isDark ? 'border-slate-700' : 'border-slate-100'}`}>
+                      <span className={`text-[11px] font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                        Filter by Type
+                      </span>
+                      {hasActiveFilter && (
+                        <button
+                          onClick={() => setTypeFilter('all')}
+                          className={`text-[10px] cursor-pointer font-medium ${isDark ? 'text-violet-400 hover:text-violet-300' : 'text-violet-600 hover:text-violet-700'}`}
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                    <div className="p-1.5 space-y-0.5">
+                      {TYPE_OPTIONS.filter((t) => t !== 'all').map((t) => {
+                        const active = typeFilter === t;
+                        return (
+                          <button
+                            key={t}
+                            onClick={() => { setTypeFilter(active ? 'all' : t); }}
+                            className={`w-full text-left flex items-center justify-between px-3 py-2 rounded-lg text-[12px] transition-colors cursor-pointer ${active
+                                ? isDark ? 'bg-violet-500/15 text-violet-400' : 'bg-violet-50 text-violet-700'
+                                : isDark ? 'text-slate-300 hover:bg-slate-700' : 'text-slate-600 hover:bg-slate-50'
+                              }`}
+                          >
+                            <span className="capitalize">{t} release</span>
+                            <span className={`w-4 h-4 rounded border flex items-center justify-center ${active
+                                ? 'bg-violet-500 border-violet-500'
+                                : isDark ? 'border-slate-600' : 'border-slate-300'
+                              }`}>
+                              {active && <span className="w-2 h-2 rounded-sm bg-white" />}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
           </div>
 
           {loading ? (
@@ -453,7 +432,7 @@ export default function ReleasesPage() {
                 <div className={`h-8 w-48 rounded-full ${isDark ? 'bg-slate-700' : 'bg-slate-100'}`} />
                 <div className={`h-4 w-3/4 rounded ${isDark ? 'bg-slate-700' : 'bg-slate-100'}`} />
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
-                  {[1,2,3,4].map(i => <div key={i} className={`h-24 rounded-xl ${isDark ? 'bg-slate-700' : 'bg-slate-100'}`} />)}
+                  {[1, 2, 3, 4].map(i => <div key={i} className={`h-24 rounded-xl ${isDark ? 'bg-slate-700' : 'bg-slate-100'}`} />)}
                 </div>
               </div>
             </div>
@@ -463,22 +442,19 @@ export default function ReleasesPage() {
             </div>
           ) : (
             <div className="flex-1 p-5">
-              <div className={`rounded-2xl border overflow-hidden ${
-                isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-sm'
-              }`}>
+              <div className={`rounded-2xl border overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-sm'
+                }`}>
 
                 <div className={`px-6 pt-5 pb-4 border-b ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
                   <div className="flex items-start justify-between gap-4 flex-wrap">
                     <div className="flex items-center gap-2.5 flex-wrap">
-                      <span className={`text-[13px] font-bold px-3 py-1 rounded-full ${
-                        isDark ? 'bg-violet-500/15 text-violet-400' : 'bg-violet-50 text-violet-700'
-                      }`}>
+                      <span className={`text-[13px] font-bold px-3 py-1 rounded-full ${isDark ? 'bg-violet-500/15 text-violet-400' : 'bg-violet-50 text-violet-700'
+                        }`}>
                         {vDisplay(selected.version)}
                       </span>
                       {selected.status === 'latest' && (
-                        <span className={`text-[10px] font-bold px-2 py-1 rounded-full tracking-wider ${
-                          isDark ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-600'
-                        }`}>Latest</span>
+                        <span className={`text-[10px] font-bold px-2 py-1 rounded-full tracking-wider ${isDark ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-600'
+                          }`}>Latest</span>
                       )}
                       <h2 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
                         {selected.title}
@@ -497,16 +473,14 @@ export default function ReleasesPage() {
                 </div>
 
                 {selected.highlightCards.length > 0 && (
-                  <div className={`px-6 py-4 border-b grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 ${
-                    isDark ? 'border-slate-800' : 'border-slate-100'
-                  }`}>
+                  <div className={`px-6 py-4 border-b grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 ${isDark ? 'border-slate-800' : 'border-slate-100'
+                    }`}>
                     {selected.highlightCards.map((card) => {
                       const Icon = HIGHLIGHT_ICON[card.icon] ?? FileText;
-                      const col  = HIGHLIGHT_COLOR[card.color] ?? HIGHLIGHT_COLOR.blue;
+                      const col = HIGHLIGHT_COLOR[card.color] ?? HIGHLIGHT_COLOR.blue;
                       return (
-                        <div key={card.title} className={`rounded-xl border p-3.5 flex items-start gap-3 ${
-                          isDark ? 'bg-slate-800/60 border-slate-700' : 'bg-slate-50 border-slate-200'
-                        }`}>
+                        <div key={card.title} className={`rounded-xl border p-3.5 flex items-start gap-3 ${isDark ? 'bg-slate-800/60 border-slate-700' : 'bg-slate-50 border-slate-200'
+                          }`}>
                           <span className={`p-2 rounded-lg shrink-0 ${col.bg}`}>
                             <Icon size={15} className={col.text} />
                           </span>
@@ -532,11 +506,10 @@ export default function ReleasesPage() {
                       <button
                         key={tab}
                         onClick={() => setActiveTab(tab)}
-                        className={`px-5 py-3 text-[12.5px] font-medium border-b-2 transition-all duration-150 cursor-pointer ${
-                          isActive
+                        className={`px-5 py-3 text-[12.5px] font-medium border-b-2 transition-all duration-150 cursor-pointer ${isActive
                             ? isDark ? 'border-violet-500 text-violet-400' : 'border-violet-600 text-violet-700'
                             : isDark ? 'border-transparent text-slate-500 hover:text-slate-300' : 'border-transparent text-slate-500 hover:text-slate-700'
-                        }`}
+                          }`}
                       >
                         {tab}
                       </button>
@@ -561,9 +534,8 @@ export default function ReleasesPage() {
                         {sec.subSections.length > 0 ? (
                           <ul className="space-y-2 pl-1">
                             {sec.subSections.map((sub) => (
-                              <li key={sub.heading} className={`flex items-start gap-2.5 text-[13px] leading-relaxed ${
-                                isDark ? 'text-slate-300' : 'text-slate-700'
-                              }`}>
+                              <li key={sub.heading} className={`flex items-start gap-2.5 text-[13px] leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-700'
+                                }`}>
                                 <span className={`mt-1.5 text-[10px] font-bold ${meta.text}`}>+</span>
                                 <span>
                                   <span className="font-semibold">{sub.heading}</span>
@@ -579,9 +551,8 @@ export default function ReleasesPage() {
                         ) : (
                           <ul className="space-y-2 pl-1">
                             {sec.items.map((item, idx) => (
-                              <li key={idx} className={`flex items-start gap-2.5 text-[13px] leading-relaxed ${
-                                isDark ? 'text-slate-300' : 'text-slate-600'
-                              }`}>
+                              <li key={idx} className={`flex items-start gap-2.5 text-[13px] leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-600'
+                                }`}>
                                 <span className={`mt-2 w-1.5 h-1.5 rounded-full shrink-0 ${isDark ? 'bg-slate-600' : 'bg-slate-300'}`} />
                                 {item}
                               </li>
@@ -594,14 +565,12 @@ export default function ReleasesPage() {
                 </div>
 
                 {/* ── Footer ── */}
-                <div className={`px-6 py-4 border-t flex items-center justify-between ${
-                  isDark ? 'border-slate-800 bg-slate-900/50' : 'border-slate-100 bg-slate-50/60'
-                }`}>
+                <div className={`px-6 py-4 border-t flex items-center justify-between ${isDark ? 'border-slate-800 bg-slate-900/50' : 'border-slate-100 bg-slate-50/60'
+                  }`}>
                   <button
                     onClick={() => downloadMd(selected)}
-                    className={`flex items-center gap-1.5 text-[12px] font-medium px-3.5 py-2 rounded-md border transition-colors cursor-pointer ${
-                      isDark ? 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm'
-                    }`}
+                    className={`flex items-center gap-1.5 text-[12px] font-medium px-3.5 py-2 rounded-md border transition-colors cursor-pointer ${isDark ? 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm'
+                      }`}
                   >
                     <Download size={13} />
                     Download MD
@@ -612,21 +581,19 @@ export default function ReleasesPage() {
                     <div className="flex items-center gap-1.5">
                       <button
                         onClick={() => setHelpful(helpful === true ? null : true)}
-                        className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
-                          helpful === true
+                        className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${helpful === true
                             ? isDark ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400' : 'bg-emerald-50 border-emerald-200 text-emerald-600'
                             : isDark ? 'border-slate-700 text-slate-500 hover:text-slate-300 hover:bg-slate-800' : 'border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-slate-100'
-                        }`}
+                          }`}
                       >
                         <ThumbsUp size={13} />
                       </button>
                       <button
                         onClick={() => setHelpful(helpful === false ? null : false)}
-                        className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
-                          helpful === false
+                        className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${helpful === false
                             ? isDark ? 'bg-red-500/15 border-red-500/30 text-red-400' : 'bg-red-50 border-red-200 text-red-500'
                             : isDark ? 'border-slate-700 text-slate-500 hover:text-slate-300 hover:bg-slate-800' : 'border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-slate-100'
-                        }`}
+                          }`}
                       >
                         <ThumbsDown size={13} />
                       </button>

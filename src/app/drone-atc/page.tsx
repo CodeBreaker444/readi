@@ -324,15 +324,20 @@ export default function DroneATCPage() {
         <div className={`shrink-0 mx-3 sm:mx-4 mt-3 px-3 sm:px-4 py-2.5 rounded-xl text-xs flex items-center gap-2 ring-1 ${isDark ? 'bg-amber-900/15 ring-amber-700/30 text-amber-300' : 'bg-amber-50 ring-amber-200 text-amber-700'
           }`}>
           <FiAlertTriangle className="w-4 h-4 shrink-0" />
-          <span>{t('droneAtc.noFlytbaseKey')}</span>
-          <Link href="/flytbase" className={`underline font-semibold ${isDark ? 'text-amber-200 hover:text-amber-100' : 'text-amber-800 hover:text-amber-900'}`}>
-            {t('droneAtc.configure')}
-          </Link>
+          {userRole === 'ADMIN' || userRole === 'SUPERADMIN' ? (
+            <>
+              <span>{t('droneAtc.noFlytbaseKey')}</span>
+              <Link href="/profile" className={`underline font-semibold ${isDark ? 'text-amber-200 hover:text-amber-100' : 'text-amber-800 hover:text-amber-900'}`}>
+                {t('droneAtc.configure')}
+              </Link>
+            </>
+          ) : (
+            <span>{t('droneAtc.noFlytbaseKeyContact')}</span>
+          )}
         </div>
       )}
 
       <div className="flex flex-1 gap-2 p-2 overflow-hidden">
-
         <aside className={`hidden md:flex w-64 shrink-0 flex-col overflow-hidden ${panelClass}`}>
           <div className={`px-3 py-2 border-b shrink-0 ${isDark ? 'border-slate-700/50' : 'border-slate-200'}`}>
             <div className="flex items-center justify-between">

@@ -1,6 +1,6 @@
-import { prisma } from '@/lib/prisma';
 import { seedLucProcedureProgressFromSteps } from '@/backend/services/operation/luc-procedure-progress';
 import { AttachmentUploadResponse, CreateOperationSchema, ListOperationsQuerySchema, Operation, OperationAttachment, OperationsListResponse, UpdateOperationSchema } from '@/config/types/operation';
+import { prisma } from '@/lib/prisma';
 import { buildS3Url, deleteFileFromS3, getPresignedDownloadUrl, REGION, uploadFileToS3 } from '@/lib/s3Client';
 
 const STATUS_NAME_TO_ID: Record<string, number> = {
@@ -112,19 +112,36 @@ export async function listOperations(
 
   const toolIds = [...new Set(operations.filter((op) => op.fk_tool_id).map((op) => op.fk_tool_id as number))];
   if (toolIds.length > 0) {
-    const primaryComps = await prisma.tool_component.findMany({
-      where: {
-        fk_tool_id: { in: toolIds },
-        component_metadata: { path: ['is_primary'], equals: true },
-      },
-      select: { fk_tool_id: true, component_code: true, component_name: true },
-    });
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const [primaryComps, expiredComps] = await Promise.all([
+      prisma.tool_component.findMany({
+        where: {
+          fk_tool_id: { in: toolIds },
+          component_metadata: { path: ['is_primary'], equals: true },
+        },
+        select: { fk_tool_id: true, component_code: true, component_name: true },
+      }),
+      prisma.tool_component.findMany({
+        where: {
+          fk_tool_id:      { in: toolIds },
+          component_active: 'Y',
+          expiration_date:  { not: null, lte: today },
+        },
+        select: { fk_tool_id: true },
+      }),
+    ]);
+
     const primaryMap = new Map<number, string>();
     primaryComps.forEach((c) => {
       if (c.fk_tool_id) primaryMap.set(c.fk_tool_id, c.component_code || c.component_name || '');
     });
+    const nonOpSet = new Set<number>(expiredComps.map((c) => c.fk_tool_id));
+
     operations.forEach((op) => {
       (op as any).primary_component_code = op.fk_tool_id ? (primaryMap.get(op.fk_tool_id) ?? null) : null;
+      (op as any).tool_status = op.fk_tool_id && nonOpSet.has(op.fk_tool_id) ? 'NOT_OPERATIONAL' : null;
     });
   }
 
@@ -648,7 +665,10 @@ export async function getToolOptions(ownerId: number) {
 
   const toolIds = tools.map((t) => t.tool_id);
 
-  const [openTickets, droneComponents, maintComps] = await Promise.all([
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const [openTickets, droneComponents, maintComps, expiredComps] = await Promise.all([
     prisma.maintenance_ticket.findMany({
       where: { fk_tool_id: { in: toolIds }, NOT: { ticket_status: 'CLOSED' } },
       select: { fk_tool_id: true },
@@ -669,25 +689,35 @@ export async function getToolOptions(ownerId: number) {
         current_maintenance_flights: true,
       },
     }),
+    prisma.tool_component.findMany({
+      where: {
+        fk_tool_id:      { in: toolIds },
+        component_active: 'Y',
+        expiration_date:  { not: null, lte: today },
+      },
+      select: { fk_tool_id: true },
+    }),
   ]);
 
-  const inMaintenanceSet = new Set<number>(openTickets.map((t) => t.fk_tool_id!).filter(Boolean));
-  const hasDroneSet = new Set<number>(droneComponents.map((c) => c.fk_tool_id).filter(Boolean));
+  const inMaintenanceSet  = new Set<number>(openTickets.map((t) => t.fk_tool_id!).filter(Boolean));
+  const hasDroneSet       = new Set<number>(droneComponents.map((c) => c.fk_tool_id).filter(Boolean));
+  const nonOperationalSet = new Set<number>(expiredComps.map((c) => c.fk_tool_id));
   const maintenanceDueSet = new Set<number>();
 
   maintComps.forEach((c) => {
     if (!c.fk_tool_id || inMaintenanceSet.has(c.fk_tool_id)) return;
-    const dayDue = Number(c.maintenance_cycle_day) > 0 && Number(c.current_maintenance_days) >= Number(c.maintenance_cycle_day);
-    const hourDue = Number(c.maintenance_cycle_hour) > 0 && Number(c.current_usage_hours) >= Number(c.maintenance_cycle_hour);
+    const dayDue    = Number(c.maintenance_cycle_day)    > 0 && Number(c.current_maintenance_days)    >= Number(c.maintenance_cycle_day);
+    const hourDue   = Number(c.maintenance_cycle_hour)   > 0 && Number(c.current_usage_hours)         >= Number(c.maintenance_cycle_hour);
     const flightDue = Number(c.maintenance_cycle_flight) > 0 && Number(c.current_maintenance_flights) >= Number(c.maintenance_cycle_flight);
     if (dayDue || hourDue || flightDue) maintenanceDueSet.add(c.fk_tool_id);
   });
 
   return tools.map((t) => ({
     ...t,
-    in_maintenance: inMaintenanceSet.has(t.tool_id),
+    in_maintenance:     inMaintenanceSet.has(t.tool_id),
     has_drone_component: hasDroneSet.has(t.tool_id),
-    maintenance_due: maintenanceDueSet.has(t.tool_id),
+    maintenance_due:    maintenanceDueSet.has(t.tool_id),
+    is_non_operational: nonOperationalSet.has(t.tool_id),
   }));
 }
 

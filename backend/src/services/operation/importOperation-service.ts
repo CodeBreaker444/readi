@@ -256,11 +256,15 @@ export async function importDrones(ownerId: number, clientId?: number) {
   });
 
   const toolIds = tools.map((t) => t.tool_id);
-  const inMaintenanceSet = new Set<number>();
+  const inMaintenanceSet  = new Set<number>();
   const maintenanceDueSet = new Set<number>();
+  const nonOperationalSet = new Set<number>();
 
   if (toolIds.length > 0) {
-    const [openTickets, maintComps] = await Promise.all([
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const [openTickets, maintComps, expiredComps] = await Promise.all([
       prisma.maintenance_ticket.findMany({
         where: { fk_tool_id: { in: toolIds }, NOT: { ticket_status: 'CLOSED' } },
         select: { fk_tool_id: true },
@@ -277,13 +281,22 @@ export async function importDrones(ownerId: number, clientId?: number) {
           current_maintenance_flights: true,
         },
       }),
+      prisma.tool_component.findMany({
+        where: {
+          fk_tool_id:      { in: toolIds },
+          component_active: 'Y',
+          expiration_date:  { not: null, lte: today },
+        },
+        select: { fk_tool_id: true },
+      }),
     ]);
 
     openTickets.forEach((t) => { if (t.fk_tool_id) inMaintenanceSet.add(t.fk_tool_id); });
+    expiredComps.forEach((c) => nonOperationalSet.add(c.fk_tool_id));
     maintComps.forEach((c) => {
       if (!c.fk_tool_id || inMaintenanceSet.has(c.fk_tool_id)) return;
-      const dayDue = Number(c.maintenance_cycle_day) > 0 && Number(c.current_maintenance_days) >= Number(c.maintenance_cycle_day);
-      const hourDue = Number(c.maintenance_cycle_hour) > 0 && Number(c.current_usage_hours) >= Number(c.maintenance_cycle_hour);
+      const dayDue    = Number(c.maintenance_cycle_day)    > 0 && Number(c.current_maintenance_days)    >= Number(c.maintenance_cycle_day);
+      const hourDue   = Number(c.maintenance_cycle_hour)   > 0 && Number(c.current_usage_hours)         >= Number(c.maintenance_cycle_hour);
       const flightDue = Number(c.maintenance_cycle_flight) > 0 && Number(c.current_maintenance_flights) >= Number(c.maintenance_cycle_flight);
       if (dayDue || hourDue || flightDue) maintenanceDueSet.add(c.fk_tool_id);
     });
@@ -295,11 +308,12 @@ export async function importDrones(ownerId: number, clientId?: number) {
   }
 
   return filtered.map((t) => ({
-    tool_id: t.tool_id,
-    tool_code: t.tool_code,
-    tool_name: t.tool_name,
-    in_maintenance: inMaintenanceSet.has(t.tool_id),
-    maintenance_due: maintenanceDueSet.has(t.tool_id),
+    tool_id:            t.tool_id,
+    tool_code:          t.tool_code,
+    tool_name:          t.tool_name,
+    in_maintenance:     inMaintenanceSet.has(t.tool_id),
+    maintenance_due:    maintenanceDueSet.has(t.tool_id),
+    is_non_operational: nonOperationalSet.has(t.tool_id),
   }));
 }
 

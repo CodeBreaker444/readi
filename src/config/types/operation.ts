@@ -247,6 +247,7 @@ export type OperationItem = {
   notes: string | null
   pilot_name?: string | null
   vehicle_code?: string | null
+  tool_status?: string | null
 }
 
 export type OperationCalendarEvent = {
@@ -257,6 +258,7 @@ export type OperationCalendarEvent = {
   color: string
   status: OperationCalenderStatus | null
   operation: OperationItem
+  tool_status?: string | null
 }
 
 export type CreateOperationCalendarInput = {

@@ -59,6 +59,7 @@ export interface Operation {
   tool_code?: string | null;
   tool_name?: string | null;
   primary_component_code?: string | null;
+  tool_status?: string | null;
   status_name?: string | null;
   client_name?: string | null;
   category_name?: string | null;

@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTheme } from '@/components/useTheme';
 import axios from 'axios';
-import { Loader2, Pencil, Search } from 'lucide-react';
+import { Loader2, Pencil, Search, X } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -98,6 +98,7 @@ export default function EditComponentModal({
   const [showManageClasses, setShowManageClasses] = useState<boolean>(false);
   const [droneClasses, setDroneClasses] = useState<DroneClassRow[]>([]);
   const [droneClassesLoading, setDroneClassesLoading] = useState<boolean>(false);
+  const [customClassInput, setCustomClassInput] = useState('');
   const [loadingParent, setLoadingParent] = useState<boolean>(false);
   const [originalFkToolId, setOriginalFkToolId] = useState<number | null>(null);
   const [drcSyncedAt, setDrcSyncedAt] = useState<string | null>(null);
@@ -544,40 +545,83 @@ export default function EditComponentModal({
                         <Pencil className="h-3 w-3" />
                       </button>
                     </div>
-                    {droneClassesLoading ? (
-                      <div className="flex flex-wrap gap-2">
-                        {[72, 88, 64, 80, 76].map(w => (
-                          <Skeleton key={w} className="h-7 rounded-full" style={{ width: w }} />
+
+                    {/* Selected classes — independent removable chips per component */}
+                    {formData.drone_classes.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {formData.drone_classes.map(cls => (
+                          <span key={cls} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-violet-600 text-white border border-violet-600">
+                            {cls}
+                            <button
+                              type="button"
+                              onClick={() => setFormData(prev => ({ ...prev, drone_classes: prev.drone_classes.filter(v => v !== cls) }))}
+                              className="ml-0.5 hover:bg-violet-700 rounded-full p-0.5 transition-colors"
+                            >
+                              <X className="h-2.5 w-2.5" />
+                            </button>
+                          </span>
                         ))}
                       </div>
-                    ) : (
-                      <div className="flex flex-wrap gap-2">
-                        {droneClasses.map(dc => {
-                          const selected = formData.drone_classes.includes(dc.class_value);
-                          return (
+                    )}
+
+                    {/* Global suggestions — only those not yet added to this component */}
+                    {!droneClassesLoading && droneClasses.filter(dc => !formData.drone_classes.includes(dc.class_value)).length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 items-center">
+                        <span className="text-[10px] font-semibold uppercase text-slate-400 mr-1">Add:</span>
+                        {droneClasses
+                          .filter(dc => !formData.drone_classes.includes(dc.class_value))
+                          .map(dc => (
                             <button
                               key={dc.class_id}
                               type="button"
-                              onClick={() => {
-                                const next = selected
-                                  ? formData.drone_classes.filter((v: string) => v !== dc.class_value)
-                                  : [...formData.drone_classes, dc.class_value];
-                                setFormData(prev => ({ ...prev, drone_classes: next }));
-                              }}
-                              className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
-                                selected
-                                  ? 'bg-violet-600 border-violet-600 text-white'
-                                  : isDark
-                                    ? 'bg-slate-700 border-slate-600 text-slate-300 hover:border-violet-400 hover:text-violet-300'
-                                    : 'bg-white border-slate-300 text-slate-600 hover:border-violet-400 hover:text-violet-600'
-                              }`}
+                              onClick={() => setFormData(prev => ({ ...prev, drone_classes: [...prev.drone_classes, dc.class_value] }))}
+                              className="px-2.5 py-1 rounded-full text-xs font-medium border border-dashed border-slate-300 text-slate-500 hover:border-violet-400 hover:text-violet-600 transition-colors"
                             >
-                              {dc.class_value} — {dc.class_label}
+                              + {dc.class_value}
                             </button>
-                          );
-                        })}
+                          ))}
                       </div>
                     )}
+                    {droneClassesLoading && (
+                      <div className="flex flex-wrap gap-2">
+                        {[72, 88, 64, 80, 76].map(w => <Skeleton key={w} className="h-7 rounded-full" style={{ width: w }} />)}
+                      </div>
+                    )}
+
+                    {/* Free-text input for custom class values */}
+                    <div className="flex gap-2 items-center">
+                      <input
+                        type="text"
+                        value={customClassInput}
+                        onChange={e => setCustomClassInput(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            const val = customClassInput.trim();
+                            if (val && !formData.drone_classes.includes(val)) {
+                              setFormData(prev => ({ ...prev, drone_classes: [...prev.drone_classes, val] }));
+                            }
+                            setCustomClassInput('');
+                          }
+                        }}
+                        placeholder="Custom class (e.g. C2)…"
+                        className="h-7 rounded-md border border-slate-300 px-2.5 text-xs outline-none focus:ring-1 focus:ring-violet-500/30 bg-background w-44"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const val = customClassInput.trim();
+                          if (val && !formData.drone_classes.includes(val)) {
+                            setFormData(prev => ({ ...prev, drone_classes: [...prev.drone_classes, val] }));
+                          }
+                          setCustomClassInput('');
+                        }}
+                        disabled={!customClassInput.trim()}
+                        className="h-7 px-3 rounded-md text-xs font-medium bg-slate-100 border border-slate-300 text-slate-600 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      >
+                        Add
+                      </button>
+                    </div>
                   </div>
                 )}
 

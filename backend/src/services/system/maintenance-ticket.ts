@@ -73,6 +73,38 @@ export async function assertToolNotInMaintenance(toolId: number): Promise<void> 
   }
 }
 
+export async function assertToolNotNonOperational(toolId: number): Promise<void> {
+  const today = new Date().toISOString().split('T')[0];
+
+  const { data: expiredComp } = await supabase
+    .from('tool_component')
+    .select('component_id, component_name')
+    .eq('fk_tool_id', toolId)
+    .eq('component_active', 'Y')
+    .lte('expiration_date', today)
+    .not('expiration_date', 'is', null)
+    .limit(1)
+    .maybeSingle();
+
+  if (expiredComp) {
+    throw new Error(
+      `This system is not operational — component "${expiredComp.component_name}" has expired. It cannot be used for mission creation.`
+    );
+  }
+
+  const { data: tool } = await supabase
+    .from('tool')
+    .select('tool_metadata')
+    .eq('tool_id', toolId)
+    .maybeSingle();
+
+  if (tool?.tool_metadata?.status === 'NOT_OPERATIONAL') {
+    throw new Error(
+      'This system is not operational and cannot be used for mission creation.'
+    );
+  }
+}
+
 export async function getTicketList(owner_id: number, tool_id?: number): Promise<MaintenanceTicket[]> {
   let query = supabase
     .from('maintenance_ticket')

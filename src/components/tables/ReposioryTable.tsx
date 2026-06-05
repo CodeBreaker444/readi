@@ -323,10 +323,13 @@ export default function RepositoryTable() {
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                table.getRowModel().rows.map((row) => (
+                                table.getRowModel().rows.map((row) => {
+                                  const isNonOp = row.original.tool_status === 'NOT_OPERATIONAL';
+                                  return (
                                     <TableRow
                                         key={row.id}
                                         className={`transition-colors
+                  ${isNonOp ? 'opacity-50' : ''}
                   ${isDark
                                                 ? 'border-slate-700/40 hover:bg-slate-700/30'
                                                 : 'border-gray-50 hover:bg-gray-50/80'
@@ -339,7 +342,8 @@ export default function RepositoryTable() {
                                             </TableCell>
                                         ))}
                                     </TableRow>
-                                ))
+                                  );
+                                })
                             )}
                         </TableBody>
                     </Table>

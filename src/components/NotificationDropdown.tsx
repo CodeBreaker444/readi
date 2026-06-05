@@ -44,12 +44,39 @@ function normalizeCategory(procedureName?: string): string {
   return 'OTHER';
 }
 
-function timeAgo(dateStr: string): string {
-  const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
-  if (diff < 60)    return 'Just now';
-  if (diff < 3600)  return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  return new Date(dateStr).toLocaleDateString();
+const KNOWN_IDS_KEY = 'notif_known_ids';
+
+function loadKnownIds(): Set<number> | null {
+  try {
+    const raw = sessionStorage.getItem(KNOWN_IDS_KEY);
+    return raw ? new Set(JSON.parse(raw) as number[]) : null;
+  } catch { return null; }
+}
+
+function persistKnownIds(ids: Set<number>) {
+  try {
+    let arr = [...ids];
+    if (arr.length > 2000) arr = arr.slice(arr.length - 2000);
+    sessionStorage.setItem(KNOWN_IDS_KEY, JSON.stringify(arr));
+  } catch {}
+}
+
+// Supabase returns `timestamp without time zone` values without a trailing Z
+// (e.g. "2026-06-05T10:30:00"), but they were stored as UTC via toISOString().
+// Appending Z ensures JS parses them as UTC, not as local time.
+function parseNotifDate(s: string): Date {
+  return new Date(!s.endsWith('Z') && !s.includes('+') ? s + 'Z' : s);
+}
+
+function formatNotifTime(dateStr: string): string {
+  const d = parseNotifDate(dateStr);
+  const now = new Date();
+  const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  if (d.toDateString() === now.toDateString()) return timeStr;
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (d.toDateString() === yesterday.toDateString()) return `Yesterday ${timeStr}`;
+  return d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' ' + timeStr;
 }
 
 const POLL_INTERVAL = 10_000;
@@ -84,8 +111,10 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isDark }) =
         setNotifications(all);
         setUnreadCount(all.filter((n) => n.is_read === 'N').length);
         lastFullFetchRef.current = Date.now();
-        if (knownIdsRef.current === null)
+        if (knownIdsRef.current === null) {
           knownIdsRef.current = new Set(all.map((n) => n.notification_id));
+          persistKnownIds(knownIdsRef.current);
+        }
       }
     } catch {
     } finally {
@@ -107,10 +136,12 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isDark }) =
         setUnreadCount(incoming.length);
         if (knownIdsRef.current === null) {
           knownIdsRef.current = new Set(incoming.map((n) => n.notification_id));
+          persistKnownIds(knownIdsRef.current);
         } else {
           const newNotifs = incoming.filter((n) => !knownIdsRef.current!.has(n.notification_id));
           if (newNotifs.length > 0) {
             newNotifs.forEach((n) => knownIdsRef.current!.add(n.notification_id));
+            persistKnownIds(knownIdsRef.current!);
 
             // Group into one toast per category instead of one per notification
             const catMap: Record<string, Notification[]> = {};
@@ -137,6 +168,12 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isDark }) =
         }
       }
     } catch {}
+  }, []);
+
+  useEffect(() => {
+    if (knownIdsRef.current === null) {
+      knownIdsRef.current = loadKnownIds();
+    }
   }, []);
 
   useEffect(() => {
@@ -313,7 +350,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isDark }) =
                               {cfg.label}
                             </span>
                             <span className={`text-[10px] ml-auto ${subtext}`}>
-                              {timeAgo(notif.created_at)}
+                              {formatNotifTime(notif.created_at)}
                             </span>
                           </div>
                           <p className={`text-xs leading-snug line-clamp-2 ${
