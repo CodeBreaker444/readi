@@ -4417,6 +4417,7 @@
       "noApiKey": "Kein API-Schlüssel"
     },
     "noFlytbaseKey": "Kein Control Center API-Schlüssel konfiguriert.",
+    "noFlytbaseKeyContact": "Wenden Sie sich an Ihren Administrator, um die FlytBase-API-Anmeldedaten hinzuzufügen.",
     "configure": "Konfigurieren →",
     "retry": "Wiederholen",
     "fleetManagement": "Flottenmanagement",

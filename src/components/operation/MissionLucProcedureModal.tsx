@@ -148,7 +148,7 @@ function MissionChecklistModal({
   return (
     <>
       <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0">
           <DialogHeader className="px-6 pt-5 pb-3 border-b border-slate-100 dark:border-slate-700">
             <div className="flex items-start gap-3">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-50 border border-emerald-100">
@@ -666,7 +666,7 @@ export function MissionLucProcedureModal({ mission, isDark, onClose }: Props) {
         onClick={onClose}
       >
         <div
-          className={`w-full max-w-lg rounded-2xl border shadow-2xl flex flex-col max-h-[90vh] ${bg}`}
+          className={`w-full max-w-5xl rounded-2xl border shadow-2xl flex flex-col max-h-[90vh] ${bg}`}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -714,7 +714,7 @@ export function MissionLucProcedureModal({ mission, isDark, onClose }: Props) {
           )}
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
+          <div className="flex-1 overflow-y-auto px-6 py-4">
             {loading ? (
               <div className="flex items-center justify-center py-16">
                 <Loader2 className="h-6 w-6 animate-spin text-violet-500" />
@@ -725,64 +725,66 @@ export function MissionLucProcedureModal({ mission, isDark, onClose }: Props) {
                 <p className="text-sm">{t('planning.evaluation.noChecklistDef')}</p>
               </div>
             ) : (
-              SECTIONS.map(({ key, label, icon: Icon, color }) => {
-                const items = tasks?.[key] ?? [];
-                if (items.length === 0) return null;
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {SECTIONS.map(({ key, label, icon: Icon, color }) => {
+                  const items = tasks?.[key] ?? [];
+                  if (items.length === 0) return null;
 
-                return (
-                  <div key={key}>
-                    <div className="flex items-center gap-2 mb-3">
-                      <Icon className={`h-4 w-4 ${color}`} />
-                      <h3 className={`text-xs font-semibold uppercase tracking-wide ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                        {label}
-                      </h3>
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${isDark ? 'bg-slate-700 text-slate-400' : 'bg-gray-100 text-gray-500'}`}>
-                        {Object.values(progress[key] ?? {}).filter((v) => v === 'Y').length}/{items.length}
-                      </span>
-                    </div>
-                    <div className="space-y-2">
-                      {items.map((item: any) => {
-                        const code = item[`${key}_code`] as string;
-                        const name = item[`${key}_name`] as string;
-                        const done = (progress[key]?.[code] ?? 'N') === 'Y';
+                  return (
+                    <div key={key} className={`flex flex-col rounded-xl border p-4 ${isDark ? 'border-slate-700 bg-slate-800/30' : 'border-gray-100 bg-gray-50/60'}`}>
+                      <div className="flex items-center gap-2 mb-3">
+                        <Icon className={`h-4 w-4 ${color}`} />
+                        <h3 className={`text-xs font-semibold uppercase tracking-wide ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                          {label}
+                        </h3>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${isDark ? 'bg-slate-700 text-slate-400' : 'bg-gray-100 text-gray-500'}`}>
+                          {Object.values(progress[key] ?? {}).filter((v) => v === 'Y').length}/{items.length}
+                        </span>
+                      </div>
+                      <div className="space-y-2 flex-1">
+                        {items.map((item: any) => {
+                          const code = item[`${key}_code`] as string;
+                          const name = item[`${key}_name`] as string;
+                          const done = (progress[key]?.[code] ?? 'N') === 'Y';
 
-                        return (
-                          <TaskRow
-                            key={code}
-                            section={key}
-                            code={code}
-                            name={name}
-                            done={done}
-                            isDark={isDark}
-                            onAction={() => {
-                              if (key === 'checklist') {
-                                setActiveModal({
-                                  type: 'checklist',
-                                  checklistId: item.checklist_id,
-                                  checklistCode: code,
-                                  checklistName: name,
-                                });
-                              } else if (key === 'assignment') {
-                                setActiveModal({
-                                  type: 'assignment',
-                                  assignmentCode: code,
-                                  assignmentName: name,
-                                });
-                              } else {
-                                setActiveModal({
-                                  type: 'communication',
-                                  communicationCode: code,
-                                  communicationName: name,
-                                });
-                              }
-                            }}
-                          />
-                        );
-                      })}
+                          return (
+                            <TaskRow
+                              key={code}
+                              section={key}
+                              code={code}
+                              name={name}
+                              done={done}
+                              isDark={isDark}
+                              onAction={() => {
+                                if (key === 'checklist') {
+                                  setActiveModal({
+                                    type: 'checklist',
+                                    checklistId: item.checklist_id,
+                                    checklistCode: code,
+                                    checklistName: name,
+                                  });
+                                } else if (key === 'assignment') {
+                                  setActiveModal({
+                                    type: 'assignment',
+                                    assignmentCode: code,
+                                    assignmentName: name,
+                                  });
+                                } else {
+                                  setActiveModal({
+                                    type: 'communication',
+                                    communicationCode: code,
+                                    communicationName: name,
+                                  });
+                                }
+                              }}
+                            />
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                );
-              })
+                  );
+                })}
+              </div>
             )}
           </div>
 

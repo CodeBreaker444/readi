@@ -3228,6 +3228,7 @@
       "noApiKey": "Nessuna Chiave API"
     },
     "noFlytbaseKey": "Nessuna chiave API Control Center configurata.",
+    "noFlytbaseKeyContact": "Contatta il tuo amministratore per aggiungere le credenziali API FlytBase.",
     "configure": "Configura →",
     "retry": "Riprova",
     "fleetManagement": "Gestione Flotta",

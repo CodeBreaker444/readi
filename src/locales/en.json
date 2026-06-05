@@ -3236,6 +3236,7 @@
       "noApiKey": "No API Key"
     },
     "noFlytbaseKey": "No Control Center API key configured.",
+    "noFlytbaseKeyContact": "Contact your administrator to add the FlytBase API credentials.",
     "configure": "Configure →",
     "retry": "Retry",
     "fleetManagement": "Fleet Management",
