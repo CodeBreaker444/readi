@@ -1,7 +1,7 @@
 'use server';
 
 import { env } from '@/backend/config/env';
-import { supabase } from '@/backend/database/database';
+import { prisma } from '@/lib/prisma';
 import { getFlytbaseCredentials, getFlytbaseCredentialsForCompany } from '@/backend/services/integrations/flytbase-service';
 import { BUCKET, getPresignedDownloadUrl, s3 } from '@/lib/s3Client';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
@@ -16,21 +16,26 @@ export interface FlightLog {
 }
 
 export async function getFlightLogsForMission(missionId: number): Promise<FlightLog[]> {
-  const { data, error } = await supabase
-    .from('mission_flight_logs')
-    .select('log_id, log_source, original_filename, flytbase_flight_id, uploaded_at, s3_key')
-    .eq('fk_mission_id', missionId)
-    .order('uploaded_at', { ascending: false });
-
-  if (error) throw new Error(error.message);
+  const data = await prisma.mission_flight_logs.findMany({
+    where: { fk_mission_id: BigInt(missionId) },
+    orderBy: { uploaded_at: 'desc' },
+    select: {
+      log_id: true,
+      log_source: true,
+      original_filename: true,
+      flytbase_flight_id: true,
+      uploaded_at: true,
+      s3_key: true,
+    },
+  });
 
   return Promise.all(
-    (data ?? []).map(async (log) => ({
-      log_id: log.log_id,
+    data.map(async (log) => ({
+      log_id: Number(log.log_id),
       log_source: log.log_source as 'manual' | 'flytbase',
-      original_filename: log.original_filename,
-      flytbase_flight_id: log.flytbase_flight_id,
-      uploaded_at: log.uploaded_at,
+      original_filename: log.original_filename ?? '',
+      flytbase_flight_id: log.flytbase_flight_id ?? null,
+      uploaded_at: log.uploaded_at?.toISOString() ?? '',
       download_url: await getPresignedDownloadUrl(log.s3_key, 3600),
     }))
   );
@@ -41,7 +46,7 @@ const ALLOWED_EXTENSIONS = ['.zip', '.json', '.xml', '.gutma'];
 export async function uploadManualFlightLog(
   missionId: number,
   userId: number,
-  file: File,
+  file: File
 ): Promise<void> {
   const MAX_SIZE = 50 * 1024 * 1024;
   if (file.size > MAX_SIZE) throw new Error('File too large (max 50 MB)');
@@ -66,22 +71,22 @@ export async function uploadManualFlightLog(
     })
   );
 
-  const { error } = await supabase.from('mission_flight_logs').insert({
-    fk_mission_id: missionId,
-    log_source: 'manual',
-    s3_key: s3Key,
-    original_filename: file.name,
-    uploaded_by: userId,
+  await prisma.mission_flight_logs.create({
+    data: {
+      fk_mission_id: BigInt(missionId),
+      log_source: 'manual',
+      s3_key: s3Key,
+      original_filename: file.name,
+      uploaded_by: BigInt(userId),
+    },
   });
-
-  if (error) throw new Error(error.message);
 }
 
 export async function attachFlytbaseFlightLog(
   missionId: number,
   userId: number,
   ownerId: number,
-  flightId: string,
+  flightId: string
 ): Promise<void> {
   const creds =
     (await getFlytbaseCredentials(userId)) ??
@@ -133,14 +138,14 @@ export async function attachFlytbaseFlightLog(
     })
   );
 
-  const { error } = await supabase.from('mission_flight_logs').insert({
-    fk_mission_id: missionId,
-    log_source: 'flytbase',
-    s3_key: s3Key,
-    original_filename: filename,
-    flytbase_flight_id: flightId,
-    uploaded_by: userId,
+  await prisma.mission_flight_logs.create({
+    data: {
+      fk_mission_id: BigInt(missionId),
+      log_source: 'flytbase',
+      s3_key: s3Key,
+      original_filename: filename,
+      flytbase_flight_id: flightId,
+      uploaded_by: BigInt(userId),
+    },
   });
-
-  if (error) throw new Error(error.message);
 }

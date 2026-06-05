@@ -1,4 +1,4 @@
-import { supabase } from '@/backend/database/database';
+import { prisma } from '@/lib/prisma';
 import { seedLucProcedureProgressFromSteps } from '@/backend/services/operation/luc-procedure-progress';
 import { assertToolNotInMaintenance } from '@/backend/services/system/maintenance-ticket';
 import {
@@ -13,55 +13,55 @@ const STATUS_COLORS: Record<string, string> = {
   'In Progress': '#d97706',
   Completed: '#16a34a',
   Cancelled: '#dc2626',
-}
+};
 
 const STATUS_NAME_TO_ID: Record<string, number> = {
   Scheduled: 1,
   'In Progress': 2,
   Completed: 3,
   Cancelled: 4,
-}
+};
 
 export const getOperationCalendarEvents = async (
   ownerId: number
 ): Promise<{ operations: OperationItem[]; calendarEvents: OperationCalendarEvent[] }> => {
-  const { data, error } = await supabase
-    .from('pilot_mission')
-    .select(`
-      pilot_mission_id,
-      mission_name,
-      mission_code,
-      scheduled_start,
-      actual_start,
-      actual_end,
-      status_name,
-      location,
-      notes,
-      fk_pilot_user_id,
-      fk_tool_id,
-      fk_mission_type_id,
-      fk_mission_category_id,
-      fk_planning_id,
-      fk_owner_id,
-      recurring_group_id,
-      mission_group_label,
-      users!pilot_mission_fk_pilot_user_id_fkey(first_name, last_name),
-      tool!pilot_mission_fk_tool_id_fkey(tool_code)
-    `)
-    .eq('fk_owner_id', ownerId)
-    .not('scheduled_start', 'is', null)
-    .order('scheduled_start', { ascending: true })
+  const data = await prisma.pilot_mission.findMany({
+    where: {
+      fk_owner_id: ownerId,
+      scheduled_start: { not: null },
+    },
+    orderBy: { scheduled_start: 'asc' },
+    select: {
+      pilot_mission_id: true,
+      mission_name: true,
+      mission_code: true,
+      scheduled_start: true,
+      actual_start: true,
+      actual_end: true,
+      status_name: true,
+      location: true,
+      notes: true,
+      fk_pilot_user_id: true,
+      fk_tool_id: true,
+      fk_mission_type_id: true,
+      fk_mission_category_id: true,
+      fk_planning_id: true,
+      fk_owner_id: true,
+      recurring_group_id: true,
+      mission_group_label: true,
+      users: { select: { first_name: true, last_name: true } },
+      tool: { select: { tool_code: true } },
+    },
+  });
 
-  if (error) throw new Error(`Failed to fetch operations: ${error.message}`)
-
-  const operations: OperationItem[] = (data || []).map((row: any) => ({
-    ...row,
+  const operations: OperationItem[] = data.map((row) => ({
+    ...(row as any),
     pilot_name: row.users
       ? `${row.users.first_name} ${row.users.last_name}`.trim()
       : null,
     vehicle_code: row.tool?.tool_code ?? null,
-    scheduled_end: row.actual_end ?? null,
-  }))
+    scheduled_end: row.actual_end?.toISOString() ?? null,
+  }));
 
   const calendarEvents: OperationCalendarEvent[] = operations.map((op) => ({
     id: String(op.pilot_mission_id),
@@ -71,10 +71,10 @@ export const getOperationCalendarEvents = async (
     color: STATUS_COLORS[op.status_name ?? 'Scheduled'] ?? STATUS_COLORS['Scheduled'],
     status: (op.status_name as OperationCalenderStatus) ?? null,
     operation: op,
-  }))
+  }));
 
-  return { operations, calendarEvents }
-}
+  return { operations, calendarEvents };
+};
 
 
 export interface MissionCreationResult {
@@ -102,15 +102,15 @@ export const createOperationCalendarEntry = async (
 
   let stepsSource: unknown = input.luc_procedure_steps;
   if (!stepsSource) {
-    const { data: procRow, error: procErr } = await supabase
-      .from('luc_procedure')
-      .select('procedure_steps')
-      .eq('procedure_id', input.fk_luc_procedure_id)
-      .eq('fk_owner_id', ownerId)
-      .eq('procedure_status', 'MISSION')
-      .eq('procedure_active', 'Y')
-      .maybeSingle();
-    if (procErr) throw new Error(`procedure lookup failed: ${procErr.message}`);
+    const procRow = await prisma.luc_procedure.findFirst({
+      where: {
+        procedure_id: input.fk_luc_procedure_id,
+        fk_owner_id: ownerId,
+        procedure_status: 'MISSION',
+        procedure_active: 'Y',
+      },
+      select: { procedure_steps: true },
+    });
     if (!procRow) throw new Error('procedure not found or not available for missions');
     stepsSource = procRow.procedure_steps;
   }
@@ -134,10 +134,10 @@ export const createOperationCalendarEntry = async (
     fk_mission_category_id: input.fk_mission_category_id ?? null,
     fk_planning_id: input.fk_planning_id ?? null,
     fk_luc_procedure_id: input.fk_luc_procedure_id,
-    luc_procedure_progress,
+    luc_procedure_progress: luc_procedure_progress as any,
     location: input.location ?? null,
     notes: input.notes ?? null,
-  }
+  };
 
   if (
     input.is_recurring &&
@@ -145,115 +145,94 @@ export const createOperationCalendarEntry = async (
     input.days_of_week.length > 0 &&
     input.recur_until
   ) {
-    const recurringGroupId = crypto.randomUUID()
+    const recurringGroupId = crypto.randomUUID();
+    const startMatch = input.scheduled_start.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+    if (!startMatch) throw new Error('Invalid scheduled start format. Expected YYYY-MM-DDTHH:mm');
+    const [, sYear, sMonth, sDay, sHour, sMin] = startMatch.map(Number);
 
-    const startMatch = input.scheduled_start.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/)
-    if (!startMatch) throw new Error('Invalid scheduled start format. Expected YYYY-MM-DDTHH:mm')
+    const endMatch = input.scheduled_end.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+    if (!endMatch) throw new Error('Invalid scheduled end format. Expected YYYY-MM-DDTHH:mm');
+    const [, eYear, eMonth, eDay, eHour, eMin] = endMatch.map(Number);
 
-    const [, sYear, sMonth, sDay, sHour, sMin] = startMatch.map(Number)
+    const startMs = Date.UTC(sYear, sMonth - 1, sDay, sHour, sMin, 0);
+    const endMs = Date.UTC(eYear, eMonth - 1, eDay, eHour, eMin, 0);
+    if (isNaN(startMs)) throw new Error('Invalid scheduled start date');
+    if (isNaN(endMs)) throw new Error('Invalid scheduled end date');
+    const durationMs = Math.max(endMs - startMs, 0);
 
-    const endMatch = input.scheduled_end.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/)
-    if (!endMatch) throw new Error('Invalid scheduled end format. Expected YYYY-MM-DDTHH:mm')
+    const untilMatch = input.recur_until.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (!untilMatch) throw new Error('Invalid recur_until format. Expected YYYY-MM-DD');
+    const [, uYear, uMonth, uDay] = untilMatch.map(Number);
+    const untilDate = new Date(Date.UTC(uYear, uMonth - 1, uDay, 23, 59, 59));
+    let cursorDate = new Date(Date.UTC(sYear, sMonth - 1, sDay));
+    if (cursorDate > untilDate) throw new Error('Recurrence end date must be on or after the start date');
 
-    const [, eYear, eMonth, eDay, eHour, eMin] = endMatch.map(Number)
-
-    const startMs = Date.UTC(sYear, sMonth - 1, sDay, sHour, sMin, 0)
-    const endMs = Date.UTC(eYear, eMonth - 1, eDay, eHour, eMin, 0)
-    if (isNaN(startMs)) throw new Error('Invalid scheduled start date')
-    if (isNaN(endMs)) throw new Error('Invalid scheduled end date')
-    const durationMs = Math.max(endMs - startMs, 0)
-
-    const untilMatch = input.recur_until.match(/^(\d{4})-(\d{2})-(\d{2})/)
-    if (!untilMatch) throw new Error('Invalid recur_until format. Expected YYYY-MM-DD')
-
-    const [, uYear, uMonth, uDay] = untilMatch.map(Number)
-    const untilDate = new Date(Date.UTC(uYear, uMonth - 1, uDay, 23, 59, 59))
-
-    let cursorDate = new Date(Date.UTC(sYear, sMonth - 1, sDay))
-
-    if (cursorDate > untilDate) {
-      throw new Error('Recurrence end date must be on or after the start date')
-    }
-
-    const daysSet = new Set(input.days_of_week.map((d: any) => Number(d)))
-
-    const rows: object[] = []
-    const rowMeta: Array<{ dccMissionId: string; startDateTime: string }> = []
-    let instanceIndex = 0
-    let iterations = 0
+    const daysSet = new Set(input.days_of_week.map((d: any) => Number(d)));
+    const rows: any[] = [];
+    const rowMeta: Array<{ dccMissionId: string; startDateTime: string }> = [];
+    let instanceIndex = 0;
+    let iterations = 0;
 
     while (cursorDate <= untilDate && iterations < 1000) {
-      iterations++
-      const dayOfWeek = cursorDate.getUTCDay()
-
-      if (daysSet.has(dayOfWeek)) {
-        instanceIndex++
-
-        const y = cursorDate.getUTCFullYear()
-        const m = cursorDate.getUTCMonth()
-        const d = cursorDate.getUTCDate()
-
-        const instanceStart = new Date(Date.UTC(y, m, d, sHour, sMin, 0, 0))
-        const instanceEnd = new Date(instanceStart.getTime() + durationMs)
-
-        const dateTag = `${y}${String(m + 1).padStart(2, '0')}${String(d).padStart(2, '0')}`
+      iterations++;
+      if (daysSet.has(cursorDate.getUTCDay())) {
+        instanceIndex++;
+        const y = cursorDate.getUTCFullYear();
+        const m = cursorDate.getUTCMonth();
+        const d = cursorDate.getUTCDate();
+        const instanceStart = new Date(Date.UTC(y, m, d, sHour, sMin, 0, 0));
+        const dateTag = `${y}${String(m + 1).padStart(2, '0')}${String(d).padStart(2, '0')}`;
         const dccMissionId = input.mission_code
           ? `${input.mission_code}-${dateTag}-${instanceIndex}`
-          : crypto.randomUUID()
+          : crypto.randomUUID();
 
         rows.push({
           ...base,
           mission_code: dccMissionId,
-          scheduled_start: instanceStart.toISOString(),
-          actual_end: instanceEnd.toISOString(),
+          scheduled_start: instanceStart,
+          actual_end: new Date(instanceStart.getTime() + durationMs),
           recurring_group_id: recurringGroupId,
-          mission_date_until: input.recur_until,
+          mission_date_until: new Date(input.recur_until),
           mission_group_label: input.mission_group_label ?? null,
-        })
-        rowMeta.push({ dccMissionId, startDateTime: instanceStart.toISOString() })
+        });
+        rowMeta.push({ dccMissionId, startDateTime: instanceStart.toISOString() });
       }
-
       cursorDate = new Date(Date.UTC(
-        cursorDate.getUTCFullYear(),
-        cursorDate.getUTCMonth(),
-        cursorDate.getUTCDate() + 1
-      ))
+        cursorDate.getUTCFullYear(), cursorDate.getUTCMonth(), cursorDate.getUTCDate() + 1
+      ));
     }
 
-    if (rows.length === 0) throw new Error('No matching days found in the recurrence range')
+    if (rows.length === 0) throw new Error('No matching days found in the recurrence range');
 
-    const { data, error } = await supabase
-      .from('pilot_mission')
-      .insert(rows)
-      .select('pilot_mission_id, scheduled_start')
+    await prisma.pilot_mission.createMany({ data: rows });
 
-    if (error) throw new Error(`Failed to create recurring operations: ${error.message}`)
+    const created = await prisma.pilot_mission.findMany({
+      where: { mission_code: { in: rowMeta.map(r => r.dccMissionId) }, fk_owner_id: ownerId },
+      orderBy: { scheduled_start: 'asc' },
+      select: { pilot_mission_id: true, scheduled_start: true, mission_code: true },
+    });
 
     return {
-      firstMissionId: data[0].pilot_mission_id,
-      missions: data.map((row: any, i: number) => ({
+      firstMissionId: created[0].pilot_mission_id,
+      missions: created.map((row, i) => ({
         pilotMissionId: row.pilot_mission_id,
-        dccMissionId:   rowMeta[i].dccMissionId,
-        startDateTime:  rowMeta[i].startDateTime,
+        dccMissionId: rowMeta[i]?.dccMissionId ?? row.mission_code ?? '',
+        startDateTime: rowMeta[i]?.startDateTime ?? row.scheduled_start?.toISOString() ?? '',
       })),
-    }
+    };
   }
 
-  // mission code doubles as DCC mission ID for PMVD-initiated missions
-  const dccMissionId = input.mission_code ?? crypto.randomUUID()
+  const dccMissionId = input.mission_code ?? crypto.randomUUID();
 
-  const { data, error } = await supabase
-    .from('pilot_mission')
-    .insert({
+  const data = await prisma.pilot_mission.create({
+    data: {
       ...base,
       mission_code: dccMissionId,
-      scheduled_start: input.scheduled_start,
-      actual_end: input.scheduled_end,
-    })
-    .select('pilot_mission_id')
-    .single()
-
-  if (error) throw new Error(`Failed to create operation: ${error.message}`)
+      scheduled_start: new Date(input.scheduled_start),
+      actual_end: input.scheduled_end ? new Date(input.scheduled_end) : null,
+    },
+    select: { pilot_mission_id: true },
+  });
 
   return {
     firstMissionId: data.pilot_mission_id,
@@ -262,44 +241,37 @@ export const createOperationCalendarEntry = async (
       dccMissionId,
       startDateTime: input.scheduled_start,
     }],
-  }
-}
+  };
+};
 
 
 export const deleteOperationCalendarEntry = async (
   operationId: number,
   ownerId: number
 ): Promise<{ deletedDccId: string | null }> => {
-  // Fetch before delete so we can notify DCC with the mission's DCC ID
-  const { data: mission } = await supabase
-    .from('pilot_mission')
-    .select('mission_code')
-    .eq('pilot_mission_id', operationId)
-    .eq('fk_owner_id', ownerId)
-    .single()
+  const mission = await prisma.pilot_mission.findFirst({
+    where: { pilot_mission_id: operationId, fk_owner_id: ownerId },
+    select: { mission_code: true },
+  });
 
-  const { error } = await supabase
-    .from('pilot_mission')
-    .delete()
-    .eq('pilot_mission_id', operationId)
-    .eq('fk_owner_id', ownerId)
+  await prisma.pilot_mission.deleteMany({
+    where: { pilot_mission_id: operationId, fk_owner_id: ownerId },
+  });
 
-  if (error) throw new Error(`Failed to delete operation: ${error.message}`)
-
-  return { deletedDccId: (mission as any)?.mission_code ?? null }
-}
+  return { deletedDccId: mission?.mission_code ?? null };
+};
 
 
 const buildOperationTitle = (op: OperationItem): string => {
-  const parts: string[] = []
-  if (op.mission_name) parts.push(op.mission_name)
-  if (op.pilot_name) parts.push(`— ${op.pilot_name}`)
-  if (op.vehicle_code) parts.push(`(${op.vehicle_code})`)
-  return parts.join(' ') || 'Unnamed Operation'
-}
+  const parts: string[] = [];
+  if (op.mission_name) parts.push(op.mission_name);
+  if (op.pilot_name) parts.push(`— ${op.pilot_name}`);
+  if (op.vehicle_code) parts.push(`(${op.vehicle_code})`);
+  return parts.join(' ') || 'Unnamed Operation';
+};
 
 const deriveEnd = (start: string): string => {
-  const d = new Date(start)
-  d.setHours(d.getHours() + 1)
-  return d.toISOString()
-}
+  const d = new Date(start);
+  d.setHours(d.getHours() + 1);
+  return d.toISOString();
+};
