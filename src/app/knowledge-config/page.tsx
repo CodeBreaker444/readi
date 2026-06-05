@@ -2,7 +2,7 @@
 
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTheme } from '@/components/useTheme';
-import { AlertCircle, ArrowLeft, CheckCircle2, ExternalLink, FileText, HardDrive, Loader2, RefreshCw, Search, Trash2, Upload } from 'lucide-react';
+import { AlertCircle, ArrowLeft, CheckCircle2, ExternalLink, FileText, HardDrive, Loader2, Search, Trash2, Upload } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -170,7 +170,7 @@ export default function KnowledgeConfigPage() {
                 {/* Header skeleton */}
                 <div className={`border-b px-6 py-4 ${isDark ? 'bg-slate-900/80 border-slate-700/60' : 'bg-white/80 border-gray-200'}`}>
                     <div className="flex items-center gap-4">
-                        <Skeleton className={`w-8 h-8 rounded-lg ${isDark ? 'bg-slate-800' : ''}`} />
+                        {/* <Skeleton className={`w-8 h-8 rounded-lg ${isDark ? 'bg-slate-800' : ''}`} /> */}
                         <Skeleton className={`w-8 h-8 rounded-lg ${isDark ? 'bg-slate-800' : ''}`} />
                         <div className="flex-1 space-y-1.5">
                             <Skeleton className={`h-4 w-40 rounded-md ${isDark ? 'bg-slate-800' : ''}`} />
@@ -233,13 +233,8 @@ export default function KnowledgeConfigPage() {
                     >
                         <ArrowLeft size={18} />
                     </button>
-
-                    <div className={`p-2 cursor-pointer rounded-lg ${isDark ? 'bg-violet-500/15' : 'bg-violet-50'}`}>
-                        <RefreshCw size={18} className="text-violet-500" />
-                    </div>
-
                     <div className="flex-1 min-w-0">
-                        <h1 className={`font-bold text-base ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('knowledge.title')}</h1>
+                        <h1 className={`font-semibold text-sm tracking-tight leading-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('knowledge.title')}</h1>
                         <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{t('knowledge.subtitle')}</p>
                     </div>
 

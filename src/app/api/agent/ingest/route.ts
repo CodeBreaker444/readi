@@ -54,7 +54,10 @@ async function extractPdfText(buffer: Buffer): Promise<string> {
 
     const { PDFParse } = await import('pdf-parse');
     const path = await import('path');
-    const workerPath = path.join(process.cwd(), 'node_modules', 'pdfjs-dist', 'legacy', 'build', 'pdf.worker.mjs');
+    const { pathToFileURL } = await import('url');
+    const workerPath = pathToFileURL(
+        path.join(process.cwd(), 'node_modules', 'pdfjs-dist', 'legacy', 'build', 'pdf.worker.mjs')
+    ).href;
     PDFParse.setWorker(workerPath);
 
     const parser = new PDFParse({ data: new Uint8Array(buffer) });
