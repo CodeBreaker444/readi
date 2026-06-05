@@ -1,6 +1,6 @@
-import { supabase } from "@/backend/database/database";
-import { RepositoryFile } from "@/config/types/evaluation-planning";
-import { getPresignedDownloadUrl } from "@/lib/s3Client";
+import { prisma } from '@/lib/prisma';
+import { RepositoryFile } from '@/config/types/evaluation-planning';
+import { getPresignedDownloadUrl } from '@/lib/s3Client';
 
 interface EvaluationCreateData {
   client_id: number;
@@ -20,24 +20,18 @@ interface EvaluationCreateData {
   }>;
 }
 
- 
 async function generateEvaluationCode(ownerId: number, year: number): Promise<string> {
   const prefix = `EVA-${year}-`;
 
-  const { data, error } = await supabase
-    .from('evaluation')
-    .select('evaluation_code')
-    .eq('fk_owner_id', ownerId)
-    .eq('evaluation_year', year)
-    .order('evaluation_code', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (error) throw new Error(`generateEvaluationCode: ${error.message}`);
+  const data = await prisma.evaluation.findFirst({
+    where: { fk_owner_id: ownerId, evaluation_year: year },
+    orderBy: { evaluation_code: 'desc' },
+    select: { evaluation_code: true },
+  });
 
   let nextNumber = 1;
 
-  if (data && data.evaluation_code) {
+  if (data?.evaluation_code) {
     const parts = data.evaluation_code.split('-');
     const lastSeq = parseInt(parts[parts.length - 1], 10);
     if (!isNaN(lastSeq)) {
@@ -52,7 +46,7 @@ async function generateEvaluationCode(ownerId: number, year: number): Promise<st
 export async function createNewEvaluationRequest(
   ownerId: number,
   userId: number,
-  data: EvaluationCreateData,
+  data: EvaluationCreateData
 ) {
   try {
     const evaluationCode = await generateEvaluationCode(ownerId, data.evaluation_year);
@@ -72,50 +66,32 @@ export async function createNewEvaluationRequest(
 
     const totalArea = data.areas.reduce((sum, area) => sum + area.area_sqm, 0);
 
-    const insertData: Record<string, any> = {
-      fk_owner_id: ownerId,
-      fk_client_id: data.client_id,
-      fk_luc_procedure_id: data.fk_luc_procedure_id || null,
-      evaluation_code: evaluationCode,
-      evaluation_name: `Evaluation ${evaluationCode}`,
-      evaluation_description: data.evaluation_description,
-      evaluation_type: 'General',
-      evaluation_status: data.evaluation_status,
-      evaluation_year: data.evaluation_year,
-      scheduled_date: data.evaluation_request_date,
-      created_by_user_id: userId,
-      evaluation_active: 'Y',
-       evaluation_result: 'PROCESSING',
-      evaluation_metadata: {
-        polygon: polygonData,
-        area_sqm: totalArea,
-        procedure_id: data.fk_luc_procedure_id,
-        year: data.evaluation_year,
-        offer: data.evaluation_offer ?? '',
-        sale_manager: data.evaluation_sale_manager ?? '',
+    const evaluation = await prisma.evaluation.create({
+      data: {
+        fk_owner_id: ownerId,
+        fk_client_id: data.client_id,
+        fk_luc_procedure_id: data.fk_luc_procedure_id || null,
+        evaluation_code: evaluationCode,
+        evaluation_name: `Evaluation ${evaluationCode}`,
+        evaluation_description: data.evaluation_description,
+        evaluation_type: 'General',
+        evaluation_status: data.evaluation_status,
+        evaluation_year: data.evaluation_year,
+        scheduled_date: data.evaluation_request_date ? new Date(data.evaluation_request_date) : null,
+        created_by_user_id: userId,
+        evaluation_active: 'Y',
+        evaluation_result: 'PROCESSING',
+        evaluation_metadata: {
+          polygon: polygonData,
+          area_sqm: totalArea,
+          procedure_id: data.fk_luc_procedure_id,
+          year: data.evaluation_year,
+          offer: data.evaluation_offer ?? '',
+          sale_manager: data.evaluation_sale_manager ?? '',
+        },
       },
-    };
-
-    if (data.areas.length > 0) {
-      const firstArea = data.areas[0];
-      insertData.coordinates = `(${firstArea.center_lng},${firstArea.center_lat})`;
-    }
-
-    const { data: evaluation, error } = await supabase
-      .from('evaluation')
-      .insert(insertData)
-      .select('evaluation_id, evaluation_code')
-      .single();
-
-    if (error) {
-      console.error('Supabase insert error:', {
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
-        code: error.code,
-      });
-      throw new Error(`Failed to insert evaluation: ${error.message}`);
-    }
+      select: { evaluation_id: true, evaluation_code: true },
+    });
 
     return {
       success: true,
@@ -126,33 +102,35 @@ export async function createNewEvaluationRequest(
   } catch (error) {
     console.error('createNewEvaluationRequest error:', error);
     throw new Error(
-      error instanceof Error ? error.message : 'Failed to create evaluation',
+      error instanceof Error ? error.message : 'Failed to create evaluation'
     );
   }
 }
 
- 
 export async function getEvaluationFileList(evaluationId: number, ownerId: number) {
   try {
-    const { data, error } = await supabase
-      .from('evaluation_file')
-      .select('*')
-      .eq('fk_evaluation_id', evaluationId)
-      .eq('fk_owner_id', ownerId)
-      .order('last_update', { ascending: false });
+    const evalCheck = await prisma.evaluation.findFirst({
+      where: { evaluation_id: evaluationId, fk_owner_id: ownerId },
+      select: { evaluation_id: true },
+    });
 
-    if (error) throw error;
+    if (!evalCheck) throw new Error('Evaluation not found');
+
+    const data = await prisma.evaluation_file.findMany({
+      where: { fk_evaluation_id: evaluationId },
+      orderBy: { uploaded_at: 'desc' },
+    });
 
     return {
       success: true,
       files: data.map(file => ({
-        id: file.evaluation_file_id,
-        filename: file.evaluation_file_filename,
-        description: file.evaluation_file_desc,
-        version: file.evaluation_file_ver,
-        upload_date: file.last_update,
-        folder: file.evaluation_file_folder
-      }))
+        id: file.file_id,
+        filename: file.file_name,
+        description: file.file_description,
+        version: file.file_version,
+        upload_date: file.uploaded_at,
+        folder: file.file_path,
+      })),
     };
   } catch (error) {
     console.error('Error fetching files:', error);
@@ -164,54 +142,49 @@ export async function getMissionPlanningLogbookFiles(
   ownerId: number,
   planningId?: number
 ): Promise<RepositoryFile[]> {
-  let query = supabase
-    .from("planning_logbook")
-    .select(
-      `
-      mission_planning_id,
-      mission_planning_code,
-      mission_planning_desc,
-      mission_planning_filename,
-      mission_planning_filesize,
-      mission_planning_s3_key,
-      mission_planning_s3_url,
-      created_at
-    `
-    )
-    .eq("fk_owner_id", ownerId)
-    .not("mission_planning_s3_key", "is", null)
-    .neq("mission_planning_s3_key", "");
-
-  if (planningId) {
-    query = query.eq("fk_planning_id", planningId);
-  }
-
-  const { data, error } = await query.order("created_at", { ascending: false });
-  if (error || !data) return [];
+  const data = await prisma.planning_logbook.findMany({
+    where: {
+      fk_owner_id: ownerId,
+      mission_planning_s3_key: { not: null },
+      NOT: { mission_planning_s3_key: '' },
+      ...(planningId && { fk_planning_id: planningId }),
+    },
+    orderBy: { created_at: 'desc' },
+    select: {
+      mission_planning_id: true,
+      mission_planning_code: true,
+      mission_planning_desc: true,
+      mission_planning_filename: true,
+      mission_planning_filesize: true,
+      mission_planning_s3_key: true,
+      mission_planning_s3_url: true,
+      created_at: true,
+    },
+  });
 
   const files: RepositoryFile[] = [];
   for (const row of data) {
-    let documentUrl = row.mission_planning_s3_url ?? "#";
+    let documentUrl = row.mission_planning_s3_url ?? '#';
 
     if (row.mission_planning_s3_key) {
       try {
         documentUrl = await getPresignedDownloadUrl(row.mission_planning_s3_key, 900);
       } catch {
-        documentUrl = row.mission_planning_s3_url ?? "#";
+        documentUrl = row.mission_planning_s3_url ?? '#';
       }
     }
 
     files.push({
       file_id: row.mission_planning_id,
-      repository_filename: row.mission_planning_filename ?? "",
-      repository_filename_description: `${row.mission_planning_code ?? ""} — ${row.mission_planning_desc ?? ""}`,
+      repository_filename: row.mission_planning_filename ?? '',
+      repository_filename_description: `${row.mission_planning_code ?? ''} — ${row.mission_planning_desc ?? ''}`,
       repository_filesize: row.mission_planning_filesize
-        ? `${(row.mission_planning_filesize / 1024).toFixed(1)} KB`
-        : "",
-      repository_folder: row.mission_planning_s3_key ?? "",
+        ? `${(Number(row.mission_planning_filesize) / 1024).toFixed(1)} KB`
+        : '',
+      repository_folder: row.mission_planning_s3_key ?? '',
       document_url: documentUrl,
-      s3_url: row.mission_planning_s3_url ?? "",
-      last_update: row.created_at ?? "",
+      s3_url: row.mission_planning_s3_url ?? '',
+      last_update: row.created_at?.toISOString() ?? '',
     });
   }
 

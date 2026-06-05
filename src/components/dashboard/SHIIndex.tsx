@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '../useTheme';
 import AreaGauges from './AreaGauges';
 import IndicatorCards from './IndicatorCards';
+import IndicatorTrendChart from './IndicatorTrendChart';
 import SafetyHealthGauge from './SafetyHealthGauge';
 import SHITrendChart from './SHITrendChart';
 
@@ -75,6 +76,14 @@ const SHIIndex: React.FC<shiIndexProps> = (user) => {
     load();
   }, [selectedIndicator]);
 
+  const card        = cn('rounded-xl border', isDark ? 'bg-slate-800/80 border-slate-700/60' : 'bg-white border-gray-200');
+  const cardHeader  = cn('px-5 py-4 border-b', isDark ? 'border-slate-700/60' : 'border-gray-100');
+  const cardTitle   = cn('text-sm font-semibold mt-0.5', isDark ? 'text-white' : 'text-gray-800');
+  const eyebrow     = cn('text-xs font-semibold uppercase tracking-widest', isDark ? 'text-slate-500' : 'text-gray-400');
+  const selectCls   = cn(
+    'text-xs border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-violet-500/40',
+    isDark ? 'bg-slate-700 border-slate-600 text-slate-200' : 'bg-gray-50 border-gray-200 text-gray-700'
+  );
 
   return (
     <div className={`min-h-screen ${isDark ? 'text-white' : 'text-gray-900'}`}>
@@ -122,7 +131,7 @@ const SHIIndex: React.FC<shiIndexProps> = (user) => {
         {shiData && <IndicatorCards dataByArea={shiData.data} isDark={isDark} />}
 
         {/* Indicator trend */}
-        {/* <div className={cn(card)}>
+        <div className={cn(card)}>
           <div className={cn(cardHeader, 'flex items-start justify-between gap-4')}>
             <div>
               <p className={eyebrow}>{t('shi.trendAnalysis')}</p>
@@ -153,7 +162,7 @@ const SHIIndex: React.FC<shiIndexProps> = (user) => {
               </div>
             )}
           </div>
-        </div> */}
+        </div>
 
       </div>
     </div>

@@ -1,8 +1,8 @@
-import { supabase } from "@/backend/database/database";
+import { prisma } from '@/lib/prisma';
 import { EvaluationTask } from '@/config/types/evaluation';
-import { DroneTool, FileType, MissionTemplate, PilotUser, PlanningLogbookRow, PlanningTestLogbookRow, RepositoryFile } from "@/config/types/evaluation-planning";
+import { DroneTool, FileType, MissionTemplate, PilotUser, PlanningLogbookRow, PlanningTestLogbookRow, RepositoryFile } from '@/config/types/evaluation-planning';
 import { ProcedureSteps } from '@/config/types/lcuProcedures';
-import { deleteFileFromS3, getPresignedDownloadUrl } from "@/lib/s3Client";
+import { deleteFileFromS3, getPresignedDownloadUrl } from '@/lib/s3Client';
 
 export type UpdatePlanning = {
   planning_id: number;
@@ -20,12 +20,7 @@ type CreatePlanningInput = {
   fk_client_id?: number;
   fk_luc_procedure_id: number;
   planning_desc: string;
-  planning_status:
-  | "NEW"
-  | "PROCESSING"
-  | "REQ_FEEDBACK"
-  | "POSITIVE_RESULT"
-  | "NEGATIVE_RESULT";
+  planning_status: 'NEW' | 'PROCESSING' | 'REQ_FEEDBACK' | 'POSITIVE_RESULT' | 'NEGATIVE_RESULT';
   planning_request_date: string;
   planning_year: number;
   planning_type?: string;
@@ -41,9 +36,8 @@ export async function addPlanningWithAssignment(
   userId: number,
   ownerId: number
 ) {
-  const { data: inserted, error } = await supabase
-    .from("planning")
-    .insert({
+  const inserted = await prisma.planning.create({
+    data: {
       fk_owner_id: ownerId,
       created_by_user_id: userId,
       fk_client_id: input.fk_client_id ?? null,
@@ -51,14 +45,12 @@ export async function addPlanningWithAssignment(
       planning_description: input.planning_desc,
       planning_name: input.planning_desc,
       planning_status: input.planning_status,
-      planning_type: input.planning_type ?? "",
-      planned_date: input.planning_request_date,
+      planning_type: input.planning_type ?? '',
+      planned_date: input.planning_request_date ? new Date(input.planning_request_date) : null,
       assigned_to_user_id: input.assigned_to_user_id ?? null,
-    })
-    .select("planning_id, created_by_user_id, assigned_to_user_id")
-    .single();
-
-  if (error) throw new Error(error.message);
+    },
+    select: { planning_id: true, created_by_user_id: true, assigned_to_user_id: true },
+  });
 
   return {
     planning_id: inserted.planning_id,
@@ -66,53 +58,46 @@ export async function addPlanningWithAssignment(
     assigned_to_user_id: inserted.assigned_to_user_id ?? null,
   };
 }
+
 export async function getPlanningList(ownerId: number) {
-  const { data, error } = await supabase
-    .from("planning")
-    .select(
-      `
-      planning_id,
-      fk_owner_id,
-      fk_client_id,
-      fk_evaluation_id,
-      planning_code,
-      planning_name,
-      planning_description,
-      planning_type,
-      planning_status,
-      planned_date,
-      planning_active,
-      created_at,
-      updated_at,
-      created_by_user_id,
-      assigned_to_user_id,
-      client:fk_client_id ( client_id, client_name ),
-      evaluation:fk_evaluation_id (
-        evaluation_id,
-        evaluation_code,
-        evaluation_metadata
-      ),
-      created_by_user:created_by_user_id ( user_id, first_name, last_name, user_role ),
-      assigned_to_user:assigned_to_user_id ( user_id, first_name, last_name, user_role )
-      `
-    )
-    .eq("fk_owner_id", ownerId)
-    .order("planning_id", { ascending: false });
+  const data = await prisma.planning.findMany({
+    where: { fk_owner_id: ownerId },
+    orderBy: { planning_id: 'desc' },
+    select: {
+      planning_id: true,
+      fk_owner_id: true,
+      fk_client_id: true,
+      fk_evaluation_id: true,
+      planning_code: true,
+      planning_name: true,
+      planning_description: true,
+      planning_type: true,
+      planning_status: true,
+      planned_date: true,
+      planning_active: true,
+      created_at: true,
+      updated_at: true,
+      created_by_user_id: true,
+      assigned_to_user_id: true,
+      client: { select: { client_id: true, client_name: true } },
+      evaluation: { select: { evaluation_id: true, evaluation_code: true, evaluation_metadata: true } },
+      users_planning_created_by_user_idTousers: { select: { user_id: true, first_name: true, last_name: true, user_role: true } },
+      users_planning_assigned_to_user_idTousers: { select: { user_id: true, first_name: true, last_name: true, user_role: true } },
+    },
+  });
 
-  if (error) throw new Error(error.message);
-
-  const mapped = (data ?? []).map((row: any) => {
-    const client = Array.isArray(row.client) ? row.client[0] : row.client;
-    const evaluation = Array.isArray(row.evaluation) ? row.evaluation[0] : row.evaluation;
-    const createdByUser = Array.isArray(row.created_by_user) ? row.created_by_user[0] : row.created_by_user;
-    const assignedToUser = Array.isArray(row.assigned_to_user) ? row.assigned_to_user[0] : row.assigned_to_user;
+  const mapped = data.map((row) => {
+    const client = row.client;
+    const evaluation = row.evaluation;
+    const createdByUser = row.users_planning_created_by_user_idTousers;
+    const assignedToUser = row.users_planning_assigned_to_user_idTousers;
 
     let procedureId: number | null = null;
     const evalMeta = evaluation?.evaluation_metadata;
     if (evalMeta) {
       try {
-        const meta = typeof evalMeta === "string" ? JSON.parse(evalMeta) : evalMeta;
-        procedureId = meta.procedure_id ?? null;
+        const meta = typeof evalMeta === 'string' ? JSON.parse(evalMeta) : evalMeta;
+        procedureId = (meta as any).procedure_id ?? null;
       } catch { /* ignore */ }
     }
 
@@ -122,50 +107,45 @@ export async function getPlanningList(ownerId: number) {
       fk_client_id: client?.client_id ?? row.fk_client_id ?? null,
       fk_evaluation_id: evaluation?.evaluation_id ?? 0,
       assigned_to_user_id: row.assigned_to_user_id ?? null,
-      planning_code: row.planning_code ?? "",
-      planning_name: row.planning_name ?? "",
-      planning_desc: row.planning_description ?? "",
-      planning_status: row.planning_status ?? "",
-      planning_type: row.planning_type ?? "",
-      planning_request_date: row.planned_date ?? "",
+      planning_code: row.planning_code ?? '',
+      planning_name: row.planning_name ?? '',
+      planning_desc: row.planning_description ?? '',
+      planning_status: row.planning_status ?? '',
+      planning_type: row.planning_type ?? '',
+      planning_request_date: row.planned_date?.toISOString().split('T')[0] ?? '',
       planning_year: new Date().getFullYear(),
-      planning_ver: "1.0",
-      planning_folder: "",
-      planning_result: "PROGRESS",
-      planning_active: row.planning_active ?? "Y",
-      last_update: row.updated_at ?? row.created_at ?? "",
-      client_name: client?.client_name ?? "",
+      planning_ver: '1.0',
+      planning_folder: '',
+      planning_result: 'PROGRESS',
+      planning_active: row.planning_active ?? 'Y',
+      last_update: row.updated_at?.toISOString() ?? row.created_at?.toISOString() ?? '',
+      client_name: client?.client_name ?? '',
       user_fullname: createdByUser
-        ? `${createdByUser.first_name ?? ""} ${createdByUser.last_name ?? ""}`.trim()
-        : "",
-      user_profile_code: createdByUser?.user_role ?? "",
+        ? `${createdByUser.first_name ?? ''} ${createdByUser.last_name ?? ''}`.trim()
+        : '',
+      user_profile_code: createdByUser?.user_role ?? '',
       pic_data: assignedToUser
         ? {
-          fullname: `${assignedToUser.first_name ?? ""} ${assignedToUser.last_name ?? ""}`.trim(),
-          user_profile_code: assignedToUser.user_role ?? "",
+          fullname: `${assignedToUser.first_name ?? ''} ${assignedToUser.last_name ?? ''}`.trim(),
+          user_profile_code: assignedToUser.user_role ?? '',
         }
         : null,
-      luc_procedure_code: "",
-      luc_procedure_ver: "",
+      luc_procedure_code: '',
+      luc_procedure_ver: '',
       _procedure_id: procedureId,
     };
   });
 
-  const procedureIds = [
-    ...new Set(mapped.map((m: any) => m._procedure_id).filter(Boolean)),
-  ] as number[];
+  const procedureIds = [...new Set(mapped.map((m) => m._procedure_id).filter(Boolean))] as number[];
 
   if (procedureIds.length > 0) {
-    const { data: procedures } = await supabase
-      .from("luc_procedure")
-      .select("procedure_id, procedure_code, procedure_version")
-      .in("procedure_id", procedureIds);
+    const procedures = await prisma.luc_procedure.findMany({
+      where: { procedure_id: { in: procedureIds } },
+      select: { procedure_id: true, procedure_code: true, procedure_version: true },
+    });
 
     const procMap = new Map(
-      (procedures ?? []).map((p: any) => [
-        p.procedure_id,
-        { code: p.procedure_code ?? "", ver: p.procedure_version ?? "" },
-      ])
+      procedures.map((p) => [p.procedure_id, { code: p.procedure_code ?? '', ver: p.procedure_version ?? '' }])
     );
 
     for (const row of mapped) {
@@ -177,60 +157,55 @@ export async function getPlanningList(ownerId: number) {
     }
   }
 
-  const cleaned = mapped.map(({ _procedure_id, ...rest }: any) => rest);
+  const cleaned = mapped.map(({ _procedure_id, ...rest }) => rest);
   return { data: cleaned, dataRows: cleaned.length };
 }
 
 export async function getPlanningData(ownerId: number, planningId: number) {
-  const { data, error } = await supabase
-    .from("planning")
-    .select(
-      `
-      planning_id,
-      fk_owner_id,
-      fk_client_id,
-      fk_evaluation_id,
-      planning_code,
-      planning_name,
-      planning_description,
-      planning_type,
-      planning_status,
-      planned_date,
-      planning_active,
-      assigned_to_user_id,
-      created_at,
-      updated_at,
-      client:fk_client_id ( client_id, client_name ),
-      evaluation:fk_evaluation_id ( evaluation_id, evaluation_metadata ),
-      created_by_user:created_by_user_id ( user_id, first_name, last_name, user_role ),
-      assigned_to_user:assigned_to_user_id ( user_id, first_name, last_name, user_role )
-      `
-    )
-    .eq("fk_owner_id", ownerId)
-    .eq("planning_id", planningId)
-    .single();
+  const data = await prisma.planning.findFirst({
+    where: { fk_owner_id: ownerId, planning_id: planningId },
+    select: {
+      planning_id: true,
+      fk_owner_id: true,
+      fk_client_id: true,
+      fk_evaluation_id: true,
+      planning_code: true,
+      planning_name: true,
+      planning_description: true,
+      planning_type: true,
+      planning_status: true,
+      planned_date: true,
+      planning_active: true,
+      assigned_to_user_id: true,
+      created_at: true,
+      updated_at: true,
+      client: { select: { client_id: true, client_name: true } },
+      evaluation: { select: { evaluation_id: true, evaluation_metadata: true } },
+      users_planning_created_by_user_idTousers: { select: { user_id: true, first_name: true, last_name: true, user_role: true } },
+      users_planning_assigned_to_user_idTousers: { select: { user_id: true, first_name: true, last_name: true, user_role: true } },
+    },
+  });
 
-  if (error) throw new Error(error.message);
+  if (!data) throw new Error('Planning not found');
 
-  const client = Array.isArray(data.client) ? data.client[0] : data.client;
-  const evaluation = Array.isArray(data.evaluation) ? data.evaluation[0] : data.evaluation;
-  const assignedToUser = Array.isArray(data.assigned_to_user) ? data.assigned_to_user[0] : data.assigned_to_user;
+  const client = data.client;
+  const evaluation = data.evaluation;
+  const assignedToUser = data.users_planning_assigned_to_user_idTousers;
 
-  let lucCode = "";
-  let lucVer = "";
+  let lucCode = '';
+  let lucVer = '';
   const evalMeta = evaluation?.evaluation_metadata;
   if (evalMeta) {
     try {
-      const meta = typeof evalMeta === "string" ? JSON.parse(evalMeta) : evalMeta;
-      if (meta.procedure_id) {
-        const { data: proc } = await supabase
-          .from("luc_procedure")
-          .select("procedure_code, procedure_version")
-          .eq("procedure_id", meta.procedure_id)
-          .single();
+      const meta = typeof evalMeta === 'string' ? JSON.parse(evalMeta) : evalMeta;
+      if ((meta as any).procedure_id) {
+        const proc = await prisma.luc_procedure.findUnique({
+          where: { procedure_id: (meta as any).procedure_id },
+          select: { procedure_code: true, procedure_version: true },
+        });
         if (proc) {
-          lucCode = proc.procedure_code ?? "";
-          lucVer = proc.procedure_version ?? "";
+          lucCode = proc.procedure_code ?? '';
+          lucVer = proc.procedure_version ?? '';
         }
       }
     } catch { /* ignore */ }
@@ -242,26 +217,24 @@ export async function getPlanningData(ownerId: number, planningId: number) {
     fk_client_id: client?.client_id ?? data.fk_client_id ?? 0,
     fk_evaluation_id: evaluation?.evaluation_id ?? 0,
     assigned_to_user_id: data.assigned_to_user_id ?? null,
-    planning_code: data.planning_code ?? "",
-    planning_desc: data.planning_description ?? "",
-    planning_status: data.planning_status ?? "",
-    planning_type: data.planning_type ?? "",
-    planning_request_date: data.planned_date ?? "",
-    planning_active: data.planning_active ?? "Y",
-    last_update: data.updated_at ?? "",
-    client_name: client?.client_name ?? "",
+    planning_code: data.planning_code ?? '',
+    planning_desc: data.planning_description ?? '',
+    planning_status: data.planning_status ?? '',
+    planning_type: data.planning_type ?? '',
+    planning_request_date: data.planned_date?.toISOString().split('T')[0] ?? '',
+    planning_active: data.planning_active ?? 'Y',
+    last_update: data.updated_at?.toISOString() ?? '',
+    client_name: client?.client_name ?? '',
     luc_procedure_code: lucCode,
     luc_procedure_ver: lucVer,
     pic_data: assignedToUser
       ? {
-        fullname: `${assignedToUser.first_name ?? ""} ${assignedToUser.last_name ?? ""}`.trim(),
-        user_profile_code: assignedToUser.user_role ?? "",
+        fullname: `${assignedToUser.first_name ?? ''} ${assignedToUser.last_name ?? ''}`.trim(),
+        user_profile_code: assignedToUser.user_role ?? '',
       }
       : null,
   };
 }
-
-
 
 export async function updatePlanning(payload: UpdatePlanning, ownerId: number) {
   const { planning_id, ...updates } = payload;
@@ -271,54 +244,36 @@ export async function updatePlanning(payload: UpdatePlanning, ownerId: number) {
     planning_name: updates.planning_desc,
     planning_status: updates.planning_status,
     planning_type: updates.planning_type ?? null,
-    planned_date: updates.planning_request_date || null,
+    planned_date: updates.planning_request_date ? new Date(updates.planning_request_date) : null,
   };
 
-  if (updates.planning_active !== undefined) {
-    updateObj.planning_active = updates.planning_active;
-  }
+  if (updates.planning_active !== undefined) updateObj.planning_active = updates.planning_active;
+  if (updates.fk_evaluation_id !== undefined) updateObj.fk_evaluation_id = updates.fk_evaluation_id;
+  if (updates.fk_client_id !== undefined) updateObj.fk_client_id = updates.fk_client_id;
 
-  if (updates.fk_evaluation_id !== undefined) {
-    updateObj.fk_evaluation_id = updates.fk_evaluation_id;
-  }
-  if (updates.fk_client_id !== undefined) {
-    updateObj.fk_client_id = updates.fk_client_id;
-  }
+  const result = await prisma.planning.updateMany({
+    where: { planning_id, fk_owner_id: ownerId },
+    data: updateObj,
+  });
 
-  const { data, error } = await supabase
-    .from("planning")
-    .update(updateObj)
-    .eq("planning_id", planning_id)
-    .eq("fk_owner_id", ownerId)
-    .select()
-    .single();
+  if (result.count === 0) throw new Error('Planning not found or access denied');
 
-  if (error) throw new Error(error.message);
-  if (!data) throw new Error("Planning not found or access denied");
-  return data;
+  return prisma.planning.findUnique({ where: { planning_id } });
 }
 
-
 export async function deletePlanning(ownerId: number, planningId: number) {
-  const { data: existing } = await supabase
-    .from("planning")
-    .select("planning_status")
-    .eq("planning_id", planningId)
-    .eq("fk_owner_id", ownerId)
-    .single();
+  const existing = await prisma.planning.findFirst({
+    where: { planning_id: planningId, fk_owner_id: ownerId },
+    select: { planning_status: true },
+  });
 
-  if (!existing) throw new Error("Planning not found");
-  if (existing.planning_status !== "NEW") {
-    throw new Error("Only planning with status NEW can be deleted");
+  if (!existing) throw new Error('Planning not found');
+  if (existing.planning_status !== 'NEW') {
+    throw new Error('Only planning with status NEW can be deleted');
   }
 
-  const { error } = await supabase
-    .from("planning")
-    .delete()
-    .eq("fk_owner_id", ownerId)
-    .eq("planning_id", planningId);
+  await prisma.planning.deleteMany({ where: { fk_owner_id: ownerId, planning_id: planningId } });
 
-  if (error) throw new Error(error.message);
   return { deleted: true };
 }
 
@@ -326,49 +281,38 @@ export async function getPlanningLogbookList(
   ownerId: number,
   planningId: number
 ): Promise<PlanningLogbookRow[]> {
-  const { data, error } = await supabase
-    .from("planning_logbook")
-    .select(
-      `
-      *,
-      planning:fk_planning_id (planning_description),
-      tool:fk_tool_id (tool_code, tool_description)
-    `
-    )
-    .eq("fk_planning_id", planningId)
-    .eq("fk_owner_id", ownerId)
-    .order("mission_planning_id", { ascending: true });
+  const data = await prisma.planning_logbook.findMany({
+    where: { fk_planning_id: planningId, fk_owner_id: ownerId },
+    orderBy: { mission_planning_id: 'asc' },
+    include: {
+      planning: { select: { planning_description: true } },
+      tool: { select: { tool_code: true, tool_description: true } },
+    },
+  });
 
-  if (error) {
-    console.error("getPlanningLogbookList error:", error.message);
-    return [];
-  }
   if (!data || data.length === 0) return [];
 
-  const { data: testCounts } = await supabase
-    .from("planning_test_logbook")
-    .select("test_id")
-    .eq("fk_planning_id", planningId);
+  const testCounts = await prisma.planning_test_logbook.count({
+    where: { fk_planning_id: planningId },
+  });
 
-  const totalTests = testCounts?.length ?? 0;
-
-  return data.map((row: any) => ({
+  return data.map((row) => ({
     mission_planning_id: row.mission_planning_id,
     fk_planning_id: row.fk_planning_id,
     fk_evaluation_id: row.fk_evaluation_id,
     fk_client_id: row.fk_client_id,
     fk_tool_id: row.fk_tool_id,
-    mission_planning_code: row.mission_planning_code ?? "",
-    mission_planning_desc: row.mission_planning_desc ?? "",
+    mission_planning_code: row.mission_planning_code ?? '',
+    mission_planning_desc: row.mission_planning_desc ?? '',
     mission_planning_limit_json: row.mission_planning_limit_json,
-    mission_planning_active: row.mission_planning_active ?? "Y",
-    mission_planning_ver: row.mission_planning_ver ?? "",
-    mission_planning_filename: row.mission_planning_filename ?? "",
-    mission_planning_filesize: row.mission_planning_filesize ?? 0,
-    planning_desc: (row.planning as any)?.planning_description ?? "",
-    tool_code: (row.tool as any)?.tool_code ?? "",
-    tool_desc: (row.tool as any)?.tool_description ?? "",
-    tot_test: totalTests,
+    mission_planning_active: row.mission_planning_active ?? 'Y',
+    mission_planning_ver: row.mission_planning_ver ?? '',
+    mission_planning_filename: row.mission_planning_filename ?? '',
+    mission_planning_filesize: Number(row.mission_planning_filesize ?? 0),
+    planning_desc: row.planning?.planning_description ?? '',
+    tool_code: row.tool?.tool_code ?? '',
+    tool_desc: row.tool?.tool_description ?? '',
+    tot_test: testCounts,
   })) as PlanningLogbookRow[];
 }
 
@@ -376,14 +320,13 @@ export async function getPlanningTestLogbookList(
   ownerId: number,
   missionPlanningId: number
 ): Promise<PlanningTestLogbookRow[]> {
-  const { data, error } = await supabase
-    .from("planning_test_logbook")
-    .select("*")
-    .eq("fk_planning_id", missionPlanningId)
-    .order("test_id", { ascending: true });
+  const data = await prisma.planning_test_logbook.findMany({
+    where: { fk_planning_id: missionPlanningId },
+    orderBy: { test_id: 'asc' },
+  });
 
-  if (error || !data) return [];
-  return data as PlanningTestLogbookRow[];
+  if (!data) return [];
+  return data as unknown as PlanningTestLogbookRow[];
 }
 
 export async function addMissionPlanningLogbook(params: {
@@ -404,13 +347,28 @@ export async function addMissionPlanningLogbook(params: {
   mission_planning_s3_key: string;
   mission_planning_s3_url: string;
 }) {
-  const { data, error } = await supabase
-    .from("planning_logbook")
-    .insert(params)
-    .select("mission_planning_id")
-    .single();
+  const data = await prisma.planning_logbook.create({
+    data: {
+      fk_planning_id: params.fk_planning_id,
+      fk_evaluation_id: params.fk_evaluation_id,
+      fk_client_id: params.fk_client_id,
+      fk_owner_id: params.fk_owner_id,
+      fk_user_id: params.fk_user_id,
+      mission_planning_code: params.mission_planning_code,
+      mission_planning_desc: params.mission_planning_desc,
+      mission_planning_limit_json: (params.mission_planning_limit_json ?? undefined) as any,
+      mission_planning_active: params.mission_planning_active,
+      mission_planning_ver: parseInt(params.mission_planning_ver) || 1,
+      fk_tool_id: params.fk_tool_id,
+      mission_planning_filename: params.mission_planning_filename,
+      mission_planning_filesize: BigInt(params.mission_planning_filesize),
+      mission_planning_folder: params.mission_planning_folder,
+      mission_planning_s3_key: params.mission_planning_s3_key,
+      mission_planning_s3_url: params.mission_planning_s3_url,
+    },
+    select: { mission_planning_id: true },
+  });
 
-  if (error) throw new Error(error.message);
   return data;
 }
 
@@ -418,91 +376,62 @@ export async function deleteMissionPlanningLogbook(
   ownerId: number,
   missionPlanningId: number
 ): Promise<{ deletedId: number; hadTestEntries: boolean }> {
-  const { data: existing, error: fetchError } = await supabase
-    .from("planning_logbook")
-    .select(
-      "mission_planning_id, mission_planning_code, mission_planning_folder"
-    )
-    .eq("mission_planning_id", missionPlanningId)
-    .eq("fk_owner_id", ownerId)
-    .single();
+  const existing = await prisma.planning_logbook.findFirst({
+    where: { mission_planning_id: missionPlanningId, fk_owner_id: ownerId },
+    select: { mission_planning_id: true, mission_planning_code: true, mission_planning_folder: true },
+  });
 
-  if (fetchError || !existing) {
-    throw new Error(
-      "Mission planning logbook entry not found or access denied"
-    );
+  if (!existing) {
+    throw new Error('Mission planning logbook entry not found or access denied');
   }
 
-  const { data: relatedTests } = await supabase
-    .from("planning_test_logbook")
-    .select("test_id, mission_test_s3_key")
-    .eq("fk_mission_planning_id", missionPlanningId)
-    .eq("fk_owner_id", ownerId);
+  const relatedTests = await prisma.planning_test_logbook.findMany({
+    where: { fk_mission_planning_id: missionPlanningId, fk_owner_id: ownerId },
+    select: { test_id: true, mission_test_s3_key: true },
+  });
 
-  const hadTestEntries = (relatedTests?.length ?? 0) > 0;
+  const hadTestEntries = relatedTests.length > 0;
 
   if (hadTestEntries) {
-    for (const test of relatedTests!) {
+    for (const test of relatedTests) {
       if (test.mission_test_s3_key) {
         try {
           await deleteFileFromS3(test.mission_test_s3_key);
         } catch (s3Err) {
-          console.error(
-            `Failed to delete S3 file for test ${test.test_id}:`,
-            s3Err
-          );
+          console.error(`Failed to delete S3 file for test ${test.test_id}:`, s3Err);
         }
       }
     }
 
-    const { error: testDeleteError } = await supabase
-      .from("planning_test_logbook")
-      .delete()
-      .eq("fk_mission_planning_id", missionPlanningId)
-      .eq("fk_owner_id", ownerId);
-
-    if (testDeleteError) {
-      throw new Error(
-        `Failed to delete related test entries: ${testDeleteError.message}`
-      );
-    }
+    await prisma.planning_test_logbook.deleteMany({
+      where: { fk_mission_planning_id: missionPlanningId, fk_owner_id: ownerId },
+    });
   }
 
-  const { error: deleteError } = await supabase
-    .from("planning_logbook")
-    .delete()
-    .eq("mission_planning_id", missionPlanningId)
-    .eq("fk_owner_id", ownerId);
-
-  if (deleteError) {
-    throw new Error(`deleteMissionPlanningLogbook: ${deleteError.message}`);
-  }
+  await prisma.planning_logbook.deleteMany({
+    where: { mission_planning_id: missionPlanningId, fk_owner_id: ownerId },
+  });
 
   return { deletedId: missionPlanningId, hadTestEntries };
 }
-
 
 export async function getRepositoryList(
   ownerId: number,
   repositoryType: string,
   planningId?: number
 ): Promise<RepositoryFile[]> {
-  let query = supabase
-    .from("repository_file")
-    .select("*")
-    .eq("fk_owner_id", ownerId)
-    .eq("file_category", repositoryType);
+  const data = await prisma.repository_file.findMany({
+    where: {
+      fk_owner_id: ownerId,
+      file_category: repositoryType,
+      ...(planningId && { file_metadata: { path: ['planning_id'], equals: planningId } }),
+    },
+    orderBy: { file_id: 'desc' },
+  });
 
-  if (planningId) {
-    query = query.contains("file_metadata", { planning_id: planningId });
-  }
-
-  const { data, error } = await query.order("file_id", { ascending: false });
-
-  if (error || !data) return [];
-  return data as RepositoryFile[];
+  if (!data) return [];
+  return data as unknown as RepositoryFile[];
 }
-
 
 export async function createCommunication(params: {
   fk_owner_id: number;
@@ -511,166 +440,147 @@ export async function createCommunication(params: {
   evaluation_id: number;
   pic_id: number;
 }) {
-  const { data, error } = await supabase
-    .from("communication_general")
-    .insert({
+  const data = await prisma.communication_general.create({
+    data: {
       fk_owner_id: params.fk_owner_id,
-      subject: "Planning Communication",
+      subject: 'Planning Communication',
       message: `New communication for planning ${params.planning_id}`,
-      communication_type: "planning",
-      status: "NEW",
+      communication_type: 'planning',
+      status: 'NEW',
       recipients: JSON.stringify({
         client_id: params.client_id,
         planning_id: params.planning_id,
         evaluation_id: params.evaluation_id,
         pic_id: params.pic_id,
       }),
-    })
-    .select("communication_id")
-    .single();
+    },
+    select: { communication_id: true },
+  });
 
-  if (error) throw new Error(error.message);
   return data;
 }
 
 export async function getDroneToolList(
   ownerId: number,
   clientId: number,
-  active: string = "ALL",
-  status: string = "ALL"
+  active: string = 'ALL',
+  status: string = 'ALL'
 ): Promise<DroneTool[]> {
-  let query = supabase
-    .from("tool")
-    .select(
-      `
-      *,
-      tool_model:fk_model_id (model_id, model_code, model_name, manufacturer),
-      tool_status:fk_status_id (status_code, status_name)
-    `
-    )
-    .eq("fk_owner_id", ownerId);
+  const data = await prisma.tool.findMany({
+    where: {
+      fk_owner_id: ownerId,
+      ...(active !== 'ALL' && { tool_active: active }),
+    },
+    orderBy: { tool_id: 'asc' },
+    include: {
+      tool_model: { select: { model_id: true, model_code: true, model_name: true, manufacturer: true } },
+      tool_status: { select: { status_code: true, status_name: true } },
+    },
+  });
 
-  if (active !== "ALL") {
-    query = query.eq("tool_active", active);
-  }
+  if (!data) return [];
 
-  query = query.order("tool_id", { ascending: true });
-
-  const { data, error } = await query;
-
-  if (error || !data) return [];
-
-  return data.map((row: any) => ({
+  return data.map((row) => ({
     tool_id: row.tool_id,
-    tool_code: row.tool_code ?? "",
-    tool_desc: row.tool_description ?? row.tool_name ?? "",
-    tool_status: (row.tool_status as any)?.status_name ?? "",
-    tool_active: row.tool_active ?? "N",
+    tool_code: row.tool_code ?? '',
+    tool_desc: row.tool_description ?? row.tool_name ?? '',
+    tool_status: row.tool_status?.status_name ?? '',
+    tool_active: row.tool_active ?? 'N',
     fk_owner_id: row.fk_owner_id,
     fk_model_id: row.fk_model_id,
-    factory_type: (row.tool_model as any)?.manufacturer ?? "",
-    factory_serie: (row.tool_model as any)?.model_code ?? "",
-    factory_model: (row.tool_model as any)?.model_name ?? "",
+    factory_type: row.tool_model?.manufacturer ?? '',
+    factory_serie: row.tool_model?.model_code ?? '',
+    factory_model: row.tool_model?.model_name ?? '',
   })) as DroneTool[];
 }
 
-
 export async function getPilotList(ownerId: number): Promise<PilotUser[]> {
-  const { data, error } = await supabase
-    .from("users")
-    .select(
-      `
-      user_id,
-      first_name,
-      last_name,
-      email,
-      user_role,
-      user_active
-    `
-    )
-    .eq("fk_owner_id", ownerId)
-    .eq("user_role", "PIC")
-    .order("last_name", { ascending: true });
+  const data = await prisma.public_users.findMany({
+    where: { fk_owner_id: ownerId, user_role: 'PIC' },
+    orderBy: { last_name: 'asc' },
+    select: {
+      user_id: true,
+      first_name: true,
+      last_name: true,
+      email: true,
+      user_role: true,
+      user_active: true,
+    },
+  });
 
-  if (error || !data) return [];
+  if (!data) return [];
 
-  return data.map((row: any) => ({
+  return data.map((row) => ({
     user_id: row.user_id,
     fullname: `${row.first_name} ${row.last_name}`,
-    username: row.username,
+    username: undefined,
     email: row.email,
     pilot_status_desc: row.user_role,
-    userActive: row.user_active
-  })) as PilotUser[];
+    userActive: row.user_active,
+  })) as unknown as PilotUser[];
 }
 
-export async function getMissionTemplateList(
-  ownerId: number
-): Promise<MissionTemplate[]> {
-  const { data, error } = await supabase
-    .from("planning_logbook")
-    .select("mission_planning_id, mission_planning_code, mission_planning_desc, mission_planning_active")
-    .eq("fk_owner_id", ownerId)
-    .eq("mission_planning_active", "Y")
-    .order("mission_planning_id", { ascending: true });
+export async function getMissionTemplateList(ownerId: number): Promise<MissionTemplate[]> {
+  const data = await prisma.planning_logbook.findMany({
+    where: { fk_owner_id: ownerId, mission_planning_active: 'Y' },
+    orderBy: { mission_planning_id: 'asc' },
+    select: {
+      mission_planning_id: true,
+      mission_planning_code: true,
+      mission_planning_desc: true,
+      mission_planning_active: true,
+    },
+  });
 
-  if (error || !data) return [];
-  return data as MissionTemplate[];
+  if (!data) return [];
+  return data as unknown as MissionTemplate[];
 }
 
 export async function getMissionTestRepositoryFiles(
   ownerId: number,
   planningId: number
 ) {
-  const { data, error } = await supabase
-    .from("planning_test_logbook")
-    .select(
-      `
-      test_id,
-      test_code,
-      mission_test_filename,
-      mission_test_filesize,
-      mission_test_s3_key,
-      mission_test_result,
-      created_at
-    `
-    )
-    .eq("fk_owner_id", ownerId)
-    .eq("fk_planning_id", planningId)
-    .not("mission_test_s3_key", "is", null)
-    .order("created_at", { ascending: false });
-
-  if (error) throw new Error(`getMissionTestRepositoryFiles: ${error.message}`);
+  const data = await prisma.planning_test_logbook.findMany({
+    where: {
+      fk_owner_id: ownerId,
+      fk_planning_id: planningId,
+      mission_test_s3_key: { not: null },
+    },
+    orderBy: { created_at: 'desc' },
+    select: {
+      test_id: true,
+      test_code: true,
+      mission_test_filename: true,
+      mission_test_filesize: true,
+      mission_test_s3_key: true,
+      mission_test_result: true,
+      created_at: true,
+    },
+  });
 
   const files = [];
   for (const row of data ?? []) {
-    let documentUrl = "#";
+    let documentUrl = '#';
     if (row.mission_test_s3_key) {
       try {
-        documentUrl = await getPresignedDownloadUrl(
-          row.mission_test_s3_key,
-          900
-        );
+        documentUrl = await getPresignedDownloadUrl(row.mission_test_s3_key, 900);
       } catch {
-        documentUrl = "#";
+        documentUrl = '#';
       }
     }
 
     files.push({
       file_id: row.test_id,
-      repository_filename: row.mission_test_filename ?? "",
-      repository_filename_description: `Test ${row.test_code ?? ""} — ${row.mission_test_result === "success" ? "Positive" : "Negative"}`,
-      repository_filesize: row.mission_test_filesize
-        ? `${row.mission_test_filesize} MB`
-        : "",
+      repository_filename: row.mission_test_filename ?? '',
+      repository_filename_description: `Test ${row.test_code ?? ''} — ${row.mission_test_result === 'success' ? 'Positive' : 'Negative'}`,
+      repository_filesize: row.mission_test_filesize ? `${row.mission_test_filesize} MB` : '',
       document_url: documentUrl,
-      last_update: row.created_at ?? "",
+      last_update: row.created_at?.toISOString() ?? '',
     });
   }
 
   return files;
 }
-
 
 export async function deleteRepositoryFile(
   fileId: number,
@@ -686,39 +596,30 @@ export async function deleteRepositoryFile(
     }
   }
 
-  if (fileType === "mission_planning_logbook") {
-    const { error } = await supabase
-      .from("planning_logbook")
-      .update({
+  if (fileType === 'mission_planning_logbook') {
+    await prisma.planning_logbook.updateMany({
+      where: { mission_planning_id: fileId, fk_owner_id: ownerId },
+      data: {
         mission_planning_filename: null,
         mission_planning_filesize: null,
         mission_planning_folder: null,
         mission_planning_s3_key: null,
         mission_planning_s3_url: null,
-      })
-      .eq("mission_planning_id", fileId)
-      .eq("fk_owner_id", ownerId);
-
-    if (error) throw new Error(`Database error (logbook): ${error.message}`);
-  }
-
-  else if (fileType === "mission_planning_test_logbook") {
-    const { error } = await supabase
-      .from("planning_test_logbook")
-      .update({
+      },
+    });
+  } else if (fileType === 'mission_planning_test_logbook') {
+    await prisma.planning_test_logbook.updateMany({
+      where: { test_id: fileId, fk_owner_id: ownerId },
+      data: {
         mission_test_filename: null,
         mission_test_filesize: null,
         mission_test_s3_key: null,
-      })
-      .eq("test_id", fileId)
-      .eq("fk_owner_id", ownerId);
-
-    if (error) throw new Error(`Database error (test_logbook): ${error.message}`);
+      },
+    });
   }
 
   return { success: true };
 }
-
 
 export async function addCommunicationGeneral(params: {
   fk_owner_id: number;
@@ -738,9 +639,8 @@ export async function addCommunicationGeneral(params: {
   communication_file_key: string | null;
   communication_file_url: string | null;
 }): Promise<number> {
-  const { data, error } = await supabase
-    .from("communication_general")
-    .insert({
+  const data = await prisma.communication_general.create({
+    data: {
       fk_owner_id: params.fk_owner_id,
       subject: params.subject,
       message: params.message,
@@ -757,110 +657,100 @@ export async function addCommunicationGeneral(params: {
       communication_file_name: params.communication_file_name,
       communication_file_key: params.communication_file_key,
       communication_file_url: params.communication_file_url,
-    })
-    .select("communication_id")
-    .single();
+    },
+    select: { communication_id: true },
+  });
 
-  if (error) throw new Error(error.message);
   return data.communication_id;
 }
 
 export async function getUsers(params: {
   fk_owner_id: number;
-}): Promise<{ user_id: number; first_name: string; last_name: string; email: string; user_role: string; }[]> {
-  const { data, error } = await supabase
-    .from("users")
-    .select("user_id, first_name, last_name, email, user_role")
-    .eq("fk_owner_id", params.fk_owner_id)
-    .eq("user_active", "Y");
+}): Promise<{ user_id: number; first_name: string; last_name: string; email: string; user_role: string }[]> {
+  const data = await prisma.public_users.findMany({
+    where: { fk_owner_id: params.fk_owner_id, user_active: 'Y' },
+    select: { user_id: true, first_name: true, last_name: true, email: true, user_role: true },
+  });
 
-  if (error) throw new Error(error.message);
-  return data ?? [];
+  return data.map((u) => ({
+    user_id: u.user_id,
+    first_name: u.first_name ?? '',
+    last_name: u.last_name ?? '',
+    email: u.email ?? '',
+    user_role: u.user_role ?? '',
+  }));
 }
-
 
 export async function getCommunicationsByPlanning(
   ownerId: number,
   planningId: number
 ) {
-  const { data, error } = await supabase
-    .from("communication_general")
-    .select(
-      `
-      communication_id,
-      subject,
-      message,
-      communication_type,
-      communication_level,
-      priority,
-      status,
-      sent_by_user_id,
-      recipients,
-      communication_to,
-      fk_client_id,
-      fk_planning_id,
-      fk_evaluation_id,
-      communication_file_name,
-      communication_file_key,
-      communication_file_url,
-      sent_at,
-      read_at,
-      sender:sent_by_user_id ( user_id, first_name, last_name )
-    `
-    )
-    .eq("fk_owner_id", ownerId)
-    .eq("fk_planning_id", planningId)
-    .order("sent_at", { ascending: false });
-
-  if (error) throw new Error(error.message);
-
-  return (data ?? []).map((row: any) => {
-    const sender = Array.isArray(row.sender) ? row.sender[0] : row.sender;
-    return {
-      communication_id: row.communication_id,
-      subject: row.subject ?? "",
-      message: row.message ?? "",
-      communication_type: row.communication_type ?? "",
-      communication_level: row.communication_level ?? "info",
-      priority: row.priority ?? "normal",
-      status: row.status ?? "sent",
-      sent_by_user_id: row.sent_by_user_id,
-      sender_name: sender
-        ? `${sender.first_name ?? ""} ${sender.last_name ?? ""}`.trim()
-        : "",
-      recipients: row.recipients ?? [],
-      communication_to: row.communication_to ?? [],
-      fk_client_id: row.fk_client_id,
-      fk_planning_id: row.fk_planning_id,
-      fk_evaluation_id: row.fk_evaluation_id,
-      communication_file_name: row.communication_file_name,
-      communication_file_key: row.communication_file_key,
-      communication_file_url: row.communication_file_url,
-      sent_at: row.sent_at ?? "",
-      read_at: row.read_at ?? null,
-    };
+  const data = await prisma.communication_general.findMany({
+    where: { fk_owner_id: ownerId, fk_planning_id: planningId },
+    orderBy: { sent_at: 'desc' },
+    select: {
+      communication_id: true,
+      subject: true,
+      message: true,
+      communication_type: true,
+      communication_level: true,
+      priority: true,
+      status: true,
+      sent_by_user_id: true,
+      recipients: true,
+      communication_to: true,
+      fk_client_id: true,
+      fk_planning_id: true,
+      fk_evaluation_id: true,
+      communication_file_name: true,
+      communication_file_key: true,
+      communication_file_url: true,
+      sent_at: true,
+      read_at: true,
+      users: { select: { user_id: true, first_name: true, last_name: true } },
+    },
   });
-}
 
+  return data.map((row) => ({
+    communication_id: row.communication_id,
+    subject: row.subject ?? '',
+    message: row.message ?? '',
+    communication_type: row.communication_type ?? '',
+    communication_level: row.communication_level ?? 'info',
+    priority: row.priority ?? 'normal',
+    status: row.status ?? 'sent',
+    sent_by_user_id: row.sent_by_user_id,
+    sender_name: row.users
+      ? `${row.users.first_name ?? ''} ${row.users.last_name ?? ''}`.trim()
+      : '',
+    recipients: row.recipients ?? [],
+    communication_to: row.communication_to ?? [],
+    fk_client_id: row.fk_client_id,
+    fk_planning_id: row.fk_planning_id,
+    fk_evaluation_id: row.fk_evaluation_id,
+    communication_file_name: row.communication_file_name,
+    communication_file_key: row.communication_file_key,
+    communication_file_url: row.communication_file_url,
+    sent_at: row.sent_at?.toISOString() ?? '',
+    read_at: row.read_at?.toISOString() ?? null,
+  }));
+}
 
 export async function getChecklistList(
   ownerId: number
 ): Promise<{ checklist_id: number; checklist_code: string; checklist_desc: string }[]> {
-  const { data, error } = await supabase
-    .from("checklist")
-    .select("checklist_id, checklist_code, checklist_desc")
-    .eq("fk_owner_id", ownerId)
-    .eq("checklist_active", "Y")
-    .order("checklist_code", { ascending: true });
+  const data = await prisma.checklist.findMany({
+    where: { fk_owner_id: ownerId, checklist_active: 'Y' },
+    orderBy: { checklist_code: 'asc' },
+    select: { checklist_id: true, checklist_code: true, checklist_desc: true },
+  });
 
-  if (error) throw new Error(error.message);
-  return (data ?? []).map((row: any) => ({
+  return data.map((row) => ({
     checklist_id: row.checklist_id,
-    checklist_code: row.checklist_code ?? "",
-    checklist_desc: row.checklist_desc ?? "",
+    checklist_code: row.checklist_code ?? '',
+    checklist_desc: row.checklist_desc ?? '',
   }));
 }
-
 
 export async function addChecklistTaskToPlanning(
   ownerId: number,
@@ -869,20 +759,18 @@ export async function addChecklistTaskToPlanning(
   taskTitle: string,
   taskDescription: string
 ) {
-  const { data: planning, error: fetchErr } = await supabase
-    .from("planning")
-    .select("planning_id, planning_json")
-    .eq("fk_owner_id", ownerId)
-    .eq("planning_id", planningId)
-    .single();
+  const planning = await prisma.planning.findFirst({
+    where: { fk_owner_id: ownerId, planning_id: planningId },
+    select: { planning_id: true, planning_json: true },
+  });
 
-  if (fetchErr) throw new Error(fetchErr.message);
+  if (!planning) throw new Error('Planning not found');
 
   let planningJson: any;
-  const raw = (planning as any)?.planning_json;
+  const raw = planning.planning_json;
   if (raw) {
     try {
-      planningJson = typeof raw === "string" ? JSON.parse(raw) : raw;
+      planningJson = typeof raw === 'string' ? JSON.parse(raw) : raw;
     } catch {
       planningJson = { tasks: [] };
     }
@@ -894,14 +782,12 @@ export async function addChecklistTaskToPlanning(
     planningJson.tasks = [];
   }
 
-  const { data: checklist, error: clErr } = await supabase
-    .from("checklist")
-    .select("checklist_id, checklist_code, checklist_desc")
-    .eq("checklist_id", checklistId)
-    .eq("fk_owner_id", ownerId)
-    .single();
+  const checklist = await prisma.checklist.findFirst({
+    where: { checklist_id: checklistId, fk_owner_id: ownerId },
+    select: { checklist_id: true, checklist_code: true, checklist_desc: true },
+  });
 
-  if (clErr) throw new Error(`Checklist not found: ${clErr.message}`);
+  if (!checklist) throw new Error('Checklist not found');
 
   const existingIds = planningJson.tasks
     .map((t: any) => Number(t?.task_id ?? t?.id ?? 0))
@@ -919,8 +805,8 @@ export async function addChecklistTaskToPlanning(
     checklist: [
       {
         checklist_id: checklist.checklist_id,
-        checklist_code: checklist.checklist_code ?? "",
-        checklist_name: checklist.checklist_desc ?? "",
+        checklist_code: checklist.checklist_code ?? '',
+        checklist_name: checklist.checklist_desc ?? '',
         checklist_completed: false,
         completed: false,
       },
@@ -929,73 +815,55 @@ export async function addChecklistTaskToPlanning(
 
   planningJson.tasks.push(newTask);
 
-  const { error: updateErr } = await supabase
-    .from("planning")
-    .update({ planning_json: planningJson })
-    .eq("planning_id", planningId)
-    .eq("fk_owner_id", ownerId);
-
-  if (updateErr) throw new Error(updateErr.message);
+  await prisma.planning.updateMany({
+    where: { planning_id: planningId, fk_owner_id: ownerId },
+    data: { planning_json: planningJson },
+  });
 
   return { task_id: nextId, checklist_id: checklistId };
 }
 
+export async function movePlanningToTesting(ownerId: number, planningId: number) {
+  const existing = await prisma.planning.findFirst({
+    where: { fk_owner_id: ownerId, planning_id: planningId },
+    select: { planning_id: true, planning_status: true },
+  });
 
-
-
-export async function movePlanningToTesting(
-  ownerId: number,
-  planningId: number
-) {
-  const { data: existing, error: fetchErr } = await supabase
-    .from("planning")
-    .select("planning_id, planning_status")
-    .eq("fk_owner_id", ownerId)
-    .eq("planning_id", planningId)
-    .single();
-
-  if (fetchErr || !existing) {
-    throw new Error("Planning not found or access denied");
+  if (!existing) {
+    throw new Error('Planning not found or access denied');
   }
 
-  if (existing.planning_status === "TESTING") {
-    throw new Error("Planning is already in TESTING status");
+  if (existing.planning_status === 'TESTING') {
+    throw new Error('Planning is already in TESTING status');
   }
 
-  const { error } = await supabase
-    .from("planning")
-    .update({ planning_status: "TESTING" })
-    .eq("planning_id", planningId)
-    .eq("fk_owner_id", ownerId);
+  await prisma.planning.updateMany({
+    where: { planning_id: planningId, fk_owner_id: ownerId },
+    data: { planning_status: 'TESTING' },
+  });
 
-  if (error) throw new Error(error.message);
   return { moved: true, planning_id: planningId };
 }
 
-
-
 async function fetchChecklistJsonMap(
   ownerId: number,
-  codes: string[],
+  codes: string[]
 ): Promise<Map<string, object>> {
   const map = new Map<string, object>();
   if (codes.length === 0) return map;
 
-  const { data, error } = await supabase
-    .from('checklist')
-    .select('checklist_code, checklist_json')
-    .eq('fk_owner_id', ownerId)
-    .in('checklist_code', codes);
+  const data = await prisma.checklist.findMany({
+    where: { fk_owner_id: ownerId, checklist_code: { in: codes } },
+    select: { checklist_code: true, checklist_json: true },
+  });
 
-  if (error) return map;
-
-  for (const row of data ?? []) {
+  for (const row of data) {
     if (!row.checklist_code) continue;
     const json =
       typeof row.checklist_json === 'string'
         ? JSON.parse(row.checklist_json)
         : row.checklist_json;
-    if (json) map.set(row.checklist_code, json);
+    if (json) map.set(row.checklist_code, json as object);
   }
 
   return map;
@@ -1005,40 +873,24 @@ type StoredTask = Omit<EvaluationTask, 'checklist_json'>;
 
 export async function getPlanningTasks(
   ownerId: number,
-  planningId: number,
+  planningId: number
 ): Promise<{ tasks: EvaluationTask[]; allCompleted: boolean }> {
-  const { data: planningBase, error: planningErr } = await supabase
-    .from('planning')
-    .select('planning_id, fk_evaluation_id')
-    .eq('planning_id', planningId)
-    .eq('fk_owner_id', ownerId)
-    .single();
+  const planningBase = await prisma.planning.findFirst({
+    where: { planning_id: planningId, fk_owner_id: ownerId },
+    select: { planning_id: true, fk_evaluation_id: true, planning_json: true },
+  });
 
-  if (planningErr) throw new Error(`getPlanningTasks (base): ${planningErr.message}`);
   if (!planningBase) throw new Error('Planning not found or access denied');
 
-  const { data: planningJsonRow, error: jsonErr } = await supabase
-    .from('planning')
-    .select('planning_json')
-    .eq('planning_id', planningId)
-    .eq('fk_owner_id', ownerId)
-    .single();
-
   let planningJson: Record<string, any> = {};
-  if (!jsonErr && planningJsonRow) {
-    const raw = (planningJsonRow as any).planning_json;
-    if (raw) {
-      planningJson = typeof raw === 'string' ? JSON.parse(raw) : raw;
-    }
-  } else if (jsonErr) {
-    console.warn('[getPlanningTasks] planning_json fetch error:', jsonErr.message);
+  const raw = planningBase.planning_json;
+  if (raw) {
+    planningJson = typeof raw === 'string' ? JSON.parse(raw) : (raw as Record<string, any>);
   }
 
   if (Array.isArray(planningJson.procedure_tasks) && planningJson.procedure_tasks.length > 0) {
     const stored = planningJson.procedure_tasks as StoredTask[];
-    const checklistCodes = stored
-      .filter((t) => t.task_type === 'checklist')
-      .map((t) => t.task_code);
+    const checklistCodes = stored.filter((t) => t.task_type === 'checklist').map((t) => t.task_code);
     const checklistJsonMap = await fetchChecklistJsonMap(ownerId, checklistCodes);
 
     const tasks: EvaluationTask[] = stored.map((t) => ({
@@ -1053,32 +905,29 @@ export async function getPlanningTasks(
     return { tasks, allCompleted };
   }
 
-  const evaluationId = (planningBase as any).fk_evaluation_id as number | null;
+  const evaluationId = planningBase.fk_evaluation_id;
   if (!evaluationId) return { tasks: [], allCompleted: false };
 
-  const { data: evaluation } = await supabase
-    .from('evaluation')
-    .select('fk_luc_procedure_id, evaluation_metadata')
-    .eq('evaluation_id', evaluationId)
-    .eq('fk_owner_id', ownerId)
-    .single();
+  const evaluation = await prisma.evaluation.findFirst({
+    where: { evaluation_id: evaluationId, fk_owner_id: ownerId },
+    select: { fk_luc_procedure_id: true, evaluation_metadata: true },
+  });
 
-  let procedureId: number | null = (evaluation as any)?.fk_luc_procedure_id ?? null;
+  let procedureId: number | null = evaluation?.fk_luc_procedure_id ?? null;
   if (!procedureId && evaluation?.evaluation_metadata) {
     const meta =
       typeof evaluation.evaluation_metadata === 'string'
         ? JSON.parse(evaluation.evaluation_metadata)
         : evaluation.evaluation_metadata;
-    procedureId = meta?.procedure_id ?? null;
+    procedureId = (meta as any)?.procedure_id ?? null;
   }
 
   if (!procedureId) return { tasks: [], allCompleted: false };
 
-  const { data: procData } = await supabase
-    .from('luc_procedure')
-    .select('procedure_steps')
-    .eq('procedure_id', procedureId)
-    .single();
+  const procData = await prisma.luc_procedure.findUnique({
+    where: { procedure_id: procedureId },
+    select: { procedure_steps: true },
+  });
 
   const steps = procData?.procedure_steps as ProcedureSteps | null;
 
@@ -1135,11 +984,10 @@ export async function getPlanningTasks(
 
   planningJson.procedure_tasks = newTasks;
 
-  await supabase
-    .from('planning')
-    .update({ planning_json: planningJson })
-    .eq('planning_id', planningId)
-    .eq('fk_owner_id', ownerId);
+  await prisma.planning.updateMany({
+    where: { planning_id: planningId, fk_owner_id: ownerId },
+    data: { planning_json: planningJson },
+  });
 
   const checklistCodes = newTasks.filter((t) => t.task_type === 'checklist').map((t) => t.task_code);
   const checklistJsonMap = await fetchChecklistJsonMap(ownerId, checklistCodes);
@@ -1156,31 +1004,19 @@ export async function updatePlanningTask(
   ownerId: number,
   planningId: number,
   taskId: number,
-  newStatus: 'pending' | 'in_progress' | 'completed' | 'skipped',
+  newStatus: 'pending' | 'in_progress' | 'completed' | 'skipped'
 ): Promise<{ success: boolean; message?: string }> {
-  const { data: planningBase, error: baseErr } = await supabase
-    .from('planning')
-    .select('planning_id')
-    .eq('planning_id', planningId)
-    .eq('fk_owner_id', ownerId)
-    .single();
+  const planningBase = await prisma.planning.findFirst({
+    where: { planning_id: planningId, fk_owner_id: ownerId },
+    select: { planning_id: true, planning_json: true },
+  });
 
-  if (baseErr) return { success: false, message: `updatePlanningTask (base): ${baseErr.message}` };
   if (!planningBase) return { success: false, message: 'Planning not found or access denied' };
 
-  const { data: jsonRow, error: jsonErr } = await supabase
-    .from('planning')
-    .select('planning_json')
-    .eq('planning_id', planningId)
-    .eq('fk_owner_id', ownerId)
-    .single();
-
-  if (jsonErr) return { success: false, message: `updatePlanningTask (read json): ${jsonErr.message}` };
-
   let planningJson: Record<string, any> = {};
-  const raw = (jsonRow as any)?.planning_json;
+  const raw = planningBase.planning_json;
   if (raw) {
-    planningJson = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    planningJson = typeof raw === 'string' ? JSON.parse(raw) : (raw as Record<string, any>);
   }
 
   if (!Array.isArray(planningJson.procedure_tasks)) {
@@ -1192,13 +1028,10 @@ export async function updatePlanningTask(
 
   planningJson.procedure_tasks[idx].task_status = newStatus;
 
-  const { error: updateErr } = await supabase
-    .from('planning')
-    .update({ planning_json: planningJson })
-    .eq('planning_id', planningId)
-    .eq('fk_owner_id', ownerId);
-
-  if (updateErr) return { success: false, message: `updatePlanningTask (update): ${updateErr.message}` };
+  await prisma.planning.updateMany({
+    where: { planning_id: planningId, fk_owner_id: ownerId },
+    data: { planning_json: planningJson },
+  });
 
   return { success: true };
 }
