@@ -811,7 +811,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
       `}</style>
 
       {/* Release Logs — SUPERADMIN only */}
-      {role === 'SUPERADMIN' && (
+      {(role === 'SUPERADMIN' || role === 'ADMIN') && (
         <div className={`shrink-0 border-t ${isDark ? 'border-slate-800' : 'border-slate-100'} ${isCollapsed ? 'px-2 py-2' : 'px-3 py-2'}`}>
           {isCollapsed ? (
             <button
