@@ -2381,6 +2381,7 @@ model tool_component {
   current_maintenance_days    Decimal?                  @default(0) @db.Decimal
   current_maintenance_flights Decimal?                  @default(0) @db.Decimal
   last_maintenance_date       DateTime?                 @db.Timestamp(6)
+  expiration_date             DateTime?                 @db.Date
   dcc_drone_id                String?                   @db.Uuid
   drone_registration_code     String?
   drc_synced_at               DateTime?                 @db.Timestamptz(6)

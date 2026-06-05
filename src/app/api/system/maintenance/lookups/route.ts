@@ -9,6 +9,7 @@ const getLookupsSchema = z.object({
   type: z.enum(['drones', 'components', 'users']),
   tool_id: z.string().nullable().optional(),
   profile: z.string().nullable().optional(),
+  ticket_type: z.string().nullable().optional(),
 });
 
 export async function GET(req: NextRequest) {
@@ -22,13 +23,14 @@ export async function GET(req: NextRequest) {
       type: searchParams.get('type'),
       tool_id: searchParams.get('tool_id'),
       profile: searchParams.get('profile'),
+      ticket_type: searchParams.get('ticket_type'),
     });
 
     if (!validation.success) {
       return zodError(E.VL001, validation.error);
     }
 
-    const { type, tool_id, profile } = validation.data;
+    const { type, tool_id, profile, ticket_type } = validation.data;
 
     const owner_id = session!.user.ownerId;
 
@@ -43,7 +45,7 @@ export async function GET(req: NextRequest) {
       case 'components': {
         if (!tool_id) return apiError(E.VL002, 400);
 
-        const components = await getComponentList(Number(tool_id));
+        const components = await getComponentList(Number(tool_id), ticket_type ?? undefined);
         return NextResponse.json({ status: 'OK', data: components });
       }
 

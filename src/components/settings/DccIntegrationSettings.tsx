@@ -1,11 +1,13 @@
 'use client';
 
+import '@/lib/i18n/config';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import axios from 'axios';
 import { CheckCircle2, Globe, Loader2, Save } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { useTheme } from '../useTheme';
 
@@ -93,6 +95,7 @@ const METHOD_COLOR: Record<string, string> = {
 };
 
 export default function DccIntegrationSettings() {
+  const { t } = useTranslation();
   const { isDark } = useTheme();
   const [loading, setLoading]         = useState(true);
   const [saving, setSaving]           = useState(false);
@@ -114,17 +117,17 @@ export default function DccIntegrationSettings() {
         setCallbackUrl(data.data.callback_url);
       }
     } catch {
-      toast.error('Failed to load DCC integration settings');
+      toast.error(t('settings.integrations.dcc.toast.loadFailed'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => { load(); }, [load]);
 
   async function handleSave() {
     if (!displayName.trim() || !callbackUrl.trim()) {
-      toast.error('Display name and URL are required');
+      toast.error(t('settings.integrations.dcc.toast.validationError'));
       return;
     }
     setSaving(true);
@@ -132,14 +135,21 @@ export default function DccIntegrationSettings() {
       await axios.post('/api/settings/dcc', { display_name: displayName.trim(), callback_url: callbackUrl.trim() });
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
-      toast.success('DCC integration saved');
+      toast.success(t('settings.integrations.dcc.toast.saved'));
     } catch (err: any) {
-      toast.error(err?.response?.data?.error ?? 'Failed to save');
+      toast.error(err?.response?.data?.error ?? t('settings.integrations.dcc.toast.saveFailed'));
     } finally {
       setSaving(false);
     }
   }
 
+  const tableHeaders = [
+    t('settings.integrations.dcc.tableHeaders.method'),
+    t('settings.integrations.dcc.tableHeaders.path'),
+    t('settings.integrations.dcc.tableHeaders.triggeredWhen'),
+    t('settings.integrations.dcc.tableHeaders.requestBody'),
+    t('settings.integrations.dcc.tableHeaders.responses'),
+  ];
 
   return (
     <div className="space-y-8">
@@ -151,10 +161,10 @@ export default function DccIntegrationSettings() {
           </div>
           <div>
             <h2 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-              DCC Server Configuration
+              {t('settings.integrations.dcc.title')}
             </h2>
             <p className={`text-xs ${label}`}>
-              Readi will send mission status updates to this server
+              {t('settings.integrations.dcc.subtitle')}
             </p>
           </div>
         </div>
@@ -166,20 +176,20 @@ export default function DccIntegrationSettings() {
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label className={`text-xs ${label}`}>Display Name</Label>
+              <Label className={`text-xs ${label}`}>{t('settings.integrations.dcc.displayName')}</Label>
               <Input
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="e.g. AI View Group DCC"
+                placeholder={t('settings.integrations.dcc.displayNamePlaceholder')}
                 className={`h-9 text-xs ${input}`}
               />
             </div>
             <div className="space-y-1.5">
-              <Label className={`text-xs ${label}`}>Callback URL</Label>
+              <Label className={`text-xs ${label}`}>{t('settings.integrations.dcc.callbackUrl')}</Label>
               <Input
                 value={callbackUrl}
                 onChange={(e) => setCallbackUrl(e.target.value)}
-                placeholder="http://pmvd-controlcenter.example.com"
+                placeholder={t('settings.integrations.dcc.callbackUrlPlaceholder')}
                 className={`h-9 text-xs font-mono ${input}`}
               />
             </div>
@@ -198,7 +208,7 @@ export default function DccIntegrationSettings() {
               : saved
                 ? <CheckCircle2 className="h-3.5 w-3.5" />
                 : <Save className="h-3.5 w-3.5" />}
-            {saved ? 'Saved' : 'Save'}
+            {saved ? t('settings.integrations.dcc.saved') : t('settings.integrations.dcc.save')}
           </Button>
         </div>
       </div>
@@ -206,10 +216,10 @@ export default function DccIntegrationSettings() {
       <div className={`rounded-xl border overflow-hidden ${card}`}>
         <div className={`px-5 py-3.5 border-b ${isDark ? 'border-slate-700/60 bg-slate-800/60' : 'border-gray-100 bg-gray-50/80'}`}>
           <h2 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-            Status Endpoints
+            {t('settings.integrations.dcc.statusEndpoints')}
           </h2>
           <p className={`text-xs mt-0.5 ${label}`}>
-            These paths are called on the DCC server when mission states change in Readi
+            {t('settings.integrations.dcc.statusEndpointsSubtitle')}
           </p>
         </div>
 
@@ -217,7 +227,7 @@ export default function DccIntegrationSettings() {
           <table className="w-full">
             <thead className={isDark ? 'bg-slate-700/40' : 'bg-gray-50/80'}>
               <tr>
-                {['Method', 'Path', 'Triggered when', 'Request body', 'Responses'].map((h) => (
+                {tableHeaders.map((h) => (
                   <th key={h} className={th}>{h}</th>
                 ))}
               </tr>
@@ -240,7 +250,7 @@ export default function DccIntegrationSettings() {
                   </td>
                   <td className={td}>
                     {ep.body.length === 0 ? (
-                      <span className={isDark ? 'text-slate-500' : 'text-gray-400'}>— none —</span>
+                      <span className={isDark ? 'text-slate-500' : 'text-gray-400'}>{t('settings.integrations.dcc.noBody')}</span>
                     ) : (
                       <div className="space-y-1.5">
                         {ep.body.map((f) => (
@@ -253,7 +263,7 @@ export default function DccIntegrationSettings() {
                                 {f.type}
                               </span>
                               {f.required && (
-                                <span className="text-[9px] font-bold text-red-500 uppercase">required</span>
+                                <span className="text-[9px] font-bold text-red-500 uppercase">{t('settings.integrations.dcc.required')}</span>
                               )}
                             </div>
                             <span className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>

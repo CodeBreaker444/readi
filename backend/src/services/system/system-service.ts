@@ -603,7 +603,8 @@ export async function getComponentList(ownerId: number, toolId?: number) {
     last_maintenance_date,
     dcc_drone_id,
     drone_registration_code,
-    drc_synced_at
+    drc_synced_at,
+    expiration_date
   `;
 
   // Specific system view: non-detached components for that tool only
@@ -650,11 +651,17 @@ export async function getComponentList(ownerId: number, toolId?: number) {
 }
 
 function buildComponentListResult(data: any[]) {
+  const today = new Date().toISOString().split('T')[0];
   return {
     code: 1,
     message: 'Success',
     dataRows: data.length,
-    data: data.map((item) => ({
+    data: data.map((item) => {
+      const isExpired = item.expiration_date && item.expiration_date <= today;
+      const effectiveStatus = isExpired
+        ? 'DECOMMISSIONED'
+        : (item.component_metadata?.component_status || 'OPERATIONAL');
+      return {
       tool_component_id: item.component_id,
       fk_tool_id: item.fk_tool_id,
       component_active: item.component_active,
@@ -664,7 +671,7 @@ function buildComponentListResult(data: any[]) {
       component_name: item.component_name,
       component_sn: item.serial_number,
       component_desc: item.component_description,
-      component_status: item.component_metadata?.component_status || 'OPERATIONAL',
+      component_status: effectiveStatus,
       component_category: item.component_metadata?.component_category || 'STANDARD',
       component_activation_date: item.installation_date,
       component_purchase_date: item.component_metadata?.component_purchase_date || null,
@@ -694,7 +701,9 @@ function buildComponentListResult(data: any[]) {
       longitude: item.component_metadata?.longitude ?? null,
       drone_classes: item.component_metadata?.drone_classes ?? null,
       is_primary: item.component_metadata?.is_primary ?? false,
-    })),
+      expiration_date: item.expiration_date || null,
+      };
+    }),
   };
 }
 
@@ -770,10 +779,15 @@ export async function addComponent(componentData: any) {
       current_maintenance_flights: componentData.initial_maintenance_flights ?? 0,
       dcc_drone_id: componentData.dcc_drone_id || null,
       drone_registration_code: componentData.drone_registration_code || null,
+      expiration_date: componentData.expiration_date || null,
       component_metadata: {
         cc_platform: componentData.cc_platform || null,
         gcs_type: componentData.gcs_type || null,
-        component_status: componentData.component_status || 'OPERATIONAL',
+        component_status: (() => {
+          const today = new Date().toISOString().split('T')[0];
+          const isExpired = componentData.expiration_date && componentData.expiration_date <= today;
+          return isExpired ? 'DECOMMISSIONED' : (componentData.component_status || 'OPERATIONAL');
+        })(),
         component_category: componentData.component_category || 'STANDARD',
         fk_tool_model_id: componentData.fk_tool_model_id || null,
         fk_parent_component_id: componentData.fk_parent_component_id ?? null,
@@ -858,6 +872,7 @@ export async function updateComponent(componentId: number, componentData: any) {
       installation_date: componentData.component_activation_date || null,
       dcc_drone_id: componentData.dcc_drone_id ?? null,
       drone_registration_code: componentData.drone_registration_code || null,
+      expiration_date: componentData.expiration_date || null,
       maintenance_cycle: componentData.maintenance_cycle || null,
       maintenance_cycle_hour: componentData.maintenance_cycle_hour ?? null,
       maintenance_cycle_day: componentData.maintenance_cycle_day ?? null,
@@ -869,7 +884,11 @@ export async function updateComponent(componentId: number, componentData: any) {
         ...baseMeta,
         cc_platform: componentData.cc_platform || null,
         gcs_type: componentData.gcs_type || null,
-        component_status: componentData.component_status || 'OPERATIONAL',
+        component_status: (() => {
+          const today = new Date().toISOString().split('T')[0];
+          const isExpired = componentData.expiration_date && componentData.expiration_date <= today;
+          return isExpired ? 'DECOMMISSIONED' : (componentData.component_status || 'OPERATIONAL');
+        })(),
         component_category: componentData.component_category || 'STANDARD',
         fk_tool_model_id: componentData.fk_tool_model_id || null,
         fk_parent_component_id: componentData.fk_parent_component_id ?? null,

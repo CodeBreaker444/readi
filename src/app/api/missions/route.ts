@@ -30,7 +30,7 @@ const BatchMissionSchema = z.object({
   target:        z.string().optional(),
   user_timezone: z.string().optional(),
   localization:  LocalizationSchema.optional(),
-  missions:      z.array(MissionItemSchema).min(1, 'missions array must not be empty'),
+  missions:      z.array(MissionItemSchema).min(1, 'missions array must not be empty').max(10, 'Maximum 10 missions can be created per request'),
   priority:      z.string().optional(),
   notes:         z.string().optional(),
   operator:      z.string().optional(),

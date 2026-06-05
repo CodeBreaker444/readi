@@ -17,6 +17,7 @@ const schema = z.object({
   component_sn: z.string().optional().nullable(),
   component_activation_date: z.string().optional().nullable(),
   component_purchase_date: z.string().optional().nullable(),
+  expiration_date: z.string().optional().nullable(),
   component_vendor: z.string().optional().nullable(),
   component_guarantee_day: z.number().optional().nullable(),
   component_status: z.string().default('OPERATIONAL'),

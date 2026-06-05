@@ -6,6 +6,8 @@ import { AlertTriangle, Check, ChevronDown, FileText, Moon, Search, Send, Settin
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { LanguageSelect } from './LanguageSelect';
 import NotificationDropdown from './NotificationDropdown';
 
@@ -148,12 +150,12 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData, loading 
 
   return (
     <>
-      <div className="fixed top-0 left-1/2 -translate-x-1/2 h-[69px] flex items-center pointer-events-none select-none z-10">
+      <div className="fixed top-0 left-1/2 -translate-x-1/2 h-[69px] flex items-center pointer-events-none select-none z-10 max-w-[calc(100vw-14rem)] sm:max-w-[calc(100vw-20rem)] md:max-w-none overflow-hidden px-2">
         {loading ? (
           <Skeleton className={`h-5 w-24 sm:w-36 rounded ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
         ) : userData?.ownerName ? (
           <span
-            className={`text-base sm:text-xl tracking-wider uppercase font-bold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}
+            className={`text-sm sm:text-base md:text-xl tracking-wider uppercase font-bold truncate ${isDark ? 'text-slate-300' : 'text-slate-600'}`}
             style={{ fontFamily: 'var(--font-bebas-neue)' }}
           >
             {userData.ownerName}
@@ -429,10 +431,14 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData, loading 
                           : <Sparkles size={13} className={isDark ? 'text-violet-400' : 'text-violet-500'} />}
                       </div>
                       <div className={`max-w-[78%] ${msg.role === 'user' ? '' : 'flex flex-col gap-1.5'}`}>
-                        <div className={`text-sm leading-relaxed px-4 py-2.5 rounded-2xl whitespace-pre-wrap ${msg.role === 'user'
-                          ? 'bg-violet-600 text-white rounded-tr-sm'
-                          : (isDark ? 'bg-slate-800 text-slate-200 rounded-tl-sm' : 'bg-gray-100 text-gray-800 rounded-tl-sm')}`}>
-                          {msg.content}
+                        <div className={`text-sm leading-relaxed px-4 py-2.5 rounded-2xl ${msg.role === 'user'
+                          ? 'bg-violet-600 text-white rounded-tr-sm whitespace-pre-wrap'
+                          : (isDark ? 'bg-slate-800 text-slate-200 rounded-tl-sm chat-md chat-md-dark' : 'bg-gray-100 text-gray-800 rounded-tl-sm chat-md chat-md-light')}`}>
+                          {msg.role === 'assistant' ? (
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                              {msg.content}
+                            </ReactMarkdown>
+                          ) : msg.content}
                         </div>
 
                         {/* Reference links on assistant messages */}

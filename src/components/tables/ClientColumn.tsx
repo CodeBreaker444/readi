@@ -1,5 +1,6 @@
 'use client';
 
+import '@/lib/i18n/config';
 import { formatDateInTz } from '@/lib/utils';
 import { ColumnDef } from '@tanstack/react-table';
 import { Building2, Globe, Mail, MoreHorizontal, Pencil, Phone, Trash2 } from 'lucide-react';
@@ -41,13 +42,14 @@ interface GetClientColumnsOptions {
   onEdit: (client: ClientData) => void;
   onDelete: (clientId: number) => void;
   timezone?: string;
+  t: (key: string) => string;
 }
 
-export function getClientColumns({ isDark, onEdit, onDelete, timezone }: GetClientColumnsOptions): ColumnDef<ClientData>[] {
+export function getClientColumns({ isDark, onEdit, onDelete, timezone, t }: GetClientColumnsOptions): ColumnDef<ClientData>[] {
   return [
     {
       accessorKey: 'client_name',
-      header: 'Client',
+      header: () => t('team.client.columns.client'),
       cell: ({ row }) => {
         const client = row.original;
         return (
@@ -67,7 +69,7 @@ export function getClientColumns({ isDark, onEdit, onDelete, timezone }: GetClie
     },
     {
       accessorKey: 'client_code',
-      header: 'Code',
+      header: () => t('team.code'),
       cell: ({ row }) => (
         <span className={`text-xs font-mono px-2 py-1 rounded-md ${isDark ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-600'}`}>
           {row.original.client_code || '—'}
@@ -76,7 +78,7 @@ export function getClientColumns({ isDark, onEdit, onDelete, timezone }: GetClie
     },
     {
       accessorKey: 'client_email',
-      header: 'Contact',
+      header: () => t('team.client.columns.contact'),
       cell: ({ row }) => {
         const client = row.original;
         return (
@@ -102,7 +104,7 @@ export function getClientColumns({ isDark, onEdit, onDelete, timezone }: GetClie
     },
     {
       accessorKey: 'client_city',
-      header: 'Location',
+      header: () => t('team.client.columns.location'),
       cell: ({ row }) => {
         const { client_city, client_state } = row.original;
         const location = [client_city, client_state].filter(Boolean).join(', ');
@@ -122,7 +124,7 @@ export function getClientColumns({ isDark, onEdit, onDelete, timezone }: GetClie
     },
     {
       accessorKey: 'client_website',
-      header: 'Website',
+      header: () => t('team.client.columns.website'),
       cell: ({ row }) => {
         const url = row.original.client_website;
         if (!url) return <span className={isDark ? 'text-slate-600 text-xs' : 'text-slate-400 text-xs'}>—</span>;
@@ -137,7 +139,7 @@ export function getClientColumns({ isDark, onEdit, onDelete, timezone }: GetClie
     },
     {
       accessorKey: 'payment_terms',
-      header: 'Payment Terms',
+      header: () => t('team.client.columns.paymentTerms'),
       cell: ({ row }) => (
         <span className={`text-sm ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
           {row.original.payment_terms || '—'}
@@ -146,7 +148,7 @@ export function getClientColumns({ isDark, onEdit, onDelete, timezone }: GetClie
     },
     {
       accessorKey: 'contract_end_date',
-      header: 'Contract End',
+      header: () => t('team.client.columns.contractEnd'),
       cell: ({ row }) => {
         const date = row.original.contract_end_date;
         if (!date) return <span className={isDark ? 'text-slate-600 text-xs' : 'text-slate-400 text-xs'}>—</span>;
@@ -161,7 +163,7 @@ export function getClientColumns({ isDark, onEdit, onDelete, timezone }: GetClie
     },
     {
       accessorKey: 'client_active',
-      header: 'Status',
+      header: () => t('common.status'),
       cell: ({ row }) => {
         const active = row.original.client_active === 'Y';
         return (
@@ -169,7 +171,7 @@ export function getClientColumns({ isDark, onEdit, onDelete, timezone }: GetClie
             ? (isDark ? 'bg-emerald-900/40 text-emerald-400' : 'bg-emerald-100 text-emerald-700')
             : (isDark ? 'bg-rose-900/40 text-rose-400' : 'bg-rose-100 text-rose-700')
           }`}>
-            {active ? 'Active' : 'Inactive'}
+            {active ? t('common.active') : t('common.inactive')}
           </Badge>
         );
       },
@@ -188,14 +190,14 @@ export function getClientColumns({ isDark, onEdit, onDelete, timezone }: GetClie
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className={isDark ? 'bg-slate-800 border-slate-700' : ''}>
               <DropdownMenuItem onClick={() => onEdit(client)} className="gap-2 text-xs cursor-pointer">
-                <Pencil size={12} /> Edit Client
+                <Pencil size={12} /> {t('team.client.columns.editClient')}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={() => onDelete(client.client_id)}
                 className="gap-2 text-xs text-rose-500 cursor-pointer focus:text-rose-500"
               >
-                <Trash2 size={12} /> Delete Client
+                <Trash2 size={12} /> {t('team.client.columns.deleteClient')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
