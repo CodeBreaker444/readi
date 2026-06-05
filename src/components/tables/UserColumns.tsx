@@ -1,5 +1,6 @@
 'use client';
 
+import '@/lib/i18n/config';
 import { ColumnDef } from '@tanstack/react-table';
 import { Loader2, Mail, Pencil, RotateCcw, Trash2 } from 'lucide-react';
 import {
@@ -34,6 +35,7 @@ interface GetUserColumnsOptions {
   onDelete: (user: UserData) => void;
   onResendInvite: (user: UserData) => void;
   resendingUserId: number | null;
+  t: (key: string) => string;
 }
 
 export function getUserColumns({
@@ -42,13 +44,14 @@ export function getUserColumns({
   onDelete,
   onResendInvite,
   resendingUserId,
+  t,
 }: GetUserColumnsOptions): ColumnDef<UserData>[] {
   const headerClass = `text-[11px] font-semibold uppercase tracking-widest ${isDark ? 'text-gray-400' : 'text-gray-400'}`;
 
   return [
     {
       accessorKey: 'fullname',
-      header: () => <span className={headerClass}>Name</span>,
+      header: () => <span className={headerClass}>{t('common.name')}</span>,
       cell: ({ row }) => {
         const initial = row.original.fullname?.charAt(0)?.toUpperCase() ?? '?';
         return (
@@ -67,7 +70,7 @@ export function getUserColumns({
     },
     {
       accessorKey: 'username',
-      header: () => <span className={headerClass}>Username</span>,
+      header: () => <span className={headerClass}>{t('team.username')}</span>,
       cell: ({ row }) => (
         <span className={`text-xs font-mono px-2 py-0.5 rounded-md ${
           isDark ? 'bg-gray-800 text-gray-400' : 'bg-gray-100 text-gray-500'
@@ -78,7 +81,7 @@ export function getUserColumns({
     },
     {
       accessorKey: 'email',
-      header: () => <span className={headerClass}>Email</span>,
+      header: () => <span className={headerClass}>{t('common.email')}</span>,
       cell: ({ row }) => (
         <div className={`flex items-center gap-1.5 text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
           <Mail size={13} className="shrink-0 opacity-40" />
@@ -88,7 +91,7 @@ export function getUserColumns({
     },
     {
       accessorKey: 'user_role',
-      header: () => <span className={headerClass}>Role</span>,
+      header: () => <span className={headerClass}>{t('common.role')}</span>,
       cell: ({ row }) => (
         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wide border ${
           isDark
@@ -101,7 +104,7 @@ export function getUserColumns({
     },
     {
       accessorKey: 'user_unique_code',
-      header: () => <span className={headerClass}>Code</span>,
+      header: () => <span className={headerClass}>{t('team.code')}</span>,
       cell: ({ row }) => (
         <span className={`text-xs font-mono ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
           {row.original.user_unique_code || '—'}
@@ -110,34 +113,34 @@ export function getUserColumns({
     },
     {
       accessorKey: 'active',
-      header: () => <span className={headerClass}>Status</span>,
+      header: () => <span className={headerClass}>{t('common.status')}</span>,
       cell: ({ row }) => {
         const isActive = row.original.active === 1;
         const isPending = row.original.is_pending;
         if (isActive) {
           return (
             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wide border ${isDark ? 'bg-emerald-950/60 text-emerald-300 border-emerald-700/50' : 'bg-emerald-50 text-emerald-600 border-emerald-200'}`}>
-              Active
+              {t('common.active')}
             </span>
           );
         }
         if (isPending) {
           return (
             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wide border ${isDark ? 'bg-amber-950/60 text-amber-300 border-amber-700/50' : 'bg-amber-50 text-amber-600 border-amber-200'}`}>
-              Pending
+              {t('team.pending')}
             </span>
           );
         }
         return (
           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wide border ${isDark ? 'bg-rose-950/60 text-rose-300 border-rose-700/50' : 'bg-rose-50 text-rose-600 border-rose-200'}`}>
-            Inactive
+            {t('common.inactive')}
           </span>
         );
       },
     },
     {
       id: 'permissions',
-      header: () => <span className={headerClass}>Permissions</span>,
+      header: () => <span className={headerClass}>{t('team.permissions')}</span>,
       cell: ({ row }) => (
         <div className="flex gap-1.5 flex-wrap">
           {row.original.is_manager === 'Y' && (
@@ -146,7 +149,7 @@ export function getUserColumns({
                 ? 'bg-violet-950/60 text-violet-300 border-violet-700/50'
                 : 'bg-violet-50 text-violet-600 border-violet-200'
             }`}>
-              Manager
+              {t('team.manager')}
             </span>
           )}
           {row.original.is_viewer === 'Y' && (
@@ -155,7 +158,7 @@ export function getUserColumns({
                 ? 'bg-gray-800 text-gray-400 border-gray-700'
                 : 'bg-gray-100 text-gray-500 border-gray-200'
             }`}>
-              Viewer
+              {t('team.viewer')}
             </span>
           )}
           {row.original.is_manager !== 'Y' && row.original.is_viewer !== 'Y' && (
@@ -166,7 +169,7 @@ export function getUserColumns({
     },
     {
       id: 'actions',
-      header: () => <div className={`${headerClass} flex justify-end`}>Actions</div>,
+      header: () => <div className={`${headerClass} flex justify-end`}>{t('common.actions')}</div>,
       cell: ({ row }) => {
         const user = row.original;
         return (
@@ -191,7 +194,7 @@ export function getUserColumns({
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="top" className="text-xs">
-                    {resendingUserId === user.user_id ? 'Sending…' : 'Resend invite'}
+                    {resendingUserId === user.user_id ? t('team.sending') : t('team.resendInvite')}
                   </TooltipContent>
                 </Tooltip>
               )}
@@ -209,7 +212,7 @@ export function getUserColumns({
                     <Pencil size={14} strokeWidth={2} />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="top" className="text-xs">Edit user</TooltipContent>
+                <TooltipContent side="top" className="text-xs">{t('team.editUser')}</TooltipContent>
               </Tooltip>
 
               <Tooltip>
@@ -225,7 +228,7 @@ export function getUserColumns({
                     <Trash2 size={14} strokeWidth={2} />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="top" className="text-xs">Delete user</TooltipContent>
+                <TooltipContent side="top" className="text-xs">{t('team.deleteUser')}</TooltipContent>
               </Tooltip>
             </div>
           </TooltipProvider>

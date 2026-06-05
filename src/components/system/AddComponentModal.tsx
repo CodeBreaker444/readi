@@ -37,6 +37,7 @@ const INITIAL_FORM = {
   drone_registration_code: '',
   component_activation_date: '',
   component_purchase_date: '',
+  expiration_date: '',
   component_vendor: '',
   component_guarantee_day: '',
   component_status: 'OPERATIONAL',
@@ -218,6 +219,7 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
         drone_registration_code: formData.drone_registration_code || null,
         component_activation_date: formData.component_activation_date || null,
         component_purchase_date: formData.component_purchase_date || null,
+        expiration_date: formData.expiration_date || null,
         component_vendor: formData.component_vendor || null,
         component_guarantee_day: formData.component_guarantee_day ? Number(formData.component_guarantee_day) : null,
         component_status: formData.component_status,
@@ -564,6 +566,11 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
               <div className="col-span-1 sm:col-span-3">
                 <Label className="pb-2">{t('systems.components.addComponent.fields.purchaseDate')}</Label>
                 <Input type="date" value={formData.component_purchase_date} onChange={(e) => handleChange('component_purchase_date', e.target.value)} />
+              </div>
+              <div className="col-span-1 sm:col-span-3">
+                <Label className="pb-2">{t('systems.components.addComponent.fields.expirationDate')} <span className="text-muted-foreground font-normal">{t('systems.components.common.optional')}</span></Label>
+                <Input type="date" value={formData.expiration_date} onChange={(e) => handleChange('expiration_date', e.target.value)} />
+                <p className="text-[10px] text-muted-foreground mt-1">{t('systems.components.common.autoDecommissionHint')}</p>
               </div>
               <div className="col-span-1 sm:col-span-3">
                 <Label className="pb-2">{t('systems.components.addComponent.fields.vendor')}</Label>

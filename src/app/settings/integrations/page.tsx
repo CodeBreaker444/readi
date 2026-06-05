@@ -1,9 +1,12 @@
 'use client';
 
+import '@/lib/i18n/config';
 import DccIntegrationSettings from '@/components/settings/DccIntegrationSettings';
 import { useTheme } from '@/components/useTheme';
+import { useTranslation } from 'react-i18next';
 
 export default function IntegrationsSettingsPage() {
+  const { t } = useTranslation();
   const { isDark } = useTheme();
   return (
     <div className={`min-h-screen ${isDark ? 'bg-slate-950' : 'bg-gray-50'}`}>
@@ -12,10 +15,10 @@ export default function IntegrationsSettingsPage() {
           <div className="w-1 h-6 rounded-full bg-violet-600" />
           <div>
             <h1 className={`font-semibold text-base ${isDark ? 'text-white' : 'text-slate-900'}`}>
-              Integrations
+              {t('settings.integrations.title')}
             </h1>
             <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-              Configure external system connections
+              {t('settings.integrations.subtitle')}
             </p>
           </div>
         </div>

@@ -1,5 +1,6 @@
 'use client';
 
+import '@/lib/i18n/config';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,6 +9,7 @@ import axios from 'axios';
 import { format } from 'date-fns';
 import { Check, Copy, KeyRound, Loader2, Plus, Trash2, XCircle } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { useTheme } from '../useTheme';
 
@@ -23,6 +25,7 @@ interface ApiKey {
 }
 
 function CopyButton({ value }: { value: string }) {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   function copy() {
     navigator.clipboard.writeText(value);
@@ -37,6 +40,7 @@ function CopyButton({ value }: { value: string }) {
 }
 
 export default function ApiKeyManager() {
+  const { t } = useTranslation();
   const { isDark } = useTheme();
   const [keys, setKeys] = useState<ApiKey[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,23 +48,23 @@ export default function ApiKeyManager() {
   const [showForm, setShowForm] = useState(false);
   const [newKeyName, setNewKeyName] = useState('');
   const [newExpiresAt, setNewExpiresAt] = useState('');
-  const [revealedKey, setRevealedKey] = useState<string | null>(null);  // shown only once after creation
+  const [revealedKey, setRevealedKey] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
       const { data } = await axios.get('/api/settings/api-keys');
       setKeys(data.items);
     } catch {
-      toast.error('Failed to load API keys');
+      toast.error(t('settings.security.apiKeys.toast.loadFailed'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => { load(); }, [load]);
 
   async function handleCreate() {
-    if (!newKeyName.trim()) { toast.error('Key name is required'); return; }
+    if (!newKeyName.trim()) { toast.error(t('settings.security.apiKeys.toast.nameRequired')); return; }
     setCreating(true);
     try {
       const { data } = await axios.post('/api/settings/api-keys', {
@@ -72,9 +76,9 @@ export default function ApiKeyManager() {
       setNewKeyName('');
       setNewExpiresAt('');
       await load();
-      toast.success('API key created — copy it now, it will not be shown again.');
+      toast.success(t('settings.security.apiKeys.toast.created'));
     } catch (err: any) {
-      toast.error(err?.response?.data?.error ?? 'Failed to create key');
+      toast.error(err?.response?.data?.error ?? t('settings.security.apiKeys.toast.createFailed'));
     } finally {
       setCreating(false);
     }
@@ -84,9 +88,9 @@ export default function ApiKeyManager() {
     try {
       await axios.patch(`/api/settings/api-keys/${id}`);
       setKeys((prev) => prev.map((k) => k.api_key_id === id ? { ...k, is_active: false } : k));
-      toast.success('API key revoked');
+      toast.success(t('settings.security.apiKeys.toast.revoked'));
     } catch {
-      toast.error('Failed to revoke key');
+      toast.error(t('settings.security.apiKeys.toast.revokeFailed'));
     }
   }
 
@@ -94,9 +98,9 @@ export default function ApiKeyManager() {
     try {
       await axios.delete(`/api/settings/api-keys/${id}`);
       setKeys((prev) => prev.filter((k) => k.api_key_id !== id));
-      toast.success('API key deleted');
+      toast.success(t('settings.security.apiKeys.toast.deleted'));
     } catch {
-      toast.error('Failed to delete key');
+      toast.error(t('settings.security.apiKeys.toast.deleteFailed'));
     }
   }
 
@@ -105,6 +109,16 @@ export default function ApiKeyManager() {
     ? 'bg-slate-700 border-slate-600 text-slate-200 placeholder:text-slate-500'
     : 'bg-gray-50 border-gray-200 text-gray-900';
   const labelCls = `text-xs font-medium ${isDark ? 'text-slate-400' : 'text-gray-500'}`;
+
+  const tableHeaders = [
+    t('settings.security.apiKeys.tableHeaders.name'),
+    t('settings.security.apiKeys.tableHeaders.keyPrefix'),
+    t('settings.security.apiKeys.tableHeaders.scope'),
+    t('settings.security.apiKeys.tableHeaders.status'),
+    t('settings.security.apiKeys.tableHeaders.lastUsed'),
+    t('settings.security.apiKeys.tableHeaders.expires'),
+    t('settings.security.apiKeys.tableHeaders.actions'),
+  ];
 
   return (
     <div className="space-y-6">
@@ -115,10 +129,10 @@ export default function ApiKeyManager() {
           <KeyRound className={`h-5 w-5 ${isDark ? 'text-violet-400' : 'text-violet-600'}`} />
           <div>
             <h2 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              API Keys
+              {t('settings.security.apiKeys.title')}
             </h2>
             <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-              Keys allow third-party services to submit flight mission requests.
+              {t('settings.security.apiKeys.headerSubtitle')}
             </p>
           </div>
         </div>
@@ -127,14 +141,14 @@ export default function ApiKeyManager() {
           onClick={() => setShowForm((v) => !v)}
           className="h-8 gap-1.5 text-xs bg-violet-600 hover:bg-violet-500 text-white"
         >
-          <Plus className="h-3.5 w-3.5" /> New Key
+          <Plus className="h-3.5 w-3.5" /> {t('settings.security.apiKeys.newKey')}
         </Button>
       </div>
 
       {revealedKey && (
         <div className={`rounded-xl border p-4 ${isDark ? 'bg-emerald-950/40 border-emerald-700/40' : 'bg-emerald-50 border-emerald-200'}`}>
           <p className={`text-xs font-semibold mb-2 ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>
-            Your new API key — copy it now, it will not be shown again:
+            {t('settings.security.apiKeys.revealedKeyNote')}
           </p>
           <div className="flex items-center gap-2">
             <code className={`flex-1 rounded px-3 py-2 text-xs font-mono break-all ${isDark ? 'bg-slate-900 text-emerald-300' : 'bg-white text-emerald-800 border border-emerald-200'}`}>
@@ -149,7 +163,7 @@ export default function ApiKeyManager() {
             </button>
           </div>
           <p className={`text-[11px] mt-2 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-            Use this key in the <code className="font-mono">X-API-KEY</code> header when calling <code className="font-mono">POST /api/missions</code>
+            {t('settings.security.apiKeys.revealedKeyUsage')}
           </p>
         </div>
       )}
@@ -157,19 +171,19 @@ export default function ApiKeyManager() {
       {/* Create form */}
       {showForm && (
         <div className={`rounded-xl border p-4 space-y-3 ${card}`}>
-          <p className={`text-xs font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>New API Key</p>
+          <p className={`text-xs font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('settings.security.apiKeys.newApiKey')}</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className={labelCls}>Key Name <span className="text-red-500">*</span></Label>
+              <Label className={labelCls}>{t('settings.security.apiKeys.keyName')} <span className="text-red-500">*</span></Label>
               <Input
                 value={newKeyName}
                 onChange={(e) => setNewKeyName(e.target.value)}
-                placeholder="e.g. External Flight App"
+                placeholder={t('settings.security.apiKeys.keyNamePlaceholder')}
                 className={`text-sm ${inputCls}`}
               />
             </div>
             <div className="space-y-1.5">
-              <Label className={labelCls}>Expires At (optional)</Label>
+              <Label className={labelCls}>{t('settings.security.apiKeys.expiresAt')}</Label>
               <Input
                 type="date"
                 value={newExpiresAt}
@@ -180,11 +194,13 @@ export default function ApiKeyManager() {
           </div>
           <div className="flex gap-2 pt-1">
             <Button size="sm" onClick={handleCreate} disabled={creating} className="bg-violet-600 hover:bg-violet-500 text-white text-xs h-8">
-              {creating ? <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />Creating...</> : 'Create Key'}
+              {creating
+                ? <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />{t('settings.security.apiKeys.creating')}</>
+                : t('settings.security.apiKeys.createKey')}
             </Button>
             <Button size="sm" variant="outline" onClick={() => setShowForm(false)}
               className={`text-xs h-8 ${isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : ''}`}>
-              Cancel
+              {t('settings.security.apiKeys.cancel')}
             </Button>
           </div>
         </div>
@@ -208,13 +224,13 @@ export default function ApiKeyManager() {
           </table>
         ) : keys.length === 0 ? (
           <div className={`py-12 text-center text-sm ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-            No API keys yet. Create one to allow external services to submit missions.
+            {t('settings.security.apiKeys.noKeys')}
           </div>
         ) : (
           <table className="w-full text-xs">
             <thead className={isDark ? 'bg-slate-700/50' : 'bg-gray-50'}>
               <tr>
-                {['Name', 'Key Prefix', 'Scope', 'Status', 'Last Used', 'Expires', 'Actions'].map((h) => (
+                {tableHeaders.map((h) => (
                   <th key={h} className={`px-4 py-2.5 text-left font-semibold uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{h}</th>
                 ))}
               </tr>
@@ -232,7 +248,7 @@ export default function ApiKeyManager() {
                       ${k.is_active
                         ? isDark ? 'bg-emerald-900/40 text-emerald-400' : 'bg-emerald-50 text-emerald-700'
                         : isDark ? 'bg-red-900/40 text-red-400' : 'bg-red-50 text-red-600'}`}>
-                      {k.is_active ? 'Active' : 'Revoked'}
+                      {k.is_active ? t('settings.security.apiKeys.active') : t('settings.security.apiKeys.revoked')}
                     </span>
                   </td>
                   <td className={`px-4 py-3 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
@@ -246,7 +262,7 @@ export default function ApiKeyManager() {
                       {k.is_active && (
                         <button
                           onClick={() => handleRevoke(k.api_key_id)}
-                          title="Revoke key"
+                          title={t('settings.security.apiKeys.revokeKey')}
                           className="p-1 rounded text-slate-400 hover:text-orange-500 transition-colors"
                         >
                           <XCircle className="h-3.5 w-3.5" />
@@ -254,7 +270,7 @@ export default function ApiKeyManager() {
                       )}
                       <button
                         onClick={() => handleDelete(k.api_key_id)}
-                        title="Delete key"
+                        title={t('settings.security.apiKeys.deleteKey')}
                         className="p-1 rounded text-slate-400 hover:text-red-500 transition-colors"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -270,12 +286,12 @@ export default function ApiKeyManager() {
 
       {/* Usage note */}
       <div className={`rounded-lg border p-4 text-xs space-y-1.5 ${isDark ? 'bg-slate-800/60 border-slate-700/40 text-slate-400' : 'bg-gray-50 border-gray-200 text-gray-500'}`}>
-        <p className={`font-semibold ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>How to use</p>
-        <p>Send flight mission requests to:</p>
+        <p className={`font-semibold ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>{t('settings.security.apiKeys.howToUse')}</p>
+        <p>{t('settings.security.apiKeys.howToUseSend')}</p>
         <code className={`block rounded px-2 py-1 font-mono text-[11px] ${isDark ? 'bg-slate-900 text-violet-300' : 'bg-white border border-gray-200 text-violet-700'}`}>
           POST /api/missions
         </code>
-        <p>Include your key in the request header:</p>
+        <p>{t('settings.security.apiKeys.howToUseHeader')}</p>
         <code className={`block rounded px-2 py-1 font-mono text-[11px] ${isDark ? 'bg-slate-900 text-violet-300' : 'bg-white border border-gray-200 text-violet-700'}`}>
           X-API-KEY: your-key-here
         </code>

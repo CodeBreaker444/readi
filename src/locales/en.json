@@ -141,7 +141,77 @@
     "viewer": "Viewer",
     "username": "Username",
     "code": "Code",
-    "permissions": "Permissions"
+    "permissions": "Permissions",
+    "client": {
+      "title": "Client Management",
+      "subtitle": "Manage clients and their contracts",
+      "addNew": "Add New Client",
+      "columns": {
+        "client": "Client",
+        "contact": "Contact",
+        "location": "Location",
+        "website": "Website",
+        "paymentTerms": "Payment Terms",
+        "contractEnd": "Contract End",
+        "editClient": "Edit Client",
+        "deleteClient": "Delete Client"
+      },
+      "stats": {
+        "total": "Total Clients",
+        "active": "Active",
+        "inactive": "Inactive",
+        "expiringSoon": "Expiring Soon"
+      },
+      "searchPlaceholder": "Search by name, email, code, city…",
+      "allStatus": "All Status",
+      "allCompanies": "All Companies",
+      "noFound": "No clients found",
+      "noFoundHint": "Try adjusting your filters or add a new client",
+      "toast": {
+        "deleted": "Client deleted",
+        "deleteFailed": "Failed to delete client",
+        "added": "Client added successfully",
+        "addFailed": "Failed to add client",
+        "addError": "Error adding client",
+        "updated": "Client updated successfully",
+        "updateFailed": "Failed to update client",
+        "updateError": "Error updating client"
+      }
+    },
+    "personnel": {
+      "title": "Team Management",
+      "subtitle": "Manage users and roles within your organization",
+      "addNew": "Add New User",
+      "stats": {
+        "total": "Total Users",
+        "active": "Active",
+        "inactive": "Inactive",
+        "managers": "Managers"
+      },
+      "searchPlaceholder": "Search by name, email, username…",
+      "allRoles": "All Roles",
+      "allStatus": "All Status",
+      "allCompanies": "All Companies",
+      "noFound": "No users found",
+      "noFoundHint": "Try adjusting your filters",
+      "deleteTitle": "Delete User",
+      "deleteDescriptionPrefix": "Are you sure you want to delete",
+      "deleteDescriptionSuffix": "? This will also remove their authentication account. This action cannot be undone.",
+      "toast": {
+        "inviteResent": "Activation email resent to {{email}}",
+        "inviteResendFailed": "Failed to resend invite",
+        "inviteResendError": "Error resending invite",
+        "deleted": "User deleted successfully",
+        "deleteFailed": "Failed to delete user",
+        "created": "User created successfully",
+        "createFailed": "Failed to create user",
+        "createError": "Error creating user",
+        "ccTokenWarning": "User created but Control Center token could not be saved",
+        "updated": "User updated successfully",
+        "updateFailed": "Failed to update user",
+        "updateError": "Error updating user"
+      }
+    }
   },
   "sidebar": {
     "dashboard": "Dashboard",
@@ -3975,6 +4045,7 @@
         "manageClasses": "Manage classes",
         "location": "Location",
         "locationOptional": "Location (optional)",
+        "autoDecommissionHint": "Component auto-decommissions on this date",
         "defaultCounters": {
           "label": "Starting Counters",
           "hint": "— for used components, set values > 0",
@@ -4063,7 +4134,8 @@
           "purchaseDate": "Purchase Date",
           "vendor": "Vendor",
           "guarantee": "Guarantee (days)",
-          "batteryRatio": "Battery Cycle Ratio"
+          "batteryRatio": "Battery Cycle Ratio",
+          "expirationDate": "Expiration Date"
         },
         "placeholders": {
           "selectSystem": "Select System",
@@ -4487,5 +4559,113 @@
     "fieldLatitude": "Latitude",
     "fieldLongitude": "Longitude",
     "fieldAltitude": "Altitude (m)"
+  },
+  "settings": {
+    "integrations": {
+      "title": "Integrations",
+      "subtitle": "Configure external system connections",
+      "dcc": {
+        "title": "DCC Server Configuration",
+        "subtitle": "Readi will send mission status updates to this server",
+        "displayName": "Display Name",
+        "displayNamePlaceholder": "e.g. AI View Group DCC",
+        "callbackUrl": "Callback URL",
+        "callbackUrlPlaceholder": "http://pmvd-controlcenter.example.com",
+        "saved": "Saved",
+        "save": "Save",
+        "statusEndpoints": "Status Endpoints",
+        "statusEndpointsSubtitle": "These paths are called on the DCC server when mission states change in Readi",
+        "tableHeaders": {
+          "method": "Method",
+          "path": "Path",
+          "triggeredWhen": "Triggered when",
+          "requestBody": "Request body",
+          "responses": "Responses"
+        },
+        "noBody": "— none —",
+        "required": "required",
+        "toast": {
+          "loadFailed": "Failed to load DCC integration settings",
+          "validationError": "Display name and URL are required",
+          "saved": "DCC integration saved",
+          "saveFailed": "Failed to save"
+        }
+      }
+    },
+    "security": {
+      "title": "Security Settings",
+      "subtitle": "Manage API keys and authorization PIN",
+      "pin": {
+        "title": "Authorization PIN",
+        "description": "Required to sign authorized actions (status changes, component moves, mission sign-offs). Your 6-digit PIN encrypts your RSA private key — it never leaves your browser.",
+        "publicKeyFingerprint": "Public key fingerprint: ",
+        "created": "Created: ",
+        "configured": "Authorization PIN configured",
+        "configuredDescription": "Your RSA keypair has been generated. Your private key is encrypted with your PIN and never leaves your browser unencrypted.",
+        "keyFingerprint": "Key Fingerprint",
+        "publicKey": "Public Key (RSA-2048 SPKI)",
+        "copied": "Copied",
+        "copy": "Copy",
+        "changePin": "Change PIN (generates new keypair)",
+        "changePinTitle": "Change Authorization PIN",
+        "setupPinTitle": "Set Up Authorization PIN",
+        "enterDescription": "Choose a 6-digit PIN to protect your digital signature",
+        "confirmDescription": "Confirm your PIN to generate the keypair",
+        "changePinWarning": "Changing your PIN will generate a new RSA keypair. Previous transaction signs remain verifiable using the public key snapshot stored with each record.",
+        "enterPin": "Enter PIN",
+        "confirmPin": "Confirm PIN",
+        "next": "Next",
+        "back": "Back",
+        "generatingKeypair": "Generating keypair…",
+        "confirmGenerate": "Confirm & Generate Key",
+        "error": {
+          "mismatch": "PINs do not match. Please try again.",
+          "setupFailed": "Setup failed. Please try again.",
+          "toast": "Failed to set up authorization PIN. Please try again."
+        }
+      },
+      "apiKeys": {
+        "title": "API Keys",
+        "subtitle": "Manage API keys for third-party integrations",
+        "headerSubtitle": "Keys allow third-party services to submit flight mission requests.",
+        "newKey": "New Key",
+        "newApiKey": "New API Key",
+        "keyName": "Key Name",
+        "expiresAt": "Expires At (optional)",
+        "keyNamePlaceholder": "e.g. External Flight App",
+        "creating": "Creating...",
+        "createKey": "Create Key",
+        "cancel": "Cancel",
+        "revealedKeyNote": "Your new API key — copy it now, it will not be shown again:",
+        "revealedKeyUsage": "Use this key in the X-API-KEY header when calling POST /api/missions",
+        "noKeys": "No API keys yet. Create one to allow external services to submit missions.",
+        "tableHeaders": {
+          "name": "Name",
+          "keyPrefix": "Key Prefix",
+          "scope": "Scope",
+          "status": "Status",
+          "lastUsed": "Last Used",
+          "expires": "Expires",
+          "actions": "Actions"
+        },
+        "active": "Active",
+        "revoked": "Revoked",
+        "revokeKey": "Revoke key",
+        "deleteKey": "Delete key",
+        "howToUse": "How to use",
+        "howToUseSend": "Send flight mission requests to:",
+        "howToUseHeader": "Include your key in the request header:",
+        "toast": {
+          "loadFailed": "Failed to load API keys",
+          "nameRequired": "Key name is required",
+          "created": "API key created — copy it now, it will not be shown again.",
+          "createFailed": "Failed to create key",
+          "revoked": "API key revoked",
+          "revokeFailed": "Failed to revoke key",
+          "deleted": "API key deleted",
+          "deleteFailed": "Failed to delete key"
+        }
+      }
+    }
   }
 }
