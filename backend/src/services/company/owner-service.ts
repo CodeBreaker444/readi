@@ -1,5 +1,5 @@
 import { env } from '@/backend/config/env';
-import { supabase } from '@/backend/database/database';
+import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcrypt';
 import { sendAdminPasswordChangedEmail, sendUserActivationEmail } from '../../../../lib/resend/mail';
 import { generateActivationToken, generateUniqueCode } from '../user/user-management';
@@ -99,185 +99,173 @@ export interface OwnerWithAdmin extends OwnerData {
 }
 
 export async function getOwners(): Promise<OwnerWithAdmin[]> {
-    const { data: owners, error } = await supabase
-        .from('owner')
-        .select('owner_id, owner_code, owner_name, owner_legal_name, owner_type, owner_address, owner_city, owner_state, owner_postal_code, owner_phone, owner_email, owner_website, owner_active, drone_atc_enabled, email_notifications_enabled, easa_operator_code, tax_id, registration_number, license_number, license_expiry, created_at')
-        .order('created_at', { ascending: false });
-    if (error) throw new Error(error.message);
+    const owners = await prisma.owner.findMany({
+        orderBy: { created_at: 'desc' },
+        include: {
+            user_owner: {
+                where: { relationship_type: 'OWNER_ADMIN', is_primary: true },
+                select: {
+                    fk_owner_id: true,
+                    users: {
+                        select: {
+                            user_id: true,
+                            username: true,
+                            email: true,
+                            first_name: true,
+                            last_name: true,
+                            phone: true,
+                            user_active: true,
+                        },
+                    },
+                },
+            },
+        },
+    });
 
-    const ownerIds = owners.map((o: any) => o.owner_id);
-
-    const { data: adminRelations } = await supabase
-        .from('user_owner')
-        .select(`
-      fk_owner_id,
-      users:fk_user_id (
-        user_id,
-        username,
-        email,
-        first_name,
-        last_name,
-        phone,
-        user_active
-      )
-    `)
-        .in('fk_owner_id', ownerIds)
-        .eq('relationship_type', 'OWNER_ADMIN')
-        .eq('is_primary', true)
-
-    const adminMap = new Map<number, any>();
-    if (adminRelations) {
-        for (const rel of adminRelations) {
-            if (!adminMap.has(rel.fk_owner_id)) {
-                adminMap.set(rel.fk_owner_id, rel.users);
-            }
-        }
-    }
-
-    return owners.map((owner: any) => ({
-        ...owner,
-        admin_user: adminMap.get(owner.owner_id) || null,
-    }));
+    return owners.map((owner) => {
+        const { user_owner, ...ownerData } = owner;
+        const adminRel = user_owner[0];
+        return {
+            ...ownerData,
+            created_at: ownerData.created_at?.toISOString() ?? '',
+            admin_user: adminRel?.users
+                ? {
+                      user_id: adminRel.users.user_id,
+                      username: adminRel.users.username ?? '',
+                      email: adminRel.users.email ?? '',
+                      first_name: adminRel.users.first_name ?? '',
+                      last_name: adminRel.users.last_name ?? '',
+                      phone: adminRel.users.phone ?? null,
+                      user_active: adminRel.users.user_active ?? '',
+                  }
+                : null,
+        } as unknown as OwnerWithAdmin;
+    });
 }
 
-
-
 export async function getOwnerById(id: string): Promise<OwnerWithAdmin | null> {
-    const { data: owner, error } = await supabase
-        .from('owner')
-        .select('owner_id, owner_code, owner_name, owner_legal_name, owner_type, owner_address, owner_city, owner_state, owner_postal_code, owner_phone, owner_email, owner_website, owner_active, drone_atc_enabled, email_notifications_enabled, easa_operator_code, tax_id, registration_number, license_number, license_expiry, created_at')
-        .eq('owner_id', id)
-        .single();
+    const ownerId = parseInt(id);
 
-    if (error || !owner) return null;
+    const owner = await prisma.owner.findUnique({
+        where: { owner_id: ownerId },
+        include: {
+            user_owner: {
+                where: { relationship_type: 'OWNER_ADMIN', is_primary: true },
+                select: {
+                    users: {
+                        select: {
+                            user_id: true,
+                            username: true,
+                            email: true,
+                            first_name: true,
+                            last_name: true,
+                            phone: true,
+                            user_active: true,
+                        },
+                    },
+                },
+                take: 1,
+            },
+        },
+    });
 
-    const { data: adminRel } = await supabase
-        .from('user_owner')
-        .select(`users:fk_user_id (user_id, username, email, first_name, last_name, phone, user_active)`)
-        .eq('fk_owner_id', id)
-        .eq('relationship_type', 'OWNER_ADMIN')
-        .eq('is_primary', true)
-        .maybeSingle();
+    if (!owner) return null;
+
+    const { user_owner, ...ownerData } = owner;
+    const adminRel = user_owner[0];
 
     return {
-        ...(owner as any),
-        admin_user: (adminRel as any)?.users || null,
-    };
+        ...ownerData,
+        created_at: ownerData.created_at?.toISOString() ?? '',
+        admin_user: adminRel?.users
+            ? {
+                  user_id: adminRel.users.user_id,
+                  username: adminRel.users.username ?? '',
+                  email: adminRel.users.email ?? '',
+                  first_name: adminRel.users.first_name ?? '',
+                  last_name: adminRel.users.last_name ?? '',
+                  phone: adminRel.users.phone ?? null,
+                  user_active: adminRel.users.user_active ?? '',
+              }
+            : null,
+    } as unknown as OwnerWithAdmin;
 }
 
 export async function getOwnerMetrics(id: string): Promise<OwnerMetrics> {
-    const { data: users } = await supabase
-        .from('users')
-        .select('user_id, user_active, user_role')
-        .eq('fk_owner_id', id);
+    const ownerId = parseInt(id);
 
-    const total_users = users?.length ?? 0;
-    const active_users = users?.filter((u: any) => u.user_active === 'Y').length ?? 0;
+    const users = await prisma.public_users.findMany({
+        where: { fk_owner_id: ownerId },
+        select: { user_id: true, user_active: true, user_role: true },
+    });
+
+    const total_users = users.length;
+    const active_users = users.filter((u) => u.user_active === 'Y').length;
     const inactive_users = total_users - active_users;
 
     const users_by_role: Record<string, number> = {};
-    users?.forEach((u: any) => {
-        users_by_role[u.user_role] = (users_by_role[u.user_role] ?? 0) + 1;
-    });
+    for (const u of users) {
+        if (u.user_role) {
+            users_by_role[u.user_role] = (users_by_role[u.user_role] ?? 0) + 1;
+        }
+    }
 
-    // Tracked file storage: aggregate from all DB tables that record file_size and
-    // can be linked back to this owner. S3 uploads with no file_size in DB (avatars,
-    // flight logs, etc.) are excluded — there is no owner prefix in S3 keys.
-    let storage_bytes = 0;
-    let storage_file_count = 0;
+    const [lucAgg, evalAgg, maintAgg, repoAgg] = await Promise.all([
+        // LUC document revisions 
+        prisma.luc_document_rev.aggregate({
+            where: { luc_document: { fk_owner_id: ownerId, document_active: 'Y' } },
+            _sum: { file_size: true },
+            _count: { revision_id: true },
+        }),
 
-    const sums: { bytes: number; count: number }[] = await Promise.all([
+        // Evaluation files  
+        prisma.evaluation_file.aggregate({
+            where: { evaluation: { fk_owner_id: ownerId } },
+            _sum: { file_size: true },
+            _count: { file_id: true },
+        }),
 
-        //  Document repository revisions  → via luc_document.fk_owner_id
-        (async () => {
-            const { data: docs } = await supabase
-                .from('luc_document')
-                .select('document_id')
-                .eq('fk_owner_id', id)
-                .eq('document_active', 'Y');
-            const docIds = (docs ?? []).map((d: any) => d.document_id);
-            if (!docIds.length) return { bytes: 0, count: 0 };
-            const { data: revs } = await supabase
-                .from('luc_document_rev')
-                .select('file_size')
-                .in('fk_document_id', docIds);
-            const rows = revs ?? [];
-            return {
-                bytes: rows.reduce((s: number, r: any) => s + (Number(r.file_size) || 0), 0),
-                count: rows.length,
-            };
-        })(),
+        // Maintenance ticket attachments  
+        prisma.maintenance_ticket_attachment.aggregate({
+            where: { maintenance_ticket: { fk_owner_id: ownerId } },
+            _sum: { file_size: true },
+            _count: { attachment_id: true },
+        }),
 
-        //  Evaluation files  → via evaluation.fk_owner_id
-        (async () => {
-            const { data: evals } = await supabase
-                .from('evaluation')
-                .select('evaluation_id')
-                .eq('fk_owner_id', id);
-            const evalIds = (evals ?? []).map((e: any) => e.evaluation_id);
-            if (!evalIds.length) return { bytes: 0, count: 0 };
-            const { data: files } = await supabase
-                .from('evaluation_file')
-                .select('file_size')
-                .in('fk_evaluation_id', evalIds);
-            const rows = files ?? [];
-            return {
-                bytes: rows.reduce((s: number, r: any) => s + (Number(r.file_size) || 0), 0),
-                count: rows.length,
-            };
-        })(),
-
-        //  Maintenance ticket attachments  → via maintenance_ticket.fk_owner_id
-        (async () => {
-            const { data: tickets } = await supabase
-                .from('maintenance_ticket')
-                .select('ticket_id')
-                .eq('fk_owner_id', id);
-            const ticketIds = (tickets ?? []).map((t: any) => t.ticket_id);
-            if (!ticketIds.length) return { bytes: 0, count: 0 };
-            const { data: attachments } = await supabase
-                .from('maintenance_ticket_attachment')
-                .select('file_size')
-                .in('fk_ticket_id', ticketIds);
-            const rows = attachments ?? [];
-            return {
-                bytes: rows.reduce((s: number, r: any) => s + (Number(r.file_size) || 0), 0),
-                count: rows.length,
-            };
-        })(),
-
-        //  Repository files  → direct fk_owner_id
-        (async () => {
-            const { data: files } = await supabase
-                .from('repository_file')
-                .select('file_size')
-                .eq('fk_owner_id', id);
-            const rows = files ?? [];
-            return {
-                bytes: rows.reduce((s: number, r: any) => s + (Number(r.file_size) || 0), 0),
-                count: rows.length,
-            };
-        })(),
+        // Repository files 
+        prisma.repository_file.aggregate({
+            where: { fk_owner_id: ownerId },
+            _sum: { file_size: true },
+            _count: { file_id: true },
+        }),
     ]);
 
-    for (const s of sums) {
-        storage_bytes += s.bytes;
-        storage_file_count += s.count;
-    }
+    const storage_bytes =
+        Number(lucAgg._sum.file_size ?? 0) +
+        Number(evalAgg._sum.file_size ?? 0) +
+        Number(maintAgg._sum.file_size ?? 0) +
+        Number(repoAgg._sum.file_size ?? 0);
+
+    const storage_file_count =
+        (lucAgg._count.revision_id ?? 0) +
+        (evalAgg._count.file_id ?? 0) +
+        (maintAgg._count.attachment_id ?? 0) +
+        (repoAgg._count.file_id ?? 0);
 
     return { total_users, active_users, inactive_users, users_by_role, storage_bytes, storage_file_count };
 }
 
 export async function updateOwner(id: string, payload: UpdateOwnerPayload) {
-    const { data: current } = await supabase
-        .from('owner')
-        .select('owner_active')
-        .eq('owner_id', id)
-        .single();
+    const ownerId = parseInt(id);
 
-    const { data, error } = await supabase
-        .from('owner')
-        .update({
+    const current = await prisma.owner.findUnique({
+        where: { owner_id: ownerId },
+        select: { owner_active: true },
+    });
+
+    const updated = await prisma.owner.update({
+        where: { owner_id: ownerId },
+        data: {
             owner_name: payload.owner_name,
             owner_legal_name: payload.owner_legal_name ?? null,
             owner_type: payload.owner_type ?? null,
@@ -295,56 +283,58 @@ export async function updateOwner(id: string, payload: UpdateOwnerPayload) {
             tax_id: payload.tax_id ?? null,
             registration_number: payload.registration_number ?? null,
             license_number: payload.license_number ?? null,
-            license_expiry: payload.license_expiry ?? null,
-        })
-        .eq('owner_id', id)
-        .select()
-        .single();
+            license_expiry: payload.license_expiry ? new Date(payload.license_expiry) : null,
+        },
+    });
 
-    if (error) throw new Error(error.message);
-
-    // Reactivate all company users when transitioning from disabled → active
+    // Reactivate all company users when transitioning from disabled to active
     if (current?.owner_active === 'N' && payload.owner_active === 'Y') {
-        await supabase
-            .from('users')
-            .update({ user_active: 'Y' })
-            .eq('fk_owner_id', id);
-
-        await supabase
-            .from('user_owner')
-            .update({ is_active: true })
-            .eq('fk_owner_id', id);
+        await Promise.all([
+            prisma.public_users.updateMany({
+                where: { fk_owner_id: ownerId },
+                data: { user_active: 'Y' },
+            }),
+            prisma.user_owner.updateMany({
+                where: { fk_owner_id: ownerId },
+                data: { is_active: true },
+            }),
+        ]);
     }
 
-    return data as OwnerData;
+    return updated as unknown as OwnerData;
 }
-// used for updating just the easa code from admin profile page
-export async function updateCompanyEasaCode(ownerId: number, easaCode: string | null): Promise<void> {
-    const { error } = await supabase
-        .from('owner')
-        .update({ easa_operator_code: easaCode ?? null })
-        .eq('owner_id', ownerId);
 
-    if (error) throw new Error(error.message);
+export async function updateCompanyEasaCode(ownerId: number, easaCode: string | null): Promise<void> {
+    await prisma.owner.update({
+        where: { owner_id: ownerId },
+        data: { easa_operator_code: easaCode ?? null },
+    });
 }
 
 export async function deleteOwner(id: string, deletedByUserId: number) {
-    const { data: owner, error: fetchError } = await supabase
-        .from('owner')
-        .select('*')
-        .eq('owner_id', id)
-        .single();
+    const ownerId = parseInt(id);
 
-    if (fetchError || !owner) throw new Error('Organization not found');
+    const owner = await prisma.owner.findUnique({ where: { owner_id: ownerId } });
+    if (!owner) throw new Error('Organization not found');
 
-    const { data: users } = await supabase
-        .from('users')
-        .select('user_id, username, email, first_name, last_name, phone, user_role, user_type, fk_owner_id, created_at')
-        .eq('fk_owner_id', id);
+    const users = await prisma.public_users.findMany({
+        where: { fk_owner_id: ownerId },
+        select: {
+            user_id: true,
+            username: true,
+            email: true,
+            first_name: true,
+            last_name: true,
+            phone: true,
+            user_role: true,
+            user_type: true,
+            fk_owner_id: true,
+            created_at: true,
+        },
+    });
 
-    const { error: archiveOwnerError } = await supabase
-        .from('deleted_owner')
-        .insert({
+    await prisma.deleted_owner.create({
+        data: {
             owner_id: owner.owner_id,
             owner_code: owner.owner_code,
             owner_name: owner.owner_name,
@@ -366,81 +356,68 @@ export async function deleteOwner(id: string, deletedByUserId: number) {
             license_expiry: owner.license_expiry,
             original_created_at: owner.created_at,
             deleted_by_user_id: deletedByUserId,
-        });
+        },
+    });
 
-    if (archiveOwnerError) throw new Error(archiveOwnerError.message);
+    if (users.length > 0) {
+        await prisma.deleted_user.createMany({
+            data: users.map((user) => ({
+                user_id: user.user_id,
+                username: user.username,
+                email: user.email,
+                first_name: user.first_name,
+                last_name: user.last_name,
+                phone: user.phone,
+                user_role: user.user_role,
+                user_type: user.user_type,
+                fk_owner_id: user.fk_owner_id,
+                owner_code: owner.owner_code,
+                owner_name: owner.owner_name,
+                original_created_at: user.created_at,
+                deleted_by_user_id: deletedByUserId,
+            })),
+            skipDuplicates: true,
+        }).catch((e) => console.error('Failed to archive users:', e));
 
-    if (users && users.length > 0) {
-        const deletedUsers = users.map((user: any) => ({
-            user_id: user.user_id,
-            username: user.username,
-            email: user.email,
-            first_name: user.first_name,
-            last_name: user.last_name,
-            phone: user.phone,
-            user_role: user.user_role,
-            user_type: user.user_type,
-            fk_owner_id: user.fk_owner_id,
-            owner_code: owner.owner_code,
-            owner_name: owner.owner_name,
-            original_created_at: user.created_at,
-            deleted_by_user_id: deletedByUserId,
-        }));
+        const userIds = users.map((u) => u.user_id);
 
-        const { error: archiveUsersError } = await supabase
-            .from('deleted_user')
-            .insert(deletedUsers);
+        await Promise.all([
+            prisma.public_users.updateMany({
+                where: { user_id: { in: userIds } },
+                data: { user_active: 'N' },
+            }).catch((e) => console.error('Failed to deactivate users:', e)),
 
-        if (archiveUsersError) {
-            console.error('Failed to archive users:', archiveUsersError);
-        }
-
-        const userIds = users.map((u: any) => u.user_id);
-
-        const { error: deactivateUsersError } = await supabase
-            .from('users')
-            .update({ user_active: 'N' })
-            .in('user_id', userIds);
-
-        if (deactivateUsersError) {
-            console.error('Failed to deactivate users:', deactivateUsersError);
-        }
-
-        const { error: deactivateRelError } = await supabase
-            .from('user_owner')
-            .update({ is_active: false })
-            .eq('fk_owner_id', id);
-
-        if (deactivateRelError) {
-            console.error('Failed to deactivate user_owner:', deactivateRelError);
-        }
+            prisma.user_owner.updateMany({
+                where: { fk_owner_id: ownerId },
+                data: { is_active: false },
+            }).catch((e) => console.error('Failed to deactivate user_owner:', e)),
+        ]);
     }
 
-    const { error: deactivateOwnerError } = await supabase
-        .from('owner')
-        .update({ owner_active: 'N' })
-        .eq('owner_id', id);
-
-    if (deactivateOwnerError) throw new Error(deactivateOwnerError.message);
+    await prisma.owner.update({
+        where: { owner_id: ownerId },
+        data: { owner_active: 'N' },
+    });
 
     return true;
 }
 
-
 export async function addOwnerWithAdmin(payload: AddOwnerWithAdminPayload) {
-    const { data: existing } = await supabase
-        .from('owner')
-        .select('owner_id')
-        .eq('owner_code', payload.owner_code)
-        .single();
-
+    const existing = await prisma.owner.findFirst({
+        where: { owner_code: payload.owner_code },
+        select: { owner_id: true },
+    });
     if (existing) throw new Error('Organization code already exists');
 
-    const { data: existingUser } = await supabase
-        .from('users')
-        .select('user_id, email, username')
-        .or(`email.ilike.${payload.admin_email},username.eq.${payload.admin_username}`)
-        .maybeSingle();
+    const existingUser = await prisma.public_users.findFirst({
+        where: {
+            OR: [
+                { email: { equals: payload.admin_email, mode: 'insensitive' } },
+                { username: payload.admin_username },
+            ],
+        },
+        select: { user_id: true, email: true, username: true },
+    });
 
     if (existingUser) {
         if (existingUser.email?.toLowerCase() === payload.admin_email.toLowerCase()) {
@@ -451,9 +428,8 @@ export async function addOwnerWithAdmin(payload: AddOwnerWithAdminPayload) {
         }
     }
 
-    const { data: owner, error: ownerError } = await supabase
-        .from('owner')
-        .insert({
+    const owner = await prisma.owner.create({
+        data: {
             owner_code: payload.owner_code,
             owner_name: payload.owner_name,
             owner_legal_name: payload.owner_legal_name || null,
@@ -471,12 +447,9 @@ export async function addOwnerWithAdmin(payload: AddOwnerWithAdminPayload) {
             tax_id: payload.tax_id || null,
             registration_number: payload.registration_number || null,
             license_number: payload.license_number || null,
-            license_expiry: payload.license_expiry || null,
-        })
-        .select()
-        .single();
-
-    if (ownerError) throw new Error(ownerError.message);
+            license_expiry: payload.license_expiry ? new Date(payload.license_expiry) : null,
+        },
+    });
 
     try {
         const uid = generateUniqueCode();
@@ -485,11 +458,10 @@ export async function addOwnerWithAdmin(payload: AddOwnerWithAdminPayload) {
         const firstName = nameParts[0] || '';
         const lastName = nameParts.slice(1).join(' ') || '';
         const hashedPasscode = await bcrypt.hash(uid, 10);
-        const userName = payload.admin_username.toLocaleLowerCase()
+        const userName = payload.admin_username.toLocaleLowerCase();
 
-        const { data: adminUser, error: userError } = await supabase
-            .from('users')
-            .insert({
+        const adminUser = await prisma.public_users.create({
+            data: {
                 username: userName,
                 email: payload.admin_email,
                 password_hash: hashedPasscode,
@@ -504,34 +476,27 @@ export async function addOwnerWithAdmin(payload: AddOwnerWithAdminPayload) {
                 is_manager: 'Y',
                 user_timezone: payload.admin_timezone || 'IST',
                 user_unique_code: uid,
-                _key_: key,
-            })
-            .select()
-            .single();
+                key_: key,
+            },
+        });
 
-        if (userError) throw new Error(userError.message);
-
-        const { error: userOwnerError } = await supabase
-            .from('user_owner')
-            .insert({
+        await prisma.user_owner.create({
+            data: {
                 fk_user_id: adminUser.user_id,
                 fk_owner_id: owner.owner_id,
                 relationship_type: 'OWNER_ADMIN',
                 role_in_organization: 'Administrator',
                 is_primary: true,
                 is_active: true,
-            });
+            },
+        });
 
-        if (userOwnerError) throw new Error(userOwnerError.message);
-
-        const { error: profileError } = await supabase
-            .from('users_profile')
-            .insert({
+        await prisma.users_profile.create({
+            data: {
                 fk_user_id: adminUser.user_id,
                 address: payload.owner_address || null,
-            });
-
-        if (profileError) throw new Error(profileError.message);
+            },
+        });
 
         const activationLink = `${env.APP_URL}/auth/activate?o=${owner.owner_id}&email=${encodeURIComponent(payload.admin_email)}&username=${encodeURIComponent(payload.admin_username)}&id=${key}`;
 
@@ -555,44 +520,39 @@ export async function addOwnerWithAdmin(payload: AddOwnerWithAdminPayload) {
             },
         };
     } catch (error) {
-        await supabase.from('owner').delete().eq('owner_id', owner.owner_id);
+        await prisma.owner.delete({ where: { owner_id: owner.owner_id } }).catch(() => {});
         throw error;
     }
 }
 
 export async function updateAdminPassword(ownerId: string, adminUserId: number, newPassword: string) {
-    const { data: user, error: userErr } = await supabase
-        .from('users')
-        .select('user_id, email, username, first_name, last_name, fk_owner_id')
-        .eq('user_id', adminUserId)
-        .eq('fk_owner_id', ownerId)
-        .single();
+    const ownerIdNum = parseInt(ownerId);
 
-    if (userErr || !user) throw new Error('Admin user not found for this company');
+    const user = await prisma.public_users.findFirst({
+        where: { user_id: adminUserId, fk_owner_id: ownerIdNum },
+        select: { user_id: true, email: true, username: true, first_name: true, last_name: true, fk_owner_id: true },
+    });
+    if (!user) throw new Error('Admin user not found for this company');
 
-    const { data: owner, error: ownerErr } = await supabase
-        .from('owner')
-        .select('owner_name')
-        .eq('owner_id', ownerId)
-        .single();
-
-    if (ownerErr || !owner) throw new Error('Company not found');
+    const owner = await prisma.owner.findUnique({
+        where: { owner_id: ownerIdNum },
+        select: { owner_name: true },
+    });
+    if (!owner) throw new Error('Company not found');
 
     const password_hash = await bcrypt.hash(newPassword, 10);
 
-    const { error: updateErr } = await supabase
-        .from('users')
-        .update({ password_hash })
-        .eq('user_id', adminUserId);
+    await prisma.public_users.update({
+        where: { user_id: adminUserId },
+        data: { password_hash },
+    });
 
-    if (updateErr) throw new Error(updateErr.message);
-
-    const fullname = [user.first_name, user.last_name].filter(Boolean).join(' ') || user.username;
+    const fullname = [user.first_name, user.last_name].filter(Boolean).join(' ') || user.username || '';
 
     await sendAdminPasswordChangedEmail(
-        user.email,
+        user.email ?? '',
         fullname,
-        user.username,
+        user.username ?? '',
         newPassword,
         owner.owner_name
     );
