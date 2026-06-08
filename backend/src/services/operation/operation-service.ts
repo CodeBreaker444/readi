@@ -110,18 +110,31 @@ export async function listOperations(
 
   const toolIds = [...new Set(operations.filter(op => op.fk_tool_id).map(op => op.fk_tool_id as number))];
   if (toolIds.length > 0) {
-    const { data: primaryComps } = await supabase
-      .from('tool_component')
-      .select('fk_tool_id, component_code, component_name')
-      .in('fk_tool_id', toolIds)
-      .contains('component_metadata', { is_primary: true });
+    const today = new Date().toISOString().split('T')[0];
+    const [{ data: primaryComps }, { data: expiredComps }] = await Promise.all([
+      supabase
+        .from('tool_component')
+        .select('fk_tool_id, component_code, component_name')
+        .in('fk_tool_id', toolIds)
+        .contains('component_metadata', { is_primary: true }),
+      supabase
+        .from('tool_component')
+        .select('fk_tool_id')
+        .in('fk_tool_id', toolIds)
+        .eq('component_active', 'Y')
+        .lte('expiration_date', today)
+        .not('expiration_date', 'is', null),
+    ]);
 
     const primaryMap = new Map<number, string>();
     (primaryComps ?? []).forEach((c: any) => {
       if (c.fk_tool_id) primaryMap.set(c.fk_tool_id, c.component_code || c.component_name || '');
     });
+    const nonOpSet = new Set<number>((expiredComps ?? []).map((c: any) => c.fk_tool_id));
+
     operations.forEach(op => {
       (op as any).primary_component_code = op.fk_tool_id ? (primaryMap.get(op.fk_tool_id) ?? null) : null;
+      (op as any).tool_status = op.fk_tool_id && nonOpSet.has(op.fk_tool_id) ? 'NOT_OPERATIONAL' : null;
     });
   }
 
@@ -746,7 +759,8 @@ export async function getToolOptions(ownerId: number) {
 
   const toolIds = tools.map((t: any) => t.tool_id);
 
-  const [{ data: openTickets }, { data: droneComponents }, { data: maintComps }] = await Promise.all([
+  const today = new Date().toISOString().split('T')[0];
+  const [{ data: openTickets }, { data: droneComponents }, { data: maintComps }, { data: expiredComps }] = await Promise.all([
     supabase
       .from('maintenance_ticket')
       .select('fk_tool_id')
@@ -763,6 +777,13 @@ export async function getToolOptions(ownerId: number) {
       .select('fk_tool_id, maintenance_cycle_day, maintenance_cycle_hour, maintenance_cycle_flight, current_maintenance_days, current_usage_hours, current_maintenance_flights')
       .in('fk_tool_id', toolIds)
       .eq('component_active', 'Y'),
+    supabase
+      .from('tool_component')
+      .select('fk_tool_id')
+      .in('fk_tool_id', toolIds)
+      .eq('component_active', 'Y')
+      .lte('expiration_date', today)
+      .not('expiration_date', 'is', null),
   ]);
 
   const inMaintenanceSet = new Set<number>(
@@ -770,6 +791,9 @@ export async function getToolOptions(ownerId: number) {
   );
   const hasDroneSet = new Set<number>(
     (droneComponents ?? []).map((c: any) => c.fk_tool_id)
+  );
+  const nonOperationalSet = new Set<number>(
+    (expiredComps ?? []).map((c: any) => c.fk_tool_id)
   );
   const maintenanceDueSet = new Set<number>();
   (maintComps ?? []).forEach((c: any) => {
@@ -785,6 +809,7 @@ export async function getToolOptions(ownerId: number) {
     in_maintenance: inMaintenanceSet.has(t.tool_id),
     has_drone_component: hasDroneSet.has(t.tool_id),
     maintenance_due: maintenanceDueSet.has(t.tool_id),
+    is_non_operational: nonOperationalSet.has(t.tool_id),
   }));
 }
 

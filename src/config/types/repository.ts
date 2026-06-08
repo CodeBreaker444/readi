@@ -64,6 +64,7 @@ export interface RepositoryDocument {
   s3_url?: string | null;            
   rev_id?: number | null;
   default_owner_role?: string | null;
+  tool_status?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
 }

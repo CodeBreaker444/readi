@@ -1,6 +1,6 @@
 import { supabase } from '@/backend/database/database';
 import { seedLucProcedureProgressFromSteps } from '@/backend/services/operation/luc-procedure-progress';
-import { assertToolNotInMaintenance } from '@/backend/services/system/maintenance-ticket';
+import { assertToolNotInMaintenance, assertToolNotNonOperational } from '@/backend/services/system/maintenance-ticket';
 import {
   CreateOperationCalendarInput,
   OperationCalendarEvent,
@@ -63,15 +63,33 @@ export const getOperationCalendarEvents = async (
     scheduled_end: row.actual_end ?? null,
   }))
 
-  const calendarEvents: OperationCalendarEvent[] = operations.map((op) => ({
-    id: String(op.pilot_mission_id),
-    title: buildOperationTitle(op),
-    start: op.scheduled_start!,
-    end: op.scheduled_end ?? deriveEnd(op.scheduled_start!),
-    color: STATUS_COLORS[op.status_name ?? 'Scheduled'] ?? STATUS_COLORS['Scheduled'],
-    status: (op.status_name as OperationCalenderStatus) ?? null,
-    operation: op,
-  }))
+  const toolIds = [...new Set(operations.filter(op => op.fk_tool_id).map(op => op.fk_tool_id as number))];
+  const nonOpSet = new Set<number>();
+  if (toolIds.length > 0) {
+    const today = new Date().toISOString().split('T')[0];
+    const { data: expiredComps } = await supabase
+      .from('tool_component')
+      .select('fk_tool_id')
+      .in('fk_tool_id', toolIds)
+      .eq('component_active', 'Y')
+      .lte('expiration_date', today)
+      .not('expiration_date', 'is', null);
+    (expiredComps ?? []).forEach((c: any) => nonOpSet.add(c.fk_tool_id));
+  }
+
+  const calendarEvents: OperationCalendarEvent[] = operations.map((op) => {
+    const isNonOp = !!op.fk_tool_id && nonOpSet.has(op.fk_tool_id as number);
+    return {
+      id: String(op.pilot_mission_id),
+      title: buildOperationTitle(op),
+      start: op.scheduled_start!,
+      end: op.scheduled_end ?? deriveEnd(op.scheduled_start!),
+      color: STATUS_COLORS[op.status_name ?? 'Scheduled'] ?? STATUS_COLORS['Scheduled'],
+      status: (op.status_name as OperationCalenderStatus) ?? null,
+      operation: { ...op, tool_status: isNonOp ? 'NOT_OPERATIONAL' : null },
+      tool_status: isNonOp ? 'NOT_OPERATIONAL' : null,
+    };
+  })
 
   return { operations, calendarEvents }
 }
@@ -91,6 +109,7 @@ export const createOperationCalendarEntry = async (
   ownerId: number
 ): Promise<MissionCreationResult> => {
   if (input.fk_tool_id) {
+    await assertToolNotNonOperational(input.fk_tool_id);
     await assertToolNotInMaintenance(input.fk_tool_id);
   }
 

@@ -128,7 +128,7 @@ export function ExportButton({
        }
 
       const isLandscape = columns.length > 4 || rows.some((r) => r.some((c) => c.length > 60));
-      const doc = new jsPDF({ orientation: isLandscape ? 'landscape' : 'portrait', unit: 'mm' });
+      const doc = new jsPDF({ orientation: isLandscape ? 'landscape' : 'portrait', unit: 'mm', compress: true });
       const pageW = doc.internal.pageSize.width;
       const pageH = doc.internal.pageSize.height;
 

@@ -164,6 +164,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                     setDrones((res.data.tools ?? []).map((t: any) => ({
                         tool_id: t.tool_id, tool_code: t.tool_code,
                         tool_name: t.tool_name, in_maintenance: t.in_maintenance,
+                        is_non_operational: t.is_non_operational,
                     })))
                 }
             })

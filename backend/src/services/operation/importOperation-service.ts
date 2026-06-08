@@ -281,8 +281,11 @@ export async function importDrones(ownerId: number, clientId?: number) {
     const toolIds = (data || []).map((t: any) => t.tool_id);
     const inMaintenanceSet = new Set<number>();
     const maintenanceDueSet = new Set<number>();
+    const nonOperationalSet = new Set<number>();
+
     if (toolIds.length > 0) {
-        const [{ data: openTickets }, { data: maintComps }] = await Promise.all([
+        const today = new Date().toISOString().split('T')[0];
+        const [{ data: openTickets }, { data: maintComps }, { data: expiredComps }] = await Promise.all([
             supabase
                 .from('maintenance_ticket')
                 .select('fk_tool_id')
@@ -293,8 +296,16 @@ export async function importDrones(ownerId: number, clientId?: number) {
                 .select('fk_tool_id, maintenance_cycle_day, maintenance_cycle_hour, maintenance_cycle_flight, current_maintenance_days, current_usage_hours, current_maintenance_flights')
                 .in('fk_tool_id', toolIds)
                 .eq('component_active', 'Y'),
+            supabase
+                .from('tool_component')
+                .select('fk_tool_id')
+                .in('fk_tool_id', toolIds)
+                .eq('component_active', 'Y')
+                .lte('expiration_date', today)
+                .not('expiration_date', 'is', null),
         ]);
         (openTickets || []).forEach((t: any) => inMaintenanceSet.add(t.fk_tool_id));
+        (expiredComps || []).forEach((c: any) => nonOperationalSet.add(c.fk_tool_id));
         (maintComps || []).forEach((c: any) => {
             if (inMaintenanceSet.has(c.fk_tool_id)) return;
             const dayDue = c.maintenance_cycle_day > 0 && Number(c.current_maintenance_days) >= Number(c.maintenance_cycle_day);
@@ -315,6 +326,7 @@ export async function importDrones(ownerId: number, clientId?: number) {
         tool_name: t.tool_name,
         in_maintenance: inMaintenanceSet.has(t.tool_id),
         maintenance_due: maintenanceDueSet.has(t.tool_id),
+        is_non_operational: nonOperationalSet.has(t.tool_id),
     }));
 }
 
