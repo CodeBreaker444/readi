@@ -1,4 +1,4 @@
-import { supabase } from '@/backend/database/database';
+import { prisma } from '@/lib/prisma';
 import { BUCKET, deleteFileFromS3, getPresignedDownloadUrl, s3 } from '@/lib/s3Client';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 
@@ -34,43 +34,40 @@ export interface UpdateProfileParams {
 }
 
 export async function getProfile(userId: number): Promise<ProfileData> {
-  const { data, error } = await supabase
-    .from('users')
-    .select(
-      `
-      user_id,
-      first_name,
-      last_name,
-      email,
-      phone,
-      user_timezone,
-      user_type,
-      users_profile!fk_user_id (
-        profile_picture,
-        user_signature,
-        bio,
-        address,
-        city,
-        state,
-        postal_code
-      )
-    `,
-    )
-    .eq('user_id', userId)
-    .single();
+  const user = await prisma.public_users.findUnique({
+    where: { user_id: userId },
+    select: {
+      user_id: true,
+      first_name: true,
+      last_name: true,
+      email: true,
+      phone: true,
+      user_timezone: true,
+      user_type: true,
+      users_profile: {
+        select: {
+          profile_picture: true,
+          user_signature: true,
+          bio: true,
+          address: true,
+          city: true,
+          state: true,
+          postal_code: true,
+        },
+      },
+    },
+  });
 
-  if (error || !data) throw new Error('Profile not found');
+  if (!user) throw new Error('Profile not found');
 
-  const profile = Array.isArray(data.users_profile)
-    ? data.users_profile[0]
-    : data.users_profile;
+  const profile = user.users_profile ?? null;
 
   let avatarUrl: string | null = null;
   if (profile?.profile_picture) {
     const pic = profile.profile_picture;
     if (pic.startsWith('avatars/') || pic.startsWith('profiles/')) {
       try {
-        avatarUrl = await getPresignedDownloadUrl(pic, 3600); // 1 hour
+        avatarUrl = await getPresignedDownloadUrl(pic, 3600);
       } catch {
         avatarUrl = null;
       }
@@ -79,14 +76,14 @@ export async function getProfile(userId: number): Promise<ProfileData> {
     }
   }
 
-  const fullName = [data.first_name, data.last_name].filter(Boolean).join(' ');
+  const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ');
 
   return {
     fullName,
-    email: data.email ?? '',
-    phone: data.phone ?? '',
-    user_timezone: data.user_timezone ?? 'IST',
-    user_type: data.user_type ?? '',
+    email: user.email ?? '',
+    phone: user.phone ?? '',
+    user_timezone: user.user_timezone ?? 'IST',
+    user_type: user.user_type ?? '',
     avatar_url: avatarUrl,
     users_profile: profile
       ? {
@@ -115,28 +112,27 @@ export async function updateProfile(
   const firstName = nameParts[0] ?? '';
   const lastName = nameParts.slice(1).join(' ') || null;
 
-  const { error: userErr } = await supabase
-    .from('users')
-    .update({
-      first_name: firstName,
-      last_name: lastName,
-      email: params.email,
-      phone: params.phone,
-      user_timezone: params.timezone,
-    })
-    .eq('user_id', userId);
-
-  if (userErr) {
-    return { success: false, message: `Failed to update user: ${userErr.message}` };
+  try {
+    await prisma.public_users.update({
+      where: { user_id: userId },
+      data: {
+        first_name: firstName,
+        last_name: lastName,
+        email: params.email,
+        phone: params.phone,
+        user_timezone: params.timezone,
+      },
+    });
+  } catch (err: any) {
+    return { success: false, message: `Failed to update user: ${err?.message ?? err}` };
   }
 
   let newAvatarUrl: string | null = null;
   if (avatarFile) {
-    const { data: oldProfile } = await supabase
-      .from('users_profile')
-      .select('profile_picture')
-      .eq('fk_user_id', userId)
-      .single();
+    const oldProfile = await prisma.users_profile.findUnique({
+      where: { fk_user_id: userId },
+      select: { profile_picture: true },
+    });
 
     if (oldProfile?.profile_picture?.startsWith('avatars/')) {
       try {
@@ -159,20 +155,16 @@ export async function updateProfile(
       }),
     );
 
-    const { error: profileErr } = await supabase
-      .from('users_profile')
-      .upsert(
-        {
-          fk_user_id: userId,
-          profile_picture: s3Key,
-        },
-        { onConflict: 'fk_user_id' },
-      );
-
-    if (profileErr) {
+    try {
+      await prisma.users_profile.upsert({
+        where: { fk_user_id: userId },
+        update: { profile_picture: s3Key },
+        create: { fk_user_id: userId, profile_picture: s3Key },
+      });
+    } catch (err: any) {
       return {
         success: false,
-        message: `Avatar uploaded but DB update failed: ${profileErr.message}`,
+        message: `Avatar uploaded but DB update failed: ${err?.message ?? err}`,
       };
     }
 
@@ -189,15 +181,14 @@ export async function updateProfile(
 export async function getAvatarPresignedUrl(
   userId: number,
 ): Promise<string | null> {
-  const { data } = await supabase
-    .from('users_profile')
-    .select('profile_picture')
-    .eq('fk_user_id', userId)
-    .single();
+  const profile = await prisma.users_profile.findUnique({
+    where: { fk_user_id: userId },
+    select: { profile_picture: true },
+  });
 
-  if (!data?.profile_picture) return null;
+  if (!profile?.profile_picture) return null;
 
-  const pic = data.profile_picture;
+  const pic = profile.profile_picture;
   if (pic.startsWith('avatars/') || pic.startsWith('profiles/')) {
     try {
       return await getPresignedDownloadUrl(pic, 3600);

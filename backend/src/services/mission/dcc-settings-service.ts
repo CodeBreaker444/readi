@@ -1,5 +1,5 @@
 import 'server-only';
-import { supabase } from '@/backend/database/database';
+import { prisma } from '@/lib/prisma';
 
 export interface DccIntegration {
   id: number;
@@ -11,14 +11,19 @@ export interface DccIntegration {
 }
 
 export async function getDccIntegration(ownerId: number): Promise<DccIntegration | null> {
-  const { data, error } = await supabase
-    .from('dcc_integrations')
-    .select('*')
-    .eq('fk_owner_id', ownerId)
-    .single();
+  const row = await prisma.dcc_integrations.findUnique({
+    where: { fk_owner_id: ownerId },
+  });
 
-  if (error || !data) return null;
-  return data as DccIntegration;
+  if (!row) return null;
+  return {
+    id: row.id,
+    fk_owner_id: row.fk_owner_id,
+    display_name: row.display_name,
+    callback_url: row.callback_url,
+    created_at: row.created_at?.toISOString() ?? '',
+    updated_at: row.updated_at?.toISOString() ?? '',
+  };
 }
 
 export async function upsertDccIntegration(
@@ -26,19 +31,19 @@ export async function upsertDccIntegration(
   displayName: string,
   callbackUrl: string,
 ): Promise<void> {
-  const { error } = await supabase
-    .from('dcc_integrations')
-    .upsert(
-      {
-        fk_owner_id: ownerId,
-        display_name: displayName,
-        callback_url: callbackUrl,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'fk_owner_id' },
-    );
-
-  if (error) throw new Error(`upsertDccIntegration: ${error.message}`);
+  await prisma.dcc_integrations.upsert({
+    where: { fk_owner_id: ownerId },
+    update: {
+      display_name: displayName,
+      callback_url: callbackUrl,
+      updated_at: new Date(),
+    },
+    create: {
+      fk_owner_id: ownerId,
+      display_name: displayName,
+      callback_url: callbackUrl,
+    },
+  });
 }
 
 export async function getDccCallbackUrl(ownerId: number): Promise<string | null> {

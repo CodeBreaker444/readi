@@ -1,37 +1,33 @@
-import { supabase } from '@/backend/database/database';
-
+import { prisma } from '@/lib/prisma';
 
 export async function getMissionStatusList(ownerId: number) {
-  const { data, error } = await supabase
-    .from('pilot_mission_status')
-    .select(`
-      status_id,
-      status_code,
-      status_name,
-      status_description,
-      status_order,
-      is_final_status,
-      is_active
-    `)
-    .eq('fk_owner_id',ownerId)
-    .eq('is_active', true)
-    .order('status_order', { ascending: true });
+  const rows = await prisma.pilot_mission_status.findMany({
+    where: { fk_owner_id: ownerId, is_active: true },
+    select: {
+      status_id: true,
+      status_code: true,
+      status_name: true,
+      status_description: true,
+      status_order: true,
+      is_final_status: true,
+      is_active: true,
+    },
+    orderBy: { status_order: 'asc' },
+  });
 
-  if (error) throw error;
-  
   return {
     code: 1,
     message: 'Success',
-    dataRows: data?.length || 0,
-    data: data?.map(item => ({
+    dataRows: rows.length,
+    data: rows.map((item) => ({
       mission_status_id: item.status_id,
       mission_status_code: item.status_code,
       mission_status_name: item.status_name,
       mission_status_desc: item.status_description,
       status_order: item.status_order,
       is_final_status: item.is_final_status,
-      tot_mission: 0
-    })) || []
+      tot_mission: 0,
+    })),
   };
 }
 
@@ -42,54 +38,37 @@ export async function addMissionStatus(ownerId: number, statusData: {
   order?: number;
   isFinalStatus?: boolean;
 }) {
-  const { data: existing } = await supabase
-    .from('pilot_mission_status')
-    .select('status_code')
-    .eq('fk_owner_id', ownerId)
-    .eq('status_code', statusData.code)
-    .eq('is_active', true)
-    .single();
+  const existing = await prisma.pilot_mission_status.findFirst({
+    where: { fk_owner_id: ownerId, status_code: statusData.code, is_active: true },
+    select: { status_id: true },
+  });
 
   if (existing) {
     throw new Error('Status code already exists');
   }
 
-  const { data, error } = await supabase
-    .from('pilot_mission_status')
-    .insert({
+  const row = await prisma.pilot_mission_status.create({
+    data: {
       status_code: statusData.code,
       status_name: statusData.name,
       status_description: statusData.description || statusData.name,
       status_order: statusData.order || 0,
       is_final_status: statusData.isFinalStatus || false,
-      fk_owner_id:ownerId,
-      is_active: true
-    })
-    .select()
-    .single();
+      fk_owner_id: ownerId,
+      is_active: true,
+    },
+  });
 
-  if (error) throw error;
-  
-  return {
-    code: 1,
-    message: 'Mission status added successfully',
-    data
-  };
+  return { code: 1, message: 'Mission status added successfully', data: row };
 }
 
 export async function deleteMissionStatus(ownerId: number, statusId: number) {
-  // Soft delete
-  const { error } = await supabase
-    .from('pilot_mission_status')
-    .update({ is_active: false })
-    .eq('status_id', statusId);
+  await prisma.pilot_mission_status.updateMany({
+    where: { status_id: statusId, fk_owner_id: ownerId },
+    data: { is_active: false },
+  });
 
-  if (error) throw error;
-  
-  return {
-    code: 1,
-    message: 'Mission status deleted successfully'
-  };
+  return { code: 1, message: 'Mission status deleted successfully' };
 }
 
 export async function updateMissionStatus(ownerId: number, statusId: number, statusData: {
@@ -100,39 +79,38 @@ export async function updateMissionStatus(ownerId: number, statusId: number, sta
   isFinalStatus?: boolean;
 }) {
   if (statusData.code) {
-    const { data: existing } = await supabase
-      .from('pilot_mission_status')
-      .select('status_id')
-      .eq('fk_owner_id', ownerId)
-      .eq('status_code', statusData.code)
-      .eq('is_active', true)
-      .neq('status_id', statusId)
-      .single();
+    const existing = await prisma.pilot_mission_status.findFirst({
+      where: {
+        fk_owner_id: ownerId,
+        status_code: statusData.code,
+        is_active: true,
+        NOT: { status_id: statusId },
+      },
+      select: { status_id: true },
+    });
 
     if (existing) {
       throw new Error('Status code already exists');
     }
   }
 
-  const updateData: any = {};
+  const updateData: {
+    status_code?: string;
+    status_name?: string;
+    status_description?: string;
+    status_order?: number;
+    is_final_status?: boolean;
+  } = {};
   if (statusData.code) updateData.status_code = statusData.code;
   if (statusData.name) updateData.status_name = statusData.name;
   if (statusData.description !== undefined) updateData.status_description = statusData.description;
   if (statusData.order !== undefined) updateData.status_order = statusData.order;
   if (statusData.isFinalStatus !== undefined) updateData.is_final_status = statusData.isFinalStatus;
 
-  const { data, error } = await supabase
-    .from('pilot_mission_status')
-    .update(updateData)
-    .eq('status_id', statusId)
-    .select()
-    .single();
+  const row = await prisma.pilot_mission_status.update({
+    where: { status_id: statusId },
+    data: updateData,
+  });
 
-  if (error) throw error;
-  
-  return {
-    code: 1,
-    message: 'Mission status updated successfully',
-    data
-  };
+  return { code: 1, message: 'Mission status updated successfully', data: row };
 }
