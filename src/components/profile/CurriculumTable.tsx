@@ -7,6 +7,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+
 export interface TrainingCurriculumRecord {
   attendance_id: number;
   training_name: string;
@@ -27,32 +28,40 @@ export function CurriculumTable({
   rows,
   formatDate,
   t,
+  isDark = false,
   muted = false,
 }: {
   rows: TrainingCurriculumRecord[];
   formatDate: (d: string) => string;
   t: (key: string) => string;
+  isDark?: boolean;
   muted?: boolean;
 }) {
+  const borderClass = isDark ? 'border-slate-700' : 'border-slate-200';
+  const headClass = isDark ? 'text-slate-400 bg-slate-800/50' : 'text-slate-500 bg-slate-50';
+  const rowClass = isDark ? 'border-slate-700 hover:bg-slate-700/30' : 'border-slate-100 hover:bg-slate-50';
+  const cellText = isDark ? 'text-slate-200' : 'text-slate-800';
+  const cellMuted = isDark ? 'text-slate-400' : 'text-slate-500';
+
   return (
-    <div className={`rounded-md border overflow-hidden ${muted ? 'opacity-60' : ''}`}>
+    <div className={`rounded-md border overflow-hidden ${borderClass} ${muted ? 'opacity-60' : ''}`}>
       <Table>
         <TableHeader>
-          <TableRow>
-            <TableHead>{t('profile.curriculum.headers.course')}</TableHead>
-            <TableHead>{t('profile.curriculum.headers.certificate')}</TableHead>
-            <TableHead>{t('profile.curriculum.headers.completionDate')}</TableHead>
-            <TableHead>{t('profile.curriculum.headers.expiryDate')}</TableHead>
-            <TableHead className="text-right">{t('profile.curriculum.headers.status')}</TableHead>
+          <TableRow className={`${borderClass} ${headClass}`}>
+            <TableHead className={cellMuted}>{t('profile.curriculum.headers.course')}</TableHead>
+            <TableHead className={cellMuted}>{t('profile.curriculum.headers.certificate')}</TableHead>
+            <TableHead className={cellMuted}>{t('profile.curriculum.headers.completionDate')}</TableHead>
+            <TableHead className={cellMuted}>{t('profile.curriculum.headers.expiryDate')}</TableHead>
+            <TableHead className={`text-right ${cellMuted}`}>{t('profile.curriculum.headers.status')}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {rows.map((r) => (
-            <TableRow key={r.attendance_id}>
+            <TableRow key={r.attendance_id} className={rowClass}>
               <TableCell>
-                <p className="font-medium text-sm">{r.training_name}</p>
+                <p className={`font-medium text-sm ${cellText}`}>{r.training_name}</p>
                 {r.training_type && (
-                  <p className="text-xs text-muted-foreground mt-0.5">{r.training_type}</p>
+                  <p className={`text-xs mt-0.5 ${cellMuted}`}>{r.training_type}</p>
                 )}
               </TableCell>
               <TableCell>
@@ -61,25 +70,29 @@ export function CurriculumTable({
                     variant="outline"
                     className={
                       r.certificate_type === 'QUALIFICATION'
-                        ? 'border-amber-300 text-amber-700 dark:border-amber-700 dark:text-amber-300'
-                        : 'border-teal-300 text-teal-700 dark:border-teal-700 dark:text-teal-300'
+                        ? isDark
+                          ? 'border-amber-700 text-amber-300'
+                          : 'border-amber-300 text-amber-700'
+                        : isDark
+                          ? 'border-teal-700 text-teal-300'
+                          : 'border-teal-300 text-teal-700'
                     }
                   >
                     {CERT_TYPE_LABELS[r.certificate_type] ?? r.certificate_type}
                   </Badge>
                 ) : (
-                  <span className="text-xs text-muted-foreground">—</span>
+                  <span className={`text-xs ${cellMuted}`}>—</span>
                 )}
               </TableCell>
-              <TableCell className="text-sm text-muted-foreground">
+              <TableCell className={`text-sm ${cellMuted}`}>
                 {r.completion_date ? formatDate(r.completion_date) : '—'}
               </TableCell>
-              <TableCell className={`text-sm ${r.status === 'EXPIRED' ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
+              <TableCell className={`text-sm ${r.status === 'EXPIRED' ? 'text-red-400 font-medium' : cellMuted}`}>
                 {r.expiry_date ? formatDate(r.expiry_date) : '—'}
               </TableCell>
               <TableCell className="text-right">
                 {r.status === 'VALID' ? (
-                  <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/40 dark:text-emerald-300">
+                  <Badge className={isDark ? 'bg-emerald-900/40 text-emerald-300 hover:bg-emerald-900/40' : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100'}>
                     {t('profile.curriculum.valid')}
                   </Badge>
                 ) : r.status === 'EXPIRED' ? (

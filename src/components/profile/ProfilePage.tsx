@@ -7,11 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -25,8 +25,6 @@ import { toast } from 'sonner';
 import { useTimezone } from '../../components/TimezoneProvider';
 import { useTheme } from '../../components/useTheme';
 import { CurriculumTable, TrainingCurriculumRecord } from './CurriculumTable';
-
-
 
 export default function Profile({ user }: { user: SessionUser }) {
   const { t } = useTranslation();
@@ -163,112 +161,122 @@ export default function Profile({ user }: { user: SessionUser }) {
   const displayAvatar = avatarPreview || currentAvatarUrl;
   const formatDate = (dateStr: string) => formatDateInTz(dateStr, timezone);
 
+  const textPrimary = isDark ? 'text-white' : 'text-slate-900';
+  const textSecondary = isDark ? 'text-slate-400' : 'text-slate-500';
+  const cardClass = isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200';
+  const inputClass = isDark
+    ? 'bg-slate-700/60 border-slate-600 text-white placeholder:text-slate-400'
+    : '';
+  const labelClass = `text-sm font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}`;
+
   return (
     <div className={`min-h-full ${isDark ? 'bg-slate-900' : 'bg-gray-50'}`}>
       {/* Page header */}
       <div className={`top-0 z-10 border-b px-4 sm:px-6 py-4 flex items-center gap-3 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'}`}>
         <div className="w-1 h-6 rounded-full bg-violet-600" />
         <div>
-          
-          <h1 className={`text-base font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('profile.title')}</h1>
+          <h1 className={`text-base font-semibold ${textPrimary}`}>{t('profile.title')}</h1>
           {!loading && (
-            <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{formData.fullName || formData.email}</p>
+            <p className={`text-xs ${textSecondary}`}>{formData.fullName || formData.email}</p>
           )}
         </div>
       </div>
 
       <div className="px-4 sm:px-6 py-6 space-y-6 mx-auto">
-        <Card>
+        <Card className={cardClass}>
           <CardContent className="p-4 sm:p-6">
             {loading ? (
-             <div className="flex flex-col gap-6 md:gap-8">
-          <div className="flex flex-row items-center gap-4 md:gap-3 md:pt-2 shrink-0">
-            <Skeleton className="w-20 h-20 md:w-24 md:h-24 rounded-full" />
-            <div className="space-y-2">
-              <Skeleton className="h-5 w-32" />
-              <Skeleton className="h-4 w-48" />
-            </div>
-          </div>
-
-          <Separator className="md:hidden" />
-          <Separator orientation="vertical" className="hidden md:block h-auto" />
-          <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-5 gap-y-4">
-            {[1, 2, 3, 4, 5, 6].map((n) => (
-              <div key={n} className="space-y-1.5">
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-10 w-full" />
+              <div className="flex flex-col gap-6 md:gap-8">
+                <div className="flex flex-row items-center gap-4 md:gap-3 md:pt-2 shrink-0">
+                  <Skeleton className="w-20 h-20 md:w-24 md:h-24 rounded-full" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-5 w-32" />
+                    <Skeleton className="h-4 w-48" />
+                  </div>
+                </div>
+                <Separator className="md:hidden" />
+                <Separator orientation="vertical" className="hidden md:block h-auto" />
+                <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-5 gap-y-4">
+                  {[1, 2, 3, 4, 5, 6].map((n) => (
+                    <div key={n} className="space-y-1.5">
+                      <Skeleton className="h-4 w-20" />
+                      <Skeleton className="h-10 w-full" />
+                    </div>
+                  ))}
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                  <div className="space-y-1.5 sm:col-span-2 lg:col-span-1">
+                    <Skeleton className="h-4 w-28" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                  <div className="flex items-end sm:col-span-2 lg:col-span-1">
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                </div>
               </div>
-            ))}
-            <div className="space-y-1.5 sm:col-span-2">
-              <Skeleton className="h-4 w-20" />
-              <Skeleton className="h-10 w-full" />
-            </div>
-            <div className="space-y-1.5 sm:col-span-2 lg:col-span-1">
-              <Skeleton className="h-4 w-28" />
-              <Skeleton className="h-10 w-full" />
-            </div>
-            <div className="flex items-end sm:col-span-2 lg:col-span-1">
-              <Skeleton className="h-10 w-full" />
-            </div>
-          </div>
-        </div>
             ) : (
               <div className="flex flex-col gap-6 md:gap-8">
                 {/* Avatar */}
                 <div className="flex flex-row items-center gap-4 md:gap-3 md:pt-2 shrink-0">
                   <div className="relative group shrink-0">
-                    <div className="w-20 h-20 md:w-24 md:h-24 rounded-full overflow-hidden border-2 border-muted shadow-md">
+                    <div className={`w-20 h-20 md:w-24 md:h-24 rounded-full overflow-hidden border-2 shadow-md ${isDark ? 'border-slate-600' : 'border-slate-200'}`}>
                       {displayAvatar ? (
                         <img src={displayAvatar} alt={t('profile.avatarAlt')} className="w-full h-full object-cover"
                           onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden'); }} />
                       ) : null}
-                      <div className={`${displayAvatar ? 'hidden' : ''} w-full h-full flex items-center justify-center bg-muted`}>
-                        <User className="w-8 h-8 md:w-10 md:h-10 text-muted-foreground" />
+                      <div className={`${displayAvatar ? 'hidden' : ''} w-full h-full flex items-center justify-center ${isDark ? 'bg-slate-700' : 'bg-slate-100'}`}>
+                        <User className={`w-8 h-8 md:w-10 md:h-10 ${isDark ? 'text-slate-400' : 'text-slate-400'}`} />
                       </div>
                     </div>
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="cursor-pointer absolute bottom-0 right-0 w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md hover:bg-primary/90 transition-colors"
+                      className="cursor-pointer absolute bottom-0 right-0 w-7 h-7 rounded-full bg-violet-600 text-white flex items-center justify-center shadow-md hover:bg-violet-700 transition-colors"
                     >
                       <Camera className="w-3.5 h-3.5" />
                     </button>
                     <input ref={fileInputRef} type="file" onChange={handleFileChange} accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" />
                   </div>
                   <div className="text-left md:text-center min-w-0">
-                    <p className="text-sm font-medium truncate">{formData.fullName || t('profile.userFallback')}</p>
-                    <p className="text-xs text-muted-foreground truncate">{formData.email}</p>
-                    {avatar && <span className="text-xs text-muted-foreground truncate block mt-1">{avatar.name}</span>}
+                    <p className={`text-sm font-medium truncate ${textPrimary}`}>{formData.fullName || t('profile.userFallback')}</p>
+                    <p className={`text-xs truncate ${textSecondary}`}>{formData.email}</p>
+                    {avatar && <span className={`text-xs truncate block mt-1 ${textSecondary}`}>{avatar.name}</span>}
                   </div>
                 </div>
 
-                <Separator className="md:hidden" />
-                <Separator orientation="vertical" className="hidden md:block h-auto" />
+                <Separator className={isDark ? 'bg-slate-700 md:hidden' : 'md:hidden'} />
+                <Separator orientation="vertical" className={`hidden md:block h-auto ${isDark ? 'bg-slate-700' : ''}`} />
 
                 {/* Form fields */}
                 <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-5 gap-y-4">
                   <div className="space-y-1.5">
-                    <Label htmlFor="fullName">{t('profile.fields.fullName')}</Label>
-                    <Input id="fullName" name="fullName" value={formData.fullName} onChange={handleInputChange} placeholder={t('profile.placeholders.fullName')} />
+                    <Label htmlFor="fullName" className={labelClass}>{t('profile.fields.fullName')}</Label>
+                    <Input id="fullName" name="fullName" value={formData.fullName} onChange={handleInputChange}
+                      placeholder={t('profile.placeholders.fullName')} className={inputClass} />
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label htmlFor="email">{t('profile.fields.email')}</Label>
+                    <Label htmlFor="email" className={labelClass}>{t('profile.fields.email')}</Label>
                     <Input id="email" name="email" type="email" value={formData.email} onChange={handleInputChange}
                       placeholder={t('profile.placeholders.email')} disabled={!canEditEmail} readOnly={!canEditEmail}
-                      className={!canEditEmail ? 'opacity-60 cursor-not-allowed' : ''} />
+                      className={`${inputClass} ${!canEditEmail ? 'opacity-60 cursor-not-allowed' : ''}`} />
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label htmlFor="phone">{t('profile.fields.phone')}</Label>
-                    <Input id="phone" name="phone" type="tel" value={formData.phone} onChange={handleInputChange} placeholder={t('profile.placeholders.phone')} />
+                    <Label htmlFor="phone" className={labelClass}>{t('profile.fields.phone')}</Label>
+                    <Input id="phone" name="phone" type="tel" value={formData.phone} onChange={handleInputChange}
+                      placeholder={t('profile.placeholders.phone')} className={inputClass} />
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label htmlFor="timezone">{t('profile.fields.timezone')}</Label>
+                    <Label htmlFor="timezone" className={labelClass}>{t('profile.fields.timezone')}</Label>
                     <Select value={formData.timezone} onValueChange={(val) => handleSelectChange('timezone', val)}>
-                      <SelectTrigger id="timezone"><SelectValue placeholder={t('profile.placeholders.timezone')} /></SelectTrigger>
-                      <SelectContent>
+                      <SelectTrigger id="timezone" className={inputClass}>
+                        <SelectValue placeholder={t('profile.placeholders.timezone')} />
+                      </SelectTrigger>
+                      <SelectContent className={isDark ? 'bg-slate-800 border-slate-700 text-white' : ''}>
                         <SelectItem value="Europe/Berlin">Central Europe (CET/CEST)</SelectItem>
                         <SelectItem value="Europe/London">UK / Ireland (GMT/BST)</SelectItem>
                         <SelectItem value="Europe/Paris">France / Belgium (CET/CEST)</SelectItem>
@@ -293,14 +301,15 @@ export default function Profile({ user }: { user: SessionUser }) {
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label htmlFor="department">{t('profile.fields.department')}</Label>
-                    <Input id="department" name="department" value={formData.department} onChange={handleInputChange} placeholder={t('profile.placeholders.department')} />
+                    <Label htmlFor="department" className={labelClass}>{t('profile.fields.department')}</Label>
+                    <Input id="department" name="department" value={formData.department} onChange={handleInputChange}
+                      placeholder={t('profile.placeholders.department')} className={inputClass} />
                   </div>
- 
 
                   <div className="space-y-1.5 sm:col-span-2">
-                    <Label htmlFor="signature">{t('profile.fields.signature')}</Label>
-                    <Input id="signature" name="signature" value={formData.signature} onChange={handleInputChange} placeholder={t('profile.placeholders.signature')} />
+                    <Label htmlFor="signature" className={labelClass}>{t('profile.fields.signature')}</Label>
+                    <Input id="signature" name="signature" value={formData.signature} onChange={handleInputChange}
+                      placeholder={t('profile.placeholders.signature')} className={inputClass} />
                   </div>
 
                   <div className="flex items-end sm:col-span-2 lg:col-span-1">
@@ -317,13 +326,13 @@ export default function Profile({ user }: { user: SessionUser }) {
 
         {/* Control Center card — ADMIN / SUPERADMIN only */}
         {!loading && (user.role === 'ADMIN' || user.role === 'SUPERADMIN') && (
-          <Card>
+          <Card className={cardClass}>
             <CardHeader className="pb-3">
               <div className="flex items-center gap-2">
-                <Link2 className="h-4 w-4 text-primary" />
-                <CardTitle className="text-base">{t('profile.controlCenter.title')}</CardTitle>
+                <Link2 className="h-4 w-4 text-violet-500" />
+                <CardTitle className={`text-base ${textPrimary}`}>{t('profile.controlCenter.title')}</CardTitle>
               </div>
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <p className={`text-xs mt-0.5 ${textSecondary}`}>
                 {t('profile.controlCenter.subtitle')}
               </p>
             </CardHeader>
@@ -335,26 +344,27 @@ export default function Profile({ user }: { user: SessionUser }) {
 
         {/* EASA Operator Code card — ADMIN only */}
         {!loading && user.role === 'ADMIN' && (
-          <Card>
+          <Card className={cardClass}>
             <CardHeader className="pb-3">
               <div className="flex items-center gap-2">
-                <ShieldCheck className="h-4 w-4 text-primary" />
-                <CardTitle className="text-base">{t('profile.fields.easaOperatorCode')}</CardTitle>
+                <ShieldCheck className="h-4 w-4 text-violet-500" />
+                <CardTitle className={`text-base ${textPrimary}`}>{t('profile.fields.easaOperatorCode')}</CardTitle>
               </div>
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <p className={`text-xs mt-0.5 ${textSecondary}`}>
                 {t('profile.placeholders.easaOperatorCode')}
               </p>
             </CardHeader>
             <CardContent className="pt-0">
               <div className="flex gap-3 items-end">
                 <div className="flex-1 space-y-1.5">
-                  <Label htmlFor="easaCode">{t('profile.fields.easaOperatorCode')}</Label>
+                  <Label htmlFor="easaCode" className={labelClass}>{t('profile.fields.easaOperatorCode')}</Label>
                   <Input
                     id="easaCode"
                     value={easaCode}
                     onChange={(e) => setEasaCode(e.target.value)}
                     placeholder={t('profile.placeholders.easaOperatorCode')}
                     maxLength={100}
+                    className={inputClass}
                   />
                 </div>
                 <Button
@@ -371,12 +381,12 @@ export default function Profile({ user }: { user: SessionUser }) {
         )}
 
         {/* Training curriculum card */}
-        <Card>
+        <Card className={cardClass}>
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <GraduationCap className="h-4 w-4 text-primary" />
-                <CardTitle className="text-base">{t('profile.curriculum.title')}</CardTitle>
+                <GraduationCap className="h-4 w-4 text-violet-500" />
+                <CardTitle className={`text-base ${textPrimary}`}>{t('profile.curriculum.title')}</CardTitle>
               </div>
               <Badge variant="secondary">{curriculum.length}</Badge>
             </div>
@@ -394,7 +404,7 @@ export default function Profile({ user }: { user: SessionUser }) {
                 ))}
               </div>
             ) : curriculum.length === 0 ? (
-              <div className="text-center py-10 text-muted-foreground">
+              <div className={`text-center py-10 ${textSecondary}`}>
                 <GraduationCap className="w-10 h-10 mx-auto mb-3 opacity-30" />
                 <p className="text-sm">{t('profile.curriculum.empty')}</p>
               </div>
@@ -404,18 +414,33 @@ export default function Profile({ user }: { user: SessionUser }) {
                   <div>
                     <div className="flex items-center gap-1.5 mb-2">
                       <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-                      <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">{t('profile.curriculum.active')}</p>
+                      <p className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
+                        {t('profile.curriculum.active')}
+                      </p>
                     </div>
-                    <CurriculumTable rows={curriculum.filter((r) => r.status === 'VALID' || r.status === null)} formatDate={formatDate} t={t} />
+                    <CurriculumTable
+                      rows={curriculum.filter((r) => r.status === 'VALID' || r.status === null)}
+                      formatDate={formatDate}
+                      t={t}
+                      isDark={isDark}
+                    />
                   </div>
                 )}
                 {curriculum.filter((r) => r.status === 'EXPIRED').length > 0 && (
                   <div>
                     <div className="flex items-center gap-1.5 mb-2">
-                      <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('profile.curriculum.history')}</p>
+                      <Clock className={`h-3.5 w-3.5 ${textSecondary}`} />
+                      <p className={`text-xs font-semibold uppercase tracking-wider ${textSecondary}`}>
+                        {t('profile.curriculum.history')}
+                      </p>
                     </div>
-                    <CurriculumTable rows={curriculum.filter((r) => r.status === 'EXPIRED')} formatDate={formatDate} t={t} muted />
+                    <CurriculumTable
+                      rows={curriculum.filter((r) => r.status === 'EXPIRED')}
+                      formatDate={formatDate}
+                      t={t}
+                      isDark={isDark}
+                      muted
+                    />
                   </div>
                 )}
               </>
