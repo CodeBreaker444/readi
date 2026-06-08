@@ -170,7 +170,6 @@ export default function KnowledgeConfigPage() {
                 {/* Header skeleton */}
                 <div className={`border-b px-6 py-4 ${isDark ? 'bg-slate-900/80 border-slate-700/60' : 'bg-white/80 border-gray-200'}`}>
                     <div className="flex items-center gap-4">
-                        {/* <Skeleton className={`w-8 h-8 rounded-lg ${isDark ? 'bg-slate-800' : ''}`} /> */}
                         <Skeleton className={`w-8 h-8 rounded-lg ${isDark ? 'bg-slate-800' : ''}`} />
                         <div className="flex-1 space-y-1.5">
                             <Skeleton className={`h-4 w-40 rounded-md ${isDark ? 'bg-slate-800' : ''}`} />

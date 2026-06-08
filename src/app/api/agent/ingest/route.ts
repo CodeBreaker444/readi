@@ -48,21 +48,10 @@ export async function GET() {
 }
 
 async function extractPdfText(buffer: Buffer): Promise<string> {
-    if (typeof (globalThis as any).DOMMatrix === 'undefined') (globalThis as any).DOMMatrix = class {};
-    if (typeof (globalThis as any).Path2D === 'undefined') (globalThis as any).Path2D = class {};
-    if (typeof (globalThis as any).ImageData === 'undefined') (globalThis as any).ImageData = class {};
-
-    const { PDFParse } = await import('pdf-parse');
-    const path = await import('path');
-    const { pathToFileURL } = await import('url');
-    const workerPath = pathToFileURL(
-        path.join(process.cwd(), 'node_modules', 'pdfjs-dist', 'legacy', 'build', 'pdf.worker.mjs')
-    ).href;
-    PDFParse.setWorker(workerPath);
-
-    const parser = new PDFParse({ data: new Uint8Array(buffer) });
-    const result = await parser.getText();
-    return result.text;
+    const { getDocumentProxy, extractText } = await import('unpdf');
+    const pdf = await getDocumentProxy(new Uint8Array(buffer));
+    const { text } = await extractText(pdf, { mergePages: true });
+    return text;
 }
 
 /** POST /api/agent/ingest — upload a new PDF or TXT file (admin only, hard limits enforced) */
