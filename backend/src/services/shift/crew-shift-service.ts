@@ -1,4 +1,4 @@
-import { supabase } from '@/backend/database/database';
+import { prisma } from '@/lib/prisma';
 import { CalendarEvent, CreateShiftInput, Shift, ShiftCategory } from '@/config/types/crewShift';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -23,29 +23,49 @@ type ShiftRow = {
     recurring_group_id: string | null
 }
 
-export const getShifts = async (ownerId: number): Promise<{ shifts: Shift[]; calendarEvents: CalendarEvent[] }> => {
-    const { data, error } = await supabase
-        .from('calendar_shift')
-        .select(`
-        *,
-        users:fk_pic_id (
-          first_name,
-          last_name
-        )
-      `)
-        .eq('fk_owner_id', ownerId)
-        .order('shift_date_start', { ascending: true })
+function shiftRowToCreateInput(row: ShiftRow) {
+    return {
+        fk_owner_id: row.fk_owner_id,
+        shift_date_start: new Date(row.shift_date_start),
+        shift_date_end: new Date(row.shift_date_end),
+        shift_time_start: new Date(`1970-01-01T${row.shift_time_start}Z`),
+        shift_time_end: new Date(`1970-01-01T${row.shift_time_end}Z`),
+        shift_category: row.shift_category,
+        shift_desc: row.shift_desc,
+        shift_recurring: row.shift_recurring,
+        shift_date_until: row.shift_date_until ? new Date(row.shift_date_until) : null,
+        shift_group_label: row.shift_group_label,
+        recurring_group_id: row.recurring_group_id,
+    };
+}
 
-    if (error) {
-        throw new Error(`Failed to fetch shifts: ${error.message}`)
-    }
-
-    const shifts: Shift[] = (data || []).map((row: any) => ({
+function mapShiftRow(row: any): any {
+    return {
         ...row,
+        shift_date_start: row.shift_date_start?.toISOString().slice(0, 10) ?? '',
+        shift_date_end: row.shift_date_end?.toISOString().slice(0, 10) ?? '',
+        shift_time_start: row.shift_time_start?.toISOString().slice(11, 19) ?? '',
+        shift_time_end: row.shift_time_end?.toISOString().slice(11, 19) ?? '',
+        shift_date_until: row.shift_date_until?.toISOString().slice(0, 10) ?? null,
         pilot_name: row.users
-            ? `${row.users.first_name} ${row.users.last_name}`.trim()
+            ? `${row.users.first_name ?? ''} ${row.users.last_name ?? ''}`.trim() || null
             : null,
-    }))
+        users: undefined,
+    };
+}
+
+export const getShifts = async (ownerId: number): Promise<{ shifts: Shift[]; calendarEvents: CalendarEvent[] }> => {
+    const data = await prisma.calendar_shift.findMany({
+        where: { fk_owner_id: ownerId },
+        include: {
+            users: {
+                select: { first_name: true, last_name: true },
+            },
+        },
+        orderBy: { shift_date_start: 'asc' },
+    });
+
+    const shifts: Shift[] = data.map(mapShiftRow);
 
     const calendarEvents: CalendarEvent[] = shifts.map((shift) => ({
         id: String(shift.shift_id),
@@ -55,45 +75,39 @@ export const getShifts = async (ownerId: number): Promise<{ shifts: Shift[]; cal
         color: CATEGORY_COLORS[shift.shift_category],
         category: shift.shift_category,
         shift,
-    }))
+    }));
 
-    return { shifts, calendarEvents }
+    return { shifts, calendarEvents };
 }
 
 export const createShift = async (input: CreateShiftInput, ownerId: number): Promise<number[]> => {
-    const isRecurring = input.shift_recurring === 'weekly'
-    const recurringGroupId = isRecurring ? uuidv4() : null
+    const isRecurring = input.shift_recurring === 'weekly';
+    const recurringGroupId = isRecurring ? uuidv4() : null;
 
     const shiftsToInsert: ShiftRow[] = isRecurring
         ? buildRecurringShifts(input, recurringGroupId!, ownerId)
-        : [buildSingleShift(input, ownerId)]
+        : [buildSingleShift(input, ownerId)];
 
     if (shiftsToInsert.length === 0) {
-        throw new Error('No valid shifts to insert')
+        throw new Error('No valid shifts to insert');
     }
 
-    const { data, error } = await supabase
-        .from('calendar_shift')
-        .insert(shiftsToInsert)
-        .select('shift_id')
+    const created = await prisma.$transaction(
+        shiftsToInsert.map((row) =>
+            prisma.calendar_shift.create({
+                data: shiftRowToCreateInput(row),
+                select: { shift_id: true },
+            })
+        )
+    );
 
-    if (error) {
-        throw new Error(`Failed to create shift: ${error.message}`)
-    }
-
-    return (data || []).map((row: any) => row.shift_id)
+    return created.map((r) => r.shift_id);
 }
 
 export const deleteShift = async (shiftId: number, ownerId: number): Promise<void> => {
-    const { error } = await supabase
-        .from('calendar_shift')
-        .delete()
-        .eq('shift_id', shiftId)
-        .eq('fk_owner_id', ownerId)
-
-    if (error) {
-        throw new Error(`Failed to delete shift: ${error.message}`)
-    }
+    await prisma.calendar_shift.deleteMany({
+        where: { shift_id: shiftId, fk_owner_id: ownerId },
+    });
 }
 
 export const buildEventTitle = (shift: Shift): string => {

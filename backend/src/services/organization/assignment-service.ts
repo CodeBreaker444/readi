@@ -1,4 +1,4 @@
-import { supabase } from "@/backend/database/database"
+import { prisma } from '@/lib/prisma';
 
 export interface Assignment {
   assignment_id: number
@@ -21,49 +21,43 @@ export interface AssignmentUpdatePayload {
   assignment_desc: string
   assignment_ver: number
   assignment_active: 'Y' | 'N'
-  assignment_json: string        
+  assignment_json: string
   fk_owner_id: number
   fk_user_id: number
 }
 
-
- 
-export async function getAssignmentsByOwner(
-  ownerId: number
-): Promise < Assignment[]> {
-  const { data, error } = await supabase
-    .from('assignment')
-    .select('*')
-    .eq('fk_owner_id', ownerId)
-    .order('created_at', { ascending: false })
-
-  if (error) 
-  {
-    throw new Error(`Failed to retrieve assignments: ${error.message}`);
-  }
-  return data as Assignment[] 
+function mapAssignment(row: any): Assignment {
+  return {
+    assignment_id: row.assignment_id,
+    fk_user_id: row.fk_user_id,
+    fk_owner_id: row.fk_owner_id,
+    assignment_code: row.assignment_code ?? null,
+    assignment_desc: row.assignment_desc ?? null,
+    assignment_json: row.assignment_json as Record<string, unknown> | null,
+    assignment_ver: row.assignment_ver != null ? Number(row.assignment_ver) : null,
+    assignment_active: (row.assignment_active ?? 'N') as 'Y' | 'N',
+    due_date: row.due_date?.toISOString().slice(0, 10) ?? null,
+    completed_date: row.completed_date?.toISOString().slice(0, 10) ?? null,
+    created_at: row.created_at?.toISOString() ?? '',
+    updated_at: row.updated_at?.toISOString() ?? '',
+  };
 }
 
-/**
- * GET: retrieve a single assignment by id + owner
- */
-export async function getAssignmentById(
-  ownerId: number,
-  assignmentId: number
-): Promise<Assignment | null> {
-  const { data, error } = await supabase
-    .from('assignment')
-    .select('*')
-    .eq('fk_owner_id', ownerId)
-    .eq('assignment_id', assignmentId)
-    .single()
-
-  if (error)  throw new Error(`Failed to retrieve assignment: ${error.message}`);
-
-  return data as Assignment 
+export async function getAssignmentsByOwner(ownerId: number): Promise<Assignment[]> {
+  const rows = await prisma.assignment.findMany({
+    where: { fk_owner_id: ownerId },
+    orderBy: { created_at: 'desc' },
+  });
+  return rows.map(mapAssignment);
 }
 
- 
+export async function getAssignmentById(ownerId: number, assignmentId: number): Promise<Assignment | null> {
+  const row = await prisma.assignment.findFirst({
+    where: { assignment_id: assignmentId, fk_owner_id: ownerId },
+  });
+  return row ? mapAssignment(row) : null;
+}
+
 export async function createAssignment(payload: {
   assignment_code: string
   assignment_desc: string
@@ -73,102 +67,73 @@ export async function createAssignment(payload: {
   fk_owner_id: number
   fk_user_id: number
 }): Promise<Assignment | null> {
-  let parsedJson: unknown
+  let parsedJson: unknown;
   try {
-    parsedJson = payload.assignment_json ? JSON.parse(payload.assignment_json) : null
-  } catch (error) {
-    throw new Error('Invalid JSON in assignment_json field')
+    parsedJson = payload.assignment_json ? JSON.parse(payload.assignment_json) : null;
+  } catch {
+    throw new Error('Invalid JSON in assignment_json field');
   }
 
-  const { data: existing } = await supabase
-    .from('assignment')
-    .select('assignment_id')
-    .eq('fk_owner_id', payload.fk_owner_id)
-    .eq('assignment_code', payload.assignment_code)
-    .maybeSingle()
+  const existing = await prisma.assignment.findFirst({
+    where: { fk_owner_id: payload.fk_owner_id, assignment_code: payload.assignment_code },
+    select: { assignment_id: true },
+  });
+  if (existing) throw new Error(`Assignment code "${payload.assignment_code}" already exists`);
 
-  if (existing) throw new Error(`Assignment code "${payload.assignment_code}" already exists`)
-
-  const { data, error } = await supabase
-    .from('assignment')
-    .insert({
+  const row = await prisma.assignment.create({
+    data: {
       fk_owner_id: payload.fk_owner_id,
       fk_user_id: payload.fk_user_id,
       assignment_code: payload.assignment_code,
       assignment_desc: payload.assignment_desc,
       assignment_ver: parseFloat(payload.assignment_ver) || 1.0,
       assignment_active: payload.assignment_active ?? 'Y',
-      assignment_json: parsedJson,
-    })
-    .select()
-    .single()
-
-  if (error)  throw new Error(error.message)
-
-  return data as Assignment
+      assignment_json: parsedJson ?? undefined,
+    },
+  });
+  return mapAssignment(row);
 }
 
- 
-export async function updateAssignment(
-  payload: AssignmentUpdatePayload
-): Promise<Assignment | null> {
-  let parsedJson: unknown
+export async function updateAssignment(payload: AssignmentUpdatePayload): Promise<Assignment | null> {
+  let parsedJson: unknown;
   try {
-    parsedJson = payload.assignment_json ? JSON.parse(payload.assignment_json) : null
+    parsedJson = payload.assignment_json ? JSON.parse(payload.assignment_json) : null;
   } catch {
-    throw new Error('Invalid JSON in assignment_json field')
+    throw new Error('Invalid JSON in assignment_json field');
   }
 
-  const { data: existing } = await supabase
-    .from('assignment')
-    .select('assignment_id')
-    .eq('assignment_id', payload.assignment_id)
-    .eq('fk_owner_id', payload.fk_owner_id)
-    .maybeSingle()
+  const existing = await prisma.assignment.findFirst({
+    where: { assignment_id: payload.assignment_id, fk_owner_id: payload.fk_owner_id },
+    select: { assignment_id: true },
+  });
+  if (!existing) throw new Error('Assignment not found or access denied');
 
-  if (!existing) throw new Error('Assignment not found or access denied')
-
-  const { data, error } = await supabase
-    .from('assignment')
-    .update({
+  const row = await prisma.assignment.update({
+    where: { assignment_id: payload.assignment_id },
+    data: {
       assignment_code: payload.assignment_code,
       assignment_desc: payload.assignment_desc,
       assignment_ver: payload.assignment_ver,
       assignment_active: payload.assignment_active,
-      assignment_json: parsedJson,
+      assignment_json: parsedJson ?? undefined,
       fk_user_id: payload.fk_user_id,
-    })
-    .eq('assignment_id', payload.assignment_id)
-    .select()
-    .single()
-
-  if (error) throw new Error(error.message)
-
-  return data as Assignment 
+    },
+  });
+  return mapAssignment(row);
 }
 
- 
 export async function deleteAssignment(
   ownerId: number,
-  assignmentId: number
+  assignmentId: number,
 ): Promise<{ code: number; message: string; dataRows: number; data: null }> {
-  const { data: existing } = await supabase
-    .from('assignment')
-    .select('assignment_id, assignment_active')
-    .eq('assignment_id', assignmentId)
-    .eq('fk_owner_id', ownerId)
-    .maybeSingle()
-
-  if (!existing) throw new Error('Assignment not found')
+  const existing = await prisma.assignment.findFirst({
+    where: { assignment_id: assignmentId, fk_owner_id: ownerId },
+    select: { assignment_id: true, assignment_active: true },
+  });
+  if (!existing) throw new Error('Assignment not found');
   if (existing.assignment_active === 'Y') {
-    throw new Error('Cannot delete an active assignment. Set it to inactive first.')
+    throw new Error('Cannot delete an active assignment. Set it to inactive first.');
   }
-
-  const { error } = await supabase
-    .from('assignment')
-    .delete()
-    .eq('assignment_id', assignmentId)
-
-  if (error) throw new Error(error.message)
-  return { code: 1, message: 'Assignment deleted', dataRows: 0, data: null }
+  await prisma.assignment.delete({ where: { assignment_id: assignmentId } });
+  return { code: 1, message: 'Assignment deleted', dataRows: 0, data: null };
 }
