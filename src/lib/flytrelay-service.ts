@@ -1,5 +1,4 @@
 import { env } from '@/backend/config/env';
-import { supabase } from '@/backend/database/database';
 import 'server-only';
 import { signReadiDroneJwt } from './drone-atc-jwt';
 
