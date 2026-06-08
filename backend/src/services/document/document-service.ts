@@ -1,11 +1,11 @@
-import { supabase } from '@/backend/database/database';
+import { prisma } from '@/lib/prisma';
 import { DocType, DocumentCreateInput, DocumentDeleteInput, DocumentFilters, DocumentHistoryInput, DocumentListInput, DocumentRevision, DocumentUpdateInput, DocumentUploadRevisionInput, PresignedDownloadInput, RepositoryDocument } from '@/config/types/repository';
-import { buildS3Key, buildS3Url, deleteFileFromS3, getPresignedDownloadUrl, uploadFileToS3 } from '@/lib/s3Client';
+import { buildS3Url, deleteFileFromS3, getPresignedDownloadUrl } from '@/lib/s3Client';
 
 
-function toNullableDate(val?: string | null): string | null {
+function toNullableDate(val?: string | null): Date | null {
   if (!val || val.trim() === '') return null;
-  return val;
+  return new Date(val);
 }
 
 function autoIncrementVersion(current?: string | null): string {
@@ -20,40 +20,32 @@ export async function getDocTypesList(ownerId?: number): Promise<{
   items: DocType[];
   filters: DocumentFilters;
 }> {
+  const types = await prisma.luc_doc_type.findMany({
+    where: {
+      doc_type_active: 'Y',
+      ...(ownerId ? { OR: [{ fk_owner_id: ownerId }, { fk_owner_id: null }] } : {}),
+    },
+    orderBy: [{ doc_type_category: 'asc' }, { doc_type_name: 'asc' }],
+  });
 
-  let query = supabase
-    .from('luc_doc_type')
-    .select('*')
-    .eq('doc_type_active', 'Y')
-    .order('doc_type_category', { ascending: true })
-    .order('doc_type_name', { ascending: true });
+  const docs = await prisma.luc_document.findMany({
+    where: { document_active: 'Y' },
+    select: { document_status: true, document_code: true },
+  });
 
-  if (ownerId) {
-    query = query.or(`fk_owner_id.eq.${ownerId},fk_owner_id.is.null`);
-  }
-
-  const { data: types, error } = await query;
-
-  if (error) throw new Error(`getDocTypesList: ${error.message}`);
-
-  const { data: docs } = await supabase
-    .from('luc_document')
-    .select('document_status, document_code')
-    .eq('document_active', 'Y');
-
-  const statuses = [...new Set((docs ?? []).map((d) => d.document_status).filter(Boolean))] as string[];
-  const areas = [...new Set((types ?? []).map((t) => t.doc_type_category).filter(Boolean))] as string[];
+  const statuses = [...new Set(docs.map((d) => d.document_status).filter(Boolean))] as string[];
+  const areas = [...new Set(types.map((t) => t.doc_type_category).filter(Boolean))] as string[];
 
   return {
-    items: (types ?? []).map((t) => ({
-      doc_type_id:       t.doc_type_id,
-      doc_type_code:     t.doc_type_code,
-      doc_type_name:     t.doc_type_name,
-      doc_type_description: t.doc_type_description,
-      doc_area:          t.doc_type_category as DocType['doc_area'],
-      doc_name:          t.doc_type_name,
-      retention_days:    null,
-      default_owner_role: null,
+    items: types.map((t) => ({
+      doc_type_id:          t.doc_type_id,
+      doc_type_code:        t.doc_type_code ?? '',
+      doc_type_name:        t.doc_type_name,
+      doc_type_description: t.doc_type_description ?? undefined,
+      doc_area:             t.doc_type_category as DocType['doc_area'],
+      doc_name:             t.doc_type_name,
+      retention_days:       null,
+      default_owner_role:   null,
     })),
     filters: {
       status:        statuses,
@@ -72,187 +64,169 @@ export async function createDocType(input: {
 }): Promise<DocType> {
   const baseCode = input.doc_type_name.toUpperCase().replace(/\s+/g, '_').replace(/[^A-Z0-9_]/g, '');
   const code = `${baseCode}_${input.owner_id}`;
-  const { data, error } = await supabase
-    .from('luc_doc_type')
-    .insert({
-      doc_type_code: code,
-      doc_type_name: input.doc_type_name.trim(),
+
+  const data = await prisma.luc_doc_type.create({
+    data: {
+      doc_type_code:     code,
+      doc_type_name:     input.doc_type_name.trim(),
       doc_type_category: input.doc_type_category,
-      doc_type_active: 'Y',
-      fk_owner_id: input.owner_id,
-    })
-    .select()
-    .single();
-  if (error) throw new Error(error.message);
+      doc_type_active:   'Y',
+      fk_owner_id:       input.owner_id,
+    },
+  });
+
   return {
-    doc_type_id: data.doc_type_id,
-    doc_type_code: data.doc_type_code,
+    doc_type_id:   data.doc_type_id,
+    doc_type_code: data.doc_type_code ?? '',
     doc_type_name: data.doc_type_name,
-    doc_area: data.doc_type_category,
-    doc_name: data.doc_type_name,
+    doc_area:      data.doc_type_category as DocType['doc_area'],
+    doc_name:      data.doc_type_name,
   };
 }
 
 export async function updateDocType(id: number, input: { doc_type_name: string }, ownerId: number): Promise<DocType> {
-  const { data, error } = await supabase
-    .from('luc_doc_type')
-    .update({ doc_type_name: input.doc_type_name.trim() })
-    .eq('doc_type_id', id)
-    .eq('fk_owner_id', ownerId)
-    .select()
-    .single();
-  if (error) throw new Error(error.message);
-  if (!data) throw new Error('Not found');
+  const existing = await prisma.luc_doc_type.findFirst({
+    where: { doc_type_id: id, fk_owner_id: ownerId },
+  });
+  if (!existing) throw new Error('Not found');
+
+  const data = await prisma.luc_doc_type.update({
+    where: { doc_type_id: id },
+    data: { doc_type_name: input.doc_type_name.trim() },
+  });
+
   return {
-    doc_type_id: data.doc_type_id,
-    doc_type_code: data.doc_type_code,
+    doc_type_id:   data.doc_type_id,
+    doc_type_code: data.doc_type_code ?? '',
     doc_type_name: data.doc_type_name,
-    doc_area: data.doc_type_category,
-    doc_name: data.doc_type_name,
+    doc_area:      data.doc_type_category as DocType['doc_area'],
+    doc_name:      data.doc_type_name,
   };
 }
 
 export async function deleteDocType(id: number, ownerId: number): Promise<void> {
-  const { data: inUse } = await supabase
-    .from('luc_document')
-    .select('document_id')
-    .eq('fk_doc_type_id', id)
-    .eq('document_active', 'Y')
-    .limit(1)
-    .maybeSingle();
+  const inUse = await prisma.luc_document.findFirst({
+    where: { fk_doc_type_id: id, document_active: 'Y' },
+    select: { document_id: true },
+  });
   if (inUse) throw new Error('This type is used by existing documents and cannot be deleted.');
-  const { error } = await supabase
-    .from('luc_doc_type')
-    .update({ doc_type_active: 'N' })
-    .eq('doc_type_id', id)
-    .eq('fk_owner_id', ownerId);
-  if (error) throw new Error(error.message);
+
+  await prisma.luc_doc_type.updateMany({
+    where: { doc_type_id: id, fk_owner_id: ownerId },
+    data: { doc_type_active: 'N' },
+  });
 }
 
 export async function listDocuments(input: DocumentListInput): Promise<{
   items: RepositoryDocument[];
   filters: { status: string[] };
 }> {
+  const docs = await prisma.luc_document.findMany({
+    where: {
+      fk_owner_id:     input.ownerId,
+      document_active: 'Y',
+      ...(input.status ? { document_status: input.status } : {}),
+      ...(input.area   ? { luc_doc_type: { doc_type_category: input.area } } : {}),
+      ...(input.search ? {
+        OR: [
+          { document_title:       { contains: input.search, mode: 'insensitive' } },
+          { document_code:        { contains: input.search, mode: 'insensitive' } },
+          { document_description: { contains: input.search, mode: 'insensitive' } },
+        ],
+      } : {}),
+    },
+    include: {
+      luc_doc_type: { select: { doc_type_name: true, doc_type_category: true } },
+    },
+    orderBy: { document_id: 'desc' },
+  });
 
-  let query = supabase
-    .from('luc_document')
-    .select(`
-      document_id,
-      fk_doc_type_id,
-      fk_component_id,
-      document_code,
-      document_title,
-      document_description,
-      document_status,
-      effective_date,
-      expiry_date,
-      version_number,
-      owner_role,
-      keywords,
-      tags,
-      created_at,
-      updated_at,
-      luc_doc_type (
-        doc_type_name,
-        doc_type_category
-      )
-    `)
-    .eq('fk_owner_id', input.ownerId)
-    .eq('document_active', 'Y')
-    .order('document_id', { ascending: false });
+  const docIds = docs.map((d) => d.document_id);
 
-  if (input.status)   query = query.eq('document_status', input.status);
-  if (input.area)     query = query.eq('luc_doc_type.doc_type_category', input.area);
-  if (input.search) {
-    query = query.or(
-      `document_title.ilike.%${input.search}%,document_code.ilike.%${input.search}%,document_description.ilike.%${input.search}%`
-    );
-  }
+  const revs = docIds.length
+    ? await prisma.luc_document_rev.findMany({
+        where: { fk_document_id: { in: docIds } },
+        select: {
+          revision_id:          true,
+          fk_document_id:       true,
+          revision_number:      true,
+          revision_description: true,
+          file_path:            true,
+          file_size:            true,
+          changes_summary:      true,
+        },
+        orderBy: { revision_id: 'desc' },
+      })
+    : [];
 
-  const { data: docs, error } = await query;
-  if (error) throw new Error(`listDocuments: ${error.message}`);
-
-  const docIds = (docs ?? []).map((d) => d.document_id);
-  const { data: revs } = docIds.length
-    ? await supabase
-        .from('luc_document_rev')
-        .select('revision_id, fk_document_id, revision_number, revision_description, file_path, file_size, changes_summary')
-        .in('fk_document_id', docIds)
-        .order('revision_id', { ascending: false })
-    : { data: [] };
-
-  const latestRevMap = new Map<number, { revision_id: any; fk_document_id: any; revision_number: any; revision_description: any; file_path: any; file_size: any; changes_summary: any }>();
-  for (const rev of (revs ?? [])) {
+  const latestRevMap = new Map<number, typeof revs[0]>();
+  for (const rev of revs) {
     if (!latestRevMap.has(rev.fk_document_id)) {
       latestRevMap.set(rev.fk_document_id, rev);
     }
   }
 
-  const { data: allStatuses } = await supabase
-    .from('luc_document')
-    .select('document_status')
-    .eq('document_active', 'Y')
-    .not('document_status', 'is', null);
+  const allDocs = await prisma.luc_document.findMany({
+    where: { document_active: 'Y', document_status: { not: null } },
+    select: { document_status: true },
+  });
+  const statusSet = [...new Set(allDocs.map((d) => d.document_status).filter(Boolean))] as string[];
 
-  const statusSet = [...new Set((allStatuses ?? []).map((d) => d.document_status).filter(Boolean))];
-
-  const componentIds = (docs ?? [])
-    .map((d) => (d as any).fk_component_id as number | null)
+  const componentIds = docs
+    .map((d) => d.fk_component_id)
     .filter((id): id is number => id != null);
 
   const expiredComponentSet = new Set<number>();
   if (componentIds.length > 0) {
-    const today = new Date().toISOString().split('T')[0];
-    const { data: expiredComps } = await supabase
-      .from('tool_component')
-      .select('tool_component_id, fk_tool_id')
-      .in('tool_component_id', componentIds)
-      .eq('component_active', 'Y')
-      .lte('expiration_date', today)
-      .not('expiration_date', 'is', null);
-    (expiredComps ?? []).forEach((c: any) => expiredComponentSet.add(c.tool_component_id));
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const expiredComps = await prisma.tool_component.findMany({
+      where: {
+        component_id:    { in: componentIds },
+        component_active: 'Y',
+        expiration_date: { not: null, lte: today },
+      },
+      select: { component_id: true },
+    });
+    expiredComps.forEach((c) => expiredComponentSet.add(c.component_id));
   }
 
-  const items: RepositoryDocument[] = (docs ?? []).map((d) => {
-    const rev = latestRevMap.get(d.document_id) ?? null;
-   const typeData = Array.isArray(d.luc_doc_type)
-  ? (d.luc_doc_type as Array<{ doc_type_name: string; doc_type_category: string }>)[0]
-  : d.luc_doc_type as { doc_type_name: string; doc_type_category: string } | null;
-
-    const componentId = (d as any).fk_component_id as number | null;
-    const isNonOp = componentId != null && expiredComponentSet.has(componentId);
+  const items: RepositoryDocument[] = docs.map((d) => {
+    const rev      = latestRevMap.get(d.document_id) ?? null;
+    const typeData = d.luc_doc_type;
+    const isNonOp  = d.fk_component_id != null && expiredComponentSet.has(d.fk_component_id);
 
     return {
-      document_id:       d.document_id,
-      doc_type_id:       d.fk_doc_type_id ?? 0,
-      fk_component_id:   componentId,
-      type_name:         typeData?.doc_type_name ?? null,
-      doc_area:          (typeData?.doc_type_category ?? null) as RepositoryDocument['doc_area'],
-      doc_category:      typeData?.doc_type_category ?? null,
-      doc_code:          d.document_code,
-      title:             d.document_title,
-      description:       d.document_description,
-      status:            (d.document_status ?? 'DRAFT') as RepositoryDocument['status'],
-      confidentiality:   'INTERNAL',
-      owner_role:        (d as any).owner_role ?? null,
-      effective_date:    d.effective_date,
-      expiry_date:       d.expiry_date,
-      tool_status:       isNonOp ? 'NOT_OPERATIONAL' : null,
-      keywords:          (d as any).keywords ?? null,
-      tags:              (d as any).tags ?? null,
-      version_label:     rev?.revision_number ?? d.version_number ?? null,
-      change_log:        rev?.changes_summary ?? null,
-      file_name:         rev?.revision_description ?? null,
-      file_path:         rev?.file_path ?? null,
-      s3_url:            rev?.file_path ? buildS3Url(rev.file_path) : null,
-      rev_id:            rev?.revision_id ?? null,
+      document_id:        d.document_id,
+      doc_type_id:        d.fk_doc_type_id ?? 0,
+      fk_component_id:    d.fk_component_id,
+      type_name:          typeData?.doc_type_name ?? null,
+      doc_area:           (typeData?.doc_type_category ?? null) as RepositoryDocument['doc_area'],
+      doc_category:       typeData?.doc_type_category ?? null,
+      doc_code:           d.document_code,
+      title:              d.document_title,
+      description:        d.document_description,
+      status:             (d.document_status ?? 'DRAFT') as RepositoryDocument['status'],
+      confidentiality:    'INTERNAL',
+      owner_role:         d.owner_role,
+      effective_date:     d.effective_date?.toISOString().split('T')[0] ?? null,
+      expiry_date:        d.expiry_date?.toISOString().split('T')[0] ?? null,
+      tool_status:        isNonOp ? 'NOT_OPERATIONAL' : null,
+      keywords:           d.keywords,
+      tags:               d.tags,
+      version_label:      rev?.revision_number ?? d.version_number ?? null,
+      change_log:         rev?.changes_summary ?? null,
+      file_name:          rev?.revision_description ?? null,
+      file_path:          rev?.file_path ?? null,
+      s3_url:             rev?.file_path ? buildS3Url(rev.file_path) : null,
+      rev_id:             rev?.revision_id ?? null,
       default_owner_role: null,
-      created_at:        d.created_at,
-      updated_at:        d.updated_at,
+      created_at:         d.created_at?.toISOString() ?? null,
+      updated_at:         d.updated_at?.toISOString() ?? null,
     };
   });
 
-  return { items, filters: { status: statusSet as string[] } };
+  return { items, filters: { status: statusSet } };
 }
 
 
@@ -263,23 +237,16 @@ export async function createDocument(
   fileSize: number,
   ownerId: number,
 ): Promise<{ document_id: number }> {
-
   if (input.doc_code) {
-    const { data: existing } = await supabase
-      .from('luc_document')
-      .select('document_id')
-      .eq('fk_owner_id', ownerId)
-      .eq('document_code', input.doc_code)
-      .maybeSingle();
-
-    if (existing) {
-      throw new Error(`A document with code already exists.`);
-    }
+    const existing = await prisma.luc_document.findFirst({
+      where: { fk_owner_id: ownerId, document_code: input.doc_code },
+      select: { document_id: true },
+    });
+    if (existing) throw new Error('A document with code already exists.');
   }
 
-  const { data: doc, error: docErr } = await supabase
-    .from('luc_document')
-    .insert({
+  const doc = await prisma.luc_document.create({
+    data: {
       fk_owner_id:          ownerId,
       fk_doc_type_id:       input.doc_type_id,
       document_code:        input.doc_code ?? null,
@@ -295,38 +262,35 @@ export async function createDocument(
       is_current_version:   true,
       document_active:      'Y',
       fk_component_id:      input.fk_component_id ?? null,
-    })
-    .select('document_id')
-    .single();
-
-  if (docErr || !doc) throw new Error(`createDocument insert: ${docErr?.message}`);
-
-  const documentId = doc.document_id;
-
-  const { error: revErr } = await supabase.from('luc_document_rev').insert({
-    fk_document_id:       documentId,
-    revision_number:      input.version_label ?? 'v1.0',
-    revision_date:        new Date().toISOString().slice(0, 10),
-    revision_description: fileName,
-    file_path:            s3Key,
-    file_size:            fileSize,
-    changes_summary:      input.change_log ?? 'Initial version',
+    },
+    select: { document_id: true },
   });
 
-  if (revErr) {
+  try {
+    await prisma.luc_document_rev.create({
+      data: {
+        fk_document_id:       doc.document_id,
+        revision_number:      input.version_label ?? 'v1.0',
+        revision_date:        new Date(),
+        revision_description: fileName,
+        file_path:            s3Key,
+        file_size:            BigInt(fileSize),
+        changes_summary:      input.change_log ?? 'Initial version',
+      },
+    });
+  } catch (err) {
     await deleteFileFromS3(s3Key).catch(() => {});
-    throw new Error(`createDocument revision: ${revErr.message}`);
+    throw err;
   }
 
-  return { document_id: documentId };
+  return { document_id: doc.document_id };
 }
 
 
 export async function updateDocument(input: DocumentUpdateInput): Promise<void> {
-
-  const { error } = await supabase
-    .from('luc_document')
-    .update({
+  await prisma.luc_document.updateMany({
+    where: { document_id: input.document_id, document_active: 'Y' },
+    data: {
       fk_doc_type_id:       input.doc_type_id,
       document_code:        input.doc_code ?? null,
       document_title:       input.title,
@@ -338,48 +302,36 @@ export async function updateDocument(input: DocumentUpdateInput): Promise<void> 
       keywords:             input.keywords ?? null,
       tags:                 input.tags ?? null,
       fk_component_id:      input.fk_component_id ?? null,
-    })
-    .eq('document_id', input.document_id)
-    .eq('document_active', 'Y');
-
-  if (error) throw new Error(`updateDocument: ${error.message}`);
+    },
+  });
 }
 
 
 export async function deleteDocument(input: DocumentDeleteInput): Promise<void> {
-
-  const { error } = await supabase
-    .from('luc_document')
-    .update({ document_active: 'N' })
-    .eq('document_id', input.document_id);
-
-  if (error) throw new Error(`deleteDocument: ${error.message}`);
+  await prisma.luc_document.update({
+    where: { document_id: input.document_id },
+    data: { document_active: 'N' },
+  });
 }
 
 
-export async function getDocumentHistory(
-  input: DocumentHistoryInput
-): Promise<DocumentRevision[]> {
+export async function getDocumentHistory(input: DocumentHistoryInput): Promise<DocumentRevision[]> {
+  const revs = await prisma.luc_document_rev.findMany({
+    where:   { fk_document_id: input.document_id },
+    orderBy: { revision_id: 'desc' },
+  });
 
-  const { data, error } = await supabase
-    .from('luc_document_rev')
-    .select('*')
-    .eq('fk_document_id', input.document_id)
-    .order('revision_id', { ascending: false });
-
-  if (error) throw new Error(`getDocumentHistory: ${error.message}`);
-
-  return (data ?? []).map((r) => ({
+  return revs.map((r) => ({
     rev_id:              r.revision_id,
     document_id:         r.fk_document_id,
     version_label:       r.revision_number,
-    file_name:           r.revision_description,
-    file_path:           r.file_path,                 
+    file_name:           r.revision_description ?? '',
+    file_path:           r.file_path ?? '',
     s3_url:              r.file_path ? buildS3Url(r.file_path) : null,
     mime_type:           null,
-    file_size:           r.file_size,
-    change_log:          r.changes_summary,
-    uploaded_at:         r.created_at,
+    file_size:           r.file_size !== null ? Number(r.file_size) : undefined,
+    change_log:          r.changes_summary ?? undefined,
+    uploaded_at:         r.created_at?.toISOString() ?? '',
     uploaded_by_user_id: null,
   }));
 }
@@ -391,39 +343,31 @@ export async function uploadDocumentRevision(
   fileName: string,
   fileSize: number,
 ): Promise<{ rev_id: number }> {
-
-  const { data: latest } = await supabase
-    .from('luc_document_rev')
-    .select('revision_number')
-    .eq('fk_document_id', input.document_id)
-    .order('revision_id', { ascending: false })
-    .limit(1)
-    .single();
+  const latest = await prisma.luc_document_rev.findFirst({
+    where:   { fk_document_id: input.document_id },
+    orderBy: { revision_id: 'desc' },
+    select:  { revision_number: true },
+  });
 
   const newVersion = input.version_label ?? autoIncrementVersion(latest?.revision_number);
 
-  const { data: rev, error: revErr } = await supabase
-    .from('luc_document_rev')
-    .insert({
+  const rev = await prisma.luc_document_rev.create({
+    data: {
       fk_document_id:       input.document_id,
       revision_number:      newVersion,
-      revision_date:        new Date().toISOString().slice(0, 10),
+      revision_date:        new Date(),
       revision_description: fileName,
       file_path:            s3Key,
-      file_size:            fileSize,
+      file_size:            BigInt(fileSize),
       changes_summary:      input.change_log ?? null,
-    })
-    .select('revision_id')
-    .single();
+    },
+    select: { revision_id: true },
+  });
 
-  if (revErr || !rev) {
-    throw new Error(`uploadDocumentRevision: ${revErr?.message}`);
-  }
-
-  await supabase
-    .from('luc_document')
-    .update({ version_number: newVersion })
-    .eq('document_id', input.document_id);
+  await prisma.luc_document.update({
+    where: { document_id: input.document_id },
+    data:  { version_number: newVersion },
+  });
 
   return { rev_id: rev.revision_id };
 }
@@ -432,17 +376,13 @@ export async function uploadDocumentRevision(
 export async function getRevisionDownloadUrl(
   input: PresignedDownloadInput
 ): Promise<{ url: string; file_name: string | null }> {
+  const rev = await prisma.luc_document_rev.findUnique({
+    where:  { revision_id: input.rev_id },
+    select: { file_path: true, revision_description: true },
+  });
 
-  const { data, error } = await supabase
-    .from('luc_document_rev')
-    .select('file_path, revision_description')
-    .eq('revision_id', input.rev_id)
-    .single();
+  if (!rev?.file_path) throw new Error('Revision not found or has no file');
 
-  if (error || !data?.file_path) {
-    throw new Error('Revision not found or has no file');
-  }
-
-  const url = await getPresignedDownloadUrl(data.file_path, 900, data.revision_description ?? undefined);
-  return { url, file_name: data.revision_description };
+  const url = await getPresignedDownloadUrl(rev.file_path, 900, rev.revision_description ?? undefined);
+  return { url, file_name: rev.revision_description };
 }
