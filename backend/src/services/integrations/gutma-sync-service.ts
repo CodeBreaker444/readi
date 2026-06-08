@@ -1,6 +1,6 @@
 'use server';
 
-import { supabase } from '@/backend/database/database';
+import { prisma } from '@/lib/prisma';
 import { BUCKET, s3 } from '@/lib/s3Client';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 
@@ -89,57 +89,40 @@ export async function gutmaArchiveAndSync(
   if (snsToFind.length === 0) {
     return {
       success: false,
-      missing_sns: ['__no_sns__'], // no id message
+      missing_sns: ['__no_sns__'],
     };
   }
 
-  // Fetching all tool_ids  
-  const { data: ownerTools, error: toolsError } = await supabase
-    .from('tool')
-    .select('tool_id')
-    .eq('fk_owner_id', ownerId)
-    .eq('tool_active', 'Y');
+  // Fetching all tool_ids
+  const ownerTools = await prisma.tool.findMany({
+    where: { fk_owner_id: ownerId, tool_active: 'Y' },
+    select: { tool_id: true },
+  });
 
-  if (toolsError) throw toolsError;
-
-  const toolIds = (ownerTools ?? []).map((t: any) => t.tool_id);
+  const toolIds = ownerTools.map((t) => t.tool_id);
 
   // Looking up matching components by serial number, scoped to this owner's tools
-  const foundComponents: Array<{
-    component_id: number;
-    fk_tool_id: number;
-    serial_number: string;
-    component_type: string | null;
-    component_metadata: unknown;
-    current_usage_hours: number;
-    current_maintenance_hours: number;
-    current_maintenance_flights: number;
-    maintenance_cycle_hour: number;
-    maintenance_cycle_flight: number;
-  }> = [];
-
-  if (toolIds.length > 0) {
-    const { data: comps, error: compError } = await supabase
-      .from('tool_component')
-      .select(`
-        component_id,
-        fk_tool_id,
-        serial_number,
-        component_type,
-        component_metadata,
-        current_usage_hours,
-        current_maintenance_hours,
-        current_maintenance_flights,
-        maintenance_cycle_hour,
-        maintenance_cycle_flight
-      `)
-      .in('fk_tool_id', toolIds)
-      .in('serial_number', snsToFind)
-      .eq('component_active', 'Y');
-
-    if (compError) throw compError;
-    foundComponents.push(...(comps ?? []));
-  }
+  const foundComponents = toolIds.length > 0
+    ? await prisma.tool_component.findMany({
+        where: {
+          fk_tool_id: { in: toolIds },
+          serial_number: { in: snsToFind },
+          component_active: 'Y',
+        },
+        select: {
+          component_id: true,
+          fk_tool_id: true,
+          serial_number: true,
+          component_type: true,
+          component_metadata: true,
+          current_usage_hours: true,
+          current_maintenance_hours: true,
+          current_maintenance_flights: true,
+          maintenance_cycle_hour: true,
+          maintenance_cycle_flight: true,
+        },
+      })
+    : [];
 
   // identify any unrecognised serial numbers
   const foundSnsSet = new Set(
@@ -175,7 +158,7 @@ export async function gutmaArchiveAndSync(
 
   // Update each matched component
   const now = new Date().toISOString();
-  // Derive the calendar date of this log for battery deduplication 
+  // Derive the calendar date of this log for battery deduplication
   const logDate = preview.start_time
     ? new Date(preview.start_time).toISOString().split('T')[0]
     : now.split('T')[0];
@@ -195,12 +178,8 @@ export async function gutmaArchiveAndSync(
 
     let existingMeta: Record<string, unknown> = {};
     const rawMeta = comp.component_metadata;
-    if (rawMeta) {
-      if (typeof rawMeta === 'string') {
-        try { existingMeta = JSON.parse(rawMeta); } catch { existingMeta = {}; }
-      } else if (typeof rawMeta === 'object' && !Array.isArray(rawMeta)) {
-        existingMeta = rawMeta as Record<string, unknown>;
-      }
+    if (rawMeta && typeof rawMeta === 'object' && !Array.isArray(rawMeta)) {
+      existingMeta = rawMeta as Record<string, unknown>;
     }
 
     // if this component is a battery in the payload, capture firmware cycle count
@@ -216,65 +195,70 @@ export async function gutmaArchiveAndSync(
       }
     }
 
-    const updatePayload: Record<string, unknown> = {
+    const newMeta: Record<string, unknown> = {
+      ...existingMeta,
+      last_flytbase_flight_id: preview.flight_id,
+      last_gutma_sync: now,
+      ...(gutmaBattery != null
+        ? {
+            last_battery_log_date: logDate,
+            ...(gutmaBattery.cycle_count != null
+              ? { gutma_battery_cycle_count: gutmaBattery.cycle_count }
+              : {}),
+          }
+        : {}),
+    };
+
+    const updateData: Record<string, unknown> = {
       current_usage_hours: newLifetimeHours,
-      component_metadata: JSON.stringify({
-        ...existingMeta,
-        last_flytbase_flight_id: preview.flight_id,
-        last_gutma_sync: now,
-        ...(gutmaBattery != null
-          ? {
-              last_battery_log_date: logDate,
-              ...(gutmaBattery.cycle_count != null
-                ? { gutma_battery_cycle_count: gutmaBattery.cycle_count }
-                : {}),
-            }
-          : {}),
-      }),
+      component_metadata: newMeta,
     };
 
     // only advance maintenance counters when limits are configured
     if (limitHour > 0 && durationHhmm > 0) {
-      updatePayload.current_maintenance_hours = newMaintHours;
+      updateData.current_maintenance_hours = newMaintHours;
     }
     if (limitFlight > 0) {
-      updatePayload.current_maintenance_flights = newMaintFlights;
+      updateData.current_maintenance_flights = newMaintFlights;
     }
 
-    await supabase
-      .from('tool_component')
-      .update(updatePayload)
-      .eq('component_id', comp.component_id)
-      .eq('fk_tool_id', comp.fk_tool_id);
+    await prisma.tool_component.update({
+      where: { component_id: comp.component_id },
+      data: updateData,
+    });
 
     updatedComponents.push({
-      serial_number: comp.serial_number,
-      component_type: comp.component_type,
+      serial_number: comp.serial_number ?? '',
+      component_type: comp.component_type ?? null,
     });
   }
 
-  //if this flight is linked to a pilot_mission, auto-sync flight time + dates
+  // if this flight is linked to a pilot_mission, auto-sync flight time + dates
   let missionSynced = false;
   try {
-    const { data: logRecord } = await supabase
-      .from('mission_flight_logs')
-      .select('fk_mission_id')
-      .eq('flytbase_flight_id', preview.flight_id)
-      .maybeSingle();
+    const logRecord = await prisma.mission_flight_logs.findFirst({
+      where: { flytbase_flight_id: preview.flight_id },
+      select: { fk_mission_id: true },
+    });
 
     if (logRecord?.fk_mission_id) {
-      const missionUpdate: Record<string, unknown> = { updated_at: now };
+      const missionData: {
+        updated_at: Date;
+        flight_duration?: number;
+        actual_start?: Date;
+        actual_end?: Date;
+      } = { updated_at: new Date() };
 
       if (durationSeconds > 0) {
-        missionUpdate.flight_duration = Math.round(durationSeconds / 60);
+        missionData.flight_duration = Math.round(durationSeconds / 60);
       }
-      if (preview.start_time) missionUpdate.actual_start = preview.start_time;
-      if (preview.end_time) missionUpdate.actual_end = preview.end_time;
+      if (preview.start_time) missionData.actual_start = new Date(preview.start_time);
+      if (preview.end_time) missionData.actual_end = new Date(preview.end_time);
 
-      await supabase
-        .from('pilot_mission')
-        .update(missionUpdate)
-        .eq('pilot_mission_id', logRecord.fk_mission_id);
+      await prisma.pilot_mission.update({
+        where: { pilot_mission_id: Number(logRecord.fk_mission_id) },
+        data: missionData,
+      });
 
       missionSynced = true;
     }

@@ -1,7 +1,7 @@
 'use server';
 
 import { env } from '@/backend/config/env';
-import { supabase } from '@/backend/database/database';
+import { prisma } from '@/lib/prisma';
 
 
 export interface FlytbaseUserInfo {
@@ -70,85 +70,65 @@ export async function saveFlytbaseConfig(
   orgId: string,
   tokenName?: string,
 ): Promise<void> {
-  const { error } = await supabase
-    .from('users')
-    .update({
+  await prisma.public_users.update({
+    where: { user_id: userId },
+    data: {
       flytbase_api_token: plainToken.trim(),
       flytbase_org_id: orgId.trim(),
       flytbase_token_name: tokenName?.trim() || null,
-    })
-    .eq('user_id', userId);
-
-  if (error) throw new Error(`saveFlytbaseConfig: ${error.message}`);
+    },
+  });
 }
 
 export async function hasFlytbaseToken(userId: number): Promise<{ exists: boolean; tokenName: string | null }> {
-  const { data, error } = await supabase
-    .from('users')
-    .select('flytbase_api_token, flytbase_org_id, flytbase_token_name')
-    .eq('user_id', userId)
-    .single();
+  const user = await prisma.public_users.findUnique({
+    where: { user_id: userId },
+    select: { flytbase_api_token: true, flytbase_org_id: true, flytbase_token_name: true },
+  });
 
-  if (error) throw new Error(`hasFlytbaseToken: ${error.message}`);
+  if (!user) throw new Error('hasFlytbaseToken: user not found');
   return {
-    exists: !!(data?.flytbase_api_token && data?.flytbase_org_id),
-    tokenName: data?.flytbase_token_name ?? null,
+    exists: !!(user.flytbase_api_token && user.flytbase_org_id),
+    tokenName: user.flytbase_token_name ?? null,
   };
 }
 
- 
 export async function getFlytbaseCredentials(
   userId: number,
 ): Promise<{ token: string; orgId: string } | null> {
-  const { data, error } = await supabase
-    .from('users')
-    .select('flytbase_api_token, flytbase_org_id')
-    .eq('user_id', userId)
-    .single();
+  const user = await prisma.public_users.findUnique({
+    where: { user_id: userId },
+    select: { flytbase_api_token: true, flytbase_org_id: true },
+  });
 
-  if (error) throw new Error(`getFlytbaseCredentials: ${error.message}`);
-  if (!data?.flytbase_api_token || !data?.flytbase_org_id) return null;
-
-  return {
-    token: data.flytbase_api_token,
-    orgId: data.flytbase_org_id,
-  };
+  if (!user?.flytbase_api_token || !user?.flytbase_org_id) return null;
+  return { token: user.flytbase_api_token, orgId: user.flytbase_org_id };
 }
 
 export async function getFlytbaseCredentialsForCompany(
   ownerId: number,
   excludeUserId?: number,
 ): Promise<{ token: string; orgId: string; userId: number } | null> {
-  let query = supabase
-    .from('users')
-    .select('user_id, flytbase_api_token, flytbase_org_id')
-    .eq('fk_owner_id', ownerId)
-    .not('flytbase_api_token', 'is', null)
-    .not('flytbase_org_id', 'is', null)
-    .limit(1);
+  const user = await prisma.public_users.findFirst({
+    where: {
+      fk_owner_id: ownerId,
+      flytbase_api_token: { not: null },
+      flytbase_org_id: { not: null },
+      ...(excludeUserId !== undefined && { user_id: { not: excludeUserId } }),
+    },
+    select: { user_id: true, flytbase_api_token: true, flytbase_org_id: true },
+  });
 
-  if (excludeUserId !== undefined) {
-    query = query.neq('user_id', excludeUserId);
-  }
-
-  const { data, error } = await query.maybeSingle();
-  if (error || !data?.flytbase_api_token || !data?.flytbase_org_id) return null;
-
-  return {
-    token: data.flytbase_api_token,
-    orgId: data.flytbase_org_id,
-    userId: data.user_id,
-  };
+  if (!user?.flytbase_api_token || !user?.flytbase_org_id) return null;
+  return { token: user.flytbase_api_token, orgId: user.flytbase_org_id, userId: user.user_id };
 }
 
 /** Remove the stored FlytBase credentials for the given user. */
 export async function removeFlytbaseToken(userId: number): Promise<void> {
-  const { error } = await supabase
-    .from('users')
-    .update({ flytbase_api_token: null, flytbase_org_id: null, flytbase_token_name: null })
-    .eq('user_id', userId);
-
-  if (error) throw new Error(`removeFlytbaseToken: ${error.message}`);
+  await prisma.public_users.update({
+    where: { user_id: userId },
+    data: { flytbase_api_token: null, flytbase_org_id: null, flytbase_token_name: null },
+  });
 }
 
 
@@ -313,4 +293,3 @@ export async function fetchRecentFlights(
   const flights = rawFlights.map(mapFlightLog);
   return { flights, total };
 }
-
