@@ -1,66 +1,52 @@
-import { supabase } from "@/backend/database/database";
+import { prisma } from '@/lib/prisma';
 import { EmergencyResponsePlan, ErpCreateInput, ErpListInput } from "@/config/types/erp";
 
-function mapRow(row: Record<string, unknown>): EmergencyResponsePlan {
+function mapRow(row: any): EmergencyResponsePlan {
   return {
-    id: row.erp_id as number,
-    description: row.description as string,
-    contact: row.contact as string,
+    id: Number(row.erp_id),
+    description: row.description,
+    contact: row.contact,
     type: row.erp_type as EmergencyResponsePlan['type'],
-    owner_id: row.fk_owner_id as number,
-    created_at: row.created_at as string,
-    updated_at: row.updated_at as string,
-  }
+    owner_id: row.fk_owner_id,
+    created_at: row.created_at?.toISOString() ?? '',
+    updated_at: row.updated_at?.toISOString() ?? '',
+  };
 }
 
 export async function listErp(input: ErpListInput): Promise<EmergencyResponsePlan[]> {
-  const { data, error } = await supabase
-    .from('emergency_response_plan')
-    .select('*')
-    .eq('fk_owner_id', input.owner_id)
-    .order('created_at', { ascending: false })
-
-  if (error) throw new Error(error.message)
-  return (data ?? []).map(mapRow)
+  const rows = await prisma.emergency_response_plan.findMany({
+    where: { fk_owner_id: input.owner_id },
+    orderBy: { created_at: 'desc' },
+  });
+  return rows.map(mapRow);
 }
 
 export async function createErp(input: ErpCreateInput): Promise<EmergencyResponsePlan> {
-  const { data, error } = await supabase
-    .from('emergency_response_plan')
-    .insert({
+  const row = await prisma.emergency_response_plan.create({
+    data: {
       description: input.description,
       contact: input.contact,
       erp_type: input.type,
       fk_owner_id: input.owner_id,
-    })
-    .select()
-    .single()
-
-  if (error) throw new Error(error.message)
-  return mapRow(data)
+    },
+  });
+  return mapRow(row);
 }
 
 export async function updateErp(id: number, input: Omit<ErpCreateInput, 'owner_id'>): Promise<EmergencyResponsePlan> {
-  const { data, error } = await supabase
-    .from('emergency_response_plan')
-    .update({
+  const row = await prisma.emergency_response_plan.update({
+    where: { erp_id: BigInt(id) },
+    data: {
       description: input.description,
       contact: input.contact,
       erp_type: input.type,
-    })
-    .eq('erp_id', id)
-    .select()
-    .single()
-
-  if (error) throw new Error(error.message)
-  return mapRow(data)
+    },
+  });
+  return mapRow(row);
 }
 
 export async function deleteErp(id: number): Promise<void> {
-  const { error } = await supabase
-    .from('emergency_response_plan')
-    .delete()
-    .eq('erp_id', id)
-
-  if (error) throw new Error(error.message)
+  await prisma.emergency_response_plan.delete({
+    where: { erp_id: BigInt(id) },
+  });
 }
