@@ -221,7 +221,7 @@ export default function GeneralAuditPlanPage() {
       regulatory_body: record.regulatory_body ?? '',
       requirement_status: record.requirement_status as ComplianceStatus,
       review_frequency: record.review_frequency != null ? String(record.review_frequency) : '',
-      next_review_date: record.next_review_date ?? '',
+      next_review_date: record.next_review_date ? record.next_review_date.split('T')[0] : '',
       requirement_description: record.requirement_description ?? '',
     });
     setModalOpen(true);
