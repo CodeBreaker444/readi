@@ -1,4 +1,4 @@
-import { supabase } from '@/backend/database/database';
+import { prisma } from '@/lib/prisma';
 import { randomUUID } from 'crypto';
 
 export interface ClientInfo {
@@ -55,62 +55,63 @@ function localDateStr(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-function asUtc(ts: string | null | undefined): string | null {
+function asUtc(ts: string | Date | null | undefined): string | null {
   if (!ts) return null;
+  if (ts instanceof Date) return ts.toISOString();
   return ts.endsWith('Z') || ts.includes('+') ? ts : ts + 'Z';
 }
 
 async function getClientPlanningIds(clientId: number, ownerId: number): Promise<number[]> {
-  const { data } = await supabase
-    .from('planning')
-    .select('planning_id')
-    .eq('fk_owner_id', ownerId)
-    .eq('fk_client_id', clientId);
-  return (data ?? []).map((p: any) => p.planning_id);
+  const rows = await prisma.planning.findMany({
+    where: { fk_owner_id: ownerId, fk_client_id: clientId },
+    select: { planning_id: true },
+  });
+  return rows.map((p) => p.planning_id);
 }
 
 export async function getClientPortalDashboard(
   clientId: number,
   ownerId: number,
 ): Promise<ClientPortalDashboard> {
-  const [planningIds, clientResult] = await Promise.all([
+  const [planningIds, clientRow] = await Promise.all([
     getClientPlanningIds(clientId, ownerId),
-    supabase
-      .from('client')
-      .select('client_name, client_legal_name, client_code, client_email, client_phone, client_website, client_city, client_state, contract_start_date, contract_end_date')
-      .eq('client_id', clientId)
-      .eq('fk_owner_id', ownerId)
-      .single(),
+    prisma.client.findFirst({
+      where: { client_id: clientId, fk_owner_id: ownerId },
+      select: {
+        client_name: true,
+        client_legal_name: true,
+        client_code: true,
+        client_email: true,
+        client_phone: true,
+        client_website: true,
+        client_city: true,
+        client_state: true,
+        contract_start_date: true,
+        contract_end_date: true,
+      },
+    }),
   ]);
 
-  let query = supabase
-    .from('pilot_mission')
-    .select(
-      `
-      pilot_mission_id,
-      status_name,
-      flight_duration,
-      distance_flown,
-      fk_tool_id,
-      tool:tool!fk_tool_id ( tool_id, tool_code, tool_name )
-    `,
-    )
-    .eq('fk_owner_id', ownerId);
-
-  // Missions belonging to this client: either tagged directly OR via their planning
+  const missionWhere: any = { fk_owner_id: ownerId };
   if (planningIds.length > 0) {
-    query = query.or(
-      `fk_client_id.eq.${clientId},fk_planning_id.in.(${planningIds.join(',')})`,
-    );
+    missionWhere.OR = [
+      { fk_client_id: clientId },
+      { fk_planning_id: { in: planningIds } },
+    ];
   } else {
-    query = query.eq('fk_client_id', clientId);
+    missionWhere.fk_client_id = clientId;
   }
 
-  const { data, error } = await query;
-
-  if (error) throw new Error(`Failed to fetch client dashboard: ${error.message}`);
-
-  const rows = data ?? [];
+  const rows = await prisma.pilot_mission.findMany({
+    where: missionWhere,
+    select: {
+      status_name: true,
+      flight_duration: true,
+      distance_flown: true,
+      fk_tool_id: true,
+      tool: { select: { tool_id: true, tool_code: true, tool_name: true } },
+    },
+  });
 
   let planned = 0, in_progress = 0, completed = 0, cancelled = 0;
   let total_flight_minutes = 0;
@@ -126,38 +127,34 @@ export async function getClientPortalDashboard(
     else if (status === 'CANCELLED' || status === 'ABORTED') cancelled++;
 
     total_flight_minutes += row.flight_duration ?? 0;
-    total_distance_m += row.distance_flown ?? 0;
+    total_distance_m += row.distance_flown ? Number(row.distance_flown) : 0;
 
     if (row.fk_tool_id && row.tool) {
-      const t = Array.isArray(row.tool) ? row.tool[0] : row.tool;
-      if (t) {
-        const existing = toolMap.get(row.fk_tool_id);
-        if (existing) {
-          existing.mission_count++;
-        } else {
-          toolMap.set(row.fk_tool_id, {
-            tool_id: t.tool_id,
-            tool_code: t.tool_code,
-            tool_name: t.tool_name ?? null,
-            mission_count: 1,
-          });
-        }
+      const existing = toolMap.get(row.fk_tool_id);
+      if (existing) {
+        existing.mission_count++;
+      } else {
+        toolMap.set(row.fk_tool_id, {
+          tool_id: row.tool.tool_id,
+          tool_code: row.tool.tool_code ?? '',
+          tool_name: row.tool.tool_name ?? null,
+          mission_count: 1,
+        });
       }
     }
   }
 
-  const ci = clientResult.data;
-  const client_info: ClientInfo | null = ci ? {
-    client_name: ci.client_name,
-    client_legal_name: ci.client_legal_name ?? null,
-    client_code: ci.client_code ?? null,
-    client_email: ci.client_email ?? null,
-    client_phone: ci.client_phone ?? null,
-    client_website: ci.client_website ?? null,
-    client_city: ci.client_city ?? null,
-    client_state: ci.client_state ?? null,
-    contract_start_date: ci.contract_start_date ?? null,
-    contract_end_date: ci.contract_end_date ?? null,
+  const client_info: ClientInfo | null = clientRow ? {
+    client_name: clientRow.client_name,
+    client_legal_name: clientRow.client_legal_name ?? null,
+    client_code: clientRow.client_code ?? null,
+    client_email: clientRow.client_email ?? null,
+    client_phone: clientRow.client_phone ?? null,
+    client_website: clientRow.client_website ?? null,
+    client_city: clientRow.client_city ?? null,
+    client_state: clientRow.client_state ?? null,
+    contract_start_date: clientRow.contract_start_date ? localDateStr(clientRow.contract_start_date) : null,
+    contract_end_date: clientRow.contract_end_date ? localDateStr(clientRow.contract_end_date) : null,
   } : null;
 
   return {
@@ -184,23 +181,25 @@ export async function getClientPortalAnalytics(
 ): Promise<ClientPortalAnalytics> {
   const planningIds = await getClientPlanningIds(clientId, ownerId);
 
-  let query = supabase
-    .from('pilot_mission')
-    .select('scheduled_start, actual_start, flight_duration, distance_flown')
-    .eq('fk_owner_id', ownerId);
-
+  const missionWhere: any = { fk_owner_id: ownerId };
   if (planningIds.length > 0) {
-    query = query.or(
-      `fk_client_id.eq.${clientId},fk_planning_id.in.(${planningIds.join(',')})`,
-    );
+    missionWhere.OR = [
+      { fk_client_id: clientId },
+      { fk_planning_id: { in: planningIds } },
+    ];
   } else {
-    query = query.eq('fk_client_id', clientId);
+    missionWhere.fk_client_id = clientId;
   }
 
-  const { data, error } = await query;
-  if (error) throw new Error(`Failed to fetch analytics: ${error.message}`);
-
-  const rows = data ?? [];
+  const rows = await prisma.pilot_mission.findMany({
+    where: missionWhere,
+    select: {
+      scheduled_start: true,
+      actual_start: true,
+      flight_duration: true,
+      distance_flown: true,
+    },
+  });
 
   // Build daily flight counts (last 365 days)
   const today = new Date();
@@ -222,16 +221,17 @@ export async function getClientPortalAnalytics(
   }
 
   for (const row of rows) {
-    const dateStr = (row.actual_start ?? row.scheduled_start ?? '').slice(0, 10);
-    if (dailyMap.has(dateStr)) {
+    const ts = row.actual_start ?? row.scheduled_start;
+    const dateStr = ts ? localDateStr(ts) : '';
+    if (dateStr && dailyMap.has(dateStr)) {
       dailyMap.set(dateStr, (dailyMap.get(dateStr) ?? 0) + 1);
     }
     const monthKey = dateStr.slice(0, 7);
-    if (monthlyMap.has(monthKey)) {
+    if (monthKey && monthlyMap.has(monthKey)) {
       const m = monthlyMap.get(monthKey)!;
       m.flights++;
       m.minutes += row.flight_duration ?? 0;
-      m.distance_m += row.distance_flown ?? 0;
+      m.distance_m += row.distance_flown ? Number(row.distance_flown) : 0;
     }
   }
 
@@ -264,27 +264,25 @@ export async function createClientPortalFlightRequest(
 ): Promise<{ request_id: number }> {
   const external_mission_id = `CLIENT-${input.client_id}-${randomUUID().slice(0, 8).toUpperCase()}`;
 
-  const { data, error } = await supabase
-    .from('flight_requests')
-    .insert({
+  const record = await prisma.flight_requests.create({
+    data: {
       fk_owner_id: input.owner_id,
       fk_api_key_id: null,
       external_mission_id,
       mission_type: input.mission_type ?? null,
       target: input.target ?? null,
-      start_datetime: input.start_datetime ?? null,
+      start_datetime: input.start_datetime ? new Date(input.start_datetime) : null,
       priority: input.priority ?? null,
       notes: input.notes ?? null,
       operator: input.operator ?? null,
-      localization: input.localization ?? null,
-      waypoint: input.waypoint ?? null,
+      localization: (input.localization ?? null) as any,
+      waypoint: (input.waypoint ?? null) as any,
       dcc_status: 'NEW',
-    })
-    .select('request_id')
-    .single();
+    },
+    select: { request_id: true },
+  });
 
-  if (error || !data) throw new Error(`createClientPortalFlightRequest: ${error?.message}`);
-  return { request_id: data.request_id };
+  return { request_id: record.request_id };
 }
 
 export async function listClientPortalMissions(
@@ -293,75 +291,79 @@ export async function listClientPortalMissions(
   params: { page: number; pageSize: number; search?: string; status?: string },
 ): Promise<ClientPortalMissionsResponse> {
   const { page, pageSize, search, status } = params;
-  const from = (page - 1) * pageSize;
-  const to = from + pageSize - 1;
+  const skip = (page - 1) * pageSize;
 
   const planningIds = await getClientPlanningIds(clientId, ownerId);
 
-  let query = supabase
-    .from('pilot_mission')
-    .select(
-      `
-      pilot_mission_id,
-      mission_code,
-      mission_name,
-      status_name,
-      scheduled_start,
-      actual_start,
-      actual_end,
-      flight_duration,
-      location,
-      distance_flown,
-      notes,
-      created_at,
-      pilot:users!fk_pilot_user_id ( first_name, last_name ),
-      tool:tool!fk_tool_id ( tool_code, tool_name )
-    `,
-      { count: 'exact' },
-    )
-    .eq('fk_owner_id', ownerId)
-    .range(from, to)
-    .order('created_at', { ascending: false });
-
+  const conditions: any[] = [];
   if (planningIds.length > 0) {
-    query = query.or(
-      `fk_client_id.eq.${clientId},fk_planning_id.in.(${planningIds.join(',')})`,
-    );
+    conditions.push({
+      OR: [
+        { fk_client_id: clientId },
+        { fk_planning_id: { in: planningIds } },
+      ],
+    });
   } else {
-    query = query.eq('fk_client_id', clientId);
+    conditions.push({ fk_client_id: clientId });
   }
-
-  if (status) query = query.eq('status_name', status);
+  if (status) conditions.push({ status_name: status });
   if (search) {
-    query = query.or(
-      `mission_code.ilike.%${search}%,mission_name.ilike.%${search}%,location.ilike.%${search}%`,
-    );
+    conditions.push({
+      OR: [
+        { mission_code: { contains: search, mode: 'insensitive' } },
+        { mission_name: { contains: search, mode: 'insensitive' } },
+        { location: { contains: search, mode: 'insensitive' } },
+      ],
+    });
   }
 
-  const { data, error, count } = await query;
-  if (error) throw new Error(`Failed to list client missions: ${error.message}`);
+  const missionWhere = { fk_owner_id: ownerId, AND: conditions };
 
-  const missions: ClientPortalMission[] = (data ?? []).map((row: any) => {
-    const pilot = Array.isArray(row.pilot) ? row.pilot[0] : row.pilot;
-    const tool = Array.isArray(row.tool) ? row.tool[0] : row.tool;
-    return {
-      pilot_mission_id: row.pilot_mission_id,
-      mission_code: row.mission_code,
-      mission_name: row.mission_name ?? null,
-      status_name: row.status_name ?? null,
-      scheduled_start: asUtc(row.scheduled_start),
-      actual_start: asUtc(row.actual_start),
-      actual_end: asUtc(row.actual_end),
-      flight_duration: row.flight_duration ?? null,
-      location: row.location ?? null,
-      distance_flown: row.distance_flown ?? null,
-      notes: row.notes ?? null,
-      pilot_name: pilot ? `${pilot.first_name ?? ''} ${pilot.last_name ?? ''}`.trim() : null,
-      tool_code: tool?.tool_code ?? null,
-      tool_name: tool?.tool_name ?? null,
-      created_at: row.created_at,
-    };
-  });
+  const [rows, total] = await Promise.all([
+    prisma.pilot_mission.findMany({
+      where: missionWhere,
+      select: {
+        pilot_mission_id: true,
+        mission_code: true,
+        mission_name: true,
+        status_name: true,
+        scheduled_start: true,
+        actual_start: true,
+        actual_end: true,
+        flight_duration: true,
+        location: true,
+        distance_flown: true,
+        notes: true,
+        created_at: true,
+        users: { select: { first_name: true, last_name: true } },
+        tool: { select: { tool_code: true, tool_name: true } },
+      },
+      skip,
+      take: pageSize,
+      orderBy: { created_at: 'desc' },
+    }),
+    prisma.pilot_mission.count({ where: missionWhere }),
+  ]);
 
-  return { data: missions, total: count ?? 0, page, pageSize };
+  const missions: ClientPortalMission[] = rows.map((row) => ({
+    pilot_mission_id: row.pilot_mission_id,
+    mission_code: row.mission_code ?? '',
+    mission_name: row.mission_name ?? null,
+    status_name: row.status_name ?? null,
+    scheduled_start: asUtc(row.scheduled_start),
+    actual_start: asUtc(row.actual_start),
+    actual_end: asUtc(row.actual_end),
+    flight_duration: row.flight_duration ?? null,
+    location: row.location ?? null,
+    distance_flown: row.distance_flown ? Number(row.distance_flown) : null,
+    notes: row.notes ?? null,
+    pilot_name: row.users
+      ? `${row.users.first_name ?? ''} ${row.users.last_name ?? ''}`.trim()
+      : null,
+    tool_code: row.tool?.tool_code ?? null,
+    tool_name: row.tool?.tool_name ?? null,
+    created_at: row.created_at?.toISOString() ?? '',
+  }));
+
+  return { data: missions, total, page, pageSize };
 }

@@ -100,11 +100,16 @@ export default function ClientManagement({ session }: ClientManagementProps) {
 
   const handleDelete = async (clientId: number) => {
     try {
-      await fetch('/api/client/delete', {
+      const res = await fetch('/api/client/delete', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ client_id: clientId }),
       });
+      const data = await res.json();
+      if (!res.ok || data.code !== 1) {
+        toast.error(data.error ?? t('team.client.toast.deleteFailed'));
+        return;
+      }
       toast.success(t('team.client.toast.deleted'));
       fetchClients();
     } catch (e) {

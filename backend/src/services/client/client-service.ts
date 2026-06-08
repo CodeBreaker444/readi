@@ -1,4 +1,6 @@
+import { env } from "@/backend/config/env";
 import { supabase } from "@/backend/database/database";
+import { prisma } from "@/lib/prisma";
 import bcrypt from 'bcryptjs';
 import { sendUserActivationEmail } from '../../../../lib/resend/mail';
 
@@ -54,23 +56,28 @@ export interface UpdateClientInput extends Partial<CreateClientInput> {
 
 export async function listClients(owner_id?: number): Promise<{ code: number; data?: ClientData[]; error?: string }> {
   try {
-    let query = supabase
-      .from('client')
-      .select('*, owner(owner_code, owner_name)')
-      .order('created_at', { ascending: false });
-    if (owner_id) query = query.eq('fk_owner_id', owner_id);
+    const rows = await prisma.client.findMany({
+      where: {
+        client_active: 'Y',
+        ...(owner_id ? { fk_owner_id: owner_id } : {}),
+      },
+      include: { owner: { select: { owner_code: true, owner_name: true } } },
+      orderBy: { created_at: 'desc' },
+    });
 
-    const { data, error } = await query;
-    if (error) return { code: 0, error: error.message };
-
-    const formatted = (data as any[]).map((c) => ({
+    const formatted = rows.map((c) => ({
       ...c,
       owner_code: c.owner?.owner_code || '',
       owner_name: c.owner?.owner_name || '',
       owner: undefined,
+      contract_start_date: c.contract_start_date?.toISOString().slice(0, 10),
+      contract_end_date: c.contract_end_date?.toISOString().slice(0, 10),
+      credit_limit: c.credit_limit ? Number(c.credit_limit) : undefined,
+      created_at: c.created_at?.toISOString(),
+      updated_at: c.updated_at?.toISOString(),
     }));
 
-    return { code: 1, data: formatted as ClientData[] };
+    return { code: 1, data: formatted as unknown as ClientData[] };
   } catch (e: any) {
     return { code: 0, error: e.message };
   }
@@ -82,16 +89,24 @@ export async function checkClientUsername(
 ): Promise<{ available: boolean; similar: string[] }> {
   if (!username || username.length < 1) return { available: true, similar: [] };
   const prefix = username.toLowerCase();
-  const { data } = await supabase
-    .from('client')
-    .select('username')
-    .eq('fk_owner_id', owner_id)
-    .not('username', 'is', null)
-    .ilike('username', `${prefix}%`)
-    .limit(10);
 
-  const similar = (data ?? []).map((r: any) => r.username as string).filter(Boolean);
-  const available = !similar.some((u) => u.toLowerCase() === prefix);
+  const [clientRows, takenInUsers] = await Promise.all([
+    prisma.client.findMany({
+      where: {
+        fk_owner_id: owner_id,
+        username: { not: null, startsWith: prefix, mode: 'insensitive' },
+      },
+      select: { username: true },
+      take: 10,
+    }),
+    prisma.public_users.findFirst({
+      where: { username: { equals: prefix, mode: 'insensitive' } },
+      select: { user_id: true },
+    }),
+  ]);
+
+  const similar = clientRows.map((r) => r.username as string).filter(Boolean);
+  const available = !takenInUsers && !similar.some((u) => u.toLowerCase() === prefix);
   return { available, similar };
 }
 
@@ -105,50 +120,55 @@ export async function addClient(input: CreateClientInput): Promise<{ code: numbe
     const activationKey = crypto.randomUUID().replace(/-/g, '');
 
     if (clientFields.client_code) {
-      const { data: existing } = await supabase
-        .from('client')
-        .select('client_id')
-        .eq('fk_owner_id', clientFields.fk_owner_id)
-        .eq('client_code', clientFields.client_code)
-        .maybeSingle();
+      const existing = await prisma.client.findFirst({
+        where: { fk_owner_id: clientFields.fk_owner_id, client_code: clientFields.client_code },
+        select: { client_id: true },
+      });
       if (existing) return { code: 0, error: 'A client with this code already exists' };
     }
 
     if (clientFields.client_email) {
-      const { data: existing } = await supabase
-        .from('client')
-        .select('client_id')
-        .eq('fk_owner_id', clientFields.fk_owner_id)
-        .ilike('client_email', clientFields.client_email)
-        .maybeSingle();
+      const existing = await prisma.client.findFirst({
+        where: {
+          fk_owner_id: clientFields.fk_owner_id,
+          client_email: { equals: clientFields.client_email, mode: 'insensitive' },
+        },
+        select: { client_id: true },
+      });
       if (existing) return { code: 0, error: 'A client with this email already exists' };
     }
 
     if (clientFields.client_phone) {
-      const { data: existing } = await supabase
-        .from('client')
-        .select('client_id')
-        .eq('fk_owner_id', clientFields.fk_owner_id)
-        .eq('client_phone', clientFields.client_phone)
-        .maybeSingle();
+      const existing = await prisma.client.findFirst({
+        where: { fk_owner_id: clientFields.fk_owner_id, client_phone: clientFields.client_phone },
+        select: { client_id: true },
+      });
       if (existing) return { code: 0, error: 'A client with this phone number already exists' };
     }
 
     const { available } = await checkClientUsername(clientFields.fk_owner_id, username);
     if (!available) return { code: 0, error: 'Username is already taken' };
 
+    const existingUser = await prisma.public_users.findFirst({
+      where: { username: { equals: username, mode: 'insensitive' } },
+      select: { user_id: true },
+    });
+    if (existingUser) return { code: 0, error: 'Username is already taken' };
+
     const sanitized: Record<string, any> = {};
     for (const [key, value] of Object.entries(clientFields)) {
       sanitized[key] = value === '' ? null : value;
     }
 
-    const { data: clientRow, error: clientError } = await supabase
-      .from('client')
-      .insert({ ...sanitized, username, client_active: 'Y' })
-      .select()
-      .single();
-
-    if (clientError) return { code: 0, error: clientError.message };
+    const clientRow = await prisma.client.create({
+      data: {
+        ...sanitized,
+        username,
+        client_active: 'Y',
+        contract_start_date: sanitized.contract_start_date ? new Date(sanitized.contract_start_date) : null,
+        contract_end_date: sanitized.contract_end_date ? new Date(sanitized.contract_end_date) : null,
+      } as any,
+    });
 
     const email = clientFields.client_email.toLowerCase().trim();
     const nameParts = (clientFields.client_name ?? '').trim().split(/\s+/);
@@ -163,33 +183,31 @@ export async function addClient(input: CreateClientInput): Promise<{ code: numbe
     });
 
     if (authError || !authData?.user) {
-      await supabase.from('client').delete().eq('client_id', clientRow.client_id);
+      await prisma.client.delete({ where: { client_id: clientRow.client_id } });
       return { code: 0, error: authError?.message ?? 'Failed to create auth user' };
     }
 
     const passwordHash = await bcrypt.hash(temp_password, 10);
 
-    const { error: userError } = await supabase
-      .from('users')
-      .update({
-        fk_owner_id: clientFields.fk_owner_id,
-        fk_client_id: clientRow.client_id,
-        username,
-        password_hash: passwordHash,
-        user_active: 'N',
-        _key_: activationKey,
-      })
-      .eq('auth_user_id', authData.user.id);
-
-    if (userError) {
-      await supabase.from('client').delete().eq('client_id', clientRow.client_id);
+    try {
+      await prisma.public_users.update({
+        where: { auth_user_id: authData.user.id },
+        data: {
+          fk_owner_id: clientFields.fk_owner_id,
+          fk_client_id: clientRow.client_id,
+          username,
+          password_hash: passwordHash,
+          user_active: 'N',
+          key_: activationKey,
+        },
+      });
+    } catch (userError: any) {
+      await prisma.client.delete({ where: { client_id: clientRow.client_id } });
       await supabase.auth.admin.deleteUser(authData.user.id).catch(() => {});
       return { code: 0, error: userError.message };
     }
-    // user_settings already seeded by initialize_user_settings() in the trigger
 
-    // Send activation email with link — client must click to activate their account
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+    const appUrl = env.APP_URL;
     const activationLink = `${appUrl}/auth/activate?o=${clientFields.fk_owner_id}&email=${encodeURIComponent(email)}&username=${encodeURIComponent(username)}&id=${activationKey}`;
     sendUserActivationEmail(clientFields.client_email, clientFields.client_name, {
       organization: 'ReADI',
@@ -198,7 +216,7 @@ export async function addClient(input: CreateClientInput): Promise<{ code: numbe
       loginlink: activationLink,
     }).catch(() => {});
 
-    return { code: 1, data: clientRow as ClientData, temp_password };
+    return { code: 1, data: clientRow as unknown as ClientData, temp_password };
   } catch (e: any) {
     return { code: 0, error: e.message };
   }
@@ -206,16 +224,14 @@ export async function addClient(input: CreateClientInput): Promise<{ code: numbe
 
 export async function updateClient(input: UpdateClientInput): Promise<{ code: number; data?: ClientData; error?: string }> {
   try {
-    const { client_id, ...updateFields } = input;
-    const { data, error } = await supabase
-      .from('client')
-      .update({ ...updateFields, updated_at: new Date().toISOString() })
-      .eq('client_id', client_id)
-      .select()
-      .single();
+    const { client_id, contract_start_date, contract_end_date, ...rest } = input;
 
-    if (error) return { code: 0, error: error.message };
-    return { code: 1, data: data as ClientData };
+    const data: any = { ...rest, updated_at: new Date() };
+    if (contract_start_date !== undefined) data.contract_start_date = contract_start_date ? new Date(contract_start_date) : null;
+    if (contract_end_date !== undefined) data.contract_end_date = contract_end_date ? new Date(contract_end_date) : null;
+
+    const updated = await prisma.client.update({ where: { client_id }, data });
+    return { code: 1, data: updated as unknown as ClientData };
   } catch (e: any) {
     return { code: 0, error: e.message };
   }
@@ -223,8 +239,10 @@ export async function updateClient(input: UpdateClientInput): Promise<{ code: nu
 
 export async function deleteClient(client_id: number): Promise<{ code: number; error?: string }> {
   try {
-    const { error } = await supabase.from('client').delete().eq('client_id', client_id);
-    if (error) return { code: 0, error: error.message };
+    await prisma.client.update({
+      where: { client_id },
+      data: { client_active: 'N', updated_at: new Date() },
+    });
     return { code: 1 };
   } catch (e: any) {
     return { code: 0, error: e.message };
@@ -233,14 +251,9 @@ export async function deleteClient(client_id: number): Promise<{ code: number; e
 
 export async function getClientById(client_id: number): Promise<{ code: number; data?: ClientData; error?: string }> {
   try {
-    const { data, error } = await supabase
-      .from('client')
-      .select('*')
-      .eq('client_id', client_id)
-      .single();
-
-    if (error) return { code: 0, error: error.message };
-    return { code: 1, data: data as ClientData };
+    const row = await prisma.client.findUnique({ where: { client_id } });
+    if (!row) return { code: 0, error: 'Client not found' };
+    return { code: 1, data: row as unknown as ClientData };
   } catch (e: any) {
     return { code: 0, error: e.message };
   }
