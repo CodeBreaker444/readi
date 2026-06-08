@@ -196,16 +196,36 @@ export async function listDocuments(input: DocumentListInput): Promise<{
 
   const statusSet = [...new Set((allStatuses ?? []).map((d) => d.document_status).filter(Boolean))];
 
+  const componentIds = (docs ?? [])
+    .map((d) => (d as any).fk_component_id as number | null)
+    .filter((id): id is number => id != null);
+
+  const expiredComponentSet = new Set<number>();
+  if (componentIds.length > 0) {
+    const today = new Date().toISOString().split('T')[0];
+    const { data: expiredComps } = await supabase
+      .from('tool_component')
+      .select('tool_component_id, fk_tool_id')
+      .in('tool_component_id', componentIds)
+      .eq('component_active', 'Y')
+      .lte('expiration_date', today)
+      .not('expiration_date', 'is', null);
+    (expiredComps ?? []).forEach((c: any) => expiredComponentSet.add(c.tool_component_id));
+  }
+
   const items: RepositoryDocument[] = (docs ?? []).map((d) => {
     const rev = latestRevMap.get(d.document_id) ?? null;
    const typeData = Array.isArray(d.luc_doc_type)
   ? (d.luc_doc_type as Array<{ doc_type_name: string; doc_type_category: string }>)[0]
   : d.luc_doc_type as { doc_type_name: string; doc_type_category: string } | null;
 
+    const componentId = (d as any).fk_component_id as number | null;
+    const isNonOp = componentId != null && expiredComponentSet.has(componentId);
+
     return {
       document_id:       d.document_id,
       doc_type_id:       d.fk_doc_type_id ?? 0,
-      fk_component_id:   (d as any).fk_component_id ?? null,
+      fk_component_id:   componentId,
       type_name:         typeData?.doc_type_name ?? null,
       doc_area:          (typeData?.doc_type_category ?? null) as RepositoryDocument['doc_area'],
       doc_category:      typeData?.doc_type_category ?? null,
@@ -217,6 +237,7 @@ export async function listDocuments(input: DocumentListInput): Promise<{
       owner_role:        (d as any).owner_role ?? null,
       effective_date:    d.effective_date,
       expiry_date:       d.expiry_date,
+      tool_status:       isNonOp ? 'NOT_OPERATIONAL' : null,
       keywords:          (d as any).keywords ?? null,
       tags:              (d as any).tags ?? null,
       version_label:     rev?.revision_number ?? d.version_number ?? null,

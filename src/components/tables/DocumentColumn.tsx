@@ -88,9 +88,16 @@ export function getRepositoryColumns(actions: ColumnActions): ColumnDef<Reposito
       ),
       cell: ({ row }) => (
         <div className="flex flex-col gap-0.5">
-          <span className="text-xs font-medium text-slate-800 dark:text-white">
-            {row.original.title}
-          </span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-medium text-slate-800 dark:text-white">
+              {row.original.title}
+            </span>
+            {row.original.tool_status === 'NOT_OPERATIONAL' && (
+              <span className="shrink-0 text-[9px] font-semibold uppercase tracking-wide text-red-600 bg-red-50 border border-red-200 rounded px-1 py-0.5 leading-none dark:bg-red-950 dark:text-red-400 dark:border-red-800">
+                Not Operational
+              </span>
+            )}
+          </div>
           {row.original.description && (
             <span className="text-[11px] text-slate-400 dark:text-slate-500 truncate max-w-[250px]">
               {row.original.description}

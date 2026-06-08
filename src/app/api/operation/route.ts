@@ -2,7 +2,7 @@ import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { notifyDccMissionCreation } from '@/backend/services/mission/dcc-callback-service';
 import { notifyPilotAssignment } from '@/backend/services/notification/notification-service';
 import { createOperation, createRecurringOperations, deleteOperation, listOperations } from '@/backend/services/operation/operation-service';
-import { assertToolNotInMaintenance } from '@/backend/services/system/maintenance-ticket';
+import { assertToolNotInMaintenance, assertToolNotNonOperational } from '@/backend/services/system/maintenance-ticket';
 import { CreateOperationSchema, ListOperationsQuerySchema } from '@/config/types/operation';
 import { internalError } from '@/lib/api-error';
 import { requirePermission } from '@/lib/auth/api-auth';
@@ -113,6 +113,13 @@ export async function POST(req: NextRequest) {
 
     if (body.is_recurring === true) {
       const validated = createRecurringSchema.parse(body);
+      if (validated.fk_tool_id) {
+        try {
+          await assertToolNotNonOperational(validated.fk_tool_id);
+        } catch (err: any) {
+          return NextResponse.json({ error: err.message }, { status: 400 });
+        }
+      }
       let result: Awaited<ReturnType<typeof createRecurringOperations>>;
       try {
         result = await createRecurringOperations(validated, ownerId);
@@ -156,6 +163,7 @@ export async function POST(req: NextRequest) {
 
     if (validated.fk_tool_id) {
       try {
+        await assertToolNotNonOperational(validated.fk_tool_id);
         await assertToolNotInMaintenance(validated.fk_tool_id);
       } catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 400 });

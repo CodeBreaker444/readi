@@ -204,7 +204,7 @@ export default function ViewSystemModal({ open, toolId, onClose }: ViewSystemMod
         console.log('Logo is Missing for PDF export!');
       }
 
-      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm' });
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', compress: true });
       const pageW = doc.internal.pageSize.width;
       const pageH = doc.internal.pageSize.height;
       const exportTitle = `System Details — ${toolData?.tool_code ?? ''}`;

@@ -213,6 +213,7 @@ export const getOperationColumns = (t: TFunction, isDark = false, timezone = 'Eu
         name={row.original.tool_name}
         primaryDrone={row.original.primary_component_code}
         size="sm"
+        toolStatus={row.original.tool_status}
       />
     ),
   },
