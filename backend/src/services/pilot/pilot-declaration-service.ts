@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 
 export interface PilotDeclarationPayload {
@@ -61,7 +62,7 @@ export async function insertPilotDeclaration(
     },
     update: {
       fk_tool_id: payload.fk_tool_id ?? null,
-      declaration_data: payload.declaration_data,
+      declaration_data: payload.declaration_data as unknown as Prisma.InputJsonValue,
       checklist_completed: true,
       declared_at: new Date(),
     },
@@ -70,7 +71,7 @@ export async function insertPilotDeclaration(
       fk_tool_id: payload.fk_tool_id ?? null,
       declaration_type: payload.declaration_type,
       declaration_date: new Date(today),
-      declaration_data: payload.declaration_data,
+      declaration_data: payload.declaration_data as unknown as Prisma.InputJsonValue,
       checklist_completed: true,
       declared_at: new Date(),
     },

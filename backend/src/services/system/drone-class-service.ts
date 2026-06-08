@@ -1,6 +1,6 @@
 'use server';
 
-import { supabase } from '@/backend/database/database';
+import { prisma } from '@/lib/prisma';
 
 export interface DroneClassRow {
   class_id: number;
@@ -19,32 +19,33 @@ const DEFAULT_CLASSES = [
 ];
 
 export async function getDroneClasses(ownerId: number): Promise<DroneClassRow[]> {
-  const { data, error } = await supabase
-    .from('drone_class_config')
-    .select('class_id, class_value, class_label')
-    .eq('fk_owner_id', ownerId)
-    .order('class_label', { ascending: true });
+  try {
+    const data = await prisma.drone_class_config.findMany({
+      where: { fk_owner_id: ownerId },
+      select: { class_id: true, class_value: true, class_label: true },
+      orderBy: { class_label: 'asc' },
+    });
 
-  if (error) {
-    // Table may not exist yet — return defaults
+    if (!data || data.length === 0) {
+      try {
+        const created = await prisma.$transaction(
+          DEFAULT_CLASSES.map((c) =>
+            prisma.drone_class_config.create({
+              data: { ...c, fk_owner_id: ownerId },
+              select: { class_id: true, class_value: true, class_label: true },
+            })
+          )
+        );
+        return created;
+      } catch {
+        return DEFAULT_CLASSES.map((c, i) => ({ class_id: i + 1, ...c }));
+      }
+    }
+
+    return data;
+  } catch {
     return DEFAULT_CLASSES.map((c, i) => ({ class_id: i + 1, ...c }));
   }
-
-  if (!data || data.length === 0) {
-    try {
-      const rows = DEFAULT_CLASSES.map(c => ({ ...c, fk_owner_id: ownerId }));
-      const { data: seeded, error: seedErr } = await supabase
-        .from('drone_class_config')
-        .insert(rows)
-        .select('class_id, class_value, class_label');
-      if (seedErr) return DEFAULT_CLASSES.map((c, i) => ({ class_id: i + 1, ...c }));
-      return seeded ?? [];
-    } catch {
-      return DEFAULT_CLASSES.map((c, i) => ({ class_id: i + 1, ...c }));
-    }
-  }
-
-  return data;
 }
 
 export async function createDroneClass(
@@ -54,23 +55,17 @@ export async function createDroneClass(
 ): Promise<DroneClassRow> {
   const normalized = classValue.trim().toUpperCase();
 
-  const { data: existing } = await supabase
-    .from('drone_class_config')
-    .select('class_id')
-    .eq('fk_owner_id', ownerId)
-    .eq('class_value', normalized)
-    .maybeSingle();
+  const existing = await prisma.drone_class_config.findFirst({
+    where: { fk_owner_id: ownerId, class_value: normalized },
+    select: { class_id: true },
+  });
 
   if (existing) throw new Error('A drone class with this value already exists.');
 
-  const { data, error } = await supabase
-    .from('drone_class_config')
-    .insert({ class_value: normalized, class_label: classLabel.trim(), fk_owner_id: ownerId })
-    .select('class_id, class_value, class_label')
-    .single();
-
-  if (error) throw new Error(error.message);
-  return data;
+  return prisma.drone_class_config.create({
+    data: { class_value: normalized, class_label: classLabel.trim(), fk_owner_id: ownerId },
+    select: { class_id: true, class_value: true, class_label: true },
+  });
 }
 
 export async function updateDroneClass(
@@ -78,19 +73,14 @@ export async function updateDroneClass(
   classId: number,
   classLabel: string,
 ): Promise<void> {
-  const { error } = await supabase
-    .from('drone_class_config')
-    .update({ class_label: classLabel.trim() })
-    .eq('class_id', classId)
-    .eq('fk_owner_id', ownerId);
-  if (error) throw new Error(error.message);
+  await prisma.drone_class_config.updateMany({
+    where: { class_id: classId, fk_owner_id: ownerId },
+    data: { class_label: classLabel.trim() },
+  });
 }
 
 export async function deleteDroneClass(ownerId: number, classId: number): Promise<void> {
-  const { error } = await supabase
-    .from('drone_class_config')
-    .delete()
-    .eq('class_id', classId)
-    .eq('fk_owner_id', ownerId);
-  if (error) throw new Error(error.message);
+  await prisma.drone_class_config.deleteMany({
+    where: { class_id: classId, fk_owner_id: ownerId },
+  });
 }

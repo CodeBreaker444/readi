@@ -1,4 +1,4 @@
-import { supabase } from '@/backend/database/database';
+import { prisma } from '@/lib/prisma';
 
 export interface ComponentTypeRow {
   type_id: number;
@@ -20,23 +20,22 @@ const DEFAULT_TYPES = [
 ];
 
 export async function getComponentTypes(ownerId: number): Promise<ComponentTypeRow[]> {
-  const { data, error } = await supabase
-    .from('component_type_config')
-    .select('type_id, type_value, type_label')
-    .eq('fk_owner_id', ownerId)
-    .order('type_label', { ascending: true });
-
-  if (error) throw new Error(error.message);
+  const data = await prisma.component_type_config.findMany({
+    where: { fk_owner_id: BigInt(ownerId) },
+    select: { type_id: true, type_value: true, type_label: true },
+    orderBy: { type_label: 'asc' },
+  });
 
   if (!data || data.length === 0) {
-    const rows = DEFAULT_TYPES.map(t => ({ ...t, fk_owner_id: ownerId }));
-    const { data: seeded, error: seedErr } = await supabase
-      .from('component_type_config')
-      .insert(rows)
-      .select('type_id, type_value, type_label');
-
-    if (seedErr) throw new Error(seedErr.message);
-    return seeded ?? [];
+    const created = await prisma.$transaction(
+      DEFAULT_TYPES.map((t) =>
+        prisma.component_type_config.create({
+          data: { ...t, fk_owner_id: BigInt(ownerId) },
+          select: { type_id: true, type_value: true, type_label: true },
+        })
+      )
+    );
+    return created;
   }
 
   return data;
@@ -50,23 +49,23 @@ export async function createComponentType(
   const normalizedValue = typeValue.trim().toUpperCase();
   const normalizedLabel = typeLabel.trim().toLowerCase();
 
-  const { data: existing } = await supabase
-    .from('component_type_config')
-    .select('type_id')
-    .eq('fk_owner_id', ownerId)
-    .or(`type_value.eq.${normalizedValue},type_label.ilike.${normalizedLabel}`)
-    .maybeSingle();
+  const existing = await prisma.component_type_config.findFirst({
+    where: {
+      fk_owner_id: BigInt(ownerId),
+      OR: [
+        { type_value: normalizedValue },
+        { type_label: { contains: normalizedLabel, mode: 'insensitive' } },
+      ],
+    },
+    select: { type_id: true },
+  });
 
   if (existing) throw new Error('A component type with this name or value already exists.');
 
-  const { data, error } = await supabase
-    .from('component_type_config')
-    .insert({ type_value: normalizedValue, type_label: typeLabel.trim(), fk_owner_id: ownerId })
-    .select('type_id, type_value, type_label')
-    .single();
-
-  if (error) throw new Error(error.message);
-  return data;
+  return prisma.component_type_config.create({
+    data: { type_value: normalizedValue, type_label: typeLabel.trim(), fk_owner_id: BigInt(ownerId) },
+    select: { type_id: true, type_value: true, type_label: true },
+  });
 }
 
 export async function updateComponentType(
@@ -74,13 +73,10 @@ export async function updateComponentType(
   typeId: number,
   typeLabel: string,
 ): Promise<void> {
-  const { error } = await supabase
-    .from('component_type_config')
-    .update({ type_label: typeLabel.trim() })
-    .eq('type_id', typeId)
-    .eq('fk_owner_id', ownerId);
-
-  if (error) throw new Error(error.message);
+  await prisma.component_type_config.updateMany({
+    where: { type_id: typeId, fk_owner_id: BigInt(ownerId) },
+    data: { type_label: typeLabel.trim() },
+  });
 }
 
 export interface ComponentUsageRow {
@@ -95,26 +91,25 @@ export async function getComponentsUsingType(
   ownerId: number,
   typeValue: string,
 ): Promise<ComponentUsageRow[]> {
-  const { data: tools, error: toolError } = await supabase
-    .from('tool')
-    .select('tool_id, tool_code')
-    .eq('fk_owner_id', ownerId);
-  if (toolError) throw new Error(toolError.message);
+  const tools = await prisma.tool.findMany({
+    where: { fk_owner_id: ownerId },
+    select: { tool_id: true, tool_code: true },
+  });
 
-  const toolIds = (tools ?? []).map((t: any) => t.tool_id);
+  const toolIds = tools.map((t) => t.tool_id);
   if (toolIds.length === 0) return [];
 
-  const { data, error } = await supabase
-    .from('tool_component')
-    .select('component_id, component_code, component_name, fk_tool_id')
-    .eq('component_type', typeValue)
-    .eq('component_active', 'Y')
-    .in('fk_tool_id', toolIds);
+  const components = await prisma.tool_component.findMany({
+    where: {
+      component_type: typeValue,
+      component_active: 'Y',
+      fk_tool_id: { in: toolIds },
+    },
+    select: { component_id: true, component_code: true, component_name: true, fk_tool_id: true },
+  });
 
-  if (error) throw new Error(error.message);
-
-  const toolMap = new Map((tools ?? []).map((t: any) => [t.tool_id, t.tool_code]));
-  return (data ?? []).map((c: any) => ({
+  const toolMap = new Map(tools.map((t) => [t.tool_id, t.tool_code]));
+  return components.map((c) => ({
     component_id: c.component_id,
     component_code: c.component_code,
     component_name: c.component_name,
@@ -124,13 +119,10 @@ export async function getComponentsUsingType(
 }
 
 export async function deleteComponentType(ownerId: number, typeId: number): Promise<void> {
-  const { data: typeRow, error: fetchErr } = await supabase
-    .from('component_type_config')
-    .select('type_value')
-    .eq('type_id', typeId)
-    .eq('fk_owner_id', ownerId)
-    .maybeSingle();
-  if (fetchErr) throw new Error(fetchErr.message);
+  const typeRow = await prisma.component_type_config.findFirst({
+    where: { type_id: typeId, fk_owner_id: BigInt(ownerId) },
+    select: { type_value: true },
+  });
   if (!typeRow) throw new Error('Type not found.');
 
   const usage = await getComponentsUsingType(ownerId, typeRow.type_value);
@@ -140,11 +132,7 @@ export async function deleteComponentType(ownerId: number, typeId: number): Prom
     );
   }
 
-  const { error } = await supabase
-    .from('component_type_config')
-    .delete()
-    .eq('type_id', typeId)
-    .eq('fk_owner_id', ownerId);
-
-  if (error) throw new Error(error.message);
+  await prisma.component_type_config.deleteMany({
+    where: { type_id: typeId, fk_owner_id: BigInt(ownerId) },
+  });
 }
