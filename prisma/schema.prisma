@@ -2526,7 +2526,9 @@ model transaction_signs {
   jwt_token           String
   payload_preview     Json?
   public_key_snapshot String
-  created_at          DateTime @default(now()) @db.Timestamptz(6)
+  integrity_status    String?   @db.VarChar(10)
+  verified_at         DateTime? @db.Timestamptz(6)
+  created_at          DateTime  @default(now()) @db.Timestamptz(6)
 
   @@index([created_at(sort: Desc)], map: "idx_transaction_signs_created")
   @@index([entity_type, entity_id], map: "idx_transaction_signs_entity")

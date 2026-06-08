@@ -28,6 +28,8 @@ interface TransactionSign {
   jwt_token: string;
   payload_preview: Record<string, unknown> | null;
   public_key_snapshot: string;
+  integrity_status: string | null;
+  verified_at: string | null;
   created_at: string;
 }
 
@@ -78,8 +80,18 @@ export function SecureTransactionsTab({ isDark }: Props) {
         params: { page: pagination.pageIndex + 1, page_size: pagination.pageSize },
       });
       if (data.code === 1) {
-        setSigns(data.data ?? []);
+        const rows = data.data ?? [];
+        setSigns(rows);
         setTotal(data.total ?? 0);
+        setVerifyMap(prev => {
+          const next = new Map(prev);
+          for (const row of rows) {
+            if (row.integrity_status === 'valid' || row.integrity_status === 'invalid') {
+              next.set(row.id, row.integrity_status as VerifyStatus);
+            }
+          }
+          return next;
+        });
       }
     } catch (err) {
       console.log('Failed to load secure transactions:', err);
@@ -100,12 +112,11 @@ export function SecureTransactionsTab({ isDark }: Props) {
 
   const handleVerify = async (sign: TransactionSign) => {
     setVerifyMap(prev => new Map(prev).set(sign.id, 'loading'));
-    try {
-      const { valid } = await verifyTransactionJWT(sign.jwt_token, sign.public_key_snapshot);
-      setVerifyMap(prev => new Map(prev).set(sign.id, valid ? 'valid' : 'invalid'));
-    } catch {
-      setVerifyMap(prev => new Map(prev).set(sign.id, 'invalid'));
-    }
+    const { valid } = await verifyTransactionJWT(sign.jwt_token, sign.public_key_snapshot);
+    const status: VerifyStatus = valid ? 'valid' : 'invalid';
+    setVerifyMap(prev => new Map(prev).set(sign.id, status));
+    // Fire-and-forget — DB persistence must never affect the displayed result
+    axios.patch('/api/authorization/verify', { id: sign.id, status }).catch(() => {});
   };
 
   const row = cn('border-b transition-colors', isDark ? 'border-white/[0.06] hover:bg-white/[0.02]' : 'border-gray-100 hover:bg-gray-50/50');
