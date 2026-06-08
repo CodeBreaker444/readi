@@ -1,4 +1,5 @@
-import { supabase } from '@/backend/database/database';
+import { Prisma } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 
 export type AuditEventType = 'CREATE' | 'UPDATE' | 'DELETE' | 'LOGIN' | 'LOGOUT';
 
@@ -36,18 +37,20 @@ export function logEvent(params: LogEventParams): void {
   // Intentionally not awaited — runs asynchronously in the background
   (async () => {
     try {
-      await supabase.from('audit_logs').insert({
-        event_type:  params.eventType,
-        entity_type: params.entityType,
-        entity_id:   params.entityId != null ? String(params.entityId) : null,
-        description: params.description,
-        user_id:     params.userId ?? null,
-        user_name:   params.userName ?? null,
-        user_email:  params.userEmail ?? null,
-        user_role:   params.userRole ?? null,
-        owner_id:    params.ownerId,
-        metadata:    params.metadata ?? null,
-        ip_address:  params.ipAddress ?? null,
+      await prisma.audit_logs.create({
+        data: {
+          event_type:  params.eventType,
+          entity_type: params.entityType,
+          entity_id:   params.entityId != null ? String(params.entityId) : null,
+          description: params.description,
+          user_id:     params.userId ?? null,
+          user_name:   params.userName ?? null,
+          user_email:  params.userEmail ?? null,
+          user_role:   params.userRole ?? null,
+          owner_id:    params.ownerId,
+          metadata:    params.metadata != null ? (params.metadata as Prisma.InputJsonValue) : undefined,
+          ip_address:  params.ipAddress ?? null,
+        },
       });
     } catch {
       // Silently swallow — audit logging must never break business logic
@@ -81,31 +84,40 @@ export interface GetAuditLogsResult {
 export async function getAuditLogs(filters: AuditLogFilters): Promise<GetAuditLogsResult> {
   const page     = filters.page     ?? 1;
   const pageSize = filters.pageSize ?? 50;
-  const from     = (page - 1) * pageSize;
-  const to       = from + pageSize - 1;
+  const skip     = (page - 1) * pageSize;
 
-  let query = supabase
-    .from('audit_logs')
-    .select('*', { count: 'exact' })
-    .order('created_at', { ascending: false })
-    .range(from, to);
+  const where: Prisma.audit_logsWhereInput = {};
 
-  if (filters.ownerId != null) query = query.eq('owner_id', filters.ownerId);
+  if (filters.ownerId != null)    where.owner_id   = filters.ownerId;
+  if (filters.userId != null)     where.user_id    = filters.userId;
+  if (filters.eventType != null)  where.event_type = filters.eventType;
+  if (filters.entityType != null) where.entity_type = filters.entityType;
+  if (filters.entityId != null)   where.entity_id  = String(filters.entityId);
+  if (filters.dateFrom || filters.dateTo) {
+    where.created_at = {
+      ...(filters.dateFrom ? { gte: new Date(filters.dateFrom) } : {}),
+      ...(filters.dateTo   ? { lte: new Date(filters.dateTo)   } : {}),
+    };
+  }
 
-  if (filters.userId)     query = query.eq('user_id', filters.userId);
-  if (filters.eventType)  query = query.eq('event_type', filters.eventType);
-  if (filters.entityType) query = query.eq('entity_type', filters.entityType);
-  if (filters.entityId != null) query = query.eq('entity_id', String(filters.entityId));
-  if (filters.dateFrom)   query = query.gte('created_at', filters.dateFrom);
-  if (filters.dateTo)     query = query.lte('created_at', filters.dateTo);
-
-  const { data, error, count } = await query;
-
-  if (error) throw error;
+  const [rows, total] = await prisma.$transaction([
+    prisma.audit_logs.findMany({
+      where,
+      orderBy: { created_at: 'desc' },
+      skip,
+      take: pageSize,
+    }),
+    prisma.audit_logs.count({ where }),
+  ]);
 
   return {
-    data:     (data ?? []) as AuditLog[],
-    total:    count ?? 0,
+    data:     rows.map(r => ({
+      ...r,
+      id:         Number(r.id),
+      created_at: r.created_at.toISOString(),
+      metadata:   r.metadata as Record<string, unknown> | null,
+    })),
+    total,
     page,
     pageSize,
   };
