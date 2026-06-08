@@ -611,9 +611,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
           isCollapsed ? (
             /* Collapsed skeleton — icon-only circles */
             <div className="flex flex-col items-center gap-2 pt-1">
-              {Array.from({ length: 9 }).map((_, i) => (
+              {Array.from({ length: 13 }).map((_, i) => (
                 <Skeleton
                   key={i}
+                  className={`w-9 h-9 rounded-lg shrink-0 ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}
+                />
+              ))}
+              <div className={`w-8 my-1 border-t ${isDark ? 'border-slate-700' : 'border-slate-200'}`} />
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton
+                  key={`cfg-${i}`}
                   className={`w-9 h-9 rounded-lg shrink-0 ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}
                 />
               ))}
@@ -621,7 +628,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
           ) : (
             /* Expanded skeleton — icon + label rows */
             <div className="space-y-1 pt-1 px-1">
-              {Array.from({ length: 9 }).map((_, i) => (
+              {Array.from({ length: 13 }).map((_, i) => (
                 <div key={i} className="flex items-center gap-2.5 px-3 py-2">
                   <Skeleton className={`w-4 h-4 rounded shrink-0 ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`} />
                   <Skeleton
@@ -630,11 +637,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
                   />
                 </div>
               ))}
-              <div className={`mx-3 my-3 border-t ${isDark ? 'border-slate-800' : 'border-slate-200'}`} />
+              <div className={`mx-3 my-3 border-t ${isDark ? 'border-slate-700' : 'border-slate-200'}`} />
               <div className="px-3 pb-1.5">
                 <Skeleton className={`h-2 w-20 rounded ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`} />
               </div>
-              {Array.from({ length: 4 }).map((_, i) => (
+              {Array.from({ length: 6 }).map((_, i) => (
                 <div key={`cfg-${i}`} className="flex items-center gap-2.5 px-3 py-2">
                   <Skeleton className={`w-4 h-4 rounded shrink-0 ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`} />
                   <Skeleton

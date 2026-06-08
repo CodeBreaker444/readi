@@ -99,7 +99,7 @@ export async function generateMissionReport(op: Operation, timezone: string): Pr
   const pf = postFlightRes?.flight ?? null;
   const resultOptions = postFlightRes?.result_options ?? [];
 
-  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm' });
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', compress: true });
   const pageW = doc.internal.pageSize.width;
   const pageH = doc.internal.pageSize.height;
   const marginL = 14;
