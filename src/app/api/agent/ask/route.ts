@@ -30,15 +30,56 @@ class TokenAccumulator {
     get total() { return this.input + this.output; }
 }
 
+async function handleDecommissioned(ownerID: number) {
+    try {
+        const supabase = getSupabase();
+        const today = new Date().toISOString().slice(0, 10);
+
+        const { data, error } = await supabase
+            .from('tool_component')
+            .select(`
+                component_id,
+                component_name,
+                component_type,
+                serial_number,
+                expiration_date,
+                component_active,
+                tool:tool!fk_tool_id (
+                    tool_id,
+                    tool_name,
+                    tool_code,
+                    fk_owner_id
+                )
+            `)
+            .lte('expiration_date', today)
+            .not('expiration_date', 'is', null);
+
+        if (error) {
+            console.error("Decommissioned query error:", error);
+            return null;
+        }
+
+        const ownerFiltered = (data || []).filter((c: any) => c.tool?.fk_owner_id === ownerID);
+        if (ownerFiltered.length === 0) return null;
+
+        return ownerFiltered;
+    } catch (e) {
+        console.error("Decommissioned handler error:", e);
+        return null;
+    }
+}
+
 async function handleClassifier(groq: any, question: string, acc: TokenAccumulator) {
-    const classifierPrompt = `Classify this question into one or more intents: [DATABASE, PROCEDURE, WEB_SEARCH, OTHER].
+    const classifierPrompt = `Classify this question into one or more intents: [DATABASE, PROCEDURE, WEB_SEARCH, DECOMMISSIONED, OTHER].
                                 - DATABASE: Facts from a database (missions, tool IDs, alerts, tickets).
                                 - PROCEDURE: Rules, regulations, manuals, checklists, or "audit/compliance" questions.
                                 - WEB_SEARCH: External knowledge, industry news, regulations not in our database (e.g. EASA, FAA, drone laws).
+                                - DECOMMISSIONED: Questions about expired, decommissioned, non-operational, or out-of-service components and systems.
                                 - OTHER: Greeting/General.
 
                                 Rule: If the question asks about "compliance", "audit", "violation", "safe to fly", or "alerts", you MUST include BOTH [DATABASE, PROCEDURE].
                                 Rule: If the question asks about external regulations, news, or industry standards, include [WEB_SEARCH].
+                                Rule: If the question asks about "decommissioned", "expired components", "non-operational", "out of service", "which systems are down", or "component expiry", you MUST include [DECOMMISSIONED].
 
                                 Question: "${question}"
                                 Output ONLY as a JSON array.`;
@@ -279,6 +320,7 @@ export async function POST(req: NextRequest) {
         let dbResult: any = null;
         let procResult: any = null;
         let webResult: any = null;
+        let decommissionedResult: any = null;
 
         if (intents.includes("DATABASE")) {
             dbResult = await handleDatabase(groq, question, user, acc);
@@ -292,12 +334,20 @@ export async function POST(req: NextRequest) {
             webResult = await handleWebSearch(question);
         }
 
+        if (intents.includes("DECOMMISSIONED")) {
+            decommissionedResult = await handleDecommissioned(user.ownerID);
+        }
+
         // Cap data fed to synthesizer to stay within Groq's 12k TPM limit
         const MAX_DATA_CHARS = 8_000;
         const rawData = dbResult?.data || "No data found.";
         const cappedData = typeof rawData === "string" && rawData.length > MAX_DATA_CHARS
             ? rawData.slice(0, MAX_DATA_CHARS) + "\n... [data truncated for length]"
             : rawData;
+
+        const decommissionedSection = decommissionedResult
+            ? `DECOMMISSIONED / EXPIRED COMPONENTS:\n${JSON.stringify(decommissionedResult, null, 2)}`
+            : "No decommissioned component data.";
 
         const synthesizerPrompt = `You are the READI Compliance Auditor. Be CONCISE and DIRECT.
 
@@ -313,18 +363,28 @@ export async function POST(req: NextRequest) {
                                     WEB SEARCH RESULTS:
                                     ${webResult || "No web search performed."}
 
+                                    ${decommissionedSection}
+
                                     AUDIT RULES:
                                     1. If a mission flew while an alert was active (compare timestamps), flag it.
                                     2. If max_altitude > 120m, flag it.
                                     3. If a drone has an open high-priority maintenance ticket, flag it.
                                     4. Quote specific mission IDs (e.g. MISSION-WIND-AUDIT).
 
+                                    DECOMMISSIONED RULES:
+                                    1. A component is decommissioned when its expiration_date is on or before today's date.
+                                    2. When a component is decommissioned, its parent system (tool) is considered NON-OPERATIONAL.
+                                    3. If decommissioned component data is present, list EACH decommissioned component as a separate line with: component name, component type, serial number (if available), expiration date, and the system (tool name / tool code) it belongs to.
+                                    4. Group by system: list all expired components under their respective system.
+                                    5. If NO decommissioned data is present, state "No decommissioned systems or components found."
+
                                     RESPONSE RULES:
                                     - NEVER start with "To answer your question" or "I have reviewed". Jump straight to the answer.
                                     - For violations: Start with "VIOLATION:" then the finding.
                                     - For non-violations: Just state the answer. Do NOT append "All clear" or any sign-off.
                                     - For data queries: Give the answer directly (e.g. "You completed 8 missions.").
-                                    - Keep answers under 3 sentences unless listing multiple violations.
+                                    - For decommissioned queries: List every expired component grouped by system. Do not summarize — list each one.
+                                    - Keep answers under 3 sentences unless listing multiple violations or decommissioned items.
                                     - Do NOT use emojis.
                                     - Do NOT explain your reasoning process.`;
 
@@ -357,6 +417,7 @@ export async function POST(req: NextRequest) {
                 dbDebug: dbResult?.debug,
                 hasProcedure: !!procResult,
                 hasWebSearch: !!webResult,
+                decommissionedCount: decommissionedResult?.length ?? 0,
             }
         });
 

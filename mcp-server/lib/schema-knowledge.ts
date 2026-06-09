@@ -401,16 +401,17 @@ TABLE: notification — Service notifications.
       maintenance_cost: cost
       next_maintenance_date: next scheduled
 
-    TABLE: tool_component — Components of a tool/drone.
+    TABLE: tool_component — Components of a tool/drone. A component with expiration_date <= today is expired/decommissioned, making its system non-operational.
       fk_tool_id: which tool
       component_name: name
       component_type: type
       serial_number: serial
       installation_date: when installed
+      expiration_date: date the component expires and becomes decommissioned
       expected_lifespan_hours: expected lifetime
       current_usage_hours: current usage
       next_replacement_date: when to replace
-      component_active: Y/N
+      component_active: Y/N active status
 
     TABLE: maintenance_ticket — Maintenance issue tickets.
       ticket_id: unique ticket ID
