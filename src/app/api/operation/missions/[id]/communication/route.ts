@@ -1,4 +1,4 @@
-import { supabase } from '@/backend/database/database';
+import { prisma } from '@/lib/prisma';
 import { internalError } from '@/lib/api-error';
 import { requirePermission } from '@/lib/auth/api-auth';
 import { E } from '@/lib/error-codes';
@@ -33,47 +33,53 @@ export async function POST(req: NextRequest, { params }: Params) {
       body.subject?.trim() ||
       `[Mission Communication] ${body.task_name} — Mission #${missionId}`;
 
-    const { error: msgErr } = await supabase.from('messages').insert({
-      from_user_id:    fromUserId,
-      to_user_id:      body.to_user_id,
-      message_subject: subject,
-      message_body:    body.message,
-      message_type:    'communication',
-    });
-
-    if (msgErr) {
+    try {
+      await prisma.messages.create({
+        data: {
+          from_user_id:    fromUserId,
+          to_user_id:      body.to_user_id,
+          message_subject: subject,
+          message_body:    body.message,
+          message_type:    'communication',
+        },
+      });
+    } catch (msgErr: any) {
       return NextResponse.json(
         { code: 0, message: `Failed to send communication: ${msgErr.message}` },
         { status: 422 },
       );
     }
 
-    await supabase.from('notification').insert({
-      fk_user_id:           body.to_user_id,
-      notification_type:    'COMMUNICATION',
-      notification_title:   'New Communication',
-      notification_message: body.message.slice(0, 200),
-      notification_data: {
-        mission_id:   missionId,
-        task_code:    body.task_code,
-        from_user_id: fromUserId,
+    await prisma.notification.create({
+      data: {
+        fk_user_id:           body.to_user_id,
+        notification_type:    'COMMUNICATION',
+        notification_title:   'New Communication',
+        notification_message: body.message.slice(0, 200),
+        notification_data: {
+          mission_id:   missionId,
+          task_code:    body.task_code,
+          from_user_id: fromUserId,
+        },
+        priority: 'normal',
       },
-      priority: 'normal',
     });
 
-    await supabase.from('communication').insert({
-      fk_user_id:           body.to_user_id,
-      fk_owner_id:          ownerId,
-      communication_code:   body.task_code,
-      communication_desc:   body.message.slice(0, 255),
-      communication_json: {
-        mission_id:   missionId,
-        task_code:    body.task_code,
-        task_name:    body.task_name,
-        from_user_id: fromUserId,
+    await prisma.communication.create({
+      data: {
+        fk_user_id:           body.to_user_id,
+        fk_owner_id:          ownerId,
+        communication_code:   body.task_code,
+        communication_desc:   body.message.slice(0, 255),
+        communication_json: {
+          mission_id:   missionId,
+          task_code:    body.task_code,
+          task_name:    body.task_name,
+          from_user_id: fromUserId,
+        },
+        communication_ver:    1,
+        communication_active: 'Y',
       },
-      communication_ver:    1,
-      communication_active: 'Y',
     });
 
     return NextResponse.json({ code: 1, message: 'Communication sent' });
