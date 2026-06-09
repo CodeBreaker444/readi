@@ -67,6 +67,8 @@ const EMPTY_FORM = {
   component_activation_date: '',
   component_purchase_date: '',
   expiration_date: '',
+  expiry_type: 'EXPIRATION_DATE',
+  expiration_flights: '',
   component_vendor: '',
   component_guarantee_day: '',
   component_status: 'OPERATIONAL',
@@ -170,6 +172,8 @@ export default function EditComponentModal({
       component_activation_date: comp.component_activation_date?.split('T')[0] || '',
       component_purchase_date: comp.component_purchase_date?.split('T')[0] || '',
       expiration_date: comp.expiration_date?.split('T')[0] || '',
+      expiry_type: comp.expiry_type || 'EXPIRATION_DATE',
+      expiration_flights: comp.expiration_flights != null ? String(comp.expiration_flights) : '',
       component_vendor: comp.component_vendor || '',
       component_guarantee_day: comp.component_guarantee_day ? String(comp.component_guarantee_day) : '',
       component_status: comp.component_status || 'OPERATIONAL',
@@ -296,6 +300,8 @@ export default function EditComponentModal({
         component_activation_date: formData.component_activation_date || null,
         component_purchase_date: formData.component_purchase_date || null,
         expiration_date: formData.expiration_date || null,
+        expiry_type: formData.expiry_type,
+        expiration_flights: formData.expiration_flights ? Number(formData.expiration_flights) : null,
         component_vendor: formData.component_vendor || null,
         component_guarantee_day: formData.component_guarantee_day ? Number(formData.component_guarantee_day) : null,
         component_status: formData.component_status,
@@ -750,10 +756,47 @@ export default function EditComponentModal({
                     <Input type="date" className={inputCls} value={formData.component_purchase_date} onChange={e => handleChange('component_purchase_date', e.target.value)} />
                   </div>
                   <div className="col-span-1 sm:col-span-3">
-                    <Label className={labelCls}>{t('systems.components.addComponent.fields.expirationDate')} <span className="font-normal opacity-60">{t('systems.components.common.optional')}</span></Label>
-                    <Input type="date" className={inputCls} value={formData.expiration_date} onChange={e => handleChange('expiration_date', e.target.value)} />
-                    <p className={`text-[10px] mt-1 ${isDark ? 'text-slate-500' : 'text-muted-foreground'}`}>{t('systems.components.common.autoDecommissionHint')}</p>
+                    <Label className={labelCls}>{t('systems.components.common.expiryType.label')} <span className="font-normal opacity-60">{t('systems.components.common.optional')}</span></Label>
+                    <Select value={formData.expiry_type} onValueChange={v => handleChange('expiry_type', v)}>
+                      <SelectTrigger className={selectTriggerCls}><SelectValue /></SelectTrigger>
+                      <SelectContent className={selectContentCls}>
+                        <SelectItem value="EXPIRATION_DATE">{t('systems.components.common.expiryType.expirationDate')}</SelectItem>
+                        <SelectItem value="FLIGHTS">{t('systems.components.common.expiryType.flights')}</SelectItem>
+                        <SelectItem value="MIXED">{t('systems.components.common.expiryType.mixed')}</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
+                  {(formData.expiry_type === 'EXPIRATION_DATE' || formData.expiry_type === 'MIXED') && (
+                    <div className="col-span-1 sm:col-span-3">
+                      <Label className={labelCls}>{t('systems.components.addComponent.fields.expirationDate')}</Label>
+                      <Input type="date" className={inputCls} value={formData.expiration_date} onChange={e => handleChange('expiration_date', e.target.value)} />
+                      {formData.expiry_type === 'EXPIRATION_DATE' && (
+                        <p className={`text-[10px] mt-1 ${isDark ? 'text-slate-500' : 'text-muted-foreground'}`}>{t('systems.components.common.autoDecommissionHint')}</p>
+                      )}
+                    </div>
+                  )}
+                  {(formData.expiry_type === 'FLIGHTS' || formData.expiry_type === 'MIXED') && (
+                    <div className="col-span-1 sm:col-span-3">
+                      <Label className={labelCls}>{t('systems.components.common.expiryType.expirationFlights')}</Label>
+                      <Input
+                        type="number"
+                        min={1}
+                        step={1}
+                        placeholder="e.g. 500"
+                        className={inputCls}
+                        value={formData.expiration_flights}
+                        onChange={e => handleChange('expiration_flights', e.target.value)}
+                      />
+                      {formData.expiry_type === 'FLIGHTS' && (
+                        <p className={`text-[10px] mt-1 ${isDark ? 'text-slate-500' : 'text-muted-foreground'}`}>{t('systems.components.common.expiryType.flightsHint')}</p>
+                      )}
+                    </div>
+                  )}
+                  {formData.expiry_type === 'MIXED' && (
+                    <div className="col-span-1 sm:col-span-12">
+                      <p className={`text-[10px] ${isDark ? 'text-slate-500' : 'text-muted-foreground'}`}>{t('systems.components.common.expiryType.mixedHint')}</p>
+                    </div>
+                  )}
                   <div className="col-span-1 sm:col-span-3">
                     <Label className={labelCls}>{t('systems.components.addComponent.fields.vendor')}</Label>
                     <Input className={inputCls} value={formData.component_vendor} onChange={e => handleChange('component_vendor', e.target.value)} />

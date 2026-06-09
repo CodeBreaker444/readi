@@ -4052,6 +4052,15 @@
         "location": "Location",
         "locationOptional": "Location (optional)",
         "autoDecommissionHint": "Component auto-decommissions on this date",
+        "expiryType": {
+          "label": "Expiry Type",
+          "expirationDate": "Expiration Date",
+          "flights": "Flights",
+          "mixed": "Mixed",
+          "expirationFlights": "Expiration Flights",
+          "flightsHint": "Component auto-decommissions when flight count is reached",
+          "mixedHint": "Decommissions when either the date or flight count is reached — whichever comes first"
+        },
         "defaultCounters": {
           "label": "Starting Counters",
           "hint": "— for used components, set values > 0",

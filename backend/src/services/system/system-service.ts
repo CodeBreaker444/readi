@@ -70,7 +70,13 @@ export async function getSystemList(
 
   if (toolIds.length > 0) {
     const today = new Date().toISOString().split('T')[0];
-    const [{ data: missions }, { data: openTickets }, { data: openComponentTickets }, { data: expiredComps }] = await Promise.all([
+    const [
+      { data: missions },
+      { data: openTickets },
+      { data: openComponentTickets },
+      { data: expiredComps },
+      { data: flightExpirableComps },
+    ] = await Promise.all([
       supabase
         .from('pilot_mission')
         .select('fk_tool_id, fk_mission_status_id, flight_duration, distance_flown')
@@ -88,7 +94,7 @@ export async function getSystemList(
         .select('fk_tool_id')
         .in('fk_tool_id', toolIds)
         .eq('component_metadata->>component_status', 'MAINTENANCE'),
-      // Tools with at least one expired component
+      // Tools with at least one date-expired component
       supabase
         .from('tool_component')
         .select('fk_tool_id, component_id, component_name, expiration_date')
@@ -96,6 +102,14 @@ export async function getSystemList(
         .eq('component_active', 'Y')
         .lte('expiration_date', today)
         .not('expiration_date', 'is', null),
+      // Tools with components that may be flight-expired (FLIGHTS or MIXED expiry type)
+      supabase
+        .from('tool_component')
+        .select('fk_tool_id, expiration_flights, current_maintenance_flights')
+        .in('fk_tool_id', toolIds)
+        .eq('component_active', 'Y')
+        .not('expiration_flights', 'is', null)
+        .in('expiry_type', ['FLIGHTS', 'MIXED']),
     ]);
 
     (missions || []).forEach((m) => {
@@ -110,6 +124,9 @@ export async function getSystemList(
     (openTickets || []).forEach((t) => toolsInMaintenance.add(t.fk_tool_id));
     (openComponentTickets || []).forEach((c) => toolsInMaintenance.add(c.fk_tool_id));
     (expiredComps || []).forEach((c) => toolsNonOperational.add(c.fk_tool_id));
+    (flightExpirableComps || [])
+      .filter((c) => Number(c.current_maintenance_flights) >= Number(c.expiration_flights))
+      .forEach((c) => toolsNonOperational.add(c.fk_tool_id));
 
     // Fire-and-forget expiration notifications for managers
     if ((expiredComps || []).length > 0) {
@@ -633,7 +650,9 @@ export async function getComponentList(ownerId: number, toolId?: number) {
     dcc_drone_id,
     drone_registration_code,
     drc_synced_at,
-    expiration_date
+    expiration_date,
+    expiry_type,
+    expiration_flights
   `;
 
   // Specific system view: non-detached components for that tool only
@@ -686,7 +705,17 @@ function buildComponentListResult(data: any[]) {
     message: 'Success',
     dataRows: data.length,
     data: data.map((item) => {
-      const isExpired = item.expiration_date && item.expiration_date <= today;
+      const expiryType: string = item.expiry_type || 'EXPIRATION_DATE';
+      const isDateExpired = item.expiration_date && item.expiration_date <= today;
+      const isFlightExpired =
+        item.expiration_flights != null &&
+        Number(item.current_maintenance_flights) >= item.expiration_flights;
+      const isExpired =
+        expiryType === 'FLIGHTS'
+          ? isFlightExpired
+          : expiryType === 'MIXED'
+          ? isDateExpired || isFlightExpired
+          : isDateExpired;
       const effectiveStatus = isExpired
         ? 'DECOMMISSIONED'
         : (item.component_metadata?.component_status || 'OPERATIONAL');
@@ -731,6 +760,8 @@ function buildComponentListResult(data: any[]) {
       drone_classes: item.component_metadata?.drone_classes ?? null,
       is_primary: item.component_metadata?.is_primary ?? false,
       expiration_date: item.expiration_date || null,
+      expiry_type: expiryType,
+      expiration_flights: item.expiration_flights ?? null,
       };
     }),
   };
@@ -809,12 +840,24 @@ export async function addComponent(componentData: any) {
       dcc_drone_id: componentData.dcc_drone_id || null,
       drone_registration_code: componentData.drone_registration_code || null,
       expiration_date: componentData.expiration_date || null,
+      expiry_type: componentData.expiry_type || 'EXPIRATION_DATE',
+      expiration_flights: componentData.expiration_flights ?? null,
       component_metadata: {
         cc_platform: componentData.cc_platform || null,
         gcs_type: componentData.gcs_type || null,
         component_status: (() => {
           const today = new Date().toISOString().split('T')[0];
-          const isExpired = componentData.expiration_date && componentData.expiration_date <= today;
+          const expiryType: string = componentData.expiry_type || 'EXPIRATION_DATE';
+          const isDateExpired = componentData.expiration_date && componentData.expiration_date <= today;
+          const isFlightExpired =
+            componentData.expiration_flights != null &&
+            (componentData.initial_maintenance_flights ?? 0) >= componentData.expiration_flights;
+          const isExpired =
+            expiryType === 'FLIGHTS'
+              ? isFlightExpired
+              : expiryType === 'MIXED'
+              ? isDateExpired || isFlightExpired
+              : isDateExpired;
           return isExpired ? 'DECOMMISSIONED' : (componentData.component_status || 'OPERATIONAL');
         })(),
         component_category: componentData.component_category || 'STANDARD',
@@ -902,6 +945,8 @@ export async function updateComponent(componentId: number, componentData: any) {
       dcc_drone_id: componentData.dcc_drone_id ?? null,
       drone_registration_code: componentData.drone_registration_code || null,
       expiration_date: componentData.expiration_date || null,
+      expiry_type: componentData.expiry_type || 'EXPIRATION_DATE',
+      expiration_flights: componentData.expiration_flights ?? null,
       maintenance_cycle: componentData.maintenance_cycle || null,
       maintenance_cycle_hour: componentData.maintenance_cycle_hour ?? null,
       maintenance_cycle_day: componentData.maintenance_cycle_day ?? null,
@@ -915,7 +960,18 @@ export async function updateComponent(componentId: number, componentData: any) {
         gcs_type: componentData.gcs_type || null,
         component_status: (() => {
           const today = new Date().toISOString().split('T')[0];
-          const isExpired = componentData.expiration_date && componentData.expiration_date <= today;
+          const expiryType: string = componentData.expiry_type || 'EXPIRATION_DATE';
+          const isDateExpired = componentData.expiration_date && componentData.expiration_date <= today;
+          const currentFlights = componentData.initial_maintenance_flights ?? Number(existing?.component_metadata?.current_maintenance_flights ?? 0);
+          const isFlightExpired =
+            componentData.expiration_flights != null &&
+            currentFlights >= componentData.expiration_flights;
+          const isExpired =
+            expiryType === 'FLIGHTS'
+              ? isFlightExpired
+              : expiryType === 'MIXED'
+              ? isDateExpired || isFlightExpired
+              : isDateExpired;
           return isExpired ? 'DECOMMISSIONED' : (componentData.component_status || 'OPERATIONAL');
         })(),
         component_category: componentData.component_category || 'STANDARD',

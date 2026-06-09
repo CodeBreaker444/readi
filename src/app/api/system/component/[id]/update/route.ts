@@ -18,6 +18,8 @@ const schema = z.object({
   component_activation_date: z.string().optional().nullable(),
   component_purchase_date: z.string().optional().nullable(),
   expiration_date: z.string().optional().nullable(),
+  expiry_type: z.enum(['EXPIRATION_DATE', 'FLIGHTS', 'MIXED']).optional().default('EXPIRATION_DATE'),
+  expiration_flights: z.number().int().positive().optional().nullable(),
   component_vendor: z.string().optional().nullable(),
   component_guarantee_day: z.number().optional().nullable(),
   component_status: z.string().default('OPERATIONAL'),
