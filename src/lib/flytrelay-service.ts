@@ -1,5 +1,6 @@
 import { env } from '@/backend/config/env';
 import { supabase } from '@/backend/database/database';
+import { unstable_cache } from 'next/cache';
 import 'server-only';
 import { signReadiDroneJwt } from './drone-atc-jwt';
 
@@ -9,24 +10,18 @@ export interface FlytrelayConnection {
   token: string;
 }
 
-const CONNECT_TTL_MS = 30_000;
 const CONNECT_TIMEOUT_MS = 5_000;
-const _connCache = new Map<string, { value: FlytrelayConnection; expiresAt: number }>();
 
-export async function connectToFlytrelay(
+async function fetchFlytrelayConnection(
   userId: string,
   flytbaseKey: string,
   orgId: string,
-  companyId?: string,
+  companyId: string | null,
 ): Promise<FlytrelayConnection> {
-  const cacheKey = `${userId}:${orgId}:${companyId ?? ''}`;
-  const cached = _connCache.get(cacheKey);
-  if (cached && Date.now() < cached.expiresAt) return cached.value;
-
   const baseUrl = env.FLYTRELAY_BASE_URL;
   if (!baseUrl) throw new Error('FLYTRELAY_BASE_URL is not configured');
 
-  const jwt = signReadiDroneJwt(userId, flytbaseKey, orgId, companyId);
+  const jwt = signReadiDroneJwt(userId, flytbaseKey, orgId, companyId ?? undefined);
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), CONNECT_TIMEOUT_MS);
@@ -40,7 +35,11 @@ export async function connectToFlytrelay(
     });
   } catch (err: any) {
     const isTimeout = err?.name === 'AbortError';
-    throw new Error(isTimeout ? 'FlytRelay identify timed out after 5s' : `FlytRelay identify network error: ${err?.message}`);
+    throw new Error(
+      isTimeout
+        ? 'FlytRelay identify timed out after 5s'
+        : `FlytRelay identify network error: ${err?.message}`,
+    );
   } finally {
     clearTimeout(timeout);
   }
@@ -59,11 +58,21 @@ export async function connectToFlytrelay(
   }
 
   const socketToken: string = data.token ?? data.sessionToken ?? jwt;
-  const conn: FlytrelayConnection = { wsUrl: data.wsUrl, topic: data.topic, token: socketToken };
+  return { wsUrl: data.wsUrl, topic: data.topic, token: socketToken };
+}
 
-  _connCache.set(cacheKey, { value: conn, expiresAt: Date.now() + CONNECT_TTL_MS });
-
-  return conn;
+export async function connectToFlytrelay(
+  userId: string,
+  flytbaseKey: string,
+  orgId: string,
+  companyId?: string,
+): Promise<FlytrelayConnection> {
+  const cached = unstable_cache(
+    () => fetchFlytrelayConnection(userId, flytbaseKey, orgId, companyId ?? null),
+    [`flytrelay-connect-${userId}-${orgId}`],
+    { revalidate: 30, tags: [`flytrelay-connect-${userId}`] },
+  );
+  return cached();
 }
 
 export async function updateFlytrelayUsers(
@@ -92,4 +101,3 @@ export async function updateFlytrelayUsers(
 
   return { synced: users.length };
 }
-

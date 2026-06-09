@@ -54,7 +54,6 @@ async function extractPdfText(buffer: Buffer): Promise<string> {
     return text;
 }
 
-/** POST /api/agent/ingest — upload a new PDF or TXT file (admin only, hard limits enforced) */
 export async function POST(req: NextRequest) {
     const { session, error } = await requireAuth();
     if (error) return error;

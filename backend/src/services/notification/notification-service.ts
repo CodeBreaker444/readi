@@ -1,3 +1,4 @@
+import { unstable_cache, revalidateTag } from "next/cache";
 import { supabase } from "@/backend/database/database";
 import { sendNotificationEmail } from "../../../../lib/resend/mail";
 import type {
@@ -6,19 +7,48 @@ import type {
     NotificationListFilters,
 } from "@/config/types/notification";
 
-const UNREAD_CACHE_TTL_MS = 8_000;
-const _unreadCache = new Map<number, { data: Notification[]; expiresAt: number }>();
 
-function invalidateNotificationCache(userId: number) {
-  _unreadCache.delete(userId);
+async function fetchUnreadNotifications(userId: number): Promise<Notification[]> {
+  const columns = "notification_id, notification_message, notification_type, notification_data, is_read, created_at, action_url";
+
+  const { data, error } = await supabase
+    .from("notification")
+    .select(columns)
+    .eq("fk_user_id", userId)
+    .eq("is_read", false)
+    .order("created_at", { ascending: false })
+    .limit(100);
+
+  if (error) throw new Error(error.message);
+
+  return (data ?? []).map((row: any) => {
+    const notifData = row.notification_data ?? {};
+    const senderFullname: string | null =
+      notifData.sender_fullname ??
+      (notifData.sender_first_name || notifData.sender_last_name
+        ? `${notifData.sender_first_name ?? ""} ${notifData.sender_last_name ?? ""}`.trim()
+        : null);
+
+    return {
+      notification_id: row.notification_id,
+      message: row.notification_message ?? "",
+      procedure_name: row.notification_type ?? "",
+      is_read: "N" as "Y" | "N",
+      created_at: row.created_at,
+      read_at: null,
+      sender_fullname: senderFullname,
+      sender_profile: notifData.sender_profile ?? null,
+      sender_profile_code: notifData.sender_profile_code ?? null,
+      communication_general_id: notifData.communication_general_id ?? null,
+      action_url: row.action_url ?? null,
+    } satisfies Notification;
+  });
 }
-
 
 export async function listNotifications(
   input: NotificationListFilters,
   userId: number
 ): Promise<Notification[]> {
-  // For unread-only polls (no secondary filters) use a lean column set to reduce payload size
   const isLightweightPoll =
     input.status === "UNREAD" &&
     !input.search &&
@@ -27,13 +57,15 @@ export async function listNotifications(
     !input.date_to;
 
   if (isLightweightPoll) {
-    const cached = _unreadCache.get(userId);
-    if (cached && Date.now() < cached.expiresAt) return cached.data;
+    const tag = `notifications-unread-${userId}`;
+    return unstable_cache(
+      () => fetchUnreadNotifications(userId),
+      [tag],
+      { revalidate: 8, tags: [tag] },
+    )();
   }
 
-  const columns = isLightweightPoll
-    ? "notification_id, notification_message, notification_type, notification_data, is_read, created_at, action_url"
-    : "notification_id, notification_message, notification_type, notification_title, notification_data, priority, is_read, created_at, read_at, action_url";
+  const columns = "notification_id, notification_message, notification_type, notification_title, notification_data, priority, is_read, created_at, read_at, action_url";
 
   let query = supabase
     .from("notification")
@@ -67,9 +99,8 @@ export async function listNotifications(
   const { data, error } = await query;
   if (error) throw new Error(error.message);
 
-  const mapped = (data ?? []).map((row: any) => {
+  return (data ?? []).map((row: any) => {
     const notifData = row.notification_data ?? {};
-
     const senderFullname: string | null =
       notifData.sender_fullname ??
       (notifData.sender_first_name || notifData.sender_last_name
@@ -90,12 +121,6 @@ export async function listNotifications(
       action_url: row.action_url ?? null,
     } satisfies Notification;
   });
-
-  if (isLightweightPoll) {
-    _unreadCache.set(userId, { data: mapped, expiresAt: Date.now() + UNREAD_CACHE_TTL_MS });
-  }
-
-  return mapped;
 }
 
 
@@ -110,7 +135,7 @@ export async function markNotificationRead(
     .eq("fk_user_id", userId);
 
   if (error) throw new Error(error.message);
-  invalidateNotificationCache(userId);
+  revalidateTag(`notifications-unread-${userId}`);
 }
 
 
@@ -125,7 +150,7 @@ export async function markAllNotificationsRead(
     .select("notification_id");
 
   if (error) throw new Error(error.message);
-  invalidateNotificationCache(userId);
+  revalidateTag(`notifications-unread-${userId}`);
 
   return { updated: data?.length ?? 0 };
 }
