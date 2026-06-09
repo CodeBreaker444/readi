@@ -1,4 +1,4 @@
-import { getSupabase } from '@mcp-server/lib/supabase';
+import { prisma } from '@/lib/prisma';
 import { TOKEN_LIMITS } from './token-limits';
 
 interface UsageRecord {
@@ -10,29 +10,26 @@ interface UsageRecord {
   model: string;
 }
 
-function todayStart(): string {
+function todayStart(): Date {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
-  return d.toISOString();
+  return d;
 }
 
 export async function getUserDailyTokens(userId: number): Promise<number> {
-  const supabase = getSupabase();
-  const { data } = await supabase
-    .from('ai_token_usage')
-    .select('total_tokens')
-    .eq('user_id', userId)
-    .gte('created_at', todayStart());
-  return (data ?? []).reduce((s, r) => s + r.total_tokens, 0);
+  const result = await prisma.ai_token_usage.aggregate({
+    _sum: { total_tokens: true },
+    where: { user_id: userId, created_at: { gte: todayStart() } },
+  });
+  return result._sum.total_tokens ?? 0;
 }
 
 export async function getPlatformDailyTokens(): Promise<number> {
-  const supabase = getSupabase();
-  const { data } = await supabase
-    .from('ai_token_usage')
-    .select('total_tokens')
-    .gte('created_at', todayStart());
-  return (data ?? []).reduce((s, r) => s + r.total_tokens, 0);
+  const result = await prisma.ai_token_usage.aggregate({
+    _sum: { total_tokens: true },
+    where: { created_at: { gte: todayStart() } },
+  });
+  return result._sum.total_tokens ?? 0;
 }
 
 export async function checkTokenLimits(
@@ -61,6 +58,5 @@ export async function checkTokenLimits(
 }
 
 export async function recordTokenUsage(record: UsageRecord): Promise<void> {
-  const supabase = getSupabase();
-  await supabase.from('ai_token_usage').insert(record);
+  await prisma.ai_token_usage.create({ data: record });
 }

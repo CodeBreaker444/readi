@@ -1,7 +1,7 @@
-import { supabase } from '@/backend/database/database'; // kept for supabase.auth.admin operations
-import { prisma } from '@/lib/prisma';
+import { supabase } from '@/backend/database/database';
 import { apiError, internalError, zodError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
+import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
