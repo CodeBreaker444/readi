@@ -397,6 +397,31 @@ export async function POST(req: NextRequest) {
 
         acc.add(finalRes.usage);
 
+        const answer = finalRes.choices?.[0]?.message?.content ?? "No response generated.";
+
+        // Generate follow-up question suggestions (non-blocking, best-effort)
+        let followUpQuestions: string[] = [];
+        try {
+            const followUpRes = await groq.chat.completions.create({
+                model: GROQ_MODEL,
+                temperature: 0.3,
+                max_tokens: 100,
+                messages: [{
+                    role: "user",
+                    content: `Suggest 3 short follow-up questions a drone operations user might ask next. Output ONLY a JSON array of strings. Max 8 words each. No quotes around questions.
+Question asked: "${question}"
+Answer given: "${answer.slice(0, 300)}"`,
+                }],
+            });
+            acc.add(followUpRes.usage);
+            const content = followUpRes.choices?.[0]?.message?.content || "[]";
+            const m = content.match(/\[[\s\S]*?\]/);
+            const parsed = m ? JSON.parse(m[0]) : [];
+            followUpQuestions = Array.isArray(parsed) ? parsed.slice(0, 3).map(String) : [];
+        } catch {
+            // fail silently — follow-up questions are optional
+        }
+
         // Record total token usage for this request (fire-and-forget)
         recordTokenUsage({
             user_id: user.userId,
@@ -408,7 +433,8 @@ export async function POST(req: NextRequest) {
         }).catch((e) => console.error("Token record error:", e));
 
         return NextResponse.json({
-            answer: finalRes.choices?.[0]?.message?.content ?? "No response generated.",
+            answer,
+            followUpQuestions,
             debug: {
                 intents,
                 role: user.role,
