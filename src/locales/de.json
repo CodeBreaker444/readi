@@ -3964,6 +3964,15 @@
         "location": "Standort",
         "locationOptional": "Standort (optional)",
         "autoDecommissionHint": "Komponente wird an diesem Datum automatisch außer Betrieb genommen",
+        "expiryType": {
+          "label": "Ablauftyp",
+          "expirationDate": "Ablaufdatum",
+          "flights": "Flüge",
+          "mixed": "Gemischt",
+          "expirationFlights": "Ablaufflüge",
+          "flightsHint": "Komponente wird automatisch außer Betrieb genommen, wenn die Fluganzahl erreicht ist",
+          "mixedHint": "Wird außer Betrieb genommen, wenn Datum oder Fluganzahl erreicht ist — je nachdem, was zuerst eintritt"
+        },
         "defaultCounters": {
           "label": "Startzähler",
           "hint": "— für gebrauchte Komponenten, Werte > 0 setzen",

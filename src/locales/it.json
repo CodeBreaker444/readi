@@ -4044,6 +4044,15 @@
         "location": "Posizione",
         "locationOptional": "Posizione (opzionale)",
         "autoDecommissionHint": "Il componente viene automaticamente dismesso in questa data",
+        "expiryType": {
+          "label": "Tipo di scadenza",
+          "expirationDate": "Data di scadenza",
+          "flights": "Voli",
+          "mixed": "Misto",
+          "expirationFlights": "Voli di scadenza",
+          "flightsHint": "Il componente viene dismesso automaticamente al raggiungimento del conteggio voli",
+          "mixedHint": "Viene dismesso quando viene raggiunta la data o il conteggio voli — in base a quale avviene prima"
+        },
         "defaultCounters": {
           "label": "Contatori iniziali",
           "hint": "— per componenti usati, imposta valori > 0",

@@ -156,7 +156,7 @@ export async function getOperationLogbookFilters(owner_id: number) {
 
       supabase
         .from("tool")
-        .select("tool_id, tool_code, tool_name")
+        .select("tool_id, tool_code, tool_name, tool_status:tool_status!fk_status_id(status_code)")
         .eq("fk_owner_id", owner_id)
         .eq("tool_active", "Y"),
 
@@ -206,7 +206,7 @@ export async function getOperationLogbookFilters(owner_id: number) {
     tool_id: t.tool_id,
     tool_code: t.tool_code,
     tool_desc: t.tool_name,
-    tool_status: "OPERATIONAL",
+    tool_status: (t.tool_status as any)?.status_code ?? "OPERATIONAL",
   }));
 
   const typeOptions: MissionTypeOption[] = (missionTypes.data || []).map((t: any) => ({

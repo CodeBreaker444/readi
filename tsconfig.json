@@ -45,7 +45,7 @@
   ],
   "exclude": [
     "node_modules",
-    "platform-docs",
-    "platform-docs/**"
+    "platform-docs copy",
+    "platform-docs copy/**"
   ]
 }
