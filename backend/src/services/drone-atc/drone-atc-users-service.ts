@@ -1,8 +1,17 @@
 import { supabase } from '@/backend/database/database';
 import 'server-only';
 
-// Roles that carry the view_drone_atc permission 
+// Roles that carry the view_drone_atc permission
 const DRONE_ATC_ROLES = ['SUPERADMIN', 'ADMIN', 'PIC', 'OPM'] as const;
+
+const CACHE_TTL_MS = 30_000;
+let _cachedUsers: DroneAtcUser[] | null = null;
+let _cacheExpiresAt = 0;
+
+export function invalidateDroneAtcUsersCache() {
+  _cachedUsers = null;
+  _cacheExpiresAt = 0;
+}
 
 export interface DroneAtcComponent {
   componentId: number;
@@ -37,6 +46,9 @@ export interface DroneAtcUser {
 }
 
 export async function getUsersWithDroneAtc(): Promise<DroneAtcUser[]> {
+  const now = Date.now();
+  if (_cachedUsers && now < _cacheExpiresAt) return _cachedUsers;
+
   // Users with drone ATC roles + flytbase credentials
   const { data: users, error: usersError } = await supabase
     .from('users')
@@ -122,7 +134,7 @@ export async function getUsersWithDroneAtc(): Promise<DroneAtcUser[]> {
     systemsByOwner.set(t.fk_owner_id, list);
   }
 
-  return users
+  const result = users
     .filter((u) => u.flytbase_api_token?.trim() && u.flytbase_org_id?.trim())
     .map((u) => ({
       userId: u.user_id,
@@ -136,4 +148,8 @@ export async function getUsersWithDroneAtc(): Promise<DroneAtcUser[]> {
       flytbaseOrgId: u.flytbase_org_id.trim(),
       systems: systemsByOwner.get(u.fk_owner_id) ?? [],
     }));
+
+  _cachedUsers = result;
+  _cacheExpiresAt = Date.now() + CACHE_TTL_MS;
+  return result;
 }

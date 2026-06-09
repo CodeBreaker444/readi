@@ -6,6 +6,13 @@ import type {
     NotificationListFilters,
 } from "@/config/types/notification";
 
+const UNREAD_CACHE_TTL_MS = 8_000;
+const _unreadCache = new Map<number, { data: Notification[]; expiresAt: number }>();
+
+function invalidateNotificationCache(userId: number) {
+  _unreadCache.delete(userId);
+}
+
 
 export async function listNotifications(
   input: NotificationListFilters,
@@ -18,6 +25,11 @@ export async function listNotifications(
     !input.procedure_name &&
     !input.date_from &&
     !input.date_to;
+
+  if (isLightweightPoll) {
+    const cached = _unreadCache.get(userId);
+    if (cached && Date.now() < cached.expiresAt) return cached.data;
+  }
 
   const columns = isLightweightPoll
     ? "notification_id, notification_message, notification_type, notification_data, is_read, created_at, action_url"
@@ -55,7 +67,7 @@ export async function listNotifications(
   const { data, error } = await query;
   if (error) throw new Error(error.message);
 
-  return (data ?? []).map((row: any) => {
+  const mapped = (data ?? []).map((row: any) => {
     const notifData = row.notification_data ?? {};
 
     const senderFullname: string | null =
@@ -78,6 +90,12 @@ export async function listNotifications(
       action_url: row.action_url ?? null,
     } satisfies Notification;
   });
+
+  if (isLightweightPoll) {
+    _unreadCache.set(userId, { data: mapped, expiresAt: Date.now() + UNREAD_CACHE_TTL_MS });
+  }
+
+  return mapped;
 }
 
 
@@ -89,9 +107,10 @@ export async function markNotificationRead(
     .from("notification")
     .update({ is_read: true, read_at: new Date().toISOString() })
     .eq("notification_id", input.notification_id)
-    .eq("fk_user_id", userId);  
+    .eq("fk_user_id", userId);
 
   if (error) throw new Error(error.message);
+  invalidateNotificationCache(userId);
 }
 
 
@@ -106,6 +125,7 @@ export async function markAllNotificationsRead(
     .select("notification_id");
 
   if (error) throw new Error(error.message);
+  invalidateNotificationCache(userId);
 
   return { updated: data?.length ?? 0 };
 }
