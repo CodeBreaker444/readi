@@ -20,47 +20,34 @@ export const sendUserActivationEmail = async (
   fullname: string,
   emailData: ActivationEmailData
 ) => {
-  try {
-    const emailHtml = await render(
-      UserActivationEmail({
-        organization: emailData.organization,
-        username: emailData.username,
-        passcode: emailData.passcode,
-        loginlink: emailData.loginlink,
-        fullname: fullname,
-      })
-    );
+  const emailHtml = await render(
+    UserActivationEmail({
+      organization: emailData.organization,
+      username: emailData.username,
+      passcode: emailData.passcode,
+      loginlink: emailData.loginlink,
+      fullname: fullname,
+    })
+  );
 
-    const { data, error } = await resend.emails.send({
-      from: 'ReADI <no-reply@readi.theun1t.com>',
-      to: [email],
-      subject: `ReADI Control Center Account for: ${fullname}`,
-      html: emailHtml,
-    });
+  const { data, error } = await resend.emails.send({
+    from: 'ReADI <no-reply@readi.theun1t.com>',
+    to: [email],
+    subject: `ReADI Control Center Account for: ${fullname}`,
+    html: emailHtml,
+  });
 
-    if (error) {
-      console.error('Resend API error:', error);
-      return {
-        data: null,
-        error,
-        message: 'Email sending failed',
-      };
-    }
-
-    console.log('Email sent successfully:', data?.id);
-    return {
-      data,
-      error: null,
-      message: `Email sent successfully to ${email}`,
-    };
-  } catch (error) {
-    console.error('Email sending error:', error);
-    return {
-      data: null,
-      error,
-      message: 'Email sending failed',
-    };
+  if (error) {
+    console.error('[Resend] sendUserActivationEmail failed:', JSON.stringify(error));
+    throw new Error(`Email delivery failed: ${(error as any).message ?? JSON.stringify(error)}`);
   }
+
+  console.log('[Resend] activation email sent — id:', data?.id, '→', email);
+  return {
+    data,
+    error: null,
+    message: `Email sent successfully to ${email}`,
+  };
 };
 export const sendTicketClosedEmail = async (
   emails: string[],

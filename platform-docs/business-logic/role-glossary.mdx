@@ -1,0 +1,27 @@
+---
+title: "Role Glossary"
+description: "All platform roles, their full names, and primary responsibilities."
+---
+
+| Code | Full Name | Primary Responsibility |
+|---|---|---|
+| **PIC** | Pilot in Command | Execute flights, file declarations, complete checklists |
+| **OPM** | Operations Manager | Oversee all operations, assign pilots and drones, manage planning |
+| **SM** | Safety Manager | Monitor safety reports, KPIs, alerts; investigate incidents |
+| **AM** | Accountable Manager | Regulatory accountability; oversees audits and compliance |
+| **CMM** | Compliance Monitoring Manager | Audit management and compliance tracking |
+| **MM** | Maintenance Manager | Drone and equipment maintenance; ticket lifecycle |
+| **TM** | Training Manager | Training courses, attendance, certifications |
+| **DC** | Data Controller | User management, permissions, data governance |
+| **SLA** | SLA Manager | Service-level tracking, client performance metrics |
+| **ADMIN** | Platform Administrator | Full access; impersonates OPM for AI agent queries |
+| **SUPERADMIN** | Internal / Anthropic | Blocked from AI agent entirely; platform-level admin |
+
+## Permission layers
+
+Beyond the role, two boolean flags add further granularity:
+
+| Flag | Effect |
+|---|---|
+| `is_viewer` | User can view data but cannot create or modify records |
+| `is_manager` | User has elevated permissions within their role scope |

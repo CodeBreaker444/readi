@@ -1,0 +1,67 @@
+---
+title: "Systems (Drones & Equipment)"
+description: "How system records, operational status, and decommissioning work."
+---
+
+A **System** in Readi is any physical asset — drone, payload, dock, or accessory — tracked as a `tool` record in the database.
+
+## What is a System?
+
+| Field | DB Column | Meaning |
+|---|---|---|
+| Asset code | `tool.tool_code` | Unique human-readable identifier (e.g. `DJI-M3T-001`) |
+| Name | `tool.tool_name` | Display name |
+| Active flag | `tool.tool_active` | `'Y'` = in service, `'N'` = decommissioned |
+| Location | `tool.location` | Physical storage / home location |
+| Activation date | `tool_metadata.activationDate` | When the asset entered service |
+| Client assignment | `tool_metadata.clientId` | Which client this drone is dedicated to (optional) |
+| Calibration | `tool.last_calibration_date` / `tool.next_calibration_date` | Calibration tracking |
+| Warranty | `tool.warranty_expiry` | Warranty end date |
+
+Each system can have **components** (`tool_component`): motors, batteries, sensors, etc. — each tracked individually for usage hours and expiry.
+
+---
+
+## Operational Status
+
+The platform computes a system's live status every time the fleet list is loaded. It is **not** a stored field — it is derived from tickets and component state.
+
+**Priority order (highest wins):**
+
+```
+NOT_OPERATIONAL  >  MAINTENANCE  >  OPERATIONAL
+```
+
+| Status | Meaning | Trigger condition |
+|---|---|---|
+| `OPERATIONAL` | Ready to fly | No open tickets, no expired components |
+| `MAINTENANCE` | Grounded for maintenance | At least one open maintenance ticket (`ticket_status != 'CLOSED'`) OR a component with `component_metadata.component_status = 'MAINTENANCE'` |
+| `NOT_OPERATIONAL` | Grounded — part expired | At least one active component (`component_active = 'Y'`) has `expiration_date <= today` |
+
+<Warning>
+A system can be in both `MAINTENANCE` and `NOT_OPERATIONAL` simultaneously. `NOT_OPERATIONAL` always wins the display, but both conditions are tracked independently.
+</Warning>
+
+See [System Status Rules](/platform-rules/system-status-rules) for the full computation logic.
+
+---
+
+## Decommissioned — Why and How
+
+Decommissioning removes a system from active operations permanently.
+
+**Manual decommissioning (user-triggered):**
+- An admin sets `tool_active = 'N'` through Settings → Systems
+- The system remains in the database for historical mission records but disappears from the active fleet list
+- Fleet list filters by `tool_active = 'Y'` — decommissioned assets are excluded
+
+**Automated decommissioning:**
+- Not currently automated. Decommissioning is always a deliberate admin action
+- The platform sends **expiration notifications** to managers when `expiration_date <= today` on any component — this alerts the team but does not auto-decommission
+
+| State | `tool_active` | Appears in fleet? | Missions allowed? |
+|---|---|---|---|
+| In service | `'Y'` | Yes | Yes (subject to operational status) |
+| Decommissioned | `'N'` | No | No |
+| Soft-deleted | `'Y'` but `tool_metadata.deleted = true` | No | No |
+| Warehouse asset | `'Y'` but `tool_metadata.is_warehouse = true` | No | No |

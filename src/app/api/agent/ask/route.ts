@@ -30,15 +30,67 @@ class TokenAccumulator {
     get total() { return this.input + this.output; }
 }
 
+async function handleDecommissioned(ownerID: number) {
+    try {
+        const supabase = getSupabase();
+        const today = new Date().toISOString().split('T')[0];
+
+        const { data, error } = await supabase
+            .from('tool_component')
+            .select('component_name, component_type, expiration_date, component_active, tool!inner(tool_id, tool_name, tool_code, fk_owner_id)')
+            .lte('expiration_date', today)
+            .not('expiration_date', 'is', null)
+            .eq('tool.fk_owner_id', ownerID);
+
+        if (error) {
+            console.error('[handleDecommissioned] query error:', error);
+            return null;
+        }
+
+        if (!data || data.length === 0) return null;
+
+        const bySystem: Record<string, { tool_code: string; tool_name: string; components: any[] }> = {};
+
+        for (const row of data) {
+            const t = (row as any).tool;
+            const key = String(t.tool_id);
+            if (!bySystem[key]) {
+                bySystem[key] = { tool_code: t.tool_code, tool_name: t.tool_name, components: [] };
+            }
+            bySystem[key].components.push({
+                name: row.component_name,
+                type: row.component_type,
+                expired: row.expiration_date,
+            });
+        }
+
+        const summary = Object.values(bySystem)
+            .map(s => {
+                const header = `System: ${s.tool_code} — ${s.tool_name} (DECOMMISSIONED)`;
+                const parts = s.components.map(c => `  • ${c.name} (${c.type ?? 'component'}): expired ${c.expired}`).join('\n');
+                return `${header}\n${parts}`;
+            })
+            .join('\n\n');
+
+        console.log(`[handleDecommissioned] ${data.length} expired component(s) across ${Object.keys(bySystem).length} system(s)`);
+        return { summary, count: data.length, systemCount: Object.keys(bySystem).length };
+    } catch (e) {
+        console.error('[handleDecommissioned] error:', e);
+        return null;
+    }
+}
+
 async function handleClassifier(groq: any, question: string, acc: TokenAccumulator) {
-    const classifierPrompt = `Classify this question into one or more intents: [DATABASE, PROCEDURE, WEB_SEARCH, OTHER].
+    const classifierPrompt = `Classify this question into one or more intents: [DATABASE, PROCEDURE, WEB_SEARCH, DECOMMISSIONED, OTHER].
                                 - DATABASE: Facts from a database (missions, tool IDs, alerts, tickets).
                                 - PROCEDURE: Rules, regulations, manuals, checklists, or "audit/compliance" questions.
                                 - WEB_SEARCH: External knowledge, industry news, regulations not in our database (e.g. EASA, FAA, drone laws).
+                                - DECOMMISSIONED: Questions about expired, decommissioned, non-operational, or out-of-service systems or components.
                                 - OTHER: Greeting/General.
 
                                 Rule: If the question asks about "compliance", "audit", "violation", "safe to fly", or "alerts", you MUST include BOTH [DATABASE, PROCEDURE].
                                 Rule: If the question asks about external regulations, news, or industry standards, include [WEB_SEARCH].
+                                Rule: If the question asks about "decommissioned", "expired components", "non-operational systems", "out of service", or "which systems are down", classify as [DECOMMISSIONED].
 
                                 Question: "${question}"
                                 Output ONLY as a JSON array.`;
@@ -279,6 +331,7 @@ export async function POST(req: NextRequest) {
         let dbResult: any = null;
         let procResult: any = null;
         let webResult: any = null;
+        let decommissionedResult: any = null;
 
         if (intents.includes("DATABASE")) {
             dbResult = await handleDatabase(groq, question, user, acc);
@@ -290,6 +343,10 @@ export async function POST(req: NextRequest) {
 
         if (intents.includes("WEB_SEARCH")) {
             webResult = await handleWebSearch(question);
+        }
+
+        if (intents.includes("DECOMMISSIONED")) {
+            decommissionedResult = await handleDecommissioned(user.ownerID);
         }
 
         // Cap data fed to synthesizer to stay within Groq's 12k TPM limit
@@ -313,6 +370,9 @@ export async function POST(req: NextRequest) {
                                     WEB SEARCH RESULTS:
                                     ${webResult || "No web search performed."}
 
+                                    DECOMMISSIONED SYSTEMS:
+                                    ${decommissionedResult?.summary || "No decommissioned systems found."}
+
                                     AUDIT RULES:
                                     1. If a mission flew while an alert was active (compare timestamps), flag it.
                                     2. If max_altitude > 120m, flag it.
@@ -324,7 +384,8 @@ export async function POST(req: NextRequest) {
                                     - For violations: Start with "VIOLATION:" then the finding.
                                     - For non-violations: Just state the answer. Do NOT append "All clear" or any sign-off.
                                     - For data queries: Give the answer directly (e.g. "You completed 8 missions.").
-                                    - Keep answers under 3 sentences unless listing multiple violations.
+                                    - For decommissioned queries: List each system with its expired components grouped under it. If no decommissioned systems exist, say "No systems are currently decommissioned."
+                                    - Keep answers under 3 sentences unless listing multiple violations or decommissioned systems.
                                     - Do NOT use emojis.
                                     - Do NOT explain your reasoning process.`;
 

@@ -1,0 +1,120 @@
+---
+title: "Authorization Code (PIN)"
+description: "How the Authorization PIN works, what happens when it's not set, and the full cryptographic flow."
+---
+
+Every mission status change on the Operations Board requires a **cryptographic Authorization PIN**. This is a 6-digit code that protects a private key used to digitally sign every status transition, creating a tamper-evident audit trail.
+
+---
+
+## What Happens If the PIN Is Not Set
+
+If a user tries to change a mission status on the board without having configured an Authorization PIN, the action is blocked immediately with:
+
+> **"Authorization PIN not set up"**
+> HTTP 422 — the transaction sign API returns this error.
+
+The user must go to **Settings → Security** and configure their 6-digit PIN before any mission status changes can be performed.
+
+<Warning>
+There is no workaround. Without a PIN configured, dragging a mission card on the Operations Board does nothing — the action is silently cancelled after the error is returned.
+</Warning>
+
+---
+
+## Setting Up the PIN
+
+1. Navigate to **Settings → Security**
+2. Click **Set Up Authorization PIN**
+3. Enter and confirm a 6-digit PIN
+4. The platform generates an RSA key pair:
+   - **Private key** — encrypted with the PIN using AES-GCM and stored in `user_authorization_keys.encrypted_private_key`
+   - **Public key** — stored in `user_authorization_keys.public_key`
+   - **Salt + IV** — stored in `user_authorization_keys.salt` and `user_authorization_keys.iv` for key derivation
+
+The PIN itself is never stored. It only exists in memory during the signing operation.
+
+---
+
+## Full Flow: Mission Status Change
+
+```
+1. User drags mission card on Operations Board
+        ↓
+2. requireAuthorization() hook called
+   (action_type = "mission_start" or "mission_complete")
+        ↓
+3. AuthorizationModal opens
+        ↓
+4. User enters 6-digit PIN
+        ↓
+5. Frontend derives encryption key (PIN + salt + IV via PBKDF2)
+        ↓
+6. Frontend decrypts private key using derived key (AES-GCM)
+        ↓
+7. Frontend signs a JWT payload with the decrypted private key
+   Payload includes: action_type, entity_type, entity_id, label, timestamp
+        ↓
+8. POST /api/authorization/transaction-sign
+   Backend stores signed record in transaction_signs table:
+   - user_id, owner_id, user_name
+   - action_type, entity_type, entity_id
+   - jwt_token (the signed JWT)
+   - payload_preview (JSON of action details)
+   - public_key_snapshot (public key at time of signing)
+   - integrity_status = "valid"
+        ↓
+9. Returns transaction_sign ID
+        ↓
+10. executeMissionStatusUpdate() called
+    POST /api/operation/board/status
+        ↓
+11. pilot_mission.fk_mission_status_id updated
+        ↓
+12. Mission card moves to the target column
+```
+
+---
+
+## Database Tables
+
+| Table | Purpose |
+|---|---|
+| `user_authorization_keys` | Stores each user's key pair (encrypted private key + public key + salt + IV) |
+| `transaction_signs` | Stores every signed status-change transaction for audit purposes |
+
+### `user_authorization_keys` fields
+
+| Field | Meaning |
+|---|---|
+| `user_id` | One key pair per user (unique) |
+| `encrypted_private_key` | AES-GCM encrypted private key — cannot be decrypted without the PIN |
+| `public_key` | Stored in plain text for signature verification |
+| `salt` | Random salt used in key derivation |
+| `iv` | Initialisation vector for AES-GCM |
+| `key_fingerprint` | Short hash for key identification |
+
+### `transaction_signs` fields
+
+| Field | Meaning |
+|---|---|
+| `action_type` | `mission_start` or `mission_complete` |
+| `entity_type` | Always `mission` |
+| `entity_id` | The `pilot_mission_id` that was changed |
+| `jwt_token` | Full signed JWT — verifiable against the public key |
+| `payload_preview` | JSON snapshot of the action context |
+| `public_key_snapshot` | The public key at the time of signing |
+| `integrity_status` | `valid` / `invalid` |
+| `verified_at` | When the signature was last verified |
+
+---
+
+## Common Scenarios
+
+| Scenario | What Happens |
+|---|---|
+| PIN not set up | HTTP 422 — "Authorization PIN not set up". User must configure it in Settings → Security |
+| Wrong PIN entered | Decryption fails client-side. Modal shows "Incorrect PIN. Please try again." Fields are cleared, user can retry |
+| Correct PIN | Private key decrypts, JWT is signed, transaction is stored, status changes |
+| User forgets PIN | Admin can reset the key pair from the user management screen. The old signed transactions remain in `transaction_signs` |
+| ADMIN role | Admin must impersonate an OPM user first (via `x-opm-impersonate` header) before performing any mission actions including Authorization PIN usage |

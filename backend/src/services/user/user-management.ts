@@ -199,24 +199,34 @@ export async function createUser(userData: UserCreateData) {
     console.log('activation link:', activationLink);
     console.log('pass:', uid);
 
-    const emailResult = await sendUserActivationEmail(
-      userData.email,
-      userData.fullname,
-      {
-        organization: 'ReADI Control Center',
-        username: userData.username,
-        passcode: uid,
-        loginlink: activationLink,
-      }
-    );
+    let emailSent = false;
+    let emailError: string | null = null;
+
+    try {
+      await sendUserActivationEmail(
+        userData.email,
+        userData.fullname,
+        {
+          organization: 'ReADI Control Center',
+          username: userData.username,
+          passcode: uid,
+          loginlink: activationLink,
+        }
+      );
+      emailSent = true;
+    } catch (err) {
+      emailError = err instanceof Error ? err.message : String(err);
+      console.error('[createUser] activation email failed:', emailError);
+    }
 
     return {
       success: true,
       userId: newUser.user_id,
       userOwnerId: userOwner.user_owner_id,
       activationKey: key,
-      emailSent: emailResult.message,
-      message: 'User created successfully',
+      emailSent,
+      emailError,
+      message: emailSent ? 'User created successfully' : `User created but activation email failed: ${emailError}`,
     };
   } catch (error) {
     console.error('Error creating user:', error);
@@ -287,6 +297,8 @@ export async function deleteUser(userId: number, ownerId: number, isSuperAdmin =
     });
 
     if (!userRecord) throw new Error('User not found or does not belong to this organization');
+
+    await prisma.communication.deleteMany({ where: { fk_user_id: userId } });
 
     await prisma.public_users.deleteMany({
       where: {

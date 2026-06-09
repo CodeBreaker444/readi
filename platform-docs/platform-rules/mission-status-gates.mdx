@@ -1,0 +1,65 @@
+---
+title: "Mission Status Gates"
+description: "All conditions that block a mission status change on the Operations Board."
+---
+
+Changing a mission's status on the Operations Board (e.g. PLANNED → IN_PROGRESS) is gated by several independent checks. All must pass before the status update proceeds.
+
+---
+
+## Gate 1 — Authorization PIN
+
+The user performing the change must have an Authorization PIN configured.
+
+- **Checked by:** `POST /api/authorization/transaction-sign`
+- **Block condition:** No entry in `user_authorization_keys` for this user
+- **Error:** HTTP 422 — "Authorization PIN not set up"
+- **Resolution:** User goes to Settings → Security and sets up their 6-digit PIN
+
+See [Authorization Code](/platform-rules/authorization-code) for the full flow.
+
+---
+
+## Gate 2 — Pilot Daily Declaration
+
+The pilot assigned to the mission must have filed a declaration on the current day.
+
+- **Checked by:** `POST /api/operation/board/status`
+- **Block condition:** No `pilot_declaration` with `declared_at >= today 00:00:00` exists for the mission's `fk_pilot_user_id`
+- **Error:** Board action is blocked with a "Daily declaration not filed" warning
+- **Resolution:** Pilot files their declaration for the day (pre-flight declaration)
+
+---
+
+## Gate 3 — System Operational Status
+
+The drone assigned to the mission must be `OPERATIONAL`.
+
+- **Checked by:** `POST /api/operation/board/status`
+- **Block conditions:**
+  - At least one active component (`component_active = 'Y'`) has `expiration_date <= today` → system is `NOT_OPERATIONAL`
+  - At least one open maintenance ticket (`ticket_status != 'CLOSED'`) → system is `MAINTENANCE`
+- **Error:** Status change blocked with a system status warning
+- **Resolution:** Close the maintenance ticket, or update/replace the expired component
+
+---
+
+## Gate 4 — Final Status Lock
+
+Once a mission reaches a terminal status (`is_final_status = true`), no further status transitions are expected.
+
+- **Final statuses:** `COMPLETED`, `CANCELLED`, `FAILED`
+- **Block condition:** `pilot_mission_status.is_final_status = true` for the current status
+- **Effect:** The mission card is non-draggable on the board
+
+---
+
+## Gate Summary
+
+| Gate | What blocks it | Who resolves it |
+|---|---|---|
+| Authorization PIN not set | No key pair in `user_authorization_keys` | The acting user sets up their PIN |
+| No daily declaration | Pilot has not filed a declaration today | Pilot files pre-flight declaration |
+| System NOT_OPERATIONAL | Expired component (`expiration_date <= today`) | Replace or deactivate the component |
+| System MAINTENANCE | Open maintenance ticket | Close the maintenance ticket |
+| Final status lock | Mission already in COMPLETED / CANCELLED / FAILED | N/A — terminal state |

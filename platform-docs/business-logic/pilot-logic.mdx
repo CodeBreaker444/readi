@@ -1,0 +1,69 @@
+---
+title: "Pilot Logic"
+description: "Pilot qualifications, declarations, and readiness rules."
+---
+
+Pilots (role `PIC` — Pilot in Command) are `public_users` records. Their readiness is determined by qualifications, training, and declarations.
+
+## Qualifications (`user_qualification`)
+
+| Field | Meaning |
+|---|---|
+| `qualification_name` | Name of the cert/licence (e.g. A2 CofC, GVC, BVLOS) |
+| `qualification_type` | Category |
+| `start_date` | When qualification was achieved |
+| `expiry_date` | When it lapses |
+| `status` | `Active` / `Expired` / `Suspended` |
+
+A pilot is considered **qualified** when all required qualifications for a mission type have `status = 'Active'` and `expiry_date > today`.
+
+## Training (`training_attendance`)
+
+| Field | Meaning |
+|---|---|
+| `attendance_status` | `present` / `absent` / `excused` |
+| `completion_status` | `completed` / `in_progress` / `failed` |
+| `score` | 0–100 test score |
+| `certification_issued` | Boolean — did this session generate a cert? |
+| `certification_expiry` | When that cert expires |
+
+## Extended Profile (`users_profile`)
+
+| Field | Meaning |
+|---|---|
+| `certifications` | JSON array of held certifications |
+| `skills` | JSON array of skill tags |
+| `user_primary_certification` | Primary regulatory licence |
+
+---
+
+## Pilot Declarations
+
+Before and after every flight, pilots file a `pilot_declaration`:
+
+| `declaration_type` | When filed |
+|---|---|
+| `Pre-flight` | Before takeoff — confirms fitness to fly, weather acceptable, system checks done |
+| `Post-flight` | After landing — confirms flight completed, anomalies noted |
+| `Medical` | Periodic fitness declaration |
+
+Key fields:
+- `checklist_completed` — Boolean confirming checklist was done
+- `declaration_data` — JSON blob with detailed answers
+- `declared_at` — Timestamp of submission
+
+<Warning>
+If a pilot has not filed a daily declaration, mission status changes on the Operations Board are blocked. The platform checks for a declaration filed on the current day before allowing any status transition.
+</Warning>
+
+---
+
+## Pilot States in a Mission
+
+```
+ASSIGNED → PRE-FLIGHT → AIRBORNE → POST-FLIGHT → DONE
+    │            │            │           │
+  mission    pilot_decl    In mission  pilot_decl
+  created    (Pre-flight)  in progress (Post-flight)
+                                        + mission result
+```

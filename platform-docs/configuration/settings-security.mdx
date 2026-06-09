@@ -1,0 +1,31 @@
+---
+title: "Settings and Security"
+description: "Password policy, MFA, API keys, and Authorization PIN setup."
+---
+
+Settings and Security covers account hardening, integrations, and the Authorization PIN used for mission status changes.
+
+## Main capabilities
+
+- Password policy and change flows
+- Multi-factor authentication (MFA) setup and verification
+- API key management for third-party integrations
+- **Authorization PIN setup** — required before any mission status change can be performed
+
+## Authorization PIN
+
+Every user who performs mission status changes on the Operations Board must configure an Authorization PIN. This is a 6-digit code that protects a cryptographic key pair used to sign every status transition.
+
+If a user tries to move a mission on the board without a PIN configured, they receive:
+> "Authorization PIN not set up"
+
+They must go to **Settings → Security** and set up their PIN before they can proceed.
+
+See [Authorization Code](/platform-rules/authorization-code) for the complete technical flow.
+
+## Primary app routes
+
+- `/settings/security`
+- `/auth/setup-2fa`
+- `/auth/verify-mfa`
+- `/auth/change-password`

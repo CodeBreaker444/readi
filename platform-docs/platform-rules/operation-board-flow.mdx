@@ -1,0 +1,78 @@
+---
+title: "Operation Board Flow"
+description: "What happens step by step when a mission card is dragged on the Operations Board."
+---
+
+The Operations Board is a Kanban-style view where mission status changes are performed by dragging cards between columns. This page documents the exact sequence of events.
+
+---
+
+## Drag-and-Drop Sequence
+
+```
+User drags mission card from column A to column B
+          ↓
+[1] targetStatus determined from column B name
+          ↓
+[2] Pre-checks run (client-side):
+    - Is the system OPERATIONAL?
+    - Is the status transition valid?
+    - Is the target status a terminal state already?
+          ↓
+[3] requireAuthorization() called
+    - AuthorizationModal opens
+    - User enters 6-digit PIN
+    - JWT signed with private key
+    - POST /api/authorization/transaction-sign
+    - transaction_sign_id returned
+          ↓
+[4] executeMissionStatusUpdate() called
+    POST /api/operation/board/status
+    Body: { missionId, targetStatus, transactionSignId }
+          ↓
+[5] Server-side checks:
+    a. requirePermission('view_operations')
+    b. Daily declaration check for the mission's pilot
+    c. System operational status check
+    d. updateMissionStatus(missionId, targetStatus) via Prisma
+          ↓
+[6] pilot_mission.fk_mission_status_id updated in DB
+          ↓
+[7] Card re-renders in new column
+    Notification logged
+    Audit log entry created
+```
+
+---
+
+## Status Transitions Supported
+
+| From | To | action_type in transaction_signs |
+|---|---|---|
+| `PLANNED` | `IN_PROGRESS` | `mission_start` |
+| `IN_PROGRESS` | `COMPLETED` | `mission_complete` |
+| Any non-final | `CANCELLED` | `mission_cancel` |
+| `IN_PROGRESS` | `PLANNED` (revert) | `mission_revert` |
+
+---
+
+## What Gets Recorded
+
+Every successful drag creates two records:
+
+1. **`transaction_signs`** — cryptographically signed record of who authorised the change, when, and to what state
+2. **Audit log** — plain-text event log entry: `"Mission status changed from X to Y by [user]"`
+
+These two records together make every status transition fully traceable and tamper-evident.
+
+---
+
+## Error States
+
+| Error | Cause | User sees |
+|---|---|---|
+| Authorization PIN not set up | No key pair in `user_authorization_keys` | Modal error: "Authorization PIN not set up. Go to Settings → Security." |
+| Wrong PIN | Client-side decryption fails | Modal: "Incorrect PIN. Please try again." |
+| Daily declaration missing | No declaration filed today for this pilot | Board action blocked: "Pilot has not filed a daily declaration" |
+| System not operational | `NOT_OPERATIONAL` or `MAINTENANCE` status | Board action blocked: system status warning shown |
+| Network error | API call fails | Card snaps back to original column, toast error shown |

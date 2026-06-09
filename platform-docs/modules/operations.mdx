@@ -1,0 +1,29 @@
+---
+title: "Operations"
+description: "Centralised execution monitoring and day-to-day activity control."
+---
+
+Operations is where missions move from planned to completed. It provides three views of the same data.
+
+## Views
+
+| View | Purpose |
+|---|---|
+| **Operations Table** | Structured list of all missions with filters by pilot, drone, status, date |
+| **Daily Board** | Kanban-style drag-and-drop board — move missions between status columns |
+| **Calendar** | Timeline view for scheduling and crew visibility |
+
+## Mission status changes
+
+Changing a mission status from the Daily Board (e.g. dragging from PLANNED → IN_PROGRESS) requires an **Authorization PIN**. See [Authorization Code](/platform-rules/authorization-code) for the full flow.
+
+Blocked cases:
+- System is `NOT_OPERATIONAL` or `MAINTENANCE` — status change prevented
+- Pilot has not filed a daily declaration — status change blocked
+- User has no Authorization PIN set up — action blocked with a prompt to configure it
+
+## Primary app routes
+
+- `/operations`
+- `/operations/board`
+- `/operations/calendar`

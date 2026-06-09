@@ -1,0 +1,22 @@
+---
+title: "Mission Definitions"
+description: "Configure mission statuses, types, categories, and result types."
+---
+
+Mission Definitions are the organisation-defined lookup values that power mission tracking.
+
+## Configurable sets
+
+| Set | Purpose | Key field |
+|---|---|---|
+| **Mission Statuses** | Lifecycle stages (PLANNED, IN_PROGRESS, etc.) | `is_final_status`, `status_order` |
+| **Mission Types** | Classification of the flight (survey, inspection, delivery) | `type_name` |
+| **Mission Categories** | Sub-classification within a type | `category_name` |
+| **Result Types** | Data output categories (thermal, RGB, survey) | `result_type_desc` |
+
+Each set is scoped to the organisation — different orgs can have different values.
+
+## Primary app routes
+
+- `/settings/mission-statuses`
+- `/settings/mission-types`

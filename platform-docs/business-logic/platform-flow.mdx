@@ -1,0 +1,92 @@
+---
+title: "Overall Platform Flow"
+description: "The four operational phases: Evaluation, Planning, Mission, Maintenance."
+---
+
+Readi models the full drone operations lifecycle in four sequential phases.
+
+```
+EVALUATION ──► PLANNING ──► MISSION ──► MAINTENANCE
+     │              │            │            │
+  Assessment    Flight plan   Execution    Asset care
+  & approval    creation      & logging    & tracking
+     │              │            │            │
+  evaluation    planning     pilot_mission  tool_maintenance
+  table         table        table          maintenance_ticket
+```
+
+---
+
+## Phase 1 — Evaluation
+
+**Purpose:** Assess whether a proposed operation is safe and compliant before any flight planning begins.
+
+| Field | Meaning |
+|---|---|
+| `evaluation_status` | `NEW → PROCESSING → DONE` |
+| `scheduled_date` | When the evaluation is due |
+| `evaluation_result` | Summary outcome text |
+| `fk_luc_procedure_id` | References the LUC procedure being assessed |
+
+**Evaluation Actions (`evaluation_action`):**
+Each evaluation contains discrete tasks, each with a `task_status` and a `dependencies` JSON field holding checklist results, sign-offs, and uploaded evidence.
+
+**Outcome:** A completed evaluation (status = `DONE`) unlocks the planning phase.
+
+---
+
+## Phase 2 — Planning
+
+**Purpose:** Build the detailed flight plan — where, when, at what altitude, with which drone and payload.
+
+| `planning_status` | Meaning |
+|---|---|
+| `NEW` | Draft just created |
+| `PROCESSING` | Under internal review |
+| `REQ_FEEDBACK` | Awaiting sign-off |
+| `POSITIVE_RESULT` | Approved — ready for mission creation |
+| `NEGATIVE_RESULT` | Rejected — must be revised |
+
+**Outcome:** A plan with `POSITIVE_RESULT` can be converted into live missions.
+
+---
+
+## Phase 3 — Mission
+
+See [Mission Lifecycle](/business-logic/mission-lifecycle) for the step-by-step breakdown.
+
+Key linkage: `pilot_mission.fk_planning_id` ties every live flight back to its approved plan.
+
+---
+
+## Phase 4 — Maintenance
+
+**Purpose:** Keep every asset airworthy.
+
+| Maintenance type | Triggered by |
+|---|---|
+| `preventive` | Calendar schedule (e.g. every 50 flight hours) |
+| `corrective` | Damage or failure discovered during/after a mission |
+| `inspection` | Regulatory or insurance-driven periodic check |
+| `calibration` | Sensor / compass recalibration |
+
+**Component lifecycle cycle:**
+
+```
+Mission completes
+  → flight_duration added to component current_usage_hours
+  → if usage_hours >= maintenance_cycle_hour: alert sent
+  → MM creates maintenance_ticket
+  → system status → MAINTENANCE
+  → maintenance performed, ticket closed
+  → system status → OPERATIONAL
+```
+
+**Ticket statuses:**
+
+| Status | Meaning |
+|---|---|
+| `open` | Issue reported, not yet assigned |
+| `in_progress` | Technician working on it |
+| `resolved` | Fix applied, awaiting verification |
+| `closed` | Verified resolved — system returns to `OPERATIONAL` |

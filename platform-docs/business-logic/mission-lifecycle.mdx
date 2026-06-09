@@ -1,0 +1,104 @@
+---
+title: "Mission Lifecycle"
+description: "Mission fields, status definitions, step-by-step lifecycle, and results."
+---
+
+A **Mission** is a single flight event tied to a pilot, a drone, and a flight plan. The DB model is `pilot_mission`.
+
+## Mission Fields Reference
+
+| Field | DB Column | Meaning |
+|---|---|---|
+| Mission ID | `pilot_mission_id` | Auto-incremented primary key |
+| Mission code | `mission_code` | Human-readable unique code |
+| Status | `status_name` | Current lifecycle stage |
+| Linked plan | `fk_planning_id` | The flight plan this mission executes |
+| Pilot | `fk_pilot_user_id` | Assigned PIC (pilot in command) |
+| Drone | `fk_tool_id` | Which system was used |
+| Planned start | `scheduled_start` | Target takeoff datetime |
+| Actual start | `actual_start` | Real takeoff timestamp |
+| Actual end | `actual_end` | Real landing timestamp |
+| Flight time | `flight_duration` | Minutes in the air |
+| Distance | `distance_flown` | Kilometres flown |
+| Max altitude | `max_altitude` | Peak altitude in metres (>120 m is a compliance flag) |
+| Pre-flight check | `pre_flight_check_ok` | Boolean — checklist signed off before flight |
+| Post-flight check | `post_flight_check_ok` | Boolean — checklist signed off after flight |
+| Incident flag | `incident_flag` | Boolean — a safety incident occurred |
+| RTH unplanned | `rth_unplanned` | Boolean — drone returned home unexpectedly |
+| Link loss | `link_loss` | Boolean — comms link was lost |
+| Deviation | `deviation_flag` | Boolean — flight deviated from planned route |
+| Battery start/end | `battery_charge_start` / `battery_charge_end` | Battery % at takeoff and landing |
+
+---
+
+## Mission Statuses
+
+Statuses are **organisation-defined** — each organisation creates its own set in `pilot_mission_status`.
+
+| Status | `is_final_status` | Meaning |
+|---|---|---|
+| `PLANNED` | false | Scheduled, not yet started |
+| `IN_PROGRESS` | false | Drone is airborne |
+| `COMPLETED` | true | Flight finished successfully |
+| `CANCELLED` | true | Called off before takeoff |
+| `FAILED` | true | Started but did not complete normally |
+
+`status_order` controls dropdown order. `is_final_status = true` marks terminal states.
+
+---
+
+## Step-by-Step Lifecycle
+
+```
+1. CREATION (OPM or pilot)
+   ├─ Mission linked to a planning_id
+   ├─ status = PLANNED
+   ├─ scheduled_start set
+   └─ pilot + drone assigned
+
+2. PRE-FLIGHT (day of mission)
+   ├─ Pilot completes pre-flight checklist
+   ├─ pre_flight_check_ok = true
+   ├─ Pilot files pilot_declaration (Pre-flight)
+   └─ System must be OPERATIONAL to proceed
+
+3. TAKEOFF → IN_PROGRESS
+   ├─ actual_start = NOW()
+   ├─ Authorization PIN required (signed transaction recorded)
+   ├─ FlytBase telemetry begins feeding in
+   └─ battery_charge_start recorded
+
+4. LANDING → COMPLETED
+   ├─ actual_end = NOW()
+   ├─ Authorization PIN required
+   ├─ flight_duration, distance_flown, max_altitude recorded
+   └─ battery_charge_end recorded
+
+5. POST-FLIGHT
+   ├─ post_flight_check_ok = true
+   ├─ Pilot files pilot_declaration (Post-flight)
+   ├─ Mission results stored in pilot_mission_result
+   └─ Attachments added via operation_attachment
+
+6. FAILURE (any point after takeoff)
+   ├─ status = FAILED (is_final_status = true)
+   ├─ Incident flags set as appropriate
+   └─ Safety report may be filed linking fk_pilot_mission_id
+
+7. CANCELLATION (before takeoff)
+   ├─ status = CANCELLED (is_final_status = true)
+   └─ actual_start remains NULL
+```
+
+---
+
+## Mission Results
+
+After a completed mission, data collected is stored in `pilot_mission_result`:
+
+| Field | Meaning |
+|---|---|
+| `result_type` | Category (imagery, thermal, RGB, survey) |
+| `quality_score` | 0–100 rating of data quality |
+| `data_size` | Bytes of raw data collected |
+| `processing_status` | `Raw → Processing → Ready` |
