@@ -1,4 +1,6 @@
+import { internalError } from "@/lib/api-error";
 import { getUserSession } from "@/lib/auth/server-session";
+import { E } from "@/lib/error-codes";
 import { checkTokenLimits, recordTokenUsage } from "@/lib/token-tracker";
 import { ROLE_ALLOWED_TABLES } from "@mcp-server/lib/constants";
 import { getGroq } from "@mcp-server/lib/groq";
@@ -9,8 +11,6 @@ import { webSearch } from "@mcp-server/lib/serp";
 import { getSupabase } from "@mcp-server/lib/supabase";
 import { NextRequest, NextResponse } from "next/server";
 import { GROQ_MODEL } from "../../../../lib/token-limits";
-import { E } from "@/lib/error-codes";
-import { internalError } from "@/lib/api-error";
 
 export const dynamic = "force-dynamic";
 
