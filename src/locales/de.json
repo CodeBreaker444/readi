@@ -1962,6 +1962,9 @@
         "selectedNonOpWarningPost": "— eine seiner Komponenten ist abgelaufen. Die Missionserstellung wird gesperrt.",
         "allNonOperationalWarning": "Alle Systeme sind aufgrund abgelaufener Komponenten nicht betriebsbereit und können nicht für Missionen verwendet werden.",
         "anyNonOperationalWarning": "Einige Systeme sind aufgrund abgelaufener Komponenten nicht betriebsbereit und können nicht für Missionen verwendet werden.",
+        "dismissedTag": "STILLGELEGT",
+        "selectedDismissedWarningPre": "Das ausgewählte System ist",
+        "selectedDismissedWarningPost": "— es wurde administrativ stillgelegt und kann nicht für Missionen verwendet werden.",
         "missionPlan": "Missionsplan",
         "noPlansForClient": "— keine Pläne für diesen Kunden",
         "noPlansAvailable": "Keine Pläne verfügbar",
@@ -3926,7 +3929,8 @@
           "operational": "Betriebsbereit",
           "notOperational": "Nicht betriebsbereit",
           "maintenance": "Wartung",
-          "decommissioned": "Außer Betrieb"
+          "decommissioned": "Außer Betrieb",
+          "dismissed": "Stillgelegt"
         },
         "activeOptions": {
           "active": "AKTIV",
@@ -3968,10 +3972,13 @@
           "label": "Ablauftyp",
           "expirationDate": "Ablaufdatum",
           "flights": "Flüge",
+          "flightHours": "Flugstunden",
           "mixed": "Gemischt",
           "expirationFlights": "Ablaufflüge",
+          "expirationFlightHours": "Ablauf-Flugstunden",
           "flightsHint": "Komponente wird automatisch außer Betrieb genommen, wenn die Fluganzahl erreicht ist",
-          "mixedHint": "Wird außer Betrieb genommen, wenn Datum oder Fluganzahl erreicht ist — je nachdem, was zuerst eintritt"
+          "flightHoursHint": "Komponente wird automatisch außer Betrieb genommen, wenn die Flugstunden erreicht sind",
+          "mixedHint": "Wird außer Betrieb genommen, wenn ein gesetztes Limit erreicht ist — Datum, Fluganzahl oder Flugstunden — je nachdem, was zuerst eintritt"
         },
         "defaultCounters": {
           "label": "Startzähler",

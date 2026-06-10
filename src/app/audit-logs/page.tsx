@@ -1,5 +1,6 @@
 'use client';
 
+import { AuditLogDetailModal } from '@/components/audit/AuditLogDetailModal';
 import { SecureTransactionsTab } from '@/components/audit/SecureTransactionsTab';
 import ExportButtons from '@/components/system/ExportButtons';
 import { AuditLog, ENTITY_TYPES, EVENT_TYPE_COLORS, EVENT_TYPES, getAuditLogsColumns, Owner, UserOption } from '@/components/tables/AuditLogsTable';
@@ -54,6 +55,7 @@ export default function AuditLogsPage() {
 
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 8 });
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
+  const [detailLog, setDetailLog] = useState<AuditLog | null>(null);
 
   const toggleRow = (id: number) =>
     setExpandedRows((prev) => {
@@ -448,6 +450,14 @@ export default function AuditLogsPage() {
                                 {owners.find((o) => o.owner_id === log.owner_id)?.owner_name ?? log.owner_id}
                               </TableCell>
                             )}
+                            <TableCell>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); setDetailLog(log); }}
+                                className={`text-[10px] font-medium px-2.5 py-1 rounded-md border transition-colors cursor-pointer ${isDark ? 'border-white/[0.1] text-slate-400 hover:bg-white/[0.05] hover:text-white' : 'border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-gray-800'}`}
+                              >
+                                Details
+                              </button>
+                            </TableCell>
                           </TableRow>
                           {isDccReport && isExpanded && dcc && (
                             <TableRow key={`${row.id}-dcc`} className={isDark ? 'border-white/[0.06]' : 'border-gray-50'}>
@@ -484,6 +494,8 @@ export default function AuditLogsPage() {
               </Table>
             </div>
           </div>
+
+          <AuditLogDetailModal log={detailLog} onClose={() => setDetailLog(null)} />
 
           <div className="flex items-center justify-between px-2 mt-2">
             <ExportButtons

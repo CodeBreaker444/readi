@@ -747,7 +747,7 @@ export async function getPilotOptions(ownerId: number) {
 export async function getToolOptions(ownerId: number) {
   const { data, error } = await supabase
     .from('tool')
-    .select('tool_id, tool_name, tool_code')
+    .select('tool_id, tool_name, tool_code, tool_metadata')
     .eq('fk_owner_id', ownerId)
     .eq('tool_active', 'Y')
     .order('tool_name');
@@ -810,6 +810,7 @@ export async function getToolOptions(ownerId: number) {
     has_drone_component: hasDroneSet.has(t.tool_id),
     maintenance_due: maintenanceDueSet.has(t.tool_id),
     is_non_operational: nonOperationalSet.has(t.tool_id),
+    is_dismissed: t.tool_metadata?.status === 'DISMISSED',
   }));
 }
 

@@ -221,11 +221,12 @@ export async function updateClient(input: UpdateClientInput): Promise<{ code: nu
   }
 }
 
-export async function deleteClient(client_id: number): Promise<{ code: number; error?: string }> {
+export async function deleteClient(client_id: number): Promise<{ code: number; clientName?: string | null; clientCode?: string | null; error?: string }> {
   try {
+    const { data: clientRow } = await supabase.from('client').select('client_name, client_code').eq('client_id', client_id).maybeSingle();
     const { error } = await supabase.from('client').delete().eq('client_id', client_id);
     if (error) return { code: 0, error: error.message };
-    return { code: 1 };
+    return { code: 1, clientName: clientRow?.client_name ?? null, clientCode: clientRow?.client_code ?? null };
   } catch (e: any) {
     return { code: 0, error: e.message };
   }

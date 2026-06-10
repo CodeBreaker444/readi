@@ -114,6 +114,7 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
     if (isNaN(id)) return zodError(E.VL002, { flatten: () => ({ fieldErrors: {} }) });
 
     const session = await getUserSession();
+    const opInfo = await getOperation(id);
     await deleteOperation(id);
 
     if (session) {
@@ -121,7 +122,7 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
         eventType: 'DELETE',
         entityType: 'operation',
         entityId: id,
-        description: `Deleted operation #${id}`,
+        description: `Deleted operation '${opInfo?.mission_code ?? `#${id}`}'${opInfo?.mission_name ? ` — ${opInfo.mission_name}` : ''} (ID ${id})`,
         userId: session.user.userId,
         userName: session.user.fullname,
         userEmail: session.user.email,

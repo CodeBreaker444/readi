@@ -1973,6 +1973,9 @@
         "selectedNonOpWarningPost": "— one of its components has expired. Mission creation will be blocked.",
         "allNonOperationalWarning": "All systems are not operational due to expired components and cannot be used for missions.",
         "anyNonOperationalWarning": "Some systems are not operational due to expired components and cannot be used for missions.",
+        "dismissedTag": "DISMISSED",
+        "selectedDismissedWarningPre": "The selected system is",
+        "selectedDismissedWarningPost": "— it has been administratively dismissed and cannot be used for missions.",
         "missionPlan": "Mission Plan",
         "noPlansForClient": "— no plans for this client",
         "noPlansAvailable": "No plans available",
@@ -4014,7 +4017,8 @@
           "operational": "Operational",
           "notOperational": "Not Operational",
           "maintenance": "Maintenance",
-          "decommissioned": "Decommissioned"
+          "decommissioned": "Decommissioned",
+          "dismissed": "Dismissed"
         },
         "activeOptions": {
           "active": "ACTIVE",
@@ -4056,10 +4060,13 @@
           "label": "Expiry Type",
           "expirationDate": "Expiration Date",
           "flights": "Flights",
+          "flightHours": "Flight Hours",
           "mixed": "Mixed",
           "expirationFlights": "Expiration Flights",
+          "expirationFlightHours": "Expiration Flight Hours",
           "flightsHint": "Component auto-decommissions when flight count is reached",
-          "mixedHint": "Decommissions when either the date or flight count is reached — whichever comes first"
+          "flightHoursHint": "Component auto-decommissions when flight hours are reached",
+          "mixedHint": "Decommissions when any set limit is reached — date, flight count, or flight hours — whichever comes first"
         },
         "defaultCounters": {
           "label": "Starting Counters",

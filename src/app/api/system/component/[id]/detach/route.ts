@@ -17,11 +17,12 @@ export async function POST(
     const result = await detachComponent(session!.user.ownerId, Number(id));
 
     if (result.code === 1) {
+      const label = result.componentCode ?? result.componentName ?? result.componentType ?? `#${id}`;
       logEvent({
         eventType: 'UPDATE',
-        entityType: 'system',
+        entityType: 'system_component',
         entityId: id,
-        description: `Detached component #${id} from system`,
+        description: `Detached component '${label}' (ID ${id}${result.componentType ? `, type: ${result.componentType}` : ''}) from system${result.toolCode ? ` '${result.toolCode}'` : ''}`,
         userId: session!.user.userId,
         userName: session!.user.fullname,
         userEmail: session!.user.email,

@@ -1,5 +1,6 @@
 'use client';
 
+import LocationPicker from '@/components/system/LocationPicker';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -12,7 +13,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Skeleton } from '../ui/skeleton';
-import LocationPicker from '@/components/system/LocationPicker';
 import { ManageComponentTypesModal } from './ManageComponentTypesModal';
 import { DroneClassRow, ManageDroneClassesModal } from './ManageDroneClassesModal';
 
@@ -21,6 +21,7 @@ function SystemOptionLabel({ tool }: { tool: any }) {
     OPERATIONAL: 'bg-green-100 text-green-700',
     MAINTENANCE: 'bg-yellow-100 text-yellow-700',
     NOT_OPERATIONAL: 'bg-red-100 text-red-700',
+    DISMISSED: 'bg-slate-200 text-slate-600',
   };
   const statusClass = statusColors[tool.tool_status] || 'bg-gray-100 text-gray-600';
   return (
@@ -69,6 +70,7 @@ const EMPTY_FORM = {
   expiration_date: '',
   expiry_type: 'EXPIRATION_DATE',
   expiration_flights: '',
+  expiration_flight_hours: '',
   component_vendor: '',
   component_guarantee_day: '',
   component_status: 'OPERATIONAL',
@@ -174,6 +176,7 @@ export default function EditComponentModal({
       expiration_date: comp.expiration_date?.split('T')[0] || '',
       expiry_type: comp.expiry_type || 'EXPIRATION_DATE',
       expiration_flights: comp.expiration_flights != null ? String(comp.expiration_flights) : '',
+      expiration_flight_hours: comp.expiration_flight_hours != null ? String(comp.expiration_flight_hours) : '',
       component_vendor: comp.component_vendor || '',
       component_guarantee_day: comp.component_guarantee_day ? String(comp.component_guarantee_day) : '',
       component_status: comp.component_status || 'OPERATIONAL',
@@ -302,6 +305,7 @@ export default function EditComponentModal({
         expiration_date: formData.expiration_date || null,
         expiry_type: formData.expiry_type,
         expiration_flights: formData.expiration_flights ? Number(formData.expiration_flights) : null,
+        expiration_flight_hours: formData.expiration_flight_hours ? parseFloat(formData.expiration_flight_hours) : null,
         component_vendor: formData.component_vendor || null,
         component_guarantee_day: formData.component_guarantee_day ? Number(formData.component_guarantee_day) : null,
         component_status: formData.component_status,
@@ -741,6 +745,7 @@ export default function EditComponentModal({
                         <SelectItem value="NOT_OPERATIONAL">{t('systems.components.common.statusOptions.notOperational')}</SelectItem>
                         <SelectItem value="MAINTENANCE">{t('systems.components.common.statusOptions.maintenance')}</SelectItem>
                         <SelectItem value="DECOMMISSIONED">{t('systems.components.common.statusOptions.decommissioned')}</SelectItem>
+                        <SelectItem value="DISMISSED">{t('systems.components.common.statusOptions.dismissed')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -762,6 +767,7 @@ export default function EditComponentModal({
                       <SelectContent className={selectContentCls}>
                         <SelectItem value="EXPIRATION_DATE">{t('systems.components.common.expiryType.expirationDate')}</SelectItem>
                         <SelectItem value="FLIGHTS">{t('systems.components.common.expiryType.flights')}</SelectItem>
+                        <SelectItem value="FLIGHT_HOURS">{t('systems.components.common.expiryType.flightHours')}</SelectItem>
                         <SelectItem value="MIXED">{t('systems.components.common.expiryType.mixed')}</SelectItem>
                       </SelectContent>
                     </Select>
@@ -789,6 +795,24 @@ export default function EditComponentModal({
                       />
                       {formData.expiry_type === 'FLIGHTS' && (
                         <p className={`text-[10px] mt-1 ${isDark ? 'text-slate-500' : 'text-muted-foreground'}`}>{t('systems.components.common.expiryType.flightsHint')}</p>
+                      )}
+                    </div>
+                  )}
+                  {(formData.expiry_type === 'FLIGHT_HOURS' || formData.expiry_type === 'MIXED') && (
+                    <div className="col-span-1 sm:col-span-3">
+                      <Label className={labelCls}>{t('systems.components.common.expiryType.expirationFlightHours')}</Label>
+                      <Input
+                        type="number"
+                        min={0.1}
+                        max={9999}
+                        step={0.1}
+                        placeholder="e.g. 1.5"
+                        className={inputCls}
+                        value={formData.expiration_flight_hours}
+                        onChange={e => handleChange('expiration_flight_hours', e.target.value)}
+                      />
+                      {formData.expiry_type === 'FLIGHT_HOURS' && (
+                        <p className={`text-[10px] mt-1 ${isDark ? 'text-slate-500' : 'text-muted-foreground'}`}>{t('systems.components.common.expiryType.flightHoursHint')}</p>
                       )}
                     </div>
                   )}

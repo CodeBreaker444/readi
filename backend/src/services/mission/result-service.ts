@@ -72,7 +72,13 @@ export async function addMissionResult(ownerId: number, resultData: {
 }
 
 export async function deleteMissionResult(ownerId: number, resultId: number) {
-  // Soft delete
+  const { data: row } = await supabase
+    .from('pilot_mission_result_type')
+    .select('result_type_code, result_type_desc')
+    .eq('result_type_id', resultId)
+    .eq('fk_owner_id', ownerId)
+    .maybeSingle();
+
   const { error } = await supabase
     .from('pilot_mission_result_type')
     .update({ is_active: false })
@@ -80,10 +86,12 @@ export async function deleteMissionResult(ownerId: number, resultId: number) {
     .eq('fk_owner_id', ownerId);
 
   if (error) throw error;
-  
+
   return {
     code: 1,
-    message: 'Mission result deleted successfully'
+    message: 'Mission result deleted successfully',
+    resultCode: row?.result_type_code ?? null,
+    resultDesc: row?.result_type_desc ?? null,
   };
 }
 

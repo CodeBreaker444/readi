@@ -72,17 +72,24 @@ export async function addMissionCategory(ownerId: number, categoryData: { code: 
 }
 
 export async function deleteMissionCategory(ownerId: number, categoryId: number) {
-  // Soft delete
+  const { data: row } = await supabase
+    .from('pilot_mission_category')
+    .select('category_code, category_name')
+    .eq('category_id', categoryId)
+    .maybeSingle();
+
   const { error } = await supabase
     .from('pilot_mission_category')
     .update({ is_active: false })
     .eq('category_id', categoryId);
 
   if (error) throw error;
-  
+
   return {
     code: 1,
-    message: 'Mission category deleted successfully'
+    message: 'Mission category deleted successfully',
+    categoryCode: row?.category_code ?? null,
+    categoryName: row?.category_name ?? null,
   };
 }
 

@@ -6,7 +6,7 @@ import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -21,7 +21,7 @@ export async function POST(
         eventType: 'DELETE',
         entityType: 'system',
         entityId: id,
-        description: `Deleted system #${id}`,
+        description: `Deleted system '${result.toolCode ?? `#${id}`}' (ID ${id}) permanently — all components moved to warehouse`,
         userId: session!.user.userId,
         userName: session!.user.fullname,
         userEmail: session!.user.email,

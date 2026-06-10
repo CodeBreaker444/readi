@@ -105,11 +105,10 @@ export async function getSystemList(
       // Tools with components that may be flight-expired (FLIGHTS or MIXED expiry type)
       supabase
         .from('tool_component')
-        .select('fk_tool_id, expiration_flights, current_maintenance_flights')
+        .select('fk_tool_id, expiration_flights, current_maintenance_flights, expiration_flight_hours, current_usage_hours')
         .in('fk_tool_id', toolIds)
         .eq('component_active', 'Y')
-        .not('expiration_flights', 'is', null)
-        .in('expiry_type', ['FLIGHTS', 'MIXED']),
+        .in('expiry_type', ['FLIGHTS', 'FLIGHT_HOURS', 'MIXED']),
     ]);
 
     (missions || []).forEach((m) => {
@@ -125,7 +124,10 @@ export async function getSystemList(
     (openComponentTickets || []).forEach((c) => toolsInMaintenance.add(c.fk_tool_id));
     (expiredComps || []).forEach((c) => toolsNonOperational.add(c.fk_tool_id));
     (flightExpirableComps || [])
-      .filter((c) => Number(c.current_maintenance_flights) >= Number(c.expiration_flights))
+      .filter((c) =>
+        (c.expiration_flights != null && Number(c.current_maintenance_flights) >= Number(c.expiration_flights)) ||
+        (c.expiration_flight_hours != null && Number(c.current_usage_hours) >= Number(c.expiration_flight_hours))
+      )
       .forEach((c) => toolsNonOperational.add(c.fk_tool_id));
 
     // Fire-and-forget expiration notifications for managers
@@ -188,6 +190,7 @@ export async function getSystemList(
           tool_latitude: item.tool_metadata?.latitude,
           tool_longitude: item.tool_metadata?.longitude,
           tool_status: toolsNonOperational.has(item.tool_id) ? 'NOT_OPERATIONAL'
+            : item.tool_metadata?.status === 'DISMISSED' ? 'DISMISSED'
             : toolsInMaintenance.has(item.tool_id) ? 'MAINTENANCE'
             : (item.tool_metadata?.status || 'OPERATIONAL'),
           tot_mission: missionData[item.tool_id]?.count || 0,
@@ -341,7 +344,7 @@ export async function getOrCreateWarehouseTool(ownerId: number): Promise<number>
 export async function deleteSystem(ownerId: number, toolId: number) {
   const { data: tool, error: fetchError } = await supabase
     .from('tool')
-    .select('tool_id, tool_metadata')
+    .select('tool_id, tool_code, tool_metadata')
     .eq('tool_id', toolId)
     .eq('fk_owner_id', ownerId)
     .maybeSingle() as { data: { tool_id: number; tool_code: string; tool_metadata: any } | null; error: any };
@@ -398,7 +401,7 @@ export async function deleteSystem(ownerId: number, toolId: number) {
     .eq('fk_owner_id', ownerId);
 
   if (deleteError) throw deleteError;
-  return { code: 1, message: 'System permanently deleted. All components moved to warehouse.' };
+  return { code: 1, message: 'System permanently deleted. All components moved to warehouse.', toolCode: tool.tool_code };
 }
 
 
@@ -447,6 +450,12 @@ export async function getModelList(ownerId: number) {
 
 
 export async function deleteModel(ownerId: number, modelId: number) {
+  const { data: modelRow } = await supabase
+    .from('tool_model')
+    .select('model_code, model_name')
+    .eq('model_id', modelId)
+    .maybeSingle();
+
   const { data: ownerTools } = await supabase
     .from('tool')
     .select('tool_id')
@@ -482,7 +491,7 @@ export async function deleteModel(ownerId: number, modelId: number) {
     .eq('model_id', modelId);
 
   if (error) throw error;
-  return { code: 1, message: 'Model deleted successfully' };
+  return { code: 1, message: 'Model deleted successfully', modelCode: modelRow?.model_code ?? null, modelName: modelRow?.model_name ?? null };
 }
 
 
@@ -522,14 +531,20 @@ export async function deleteComponent(ownerId: number, componentId: number, forc
     .eq('component_id', componentId);
 
   if (error) throw error;
-  return { code: 1, message: 'Component deleted successfully' };
+  return {
+    code: 1,
+    message: 'Component deleted successfully',
+    componentCode: comp.component_code ?? null,
+    componentName: comp.component_name ?? null,
+    componentType: comp.component_type ?? null,
+  };
 }
 
 
 export async function detachComponent(ownerId: number, componentId: number) {
   const { data: comp, error: compError } = await supabase
     .from('tool_component')
-    .select('component_id, fk_tool_id, component_metadata')
+    .select('component_id, fk_tool_id, component_code, component_name, component_type, component_metadata')
     .eq('component_id', componentId)
     .single();
 
@@ -537,14 +552,18 @@ export async function detachComponent(ownerId: number, componentId: number) {
 
   const { data: tool } = await supabase
     .from('tool')
-    .select('tool_id')
+    .select('tool_id, tool_code, tool_metadata')
     .eq('tool_id', comp.fk_tool_id)
     .eq('fk_owner_id', ownerId)
     .maybeSingle();
 
   if (!tool) throw new Error('Component not found or unauthorized');
 
-  const updatedMetadata = { ...(comp.component_metadata || {}), system_detached: true };
+  const updatedMetadata = {
+    ...(comp.component_metadata || {}),
+    system_detached: true,
+    component_status: 'DISMISSED',
+  };
 
   const { error } = await supabase
     .from('tool_component')
@@ -552,7 +571,49 @@ export async function detachComponent(ownerId: number, componentId: number) {
     .eq('component_id', componentId);
 
   if (error) throw error;
-  return { code: 1, message: 'Component detached from system successfully' };
+
+  // Cascade: also detach all children that reference this component as parent
+  const { data: siblings } = await supabase
+    .from('tool_component')
+    .select('component_id, component_metadata')
+    .eq('fk_tool_id', comp.fk_tool_id)
+    .neq('component_id', componentId);
+
+  const children = (siblings || []).filter(
+    (c) => c.component_metadata?.fk_parent_component_id === componentId,
+  );
+
+  for (const child of children) {
+    const childMeta = {
+      ...(child.component_metadata || {}),
+      system_detached: true,
+      component_status: 'DISMISSED',
+    };
+    const { error: childErr } = await supabase
+      .from('tool_component')
+      .update({ component_metadata: childMeta })
+      .eq('component_id', child.component_id);
+    if (childErr) throw childErr;
+  }
+
+  // Set the system itself to DISMISSED
+  const toolMeta = (tool as any).tool_metadata || {};
+  if (toolMeta.status !== 'DISMISSED') {
+    await supabase
+      .from('tool')
+      .update({ tool_metadata: { ...toolMeta, status: 'DISMISSED' } })
+      .eq('tool_id', comp.fk_tool_id);
+  }
+
+  return {
+    code: 1,
+    message: 'Component detached from system successfully',
+    componentCode: comp.component_code ?? null,
+    componentName: comp.component_name ?? null,
+    componentType: comp.component_type ?? null,
+    toolCode: (tool as any)?.tool_code ?? null,
+    childrenDetached: children.length,
+  };
 }
 
 
@@ -652,7 +713,8 @@ export async function getComponentList(ownerId: number, toolId?: number) {
     drc_synced_at,
     expiration_date,
     expiry_type,
-    expiration_flights
+    expiration_flights,
+    expiration_flight_hours
   `;
 
   // Specific system view: non-detached components for that tool only
@@ -710,15 +772,23 @@ function buildComponentListResult(data: any[]) {
       const isFlightExpired =
         item.expiration_flights != null &&
         Number(item.current_maintenance_flights) >= item.expiration_flights;
+      const isFlightHoursExpired =
+        item.expiration_flight_hours != null &&
+        Number(item.current_usage_hours) >= Number(item.expiration_flight_hours);
       const isExpired =
         expiryType === 'FLIGHTS'
           ? isFlightExpired
+          : expiryType === 'FLIGHT_HOURS'
+          ? isFlightHoursExpired
           : expiryType === 'MIXED'
-          ? isDateExpired || isFlightExpired
+          ? isDateExpired || isFlightExpired || isFlightHoursExpired
           : isDateExpired;
-      const effectiveStatus = isExpired
+      const storedStatus = item.component_metadata?.component_status;
+      const effectiveStatus = storedStatus === 'DISMISSED'
+        ? 'DISMISSED'
+        : isExpired
         ? 'DECOMMISSIONED'
-        : (item.component_metadata?.component_status || 'OPERATIONAL');
+        : (storedStatus || 'OPERATIONAL');
       return {
       tool_component_id: item.component_id,
       fk_tool_id: item.fk_tool_id,
@@ -762,6 +832,7 @@ function buildComponentListResult(data: any[]) {
       expiration_date: item.expiration_date || null,
       expiry_type: expiryType,
       expiration_flights: item.expiration_flights ?? null,
+      expiration_flight_hours: item.expiration_flight_hours != null ? Number(item.expiration_flight_hours) : null,
       };
     }),
   };
@@ -842,6 +913,7 @@ export async function addComponent(componentData: any) {
       expiration_date: componentData.expiration_date || null,
       expiry_type: componentData.expiry_type || 'EXPIRATION_DATE',
       expiration_flights: componentData.expiration_flights ?? null,
+      expiration_flight_hours: componentData.expiration_flight_hours ?? null,
       component_metadata: {
         cc_platform: componentData.cc_platform || null,
         gcs_type: componentData.gcs_type || null,
@@ -852,11 +924,16 @@ export async function addComponent(componentData: any) {
           const isFlightExpired =
             componentData.expiration_flights != null &&
             (componentData.initial_maintenance_flights ?? 0) >= componentData.expiration_flights;
+          const isFlightHoursExpired =
+            componentData.expiration_flight_hours != null &&
+            (componentData.initial_usage_hours ?? 0) >= componentData.expiration_flight_hours;
           const isExpired =
             expiryType === 'FLIGHTS'
               ? isFlightExpired
+              : expiryType === 'FLIGHT_HOURS'
+              ? isFlightHoursExpired
               : expiryType === 'MIXED'
-              ? isDateExpired || isFlightExpired
+              ? isDateExpired || isFlightExpired || isFlightHoursExpired
               : isDateExpired;
           return isExpired ? 'DECOMMISSIONED' : (componentData.component_status || 'OPERATIONAL');
         })(),
@@ -910,7 +987,7 @@ export async function updateComponent(componentId: number, componentData: any) {
 
   const { data: existing } = await supabase
     .from('tool_component')
-    .select('component_metadata, fk_tool_id')
+    .select('component_metadata, fk_tool_id, current_usage_hours')
     .eq('component_id', componentId)
     .single();
 
@@ -947,6 +1024,7 @@ export async function updateComponent(componentId: number, componentData: any) {
       expiration_date: componentData.expiration_date || null,
       expiry_type: componentData.expiry_type || 'EXPIRATION_DATE',
       expiration_flights: componentData.expiration_flights ?? null,
+      expiration_flight_hours: componentData.expiration_flight_hours ?? null,
       maintenance_cycle: componentData.maintenance_cycle || null,
       maintenance_cycle_hour: componentData.maintenance_cycle_hour ?? null,
       maintenance_cycle_day: componentData.maintenance_cycle_day ?? null,
@@ -963,14 +1041,20 @@ export async function updateComponent(componentId: number, componentData: any) {
           const expiryType: string = componentData.expiry_type || 'EXPIRATION_DATE';
           const isDateExpired = componentData.expiration_date && componentData.expiration_date <= today;
           const currentFlights = componentData.initial_maintenance_flights ?? Number(existing?.component_metadata?.current_maintenance_flights ?? 0);
+          const currentHours = componentData.initial_usage_hours ?? Number(existing?.current_usage_hours ?? 0);
           const isFlightExpired =
             componentData.expiration_flights != null &&
             currentFlights >= componentData.expiration_flights;
+          const isFlightHoursExpired =
+            componentData.expiration_flight_hours != null &&
+            currentHours >= componentData.expiration_flight_hours;
           const isExpired =
             expiryType === 'FLIGHTS'
               ? isFlightExpired
+              : expiryType === 'FLIGHT_HOURS'
+              ? isFlightHoursExpired
               : expiryType === 'MIXED'
-              ? isDateExpired || isFlightExpired
+              ? isDateExpired || isFlightExpired || isFlightHoursExpired
               : isDateExpired;
           return isExpired ? 'DECOMMISSIONED' : (componentData.component_status || 'OPERATIONAL');
         })(),

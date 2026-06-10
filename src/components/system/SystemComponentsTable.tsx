@@ -68,6 +68,7 @@ function StatusPill({ status }: { status?: string | null }) {
     MAINTENANCE: 'bg-yellow-100 text-yellow-800',
     NOT_OPERATIONAL: 'bg-red-100 text-red-800',
     DECOMMISSIONED: 'bg-slate-200 text-slate-700',
+    DISMISSED: 'bg-slate-300 text-slate-600',
   };
   return <span className={`px-2 py-0.5 rounded text-xs font-medium ${cls[status] || 'bg-slate-100 text-slate-700'}`}>{status}</span>;
 }

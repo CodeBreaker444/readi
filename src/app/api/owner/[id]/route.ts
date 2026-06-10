@@ -92,13 +92,14 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
             return NextResponse.json({ code: 0, message: 'This company cannot be deactivated.' }, { status: 403 });
         }
 
+        const ownerInfo = await getOwnerById(id);
         await deleteOwner(id, Number(deletedByUserId));
 
         logEvent({
             eventType: 'DELETE',
             entityType: 'company',
             entityId: id,
-            description: `Deactivated company ID ${id}`,
+            description: `Deactivated company '${ownerInfo?.owner_name ?? `#${id}`}' (ID ${id})`,
             userId: session.user.userId,
             userName: session.user.fullname,
             userEmail: session.user.email,

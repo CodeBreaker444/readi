@@ -42,7 +42,7 @@ export async function POST(
         eventType: 'UPDATE',
         entityType: 'system',
         entityId: id,
-        description: `System '${parsed.data.tool_code}' updated`,
+        description: `Updated system '${parsed.data.tool_code}' (ID ${id})${parsed.data.location ? ` — location: ${parsed.data.location}` : ''}${parsed.data.tool_status ? `, status: ${parsed.data.tool_status}` : ''}${parsed.data.fk_client_id ? `, client: #${parsed.data.fk_client_id}` : ''}`,
         userId: session!.user.userId,
         userName: session!.user.fullname,
         userEmail: session!.user.email,

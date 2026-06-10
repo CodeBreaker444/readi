@@ -19,8 +19,9 @@ const ComponentSchema = z
     component_activation_date: z.string().optional().nullable(),
     component_purchase_date: z.string().optional().nullable(),
     expiration_date: z.string().optional().nullable(),
-    expiry_type: z.enum(['EXPIRATION_DATE', 'FLIGHTS', 'MIXED']).optional().default('EXPIRATION_DATE'),
+    expiry_type: z.enum(['EXPIRATION_DATE', 'FLIGHTS', 'FLIGHT_HOURS', 'MIXED']).optional().default('EXPIRATION_DATE'),
     expiration_flights: z.number().int().positive().optional().nullable(),
+    expiration_flight_hours: z.number().min(0).max(9999).optional().nullable(),
     component_vendor: z.string().optional().nullable(),
     component_guarantee_day: z.number().optional().nullable(),
     component_status: z.string().default('OPERATIONAL'),
@@ -75,6 +76,7 @@ export async function POST(req: NextRequest) {
       expiration_date: d.expiration_date ?? null,
       expiry_type: d.expiry_type ?? 'EXPIRATION_DATE',
       expiration_flights: d.expiration_flights ?? null,
+      expiration_flight_hours: d.expiration_flight_hours ?? null,
       component_vendor: d.component_vendor,
       component_guarantee_day: d.component_guarantee_day,
       component_status: d.component_status,
@@ -103,8 +105,8 @@ export async function POST(req: NextRequest) {
         entityType: 'system_component',
         entityId: result.data?.component_id,
         description: d.warehouse
-          ? `Added component '${d.component_code ?? d.component_type}' to warehouse`
-          : `Added component '${d.component_code ?? d.component_type}' to system #${toolId}`,
+          ? `Added component '${d.component_code ?? d.component_type}' (type: ${d.component_type}${d.component_sn ? `, SN: ${d.component_sn}` : ''}) to warehouse`
+          : `Added component '${d.component_code ?? d.component_type}' (type: ${d.component_type}${d.component_sn ? `, SN: ${d.component_sn}` : ''}) to system #${toolId}`,
         userId: session!.user.userId,
         userName: session!.user.fullname,
         userEmail: session!.user.email,

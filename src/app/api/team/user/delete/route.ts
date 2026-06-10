@@ -13,13 +13,13 @@ export async function DELETE(request: NextRequest) {
     const body = await request.json();
     const isSuperAdmin = session!.user.role === 'SUPERADMIN';
 
-    await deleteUser(body.user_id, session!.user.ownerId, isSuperAdmin);
+    const deleted = await deleteUser(body.user_id, session!.user.ownerId, isSuperAdmin);
 
     logEvent({
       eventType: 'DELETE',
       entityType: 'user',
       entityId: body.user_id,
-      description: `Deleted user ID ${body.user_id}`,
+      description: `Deleted user${deleted.fullName ? ` '${deleted.fullName}'` : ''}${deleted.email ? ` (${deleted.email})` : ` ID ${body.user_id}`}`,
       userId: session!.user.userId,
       userName: session!.user.fullname,
       userEmail: session!.user.email,
