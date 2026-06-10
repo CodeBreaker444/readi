@@ -4009,7 +4009,8 @@
           "operational": "Operativo",
           "notOperational": "Non Operativo",
           "maintenance": "Manutenzione",
-          "decommissioned": "Dismesso"
+          "decommissioned": "Dismesso",
+          "dismissed": "Dismesso (Ritiro)"
         },
         "activeOptions": {
           "active": "ATTIVO",

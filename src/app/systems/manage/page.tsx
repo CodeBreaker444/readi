@@ -243,9 +243,29 @@ export default function DroneToolPage() {
             const result = await res.json();
             if (result.code === 1) {
                 toast.success(t('systems.manage.toasts.componentDetached'));
+                const detachedId = deleteConfirm.id;
                 setDeleteConfirm(null);
-                fetchAllComponents();
-                fetchToolData();
+
+                // Find which tool this component belongs to
+                const comp = componentData.find((c: any) => c.tool_component_id === detachedId);
+                const toolId = comp?.fk_tool_id ?? null;
+
+                // Mark parent + all its children as detached/dismissed in local state
+                setComponentData((prev: any[]) =>
+                    prev.map((c: any) => {
+                        if (c.tool_component_id === detachedId || c.fk_parent_component_id === detachedId) {
+                            return { ...c, system_detached: true, component_status: 'DISMISSED' };
+                        }
+                        return c;
+                    }),
+                );
+
+                if (toolId) {
+                    const applyDismissed = (prev: DroneToolData[]) =>
+                        prev.map((t) => t.tool_id === toolId ? { ...t, tool_status: 'DISMISSED' } : t);
+                    setToolData(applyDismissed);
+                    setTools(applyDismissed);
+                }
             } else {
                 toast.error(result.message || t('systems.manage.toasts.detachFailed'));
             }
@@ -263,15 +283,21 @@ export default function DroneToolPage() {
             if (deleteConfirm.type === 'system') {
                 const res = await fetch(`/api/system/${deleteConfirm.id}/delete`, { method: 'POST' });
                 const result = await res.json();
+                const deletedId = deleteConfirm.id;
                 if (result.code === 1) {
                     toast.success(t('systems.manage.toasts.systemDeleted'));
                     setDeleteConfirm(null);
-                    fetchToolData();
-                    fetchAllComponents();
+                    setToolData((prev) => prev.filter((t) => t.tool_id !== deletedId));
+                    setTools((prev) => prev.filter((t) => t.tool_id !== deletedId));
+                    setComponentData((prev: any[]) => prev.filter((c: any) => c.fk_tool_id !== deletedId));
                 } else if (result.code === 2) {
                     toast.info(t('systems.manage.toasts.systemSetNonOperational'));
                     setDeleteConfirm(null);
-                    fetchToolData();
+                    // Mark system as NOT_OPERATIONAL in local state
+                    const applyNotOp = (prev: DroneToolData[]) =>
+                        prev.map((t) => t.tool_id === deletedId ? { ...t, tool_status: 'NOT_OPERATIONAL' } : t);
+                    setToolData(applyNotOp);
+                    setTools(applyNotOp);
                 } else {
                     toast.error(result.message || t('systems.manage.toasts.deleteFailed'));
                     setDeleteConfirm(null);
@@ -299,10 +325,12 @@ export default function DroneToolPage() {
                     body: JSON.stringify({ force: false }),
                 });
                 const result = await res.json();
+                const deletedId = deleteConfirm.id;
                 if (result.code === 1) {
                     toast.success(t('systems.manage.toasts.componentDeleted'));
                     setDeleteConfirm(null);
-                    fetchAllComponents();
+                    // Remove component from local state
+                    setComponentData((prev: any[]) => prev.filter((c: any) => c.tool_component_id !== deletedId));
                 } else if (result.code === 2) {
                     setDeleteConfirm(prev => prev ? {
                         ...prev,

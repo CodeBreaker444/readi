@@ -4017,7 +4017,8 @@
           "operational": "Operational",
           "notOperational": "Not Operational",
           "maintenance": "Maintenance",
-          "decommissioned": "Decommissioned"
+          "decommissioned": "Decommissioned",
+          "dismissed": "Dismissed"
         },
         "activeOptions": {
           "active": "ACTIVE",

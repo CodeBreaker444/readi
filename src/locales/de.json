@@ -3929,7 +3929,8 @@
           "operational": "Betriebsbereit",
           "notOperational": "Nicht betriebsbereit",
           "maintenance": "Wartung",
-          "decommissioned": "Außer Betrieb"
+          "decommissioned": "Außer Betrieb",
+          "dismissed": "Stillgelegt"
         },
         "activeOptions": {
           "active": "AKTIV",

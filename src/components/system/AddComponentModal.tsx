@@ -65,6 +65,7 @@ function SystemOptionLabel({ tool }: { tool: any }) {
     OPERATIONAL: 'bg-green-100 text-green-700',
     MAINTENANCE: 'bg-yellow-100 text-yellow-700',
     NOT_OPERATIONAL: 'bg-red-100 text-red-700',
+    DISMISSED: 'bg-slate-200 text-slate-600',
   };
   const statusClass = statusColors[tool.tool_status] || 'bg-gray-100 text-gray-600';
   return (
@@ -702,6 +703,7 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
                     <SelectItem value="NOT_OPERATIONAL">{t('systems.components.common.statusOptions.notOperational')}</SelectItem>
                     <SelectItem value="MAINTENANCE">{t('systems.components.common.statusOptions.maintenance')}</SelectItem>
                     <SelectItem value="DECOMMISSIONED">{t('systems.components.common.statusOptions.decommissioned')}</SelectItem>
+                    <SelectItem value="DISMISSED">{t('systems.components.common.statusOptions.dismissed')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
