@@ -40,6 +40,7 @@ const INITIAL_FORM = {
   expiration_date: '',
   expiry_type: 'EXPIRATION_DATE',
   expiration_flights: '',
+  expiration_flight_hours: '',
   component_vendor: '',
   component_guarantee_day: '',
   component_status: 'OPERATIONAL',
@@ -225,6 +226,7 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
         expiration_date: formData.expiration_date || null,
         expiry_type: formData.expiry_type,
         expiration_flights: formData.expiration_flights ? Number(formData.expiration_flights) : null,
+        expiration_flight_hours: formData.expiration_flight_hours ? parseFloat(formData.expiration_flight_hours) : null,
         component_vendor: formData.component_vendor || null,
         component_guarantee_day: formData.component_guarantee_day ? Number(formData.component_guarantee_day) : null,
         component_status: formData.component_status,
@@ -624,6 +626,7 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
                   <SelectContent>
                     <SelectItem value="EXPIRATION_DATE">{t('systems.components.common.expiryType.expirationDate')}</SelectItem>
                     <SelectItem value="FLIGHTS">{t('systems.components.common.expiryType.flights')}</SelectItem>
+                    <SelectItem value="FLIGHT_HOURS">{t('systems.components.common.expiryType.flightHours')}</SelectItem>
                     <SelectItem value="MIXED">{t('systems.components.common.expiryType.mixed')}</SelectItem>
                   </SelectContent>
                 </Select>
@@ -650,6 +653,23 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
                   />
                   {formData.expiry_type === 'FLIGHTS' && (
                     <p className="text-[10px] text-muted-foreground mt-1">{t('systems.components.common.expiryType.flightsHint')}</p>
+                  )}
+                </div>
+              )}
+              {(formData.expiry_type === 'FLIGHT_HOURS' || formData.expiry_type === 'MIXED') && (
+                <div className="col-span-1 sm:col-span-3">
+                  <Label className="pb-2">{t('systems.components.common.expiryType.expirationFlightHours')}</Label>
+                  <Input
+                    type="number"
+                    min={0.1}
+                    max={9999}
+                    step={0.1}
+                    placeholder="e.g. 1.5"
+                    value={formData.expiration_flight_hours}
+                    onChange={(e) => handleChange('expiration_flight_hours', e.target.value)}
+                  />
+                  {formData.expiry_type === 'FLIGHT_HOURS' && (
+                    <p className="text-[10px] text-muted-foreground mt-1">{t('systems.components.common.expiryType.flightHoursHint')}</p>
                   )}
                 </div>
               )}

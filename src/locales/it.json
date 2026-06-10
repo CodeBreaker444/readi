@@ -4048,10 +4048,13 @@
           "label": "Tipo di scadenza",
           "expirationDate": "Data di scadenza",
           "flights": "Voli",
+          "flightHours": "Ore di volo",
           "mixed": "Misto",
           "expirationFlights": "Voli di scadenza",
+          "expirationFlightHours": "Ore di volo di scadenza",
           "flightsHint": "Il componente viene dismesso automaticamente al raggiungimento del conteggio voli",
-          "mixedHint": "Viene dismesso quando viene raggiunta la data o il conteggio voli — in base a quale avviene prima"
+          "flightHoursHint": "Il componente viene dismesso automaticamente al raggiungimento delle ore di volo",
+          "mixedHint": "Viene dismesso quando viene raggiunto qualsiasi limite impostato — data, conteggio voli o ore di volo — in base a quale avviene prima"
         },
         "defaultCounters": {
           "label": "Contatori iniziali",

@@ -105,11 +105,10 @@ export async function getSystemList(
       // Tools with components that may be flight-expired (FLIGHTS or MIXED expiry type)
       supabase
         .from('tool_component')
-        .select('fk_tool_id, expiration_flights, current_maintenance_flights')
+        .select('fk_tool_id, expiration_flights, current_maintenance_flights, expiration_flight_hours, current_usage_hours')
         .in('fk_tool_id', toolIds)
         .eq('component_active', 'Y')
-        .not('expiration_flights', 'is', null)
-        .in('expiry_type', ['FLIGHTS', 'MIXED']),
+        .in('expiry_type', ['FLIGHTS', 'FLIGHT_HOURS', 'MIXED']),
     ]);
 
     (missions || []).forEach((m) => {
@@ -125,7 +124,10 @@ export async function getSystemList(
     (openComponentTickets || []).forEach((c) => toolsInMaintenance.add(c.fk_tool_id));
     (expiredComps || []).forEach((c) => toolsNonOperational.add(c.fk_tool_id));
     (flightExpirableComps || [])
-      .filter((c) => Number(c.current_maintenance_flights) >= Number(c.expiration_flights))
+      .filter((c) =>
+        (c.expiration_flights != null && Number(c.current_maintenance_flights) >= Number(c.expiration_flights)) ||
+        (c.expiration_flight_hours != null && Number(c.current_usage_hours) >= Number(c.expiration_flight_hours))
+      )
       .forEach((c) => toolsNonOperational.add(c.fk_tool_id));
 
     // Fire-and-forget expiration notifications for managers
@@ -652,7 +654,8 @@ export async function getComponentList(ownerId: number, toolId?: number) {
     drc_synced_at,
     expiration_date,
     expiry_type,
-    expiration_flights
+    expiration_flights,
+    expiration_flight_hours
   `;
 
   // Specific system view: non-detached components for that tool only
@@ -710,11 +713,16 @@ function buildComponentListResult(data: any[]) {
       const isFlightExpired =
         item.expiration_flights != null &&
         Number(item.current_maintenance_flights) >= item.expiration_flights;
+      const isFlightHoursExpired =
+        item.expiration_flight_hours != null &&
+        Number(item.current_usage_hours) >= Number(item.expiration_flight_hours);
       const isExpired =
         expiryType === 'FLIGHTS'
           ? isFlightExpired
+          : expiryType === 'FLIGHT_HOURS'
+          ? isFlightHoursExpired
           : expiryType === 'MIXED'
-          ? isDateExpired || isFlightExpired
+          ? isDateExpired || isFlightExpired || isFlightHoursExpired
           : isDateExpired;
       const effectiveStatus = isExpired
         ? 'DECOMMISSIONED'
@@ -762,6 +770,7 @@ function buildComponentListResult(data: any[]) {
       expiration_date: item.expiration_date || null,
       expiry_type: expiryType,
       expiration_flights: item.expiration_flights ?? null,
+      expiration_flight_hours: item.expiration_flight_hours != null ? Number(item.expiration_flight_hours) : null,
       };
     }),
   };
@@ -842,6 +851,7 @@ export async function addComponent(componentData: any) {
       expiration_date: componentData.expiration_date || null,
       expiry_type: componentData.expiry_type || 'EXPIRATION_DATE',
       expiration_flights: componentData.expiration_flights ?? null,
+      expiration_flight_hours: componentData.expiration_flight_hours ?? null,
       component_metadata: {
         cc_platform: componentData.cc_platform || null,
         gcs_type: componentData.gcs_type || null,
@@ -852,11 +862,16 @@ export async function addComponent(componentData: any) {
           const isFlightExpired =
             componentData.expiration_flights != null &&
             (componentData.initial_maintenance_flights ?? 0) >= componentData.expiration_flights;
+          const isFlightHoursExpired =
+            componentData.expiration_flight_hours != null &&
+            (componentData.initial_usage_hours ?? 0) >= componentData.expiration_flight_hours;
           const isExpired =
             expiryType === 'FLIGHTS'
               ? isFlightExpired
+              : expiryType === 'FLIGHT_HOURS'
+              ? isFlightHoursExpired
               : expiryType === 'MIXED'
-              ? isDateExpired || isFlightExpired
+              ? isDateExpired || isFlightExpired || isFlightHoursExpired
               : isDateExpired;
           return isExpired ? 'DECOMMISSIONED' : (componentData.component_status || 'OPERATIONAL');
         })(),
@@ -947,6 +962,7 @@ export async function updateComponent(componentId: number, componentData: any) {
       expiration_date: componentData.expiration_date || null,
       expiry_type: componentData.expiry_type || 'EXPIRATION_DATE',
       expiration_flights: componentData.expiration_flights ?? null,
+      expiration_flight_hours: componentData.expiration_flight_hours ?? null,
       maintenance_cycle: componentData.maintenance_cycle || null,
       maintenance_cycle_hour: componentData.maintenance_cycle_hour ?? null,
       maintenance_cycle_day: componentData.maintenance_cycle_day ?? null,
@@ -963,14 +979,20 @@ export async function updateComponent(componentId: number, componentData: any) {
           const expiryType: string = componentData.expiry_type || 'EXPIRATION_DATE';
           const isDateExpired = componentData.expiration_date && componentData.expiration_date <= today;
           const currentFlights = componentData.initial_maintenance_flights ?? Number(existing?.component_metadata?.current_maintenance_flights ?? 0);
+          const currentHours = componentData.initial_usage_hours ?? Number(existing?.current_usage_hours ?? 0);
           const isFlightExpired =
             componentData.expiration_flights != null &&
             currentFlights >= componentData.expiration_flights;
+          const isFlightHoursExpired =
+            componentData.expiration_flight_hours != null &&
+            currentHours >= componentData.expiration_flight_hours;
           const isExpired =
             expiryType === 'FLIGHTS'
               ? isFlightExpired
+              : expiryType === 'FLIGHT_HOURS'
+              ? isFlightHoursExpired
               : expiryType === 'MIXED'
-              ? isDateExpired || isFlightExpired
+              ? isDateExpired || isFlightExpired || isFlightHoursExpired
               : isDateExpired;
           return isExpired ? 'DECOMMISSIONED' : (componentData.component_status || 'OPERATIONAL');
         })(),
