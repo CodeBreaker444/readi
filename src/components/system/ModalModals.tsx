@@ -201,7 +201,7 @@ export function NewTicketModal({
               ) : (
                 components.map((c) => (
                   <option key={c.tool_component_id} value={c.tool_component_id}>
-                    {c.component_type} — {c.component_sn}
+                    {c.component_code || c.component_type}
                   </option>
                 ))
               )}
