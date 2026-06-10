@@ -1,4 +1,5 @@
-import { getSupabase } from "./supabase";
+import { Prisma } from "@prisma/client";
+import { prisma } from "../../src/lib/prisma";
 import { BLOCKED_COLUMNS, TABLES_WITH_OWNER } from "./constants";
 import { QueryPlan } from "./types";
 
@@ -74,71 +75,96 @@ function sanitizeQueryPlan(plan: QueryPlan): QueryPlan {
 
 export async function executeQueryPlan(plan: QueryPlan, userId: number, ownerID: number, role: string): Promise<any[]> {
 
-    const supabase = getSupabase();
-
     // Sanitize the LLM-generated plan before any DB interaction
     plan = sanitizeQueryPlan(plan);
 
     const safeCols = (plan.select_columns ?? []).filter((c: string) => !BLOCKED_COLUMNS.includes(c));
 
-    let sel: string;
-    if (plan.aggregation === "COUNT")
-        sel = safeCols.length > 0 ? safeCols.join(",") : "*";
-    else if (plan.aggregation === "SUM" && plan.aggregation_column)
-        sel = `${plan.aggregation_column}.sum()`;
-    else if (plan.aggregation === "AVG" && plan.aggregation_column)
-        sel = `${plan.aggregation_column}.avg()`;
-    else
-        sel = safeCols.length > 0 ? safeCols.join(",") : "*";
+    // Build SELECT clause (using Prisma.raw for identifiers, safe after isValidColumn validation)
+    let selectSql: Prisma.Sql;
+    if (plan.aggregation === "COUNT") {
+        selectSql = Prisma.raw("COUNT(*) as count");
+    } else if (plan.aggregation === "SUM" && plan.aggregation_column) {
+        selectSql = Prisma.raw(`SUM("${plan.aggregation_column}") as sum_value`);
+    } else if (plan.aggregation === "AVG" && plan.aggregation_column) {
+        selectSql = Prisma.raw(`AVG("${plan.aggregation_column}") as avg_value`);
+    } else {
+        const cols = safeCols.length > 0
+            ? safeCols.map((c: string) => c === "*" ? "*" : `"${c}"`).join(", ")
+            : "*";
+        selectSql = Prisma.raw(cols);
+    }
 
-    let q = supabase.from(plan.table).select(sel, {
-        count: plan.aggregation === "COUNT" ? "exact" : undefined,
-    });
+    // Build WHERE conditions
+    const conditions: Prisma.Sql[] = [];
 
     if (TABLES_WITH_OWNER.includes(plan.table))
-        q = q.eq("fk_owner_id", ownerID);
+        conditions.push(Prisma.sql`"fk_owner_id" = ${ownerID}`);
 
     if (role === "PIC" && plan.table === "pilot_mission")
-        q = q.eq("fk_pilot_user_id", userId);
+        conditions.push(Prisma.sql`"fk_pilot_user_id" = ${userId}`);
 
     if (plan.date_filter) {
         const { start, end } = dateRange(plan.date_filter.range);
-        q = q.gte(plan.date_filter.column, start).lte(plan.date_filter.column, end);
+        const col = Prisma.raw(`"${plan.date_filter.column}"`);
+        conditions.push(Prisma.sql`${col} >= ${new Date(start)} AND ${col} <= ${new Date(end)}`);
     }
 
     if (plan.extra_filter) {
         let val = plan.extra_filter.value;
-        if (typeof val === 'string' && val.includes("=")) {
+        if (typeof val === "string" && val.includes("=")) {
             const parts = val.split("=");
             val = parts[parts.length - 1].trim().replace(/['"]/g, "");
         }
-        q = q.eq(plan.extra_filter.column, val);
+        const col = Prisma.raw(`"${plan.extra_filter.column}"`);
+        conditions.push(Prisma.sql`${col} = ${val}`);
     }
 
+    const tableSql = Prisma.raw(`public."${plan.table}"`);
+    const whereSql = conditions.length > 0
+        ? Prisma.sql`WHERE ${Prisma.join(conditions, " AND ")}`
+        : Prisma.empty;
+
+    let orderSql: Prisma.Sql = Prisma.empty;
     if (plan.order_by && isValidColumn(plan.order_by.column)) {
-        q = q.order(plan.order_by.column, { ascending: plan.order_by.direction === "asc" });
+        const col = Prisma.raw(`"${plan.order_by.column}"`);
+        const dir = Prisma.raw(plan.order_by.direction === "asc" ? "ASC" : "DESC");
+        orderSql = Prisma.sql`ORDER BY ${col} ${dir}`;
     }
 
-    // COUNT queries need no row cap; LIST queries use the LLM-requested limit or default to 15
+    // COUNT queries need no row cap; LIST/SUM/AVG use the LLM-requested limit or default to 15
+    let limitSql: Prisma.Sql = Prisma.empty;
     if (plan.aggregation !== "COUNT") {
         const cap = (plan.row_limit && plan.row_limit > 0 && plan.row_limit <= 50)
             ? plan.row_limit
             : 15;
-        q = q.limit(cap);
+        limitSql = Prisma.sql`LIMIT ${cap}`;
     }
 
-    const { data: rawData, error, count } = await q;
-
-    if (error) throw error;
+    const rawData = await prisma.$queryRaw<any[]>(
+        Prisma.sql`SELECT ${selectSql} FROM ${tableSql} ${whereSql} ${orderSql} ${limitSql}`
+    );
 
     const debugInfo = {
         ownerID, userId, role,
         table: plan.table,
-        count: rawData?.length || 0
+        count: rawData?.length || 0,
     };
 
     if (plan.aggregation === "COUNT") {
-        return [{ count: count ?? (rawData?.length ?? 0), _debug: debugInfo }];
+        const countVal = rawData?.[0]?.count;
+        const count = typeof countVal === "bigint" ? Number(countVal) : (countVal ?? 0);
+        return [{ count, _debug: debugInfo }];
+    }
+
+    if (plan.aggregation === "SUM") {
+        const val = rawData?.[0]?.sum_value;
+        return [{ sum: val != null ? Number(val) : 0, _debug: debugInfo }];
+    }
+
+    if (plan.aggregation === "AVG") {
+        const val = rawData?.[0]?.avg_value;
+        return [{ avg: val != null ? Number(val) : 0, _debug: debugInfo }];
     }
 
     return (rawData || []).map((row: any) => {
@@ -188,6 +214,6 @@ function dateRange(range: string): { start: string; end: string } {
 
     return {
         start: new Date(0).toISOString(),
-        end: now.toISOString()
+        end: now.toISOString(),
     };
 }

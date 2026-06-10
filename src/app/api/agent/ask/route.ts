@@ -1,4 +1,5 @@
 import { getUserSession } from "@/lib/auth/server-session";
+import { Role } from "@/lib/auth/roles";
 import { checkTokenLimits, recordTokenUsage } from "@/lib/token-tracker";
 import { ROLE_ALLOWED_TABLES } from "@mcp-server/lib/constants";
 import { getGroq } from "@mcp-server/lib/groq";
@@ -6,6 +7,7 @@ import { executeQueryPlan } from "@mcp-server/lib/query-executor";
 import { TABLE_CATALOG } from "@mcp-server/lib/schema-catalog";
 import { ROLE_QUERY_RULES, TABLE_SCHEMA } from "@mcp-server/lib/schema-details";
 import { webSearch } from "@mcp-server/lib/serp";
+import { prisma } from "@/lib/prisma";
 import { getSupabase } from "@mcp-server/lib/supabase";
 import { NextRequest, NextResponse } from "next/server";
 import { GROQ_MODEL } from "../../../../lib/token-limits";
@@ -32,35 +34,44 @@ class TokenAccumulator {
 
 async function handleDecommissioned(ownerID: number) {
     try {
-        const supabase = getSupabase();
-        const today = new Date().toISOString().split('T')[0];
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
-        const { data, error } = await supabase
-            .from('tool_component')
-            .select('component_name, component_type, expiration_date, component_active, tool!inner(tool_id, tool_name, tool_code, fk_owner_id)')
-            .lte('expiration_date', today)
-            .not('expiration_date', 'is', null)
-            .eq('tool.fk_owner_id', ownerID);
-
-        if (error) {
-            console.error('[handleDecommissioned] query error:', error);
-            return null;
-        }
+        const data = await prisma.tool_component.findMany({
+            where: {
+                expiration_date: { lte: today, not: null },
+                tool: { fk_owner_id: ownerID },
+            },
+            select: {
+                component_name: true,
+                component_type: true,
+                expiration_date: true,
+                component_active: true,
+                tool: {
+                    select: {
+                        tool_id: true,
+                        tool_name: true,
+                        tool_code: true,
+                        fk_owner_id: true,
+                    },
+                },
+            },
+        });
 
         if (!data || data.length === 0) return null;
 
         const bySystem: Record<string, { tool_code: string; tool_name: string; components: any[] }> = {};
 
         for (const row of data) {
-            const t = (row as any).tool;
+            const t = row.tool;
             const key = String(t.tool_id);
             if (!bySystem[key]) {
-                bySystem[key] = { tool_code: t.tool_code, tool_name: t.tool_name, components: [] };
+                bySystem[key] = { tool_code: t.tool_code ?? '', tool_name: t.tool_name ?? '', components: [] };
             }
             bySystem[key].components.push({
                 name: row.component_name,
                 type: row.component_type,
-                expired: row.expiration_date,
+                expired: row.expiration_date?.toISOString().split('T')[0],
             });
         }
 
@@ -296,24 +307,24 @@ export async function POST(req: NextRequest) {
                 return NextResponse.json({ error: "Select an OPM user to chat as." }, { status: 400 });
             }
 
-            const supabase = getSupabase();
-            const { data: opmUser, error: opmError } = await supabase
-                .from('users')
-                .select('user_id, fk_owner_id, user_role')
-                .eq('email', impersonateEmail)
-                .eq('fk_owner_id', session.user.ownerId)
-                .eq('user_role', 'OPM')
-                .eq('user_active', 'Y')
-                .single();
+            const opmUser = await prisma.public_users.findFirst({
+                where: {
+                    email: impersonateEmail,
+                    fk_owner_id: session.user.ownerId,
+                    user_role: 'OPM',
+                    user_active: 'Y',
+                },
+                select: { user_id: true, fk_owner_id: true, user_role: true },
+            });
 
-            if (opmError || !opmUser) {
+            if (!opmUser) {
                 return NextResponse.json({ error: "OPM user not found or inactive." }, { status: 403 });
             }
 
             user = {
-                role: opmUser.user_role,
+                role: (opmUser.user_role ?? 'OPM') as Role,
                 userId: opmUser.user_id,
-                ownerID: opmUser.fk_owner_id,
+                ownerID: opmUser.fk_owner_id ?? session.user.ownerId,
             };
         }
 

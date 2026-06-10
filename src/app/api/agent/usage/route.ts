@@ -1,15 +1,15 @@
 import { getUserSession } from "@/lib/auth/server-session";
-import { getSupabase } from "@mcp-server/lib/supabase";
+import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { TOKEN_LIMITS } from "../../../../lib/token-limits";
 import { forbidden, internalError, unauthorized } from "@/lib/api-error";
 import { E } from "@/lib/error-codes";
 export const dynamic = "force-dynamic";
 
-function todayStart(): string {
+function todayStart(): Date {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
-    return d.toISOString();
+    return d;
 }
 
 export async function GET() {
@@ -20,27 +20,24 @@ export async function GET() {
         }
 
         const { role, ownerId } = session.user;
-        const supabase = getSupabase();
         const today = todayStart();
 
         if (role === 'SUPERADMIN') {
-            // Platform-wide totals + per-company breakdown
-            const { data: rows } = await supabase
-                .from('ai_token_usage')
-                .select('owner_id, total_tokens, created_at')
-                .gte('created_at', today);
+            const [rows, allTimeResult] = await Promise.all([
+                prisma.ai_token_usage.findMany({
+                    where: { created_at: { gte: today } },
+                    select: { owner_id: true, total_tokens: true },
+                }),
+                prisma.ai_token_usage.aggregate({ _sum: { total_tokens: true } }),
+            ]);
 
-            const platformTotal = (rows ?? []).reduce((s, r) => s + r.total_tokens, 0);
+            const platformTotal = rows.reduce((s, r) => s + r.total_tokens, 0);
+            const platformAllTime = allTimeResult._sum.total_tokens ?? 0;
 
             const byCompany: Record<number, number> = {};
-            for (const r of rows ?? []) {
+            for (const r of rows) {
                 byCompany[r.owner_id] = (byCompany[r.owner_id] ?? 0) + r.total_tokens;
             }
-
-            const { data: allTime } = await supabase
-                .from('ai_token_usage')
-                .select('total_tokens');
-            const platformAllTime = (allTime ?? []).reduce((s, r) => s + r.total_tokens, 0);
 
             return NextResponse.json({
                 scope: 'platform',
@@ -56,29 +53,39 @@ export async function GET() {
         }
 
         if (role === 'ADMIN') {
-            // Company-wide totals
-            const { data: rows } = await supabase
-                .from('ai_token_usage')
-                .select('user_id, total_tokens, created_at')
-                .eq('owner_id', ownerId)
-                .gte('created_at', today);
+            const [rows, allTimeResult, platformResult] = await Promise.all([
+                prisma.ai_token_usage.findMany({
+                    where: { owner_id: ownerId, created_at: { gte: today } },
+                    select: { user_id: true, total_tokens: true },
+                }),
+                prisma.ai_token_usage.aggregate({
+                    _sum: { total_tokens: true },
+                    where: { owner_id: ownerId },
+                }),
+                prisma.ai_token_usage.aggregate({
+                    _sum: { total_tokens: true },
+                    where: { created_at: { gte: today } },
+                }),
+            ]);
 
-            const companyTotal = (rows ?? []).reduce((s, r) => s + r.total_tokens, 0);
+            const companyTotal = rows.reduce((s, r) => s + r.total_tokens, 0);
+            const companyAllTime = allTimeResult._sum.total_tokens ?? 0;
+            const platformTotal = platformResult._sum.total_tokens ?? 0;
 
             const byUserId: Record<number, number> = {};
-            for (const r of rows ?? []) {
+            for (const r of rows) {
                 byUserId[r.user_id] = (byUserId[r.user_id] ?? 0) + r.total_tokens;
             }
 
             const userIds = Object.keys(byUserId).map(Number);
-            const { data: userRows } = await supabase
-                .from('users')
-                .select('user_id, email')
-                .in('user_id', userIds);
+            const userRows = await prisma.public_users.findMany({
+                where: { user_id: { in: userIds } },
+                select: { user_id: true, email: true },
+            });
 
             const idToEmail: Record<number, string> = {};
-            for (const u of userRows ?? []) {
-                idToEmail[u.user_id] = u.email;
+            for (const u of userRows) {
+                idToEmail[u.user_id] = u.email ?? `user_${u.user_id}`;
             }
 
             const byUser: Record<string, number> = {};
@@ -86,19 +93,6 @@ export async function GET() {
                 const email = idToEmail[Number(id)] ?? `user_${id}`;
                 byUser[email] = tokens;
             }
-
-            const { data: allTime } = await supabase
-                .from('ai_token_usage')
-                .select('total_tokens')
-                .eq('owner_id', ownerId);
-            const companyAllTime = (allTime ?? []).reduce((s, r) => s + r.total_tokens, 0);
-
-            // Platform total so admin can see where their company stands
-            const { data: platformRows } = await supabase
-                .from('ai_token_usage')
-                .select('total_tokens')
-                .gte('created_at', today);
-            const platformTotal = (platformRows ?? []).reduce((s, r) => s + r.total_tokens, 0);
 
             return NextResponse.json({
                 scope: 'company',
