@@ -28,11 +28,12 @@ export async function DELETE(req: NextRequest) {
         const result = await deleteClient(parsed.data.client_id);
 
         if (result.code === 1) {
+          const clientLabel = result.clientCode ?? result.clientName ?? `#${parsed.data.client_id}`;
           logEvent({
             eventType: 'DELETE',
             entityType: 'client',
             entityId: parsed.data.client_id,
-            description: `Deleted client #${parsed.data.client_id}`,
+            description: `Deleted client '${clientLabel}' (ID ${parsed.data.client_id}${result.clientName ? `, name: ${result.clientName}` : ''})`,
             userId: session.user.userId,
             userName: session.user.fullname,
             userEmail: session.user.email,

@@ -343,7 +343,7 @@ export async function getOrCreateWarehouseTool(ownerId: number): Promise<number>
 export async function deleteSystem(ownerId: number, toolId: number) {
   const { data: tool, error: fetchError } = await supabase
     .from('tool')
-    .select('tool_id, tool_metadata')
+    .select('tool_id, tool_code, tool_metadata')
     .eq('tool_id', toolId)
     .eq('fk_owner_id', ownerId)
     .maybeSingle() as { data: { tool_id: number; tool_code: string; tool_metadata: any } | null; error: any };
@@ -400,7 +400,7 @@ export async function deleteSystem(ownerId: number, toolId: number) {
     .eq('fk_owner_id', ownerId);
 
   if (deleteError) throw deleteError;
-  return { code: 1, message: 'System permanently deleted. All components moved to warehouse.' };
+  return { code: 1, message: 'System permanently deleted. All components moved to warehouse.', toolCode: tool.tool_code };
 }
 
 
@@ -449,6 +449,12 @@ export async function getModelList(ownerId: number) {
 
 
 export async function deleteModel(ownerId: number, modelId: number) {
+  const { data: modelRow } = await supabase
+    .from('tool_model')
+    .select('model_code, model_name')
+    .eq('model_id', modelId)
+    .maybeSingle();
+
   const { data: ownerTools } = await supabase
     .from('tool')
     .select('tool_id')
@@ -484,7 +490,7 @@ export async function deleteModel(ownerId: number, modelId: number) {
     .eq('model_id', modelId);
 
   if (error) throw error;
-  return { code: 1, message: 'Model deleted successfully' };
+  return { code: 1, message: 'Model deleted successfully', modelCode: modelRow?.model_code ?? null, modelName: modelRow?.model_name ?? null };
 }
 
 
@@ -524,14 +530,20 @@ export async function deleteComponent(ownerId: number, componentId: number, forc
     .eq('component_id', componentId);
 
   if (error) throw error;
-  return { code: 1, message: 'Component deleted successfully' };
+  return {
+    code: 1,
+    message: 'Component deleted successfully',
+    componentCode: comp.component_code ?? null,
+    componentName: comp.component_name ?? null,
+    componentType: comp.component_type ?? null,
+  };
 }
 
 
 export async function detachComponent(ownerId: number, componentId: number) {
   const { data: comp, error: compError } = await supabase
     .from('tool_component')
-    .select('component_id, fk_tool_id, component_metadata')
+    .select('component_id, fk_tool_id, component_code, component_name, component_type, component_metadata')
     .eq('component_id', componentId)
     .single();
 
@@ -539,7 +551,7 @@ export async function detachComponent(ownerId: number, componentId: number) {
 
   const { data: tool } = await supabase
     .from('tool')
-    .select('tool_id')
+    .select('tool_id, tool_code')
     .eq('tool_id', comp.fk_tool_id)
     .eq('fk_owner_id', ownerId)
     .maybeSingle();
@@ -554,7 +566,14 @@ export async function detachComponent(ownerId: number, componentId: number) {
     .eq('component_id', componentId);
 
   if (error) throw error;
-  return { code: 1, message: 'Component detached from system successfully' };
+  return {
+    code: 1,
+    message: 'Component detached from system successfully',
+    componentCode: comp.component_code ?? null,
+    componentName: comp.component_name ?? null,
+    componentType: comp.component_type ?? null,
+    toolCode: (tool as any)?.tool_code ?? null,
+  };
 }
 
 
@@ -925,7 +944,7 @@ export async function updateComponent(componentId: number, componentData: any) {
 
   const { data: existing } = await supabase
     .from('tool_component')
-    .select('component_metadata, fk_tool_id')
+    .select('component_metadata, fk_tool_id, current_usage_hours')
     .eq('component_id', componentId)
     .single();
 

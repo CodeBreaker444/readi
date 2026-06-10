@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
       logEvent({
         eventType: 'CREATE',
         entityType: 'system',
-        description: `Created system '${data.tool_code}'`,
+        description: `Created system '${data.tool_code}'${data.location ? ` at ${data.location}` : ''}${data.clientId ? ` for client #${data.clientId}` : ''}`,
         userId: session!.user.userId,
         userName: session!.user.fullname,
         userEmail: session!.user.email,

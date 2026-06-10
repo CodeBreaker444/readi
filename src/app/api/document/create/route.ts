@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
       eventType: 'CREATE',
       entityType: 'document',
       entityId: result?.document_id,
-      description: `Created document '${parsed.data.title}'`,
+      description: `Created document '${parsed.data.title}'${parsed.data.doc_code ? ` (code: ${parsed.data.doc_code})` : ''} — status: ${parsed.data.status}, confidentiality: ${parsed.data.confidentiality}`,
       userId: session!.user.userId,
       userName: session!.user.fullname,
       userEmail: session!.user.email,

@@ -71,17 +71,24 @@ export async function addMissionType(ownerId: number, missionType: Omit<MissionT
  
 
 export async function deleteMissionType(ownerId: number, missionTypeId: number) {
-  
+  const { data: row } = await supabase
+    .from('pilot_mission_type')
+    .select('type_code, type_name')
+    .eq('mission_type_id', missionTypeId)
+    .maybeSingle();
+
   const { error } = await supabase
     .from('pilot_mission_type')
     .update({ is_active: false })
     .eq('mission_type_id', missionTypeId);
 
   if (error) throw error;
-  
+
   return {
     code: 1,
-    message: 'Mission type deleted successfully'
+    message: 'Mission type deleted successfully',
+    typeCode: row?.type_code ?? null,
+    typeName: row?.type_name ?? null,
   };
 }
 

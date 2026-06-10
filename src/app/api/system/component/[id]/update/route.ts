@@ -70,7 +70,7 @@ export async function POST(
         eventType: 'UPDATE',
         entityType: 'system_component',
         entityId: id,
-        description: `Updated component #${id} on system #${parsed.data.fk_tool_id}`,
+        description: `Updated component '${parsed.data.component_code ?? parsed.data.component_name ?? parsed.data.component_type}' (ID ${id}, type: ${parsed.data.component_type}) on system #${parsed.data.fk_tool_id}${parsed.data.component_sn ? ` — SN: ${parsed.data.component_sn}` : ''}`,
         userId: session!.user.userId,
         userName: session!.user.fullname,
         userEmail: session!.user.email,

@@ -149,7 +149,7 @@ export async function POST(req: NextRequest) {
       logEvent({
         eventType: 'CREATE',
         entityType: 'operation',
-        description: `Created ${result.count} recurring operation(s) '${validated.mission_name}'`,
+        description: `Created ${result.count} recurring operation(s) '${validated.mission_name}'${validated.fk_tool_id ? ` — system #${validated.fk_tool_id}` : ''}${validated.fk_pilot_user_id ? `, pilot #${validated.fk_pilot_user_id}` : ''}${validated.location ? `, location: ${validated.location}` : ''}`,
         userId: session.user.userId,
         userName: session.user.fullname,
         userEmail: session.user.email,
@@ -208,7 +208,7 @@ export async function POST(req: NextRequest) {
     logEvent({
       eventType: 'CREATE',
       entityType: 'operation',
-      description: `Created operation '${validated.mission_name}'`,
+      description: `Created operation '${validated.mission_code}'${validated.mission_name ? ` — ${validated.mission_name}` : ''} (status: ${validated.status_name}${validated.fk_tool_id ? `, system: #${validated.fk_tool_id}` : ''}${validated.fk_pilot_user_id ? `, pilot: #${validated.fk_pilot_user_id}` : ''})`,
       userId: session.user.userId,
       userName: session.user.fullname,
       userEmail: session.user.email,

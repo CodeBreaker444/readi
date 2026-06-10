@@ -6,7 +6,7 @@ import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -18,11 +18,12 @@ export async function POST(
     const result = await deleteMissionStatus(ownerId, Number(id));
 
     if (result.code === 1) {
+      const statusLabel = result.statusCode ?? `#${id}`;
       logEvent({
         eventType: 'DELETE',
         entityType: 'mission_status',
         entityId: id,
-        description: `Deleted mission status #${id}`,
+        description: `Deleted mission status '${statusLabel}'${result.statusName ? ` — ${result.statusName}` : ''} (ID ${id})`,
         userId: session!.user.userId,
         userName: session!.user.fullname,
         userEmail: session!.user.email,

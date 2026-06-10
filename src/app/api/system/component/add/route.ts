@@ -105,8 +105,8 @@ export async function POST(req: NextRequest) {
         entityType: 'system_component',
         entityId: result.data?.component_id,
         description: d.warehouse
-          ? `Added component '${d.component_code ?? d.component_type}' to warehouse`
-          : `Added component '${d.component_code ?? d.component_type}' to system #${toolId}`,
+          ? `Added component '${d.component_code ?? d.component_type}' (type: ${d.component_type}${d.component_sn ? `, SN: ${d.component_sn}` : ''}) to warehouse`
+          : `Added component '${d.component_code ?? d.component_type}' (type: ${d.component_type}${d.component_sn ? `, SN: ${d.component_sn}` : ''}) to system #${toolId}`,
         userId: session!.user.userId,
         userName: session!.user.fullname,
         userEmail: session!.user.email,

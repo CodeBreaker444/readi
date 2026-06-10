@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
       eventType: 'CREATE',
       entityType: 'maintenance_ticket',
       entityId: ticket_id,
-      description: `Created maintenance ticket for system #${body.fk_tool_id}`,
+      description: `Opened maintenance ticket #${ticket_id} for system #${body.fk_tool_id}${validation.data.issue_description ? ` — "${validation.data.issue_description.slice(0, 80)}${validation.data.issue_description.length > 80 ? '…' : ''}"` : ''}`,
       userId: session!.user.userId,
       userName: session!.user.fullname,
       userEmail: session!.user.email,

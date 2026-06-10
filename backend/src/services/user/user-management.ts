@@ -315,7 +315,7 @@ export async function deleteUser(userId: number, ownerId: number, isSuperAdmin =
   try {
     let lookupQuery = supabase
       .from('users')
-      .select('auth_user_id, fk_owner_id')
+      .select('auth_user_id, fk_owner_id, first_name, last_name, email')
       .eq('user_id', userId);
 
     if (!isSuperAdmin) {
@@ -347,7 +347,8 @@ export async function deleteUser(userId: number, ownerId: number, isSuperAdmin =
       }
     }
 
-    return { success: true, message: 'User deleted successfully' };
+    const fullName = `${userRecord.first_name ?? ''} ${userRecord.last_name ?? ''}`.trim() || null;
+    return { success: true, message: 'User deleted successfully', fullName, email: userRecord.email ?? null };
   } catch (error) {
     console.error('Error deleting user:', error);
     throw new Error(error instanceof Error ? error.message : 'Failed to delete user');
