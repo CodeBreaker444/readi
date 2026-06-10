@@ -5,7 +5,7 @@ import { apiError, internalError, zodError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { supabase } from '@/backend/database/database';
+import { prisma } from '@/lib/prisma';
 
 const Schema = z.object({
   request_id: z.number().int().positive(),
@@ -25,13 +25,16 @@ export async function POST(req: NextRequest) {
 
     const { request_id, note } = parsed.data;
 
-    // Fetch the external_mission_id before updating so we can callback DCC
-    const { data: fr } = await supabase
-      .from('flight_requests')
-      .select('external_mission_id, dcc_status')
-      .eq('request_id', request_id)
-      .eq('fk_owner_id', session!.user.ownerId)
-      .single();
+    const fr = await prisma.flight_requests.findFirst({
+      where: {
+        request_id,
+        fk_owner_id: session!.user.ownerId,
+      },
+      select: {
+        external_mission_id: true,
+        dcc_status: true,
+      },
+    });
 
     if (!fr) {
       return apiError(E.NF021, 404);

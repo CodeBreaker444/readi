@@ -1,4 +1,4 @@
-import { supabase } from '@/backend/database/database'; // kept for supabase.auth.admin operations
+import { supabase } from '@/backend/database/database';
 import { internalError, unauthorized, zodError } from '@/lib/api-error';
 import { createToken, verifyToken } from '@/lib/auth/jwt-utils';
 import { E } from '@/lib/error-codes';
