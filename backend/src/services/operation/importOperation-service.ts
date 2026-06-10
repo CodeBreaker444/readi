@@ -327,6 +327,7 @@ export async function importDrones(ownerId: number, clientId?: number) {
         in_maintenance: inMaintenanceSet.has(t.tool_id),
         maintenance_due: maintenanceDueSet.has(t.tool_id),
         is_non_operational: nonOperationalSet.has(t.tool_id),
+        is_dismissed: t.tool_metadata?.status === 'DISMISSED',
     }));
 }
 

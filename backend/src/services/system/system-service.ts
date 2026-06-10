@@ -190,6 +190,7 @@ export async function getSystemList(
           tool_latitude: item.tool_metadata?.latitude,
           tool_longitude: item.tool_metadata?.longitude,
           tool_status: toolsNonOperational.has(item.tool_id) ? 'NOT_OPERATIONAL'
+            : item.tool_metadata?.status === 'DISMISSED' ? 'DISMISSED'
             : toolsInMaintenance.has(item.tool_id) ? 'MAINTENANCE'
             : (item.tool_metadata?.status || 'OPERATIONAL'),
           tot_mission: missionData[item.tool_id]?.count || 0,
@@ -551,14 +552,18 @@ export async function detachComponent(ownerId: number, componentId: number) {
 
   const { data: tool } = await supabase
     .from('tool')
-    .select('tool_id, tool_code')
+    .select('tool_id, tool_code, tool_metadata')
     .eq('tool_id', comp.fk_tool_id)
     .eq('fk_owner_id', ownerId)
     .maybeSingle();
 
   if (!tool) throw new Error('Component not found or unauthorized');
 
-  const updatedMetadata = { ...(comp.component_metadata || {}), system_detached: true };
+  const updatedMetadata = {
+    ...(comp.component_metadata || {}),
+    system_detached: true,
+    component_status: 'DISMISSED',
+  };
 
   const { error } = await supabase
     .from('tool_component')
@@ -566,6 +571,40 @@ export async function detachComponent(ownerId: number, componentId: number) {
     .eq('component_id', componentId);
 
   if (error) throw error;
+
+  // Cascade: also detach all children that reference this component as parent
+  const { data: siblings } = await supabase
+    .from('tool_component')
+    .select('component_id, component_metadata')
+    .eq('fk_tool_id', comp.fk_tool_id)
+    .neq('component_id', componentId);
+
+  const children = (siblings || []).filter(
+    (c) => c.component_metadata?.fk_parent_component_id === componentId,
+  );
+
+  for (const child of children) {
+    const childMeta = {
+      ...(child.component_metadata || {}),
+      system_detached: true,
+      component_status: 'DISMISSED',
+    };
+    const { error: childErr } = await supabase
+      .from('tool_component')
+      .update({ component_metadata: childMeta })
+      .eq('component_id', child.component_id);
+    if (childErr) throw childErr;
+  }
+
+  // Set the system itself to DISMISSED
+  const toolMeta = (tool as any).tool_metadata || {};
+  if (toolMeta.status !== 'DISMISSED') {
+    await supabase
+      .from('tool')
+      .update({ tool_metadata: { ...toolMeta, status: 'DISMISSED' } })
+      .eq('tool_id', comp.fk_tool_id);
+  }
+
   return {
     code: 1,
     message: 'Component detached from system successfully',
@@ -573,6 +612,7 @@ export async function detachComponent(ownerId: number, componentId: number) {
     componentName: comp.component_name ?? null,
     componentType: comp.component_type ?? null,
     toolCode: (tool as any)?.tool_code ?? null,
+    childrenDetached: children.length,
   };
 }
 
@@ -743,9 +783,12 @@ function buildComponentListResult(data: any[]) {
           : expiryType === 'MIXED'
           ? isDateExpired || isFlightExpired || isFlightHoursExpired
           : isDateExpired;
-      const effectiveStatus = isExpired
+      const storedStatus = item.component_metadata?.component_status;
+      const effectiveStatus = storedStatus === 'DISMISSED'
+        ? 'DISMISSED'
+        : isExpired
         ? 'DECOMMISSIONED'
-        : (item.component_metadata?.component_status || 'OPERATIONAL');
+        : (storedStatus || 'OPERATIONAL');
       return {
       tool_component_id: item.component_id,
       fk_tool_id: item.fk_tool_id,

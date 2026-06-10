@@ -177,7 +177,12 @@ export function NewTicketModal({
             >
               <option value={0}>{t('systems.maintenanceLogbook.modals.newTicket.selectDrone')}</option>
               {drones.map((d) => (
-                <option key={d.tool_id} value={d.tool_id}>
+                <option
+                  key={d.tool_id}
+                  value={d.tool_id}
+                  disabled={d.tool_status === 'DISMISSED'}
+                  style={d.tool_status === 'DISMISSED' ? { color: '#94a3b8' } : undefined}
+                >
                   {d.tool_code} — {d.tool_desc} [{d.tool_status}]
                 </option>
               ))}

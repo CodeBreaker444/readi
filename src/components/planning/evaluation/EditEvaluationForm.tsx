@@ -150,7 +150,7 @@ export function EditEvaluationForm({ evaluation, onUpdated }: Props) {
               <SelectItem value="PROGRESS">{t('planning.status.inProgress')}</SelectItem>
               <SelectItem value="REVIEW">{t('planning.status.feedbackRequest')}</SelectItem>
               <SelectItem value="SUSPENDED">{t('planning.status.suspended')}</SelectItem>
-              <SelectItem value="COMPLETED">{t('planning.status.done')}</SelectItem>
+              <SelectItem value="DONE">{t('planning.status.done')}</SelectItem>
             </SelectContent>
           </Select>
         </div>

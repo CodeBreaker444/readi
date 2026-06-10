@@ -245,6 +245,7 @@ export default function DroneToolPage() {
                 toast.success(t('systems.manage.toasts.componentDetached'));
                 setDeleteConfirm(null);
                 fetchAllComponents();
+                fetchToolData();
             } else {
                 toast.error(result.message || t('systems.manage.toasts.detachFailed'));
             }
