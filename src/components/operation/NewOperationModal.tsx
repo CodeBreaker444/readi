@@ -433,10 +433,25 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
             onSuccess(); onClose()
         } catch (err: any) {
             const data = err.response?.data
-            toastWithDcc(
-                { title: data?.error || err.message || (isEdit ? t('operations.newOperation.toast.updateError') : t('operations.newOperation.toast.createError')), variant: 'error' },
-                data?.dcc,
-            )
+            const fallback = isEdit ? t('operations.newOperation.toast.updateError') : t('operations.newOperation.toast.createError')
+
+            // Build a readable description from field-level validation errors
+            const fieldErrors: Record<string, string[]> | undefined = data?.errors
+            const fieldDescription = fieldErrors
+                ? Object.entries(fieldErrors)
+                    .filter(([, msgs]) => (msgs as string[]).length > 0)
+                    .map(([field, msgs]) => `${field.replace(/_/g, ' ')}: ${(msgs as string[])[0]}`)
+                    .join('\n')
+                : undefined
+
+            const title = data?.error || err.message || fallback
+
+            toastWithDcc({ title, variant: 'error' }, data?.dcc)
+
+            // Show field errors as a follow-up description toast when validation fails
+            if (fieldDescription) {
+                toast.error(title, { description: fieldDescription, duration: 6000 })
+            }
         } finally {
             setIsSubmitting(false)
         }
