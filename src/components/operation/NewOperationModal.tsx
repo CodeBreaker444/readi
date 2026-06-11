@@ -21,6 +21,7 @@ import {
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+import { toastWithDcc } from '@/lib/dcc-toast'
 import { EditMissionLogTab } from './EditMissionLogTab'
 import { OperationErpTab } from './OperationErpTab'
 import { OperationMaintenanceTab, type OperationMaintenanceTabHandle } from './OperationMaintenanceTab'
@@ -431,7 +432,11 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
             toast.success(t('operations.newOperation.toast.createSuccess'))
             onSuccess(); onClose()
         } catch (err: any) {
-            toast.error(err.response?.data?.error || err.message || (isEdit ? t('operations.newOperation.toast.updateError') : t('operations.newOperation.toast.createError')))
+            const data = err.response?.data
+            toastWithDcc(
+                { title: data?.error || err.message || (isEdit ? t('operations.newOperation.toast.updateError') : t('operations.newOperation.toast.createError')), variant: 'error' },
+                data?.dcc,
+            )
         } finally {
             setIsSubmitting(false)
         }

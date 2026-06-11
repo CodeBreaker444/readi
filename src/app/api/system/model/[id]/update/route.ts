@@ -43,7 +43,6 @@ export async function POST(
       logEvent({
         eventType: 'UPDATE',
         entityType: 'system',
-        entityId: id,
         description: `Updated system model '${parsed.data.model_name}' (${parsed.data.model_code})`,
         userId: session!.user.userId,
         userName: session!.user.fullname,

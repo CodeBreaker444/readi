@@ -285,18 +285,23 @@ export const createOperationCalendarEntry = async (
 }
 
 
-export const deleteOperationCalendarEntry = async (
+export const lookupOperationMissionCode = async (
   operationId: number,
-  ownerId: number
-): Promise<{ deletedDccId: string | null }> => {
-  // Fetch before delete so we can notify DCC with the mission's DCC ID
-  const { data: mission } = await supabase
+  ownerId: number,
+): Promise<string | null> => {
+  const { data } = await supabase
     .from('pilot_mission')
     .select('mission_code')
     .eq('pilot_mission_id', operationId)
     .eq('fk_owner_id', ownerId)
-    .single()
+    .maybeSingle()
+  return (data as any)?.mission_code ?? null
+}
 
+export const deleteOperationCalendarEntry = async (
+  operationId: number,
+  ownerId: number,
+): Promise<void> => {
   const { error } = await supabase
     .from('pilot_mission')
     .delete()
@@ -304,8 +309,6 @@ export const deleteOperationCalendarEntry = async (
     .eq('fk_owner_id', ownerId)
 
   if (error) throw new Error(`Failed to delete operation: ${error.message}`)
-
-  return { deletedDccId: (mission as any)?.mission_code ?? null }
 }
 
 

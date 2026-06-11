@@ -1,5 +1,5 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
-import { addComponent, getOrCreateWarehouseTool } from '@/backend/services/system/system-service';
+import { addComponent, getOrCreateWarehouseTool, getToolCode } from '@/backend/services/system/system-service';
 import { internalError, zodError } from '@/lib/api-error';
 import { requirePermission } from '@/lib/auth/api-auth';
 import { E } from '@/lib/error-codes';
@@ -100,13 +100,16 @@ export async function POST(req: NextRequest) {
     });
 
     if (result.code === 1) {
+      const systemCode = d.warehouse ? null : await getToolCode(toolId, session!.user.ownerId);
+      const label = d.component_code ?? d.component_type;
+      const snInfo = d.component_sn ? `, SN: ${d.component_sn}` : '';
+      const destination = d.warehouse
+        ? 'Warehouse'
+        : systemCode ? `system '${systemCode}'` : 'system';
       logEvent({
         eventType: 'CREATE',
         entityType: 'system_component',
-        entityId: result.data?.component_id,
-        description: d.warehouse
-          ? `Added component '${d.component_code ?? d.component_type}' (type: ${d.component_type}${d.component_sn ? `, SN: ${d.component_sn}` : ''}) to warehouse`
-          : `Added component '${d.component_code ?? d.component_type}' (type: ${d.component_type}${d.component_sn ? `, SN: ${d.component_sn}` : ''}) to system #${toolId}`,
+        description: `Added component '${label}' (type: ${d.component_type}${snInfo}) to ${destination}`,
         userId: session!.user.userId,
         userName: session!.user.fullname,
         userEmail: session!.user.email,

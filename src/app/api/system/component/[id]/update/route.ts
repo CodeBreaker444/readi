@@ -1,5 +1,5 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
-import { updateComponent } from '@/backend/services/system/system-service';
+import { getToolCode, updateComponent } from '@/backend/services/system/system-service';
 import { internalError, zodError } from '@/lib/api-error';
 import { requirePermission } from '@/lib/auth/api-auth';
 import { E } from '@/lib/error-codes';
@@ -66,11 +66,11 @@ export async function POST(
     });
 
     if (result.code === 1) {
+      const systemCode = await getToolCode(parsed.data.fk_tool_id, session!.user.ownerId);
       logEvent({
         eventType: 'UPDATE',
         entityType: 'system_component',
-        entityId: id,
-        description: `Updated component '${parsed.data.component_code ?? parsed.data.component_name ?? parsed.data.component_type}' (ID ${id}, type: ${parsed.data.component_type}) on system #${parsed.data.fk_tool_id}${parsed.data.component_sn ? ` — SN: ${parsed.data.component_sn}` : ''}`,
+        description: `Updated component '${parsed.data.component_code ?? parsed.data.component_name ?? parsed.data.component_type}' (type: ${parsed.data.component_type}) on system '${systemCode ?? parsed.data.fk_tool_id}'${parsed.data.component_sn ? ` — SN: ${parsed.data.component_sn}` : ''}`,
         userId: session!.user.userId,
         userName: session!.user.fullname,
         userEmail: session!.user.email,

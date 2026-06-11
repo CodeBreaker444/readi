@@ -17,12 +17,14 @@ export async function POST(
     const result = await detachComponent(session!.user.ownerId, Number(id));
 
     if (result.code === 1) {
-      const label = result.componentCode ?? result.componentName ?? result.componentType ?? `#${id}`;
+      const label = result.componentCode ?? result.componentName ?? result.componentType ?? 'Unknown';
+      const typeInfo = result.componentType ? ` (type: ${result.componentType})` : '';
+      const childInfo = result.childrenDetached > 0 ? `, along with ${result.childrenDetached} child component(s)` : '';
+      const systemInfo = result.toolCode ? ` — detached from system '${result.toolCode}'` : '';
       logEvent({
         eventType: 'UPDATE',
         entityType: 'system_component',
-        entityId: id,
-        description: `Detached component '${label}' (ID ${id}${result.componentType ? `, type: ${result.componentType}` : ''}) from system${result.toolCode ? ` '${result.toolCode}'` : ''}`,
+        description: `Moved component '${label}'${typeInfo} to Warehouse${childInfo}${systemInfo}`,
         userId: session!.user.userId,
         userName: session!.user.fullname,
         userEmail: session!.user.email,
