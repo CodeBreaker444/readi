@@ -79,6 +79,17 @@ export async function POST(request: NextRequest) {
         { status: 409 },
       );
     }
+    const conflictMessages = [
+      'A user with this email already exists',
+      'This username is already taken',
+      'A user with this email or username already exists',
+    ];
+    if (conflictMessages.includes(msg)) {
+      return NextResponse.json(
+        { code: 0, status: 'ERROR', message: msg, error_list: [msg] },
+        { status: 409 },
+      );
+    }
     return internalError(E.SV001, err);
   }
 }

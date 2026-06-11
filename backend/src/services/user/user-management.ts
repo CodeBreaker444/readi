@@ -122,11 +122,21 @@ export async function createUser(userData: UserCreateData) {
     const uid = generateUniqueCode();
     const key = generateActivationToken(128);
 
-    const { data: existingUser } = await supabase
+    const userName = userData.username.toLowerCase();
+
+    const { data: existingUser, error: lookupError } = await supabase
       .from('users')
       .select('user_id, email, username, user_active, auth_user_id')
-      .or(`email.ilike.${userData.email},username.eq.${userData.username}`)
+      .or(`email.ilike.${userData.email},username.eq.${userName}`)
       .maybeSingle();
+
+    if (lookupError) {
+      // PGRST116 = multiple rows matched (email hit one user, username hit another)
+      if (lookupError.code === 'PGRST116') {
+        throw new Error('A user with this email or username already exists');
+      }
+      throw lookupError;
+    }
 
     if (existingUser) {
       if (existingUser.email?.toLowerCase() === userData.email.toLowerCase()) {
@@ -136,7 +146,7 @@ export async function createUser(userData: UserCreateData) {
         }
         throw new Error('A user with this email already exists');
       }
-      if (existingUser.username === userData.username) {
+      if (existingUser.username === userName) {
         throw new Error('This username is already taken');
       }
     }
@@ -146,7 +156,6 @@ export async function createUser(userData: UserCreateData) {
     const lastName = nameParts.slice(1).join(' ') || '';
     const saltRounds = 10;
     const hashedPasscode = await bcrypt.hash(uid, saltRounds);
-    const userName = userData.username.toLowerCase();
 
     const { data: newUser, error: insertError } = await supabase
       .from('users')
