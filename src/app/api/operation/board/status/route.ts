@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
         eventType: 'UPDATE',
         entityType: 'operation',
         entityId: parsed.data.mission_id,
-        description: `Mission #${parsed.data.mission_id} ${actionMap[parsed.data.workflow_mission_status] ?? 'status updated'}`,
+        description: `Mission #${parsed.data.mission_id} ${actionMap[parsed.data.workflow_mission_status] ?? 'status updated'}${parsed.data.vehicle_id ? ` — vehicle #${parsed.data.vehicle_id}` : ''}${parsed.data.pilot_id ? `, pilot #${parsed.data.pilot_id}` : ''}`,
         userId: session!.user.userId,
         userName: session!.user.fullname,
         userEmail: session!.user.email,

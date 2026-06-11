@@ -346,7 +346,12 @@ export async function updateDocument(input: DocumentUpdateInput): Promise<void> 
 }
 
 
-export async function deleteDocument(input: DocumentDeleteInput): Promise<void> {
+export async function deleteDocument(input: DocumentDeleteInput): Promise<{ title: string | null; docCode: string | null }> {
+  const { data: docRow } = await supabase
+    .from('luc_document')
+    .select('title, doc_code')
+    .eq('document_id', input.document_id)
+    .maybeSingle();
 
   const { error } = await supabase
     .from('luc_document')
@@ -354,6 +359,7 @@ export async function deleteDocument(input: DocumentDeleteInput): Promise<void> 
     .eq('document_id', input.document_id);
 
   if (error) throw new Error(`deleteDocument: ${error.message}`);
+  return { title: docRow?.title ?? null, docCode: docRow?.doc_code ?? null };
 }
 
 

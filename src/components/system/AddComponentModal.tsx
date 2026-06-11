@@ -38,6 +38,9 @@ const INITIAL_FORM = {
   component_activation_date: '',
   component_purchase_date: '',
   expiration_date: '',
+  expiry_type: 'EXPIRATION_DATE',
+  expiration_flights: '',
+  expiration_flight_hours: '',
   component_vendor: '',
   component_guarantee_day: '',
   component_status: 'OPERATIONAL',
@@ -62,6 +65,7 @@ function SystemOptionLabel({ tool }: { tool: any }) {
     OPERATIONAL: 'bg-green-100 text-green-700',
     MAINTENANCE: 'bg-yellow-100 text-yellow-700',
     NOT_OPERATIONAL: 'bg-red-100 text-red-700',
+    DISMISSED: 'bg-slate-200 text-slate-600',
   };
   const statusClass = statusColors[tool.tool_status] || 'bg-gray-100 text-gray-600';
   return (
@@ -221,6 +225,9 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
         component_activation_date: formData.component_activation_date || null,
         component_purchase_date: formData.component_purchase_date || null,
         expiration_date: formData.expiration_date || null,
+        expiry_type: formData.expiry_type,
+        expiration_flights: formData.expiration_flights ? Number(formData.expiration_flights) : null,
+        expiration_flight_hours: formData.expiration_flight_hours ? parseFloat(formData.expiration_flight_hours) : null,
         component_vendor: formData.component_vendor || null,
         component_guarantee_day: formData.component_guarantee_day ? Number(formData.component_guarantee_day) : null,
         component_status: formData.component_status,
@@ -614,10 +621,64 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
                 <Input type="date" value={formData.component_purchase_date} onChange={(e) => handleChange('component_purchase_date', e.target.value)} />
               </div>
               <div className="col-span-1 sm:col-span-3">
-                <Label className="pb-2">{t('systems.components.addComponent.fields.expirationDate')} <span className="text-muted-foreground font-normal">{t('systems.components.common.optional')}</span></Label>
-                <Input type="date" value={formData.expiration_date} onChange={(e) => handleChange('expiration_date', e.target.value)} />
-                <p className="text-[10px] text-muted-foreground mt-1">{t('systems.components.common.autoDecommissionHint')}</p>
+                <Label className="pb-2">{t('systems.components.common.expiryType.label')} <span className="text-muted-foreground font-normal">{t('systems.components.common.optional')}</span></Label>
+                <Select value={formData.expiry_type} onValueChange={(v) => handleChange('expiry_type', v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="EXPIRATION_DATE">{t('systems.components.common.expiryType.expirationDate')}</SelectItem>
+                    <SelectItem value="FLIGHTS">{t('systems.components.common.expiryType.flights')}</SelectItem>
+                    <SelectItem value="FLIGHT_HOURS">{t('systems.components.common.expiryType.flightHours')}</SelectItem>
+                    <SelectItem value="MIXED">{t('systems.components.common.expiryType.mixed')}</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
+              {(formData.expiry_type === 'EXPIRATION_DATE' || formData.expiry_type === 'MIXED') && (
+                <div className="col-span-1 sm:col-span-3">
+                  <Label className="pb-2">{t('systems.components.addComponent.fields.expirationDate')}</Label>
+                  <Input type="date" value={formData.expiration_date} onChange={(e) => handleChange('expiration_date', e.target.value)} />
+                  {formData.expiry_type === 'EXPIRATION_DATE' && (
+                    <p className="text-[10px] text-muted-foreground mt-1">{t('systems.components.common.autoDecommissionHint')}</p>
+                  )}
+                </div>
+              )}
+              {(formData.expiry_type === 'FLIGHTS' || formData.expiry_type === 'MIXED') && (
+                <div className="col-span-1 sm:col-span-3">
+                  <Label className="pb-2">{t('systems.components.common.expiryType.expirationFlights')}</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    step={1}
+                    placeholder="e.g. 500"
+                    value={formData.expiration_flights}
+                    onChange={(e) => handleChange('expiration_flights', e.target.value)}
+                  />
+                  {formData.expiry_type === 'FLIGHTS' && (
+                    <p className="text-[10px] text-muted-foreground mt-1">{t('systems.components.common.expiryType.flightsHint')}</p>
+                  )}
+                </div>
+              )}
+              {(formData.expiry_type === 'FLIGHT_HOURS' || formData.expiry_type === 'MIXED') && (
+                <div className="col-span-1 sm:col-span-3">
+                  <Label className="pb-2">{t('systems.components.common.expiryType.expirationFlightHours')}</Label>
+                  <Input
+                    type="number"
+                    min={0.1}
+                    max={9999}
+                    step={0.1}
+                    placeholder="e.g. 1.5"
+                    value={formData.expiration_flight_hours}
+                    onChange={(e) => handleChange('expiration_flight_hours', e.target.value)}
+                  />
+                  {formData.expiry_type === 'FLIGHT_HOURS' && (
+                    <p className="text-[10px] text-muted-foreground mt-1">{t('systems.components.common.expiryType.flightHoursHint')}</p>
+                  )}
+                </div>
+              )}
+              {formData.expiry_type === 'MIXED' && (
+                <div className="col-span-1 sm:col-span-12">
+                  <p className="text-[10px] text-muted-foreground">{t('systems.components.common.expiryType.mixedHint')}</p>
+                </div>
+              )}
               <div className="col-span-1 sm:col-span-3">
                 <Label className="pb-2">{t('systems.components.addComponent.fields.vendor')}</Label>
                 <Input value={formData.component_vendor} onChange={(e) => handleChange('component_vendor', e.target.value)} />
@@ -642,6 +703,7 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
                     <SelectItem value="NOT_OPERATIONAL">{t('systems.components.common.statusOptions.notOperational')}</SelectItem>
                     <SelectItem value="MAINTENANCE">{t('systems.components.common.statusOptions.maintenance')}</SelectItem>
                     <SelectItem value="DECOMMISSIONED">{t('systems.components.common.statusOptions.decommissioned')}</SelectItem>
+                    <SelectItem value="DISMISSED">{t('systems.components.common.statusOptions.dismissed')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

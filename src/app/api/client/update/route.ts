@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
             eventType: 'UPDATE',
             entityType: 'client',
             entityId: parsed.data.client_id,
-            description: `Updated client '${parsed.data.client_name ?? `#${parsed.data.client_id}`}'`,
+            description: `Updated client '${parsed.data.client_name ?? `#${parsed.data.client_id}`}' (ID ${parsed.data.client_id})${parsed.data.client_email ? ` — email: ${parsed.data.client_email}` : ''}${parsed.data.client_active ? `, active: ${parsed.data.client_active}` : ''}`,
             userId: session.user.userId,
             userName: session.user.fullname,
             userEmail: session.user.email,

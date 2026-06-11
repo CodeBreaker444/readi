@@ -78,17 +78,24 @@ export async function addMissionStatus(ownerId: number, statusData: {
 }
 
 export async function deleteMissionStatus(ownerId: number, statusId: number) {
-  // Soft delete
+  const { data: row } = await supabase
+    .from('pilot_mission_status')
+    .select('status_code, status_name')
+    .eq('status_id', statusId)
+    .maybeSingle();
+
   const { error } = await supabase
     .from('pilot_mission_status')
     .update({ is_active: false })
     .eq('status_id', statusId);
 
   if (error) throw error;
-  
+
   return {
     code: 1,
-    message: 'Mission status deleted successfully'
+    message: 'Mission status deleted successfully',
+    statusCode: row?.status_code ?? null,
+    statusName: row?.status_name ?? null,
   };
 }
 

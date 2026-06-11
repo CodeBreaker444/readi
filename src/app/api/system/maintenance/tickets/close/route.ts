@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
       eventType: 'UPDATE',
       entityType: 'maintenance_ticket',
       entityId: validation.data.ticket_id,
-      description: `Closed maintenance ticket #${validation.data.ticket_id}`,
+      description: `Closed maintenance ticket #${validation.data.ticket_id}${validation.data.note ? ` — note: "${validation.data.note.slice(0, 100)}${validation.data.note.length > 100 ? '…' : ''}"` : ''}`,
       userId: session!.user.userId,
       userName: session!.user.fullname,
       userEmail: session!.user.email,

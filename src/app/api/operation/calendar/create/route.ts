@@ -6,10 +6,6 @@ import { requirePermission } from '@/lib/auth/api-auth'
 import { E } from '@/lib/error-codes'
 import { NextRequest, NextResponse } from 'next/server'
 
-// DCC codes that mean "I received your missions and explicitly reject them".
-// Everything else (404, 405, 5xx, network errors) is non-blocking infrastructure noise.
-const DCC_REJECTION_CODES = new Set([409, 422])
-
 export async function POST(req: NextRequest) {
   try {
     const { session, error } = await requirePermission('view_operations')
@@ -43,14 +39,14 @@ export async function POST(req: NextRequest) {
 
 
 
-    if (dcc.outcome === 'http_error' && DCC_REJECTION_CODES.has(dcc.httpStatus!)) {
+    if (dcc.outcome === 'http_error' || dcc.outcome === 'network_error') {
       await Promise.allSettled(
         result.missions.map((m) =>
           deleteOperationCalendarEntry(m.pilotMissionId, session!.user.ownerId),
         ),
       )
       return NextResponse.json(
-        { success: false, error: 'DCC rejected the mission creation - operation rolled back', dcc },
+        { success: false, error: `DCC rejected the mission creation — ${dcc.message}. Operation rolled back.`, dcc },
         { status: 502 },
       )
     }

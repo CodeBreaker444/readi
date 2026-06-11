@@ -15,6 +15,7 @@ interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   references?: Array<{ url: string; title: string; source: string }>;
+  followUpQuestions?: string[];
 }
 
 interface OpmUser {
@@ -125,6 +126,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData, loading 
           role: 'assistant',
           content: data.answer ?? data.error ?? 'No response.',
           references: data.references || [],
+          followUpQuestions: Array.isArray(data.followUpQuestions) ? data.followUpQuestions : [],
         },
       ]);
     } catch {
@@ -457,6 +459,24 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData, loading 
                                 <FileText size={9} />
                                 <span className="truncate max-w-[140px]">{ref.title || ref.source}</span>
                               </a>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Follow-up question chips — only on the last assistant message */}
+                        {msg.role === 'assistant' && i === chatMessages.length - 1 &&
+                          msg.followUpQuestions && msg.followUpQuestions.length > 0 && (
+                          <div className="flex flex-col gap-1.5 px-1 mt-1">
+                            {msg.followUpQuestions.map((q, qi) => (
+                              <button
+                                key={qi}
+                                onClick={() => { setChatInput(q); chatInputRef.current?.focus(); }}
+                                className={`cursor-pointer text-left text-[11px] px-3 py-1.5 rounded-xl border transition-colors leading-snug w-full ${isDark
+                                  ? 'bg-slate-800/50 border-slate-700 text-slate-400 hover:border-violet-500/40 hover:text-violet-300 hover:bg-slate-800'
+                                  : 'bg-gray-50 border-gray-200 text-gray-500 hover:border-violet-300 hover:text-violet-700 hover:bg-violet-50'}`}
+                              >
+                                {q}
+                              </button>
                             ))}
                           </div>
                         )}

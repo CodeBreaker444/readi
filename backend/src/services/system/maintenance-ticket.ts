@@ -515,7 +515,7 @@ export async function getComponentList(toolId: number, ticketType?: string): Pro
 
   const { data, error } = await supabase
     .from('tool_component')
-    .select('component_id, component_name, component_type, serial_number, maintenance_cycle, maintenance_cycle_day')
+    .select('component_id, component_code, component_name, component_type, serial_number, maintenance_cycle, maintenance_cycle_day')
     .eq('fk_tool_id', toolId)
     .eq('component_active', 'Y');
 
@@ -537,6 +537,7 @@ export async function getComponentList(toolId: number, ticketType?: string): Pro
 
   return rows.map((row: any) => ({
     tool_component_id: row.component_id,
+    component_code:    row.component_code ?? '',
     component_type:    row.component_type ?? row.component_name ?? '',
     component_sn:      row.serial_number ?? '',
   }));

@@ -17,9 +17,11 @@ import {
   Rocket,
   Search,
   Shield,
+  ShieldAlert,
   SlidersHorizontal,
   ThumbsDown,
   ThumbsUp,
+  Timer,
   X,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -47,8 +49,8 @@ type TabKey = "What's New" | 'Improvements' | 'Bug Fixes' | 'Details';
 
 const HIGHLIGHT_ICON: Record<string, React.ElementType> = {
   bell: Bell, 'at-sign': AtSign, 'layout-grid': LayoutGrid,
-  filter: Filter, shield: Shield, bug: Bug, rocket: Rocket,
-  file: FileText, warning: AlertTriangle,
+  filter: Filter, shield: Shield, 'shield-alert': ShieldAlert, bug: Bug, rocket: Rocket,
+  file: FileText, warning: AlertTriangle, timer: Timer,
 };
 
 const HIGHLIGHT_COLOR: Record<string, { bg: string; text: string }> = {
@@ -56,6 +58,7 @@ const HIGHLIGHT_COLOR: Record<string, { bg: string; text: string }> = {
   orange: { bg: 'bg-orange-500/10', text: 'text-orange-500' },
   green: { bg: 'bg-emerald-500/10', text: 'text-emerald-600' },
   purple: { bg: 'bg-purple-500/10', text: 'text-purple-600' },
+  violet: { bg: 'bg-violet-500/10', text: 'text-violet-600' },
   blue: { bg: 'bg-blue-500/10', text: 'text-blue-600' },
   amber: { bg: 'bg-amber-500/10', text: 'text-amber-600' },
 };
@@ -75,6 +78,15 @@ const SECTION_META: Record<string, {
 const FALLBACK_META = { icon: HiOutlineInformationCircle, bg: 'bg-slate-500/10', text: 'text-slate-500', border: 'border-slate-500/20' };
 
 function cleanHeading(h: string) { return h.replace(/^[^a-zA-Z"']+/, '').trim(); }
+
+function stripMd(s: string): string {
+  return s
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/\*([^*]+)\*/g, '$1')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/^['"]+|['"]+$/g, '')
+    .trim();
+}
 
 
 function parseBody(body: string): BodySection[] {
@@ -541,7 +553,7 @@ export default function ReleasesPage() {
                                   <span className="font-semibold">{sub.heading}</span>
                                   {sub.items[0] && (
                                     <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>
-                                      {' – '}{sub.items[0]}
+                                      {' – '}{stripMd(sub.items[0])}
                                     </span>
                                   )}
                                 </span>
@@ -554,7 +566,7 @@ export default function ReleasesPage() {
                               <li key={idx} className={`flex items-start gap-2.5 text-[13px] leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-600'
                                 }`}>
                                 <span className={`mt-2 w-1.5 h-1.5 rounded-full shrink-0 ${isDark ? 'bg-slate-600' : 'bg-slate-300'}`} />
-                                {item}
+                                {stripMd(item)}
                               </li>
                             ))}
                           </ul>

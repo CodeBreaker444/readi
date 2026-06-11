@@ -1,5 +1,5 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
-import { updateComponent } from '@/backend/services/system/system-service';
+import { getToolCode, updateComponent } from '@/backend/services/system/system-service';
 import { internalError, zodError } from '@/lib/api-error';
 import { requirePermission } from '@/lib/auth/api-auth';
 import { E } from '@/lib/error-codes';
@@ -18,6 +18,9 @@ const schema = z.object({
   component_activation_date: z.string().optional().nullable(),
   component_purchase_date: z.string().optional().nullable(),
   expiration_date: z.string().optional().nullable(),
+  expiry_type: z.enum(['EXPIRATION_DATE', 'FLIGHTS', 'FLIGHT_HOURS', 'MIXED']).optional().default('EXPIRATION_DATE'),
+  expiration_flights: z.number().int().positive().optional().nullable(),
+  expiration_flight_hours: z.number().min(0).max(9999).optional().nullable(),
   component_vendor: z.string().optional().nullable(),
   component_guarantee_day: z.number().optional().nullable(),
   component_status: z.string().default('OPERATIONAL'),
@@ -63,11 +66,11 @@ export async function POST(
     });
 
     if (result.code === 1) {
+      const systemCode = await getToolCode(parsed.data.fk_tool_id, session!.user.ownerId);
       logEvent({
         eventType: 'UPDATE',
         entityType: 'system_component',
-        entityId: id,
-        description: `Updated component #${id} on system #${parsed.data.fk_tool_id}`,
+        description: `Updated component '${parsed.data.component_code ?? parsed.data.component_name ?? parsed.data.component_type}' (type: ${parsed.data.component_type}) on system '${systemCode ?? parsed.data.fk_tool_id}'${parsed.data.component_sn ? ` — SN: ${parsed.data.component_sn}` : ''}`,
         userId: session!.user.userId,
         userName: session!.user.fullname,
         userEmail: session!.user.email,
