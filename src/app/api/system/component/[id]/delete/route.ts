@@ -20,12 +20,11 @@ export async function POST(
     const result = await deleteComponent(session!.user.ownerId, Number(id), force);
 
     if (result.code === 1) {
-      const label = result.componentCode ?? result.componentName ?? result.componentType ?? `#${id}`;
+      const label = result.componentCode ?? result.componentName ?? result.componentType ?? 'Unknown';
       logEvent({
         eventType: 'DELETE',
         entityType: 'system_component',
-        entityId: id,
-        description: `Deleted component '${label}' (ID ${id}${result.componentType ? `, type: ${result.componentType}` : ''})`,
+        description: `Deleted component '${label}'${result.componentType ? ` (type: ${result.componentType})` : ''}`,
         userId: session!.user.userId,
         userName: session!.user.fullname,
         userEmail: session!.user.email,

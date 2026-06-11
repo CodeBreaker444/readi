@@ -20,8 +20,7 @@ export async function POST(
       logEvent({
         eventType: 'DELETE',
         entityType: 'system',
-        entityId: id,
-        description: `Deleted system '${result.toolCode ?? `#${id}`}' (ID ${id}) permanently — all components moved to warehouse`,
+        description: `Deleted system '${result.toolCode ?? 'Unknown'}' permanently — all components moved to Warehouse`,
         userId: session!.user.userId,
         userName: session!.user.fullname,
         userEmail: session!.user.email,

@@ -541,6 +541,17 @@ export async function deleteComponent(ownerId: number, componentId: number, forc
 }
 
 
+export async function getToolCode(toolId: number, ownerId: number): Promise<string | null> {
+  const { data } = await supabase
+    .from('tool')
+    .select('tool_code')
+    .eq('tool_id', toolId)
+    .eq('fk_owner_id', ownerId)
+    .maybeSingle();
+  return (data as any)?.tool_code ?? null;
+}
+
+
 export async function detachComponent(ownerId: number, componentId: number) {
   const { data: comp, error: compError } = await supabase
     .from('tool_component')
