@@ -5,6 +5,7 @@ import { useTimezone } from '@/components/TimezoneProvider'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { EmergencyResponsePlan } from '@/config/types/erp'
+import { toastWithDcc } from '@/lib/dcc-toast'
 import { cn } from '@/lib/utils'
 import axios from 'axios'
 import {
@@ -21,7 +22,6 @@ import {
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { toastWithDcc } from '@/lib/dcc-toast'
 import { EditMissionLogTab } from './EditMissionLogTab'
 import { OperationErpTab } from './OperationErpTab'
 import { OperationMaintenanceTab, type OperationMaintenanceTabHandle } from './OperationMaintenanceTab'
@@ -435,7 +435,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
             const data = err.response?.data
             const fallback = isEdit ? t('operations.newOperation.toast.updateError') : t('operations.newOperation.toast.createError')
 
-            // Build a readable description from field-level validation errors
+            // a readable description from field-level validation errors
             const fieldErrors: Record<string, string[]> | undefined = data?.errors
             const fieldDescription = fieldErrors
                 ? Object.entries(fieldErrors)
@@ -448,7 +448,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
 
             toastWithDcc({ title, variant: 'error' }, data?.dcc)
 
-            // Show field errors as a follow-up description toast when validation fails
+            // showing field errors as a follow-up description toast when validation fails
             if (fieldDescription) {
                 toast.error(title, { description: fieldDescription, duration: 6000 })
             }

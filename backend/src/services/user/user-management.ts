@@ -336,6 +336,27 @@ export async function deleteUser(userId: number, ownerId: number, isSuperAdmin =
     if (lookupError) throw lookupError;
     if (!userRecord) throw new Error('User not found or does not belong to this organization');
 
+    // Delete user-owned records that would block deletion due to FK constraints
+    const cleanupTables: { table: string; column: string }[] = [
+      { table: 'notification', column: 'fk_user_id' },
+      { table: 'checklist', column: 'fk_user_id' },
+      { table: 'kanban', column: 'fk_user_id' },
+      { table: 'assignment', column: 'fk_user_id' },
+      { table: 'communication', column: 'fk_user_id' },
+      { table: 'pilot_declaration', column: 'fk_user_id' },
+      { table: 'planning_logbook', column: 'fk_user_id' },
+    ];
+
+    for (const { table, column } of cleanupTables) {
+      const { error: cleanupError } = await supabase
+        .from(table as any)
+        .delete()
+        .eq(column, userId);
+      if (cleanupError) {
+        console.warn(`[deleteUser] cleanup of ${table} failed (non-fatal):`, cleanupError);
+      }
+    }
+
     let updateQuery = supabase
       .from('users')
       .delete()
@@ -360,7 +381,7 @@ export async function deleteUser(userId: number, ownerId: number, isSuperAdmin =
     return { success: true, message: 'User deleted successfully', fullName, email: userRecord.email ?? null };
   } catch (error) {
     console.error('Error deleting user:', error);
-    throw new Error(error instanceof Error ? error.message : 'Failed to delete user');
+    throw error;
   }
 }
 
