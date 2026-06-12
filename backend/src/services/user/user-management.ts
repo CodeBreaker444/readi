@@ -27,8 +27,8 @@ export interface UserUpdateData {
   email: string;
   user_phone?: string;
   fk_user_profile_id: number;
-  fk_territorial_unit?: number;
-  fk_client_id?: number;
+  fk_territorial_unit?: number | null;
+  fk_client_id?: number | null;
   user_type: string;
   active: number;
   is_viewer: 'Y' | 'N';
