@@ -336,25 +336,24 @@ export async function deleteUser(userId: number, ownerId: number, isSuperAdmin =
     if (lookupError) throw lookupError;
     if (!userRecord) throw new Error('User not found or does not belong to this organization');
 
-    // Delete user-owned records that would block deletion due to FK constraints
-    const cleanupTables: { table: string; column: string }[] = [
-      { table: 'notification', column: 'fk_user_id' },
+    const { error: notifError } = await supabase
+      .from('notification')
+      .delete()
+      .eq('fk_user_id', userId);
+    if (notifError) console.warn('[deleteUser] notification cleanup failed:', notifError);
+
+    const nullableFkTables: { table: string; column: string }[] = [
       { table: 'checklist', column: 'fk_user_id' },
       { table: 'kanban', column: 'fk_user_id' },
-      { table: 'assignment', column: 'fk_user_id' },
-      { table: 'communication', column: 'fk_user_id' },
-      { table: 'pilot_declaration', column: 'fk_user_id' },
       { table: 'planning_logbook', column: 'fk_user_id' },
     ];
 
-    for (const { table, column } of cleanupTables) {
-      const { error: cleanupError } = await supabase
+    for (const { table, column } of nullableFkTables) {
+      const { error: nullifyError } = await supabase
         .from(table as any)
-        .delete()
+        .update({ [column]: null })
         .eq(column, userId);
-      if (cleanupError) {
-        console.warn(`[deleteUser] cleanup of ${table} failed (non-fatal):`, cleanupError);
-      }
+      if (nullifyError) console.warn(`[deleteUser] nullify ${table}.${column} failed:`, nullifyError);
     }
 
     let updateQuery = supabase
