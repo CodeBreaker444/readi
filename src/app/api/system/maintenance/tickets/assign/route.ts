@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
       eventType: 'UPDATE',
       entityType: 'maintenance_ticket',
       entityId: validation.data.ticket_id,
-      description: `Assigned maintenance ticket #${validation.data.ticket_id} to user #${validation.data.assigned_to}`,
+      description: `Assigned maintenance ticket #${validation.data.ticket_id} to technician (user ID ${validation.data.assigned_to})`,
       userId: session!.user.userId,
       userName: session!.user.fullname,
       userEmail: session!.user.email,

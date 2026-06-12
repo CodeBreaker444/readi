@@ -174,7 +174,7 @@ export default function UserManagement({ session }: UserManagementProps) {
     }
   };
 
-  const handleAddUser = async (formData: any) => {
+  const handleAddUser = async (formData: any): Promise<{ fieldErrors?: Record<string, string> } | void> => {
     try {
       const res = await axios.post('/api/team/user/add', {
         username: formData.username,
@@ -218,6 +218,11 @@ export default function UserManagement({ session }: UserManagementProps) {
         return;
       }
       const msg = responseData?.error_list?.[0] || responseData?.message || t('team.personnel.toast.createError');
+
+      const lowerMsg = msg.toLowerCase();
+      if (lowerMsg.includes('email')) return { fieldErrors: { email: msg } };
+      if (lowerMsg.includes('username')) return { fieldErrors: { username: msg } };
+
       toast.error(msg);
     }
   };

@@ -1,4 +1,5 @@
 import { env } from '@/backend/config/env';
+import { unstable_cache } from 'next/cache';
 import 'server-only';
 import { signReadiDroneJwt } from './drone-atc-jwt';
 
@@ -8,21 +9,39 @@ export interface FlytrelayConnection {
   token: string;
 }
 
-export async function connectToFlytrelay(
+const CONNECT_TIMEOUT_MS = 5_000;
+
+async function fetchFlytrelayConnection(
   userId: string,
   flytbaseKey: string,
   orgId: string,
-  companyId?: string,
+  companyId: string | null,
 ): Promise<FlytrelayConnection> {
   const baseUrl = env.FLYTRELAY_BASE_URL;
   if (!baseUrl) throw new Error('FLYTRELAY_BASE_URL is not configured');
 
-  const jwt = signReadiDroneJwt(userId, flytbaseKey, orgId, companyId);
-  
-  const res = await fetch(`${baseUrl}/api/auth/identify`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${jwt}`, 'Content-Type': 'application/json' },
-  });
+  const jwt = signReadiDroneJwt(userId, flytbaseKey, orgId, companyId ?? undefined);
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), CONNECT_TIMEOUT_MS);
+
+  let res: Response;
+  try {
+    res = await fetch(`${baseUrl}/api/auth/identify`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${jwt}`, 'Content-Type': 'application/json' },
+      signal: controller.signal,
+    });
+  } catch (err: any) {
+    const isTimeout = err?.name === 'AbortError';
+    throw new Error(
+      isTimeout
+        ? 'FlytRelay identify timed out after 5s'
+        : `FlytRelay identify network error: ${err?.message}`,
+    );
+  } finally {
+    clearTimeout(timeout);
+  }
 
   const body = await res.text();
   console.log('[FlytRelay identify] status:', res.status, 'body:', body);
@@ -38,8 +57,21 @@ export async function connectToFlytrelay(
   }
 
   const socketToken: string = data.token ?? data.sessionToken ?? jwt;
-
   return { wsUrl: data.wsUrl, topic: data.topic, token: socketToken };
+}
+
+export async function connectToFlytrelay(
+  userId: string,
+  flytbaseKey: string,
+  orgId: string,
+  companyId?: string,
+): Promise<FlytrelayConnection> {
+  const cached = unstable_cache(
+    () => fetchFlytrelayConnection(userId, flytbaseKey, orgId, companyId ?? null),
+    [`flytrelay-connect-${userId}-${orgId}`],
+    { revalidate: 30, tags: [`flytrelay-connect-${userId}`] },
+  );
+  return cached();
 }
 
 export async function updateFlytrelayUsers(
@@ -68,4 +100,3 @@ export async function updateFlytrelayUsers(
 
   return { synced: users.length };
 }
-

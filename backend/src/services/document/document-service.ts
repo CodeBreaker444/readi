@@ -1,6 +1,6 @@
-import { prisma } from '@/lib/prisma';
 import { DocType, DocumentCreateInput, DocumentDeleteInput, DocumentFilters, DocumentHistoryInput, DocumentListInput, DocumentRevision, DocumentUpdateInput, DocumentUploadRevisionInput, PresignedDownloadInput, RepositoryDocument } from '@/config/types/repository';
-import { buildS3Url, deleteFileFromS3, getPresignedDownloadUrl } from '@/lib/s3Client';
+import { prisma } from '@/lib/prisma';
+import { buildS3Key, buildS3Url, deleteFileFromS3, getPresignedDownloadUrl, uploadFileToS3 } from '@/lib/s3Client';
 
 
 function toNullableDate(val?: string | null): Date | null {
@@ -176,50 +176,53 @@ export async function listDocuments(input: DocumentListInput): Promise<{
     .map((d) => d.fk_component_id)
     .filter((id): id is number => id != null);
 
+
   const expiredComponentSet = new Set<number>();
   if (componentIds.length > 0) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
     const expiredComps = await prisma.tool_component.findMany({
       where: {
-        component_id:    { in: componentIds },
+        component_id:   { in: componentIds },
         component_active: 'Y',
-        expiration_date: { not: null, lte: today },
+        expiration_date:  { lte: new Date(), not: null },
       },
       select: { component_id: true },
     });
     expiredComps.forEach((c) => expiredComponentSet.add(c.component_id));
   }
 
-  const items: RepositoryDocument[] = docs.map((d) => {
-    const rev      = latestRevMap.get(d.document_id) ?? null;
-    const typeData = d.luc_doc_type;
-    const isNonOp  = d.fk_component_id != null && expiredComponentSet.has(d.fk_component_id);
+  const items: RepositoryDocument[] = (docs ?? []).map((d) => {
+    const rev = latestRevMap.get(d.document_id) ?? null;
+   const typeData = Array.isArray(d.luc_doc_type)
+  ? (d.luc_doc_type as Array<{ doc_type_name: string; doc_type_category: string }>)[0]
+  : d.luc_doc_type as { doc_type_name: string; doc_type_category: string } | null;
+
+    const componentId = (d as any).fk_component_id as number | null;
+    const isNonOp = componentId != null && expiredComponentSet.has(componentId);
 
     return {
-      document_id:        d.document_id,
-      doc_type_id:        d.fk_doc_type_id ?? 0,
-      fk_component_id:    d.fk_component_id,
-      type_name:          typeData?.doc_type_name ?? null,
-      doc_area:           (typeData?.doc_type_category ?? null) as RepositoryDocument['doc_area'],
-      doc_category:       typeData?.doc_type_category ?? null,
-      doc_code:           d.document_code,
-      title:              d.document_title,
-      description:        d.document_description,
-      status:             (d.document_status ?? 'DRAFT') as RepositoryDocument['status'],
-      confidentiality:    'INTERNAL',
-      owner_role:         d.owner_role,
-      effective_date:     d.effective_date?.toISOString().split('T')[0] ?? null,
-      expiry_date:        d.expiry_date?.toISOString().split('T')[0] ?? null,
-      tool_status:        isNonOp ? 'NOT_OPERATIONAL' : null,
-      keywords:           d.keywords,
-      tags:               d.tags,
-      version_label:      rev?.revision_number ?? d.version_number ?? null,
-      change_log:         rev?.changes_summary ?? null,
-      file_name:          rev?.revision_description ?? null,
-      file_path:          rev?.file_path ?? null,
-      s3_url:             rev?.file_path ? buildS3Url(rev.file_path) : null,
-      rev_id:             rev?.revision_id ?? null,
+      document_id:       d.document_id,
+      doc_type_id:       d.fk_doc_type_id ?? 0,
+      fk_component_id:   componentId,
+      type_name:         typeData?.doc_type_name ?? null,
+      doc_area:          (typeData?.doc_type_category ?? null) as RepositoryDocument['doc_area'],
+      doc_category:      typeData?.doc_type_category ?? null,
+      doc_code:          d.document_code,
+      title:             d.document_title,
+      description:       d.document_description,
+      status:            (d.document_status ?? 'DRAFT') as RepositoryDocument['status'],
+      confidentiality:   'INTERNAL',
+      owner_role:        (d as any).owner_role ?? null,
+      effective_date:    d.effective_date?.toISOString() ?? null,
+      expiry_date:       d.expiry_date?.toISOString() ?? null,
+      tool_status:       isNonOp ? 'NOT_OPERATIONAL' : null,
+      keywords:          (d as any).keywords ?? null,
+      tags:              (d as any).tags ?? null,
+      version_label:     rev?.revision_number ?? d.version_number ?? null,
+      change_log:        rev?.changes_summary ?? null,
+      file_name:         rev?.revision_description ?? null,
+      file_path:         rev?.file_path ?? null,
+      s3_url:            rev?.file_path ? buildS3Url(rev.file_path) : null,
+      rev_id:            rev?.revision_id ?? null,
       default_owner_role: null,
       created_at:         d.created_at?.toISOString() ?? null,
       updated_at:         d.updated_at?.toISOString() ?? null,
@@ -307,11 +310,18 @@ export async function updateDocument(input: DocumentUpdateInput): Promise<void> 
 }
 
 
-export async function deleteDocument(input: DocumentDeleteInput): Promise<void> {
-  await prisma.luc_document.update({
-    where: { document_id: input.document_id },
-    data: { document_active: 'N' },
+export async function deleteDocument(input: DocumentDeleteInput): Promise<{ title: string | null; docCode: string | null }> {
+  const docRow = await prisma.luc_document.findFirst({
+    where:  { document_id: input.document_id },
+    select: { document_title: true, document_code: true },
   });
+
+  await prisma.luc_document.updateMany({
+    where: { document_id: input.document_id },
+    data:  { document_active: 'N' },
+  });
+
+  return { title: docRow?.document_title ?? null, docCode: docRow?.document_code ?? null };
 }
 
 

@@ -11,8 +11,7 @@ import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import { ZodError, z } from 'zod';
 
-// Only 409 or 422 mean DCC explicitly rejected the data, all other errors are non-blocking.
-const DCC_REJECTION_CODES = new Set([409, 422]);
+
 
 const listOperationsQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
@@ -138,10 +137,10 @@ export async function POST(req: NextRequest) {
         operator: session.user.email ?? undefined,
       });
 
-      if (dcc.outcome === 'http_error' && DCC_REJECTION_CODES.has(dcc.httpStatus!)) {
+      if (dcc.outcome === 'http_error' || dcc.outcome === 'network_error') {
         await Promise.allSettled(result.missions.map((m) => deleteOperation(m.pilotMissionId)));
         return NextResponse.json(
-          { success: false, error: 'DCC rejected the mission creation - operation rolled back', dcc },
+          { success: false, error: `DCC rejected the mission creation — ${dcc.message}. Operation rolled back.`, dcc },
           { status: 502 },
         );
       }
@@ -149,7 +148,7 @@ export async function POST(req: NextRequest) {
       logEvent({
         eventType: 'CREATE',
         entityType: 'operation',
-        description: `Created ${result.count} recurring operation(s) '${validated.mission_name}'`,
+        description: `Created ${result.count} recurring operation(s) '${validated.mission_name}'${validated.fk_tool_id ? ` — system #${validated.fk_tool_id}` : ''}${validated.fk_pilot_user_id ? `, pilot #${validated.fk_pilot_user_id}` : ''}${validated.location ? `, location: ${validated.location}` : ''}`,
         userId: session.user.userId,
         userName: session.user.fullname,
         userEmail: session.user.email,
@@ -188,10 +187,10 @@ export async function POST(req: NextRequest) {
       operator: session.user.email ?? undefined,
     });
 
-    if (dcc.outcome === 'http_error' && DCC_REJECTION_CODES.has(dcc.httpStatus!)) {
+    if (dcc.outcome === 'http_error' || dcc.outcome === 'network_error') {
       await deleteOperation(operation.pilot_mission_id);
       return NextResponse.json(
-        { success: false, error: 'DCC rejected the mission creation - operation rolled back', dcc },
+        { success: false, error: `DCC rejected the mission creation — ${dcc.message}. Operation rolled back.`, dcc },
         { status: 502 },
       );
     }
@@ -208,7 +207,7 @@ export async function POST(req: NextRequest) {
     logEvent({
       eventType: 'CREATE',
       entityType: 'operation',
-      description: `Created operation '${validated.mission_name}'`,
+      description: `Created operation '${validated.mission_code}'${validated.mission_name ? ` — ${validated.mission_name}` : ''} (status: ${validated.status_name}${validated.fk_tool_id ? `, system: #${validated.fk_tool_id}` : ''}${validated.fk_pilot_user_id ? `, pilot: #${validated.fk_pilot_user_id}` : ''})`,
       userId: session.user.userId,
       userName: session.user.fullname,
       userEmail: session.user.email,

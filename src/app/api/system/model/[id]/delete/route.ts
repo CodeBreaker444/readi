@@ -17,11 +17,11 @@ export async function POST(
     const result = await deleteModel(session!.user.ownerId, Number(id));
 
     if (result.code === 1) {
+      const modelLabel = result.modelCode ?? result.modelName ?? 'Unknown';
       logEvent({
         eventType: 'DELETE',
         entityType: 'system',
-        entityId: id,
-        description: `Deleted system model #${id}`,
+        description: `Deleted system model '${modelLabel}'${result.modelName && result.modelCode && result.modelName !== result.modelCode ? ` — ${result.modelName}` : ''}`,
         userId: session!.user.userId,
         userName: session!.user.fullname,
         userEmail: session!.user.email,

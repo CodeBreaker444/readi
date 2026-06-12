@@ -5,6 +5,7 @@ import { useTimezone } from '@/components/TimezoneProvider'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { EmergencyResponsePlan } from '@/config/types/erp'
+import { toastWithDcc } from '@/lib/dcc-toast'
 import { cn } from '@/lib/utils'
 import axios from 'axios'
 import {
@@ -431,7 +432,26 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
             toast.success(t('operations.newOperation.toast.createSuccess'))
             onSuccess(); onClose()
         } catch (err: any) {
-            toast.error(err.response?.data?.error || err.message || (isEdit ? t('operations.newOperation.toast.updateError') : t('operations.newOperation.toast.createError')))
+            const data = err.response?.data
+            const fallback = isEdit ? t('operations.newOperation.toast.updateError') : t('operations.newOperation.toast.createError')
+
+            // a readable description from field-level validation errors
+            const fieldErrors: Record<string, string[]> | undefined = data?.errors
+            const fieldDescription = fieldErrors
+                ? Object.entries(fieldErrors)
+                    .filter(([, msgs]) => (msgs as string[]).length > 0)
+                    .map(([field, msgs]) => `${field.replace(/_/g, ' ')}: ${(msgs as string[])[0]}`)
+                    .join('\n')
+                : undefined
+
+            const title = data?.error || err.message || fallback
+
+            toastWithDcc({ title, variant: 'error' }, data?.dcc)
+
+            // showing field errors as a follow-up description toast when validation fails
+            if (fieldDescription) {
+                toast.error(title, { description: fieldDescription, duration: 6000 })
+            }
         } finally {
             setIsSubmitting(false)
         }

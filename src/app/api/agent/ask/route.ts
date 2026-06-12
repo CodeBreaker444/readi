@@ -1,5 +1,8 @@
-import { getUserSession } from "@/lib/auth/server-session";
+import { internalError } from "@/lib/api-error";
 import { Role } from "@/lib/auth/roles";
+import { getUserSession } from "@/lib/auth/server-session";
+import { E } from "@/lib/error-codes";
+import { prisma } from "@/lib/prisma";
 import { checkTokenLimits, recordTokenUsage } from "@/lib/token-tracker";
 import { ROLE_ALLOWED_TABLES } from "@mcp-server/lib/constants";
 import { getGroq } from "@mcp-server/lib/groq";
@@ -7,12 +10,9 @@ import { executeQueryPlan } from "@mcp-server/lib/query-executor";
 import { TABLE_CATALOG } from "@mcp-server/lib/schema-catalog";
 import { ROLE_QUERY_RULES, TABLE_SCHEMA } from "@mcp-server/lib/schema-details";
 import { webSearch } from "@mcp-server/lib/serp";
-import { prisma } from "@/lib/prisma";
 import { getSupabase } from "@mcp-server/lib/supabase";
 import { NextRequest, NextResponse } from "next/server";
 import { GROQ_MODEL } from "../../../../lib/token-limits";
-import { E } from "@/lib/error-codes";
-import { internalError } from "@/lib/api-error";
 
 export const dynamic = "force-dynamic";
 
@@ -43,48 +43,24 @@ async function handleDecommissioned(ownerID: number) {
                 tool: { fk_owner_id: ownerID },
             },
             select: {
-                component_name: true,
-                component_type: true,
-                expiration_date: true,
+                component_id:     true,
+                component_name:   true,
+                component_type:   true,
+                serial_number:    true,
+                expiration_date:  true,
                 component_active: true,
                 tool: {
-                    select: {
-                        tool_id: true,
-                        tool_name: true,
-                        tool_code: true,
-                        fk_owner_id: true,
-                    },
+                    select: { tool_id: true, tool_name: true, tool_code: true, fk_owner_id: true },
                 },
             },
         });
 
-        if (!data || data.length === 0) return null;
+        if (!data.length) return null;
 
-        const bySystem: Record<string, { tool_code: string; tool_name: string; components: any[] }> = {};
-
-        for (const row of data) {
-            const t = row.tool;
-            const key = String(t.tool_id);
-            if (!bySystem[key]) {
-                bySystem[key] = { tool_code: t.tool_code ?? '', tool_name: t.tool_name ?? '', components: [] };
-            }
-            bySystem[key].components.push({
-                name: row.component_name,
-                type: row.component_type,
-                expired: row.expiration_date?.toISOString().split('T')[0],
-            });
-        }
-
-        const summary = Object.values(bySystem)
-            .map(s => {
-                const header = `System: ${s.tool_code} — ${s.tool_name} (DECOMMISSIONED)`;
-                const parts = s.components.map(c => `  • ${c.name} (${c.type ?? 'component'}): expired ${c.expired}`).join('\n');
-                return `${header}\n${parts}`;
-            })
-            .join('\n\n');
-
-        console.log(`[handleDecommissioned] ${data.length} expired component(s) across ${Object.keys(bySystem).length} system(s)`);
-        return { summary, count: data.length, systemCount: Object.keys(bySystem).length };
+        return data.map(c => ({
+            ...c,
+            expiration_date: c.expiration_date?.toISOString().split('T')[0] ?? null,
+        }));
     } catch (e) {
         console.error('[handleDecommissioned] error:', e);
         return null;
@@ -96,12 +72,12 @@ async function handleClassifier(groq: any, question: string, acc: TokenAccumulat
                                 - DATABASE: Facts from a database (missions, tool IDs, alerts, tickets).
                                 - PROCEDURE: Rules, regulations, manuals, checklists, or "audit/compliance" questions.
                                 - WEB_SEARCH: External knowledge, industry news, regulations not in our database (e.g. EASA, FAA, drone laws).
-                                - DECOMMISSIONED: Questions about expired, decommissioned, non-operational, or out-of-service systems or components.
+                                - DECOMMISSIONED: Questions about expired, decommissioned, non-operational, or out-of-service components and systems.
                                 - OTHER: Greeting/General.
 
                                 Rule: If the question asks about "compliance", "audit", "violation", "safe to fly", or "alerts", you MUST include BOTH [DATABASE, PROCEDURE].
                                 Rule: If the question asks about external regulations, news, or industry standards, include [WEB_SEARCH].
-                                Rule: If the question asks about "decommissioned", "expired components", "non-operational systems", "out of service", or "which systems are down", classify as [DECOMMISSIONED].
+                                Rule: If the question asks about "decommissioned", "expired components", "non-operational", "out of service", "which systems are down", or "component expiry", you MUST include [DECOMMISSIONED].
 
                                 Question: "${question}"
                                 Output ONLY as a JSON array.`;
@@ -367,6 +343,10 @@ export async function POST(req: NextRequest) {
             ? rawData.slice(0, MAX_DATA_CHARS) + "\n... [data truncated for length]"
             : rawData;
 
+        const decommissionedSection = decommissionedResult
+            ? `DECOMMISSIONED / EXPIRED COMPONENTS:\n${JSON.stringify(decommissionedResult, null, 2)}`
+            : "No decommissioned component data.";
+
         const synthesizerPrompt = `You are the READI Compliance Auditor. Be CONCISE and DIRECT.
 
                                     USER ROLE: ${user.role}
@@ -381,8 +361,7 @@ export async function POST(req: NextRequest) {
                                     WEB SEARCH RESULTS:
                                     ${webResult || "No web search performed."}
 
-                                    DECOMMISSIONED SYSTEMS:
-                                    ${decommissionedResult?.summary || "No decommissioned systems found."}
+                                    ${decommissionedSection}
 
                                     AUDIT RULES:
                                     1. If a mission flew while an alert was active (compare timestamps), flag it.
@@ -390,13 +369,20 @@ export async function POST(req: NextRequest) {
                                     3. If a drone has an open high-priority maintenance ticket, flag it.
                                     4. Quote specific mission IDs (e.g. MISSION-WIND-AUDIT).
 
+                                    DECOMMISSIONED RULES:
+                                    1. A component is decommissioned when its expiration_date is on or before today's date.
+                                    2. When a component is decommissioned, its parent system (tool) is considered NON-OPERATIONAL.
+                                    3. If decommissioned component data is present, list EACH decommissioned component as a separate line with: component name, component type, serial number (if available), expiration date, and the system (tool name / tool code) it belongs to.
+                                    4. Group by system: list all expired components under their respective system.
+                                    5. If NO decommissioned data is present, state "No decommissioned systems or components found."
+
                                     RESPONSE RULES:
                                     - NEVER start with "To answer your question" or "I have reviewed". Jump straight to the answer.
                                     - For violations: Start with "VIOLATION:" then the finding.
                                     - For non-violations: Just state the answer. Do NOT append "All clear" or any sign-off.
                                     - For data queries: Give the answer directly (e.g. "You completed 8 missions.").
-                                    - For decommissioned queries: List each system with its expired components grouped under it. If no decommissioned systems exist, say "No systems are currently decommissioned."
-                                    - Keep answers under 3 sentences unless listing multiple violations or decommissioned systems.
+                                    - For decommissioned queries: List every expired component grouped by system. Do not summarize — list each one.
+                                    - Keep answers under 3 sentences unless listing multiple violations or decommissioned items.
                                     - Do NOT use emojis.
                                     - Do NOT explain your reasoning process.`;
 
@@ -409,6 +395,31 @@ export async function POST(req: NextRequest) {
 
         acc.add(finalRes.usage);
 
+        const answer = finalRes.choices?.[0]?.message?.content ?? "No response generated.";
+
+        // Generate follow-up question suggestions (non-blocking, best-effort)
+        let followUpQuestions: string[] = [];
+        try {
+            const followUpRes = await groq.chat.completions.create({
+                model: GROQ_MODEL,
+                temperature: 0.3,
+                max_tokens: 100,
+                messages: [{
+                    role: "user",
+                    content: `Suggest 3 short follow-up questions a drone operations user might ask next. Output ONLY a JSON array of strings. Max 8 words each. No quotes around questions.
+Question asked: "${question}"
+Answer given: "${answer.slice(0, 300)}"`,
+                }],
+            });
+            acc.add(followUpRes.usage);
+            const content = followUpRes.choices?.[0]?.message?.content || "[]";
+            const m = content.match(/\[[\s\S]*?\]/);
+            const parsed = m ? JSON.parse(m[0]) : [];
+            followUpQuestions = Array.isArray(parsed) ? parsed.slice(0, 3).map(String) : [];
+        } catch {
+            // fail silently — follow-up questions are optional
+        }
+
         // Record total token usage for this request (fire-and-forget)
         recordTokenUsage({
             user_id: user.userId,
@@ -420,7 +431,8 @@ export async function POST(req: NextRequest) {
         }).catch((e) => console.error("Token record error:", e));
 
         return NextResponse.json({
-            answer: finalRes.choices?.[0]?.message?.content ?? "No response generated.",
+            answer,
+            followUpQuestions,
             debug: {
                 intents,
                 role: user.role,
@@ -429,6 +441,7 @@ export async function POST(req: NextRequest) {
                 dbDebug: dbResult?.debug,
                 hasProcedure: !!procResult,
                 hasWebSearch: !!webResult,
+                decommissionedCount: decommissionedResult?.length ?? 0,
             }
         });
 

@@ -198,7 +198,7 @@ export default function MaintenancePage() {
         });
       } catch { /* skip */ }
 
-      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm' });
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', compress: true });
       const pageW = doc.internal.pageSize.width;
       const pageH = doc.internal.pageSize.height;
       const exportedOn = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });

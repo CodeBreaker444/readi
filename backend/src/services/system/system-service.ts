@@ -1,7 +1,7 @@
-import { Prisma } from '@prisma/client';
-import { prisma } from '@/lib/prisma';
 import { refreshMaintenanceDaysForOwner, refreshMaintenanceDaysForTool } from '@/backend/utils/refresh-maintenance-days';
+import { prisma } from '@/lib/prisma';
 import { buildS3Url, getPresignedDownloadUrl, uploadFileToS3 } from '@/lib/s3Client';
+import { Prisma } from '@prisma/client';
 
 export interface StoredFile {
   filename: string;
@@ -66,30 +66,31 @@ export async function getSystemList(
   const toolsNonOperational = new Set<number>();
 
   if (toolIds.length > 0) {
-    const today = new Date(new Date().toISOString().split('T')[0]);
-    const [missions, openTickets, openComponentTickets, expiredComps] = await Promise.all([
+    const [missions, openTickets, openComponentTickets, expiredComps, flightExpirableComps] = await Promise.all([
+      // Mission stats per tool
       prisma.pilot_mission.findMany({
-        where: { fk_owner_id: ownerId, fk_tool_id: { in: toolIds } },
+        where:  { fk_owner_id: ownerId, fk_tool_id: { in: toolIds } },
         select: { fk_tool_id: true, fk_mission_status_id: true, flight_duration: true, distance_flown: true },
       }),
+      // Tools with open maintenance tickets
       prisma.maintenance_ticket.findMany({
-        where: { fk_tool_id: { in: toolIds }, ticket_status: { not: 'CLOSED' } },
+        where:  { fk_tool_id: { in: toolIds }, ticket_status: { not: 'CLOSED' } },
         select: { fk_tool_id: true },
       }),
+      // Tools whose components are in maintenance
       prisma.tool_component.findMany({
-        where: {
-          fk_tool_id: { in: toolIds },
-          component_metadata: { path: ['component_status'], equals: 'MAINTENANCE' },
-        },
+        where:  { fk_tool_id: { in: toolIds }, component_metadata: { path: ['component_status'], equals: 'MAINTENANCE' } },
         select: { fk_tool_id: true },
       }),
+      // Tools with at least one date-expired component
       prisma.tool_component.findMany({
-        where: {
-          fk_tool_id: { in: toolIds },
-          component_active: 'Y',
-          expiration_date: { lte: today },
-        },
+        where:  { fk_tool_id: { in: toolIds }, component_active: 'Y', expiration_date: { lte: new Date(), not: null } },
         select: { fk_tool_id: true, component_id: true, component_name: true, expiration_date: true },
+      }),
+      // Tools with components that may be flight-expired
+      prisma.tool_component.findMany({
+        where:  { fk_tool_id: { in: toolIds }, component_active: 'Y', expiry_type: { in: ['FLIGHTS', 'FLIGHT_HOURS', 'MIXED'] } },
+        select: { fk_tool_id: true, expiration_flights: true, current_maintenance_flights: true, expiration_flight_hours: true, current_usage_hours: true },
       }),
     ]);
 
@@ -103,22 +104,31 @@ export async function getSystemList(
       missionData[m.fk_tool_id].distance += Number(m.distance_flown) || 0;
     });
 
-    openTickets.forEach((t) => { if (t.fk_tool_id) toolsInMaintenance.add(t.fk_tool_id); });
-    openComponentTickets.forEach((c) => toolsInMaintenance.add(c.fk_tool_id));
-    expiredComps.forEach((c) => toolsNonOperational.add(c.fk_tool_id));
+    openTickets.forEach((t) => { if (t.fk_tool_id != null) toolsInMaintenance.add(t.fk_tool_id); });
+    openComponentTickets.forEach((c) => { if (c.fk_tool_id != null) toolsInMaintenance.add(c.fk_tool_id); });
+    expiredComps.forEach((c) => { if (c.fk_tool_id != null) toolsNonOperational.add(c.fk_tool_id); });
+    flightExpirableComps
+      .filter((c) =>
+        (c.expiration_flights != null && Number(c.current_maintenance_flights) >= Number(c.expiration_flights)) ||
+        (c.expiration_flight_hours != null && Number(c.current_usage_hours) >= Number(c.expiration_flight_hours))
+      )
+      .forEach((c) => { if (c.fk_tool_id != null) toolsNonOperational.add(c.fk_tool_id); });
 
+    // Fire-and-forget expiration notifications for managers
     if (expiredComps.length > 0) {
       const { sendExpirationNotifications } = await import('@/backend/services/system/expiration-notification');
-      const expiredItems = expiredComps.map((c) => {
-        const tool = data.find((t) => t.tool_id === c.fk_tool_id);
-        return {
-          tool_component_id: c.component_id,
-          component_name: c.component_name ?? '',
-          tool_id: c.fk_tool_id,
-          tool_code: tool?.tool_code ?? String(c.fk_tool_id),
-          expiration_date: c.expiration_date?.toISOString().slice(0, 10) ?? '',
-        };
-      });
+      const expiredItems = expiredComps
+        .filter((c) => c.fk_tool_id != null)
+        .map((c) => {
+          const tool = data.find((t) => t.tool_id === c.fk_tool_id);
+          return {
+            tool_component_id: c.component_id,
+            component_name:    c.component_name,
+            tool_id:           c.fk_tool_id as number,
+            tool_code:         tool?.tool_code ?? String(c.fk_tool_id),
+            expiration_date:   c.expiration_date?.toISOString() ?? '',
+          };
+        });
       sendExpirationNotifications(ownerId, expiredItems).catch(() => {});
     }
   }
@@ -166,6 +176,7 @@ export async function getSystemList(
           tool_latitude: (item.tool_metadata as any)?.latitude,
           tool_longitude: (item.tool_metadata as any)?.longitude,
           tool_status: toolsNonOperational.has(item.tool_id) ? 'NOT_OPERATIONAL'
+            : (item.tool_metadata as any)?.status === 'DISMISSED' ? 'DISMISSED'
             : toolsInMaintenance.has(item.tool_id) ? 'MAINTENANCE'
             : ((item.tool_metadata as any)?.status || 'OPERATIONAL'),
           tot_mission: missionData[item.tool_id]?.count || 0,
@@ -306,8 +317,8 @@ export async function getOrCreateWarehouseTool(ownerId: number): Promise<number>
 export async function deleteSystem(ownerId: number, toolId: number) {
   const tool = await prisma.tool.findFirst({
     where: { tool_id: toolId, fk_owner_id: ownerId },
-    select: { tool_id: true, tool_metadata: true },
-  }) as { tool_id: number; tool_metadata: any } | null;
+    select: { tool_id: true, tool_code: true, tool_metadata: true },
+  });
 
   if (!tool) throw new Error('System not found or unauthorized');
 
@@ -352,7 +363,7 @@ export async function deleteSystem(ownerId: number, toolId: number) {
 
   await prisma.tool.delete({ where: { tool_id: toolId } });
 
-  return { code: 1, message: 'System permanently deleted. All components moved to warehouse.' };
+  return { code: 1, message: 'System permanently deleted. All components moved to warehouse.', toolCode: tool.tool_code };
 }
 
 
@@ -409,6 +420,11 @@ export async function getModelList(ownerId: number) {
 
 
 export async function deleteModel(ownerId: number, modelId: number) {
+  const modelRow = await prisma.tool_model.findUnique({
+    where: { model_id: modelId },
+    select: { model_code: true, model_name: true },
+  });
+
   const ownerTools = await prisma.tool.findMany({
     where: { fk_owner_id: ownerId },
     select: { tool_id: true },
@@ -445,7 +461,7 @@ export async function deleteModel(ownerId: number, modelId: number) {
 
   await prisma.tool_model.delete({ where: { model_id: modelId } });
 
-  return { code: 1, message: 'Model deleted successfully' };
+  return { code: 1, message: 'Model deleted successfully', modelCode: modelRow?.model_code ?? null, modelName: modelRow?.model_name ?? null };
 }
 
 
@@ -478,21 +494,36 @@ export async function deleteComponent(ownerId: number, componentId: number, forc
 
   await prisma.tool_component.delete({ where: { component_id: componentId } });
 
-  return { code: 1, message: 'Component deleted successfully' };
+  return {
+    code: 1,
+    message: 'Component deleted successfully',
+    componentCode: comp.component_code ?? null,
+    componentName: comp.component_name ?? null,
+    componentType: comp.component_type ?? null,
+  };
+}
+
+
+export async function getToolCode(toolId: number, ownerId: number): Promise<string | null> {
+  const data = await prisma.tool.findFirst({
+    where: { tool_id: toolId, fk_owner_id: ownerId },
+    select: { tool_code: true },
+  });
+  return data?.tool_code ?? null;
 }
 
 
 export async function detachComponent(ownerId: number, componentId: number) {
   const comp = await prisma.tool_component.findUnique({
     where: { component_id: componentId },
-    select: { component_id: true, fk_tool_id: true, component_metadata: true },
+    select: { component_id: true, fk_tool_id: true, component_code: true, component_name: true, component_type: true, component_metadata: true },
   });
 
   if (!comp) throw new Error('Component not found');
 
   const tool = await prisma.tool.findFirst({
-    where: { tool_id: comp.fk_tool_id, fk_owner_id: ownerId },
-    select: { tool_id: true },
+    where: { tool_id: comp.fk_tool_id ?? undefined, fk_owner_id: ownerId },
+    select: { tool_id: true, tool_code: true, tool_metadata: true },
   });
 
   if (!tool) throw new Error('Component not found or unauthorized');
@@ -500,6 +531,7 @@ export async function detachComponent(ownerId: number, componentId: number) {
   const updatedMetadata = {
     ...(comp.component_metadata as Record<string, unknown> ?? {}),
     system_detached: true,
+    component_status: 'DISMISSED',
   };
 
   await prisma.tool_component.update({
@@ -507,7 +539,46 @@ export async function detachComponent(ownerId: number, componentId: number) {
     data: { component_metadata: updatedMetadata as Prisma.InputJsonValue },
   });
 
-  return { code: 1, message: 'Component detached from system successfully' };
+  // Cascade: also detach all children that reference this component as parent
+  const siblings = await prisma.tool_component.findMany({
+    where: { fk_tool_id: comp.fk_tool_id ?? undefined, component_id: { not: componentId } },
+    select: { component_id: true, component_metadata: true },
+  });
+
+  const children = siblings.filter(
+    (c) => (c.component_metadata as any)?.fk_parent_component_id === componentId,
+  );
+
+  for (const child of children) {
+    const childMeta = {
+      ...(child.component_metadata as Record<string, unknown> ?? {}),
+      system_detached: true,
+      component_status: 'DISMISSED',
+    };
+    await prisma.tool_component.update({
+      where: { component_id: child.component_id },
+      data: { component_metadata: childMeta as Prisma.InputJsonValue },
+    });
+  }
+
+  // Set the system itself to DISMISSED
+  const toolMeta = (tool.tool_metadata as Record<string, unknown>) ?? {};
+  if (toolMeta.status !== 'DISMISSED') {
+    await prisma.tool.update({
+      where: { tool_id: tool.tool_id },
+      data: { tool_metadata: { ...toolMeta, status: 'DISMISSED' } as Prisma.InputJsonValue },
+    });
+  }
+
+  return {
+    code: 1,
+    message: 'Component detached from system successfully',
+    componentCode: comp.component_code ?? null,
+    componentName: comp.component_name ?? null,
+    componentType: comp.component_type ?? null,
+    toolCode: tool.tool_code ?? null,
+    childrenDetached: children.length,
+  };
 }
 
 
@@ -574,6 +645,36 @@ export async function getComponentList(ownerId: number, toolId?: number) {
     await refreshMaintenanceDaysForOwner(ownerId);
   }
 
+  const selectFields = `
+    component_id,
+    fk_tool_id,
+    component_code,
+    component_name,
+    component_type,
+    component_description,
+    serial_number,
+    component_active,
+    installation_date,
+    component_metadata,
+    maintenance_cycle,
+    maintenance_cycle_hour,
+    maintenance_cycle_day,
+    maintenance_cycle_flight,
+    current_usage_hours,
+    current_maintenance_hours,
+    current_maintenance_days,
+    current_maintenance_flights,
+    last_maintenance_date,
+    dcc_drone_id,
+    drone_registration_code,
+    drc_synced_at,
+    expiration_date,
+    expiry_type,
+    expiration_flights,
+    expiration_flight_hours
+  `;
+
+  // Specific system view: non-detached components for that tool only
   if (toolId && toolId !== 0) {
     const ownerTool = await prisma.tool.findFirst({
       where: { fk_owner_id: ownerId, tool_id: toolId },
@@ -614,60 +715,72 @@ function buildComponentListResult(data: any[]) {
     message: 'Success',
     dataRows: data.length,
     data: data.map((item) => {
-      const expirationStr = item.expiration_date instanceof Date
-        ? item.expiration_date.toISOString().slice(0, 10)
-        : (item.expiration_date ?? null);
-      const isExpired = expirationStr && expirationStr <= today;
-      const effectiveStatus = isExpired
+      const expiryType: string = item.expiry_type || 'EXPIRATION_DATE';
+      const isDateExpired = item.expiration_date && item.expiration_date <= today;
+      const isFlightExpired =
+        item.expiration_flights != null &&
+        Number(item.current_maintenance_flights) >= item.expiration_flights;
+      const isFlightHoursExpired =
+        item.expiration_flight_hours != null &&
+        Number(item.current_usage_hours) >= Number(item.expiration_flight_hours);
+      const isExpired =
+        expiryType === 'FLIGHTS'
+          ? isFlightExpired
+          : expiryType === 'FLIGHT_HOURS'
+          ? isFlightHoursExpired
+          : expiryType === 'MIXED'
+          ? isDateExpired || isFlightExpired || isFlightHoursExpired
+          : isDateExpired;
+      const storedStatus = item.component_metadata?.component_status;
+      const effectiveStatus = storedStatus === 'DISMISSED'
+        ? 'DISMISSED'
+        : isExpired
         ? 'DECOMMISSIONED'
-        : ((item.component_metadata as any)?.component_status || 'OPERATIONAL');
+        : (storedStatus || 'OPERATIONAL');
       return {
-        tool_component_id: item.component_id,
-        fk_tool_id: item.fk_tool_id,
-        component_active: item.component_active,
-        system_detached: (item.component_metadata as any)?.system_detached === true,
-        component_type: item.component_type,
-        component_code: item.component_code,
-        component_name: item.component_name,
-        component_sn: item.serial_number,
-        component_desc: item.component_description,
-        component_status: effectiveStatus,
-        component_category: (item.component_metadata as any)?.component_category || 'STANDARD',
-        component_activation_date: item.installation_date instanceof Date
-          ? item.installation_date.toISOString().slice(0, 10)
-          : (item.installation_date ?? null),
-        component_purchase_date: (item.component_metadata as any)?.component_purchase_date || null,
-        component_vendor: (item.component_metadata as any)?.component_vendor || '',
-        component_guarantee_day: (item.component_metadata as any)?.component_guarantee_day || 0,
-        fk_client_id: (item.component_metadata as any)?.fk_client_id || null,
-        fk_tool_model_id: (item.component_metadata as any)?.fk_tool_model_id || null,
-        fk_parent_component_id: (item.component_metadata as any)?.fk_parent_component_id ?? null,
-        cc_platform: (item.component_metadata as any)?.cc_platform || '',
-        gcs_type: (item.component_metadata as any)?.gcs_type || '',
-        factory_serie: item.component_code,
-        factory_model: item.component_name,
-        maintenance_cycle: item.maintenance_cycle || '',
-        maintenance_cycle_hour: item.maintenance_cycle_hour ?? '',
-        maintenance_cycle_day: item.maintenance_cycle_day ?? '',
-        maintenance_cycle_flight: item.maintenance_cycle_flight ?? '',
-        battery_cycle_ratio: (item.component_metadata as any)?.battery_cycle_ratio ?? null,
-        current_usage_hours: Number(item.current_usage_hours) || 0,
-        current_maintenance_hours: Number(item.current_maintenance_hours) || 0,
-        current_maintenance_days: Number(item.current_maintenance_days) || 0,
-        current_maintenance_flights: Number(item.current_maintenance_flights) || 0,
-        last_maintenance_date: item.last_maintenance_date instanceof Date
-          ? item.last_maintenance_date.toISOString()
-          : (item.last_maintenance_date ?? null),
-        dcc_drone_id: item.dcc_drone_id ?? null,
-        drone_registration_code: item.drone_registration_code ?? null,
-        drc_synced_at: item.drc_synced_at instanceof Date
-          ? item.drc_synced_at.toISOString()
-          : (item.drc_synced_at ?? null),
-        latitude: (item.component_metadata as any)?.latitude ?? null,
-        longitude: (item.component_metadata as any)?.longitude ?? null,
-        drone_classes: (item.component_metadata as any)?.drone_classes ?? null,
-        is_primary: (item.component_metadata as any)?.is_primary ?? false,
-        expiration_date: expirationStr,
+      tool_component_id: item.component_id,
+      fk_tool_id: item.fk_tool_id,
+      component_active: item.component_active,
+      system_detached: item.component_metadata?.system_detached === true,
+      component_type: item.component_type,
+      component_code: item.component_code,
+      component_name: item.component_name,
+      component_sn: item.serial_number,
+      component_desc: item.component_description,
+      component_status: effectiveStatus,
+      component_category: item.component_metadata?.component_category || 'STANDARD',
+      component_activation_date: item.installation_date,
+      component_purchase_date: item.component_metadata?.component_purchase_date || null,
+      component_vendor: item.component_metadata?.component_vendor || '',
+      component_guarantee_day: item.component_metadata?.component_guarantee_day || 0,
+      fk_client_id: item.component_metadata?.fk_client_id || null,
+      fk_tool_model_id: item.component_metadata?.fk_tool_model_id || null,
+      fk_parent_component_id: item.component_metadata?.fk_parent_component_id ?? null,
+      cc_platform: item.component_metadata?.cc_platform || '',
+      gcs_type: item.component_metadata?.gcs_type || '',
+      factory_serie: item.component_code,
+      factory_model: item.component_name,
+      maintenance_cycle: item.maintenance_cycle || '',
+      maintenance_cycle_hour: item.maintenance_cycle_hour ?? '',
+      maintenance_cycle_day: item.maintenance_cycle_day ?? '',
+      maintenance_cycle_flight: item.maintenance_cycle_flight ?? '',
+      battery_cycle_ratio: item.component_metadata?.battery_cycle_ratio ?? null,
+      current_usage_hours: Number(item.current_usage_hours) || 0,
+      current_maintenance_hours: Number(item.current_maintenance_hours) || 0,
+      current_maintenance_days: Number(item.current_maintenance_days) || 0,
+      current_maintenance_flights: Number(item.current_maintenance_flights) || 0,
+      last_maintenance_date: item.last_maintenance_date || null,
+      dcc_drone_id: item.dcc_drone_id ?? null,
+      drone_registration_code: item.drone_registration_code ?? null,
+      drc_synced_at: item.drc_synced_at ?? null,
+      latitude: item.component_metadata?.latitude ?? null,
+      longitude: item.component_metadata?.longitude ?? null,
+      drone_classes: item.component_metadata?.drone_classes ?? null,
+      is_primary: item.component_metadata?.is_primary ?? false,
+      expiration_date: item.expiration_date || null,
+      expiry_type: expiryType,
+      expiration_flights: item.expiration_flights ?? null,
+      expiration_flight_hours: item.expiration_flight_hours != null ? Number(item.expiration_flight_hours) : null,
       };
     }),
   };
@@ -739,13 +852,31 @@ export async function addComponent(componentData: any) {
       current_maintenance_flights: componentData.initial_maintenance_flights ?? 0,
       dcc_drone_id: componentData.dcc_drone_id || null,
       drone_registration_code: componentData.drone_registration_code || null,
-      expiration_date: componentData.expiration_date ? new Date(componentData.expiration_date) : null,
+      expiration_date: componentData.expiration_date || null,
+      expiry_type: componentData.expiry_type || 'EXPIRATION_DATE',
+      expiration_flights: componentData.expiration_flights ?? null,
+      expiration_flight_hours: componentData.expiration_flight_hours ?? null,
       component_metadata: {
         cc_platform: componentData.cc_platform || null,
         gcs_type: componentData.gcs_type || null,
         component_status: (() => {
           const today = new Date().toISOString().split('T')[0];
-          const isExpired = componentData.expiration_date && componentData.expiration_date <= today;
+          const expiryType: string = componentData.expiry_type || 'EXPIRATION_DATE';
+          const isDateExpired = componentData.expiration_date && componentData.expiration_date <= today;
+          const isFlightExpired =
+            componentData.expiration_flights != null &&
+            (componentData.initial_maintenance_flights ?? 0) >= componentData.expiration_flights;
+          const isFlightHoursExpired =
+            componentData.expiration_flight_hours != null &&
+            (componentData.initial_usage_hours ?? 0) >= componentData.expiration_flight_hours;
+          const isExpired =
+            expiryType === 'FLIGHTS'
+              ? isFlightExpired
+              : expiryType === 'FLIGHT_HOURS'
+              ? isFlightHoursExpired
+              : expiryType === 'MIXED'
+              ? isDateExpired || isFlightExpired || isFlightHoursExpired
+              : isDateExpired;
           return isExpired ? 'DECOMMISSIONED' : (componentData.component_status || 'OPERATIONAL');
         })(),
         component_category: componentData.component_category || 'STANDARD',
@@ -795,7 +926,7 @@ export async function updateComponent(componentId: number, componentData: any) {
 
   const existing = await prisma.tool_component.findUnique({
     where: { component_id: componentId },
-    select: { component_metadata: true, fk_tool_id: true },
+    select: { component_metadata: true, fk_tool_id: true, current_usage_hours: true },
   });
 
   const existingMeta = (existing?.component_metadata as Record<string, unknown>) || {};
@@ -828,7 +959,10 @@ export async function updateComponent(componentId: number, componentData: any) {
       installation_date: componentData.component_activation_date ? new Date(componentData.component_activation_date) : null,
       dcc_drone_id: componentData.dcc_drone_id ?? null,
       drone_registration_code: componentData.drone_registration_code || null,
-      expiration_date: componentData.expiration_date ? new Date(componentData.expiration_date) : null,
+      expiration_date: componentData.expiration_date || null,
+      expiry_type: componentData.expiry_type || 'EXPIRATION_DATE',
+      expiration_flights: componentData.expiration_flights ?? null,
+      expiration_flight_hours: componentData.expiration_flight_hours ?? null,
       maintenance_cycle: componentData.maintenance_cycle || null,
       maintenance_cycle_hour: componentData.maintenance_cycle_hour ?? null,
       maintenance_cycle_day: componentData.maintenance_cycle_day ?? null,
@@ -842,7 +976,24 @@ export async function updateComponent(componentId: number, componentData: any) {
         gcs_type: componentData.gcs_type || null,
         component_status: (() => {
           const today = new Date().toISOString().split('T')[0];
-          const isExpired = componentData.expiration_date && componentData.expiration_date <= today;
+          const expiryType: string = componentData.expiry_type || 'EXPIRATION_DATE';
+          const isDateExpired = componentData.expiration_date && componentData.expiration_date <= today;
+          const currentFlights = componentData.initial_maintenance_flights ?? Number((existing?.component_metadata as any)?.current_maintenance_flights ?? 0);
+          const currentHours = componentData.initial_usage_hours ?? Number(existing?.current_usage_hours ?? 0);
+          const isFlightExpired =
+            componentData.expiration_flights != null &&
+            currentFlights >= componentData.expiration_flights;
+          const isFlightHoursExpired =
+            componentData.expiration_flight_hours != null &&
+            currentHours >= componentData.expiration_flight_hours;
+          const isExpired =
+            expiryType === 'FLIGHTS'
+              ? isFlightExpired
+              : expiryType === 'FLIGHT_HOURS'
+              ? isFlightHoursExpired
+              : expiryType === 'MIXED'
+              ? isDateExpired || isFlightExpired || isFlightHoursExpired
+              : isDateExpired;
           return isExpired ? 'DECOMMISSIONED' : (componentData.component_status || 'OPERATIONAL');
         })(),
         component_category: componentData.component_category || 'STANDARD',

@@ -6,43 +6,42 @@ description: "Quick reference for every major table in the platform database."
 | Table | What it stores | Primary key |
 |---|---|---|
 | `tool` | Drones and equipment | `tool_id` |
-| `tool_status` | Organisation-defined status codes for tools | `status_id` |
-| `tool_component` | Individual drone parts (battery, motor, sensor) with expiry dates | `component_id` |
-| `tool_maintenance` | Maintenance records (scheduled/completed) | `maintenance_id` |
-| `maintenance_ticket` | Issue tickets raised against tools | `ticket_id` |
-| `maintenance_ticket_event` | Timeline of updates on a ticket | `event_id` |
+| `tool_status` | Status codes for tools | `status_id` |
+| `tool_component` | Drone parts with usage hours and expiry dates | `component_id` |
+| `tool_maintenance` | Maintenance records | `maintenance_id` |
+| `maintenance_ticket` | Issue tickets against tools | `ticket_id` |
+| `maintenance_ticket_event` | Timeline of ticket updates | `event_id` |
 | `maintenance_ticket_item` | Parts consumed during a ticket | `item_id` |
 | `pilot_mission` | Individual flight events | `pilot_mission_id` |
 | `pilot_mission_status` | Org-defined mission status codes | `status_id` |
-| `pilot_mission_result` | Data/results collected from completed missions | `result_id` |
+| `pilot_mission_result` | Data collected from completed missions | `result_id` |
 | `planning` | Flight plans | `planning_id` |
-| `planning_logbook` | Waypoints and flight parameters per plan | `logbook_id` |
+| `planning_logbook` | Waypoints and flight parameters | `logbook_id` |
 | `planning_test_logbook` | Test/rehearsal flight records | `test_id` |
 | `evaluation` | Pre-operation assessments | `evaluation_id` |
-| `evaluation_action` | Tasks within an evaluation (checklist results in JSON) | `action_id` |
+| `evaluation_action` | Tasks within an evaluation | `action_id` |
 | `checklist` | Reusable checklist templates | `checklist_id` |
 | `pilot_declaration` | Pilot pre/post-flight declarations | `declaration_id` |
-| `public_users` | All platform users (pilots, managers, staff) | `user_id` |
-| `users_profile` | Extended pilot profiles (certs, skills, DOB) | `profile_id` |
-| `user_qualification` | Individual pilot qualifications with expiry | `qualification_id` |
+| `public_users` | All platform users | `user_id` |
+| `users_profile` | Extended pilot profiles | `profile_id` |
+| `user_qualification` | Pilot qualifications with expiry | `qualification_id` |
 | `user_authorization_keys` | Encrypted key pairs for Authorization PIN | `id` (UUID) |
-| `transaction_signs` | Signed audit trail of mission status changes | `id` (UUID) |
+| `transaction_signs` | Signed audit trail of status changes | `id` (UUID) |
 | `training` | Training course definitions | `training_id` |
-| `training_attendance` | Attendance and certification records per user per course | `attendance_id` |
-| `safety_report` | Incident, hazard, and observation reports | `report_id` |
-| `safety_action` | Corrective actions following safety reports | `action_id` |
-| `audit` | Audit records (internal/external/surveillance) | `audit_id` |
-| `audit_finding` | Individual findings from audits | `finding_id` |
+| `training_attendance` | Attendance and certification records | `attendance_id` |
+| `safety_report` | Incident, hazard, observation reports | `report_id` |
+| `safety_action` | Corrective actions after safety reports | `action_id` |
+| `audit` | Audit records | `audit_id` |
+| `audit_finding` | Individual audit findings | `finding_id` |
 | `compliance_requirement` | Regulatory compliance items | `requirement_id` |
 | `compliance_evidence` | Documents proving compliance | `evidence_id` |
 | `compliance_status_log` | History of compliance status changes | `log_id` |
-| `spi_kpi` | KPI measurements (actual vs target) | `kpi_id` |
-| `spi_kpi_definition` | KPI definitions and measurement rules | `definition_id` |
-| `spi_kpi_log` | Historical KPI value changes | `log_id` |
+| `spi_kpi` | KPI measurements vs targets | `kpi_id` |
+| `spi_kpi_definition` | KPI definitions | `definition_id` |
 | `alert_log` | System and weather alerts | `alert_id` |
-| `notification` | In-app notifications sent to users | `notification_id` |
+| `notification` | In-app notifications | `notification_id` |
 | `calendar_shift` | Crew shift schedules | `shift_id` |
-| `luc_document` | LUC / regulatory licence documents with expiry | `document_id` |
-| `client` | Client and customer records | `client_id` |
+| `luc_document` | LUC/regulatory documents with expiry | `document_id` |
+| `client` | Client records | `client_id` |
 | `repository_file` | Uploaded operational documents | `file_id` |
 | `ai_token_usage` | Token consumption per agent request | `usage_id` |

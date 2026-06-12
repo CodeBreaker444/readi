@@ -3,15 +3,16 @@ title: "Systems and Maintenance"
 description: "Asset inventory, component management, and maintenance ticket workflows."
 ---
 
-Systems and Maintenance covers the full lifecycle of drones and equipment.
-
 ## Main capabilities
 
 - System and component inventory management
 - Component expiry tracking — expired components push a system to `NOT_OPERATIONAL`
-- Maintenance dashboard showing open tickets and upcoming scheduled work
-- Maintenance ticket lifecycle: `open → in_progress → resolved → closed`
-- System map for location and context visualisation
+- Maintenance dashboard and ticket lifecycle: `open → in_progress → resolved → closed`
+- System map for location visualisation
+
+## Key logic
+
+See [System Status Rules](/platform-rules/system-status-rules) for how `OPERATIONAL / MAINTENANCE / NOT_OPERATIONAL` is computed.
 
 ## Primary app routes
 
@@ -19,7 +20,3 @@ Systems and Maintenance covers the full lifecycle of drones and equipment.
 - `/systems/map`
 - `/systems/maintenance-dashboard`
 - `/systems/maintenance-tickets`
-
-## Key logic
-
-See [System Status Rules](/platform-rules/system-status-rules) for how `OPERATIONAL / MAINTENANCE / NOT_OPERATIONAL` is computed from components and tickets.

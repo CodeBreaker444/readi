@@ -15,13 +15,11 @@ description: "All platform roles, their full names, and primary responsibilities
 | **DC** | Data Controller | User management, permissions, data governance |
 | **SLA** | SLA Manager | Service-level tracking, client performance metrics |
 | **ADMIN** | Platform Administrator | Full access; impersonates OPM for AI agent queries |
-| **SUPERADMIN** | Internal / Anthropic | Blocked from AI agent entirely; platform-level admin |
+| **SUPERADMIN** | Internal | Blocked from AI agent entirely |
 
-## Permission layers
-
-Beyond the role, two boolean flags add further granularity:
+## Permission flags
 
 | Flag | Effect |
 |---|---|
-| `is_viewer` | User can view data but cannot create or modify records |
-| `is_manager` | User has elevated permissions within their role scope |
+| `is_viewer` | Can view data but not create or modify |
+| `is_manager` | Elevated permissions within their role scope |

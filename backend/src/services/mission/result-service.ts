@@ -61,12 +61,22 @@ export async function addMissionResult(ownerId: number, resultData: {
 }
 
 export async function deleteMissionResult(ownerId: number, resultId: number) {
-  await prisma.pilot_mission_result_type.updateMany({
-    where: { result_type_id: resultId, fk_owner_id: ownerId },
-    data: { is_active: false },
+  const row = await prisma.pilot_mission_result_type.findFirst({
+    where:  { result_type_id: resultId, fk_owner_id: ownerId },
+    select: { result_type_code: true, result_type_desc: true },
   });
 
-  return { code: 1, message: 'Mission result deleted successfully' };
+  await prisma.pilot_mission_result_type.update({
+    where: { result_type_id: resultId },
+    data:  { is_active: false },
+  });
+
+  return {
+    code: 1,
+    message: 'Mission result deleted successfully',
+    resultCode: row?.result_type_code ?? null,
+    resultDesc: row?.result_type_desc ?? null,
+  };
 }
 
 export async function updateMissionResult(ownerId: number, resultId: number, resultData: {

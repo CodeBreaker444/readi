@@ -7,7 +7,6 @@
     "light": "#3f83f8",
     "dark": "#1e40af"
   },
-  "favicon": "/favicon.ico",
   "navigation": {
     "groups": [
       {
@@ -75,8 +74,9 @@
     ]
   },
   "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
+    "light": "/public/logo/light.png",
+    "dark": "/public/logo/dark.png",
+    "href": "https://readi.theun1t.com"
   },
   "navbar": {
     "primary": {

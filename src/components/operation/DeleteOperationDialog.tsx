@@ -18,6 +18,7 @@ import { Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+import { toastWithDcc } from '@/lib/dcc-toast'
 
 interface DeleteOperationDialogProps {
     operation: OperationItem | null
@@ -51,8 +52,12 @@ export function DeleteOperationDialog({
             toast.success(t('operations.table.toast.deleteSuccess', { count: 1 }))
             onSuccess(operation.pilot_mission_id)
             onClose()
-        } catch {
-            toast.error(t('operations.table.toast.deleteError'))
+        } catch (err: any) {
+            const data = err.response?.data
+            toastWithDcc(
+                { title: data?.error || t('operations.table.toast.deleteError'), variant: 'error' },
+                data?.dcc,
+            )
         } finally {
             setIsDeleting(false)
         }

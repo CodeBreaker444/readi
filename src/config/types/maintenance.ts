@@ -170,6 +170,7 @@ export interface DroneOption {
 
 export interface ComponentOption {
   tool_component_id: number;
+  component_code: string;
   component_type: string;
   component_sn: string;
 }

@@ -3,13 +3,13 @@ import { notifyDccAcceptance } from '@/backend/services/mission/dcc-callback-ser
 import { notifyPilotAssignment } from '@/backend/services/notification/notification-service';
 import { deleteOperation, getOperation, updateOperation } from '@/backend/services/operation/operation-service';
 import { UpdateOperationSchema } from '@/config/types/operation';
-import { internalError, notFound, zodError } from '@/lib/api-error';
+import { apiError, dbError, internalError, notFound, zodError } from '@/lib/api-error';
 import { requirePermission } from '@/lib/auth/api-auth';
 import { getUserSession } from '@/lib/auth/server-session';
 import { E } from '@/lib/error-codes';
 import type { DccCallbackResult } from '@/types/dcc-callback';
 import { NextRequest, NextResponse } from 'next/server';
-import { ZodError, z } from 'zod';
+import { z } from 'zod';
 
 const flexibleDatetime = z.string().refine(
   (val) => !isNaN(Date.parse(val)),
@@ -66,10 +66,13 @@ export async function PUT(req: NextRequest, { params }: Params) {
     if (error) return error;
 
     const id = parseInt((await params).id, 10);
-    if (isNaN(id)) return zodError(E.VL002, { flatten: () => ({ fieldErrors: {} }) });
+    if (isNaN(id)) return apiError(E.VL002, 400);
 
     const body = await req.json();
-    const validated = updateOperationSchema.parse(body) as UpdateOperationSchema;
+    const parsed = updateOperationSchema.safeParse(body);
+    if (!parsed.success) return zodError(E.VL011, parsed.error);
+
+    const validated = parsed.data as UpdateOperationSchema;
     const updated = await updateOperation(id, validated);
 
     logEvent({
@@ -84,26 +87,33 @@ export async function PUT(req: NextRequest, { params }: Params) {
       ownerId: session!.user.ownerId,
     });
 
+    // Non-fatal: notification failure must not roll back a successful save
     if (validated.fk_pilot_user_id) {
-      await notifyPilotAssignment({
+      notifyPilotAssignment({
         pilotUserId: validated.fk_pilot_user_id,
         missionId:   id,
         missionCode: (updated as any).mission_code ?? `#${id}`,
         fromUserId:  session!.user.userId,
-      });
+      }).catch((notifyErr) => console.error('[operation/update] pilot notification failed:', notifyErr));
     }
 
-    // If a drone was just assigned to a mission that has a DCC planning link,
-    // fire DCC acceptance now (it was skipped earlier when the drone wasn't set yet).
     let dcc: DccCallbackResult | undefined;
     const planningId = (updated as any)?.fk_planning_id ?? validated.fk_planning_id;
     if (validated.fk_tool_id && planningId) {
-      dcc = await notifyDccAcceptance(session!.user.ownerId, planningId);
+      try {
+        dcc = await notifyDccAcceptance(session!.user.ownerId, planningId);
+      } catch (dccErr) {
+        console.error('[operation/update] DCC callback failed:', dccErr);
+      }
     }
 
     return NextResponse.json({ ...updated, ...(dcc ? { dcc } : {}) });
-  } catch (err) {
-    if (err instanceof ZodError) return zodError(E.VL011, err);
+  } catch (err: any) {
+    const msg = err instanceof Error ? err.message : '';
+    if (msg === 'OPERATION_NOT_FOUND') return notFound(E.NF004);
+    const pgCode: string | undefined = err?.code;
+    if (pgCode === '23505') return apiError({ code: 'DB005', category: 'Database', message: 'Mission code is already in use by another operation', detail: 'Unique constraint violation on pilot_mission.mission_code during UPDATE.' }, 409);
+    if (pgCode === '23503') return dbError(E.DB003, err);
     return internalError(E.SV001, err);
   }
 }
@@ -114,6 +124,7 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
     if (isNaN(id)) return zodError(E.VL002, { flatten: () => ({ fieldErrors: {} }) });
 
     const session = await getUserSession();
+    const opInfo = await getOperation(id);
     await deleteOperation(id);
 
     if (session) {
@@ -121,7 +132,7 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
         eventType: 'DELETE',
         entityType: 'operation',
         entityId: id,
-        description: `Deleted operation #${id}`,
+        description: `Deleted operation '${opInfo?.mission_code ?? `#${id}`}'${opInfo?.mission_name ? ` — ${opInfo.mission_name}` : ''} (ID ${id})`,
         userId: session.user.userId,
         userName: session.user.fullname,
         userEmail: session.user.email,

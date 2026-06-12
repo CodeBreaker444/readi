@@ -1,8 +1,8 @@
-import { prisma } from '@/lib/prisma';
+import { prisma } from "@/lib/prisma";
+import { revalidateTag, unstable_cache } from 'next/cache';
 import 'server-only';
 
-// Roles that carry the view_drone_atc permission
-const DRONE_ATC_ROLES = ['SUPERADMIN', 'ADMIN', 'PIC', 'OPM'];
+const DRONE_ATC_ROLES = ['SUPERADMIN', 'ADMIN', 'PIC', 'OPM'] as const;
 
 export interface DroneAtcComponent {
   componentId: number;
@@ -36,10 +36,10 @@ export interface DroneAtcUser {
   systems: DroneAtcSystem[];
 }
 
-export async function getUsersWithDroneAtc(): Promise<DroneAtcUser[]> {
+async function fetchUsersWithDroneAtc(): Promise<DroneAtcUser[]> {
   const users = await prisma.public_users.findMany({
     where: {
-      user_role:          { in: DRONE_ATC_ROLES },
+      user_role:          { in: [...DRONE_ATC_ROLES] },
       user_active:        'Y',
       flytbase_api_token: { not: null },
       flytbase_org_id:    { not: null },
@@ -62,7 +62,7 @@ export async function getUsersWithDroneAtc(): Promise<DroneAtcUser[]> {
   );
   if (!filtered.length) return [];
 
-  const ownerIds = [...new Set(filtered.map((u) => u.fk_owner_id as number))];
+  const ownerIds = [...new Set(users.map((u) => u.fk_owner_id).filter((id): id is number => id != null))];
 
   const [owners, tools] = await Promise.all([
     prisma.owner.findMany({
@@ -145,4 +145,14 @@ export async function getUsersWithDroneAtc(): Promise<DroneAtcUser[]> {
     flytbaseOrgId: u.flytbase_org_id!.trim(),
     systems:     systemsByOwner.get(u.fk_owner_id as number) ?? [],
   }));
+}
+
+export const getUsersWithDroneAtc = unstable_cache(
+  fetchUsersWithDroneAtc,
+  ['drone-atc-users'],
+  { revalidate: 30, tags: ['drone-atc-users'] },
+);
+
+export function invalidateDroneAtcUsersCache() {
+  revalidateTag('drone-atc-users');
 }

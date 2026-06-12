@@ -56,16 +56,32 @@ export async function addMissionType(
     },
   });
 
-  return { code: 1, message: 'Mission type added successfully', data: created };
+  return {
+    code: 1,
+    message: 'Mission type added successfully',
+    data: created,
+  };
 }
 
-export async function deleteMissionType(_ownerId: number, missionTypeId: number) {
+ 
+
+export async function deleteMissionType(ownerId: number, missionTypeId: number) {
+  const row = await prisma.pilot_mission_type.findFirst({
+    where:  { mission_type_id: missionTypeId, fk_owner_id: ownerId },
+    select: { type_code: true, type_name: true },
+  });
+
   await prisma.pilot_mission_type.update({
     where: { mission_type_id: missionTypeId },
     data:  { is_active: false },
   });
 
-  return { code: 1, message: 'Mission type deleted successfully' };
+  return {
+    code: 1,
+    message: 'Mission type deleted successfully',
+    typeCode: row?.type_code ?? null,
+    typeName: row?.type_name ?? null,
+  };
 }
 
 export async function updateMissionType(

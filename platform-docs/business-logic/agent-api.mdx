@@ -1,6 +1,6 @@
 ---
 title: "Agent API"
-description: "AI agent pipeline, role access table, coverage gaps, and built-in audit rules."
+description: "AI agent pipeline, role access, coverage gaps, and compliance audit rules."
 ---
 
 The AI Agent answers natural language questions about missions, maintenance, compliance, and safety — scoped to the user's role and organisation.
@@ -13,39 +13,37 @@ User question
 [1] CLASSIFY INTENT
     DATABASE | PROCEDURE | WEB_SEARCH | DECOMMISSIONED | OTHER
     │
-[2] SELECT TABLE(S)
-    LLM picks 1–2 tables from the role's allowed list
+[2] SELECT TABLE(S) — LLM picks 1-2 from role allowed list
     │
-[3] GENERATE QUERY PLAN (per table)
+[3] GENERATE QUERY PLAN
     { table, aggregation: COUNT|LIST, date_filter, extra_filter, row_limit }
     │
-[4] EXECUTE (Supabase PostgREST)
+[4] EXECUTE (Supabase)
     - fk_owner_id always applied
-    - PIC: pilot_mission auto-filtered to own missions only
+    - PIC: pilot_mission filtered to own missions only
     - Blocked columns stripped
-    - Max 15 rows (50 hard cap), data capped at 8,000 chars
+    - Max 15 rows, data capped at 8,000 chars
     │
-[5] SYNTHESISE ANSWER
-    Groq LLM with DB data + company procedure docs + optional web search
-    + decommissioned systems data (if DECOMMISSIONED intent detected)
+[5] SYNTHESISE (Groq llama-3.3-70b)
+    DB data + company procedures + optional web search + decommissioned data
 ```
 
 ---
 
-## What Each Role Can Query
+## Role Access
 
 | Role | Accessible Tables |
 |---|---|
-| **PIC** | `pilot_mission` (own only), `pilot_mission_result`, `planning`, `planning_logbook`, `pilot_declaration`, `notification`, `repository_file` |
-| **OPM** | All of the above plus: `calendar_shift`, `checklist`, `luc_document`, `users`, `tool`, `tool_maintenance`, `tool_component`, `maintenance_ticket`, `audit`, `audit_finding`, `compliance_requirement`, `safety_report`, `alert_log`, `training`, `client` |
-| **SM** | `safety_report`, `safety_action`, `spi_kpi`, `spi_kpi_definition`, `spi_kpi_log`, `alert_log`, `pilot_mission`, `tool`, `tool_maintenance`, `maintenance_ticket`, `training`, `training_attendance` |
-| **AM** | `pilot_mission`, `planning`, `tool`, `tool_maintenance`, `luc_document`, `audit`, `compliance_requirement`, `notification` |
-| **CMM** | `audit`, `audit_finding`, `compliance_requirement`, `compliance_evidence`, `compliance_status_log`, `spi_kpi`, `spi_kpi_definition` |
-| **MM** | `tool`, `tool_maintenance`, `tool_component`, `maintenance_ticket`, `maintenance_ticket_event`, `maintenance_ticket_item`, `pilot_mission`, `alert_log` |
+| **PIC** | `pilot_mission` (own only), `pilot_mission_result`, `planning`, `pilot_declaration`, `notification`, `repository_file` |
+| **OPM** | All of the above + `calendar_shift`, `checklist`, `luc_document`, `users`, `tool`, `tool_maintenance`, `tool_component`, `maintenance_ticket`, `audit`, `compliance_requirement`, `safety_report`, `alert_log`, `training`, `client` |
+| **SM** | `safety_report`, `safety_action`, `spi_kpi`, `alert_log`, `pilot_mission`, `tool`, `maintenance_ticket`, `training_attendance` |
+| **AM** | `pilot_mission`, `planning`, `tool`, `tool_maintenance`, `luc_document`, `audit`, `compliance_requirement` |
+| **CMM** | `audit`, `audit_finding`, `compliance_requirement`, `compliance_evidence`, `compliance_status_log`, `spi_kpi` |
+| **MM** | `tool`, `tool_maintenance`, `tool_component`, `maintenance_ticket`, `maintenance_ticket_event`, `pilot_mission`, `alert_log` |
 | **TM** | `training`, `training_attendance`, `spi_kpi`, `users`, `users_profile` |
-| **DC** | `users`, `users_profile`, `user_permessi`, `pilot_mission`, `planning_logbook`, `repository_file` |
+| **DC** | `users`, `users_profile`, `user_permessi`, `pilot_mission`, `repository_file` |
 | **SLA** | `pilot_mission`, `tool`, `maintenance_ticket`, `spi_kpi`, `alert_log`, `client` |
-| **ADMIN** | Same as OPM — must impersonate an OPM user via `x-opm-impersonate` header |
+| **ADMIN** | Same as OPM — must impersonate OPM via `x-opm-impersonate` header |
 
 ---
 
@@ -55,22 +53,17 @@ User question
 |---|---|
 | `evaluation` / `evaluation_action` | Cannot answer "what evaluations are open?" |
 | `user_qualification` | Cannot answer "which pilots have expired qualifications?" |
-| `pilot_declaration` (non-PIC roles) | OPM cannot ask "did pilot X file a pre-flight declaration?" |
-| `planning_test_logbook` | Test flight details unavailable |
-| `incident_flag`, `rth_unplanned`, `link_loss`, `deviation_flag` | Not in TABLE_SCHEMA — LLM planner doesn't know these exist |
+| `pilot_declaration` (non-PIC) | OPM cannot ask "did pilot X file a pre-flight declaration?" |
+| `incident_flag`, `rth_unplanned`, `link_loss`, `deviation_flag` | Not in TABLE_SCHEMA — planner unaware |
 | `battery_charge_start/end`, `fuel_used` | Missing from TABLE_SCHEMA |
-| Cross-table JOINs | Agent queries 1–2 tables sequentially — three-table questions may be incomplete |
 
-**Blocked columns (never returned):**
-`password_hash`, `auth_user_id`, `key_`, `api_key`, `session_token`, `purchase_price`, `actual_cost`, `estimated_cost`
+**Blocked columns:** `password_hash`, `auth_user_id`, `key_`, `api_key`, `session_token`, `purchase_price`
 
 ---
 
-## Built-in Compliance Audit Rules
+## Built-in Audit Rules
 
-The synthesiser automatically applies these checks:
-
-1. **Wind/weather compliance** — mission flew while a `WIND_ALERT` was `OPEN` → `VIOLATION:`
+1. **Wind compliance** — mission flew while `WIND_ALERT` was `OPEN` → `VIOLATION:`
 2. **Altitude limit** — `max_altitude > 120 m` → `VIOLATION:`
-3. **Maintenance gate** — drone had an open `HIGH` priority ticket during flight → `VIOLATION:`
-4. **Decommissioned systems** — queries `tool_component` for `expiration_date <= today` and groups expired components by system
+3. **Maintenance gate** — drone had open `HIGH` priority ticket during flight → `VIOLATION:`
+4. **Decommissioned** — queries `tool_component` for `expiration_date <= today`, groups by system

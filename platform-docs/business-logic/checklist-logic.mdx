@@ -3,31 +3,25 @@ title: "Checklist Logic"
 description: "How checklists are created, assigned, and completed."
 ---
 
-Checklists are reusable templates that can be attached to missions, evaluations, or standalone tasks.
+Checklists are reusable templates attached to missions, evaluations, or standalone tasks.
 
-## How a Checklist Is Created
+## Creation
 
 1. OPM or Admin creates a checklist in **Organisation Settings → Checklists**
-2. A `checklist` record is created with:
-   - `checklist_code` — unique identifier
-   - `checklist_desc` — human-readable description
-   - `checklist_json` — JSON structure defining all items and sections
-   - `checklist_ver` — version number (decimal, e.g. `1.00`) incremented on each edit
-   - `checklist_active` — `'Y'` = live, `'N'` = archived
-3. Version history is maintained — editing creates a new version, not an overwrite
+2. Fields: `checklist_code`, `checklist_desc`, `checklist_json` (items/sections), `checklist_ver`, `checklist_active`
+3. Editing creates a new version — not an overwrite
 
-## How a Checklist Is Assigned
+## Assignment
 
-| Assignment type | How it links | DB field |
-|---|---|---|
-| To a mission plan | Linked when planning is created | `checklist.fk_planning_id` |
-| To a pilot | Directly assigned for standalone tasks | `checklist.fk_user_id` |
-| To an evaluation | Referenced in `evaluation_action.dependencies` JSON | JSON field |
+| Type | DB field |
+|---|---|
+| To a mission plan | `checklist.fk_planning_id` |
+| To a pilot | `checklist.fk_user_id` |
+| To an evaluation | `evaluation_action.dependencies` JSON |
 
-## How a Checklist Is Completed
+## Completion
 
-1. The assigned user opens the checklist and checks off each item
-2. On completion, the result is written as JSON into `evaluation_action.dependencies`:
+Results written into `evaluation_action.dependencies`:
 
 ```json
 {
@@ -36,5 +30,4 @@ Checklists are reusable templates that can be attached to missions, evaluations,
 }
 ```
 
-3. For pre/post-flight checklists, the pilot declaration's `checklist_completed` flag is set to `true`
-4. For planning-linked checklists, `pre_flight_check_ok` / `post_flight_check_ok` on the mission record is updated
+For pre/post-flight checklists, `pre_flight_check_ok` / `post_flight_check_ok` on the mission record is updated.

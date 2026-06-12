@@ -17,11 +17,12 @@ export async function POST(
 
     const result = await deleteMissionType(ownerId, Number(typeId));
 
+    const typeLabel = result.typeCode ?? `#${typeId}`;
     logEvent({
       eventType: 'DELETE',
       entityType: 'mission_type',
       entityId: typeId,
-      description: `Deleted mission type ID ${typeId}`,
+      description: `Deleted mission type '${typeLabel}'${result.typeName ? ` — ${result.typeName}` : ''} (ID ${typeId})`,
       userId: session!.user.userId,
       userName: session!.user.fullname,
       userEmail: session!.user.email,

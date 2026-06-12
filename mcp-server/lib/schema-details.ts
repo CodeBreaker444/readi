@@ -144,10 +144,10 @@ export const TABLE_SCHEMA: Record<string, string> = {
   component_type: type
   serial_number: serial
   installation_date: when installed
+  expiration_date: date the component expires and becomes decommissioned (DATE, compare with today to check if expired)
   expected_lifespan_hours: expected lifetime
   current_usage_hours: current usage
   next_replacement_date: when to replace
-  expiration_date: date the component expires and becomes decommissioned (DATE, compare with today to check if expired)
   component_active: Y/N active status`,
 
     audit: `

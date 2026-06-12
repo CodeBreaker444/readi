@@ -15,6 +15,7 @@ import { useEffect, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+import { toastWithDcc } from '@/lib/dcc-toast'
 import { z } from 'zod'
 
 interface AddOperationModalProps {
@@ -190,7 +191,11 @@ export function AddOperationModal({ open, onClose, onSuccess, isDark }: AddOpera
             onSuccess()
             setTimeout(() => handleClose(), 1500)
         } catch (err: any) {
-            toast.error(err.response?.data?.error || t('operations.board.toast.statusUpdateFailed'))
+            const data = err.response?.data
+            toastWithDcc(
+                { title: data?.error || t('operations.board.toast.statusUpdateFailed'), variant: 'error' },
+                data?.dcc,
+            )
         } finally {
             setIsSubmitting(false)
         }

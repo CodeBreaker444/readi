@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import axios from 'axios';
-import { CheckCircle, ChevronDown, ChevronRight, Eye, EyeOff, Link2, Link2Off, Loader2 } from 'lucide-react';
+import { CheckCircle, ChevronDown, ChevronRight, Eye, EyeOff, Link2, Link2Off, Loader2, XCircle } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Skeleton } from '../ui/skeleton';
@@ -35,7 +35,6 @@ const ROLE_OPTIONS = [
   { value: 17, label: 'Administrator (ADMIN)' },
 ];
 
-
 interface UserFormModalProps {
   isOpen: boolean;
   clients: { client_id: number; client_name: string }[];
@@ -44,12 +43,13 @@ interface UserFormModalProps {
   onClose: () => void;
   mode: 'add' | 'edit';
   userData?: any;
-  onSubmit: (data: any) => void;
+  onSubmit: (data: any) => Promise<{ fieldErrors?: Record<string, string> } | void> | void;
   isDark: boolean;
   canEditEmail?: boolean;
 }
 
 type CcStep = 'idle' | 'verifying' | 'confirmed' | 'saving';
+type UsernameStatus = 'idle' | 'checking' | 'available' | 'taken';
 
 export function UserFormModal({
   isOpen,
@@ -92,6 +92,8 @@ export function UserFormModal({
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [usernameStatus, setUsernameStatus] = useState<UsernameStatus>('idle');
 
   const [ccExpanded, setCcExpanded] = useState(false);
   const [ccHasToken, setCcHasToken] = useState<boolean | null>(null);
@@ -104,6 +106,53 @@ export function UserFormModal({
   const [ccVerifiedUser, setCcVerifiedUser] = useState<any>(null);
   const [ccRemoving, setCcRemoving] = useState(false);
   const [ccShowForm, setCcShowForm] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setFieldErrors({});
+      setUsernameStatus('idle');
+    }
+  }, [isOpen]);
+
+  // Debounced username availability check (add mode only)
+  useEffect(() => {
+    if (mode !== 'add') return;
+    const trimmed = formData.username.trim();
+    if (trimmed.length < 3) {
+      setUsernameStatus('idle');
+      return;
+    }
+
+    setUsernameStatus('checking');
+    const timer = setTimeout(async () => {
+      try {
+        const res = await axios.get(`/api/team/user/check-username?username=${encodeURIComponent(trimmed)}`);
+        const taken = !res.data.available;
+        setUsernameStatus(taken ? 'taken' : 'available');
+        setFieldErrors((prev) => {
+          const next = { ...prev };
+          if (taken) {
+            next.username = 'This username is already taken';
+          } else {
+            delete next.username;
+          }
+          return next;
+        });
+      } catch {
+        setUsernameStatus('idle');
+      }
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [formData.username, mode]);
+
+  const clearFieldError = (field: string) => {
+    setFieldErrors((prev) => {
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  };
 
   const fetchCcStatus = useCallback(async () => {
     if (mode !== 'edit' || !userData?.user_id) return;
@@ -177,12 +226,24 @@ export function UserFormModal({
 
   const handleSubmit = (e: React.SyntheticEvent) => {
     e.preventDefault();
+
+    const errors: Record<string, string> = {};
+
     if (isSuperAdmin && mode === 'add' && (!formData.owner_id || formData.owner_id === 0)) {
-      toast.error('Please assign a company to the user');
-      return;
+      errors.owner_id = 'Please assign a company to the user';
     }
     if (!formData.fk_user_profile_id || formData.fk_user_profile_id === 0) {
-      toast.error('Please select a role for the user');
+      errors.fk_user_profile_id = 'Please select a role for the user';
+    }
+    if (mode === 'add' && usernameStatus === 'taken') {
+      errors.username = 'This username is already taken';
+    }
+    if (mode === 'add' && usernameStatus === 'checking') {
+      errors.username = 'Please wait while we check username availability';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
       return;
     }
 
@@ -194,10 +255,17 @@ export function UserFormModal({
     }
 
     setIsSubmitting(true);
-    Promise.resolve(onSubmit(payload)).finally(() => {
+    Promise.resolve(onSubmit(payload)).then((result: any) => {
+      if (result?.fieldErrors) {
+        setFieldErrors(result.fieldErrors);
+      }
+    }).finally(() => {
       setIsSubmitting(false);
     });
   };
+
+  const inputError = (field: string) =>
+    fieldErrors[field] ? 'border-red-500 focus-visible:ring-red-500' : '';
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -208,16 +276,35 @@ export function UserFormModal({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
+            {/* Username */}
             <div>
               <Label htmlFor="username" className="pb-2">Username *</Label>
-              <Input
-                id="username"
-                value={formData.username}
-                onChange={(e) => setFormData({ ...formData, username: e.target.value.toLowerCase() })}
-                required
-                disabled={mode === 'edit'}
-              />
+              <div className="relative">
+                <Input
+                  id="username"
+                  value={formData.username}
+                  onChange={(e) => {
+                    setFormData({ ...formData, username: e.target.value.toLowerCase() });
+                    clearFieldError('username');
+                  }}
+                  required
+                  disabled={mode === 'edit'}
+                  className={`pr-8 ${inputError('username')}`}
+                />
+                {mode === 'add' && formData.username.length >= 3 && (
+                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                    {usernameStatus === 'checking' && <Loader2 size={14} className="animate-spin text-slate-400" />}
+                    {usernameStatus === 'available' && <CheckCircle size={14} className="text-emerald-500" />}
+                    {usernameStatus === 'taken' && <XCircle size={14} className="text-red-500" />}
+                  </span>
+                )}
+              </div>
+              {fieldErrors.username && (
+                <p className="text-xs text-red-500 mt-1">{fieldErrors.username}</p>
+              )}
             </div>
+
+            {/* Full Name */}
             <div>
               <Label htmlFor="fullname" className="pb-2">Full Name *</Label>
               <Input
@@ -230,19 +317,28 @@ export function UserFormModal({
           </div>
 
           <div className="grid grid-cols-2 gap-4">
+            {/* Email */}
             <div>
               <Label htmlFor="email" className="pb-2">Email *</Label>
               <Input
                 id="email"
                 type="email"
                 value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, email: e.target.value });
+                  clearFieldError('email');
+                }}
                 required
                 disabled={!canEditEmail && mode === 'edit'}
                 readOnly={!canEditEmail && mode === 'edit'}
-                className={!canEditEmail && mode === 'edit' ? 'opacity-60 cursor-not-allowed' : ''}
+                className={`${!canEditEmail && mode === 'edit' ? 'opacity-60 cursor-not-allowed' : ''} ${inputError('email')}`}
               />
+              {fieldErrors.email && (
+                <p className="text-xs text-red-500 mt-1">{fieldErrors.email}</p>
+              )}
             </div>
+
+            {/* Phone */}
             <div>
               <Label htmlFor="phone" className="pb-2">Phone</Label>
               <Input
@@ -254,6 +350,7 @@ export function UserFormModal({
             </div>
           </div>
 
+          {/* Company (super admin add mode) */}
           {isSuperAdmin && mode === 'add' && (
             <div>
               <Label htmlFor="owner_id" className="pb-2">
@@ -261,9 +358,12 @@ export function UserFormModal({
               </Label>
               <Select
                 value={formData.owner_id?.toString()}
-                onValueChange={(value) => setFormData({ ...formData, owner_id: parseInt(value) })}
+                onValueChange={(value) => {
+                  setFormData({ ...formData, owner_id: parseInt(value) });
+                  clearFieldError('owner_id');
+                }}
               >
-                <SelectTrigger className={isDark ? 'bg-slate-900 border-slate-700' : ''}>
+                <SelectTrigger className={`${isDark ? 'bg-slate-900 border-slate-700' : ''} ${inputError('owner_id')}`}>
                   <SelectValue placeholder="Select a Company" />
                 </SelectTrigger>
                 <SelectContent>
@@ -275,6 +375,9 @@ export function UserFormModal({
                   ))}
                 </SelectContent>
               </Select>
+              {fieldErrors.owner_id && (
+                <p className="text-xs text-red-500 mt-1">{fieldErrors.owner_id}</p>
+              )}
             </div>
           )}
 
@@ -301,14 +404,18 @@ export function UserFormModal({
           </div>
 
           <div className="grid grid-cols-2 gap-36">
+            {/* Role */}
             <div>
               <Label htmlFor="role" className="pb-2">Role *</Label>
               <Select
                 value={formData.fk_user_profile_id?.toString()}
-                onValueChange={(value) => setFormData({ ...formData, fk_user_profile_id: parseInt(value) })}
+                onValueChange={(value) => {
+                  setFormData({ ...formData, fk_user_profile_id: parseInt(value) });
+                  clearFieldError('fk_user_profile_id');
+                }}
                 disabled={mode === 'edit'}
               >
-                <SelectTrigger className={mode === 'edit' ? 'opacity-60 cursor-not-allowed' : ''}>
+                <SelectTrigger className={`${mode === 'edit' ? 'opacity-60 cursor-not-allowed' : ''} ${inputError('fk_user_profile_id')}`}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -320,7 +427,11 @@ export function UserFormModal({
                   ))}
                 </SelectContent>
               </Select>
+              {fieldErrors.fk_user_profile_id && (
+                <p className="text-xs text-red-500 mt-1">{fieldErrors.fk_user_profile_id}</p>
+              )}
             </div>
+
             <div>
               <Label htmlFor="user_type" className="pb-2">User Type *</Label>
               <Select
@@ -520,17 +631,14 @@ export function UserFormModal({
                         <Skeleton className="h-3 w-20" />
                         <Skeleton className="h-8 w-full" />
                       </div>
-
                       <div className="space-y-2">
                         <Skeleton className="h-3 w-16" />
                         <Skeleton className="h-8 w-full" />
                       </div>
-
                       <div className="space-y-2">
                         <Skeleton className="h-3 w-24" />
                         <Skeleton className="h-8 w-full" />
                       </div>
-
                       <Skeleton className="h-7 w-24 mt-1" />
                     </div>
                   )}
@@ -657,7 +765,7 @@ export function UserFormModal({
             </Button>
             <Button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || (mode === 'add' && usernameStatus === 'taken')}
               className="flex items-center gap-2 bg-violet-600 hover:bg-violet-700 cursor-pointer"
             >
               {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}

@@ -38,10 +38,11 @@ export function OperationStepDrone({
     const { t } = useTranslation()
     const allInMaintenance = drones.length > 0 && drones.every(d => d.in_maintenance)
     const anyMaintenanceDue = drones.some(d => d.maintenance_due && !d.in_maintenance)
-    const allNonOperational = drones.length > 0 && drones.every(d => d.is_non_operational)
-    const anyNonOperational = drones.some(d => d.is_non_operational)
+    const allNonOperational = drones.length > 0 && drones.every(d => d.is_non_operational || d.is_dismissed)
+    const anyNonOperational = drones.some(d => d.is_non_operational || d.is_dismissed)
     const selectedDrone = drones.find(d => String(d.tool_id) === droneId)
-    const selectedIsNonOp = selectedDrone?.is_non_operational ?? false
+    const selectedIsNonOp = (selectedDrone?.is_non_operational || selectedDrone?.is_dismissed) ?? false
+    const selectedIsDismissed = selectedDrone?.is_dismissed ?? false
 
     const planLabel = planId
         ? (clientPlannings.find(p => String(p.planning_id) === planId)?.planning_name ?? selectedPlanName)
@@ -103,8 +104,8 @@ export function OperationStepDrone({
                             <SelectItem
                                 key={d.tool_id}
                                 value={String(d.tool_id)}
-                                disabled={!!d.is_non_operational || !!d.in_maintenance}
-                                className={cn(siCls(isDark), d.is_non_operational ? 'opacity-50' : '')}
+                                disabled={!!d.is_non_operational || !!d.is_dismissed || !!d.in_maintenance}
+                                className={cn(siCls(isDark), (d.is_non_operational || d.is_dismissed) ? 'opacity-50' : '')}
                             >
                                 <span className="flex items-center gap-2">
                                     <span>{d.tool_code} — {d.tool_name}</span>
@@ -113,12 +114,17 @@ export function OperationStepDrone({
                                             {t('operations.newOperation.drone.notOperationalTag')}
                                         </span>
                                     )}
-                                    {!d.is_non_operational && d.in_maintenance && (
+                                    {!d.is_non_operational && d.is_dismissed && (
+                                        <span className="text-[10px] font-semibold text-slate-600 bg-slate-100 border border-slate-300 rounded px-1.5 py-0.5 leading-none">
+                                            {t('operations.newOperation.drone.dismissedTag')}
+                                        </span>
+                                    )}
+                                    {!d.is_non_operational && !d.is_dismissed && d.in_maintenance && (
                                         <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 leading-none">
                                             {t('operations.newOperation.drone.maintenanceTag')}
                                         </span>
                                     )}
-                                    {!d.is_non_operational && !d.in_maintenance && d.maintenance_due && (
+                                    {!d.is_non_operational && !d.is_dismissed && !d.in_maintenance && d.maintenance_due && (
                                         <span className="text-[10px] font-semibold text-orange-600 bg-orange-50 border border-orange-200 rounded px-1.5 py-0.5 leading-none">
                                             {t('operations.newOperation.drone.maintenanceDueTag')}
                                         </span>
@@ -128,7 +134,7 @@ export function OperationStepDrone({
                         ))}
                     </SelectContent>
                 </Select>
-                {selectedIsNonOp && (
+                {selectedIsNonOp && !selectedIsDismissed && (
                     <div className={cn(
                         'mt-2 flex items-start gap-2 rounded-lg border px-3 py-2.5',
                         isDark ? 'border-red-800 bg-red-950/40' : 'border-red-200 bg-red-50'
@@ -138,6 +144,19 @@ export function OperationStepDrone({
                             {t('operations.newOperation.drone.selectedNonOpWarningPre')}{' '}
                             <span className="font-semibold">{t('operations.newOperation.drone.notOperationalTag')}</span>{' '}
                             {t('operations.newOperation.drone.selectedNonOpWarningPost')}
+                        </p>
+                    </div>
+                )}
+                {selectedIsDismissed && (
+                    <div className={cn(
+                        'mt-2 flex items-start gap-2 rounded-lg border px-3 py-2.5',
+                        isDark ? 'border-slate-700 bg-slate-800/60' : 'border-slate-200 bg-slate-50'
+                    )}>
+                        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-500" />
+                        <p className={cn('text-xs leading-snug', isDark ? 'text-slate-400' : 'text-slate-600')}>
+                            {t('operations.newOperation.drone.selectedDismissedWarningPre')}{' '}
+                            <span className="font-semibold">{t('operations.newOperation.drone.dismissedTag')}</span>{' '}
+                            {t('operations.newOperation.drone.selectedDismissedWarningPost')}
                         </p>
                     </div>
                 )}

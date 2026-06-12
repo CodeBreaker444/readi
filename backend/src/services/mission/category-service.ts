@@ -58,13 +58,23 @@ export async function addMissionCategory(
   return { code: 1, message: 'Mission category added successfully', data: created };
 }
 
-export async function deleteMissionCategory(_ownerId: number, categoryId: number) {
+export async function deleteMissionCategory(ownerId: number, categoryId: number) {
+  const row = await prisma.pilot_mission_category.findFirst({
+    where:  { category_id: categoryId, fk_owner_id: ownerId },
+    select: { category_code: true, category_name: true },
+  });
+
   await prisma.pilot_mission_category.update({
     where: { category_id: categoryId },
     data:  { is_active: false },
   });
 
-  return { code: 1, message: 'Mission category deleted successfully' };
+  return {
+    code: 1,
+    message: 'Mission category deleted successfully',
+    categoryCode: row?.category_code ?? null,
+    categoryName: row?.category_name ?? null,
+  };
 }
 
 export async function updateMissionCategory(

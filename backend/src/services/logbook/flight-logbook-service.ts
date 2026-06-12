@@ -1,4 +1,3 @@
-import { prisma } from '@/lib/prisma';
 import {
   ClientOption,
   DroneOption,
@@ -11,6 +10,7 @@ import {
   OperationLogbookItem,
   PilotOption,
 } from '@/config/types/logbook';
+import { prisma } from '@/lib/prisma';
 
 const STATUS_ID_TO_DESC: Record<number, string> = {
   1: 'PLANNED',
@@ -132,40 +132,36 @@ export async function getOperationLogbookFilters(owner_id: number) {
   const [pilots, clients, drones, missionTypes, missionCategories, missionResults, missionStatuses, missionPlans] =
     await Promise.all([
       prisma.public_users.findMany({
-        where: { fk_owner_id: owner_id, user_role: 'PIC', user_active: 'Y' },
+        where:  { fk_owner_id: owner_id, user_role: 'PIC', user_active: 'Y' },
         select: { user_id: true, first_name: true, last_name: true },
       }),
       prisma.client.findMany({
-        where: { fk_owner_id: owner_id, client_active: 'Y' },
+        where:  { fk_owner_id: owner_id, client_active: 'Y' },
         select: { client_id: true, client_name: true },
       }),
       prisma.tool.findMany({
-        where: { fk_owner_id: owner_id, tool_active: 'Y' },
-        select: { tool_id: true, tool_code: true, tool_name: true, tool_status: { select: { status_code: true } } },
+        where:  { fk_owner_id: owner_id, tool_active: 'Y' },
+        select: { tool_id: true, tool_code: true, tool_name: true },
       }),
       prisma.pilot_mission_type.findMany({
-        where: { fk_owner_id: owner_id, is_active: true },
+        where:  { fk_owner_id: owner_id, is_active: true },
         select: { mission_type_id: true, type_name: true },
       }),
       prisma.pilot_mission_category.findMany({
-        where: { fk_owner_id: owner_id, is_active: true },
+        where:  { fk_owner_id: owner_id, is_active: true },
         select: { category_id: true, category_name: true },
       }),
       prisma.pilot_mission_result_type.findMany({
-        where: { fk_owner_id: owner_id, is_active: true },
+        where:  { fk_owner_id: owner_id, is_active: true },
         select: { result_type_id: true, result_type_desc: true },
       }),
       prisma.pilot_mission_status.findMany({
-        where: { fk_owner_id: owner_id, is_active: true },
+        where:  { fk_owner_id: owner_id, is_active: true },
         select: { status_id: true, status_name: true },
       }),
       prisma.planning_logbook.findMany({
-        where: { fk_owner_id: owner_id, mission_planning_active: 'Y' },
-        select: {
-          mission_planning_id: true,
-          mission_planning_code: true,
-          mission_planning_desc: true,
-        },
+        where:  { fk_owner_id: owner_id, mission_planning_active: 'Y' },
+        select: { mission_planning_id: true, mission_planning_code: true, mission_planning_desc: true },
       }),
     ]);
 
@@ -184,7 +180,7 @@ export async function getOperationLogbookFilters(owner_id: number) {
     tool_id: t.tool_id,
     tool_code: t.tool_code ?? '',
     tool_desc: t.tool_name ?? '',
-    tool_status: t.tool_status?.status_code ?? 'OPERATIONAL',
+    tool_status: 'OPERATIONAL',
   }));
 
   const typeOptions: MissionTypeOption[] = missionTypes.map((t) => ({

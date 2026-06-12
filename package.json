@@ -57,7 +57,6 @@
     "next-auth": "^4.24.13",
     "next-themes": "^0.4.6",
     "npm": "^11.10.0",
-    "pdf-parse": "^2.4.5",
     "radix-ui": "^1.4.3",
     "react": "19.2.3",
     "react-dom": "19.2.3",
@@ -74,6 +73,7 @@
     "survey-react-ui": "^2.5.14",
     "surveyjs-widgets": "^1.12.59",
     "tailwind-merge": "^3.4.0",
+    "unpdf": "^1.6.2",
     "uuid": "^13.0.0",
     "xlsx": "^0.18.5",
     "zod": "^4.3.6"

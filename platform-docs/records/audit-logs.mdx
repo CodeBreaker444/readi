@@ -3,22 +3,20 @@ title: "Audit Logs"
 description: "Platform-wide event log for every create, update, and delete action."
 ---
 
-Audit Logs provide a tamper-evident record of every significant action performed in the platform.
-
 ## What is logged
 
 - User created / updated / deleted
-- Mission status changes (with who changed it and when)
+- Mission status changes (who changed it and when)
 - Compliance status changes
 - Document uploads
 - System and component changes
 
-## Fields per log entry
+## Fields per entry
 
 | Field | Meaning |
 |---|---|
 | `event_type` | CREATE, UPDATE, DELETE |
-| `entity_type` | What was changed (user, mission, tool, etc.) |
+| `entity_type` | What was changed |
 | `entity_id` | ID of the changed record |
 | `description` | Human-readable summary |
 | `user_name` / `user_email` | Who performed the action |

@@ -63,12 +63,22 @@ export async function addMissionStatus(ownerId: number, statusData: {
 }
 
 export async function deleteMissionStatus(ownerId: number, statusId: number) {
-  await prisma.pilot_mission_status.updateMany({
-    where: { status_id: statusId, fk_owner_id: ownerId },
-    data: { is_active: false },
+  const row = await prisma.pilot_mission_status.findFirst({
+    where:  { status_id: statusId, fk_owner_id: ownerId },
+    select: { status_code: true, status_name: true },
   });
 
-  return { code: 1, message: 'Mission status deleted successfully' };
+  await prisma.pilot_mission_status.update({
+    where: { status_id: statusId },
+    data:  { is_active: false },
+  });
+
+  return {
+    code: 1,
+    message: 'Mission status deleted successfully',
+    statusCode: row?.status_code ?? null,
+    statusName: row?.status_name ?? null,
+  };
 }
 
 export async function updateMissionStatus(ownerId: number, statusId: number, statusData: {

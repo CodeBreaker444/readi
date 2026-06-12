@@ -1,7 +1,6 @@
 'use server';
 
-import { Prisma } from '@prisma/client';
-import { prisma } from '@/lib/prisma';
+import { supabase } from '@/backend/database/database';
 import { sendNotificationToRoles, sendNotificationToUser } from '@/backend/services/notification/notification-service';
 import { refreshMaintenanceDaysForTool } from '@/backend/utils/refresh-maintenance-days';
 import type {
@@ -15,6 +14,7 @@ import type {
   TicketEvent,
   UserOption,
 } from '@/config/types/maintenance';
+import { prisma } from '@/lib/prisma';
 import {
   REGION,
   buildS3Key,
@@ -23,6 +23,7 @@ import {
   getPresignedDownloadUrl,
   uploadFileToS3,
 } from '@/lib/s3Client';
+import { Prisma } from '@prisma/client';
 import { sendTicketClosedEmail } from '../../../../lib/resend/mail';
 
 
@@ -61,16 +62,17 @@ export async function assertToolNotInMaintenance(toolId: number): Promise<void> 
 }
 
 export async function assertToolNotNonOperational(toolId: number): Promise<void> {
-  const today = new Date(new Date().toISOString().split('T')[0]);
+  const today = new Date().toISOString().split('T')[0];
 
-  const expiredComp = await prisma.tool_component.findFirst({
-    where: {
-      fk_tool_id: toolId,
-      component_active: 'Y',
-      expiration_date: { lte: today },
-    },
-    select: { component_id: true, component_name: true },
-  });
+  const { data: expiredComp } = await supabase
+    .from('tool_component')
+    .select('component_id, component_name')
+    .eq('fk_tool_id', toolId)
+    .eq('component_active', 'Y')
+    .lte('expiration_date', today)
+    .not('expiration_date', 'is', null)
+    .limit(1)
+    .maybeSingle();
 
   if (expiredComp) {
     throw new Error(
@@ -78,12 +80,13 @@ export async function assertToolNotNonOperational(toolId: number): Promise<void>
     );
   }
 
-  const tool = await prisma.tool.findUnique({
-    where: { tool_id: toolId },
-    select: { tool_metadata: true },
-  });
+  const { data: tool } = await supabase
+    .from('tool')
+    .select('tool_metadata')
+    .eq('tool_id', toolId)
+    .maybeSingle();
 
-  if ((tool?.tool_metadata as any)?.status === 'NOT_OPERATIONAL') {
+  if (tool?.tool_metadata?.status === 'NOT_OPERATIONAL') {
     throw new Error(
       'This system is not operational and cannot be used for mission creation.'
     );
@@ -456,7 +459,6 @@ export async function deleteAttachment(attachmentId: number): Promise<void> {
 }
 
 
-// ─── LOOKUPS ─────────────────────────────────────────────────────────────────
 
 export async function getDroneList(ownerId: number): Promise<DroneOption[]> {
   const data = await prisma.tool.findMany({
@@ -478,19 +480,15 @@ export async function getDroneList(ownerId: number): Promise<DroneOption[]> {
 export async function getComponentList(toolId: number, ticketType?: string): Promise<ComponentOption[]> {
   await refreshMaintenanceDaysForTool(toolId);
 
-  const data = await prisma.tool_component.findMany({
-    where: { fk_tool_id: toolId, component_active: 'Y' },
-    select: {
-      component_id: true,
-      component_name: true,
-      component_type: true,
-      serial_number: true,
-      maintenance_cycle: true,
-      maintenance_cycle_day: true,
-    },
-  });
+  const { data, error } = await supabase
+    .from('tool_component')
+    .select('component_id, component_code, component_name, component_type, serial_number, maintenance_cycle, maintenance_cycle_day')
+    .eq('fk_tool_id', toolId)
+    .eq('component_active', 'Y');
 
-  let rows = data;
+  if (error) throw new Error(`getComponentList: ${error.message}`);
+
+  let rows = data ?? [];
 
   if (ticketType === 'BASIC') {
     rows = rows.filter((row) => {
@@ -504,6 +502,7 @@ export async function getComponentList(toolId: number, ticketType?: string): Pro
 
   return rows.map((row) => ({
     tool_component_id: row.component_id,
+    component_code:    row.component_code ?? '',
     component_type:    row.component_type ?? row.component_name ?? '',
     component_sn:      row.serial_number ?? '',
   }));

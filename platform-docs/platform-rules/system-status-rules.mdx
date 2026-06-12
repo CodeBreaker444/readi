@@ -3,7 +3,7 @@ title: "System Status Rules"
 description: "How OPERATIONAL, MAINTENANCE, and NOT_OPERATIONAL are computed on every fleet load."
 ---
 
-A system's operational status is **not stored in the database**. It is computed fresh every time the fleet list loads, by inspecting the system's current components and open maintenance tickets.
+A system status is **not stored**. It is computed fresh every time the fleet list loads.
 
 ---
 
@@ -13,59 +13,52 @@ A system's operational status is **not stored in the database**. It is computed 
 For each system (tool):
 
   1. Check components:
-     - Find any active component where expiration_date <= today
-     - If found → NOT_OPERATIONAL
+     Find any active component (component_active = Y)
+     where expiration_date <= today
+     → If found: NOT_OPERATIONAL
 
   2. Check maintenance tickets:
-     - Find any ticket where ticket_status != 'CLOSED'
-     - If found → MAINTENANCE
+     Find any ticket where ticket_status != CLOSED
+     → If found: MAINTENANCE
 
-  3. If neither condition → OPERATIONAL
+  3. Neither condition → OPERATIONAL
 ```
 
-**Priority:** `NOT_OPERATIONAL` beats `MAINTENANCE`. A system with both an expired component AND an open ticket displays as `NOT_OPERATIONAL`.
+**Priority:** `NOT_OPERATIONAL` beats `MAINTENANCE`.
 
 ---
 
 ## Status Definitions
 
-| Status | DB trigger | Meaning |
-|---|---|---|
-| `OPERATIONAL` | No expired active components, no open tickets | Ready to fly |
-| `MAINTENANCE` | `maintenance_ticket.ticket_status IN ('open', 'in_progress', 'resolved')` | Grounded for maintenance work |
-| `NOT_OPERATIONAL` | `tool_component.expiration_date <= today` AND `component_active = 'Y'` | Grounded — expired part |
+| Status | Trigger |
+|---|---|
+| `OPERATIONAL` | No expired active components, no open tickets |
+| `MAINTENANCE` | `ticket_status IN (open, in_progress, resolved)` |
+| `NOT_OPERATIONAL` | `component_active = Y` AND `expiration_date <= today` |
 
 <Note>
-`component_active = 'Y'` is the key filter. Deactivated components (`'N'`) do not count toward the status computation. If you want to remove an expired component from the status check without deleting it, set `component_active = 'N'`.
+Set `component_active = N` on an expired component to remove it from the status computation without deleting it.
 </Note>
 
 ---
 
 ## Where Status Appears
 
-| Feature | Effect of status |
+| Feature | Effect |
 |---|---|
-| **Fleet list** | Status badge shown next to each drone |
-| **Operations Board** | Status change blocked if NOT_OPERATIONAL or MAINTENANCE |
-| **Mission creation** | NOT_OPERATIONAL / MAINTENANCE drones are greyed out and unselectable |
-| **Operation Calendar** | Missions linked to non-operational systems shown greyed out with strikethrough |
-| **Document Repository** | Documents linked to non-operational systems show a "Not Operational" label |
-| **Logbook filter** | Drone status shown per entry based on current computed value |
-| **AI Agent** | DECOMMISSIONED intent queries expired components via `tool_component.expiration_date` |
-
----
-
-## Notifications
-
-When the fleet list loads and a component with `expiration_date <= today` is found, the platform sends **expiration notifications** to managers (OPM, MM roles). This is a warning, not an automatic decommission.
-
-No code changes the system's status automatically — the computation just reads the current state of tickets and component expiry dates.
+| Fleet list | Status badge per drone |
+| Operations Board | Status change blocked if NOT_OPERATIONAL or MAINTENANCE |
+| Mission creation | Non-operational drones greyed out and unselectable |
+| Operation Calendar | Missions on non-operational systems shown with strikethrough |
+| Document Repository | Documents linked to non-operational systems flagged |
+| Logbook filter | Drone status shown per entry |
+| AI Agent | DECOMMISSIONED intent queries `tool_component.expiration_date` |
 
 ---
 
 ## Clearing Each Status
 
-| Status | How to clear it |
+| Status | How to clear |
 |---|---|
-| `NOT_OPERATIONAL` | Set `component_active = 'N'` on the expired component (removes it from computation), OR update `expiration_date` to a future date after replacement |
-| `MAINTENANCE` | Close the maintenance ticket (`ticket_status = 'CLOSED'`) |
+| `NOT_OPERATIONAL` | Set `component_active = N` on the expired component, or update `expiration_date` after replacement |
+| `MAINTENANCE` | Close the maintenance ticket (`ticket_status = CLOSED`) |

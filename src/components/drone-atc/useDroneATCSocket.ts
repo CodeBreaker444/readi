@@ -82,6 +82,7 @@ export function useDroneATCSocket(): UseDroneATCSocketReturn {
   const socketRef = useRef<Socket | null>(null);
   const retryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const retryCountRef = useRef(0);
+  const credsRef = useRef<{ wsUrl: string; topic: string; token: string } | null>(null);
 
   const connect = useCallback(async () => {
     if (socketRef.current?.connected) return;
@@ -90,43 +91,47 @@ export function useDroneATCSocket(): UseDroneATCSocketReturn {
     setErrorMessage(null);
 
     try {
-      const connectRes = await fetch('/api/drone-atc/connect', { method: 'POST' });
-      if (!connectRes.ok) throw new Error(`Connect failed: ${connectRes.status}`);
+      if (!credsRef.current) {
+        const connectRes = await fetch('/api/drone-atc/connect', { method: 'POST' });
+        if (!connectRes.ok) throw new Error(`Connect failed: ${connectRes.status}`);
 
-      const connectData = await connectRes.json();
-      if (!connectData.hasFlytbaseKey) {
-        setStatus('no_flytbase_key');
-        return;
-      }
-
-      const fleetRes = await fetch('/api/drone-atc/fleet');
-
-      if (fleetRes.ok) {
-        const fleetData = await fleetRes.json();
-              console.log('fleet response:', fleetData);
-        setUserRole(fleetData.role ?? null);
-
-        const items: TelemetryData[] = fleetData.items ?? [];
-        const droneMap: DroneMap = {};
-        const dockMap: DroneMap = {};
-
-        for (const item of items) {
-          if (isDockDevice(item)) {
-            dockMap[item.drone_id] = item;
-          } else {
-            droneMap[item.drone_id] = item;
-          }
+        const connectData = await connectRes.json();
+        if (!connectData.hasFlytbaseKey) {
+          setStatus('no_flytbase_key');
+          return;
         }
 
-        setDrones(droneMap);
-        setDocks(dockMap);
+        const { wsUrl, topic, token } = connectData as { wsUrl: string; topic: string; token: string };
+        if (!wsUrl || !token) {
+          throw new Error(`FlytRelay returned incomplete connection data — wsUrl: ${wsUrl}, token present: ${!!token}`);
+        }
+
+        credsRef.current = { wsUrl, topic, token };
+
+        const fleetRes = await fetch('/api/drone-atc/fleet');
+        if (fleetRes.ok) {
+          const fleetData = await fleetRes.json();
+          console.log('fleet response:', fleetData);
+          setUserRole(fleetData.role ?? null);
+
+          const items: TelemetryData[] = fleetData.items ?? [];
+          const droneMap: DroneMap = {};
+          const dockMap: DroneMap = {};
+
+          for (const item of items) {
+            if (isDockDevice(item)) {
+              dockMap[item.drone_id] = item;
+            } else {
+              droneMap[item.drone_id] = item;
+            }
+          }
+
+          setDrones(droneMap);
+          setDocks(dockMap);
+        }
       }
 
-      const { wsUrl, topic, token } = connectData as { wsUrl: string; topic: string; token: string };
-
-      if (!wsUrl || !token) {
-        throw new Error(`FlytRelay returned incomplete connection data — wsUrl: ${wsUrl}, token present: ${!!token}`);
-      }
+      const { wsUrl, topic, token } = credsRef.current;
 
       const socket = io(wsUrl, {
         path: '/socket.io/',
@@ -187,6 +192,7 @@ export function useDroneATCSocket(): UseDroneATCSocketReturn {
         scheduleRetry();
       });
     } catch (err) {
+      credsRef.current = null;
       setStatus('error');
       setErrorMessage(err instanceof Error ? err.message : 'Connection failed');
       scheduleRetry();
@@ -206,6 +212,7 @@ export function useDroneATCSocket(): UseDroneATCSocketReturn {
 
   const reconnect = useCallback(() => {
     retryCountRef.current = 0;
+    credsRef.current = null; 
     if (retryRef.current) { clearTimeout(retryRef.current); retryRef.current = null; }
     socketRef.current?.disconnect();
     socketRef.current = null;

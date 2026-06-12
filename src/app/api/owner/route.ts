@@ -1,7 +1,7 @@
 import { logEvent } from "@/backend/services/auditLog/audit-log";
 import { addOwnerWithAdmin, getOwners } from "@/backend/services/company/owner-service";
 import { getUserSession } from "@/lib/auth/server-session";
-import { internalError, unauthorized, forbidden } from "@/lib/api-error";
+import { internalError, unauthorized, forbidden, zodError } from "@/lib/api-error";
 import { E } from "@/lib/error-codes";
 import { NextResponse } from "next/server";
 import z from "zod";
@@ -41,11 +41,7 @@ const POST = async (req: Request) => {
         const body = await req.json();
 
         const validation = ownerValidation.safeParse(body);
-
-        if (!validation.success) {
-            const errorMessages = validation.error.issues.map((e) => e.message).join(', ');
-            return NextResponse.json({ code: 0, message: errorMessages }, { status: 400 });
-        }
+        if (!validation.success) return zodError(E.VL001, validation.error);
 
         const result = await addOwnerWithAdmin(body);
 

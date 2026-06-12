@@ -108,15 +108,25 @@ export async function createUser(userData: UserCreateData) {
     const uid = generateUniqueCode();
     const key = generateActivationToken(128);
 
-    const existingUser = await prisma.public_users.findFirst({
-      where: {
-        OR: [
-          { email: { equals: userData.email, mode: 'insensitive' } },
-          { username: userData.username },
-        ],
-      },
-      select: { user_id: true, email: true, username: true, user_active: true, auth_user_id: true },
-    });
+    const userName = userData.username.toLowerCase();
+
+    const [byEmail, byUsername] = await Promise.all([
+      prisma.public_users.findFirst({
+        where:  { email: { equals: userData.email, mode: 'insensitive' } },
+        select: { user_id: true, email: true, username: true, user_active: true, auth_user_id: true },
+      }),
+      prisma.public_users.findFirst({
+        where:  { username: userName },
+        select: { user_id: true, email: true, username: true, user_active: true, auth_user_id: true },
+      }),
+    ]);
+
+    // If email and username each match a different existing user
+    if (byEmail && byUsername && byEmail.user_id !== byUsername.user_id) {
+      throw new Error('A user with this email or username already exists');
+    }
+
+    const existingUser = byEmail ?? byUsername;
 
     if (existingUser) {
       if (existingUser.email?.toLowerCase() === userData.email.toLowerCase()) {
@@ -126,7 +136,7 @@ export async function createUser(userData: UserCreateData) {
         }
         throw new Error('A user with this email already exists');
       }
-      if (existingUser.username === userData.username) {
+      if (existingUser.username === userName) {
         throw new Error('This username is already taken');
       }
     }
@@ -136,7 +146,6 @@ export async function createUser(userData: UserCreateData) {
     const lastName = nameParts.slice(1).join(' ') || '';
     const saltRounds = 10;
     const hashedPasscode = await bcrypt.hash(uid, saltRounds);
-    const userName = userData.username.toLowerCase();
 
     const newUser = await prisma.public_users.create({
       data: {
@@ -293,12 +302,20 @@ export async function deleteUser(userId: number, ownerId: number, isSuperAdmin =
         user_id: userId,
         ...(!isSuperAdmin ? { fk_owner_id: ownerId } : {}),
       },
-      select: { auth_user_id: true, fk_owner_id: true },
+      select: { auth_user_id: true, first_name: true, last_name: true, email: true },
     });
 
     if (!userRecord) throw new Error('User not found or does not belong to this organization');
 
-    await prisma.communication.deleteMany({ where: { fk_user_id: userId } });
+    await prisma.notification.deleteMany({ where: { fk_user_id: userId } }).catch((e) =>
+      console.warn('[deleteUser] notification cleanup failed:', e)
+    );
+
+    await Promise.allSettled([
+      prisma.checklist.updateMany({ where: { fk_user_id: userId }, data: { fk_user_id: null } }),
+      prisma.kanban.updateMany({ where: { fk_user_id: userId }, data: { fk_user_id: null } }),
+      prisma.planning_logbook.updateMany({ where: { fk_user_id: userId }, data: { fk_user_id: null } }),
+    ]);
 
     await prisma.public_users.deleteMany({
       where: {
@@ -315,10 +332,11 @@ export async function deleteUser(userId: number, ownerId: number, isSuperAdmin =
       }
     }
 
-    return { success: true, message: 'User deleted successfully' };
+    const fullName = `${userRecord.first_name ?? ''} ${userRecord.last_name ?? ''}`.trim() || null;
+    return { success: true, message: 'User deleted successfully', fullName, email: userRecord.email ?? null };
   } catch (error) {
     console.error('Error deleting user:', error);
-    throw new Error(error instanceof Error ? error.message : 'Failed to delete user');
+    throw error;
   }
 }
 

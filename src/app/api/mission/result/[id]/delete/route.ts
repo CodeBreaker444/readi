@@ -16,11 +16,12 @@ export async function POST(
     const result = await deleteMissionResult(ownerId, Number(id));
 
     if (result.code === 1) {
+      const resultLabel = result.resultCode ?? `#${id}`;
       logEvent({
         eventType: 'DELETE',
         entityType: 'mission_result',
         entityId: id,
-        description: `Deleted mission result #${id}`,
+        description: `Deleted mission result '${resultLabel}'${result.resultDesc ? ` — ${result.resultDesc}` : ''} (ID ${id})`,
         userId: session!.user.userId,
         userName: session!.user.fullname,
         userEmail: session!.user.email,

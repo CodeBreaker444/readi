@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 
 interface ExpiredComponentItem {
   tool_component_id: number;
@@ -10,8 +11,6 @@ interface ExpiredComponentItem {
 
 async function getAlreadyNotifiedTodayForExpiry(ownerId: number): Promise<Set<number>> {
   const today = new Date().toISOString().slice(0, 10);
-  const todayStart = new Date(`${today}T00:00:00.000Z`);
-  const todayEnd = new Date(`${today}T23:59:59.999Z`);
 
   const ownerUsers = await prisma.public_users.findMany({
     where: {
@@ -25,11 +24,15 @@ async function getAlreadyNotifiedTodayForExpiry(ownerId: number): Promise<Set<nu
   const userIds = ownerUsers.map((u) => u.user_id);
   if (!userIds.length) return new Set();
 
+  const startOfDay = new Date(`${today}T00:00:00.000Z`);
+  const endOfDay = new Date(`${today}T23:59:59.999Z`);
+
   const notifications = await prisma.notification.findMany({
     where: {
       notification_type: "SYSTEM",
       fk_user_id: { in: userIds },
-      created_at: { gte: todayStart, lte: todayEnd },
+      created_at: { gte: startOfDay, lte: endOfDay },
+      notification_data: { not: Prisma.JsonNull },
     },
     select: { notification_data: true },
   });

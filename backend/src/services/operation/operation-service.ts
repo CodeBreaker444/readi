@@ -112,34 +112,24 @@ export async function listOperations(
 
   const toolIds = [...new Set(operations.filter((op) => op.fk_tool_id).map((op) => op.fk_tool_id as number))];
   if (toolIds.length > 0) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
     const [primaryComps, expiredComps] = await Promise.all([
       prisma.tool_component.findMany({
-        where: {
-          fk_tool_id: { in: toolIds },
-          component_metadata: { path: ['is_primary'], equals: true },
-        },
+        where:  { fk_tool_id: { in: toolIds }, component_metadata: { path: ['is_primary'], equals: true } },
         select: { fk_tool_id: true, component_code: true, component_name: true },
       }),
       prisma.tool_component.findMany({
-        where: {
-          fk_tool_id:      { in: toolIds },
-          component_active: 'Y',
-          expiration_date:  { not: null, lte: today },
-        },
+        where:  { fk_tool_id: { in: toolIds }, component_active: 'Y', expiration_date: { lte: new Date(), not: null } },
         select: { fk_tool_id: true },
       }),
     ]);
 
     const primaryMap = new Map<number, string>();
     primaryComps.forEach((c) => {
-      if (c.fk_tool_id) primaryMap.set(c.fk_tool_id, c.component_code || c.component_name || '');
+      if (c.fk_tool_id != null) primaryMap.set(c.fk_tool_id, c.component_code ?? c.component_name ?? '');
     });
-    const nonOpSet = new Set<number>(expiredComps.map((c) => c.fk_tool_id));
+    const nonOpSet = new Set<number>(expiredComps.filter((c) => c.fk_tool_id != null).map((c) => c.fk_tool_id as number));
 
-    operations.forEach((op) => {
+    operations.forEach(op => {
       (op as any).primary_component_code = op.fk_tool_id ? (primaryMap.get(op.fk_tool_id) ?? null) : null;
       (op as any).tool_status = op.fk_tool_id && nonOpSet.has(op.fk_tool_id) ? 'NOT_OPERATIONAL' : null;
     });
@@ -290,7 +280,7 @@ export async function updateOperation(id: number, input: UpdateOperationSchema):
   });
 
   const full = await getOperation(id);
-  if (!full) throw new Error('Failed to fetch updated operation');
+  if (!full) throw new Error('OPERATION_NOT_FOUND');
   return full;
 }
 
@@ -655,69 +645,69 @@ export async function getPilotOptions(ownerId: number) {
 }
 
 export async function getToolOptions(ownerId: number) {
-  const tools = await prisma.tool.findMany({
+  const data = await prisma.tool.findMany({
     where: { fk_owner_id: ownerId, tool_active: 'Y' },
     orderBy: { tool_name: 'asc' },
-    select: { tool_id: true, tool_name: true, tool_code: true },
+    select: { tool_id: true, tool_name: true, tool_code: true, tool_metadata: true },
   });
 
-  if (tools.length === 0) return tools;
+  if (data.length === 0) return data;
 
-  const toolIds = tools.map((t) => t.tool_id);
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const toolIds = data.map((t) => t.tool_id);
 
   const [openTickets, droneComponents, maintComps, expiredComps] = await Promise.all([
     prisma.maintenance_ticket.findMany({
-      where: { fk_tool_id: { in: toolIds }, NOT: { ticket_status: 'CLOSED' } },
+      where:  { fk_tool_id: { in: toolIds }, ticket_status: { not: 'CLOSED' } },
       select: { fk_tool_id: true },
     }),
     prisma.tool_component.findMany({
-      where: { fk_tool_id: { in: toolIds }, component_type: 'DRONE', component_active: 'Y' },
+      where:  { fk_tool_id: { in: toolIds }, component_type: 'DRONE', component_active: 'Y' },
       select: { fk_tool_id: true },
     }),
     prisma.tool_component.findMany({
-      where: { fk_tool_id: { in: toolIds }, component_active: 'Y' },
+      where:  { fk_tool_id: { in: toolIds }, component_active: 'Y' },
       select: {
-        fk_tool_id: true,
-        maintenance_cycle_day: true,
-        maintenance_cycle_hour: true,
-        maintenance_cycle_flight: true,
-        current_maintenance_days: true,
-        current_usage_hours: true,
+        fk_tool_id:                  true,
+        maintenance_cycle_day:       true,
+        maintenance_cycle_hour:      true,
+        maintenance_cycle_flight:    true,
+        current_maintenance_days:    true,
+        current_usage_hours:         true,
         current_maintenance_flights: true,
       },
     }),
     prisma.tool_component.findMany({
-      where: {
-        fk_tool_id:      { in: toolIds },
-        component_active: 'Y',
-        expiration_date:  { not: null, lte: today },
-      },
+      where:  { fk_tool_id: { in: toolIds }, component_active: 'Y', expiration_date: { lte: new Date(), not: null } },
       select: { fk_tool_id: true },
     }),
   ]);
 
-  const inMaintenanceSet  = new Set<number>(openTickets.map((t) => t.fk_tool_id!).filter(Boolean));
-  const hasDroneSet       = new Set<number>(droneComponents.map((c) => c.fk_tool_id).filter(Boolean));
-  const nonOperationalSet = new Set<number>(expiredComps.map((c) => c.fk_tool_id));
+  const inMaintenanceSet = new Set<number>(
+    openTickets.filter((t) => t.fk_tool_id != null).map((t) => t.fk_tool_id as number)
+  );
+  const hasDroneSet = new Set<number>(
+    droneComponents.filter((c) => c.fk_tool_id != null).map((c) => c.fk_tool_id as number)
+  );
+  const nonOperationalSet = new Set<number>(
+    expiredComps.filter((c) => c.fk_tool_id != null).map((c) => c.fk_tool_id as number)
+  );
   const maintenanceDueSet = new Set<number>();
 
   maintComps.forEach((c) => {
-    if (!c.fk_tool_id || inMaintenanceSet.has(c.fk_tool_id)) return;
+    if (c.fk_tool_id == null || inMaintenanceSet.has(c.fk_tool_id)) return;
     const dayDue    = Number(c.maintenance_cycle_day)    > 0 && Number(c.current_maintenance_days)    >= Number(c.maintenance_cycle_day);
     const hourDue   = Number(c.maintenance_cycle_hour)   > 0 && Number(c.current_usage_hours)         >= Number(c.maintenance_cycle_hour);
     const flightDue = Number(c.maintenance_cycle_flight) > 0 && Number(c.current_maintenance_flights) >= Number(c.maintenance_cycle_flight);
     if (dayDue || hourDue || flightDue) maintenanceDueSet.add(c.fk_tool_id);
   });
 
-  return tools.map((t) => ({
+  return data.map((t) => ({
     ...t,
     in_maintenance:     inMaintenanceSet.has(t.tool_id),
     has_drone_component: hasDroneSet.has(t.tool_id),
-    maintenance_due:    maintenanceDueSet.has(t.tool_id),
+    maintenance_due: maintenanceDueSet.has(t.tool_id),
     is_non_operational: nonOperationalSet.has(t.tool_id),
+    is_dismissed: (t.tool_metadata as any)?.status === 'DISMISSED',
   }));
 }
 

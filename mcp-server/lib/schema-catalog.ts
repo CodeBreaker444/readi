@@ -15,6 +15,7 @@ export const TABLE_CATALOG: Record<string, string> = {
     user_permessi: "User permissions and access rights with expiry dates",
     tool: "Drones and equipment inventory with calibration and warranty tracking",
     tool_maintenance: "Maintenance records for drones and equipment",
+    tool_component: "Individual drone components with usage hours, lifespan, and expiration date tracking — expired components make their system non-operational (decommissioned)",
     audit: "Organisational audit records (internal, external, surveillance)",
     audit_finding: "Individual findings from audits with severity and corrective actions",
     compliance_requirement: "Regulatory compliance requirements and their current status",

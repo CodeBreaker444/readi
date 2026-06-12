@@ -1,3 +1,4 @@
+import { supabase } from '@/backend/database/database';
 import { seedLucProcedureProgressFromSteps } from '@/backend/services/operation/luc-procedure-progress';
 import { assertToolNotInMaintenance, assertToolNotNonOperational } from '@/backend/services/system/maintenance-ticket';
 import {
@@ -63,20 +64,18 @@ export const getOperationCalendarEvents = async (
     scheduled_end: row.actual_end?.toISOString() ?? null,
   }));
 
-  const toolIds = [...new Set(operations.filter((op) => op.fk_tool_id).map((op) => op.fk_tool_id as number))];
+  const toolIds = [...new Set(operations.filter(op => op.fk_tool_id).map(op => op.fk_tool_id as number))];
   const nonOpSet = new Set<number>();
   if (toolIds.length > 0) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const expiredComps = await prisma.tool_component.findMany({
-      where: {
-        fk_tool_id:      { in: toolIds },
-        component_active: 'Y',
-        expiration_date:  { not: null, lte: today },
-      },
-      select: { fk_tool_id: true },
-    });
-    expiredComps.forEach((c) => nonOpSet.add(c.fk_tool_id));
+    const today = new Date().toISOString().split('T')[0];
+    const { data: expiredComps } = await supabase
+      .from('tool_component')
+      .select('fk_tool_id')
+      .in('fk_tool_id', toolIds)
+      .eq('component_active', 'Y')
+      .lte('expiration_date', today)
+      .not('expiration_date', 'is', null);
+    (expiredComps ?? []).forEach((c: any) => nonOpSet.add(c.fk_tool_id));
   }
 
   const calendarEvents: OperationCalendarEvent[] = operations.map((op) => {
@@ -91,7 +90,7 @@ export const getOperationCalendarEvents = async (
       operation: { ...op, tool_status: isNonOp ? 'NOT_OPERATIONAL' : null },
       tool_status: isNonOp ? 'NOT_OPERATIONAL' : null,
     };
-  });
+  })
 
   return { operations, calendarEvents };
 };
@@ -266,21 +265,31 @@ export const createOperationCalendarEntry = async (
 };
 
 
+export const lookupOperationMissionCode = async (
+  operationId: number,
+  ownerId: number,
+): Promise<string | null> => {
+  const { data } = await supabase
+    .from('pilot_mission')
+    .select('mission_code')
+    .eq('pilot_mission_id', operationId)
+    .eq('fk_owner_id', ownerId)
+    .maybeSingle()
+  return (data as any)?.mission_code ?? null
+}
+
 export const deleteOperationCalendarEntry = async (
   operationId: number,
-  ownerId: number
-): Promise<{ deletedDccId: string | null }> => {
-  const mission = await prisma.pilot_mission.findFirst({
-    where: { pilot_mission_id: operationId, fk_owner_id: ownerId },
-    select: { mission_code: true },
-  });
+  ownerId: number,
+): Promise<void> => {
+  const { error } = await supabase
+    .from('pilot_mission')
+    .delete()
+    .eq('pilot_mission_id', operationId)
+    .eq('fk_owner_id', ownerId)
 
-  await prisma.pilot_mission.deleteMany({
-    where: { pilot_mission_id: operationId, fk_owner_id: ownerId },
-  });
-
-  return { deletedDccId: mission?.mission_code ?? null };
-};
+  if (error) throw new Error(`Failed to delete operation: ${error.message}`)
+}
 
 
 const buildOperationTitle = (op: OperationItem): string => {

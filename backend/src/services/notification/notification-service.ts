@@ -1,11 +1,50 @@
-import { prisma } from "@/lib/prisma";
+import { supabase } from "@/backend/database/database";
 import type {
   MarkReadPayload,
   Notification,
   NotificationListFilters,
 } from "@/config/types/notification";
+import { prisma } from "@/lib/prisma";
+import { revalidateTag, unstable_cache } from "next/cache";
 import { sendNotificationEmail } from "../../../../lib/resend/mail";
 
+
+async function fetchUnreadNotifications(userId: number): Promise<Notification[]> {
+  const columns = "notification_id, notification_message, notification_type, notification_data, is_read, created_at, action_url";
+
+  const { data, error } = await supabase
+    .from("notification")
+    .select(columns)
+    .eq("fk_user_id", userId)
+    .eq("is_read", false)
+    .order("created_at", { ascending: false })
+    .limit(100);
+
+  if (error) throw new Error(error.message);
+
+  return (data ?? []).map((row: any) => {
+    const notifData = row.notification_data ?? {};
+    const senderFullname: string | null =
+      notifData.sender_fullname ??
+      (notifData.sender_first_name || notifData.sender_last_name
+        ? `${notifData.sender_first_name ?? ""} ${notifData.sender_last_name ?? ""}`.trim()
+        : null);
+
+    return {
+      notification_id: row.notification_id,
+      message: row.notification_message ?? "",
+      procedure_name: row.notification_type ?? "",
+      is_read: "N" as "Y" | "N",
+      created_at: row.created_at,
+      read_at: null,
+      sender_fullname: senderFullname,
+      sender_profile: notifData.sender_profile ?? null,
+      sender_profile_code: notifData.sender_profile_code ?? null,
+      communication_general_id: notifData.communication_general_id ?? null,
+      action_url: row.action_url ?? null,
+    } satisfies Notification;
+  });
+}
 
 export async function listNotifications(
   input: NotificationListFilters,
@@ -18,51 +57,51 @@ export async function listNotifications(
     !input.date_from &&
     !input.date_to;
 
-  const select = isLightweightPoll
-    ? {
-        notification_id: true,
-        notification_message: true,
-        notification_type: true,
-        notification_data: true,
-        is_read: true,
-        created_at: true,
-        action_url: true,
-      }
-    : {
-        notification_id: true,
-        notification_message: true,
-        notification_type: true,
-        notification_title: true,
-        notification_data: true,
-        priority: true,
-        is_read: true,
-        created_at: true,
-        read_at: true,
-        action_url: true,
-      };
+  if (isLightweightPoll) {
+    const tag = `notifications-unread-${userId}`;
+    return unstable_cache(
+      () => fetchUnreadNotifications(userId),
+      [tag],
+      { revalidate: 8, tags: [tag] },
+    )();
+  }
 
-  const rows = await prisma.notification.findMany({
-    where: {
-      fk_user_id: userId,
-      ...(input.status === "READ" && { is_read: true }),
-      ...(input.status === "UNREAD" && { is_read: false }),
-      ...(input.procedure_name && {
-        notification_type: { contains: input.procedure_name, mode: "insensitive" },
-      }),
-      ...(input.search && {
-        notification_message: { contains: input.search, mode: "insensitive" },
-      }),
-      ...(input.date_from && { created_at: { gte: new Date(input.date_from) } }),
-      ...(input.date_to && { created_at: { lte: new Date(`${input.date_to}T23:59:59`) } }),
-    },
-    select,
-    orderBy: { created_at: "desc" },
-    take: input.limit ?? 100,
-  });
+  const columns = "notification_id, notification_message, notification_type, notification_title, notification_data, priority, is_read, created_at, read_at, action_url";
 
-  return rows.map((row: any) => {
-    const notifData = (row.notification_data as Record<string, any>) ?? {};
+  let query = supabase
+    .from("notification")
+    .select(columns)
+    .eq("fk_user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(input.limit ?? 100);
 
+  if (input.status === "READ") {
+    query = query.eq("is_read", true);
+  } else if (input.status === "UNREAD") {
+    query = query.eq("is_read", false);
+  }
+
+  if (input.procedure_name) {
+    query = query.ilike("notification_type", `%${input.procedure_name}%`);
+  }
+
+  if (input.search) {
+    query = query.ilike("notification_message", `%${input.search}%`);
+  }
+
+  if (input.date_from) {
+    query = query.gte("created_at", input.date_from);
+  }
+
+  if (input.date_to) {
+    query = query.lte("created_at", `${input.date_to}T23:59:59`);
+  }
+
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+
+  return (data ?? []).map((row: any) => {
+    const notifData = row.notification_data ?? {};
     const senderFullname: string | null =
       notifData.sender_fullname ??
       (notifData.sender_first_name || notifData.sender_last_name
@@ -90,22 +129,31 @@ export async function markNotificationRead(
   input: MarkReadPayload,
   userId: number
 ): Promise<void> {
-  await prisma.notification.updateMany({
-    where: { notification_id: input.notification_id, fk_user_id: userId },
-    data: { is_read: true, read_at: new Date() },
-  });
+  const { error } = await supabase
+    .from("notification")
+    .update({ is_read: true, read_at: new Date().toISOString() })
+    .eq("notification_id", input.notification_id)
+    .eq("fk_user_id", userId);
+
+  if (error) throw new Error(error.message);
+  revalidateTag(`notifications-unread-${userId}`);
 }
 
 
 export async function markAllNotificationsRead(
   userId: number
 ): Promise<{ updated: number }> {
-  const result = await prisma.notification.updateMany({
-    where: { fk_user_id: userId, is_read: false },
-    data: { is_read: true, read_at: new Date() },
-  });
+  const { data, error } = await supabase
+    .from("notification")
+    .update({ is_read: true, read_at: new Date().toISOString() })
+    .eq("fk_user_id", userId)
+    .eq("is_read", false)
+    .select("notification_id");
 
-  return { updated: result.count };
+  if (error) throw new Error(error.message);
+  revalidateTag(`notifications-unread-${userId}`);
+
+  return { updated: data?.length ?? 0 };
 }
 
 
