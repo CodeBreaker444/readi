@@ -1,7 +1,7 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { deleteOwner, getOwnerById, updateOwner } from '@/backend/services/company/owner-service';
 import { getUserSession } from '@/lib/auth/server-session';
-import { forbidden, internalError, notFound, unauthorized } from '@/lib/api-error';
+import { apiError, forbidden, internalError, notFound, unauthorized, zodError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
 import { NextResponse } from 'next/server';
 import z from 'zod';
@@ -53,10 +53,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         const body = await req.json();
         const validation = editOwnerValidation.safeParse(body);
 
-        if (!validation.success) {
-            const errorMessages = validation.error.issues.map((e) => e.message).join(', ');
-            return NextResponse.json({ code: 0, message: errorMessages }, { status: 400 });
-        }
+        if (!validation.success) return zodError(E.VL001, validation.error);
 
         const data = await updateOwner(id, validation.data);
 
@@ -89,7 +86,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
         if (session.user.role !== 'SUPERADMIN') return forbidden(E.PX004);
 
         if (id === '1') {
-            return NextResponse.json({ code: 0, message: 'This company cannot be deactivated.' }, { status: 403 });
+            return apiError(E.BL004, 403);
         }
 
         const ownerInfo = await getOwnerById(id);

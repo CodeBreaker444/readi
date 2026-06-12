@@ -36,6 +36,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ code: 1, message: 'Documento eliminato' });
   } catch (error: any) {
     console.error('[document_delete]', error);
-    return internalError(E.AU002, error);
+    return internalError(E.SV001, error);
   }
 }

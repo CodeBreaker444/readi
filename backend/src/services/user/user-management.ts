@@ -257,11 +257,11 @@ export async function createUser(userData: UserCreateData) {
 
 export async function updateUser(userData: UserUpdateData) {
   try {
-const toIntOrNull = (v: unknown): number | null => {
-  if (v === undefined || v === null || v === '' || v === 'undefined' || v === 'null') return null;
-  const n = parseInt(String(v), 10);
-  return isNaN(n) ? null : n;
-};
+    const toIntOrNull = (v: unknown): number | null => {
+      if (v === undefined || v === null || v === '' || v === 'undefined' || v === 'null') return null;
+      const n = parseInt(String(v), 10);
+      return isNaN(n) ? null : n;
+    };
 
     const updateData: any = {
       ...(userData.fullname && (() => {
@@ -336,6 +336,26 @@ export async function deleteUser(userId: number, ownerId: number, isSuperAdmin =
     if (lookupError) throw lookupError;
     if (!userRecord) throw new Error('User not found or does not belong to this organization');
 
+    const { error: notifError } = await supabase
+      .from('notification')
+      .delete()
+      .eq('fk_user_id', userId);
+    if (notifError) console.warn('[deleteUser] notification cleanup failed:', notifError);
+
+    const nullableFkTables: { table: string; column: string }[] = [
+      { table: 'checklist', column: 'fk_user_id' },
+      { table: 'kanban', column: 'fk_user_id' },
+      { table: 'planning_logbook', column: 'fk_user_id' },
+    ];
+
+    for (const { table, column } of nullableFkTables) {
+      const { error: nullifyError } = await supabase
+        .from(table as any)
+        .update({ [column]: null })
+        .eq(column, userId);
+      if (nullifyError) console.warn(`[deleteUser] nullify ${table}.${column} failed:`, nullifyError);
+    }
+
     let updateQuery = supabase
       .from('users')
       .delete()
@@ -360,7 +380,7 @@ export async function deleteUser(userId: number, ownerId: number, isSuperAdmin =
     return { success: true, message: 'User deleted successfully', fullName, email: userRecord.email ?? null };
   } catch (error) {
     console.error('Error deleting user:', error);
-    throw new Error(error instanceof Error ? error.message : 'Failed to delete user');
+    throw error;
   }
 }
 
