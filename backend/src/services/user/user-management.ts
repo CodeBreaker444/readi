@@ -257,11 +257,11 @@ export async function createUser(userData: UserCreateData) {
 
 export async function updateUser(userData: UserUpdateData) {
   try {
-const toIntOrNull = (v: unknown): number | null => {
-  if (v === undefined || v === null || v === '' || v === 'undefined' || v === 'null') return null;
-  const n = parseInt(String(v), 10);
-  return isNaN(n) ? null : n;
-};
+    const toIntOrNull = (v: unknown): number | null => {
+      if (v === undefined || v === null || v === '' || v === 'undefined' || v === 'null') return null;
+      const n = parseInt(String(v), 10);
+      return isNaN(n) ? null : n;
+    };
 
     const updateData: any = {
       ...(userData.fullname && (() => {
