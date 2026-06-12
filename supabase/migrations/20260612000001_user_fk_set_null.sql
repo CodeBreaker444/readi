@@ -1,5 +1,5 @@
+-- Prevent user deletion from being blocked by FK constraints.
  
-
 ALTER TABLE "public"."assignment"
   DROP CONSTRAINT IF EXISTS "assignment_fk_user_id_fkey",
   ALTER COLUMN "fk_user_id" DROP NOT NULL,

@@ -321,10 +321,10 @@ export async function updateOperation(id: number, input: UpdateOperationSchema):
     .update(updatePayload)
     .eq('pilot_mission_id', id);
 
-  if (error) throw new Error(`Failed to update operation: ${error.message}`);
+  if (error) throw error;
 
   const full = await getOperation(id);
-  if (!full) throw new Error('Failed to fetch updated operation');
+  if (!full) throw new Error('OPERATION_NOT_FOUND');
   return full;
 }
 
