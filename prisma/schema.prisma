@@ -531,10 +531,10 @@ model alert_log {
   resolved_by_user_id                            Int?
   resolution_notes                               String?
   created_at                                     DateTime?     @default(now()) @db.Timestamp(6)
-  users_alert_log_acknowledged_by_user_idTousers public_users? @relation("alert_log_acknowledged_by_user_idTousers", fields: [acknowledged_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
-  users_alert_log_assigned_to_user_idTousers     public_users? @relation("alert_log_assigned_to_user_idTousers", fields: [assigned_to_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
-  users_alert_log_resolved_by_user_idTousers     public_users? @relation("alert_log_resolved_by_user_idTousers", fields: [resolved_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
-  users_alert_log_triggered_by_user_idTousers    public_users? @relation("alert_log_triggered_by_user_idTousers", fields: [triggered_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users_alert_log_acknowledged_by_user_idTousers public_users? @relation("alert_log_acknowledged_by_user_idTousers", fields: [acknowledged_by_user_id], references: [user_id], onUpdate: NoAction)
+  users_alert_log_assigned_to_user_idTousers     public_users? @relation("alert_log_assigned_to_user_idTousers", fields: [assigned_to_user_id], references: [user_id], onUpdate: NoAction)
+  users_alert_log_resolved_by_user_idTousers     public_users? @relation("alert_log_resolved_by_user_idTousers", fields: [resolved_by_user_id], references: [user_id], onUpdate: NoAction)
+  users_alert_log_triggered_by_user_idTousers    public_users? @relation("alert_log_triggered_by_user_idTousers", fields: [triggered_by_user_id], references: [user_id], onUpdate: NoAction)
 
   @@schema("public")
 }
@@ -552,7 +552,7 @@ model api_keys {
   expires_at         DateTime?         @db.Timestamp(6)
   created_at         DateTime          @default(now()) @db.Timestamp(6)
   key_prefix         String?
-  users              public_users?     @relation(fields: [created_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users              public_users?     @relation(fields: [created_by_user_id], references: [user_id], onUpdate: NoAction)
   owner              owner             @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
   flight_requests    flight_requests[]
 
@@ -563,20 +563,20 @@ model api_keys {
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model assignment {
-  assignment_id     Int          @id @default(autoincrement())
-  fk_user_id        Int
+  assignment_id     Int           @id @default(autoincrement())
+  fk_user_id        Int?
   fk_owner_id       Int
-  assignment_code   String?      @db.VarChar(50)
+  assignment_code   String?       @db.VarChar(50)
   assignment_desc   String?
   assignment_json   Json?
-  assignment_ver    Decimal?     @db.Decimal(5, 2)
-  assignment_active String?      @default("Y") @db.Char(1)
-  due_date          DateTime?    @db.Date
-  completed_date    DateTime?    @db.Date
-  created_at        DateTime?    @default(now()) @db.Timestamp(6)
-  updated_at        DateTime?    @default(now()) @db.Timestamp(6)
-  owner             owner        @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
-  users             public_users @relation(fields: [fk_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  assignment_ver    Decimal?      @db.Decimal(5, 2)
+  assignment_active String?       @default("Y") @db.Char(1)
+  due_date          DateTime?     @db.Date
+  completed_date    DateTime?     @db.Date
+  created_at        DateTime?     @default(now()) @db.Timestamp(6)
+  updated_at        DateTime?     @default(now()) @db.Timestamp(6)
+  owner             owner         @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
+  users             public_users? @relation(fields: [fk_user_id], references: [user_id], onUpdate: NoAction)
 
   @@schema("public")
 }
@@ -622,7 +622,7 @@ model backup_log {
   performed_by_user_id Int?
   backup_metadata      Json?
   created_at           DateTime?     @default(now()) @db.Timestamp(6)
-  users                public_users? @relation(fields: [performed_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users                public_users? @relation(fields: [performed_by_user_id], references: [user_id], onUpdate: NoAction)
 
   @@schema("public")
 }
@@ -648,7 +648,7 @@ model calendar_shift {
   updated_at         DateTime?     @default(now()) @db.Timestamp(6)
   client             client?       @relation(fields: [fk_client_id], references: [client_id], onDelete: NoAction, onUpdate: NoAction)
   owner              owner?        @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
-  users              public_users? @relation(fields: [fk_pic_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users              public_users? @relation(fields: [fk_pic_id], references: [user_id], onUpdate: NoAction)
 
   @@schema("public")
 }
@@ -726,7 +726,7 @@ model code_index {
   inspection_code_index Int?
   date_update           DateTime?     @db.Date
   user_id               Int?
-  users                 public_users? @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users                 public_users? @relation(fields: [user_id], references: [user_id], onUpdate: NoAction)
 
   @@schema("public")
 }
@@ -734,18 +734,18 @@ model code_index {
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model communication {
-  communication_id     Int          @id @default(autoincrement())
-  fk_user_id           Int
+  communication_id     Int           @id @default(autoincrement())
+  fk_user_id           Int?
   fk_owner_id          Int?
-  communication_code   String?      @db.VarChar(50)
+  communication_code   String?       @db.VarChar(50)
   communication_desc   String?
   communication_json   Json?
-  communication_ver    Decimal?     @db.Decimal(5, 2)
-  communication_active String?      @default("Y") @db.Char(1)
-  created_at           DateTime?    @default(now()) @db.Timestamp(6)
-  updated_at           DateTime?    @default(now()) @db.Timestamp(6)
-  owner                owner?       @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
-  users                public_users @relation(fields: [fk_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  communication_ver    Decimal?      @db.Decimal(5, 2)
+  communication_active String?       @default("Y") @db.Char(1)
+  created_at           DateTime?     @default(now()) @db.Timestamp(6)
+  updated_at           DateTime?     @default(now()) @db.Timestamp(6)
+  owner                owner?        @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
+  users                public_users? @relation(fields: [fk_user_id], references: [user_id], onUpdate: NoAction)
 
   @@schema("public")
 }
@@ -774,7 +774,7 @@ model communication_general {
   communication_file_key  String?       @db.VarChar(500)
   communication_file_url  String?
   owner                   owner?        @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
-  users                   public_users? @relation(fields: [sent_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users                   public_users? @relation(fields: [sent_by_user_id], references: [user_id], onUpdate: NoAction)
 
   @@schema("public")
 }
@@ -794,8 +794,8 @@ model compliance_evidence {
   verification_status                                   String?                @db.VarChar(50)
   notes                                                 String?
   compliance_requirement                                compliance_requirement @relation(fields: [fk_requirement_id], references: [requirement_id], onDelete: NoAction, onUpdate: NoAction)
-  users_compliance_evidence_submitted_by_user_idTousers public_users?          @relation("compliance_evidence_submitted_by_user_idTousers", fields: [submitted_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
-  users_compliance_evidence_verified_by_user_idTousers  public_users?          @relation("compliance_evidence_verified_by_user_idTousers", fields: [verified_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users_compliance_evidence_submitted_by_user_idTousers public_users?          @relation("compliance_evidence_submitted_by_user_idTousers", fields: [submitted_by_user_id], references: [user_id], onUpdate: NoAction)
+  users_compliance_evidence_verified_by_user_idTousers  public_users?          @relation("compliance_evidence_verified_by_user_idTousers", fields: [verified_by_user_id], references: [user_id], onUpdate: NoAction)
 
   @@schema("public")
 }
@@ -833,7 +833,7 @@ model compliance_status_log {
   changed_by_user_id     Int?
   change_reason          String?
   changed_at             DateTime?              @default(now()) @db.Timestamp(6)
-  users                  public_users?          @relation(fields: [changed_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users                  public_users?          @relation(fields: [changed_by_user_id], references: [user_id], onUpdate: NoAction)
   compliance_requirement compliance_requirement @relation(fields: [fk_requirement_id], references: [requirement_id], onDelete: NoAction, onUpdate: NoAction)
 
   @@schema("public")
@@ -944,7 +944,7 @@ model deleted_owner {
   deleted_at          DateTime?     @default(now()) @db.Timestamp(6)
   deleted_by_user_id  Int?
   deletion_reason     String?
-  users               public_users? @relation(fields: [deleted_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users               public_users? @relation(fields: [deleted_by_user_id], references: [user_id], onUpdate: NoAction)
 
   @@schema("public")
 }
@@ -968,7 +968,7 @@ model deleted_user {
   deleted_at          DateTime?     @default(now()) @db.Timestamp(6)
   deleted_by_user_id  Int?
   deletion_reason     String?
-  users               public_users? @relation(fields: [deleted_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users               public_users? @relation(fields: [deleted_by_user_id], references: [user_id], onUpdate: NoAction)
 
   @@schema("public")
 }
@@ -1065,7 +1065,7 @@ model evaluation {
   fk_luc_procedure_id    Int?
   evaluation_year        Int?
   evaluation_result      String?
-  users                  public_users?           @relation(fields: [created_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users                  public_users?           @relation(fields: [created_by_user_id], references: [user_id], onUpdate: NoAction)
   client                 client?                 @relation(fields: [fk_client_id], references: [client_id], onDelete: NoAction, onUpdate: NoAction)
   luc_procedure          luc_procedure?          @relation(fields: [fk_luc_procedure_id], references: [procedure_id], onDelete: NoAction, onUpdate: NoAction)
   owner                  owner                   @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
@@ -1105,7 +1105,7 @@ model evaluation_action {
   dependencies        Json?
   created_at          DateTime?     @default(now()) @db.Timestamp(6)
   updated_at          DateTime?     @default(now()) @db.Timestamp(6)
-  users               public_users? @relation(fields: [assigned_to_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users               public_users? @relation(fields: [assigned_to_user_id], references: [user_id], onUpdate: NoAction)
   evaluation          evaluation    @relation(fields: [fk_evaluation_id], references: [evaluation_id], onDelete: Cascade, onUpdate: NoAction)
 
   @@schema("public")
@@ -1128,7 +1128,7 @@ model evaluation_file {
   is_latest           Boolean?      @default(true)
   file_url            String?
   evaluation          evaluation    @relation(fields: [fk_evaluation_id], references: [evaluation_id], onDelete: Cascade, onUpdate: NoAction)
-  users               public_users? @relation(fields: [uploaded_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users               public_users? @relation(fields: [uploaded_by_user_id], references: [user_id], onUpdate: NoAction)
 
   @@schema("public")
 }
@@ -1153,7 +1153,7 @@ model flight_requests {
   assigned_at         DateTime?     @db.Timestamp(6)
   created_at          DateTime      @default(now()) @db.Timestamp(6)
   updated_at          DateTime      @default(now()) @db.Timestamp(6)
-  users               public_users? @relation(fields: [assigned_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users               public_users? @relation(fields: [assigned_by_user_id], references: [user_id], onUpdate: NoAction)
   api_keys            api_keys?     @relation(fields: [fk_api_key_id], references: [api_key_id], onDelete: NoAction, onUpdate: NoAction)
   owner               owner         @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
 
@@ -1275,8 +1275,8 @@ model luc_document {
   keywords                                      String?
   tags                                          String?
   fk_component_id                               Int?
-  users_luc_document_approved_by_user_idTousers public_users?      @relation("luc_document_approved_by_user_idTousers", fields: [approved_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
-  users_luc_document_created_by_user_idTousers  public_users?      @relation("luc_document_created_by_user_idTousers", fields: [created_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users_luc_document_approved_by_user_idTousers public_users?      @relation("luc_document_approved_by_user_idTousers", fields: [approved_by_user_id], references: [user_id], onUpdate: NoAction)
+  users_luc_document_created_by_user_idTousers  public_users?      @relation("luc_document_created_by_user_idTousers", fields: [created_by_user_id], references: [user_id], onUpdate: NoAction)
   tool_component                                tool_component?    @relation(fields: [fk_component_id], references: [component_id], onUpdate: NoAction)
   luc_doc_type                                  luc_doc_type?      @relation(fields: [fk_doc_type_id], references: [doc_type_id], onDelete: NoAction, onUpdate: NoAction)
   owner                                         owner?             @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
@@ -1305,7 +1305,7 @@ model luc_document_rev {
   changes_summary      String?
   created_at           DateTime?     @default(now()) @db.Timestamp(6)
   luc_document         luc_document  @relation(fields: [fk_document_id], references: [document_id], onDelete: Cascade, onUpdate: NoAction)
-  users                public_users? @relation(fields: [revised_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users                public_users? @relation(fields: [revised_by_user_id], references: [user_id], onUpdate: NoAction)
 
   @@unique([fk_document_id, revision_number])
   @@schema("public")
@@ -1332,8 +1332,8 @@ model luc_procedure {
   updated_at                                     DateTime?       @default(now()) @db.Timestamp(6)
   procedure_sector                               String?         @db.VarChar(50)
   evaluation                                     evaluation[]
-  users_luc_procedure_approved_by_user_idTousers public_users?   @relation("luc_procedure_approved_by_user_idTousers", fields: [approved_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
-  users_luc_procedure_created_by_user_idTousers  public_users?   @relation("luc_procedure_created_by_user_idTousers", fields: [created_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users_luc_procedure_approved_by_user_idTousers public_users?   @relation("luc_procedure_approved_by_user_idTousers", fields: [approved_by_user_id], references: [user_id], onUpdate: NoAction)
+  users_luc_procedure_created_by_user_idTousers  public_users?   @relation("luc_procedure_created_by_user_idTousers", fields: [created_by_user_id], references: [user_id], onUpdate: NoAction)
   luc_document                                   luc_document?   @relation(fields: [fk_document_id], references: [document_id], onDelete: NoAction, onUpdate: NoAction)
   owner                                          owner?          @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
   pilot_mission                                  pilot_mission[]
@@ -1362,11 +1362,11 @@ model maintenance_ticket {
   fk_component_id                                     Int?
   location_latitude                                   Decimal?                        @db.Decimal(10, 7)
   location_longitude                                  Decimal?                        @db.Decimal(10, 7)
-  users_maintenance_ticket_assigned_to_user_idTousers public_users?                   @relation("maintenance_ticket_assigned_to_user_idTousers", fields: [assigned_to_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users_maintenance_ticket_assigned_to_user_idTousers public_users?                   @relation("maintenance_ticket_assigned_to_user_idTousers", fields: [assigned_to_user_id], references: [user_id], onUpdate: NoAction)
   tool_component                                      tool_component?                 @relation(fields: [fk_component_id], references: [component_id], onUpdate: NoAction)
   owner                                               owner?                          @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
   tool                                                tool?                           @relation(fields: [fk_tool_id], references: [tool_id], onUpdate: NoAction)
-  users_maintenance_ticket_reported_by_user_idTousers public_users?                   @relation("maintenance_ticket_reported_by_user_idTousers", fields: [reported_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users_maintenance_ticket_reported_by_user_idTousers public_users?                   @relation("maintenance_ticket_reported_by_user_idTousers", fields: [reported_by_user_id], references: [user_id], onUpdate: NoAction)
   maintenance_ticket_attachment                       maintenance_ticket_attachment[]
   maintenance_ticket_event                            maintenance_ticket_event[]
   maintenance_ticket_item                             maintenance_ticket_item[]
@@ -1393,7 +1393,7 @@ model maintenance_ticket_attachment {
   uploaded_by_user_id Int?
   uploaded_at         DateTime?          @default(now()) @db.Timestamp(6)
   maintenance_ticket  maintenance_ticket @relation(fields: [fk_ticket_id], references: [ticket_id], onDelete: Cascade, onUpdate: NoAction)
-  users               public_users?      @relation(fields: [uploaded_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users               public_users?      @relation(fields: [uploaded_by_user_id], references: [user_id], onUpdate: NoAction)
 
   @@schema("public")
 }
@@ -1408,7 +1408,7 @@ model maintenance_ticket_event {
   event_data         Json?
   created_by_user_id Int?
   created_at         DateTime?          @default(now()) @db.Timestamp(6)
-  users              public_users?      @relation(fields: [created_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users              public_users?      @relation(fields: [created_by_user_id], references: [user_id], onUpdate: NoAction)
   maintenance_ticket maintenance_ticket @relation(fields: [fk_ticket_id], references: [ticket_id], onDelete: Cascade, onUpdate: NoAction)
 
   @@schema("public")
@@ -1447,7 +1447,7 @@ model maintenance_ticket_report {
   generated_by_user_id Int?
   generated_at         DateTime?          @default(now()) @db.Timestamp(6)
   maintenance_ticket   maintenance_ticket @relation(fields: [fk_ticket_id], references: [ticket_id], onDelete: Cascade, onUpdate: NoAction)
-  users                public_users?      @relation(fields: [generated_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users                public_users?      @relation(fields: [generated_by_user_id], references: [user_id], onUpdate: NoAction)
 
   @@schema("public")
 }
@@ -1455,23 +1455,23 @@ model maintenance_ticket_report {
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model messages {
-  message_id                         Int          @id @default(autoincrement())
-  from_user_id                       Int
-  to_user_id                         Int
-  message_subject                    String?      @db.VarChar(255)
+  message_id                         Int           @id @default(autoincrement())
+  from_user_id                       Int?
+  to_user_id                         Int?
+  message_subject                    String?       @db.VarChar(255)
   message_body                       String?
-  message_type                       String?      @db.VarChar(50)
-  is_read                            Boolean?     @default(false)
-  read_at                            DateTime?    @db.Timestamp(6)
+  message_type                       String?       @db.VarChar(50)
+  is_read                            Boolean?      @default(false)
+  read_at                            DateTime?     @db.Timestamp(6)
   parent_message_id                  Int?
   attachments                        Json?
-  created_at                         DateTime?    @default(now()) @db.Timestamp(6)
-  deleted_by_sender                  Boolean?     @default(false)
-  deleted_by_recipient               Boolean?     @default(false)
-  users_messages_from_user_idTousers public_users @relation("messages_from_user_idTousers", fields: [from_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
-  messages                           messages?    @relation("messagesTomessages", fields: [parent_message_id], references: [message_id], onDelete: NoAction, onUpdate: NoAction)
-  other_messages                     messages[]   @relation("messagesTomessages")
-  users_messages_to_user_idTousers   public_users @relation("messages_to_user_idTousers", fields: [to_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  created_at                         DateTime?     @default(now()) @db.Timestamp(6)
+  deleted_by_sender                  Boolean?      @default(false)
+  deleted_by_recipient               Boolean?      @default(false)
+  users_messages_from_user_idTousers public_users? @relation("messages_from_user_idTousers", fields: [from_user_id], references: [user_id], onUpdate: NoAction)
+  messages                           messages?     @relation("messagesTomessages", fields: [parent_message_id], references: [message_id], onDelete: NoAction, onUpdate: NoAction)
+  other_messages                     messages[]    @relation("messagesTomessages")
+  users_messages_to_user_idTousers   public_users? @relation("messages_to_user_idTousers", fields: [to_user_id], references: [user_id], onUpdate: NoAction)
 
   @@index([from_user_id], map: "idx_messages_from")
   @@index([is_read], map: "idx_messages_read")
@@ -1658,7 +1658,7 @@ model owner_territorial_unit {
   updated_at                                              DateTime?      @default(now()) @db.Timestamp(6)
   countries                                               countries?     @relation(fields: [fk_country_id], references: [country_id], onDelete: NoAction, onUpdate: NoAction)
   owner                                                   owner          @relation(fields: [fk_owner_id], references: [owner_id], onDelete: Cascade, onUpdate: NoAction)
-  users_owner_territorial_unit_unit_manager_idTousers     public_users?  @relation("owner_territorial_unit_unit_manager_idTousers", fields: [unit_manager_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users_owner_territorial_unit_unit_manager_idTousers     public_users?  @relation("owner_territorial_unit_unit_manager_idTousers", fields: [unit_manager_id], references: [user_id], onUpdate: NoAction)
   users_users_fk_territorial_unitToowner_territorial_unit public_users[] @relation("users_fk_territorial_unitToowner_territorial_unit")
 
   @@unique([fk_owner_id, unit_code])
@@ -1694,16 +1694,16 @@ model payload {
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model pilot_declaration {
-  declaration_id      Int          @id @default(autoincrement())
-  fk_user_id          Int
+  declaration_id      Int           @id @default(autoincrement())
+  fk_user_id          Int?
   fk_tool_id          Int?
-  declaration_type    String?      @db.VarChar(50)
-  declaration_date    DateTime?    @db.Date
+  declaration_type    String?       @db.VarChar(50)
+  declaration_date    DateTime?     @db.Date
   declaration_data    Json?
-  checklist_completed Boolean?     @default(false)
-  declared_at         DateTime?    @default(now()) @db.Timestamp(6)
-  tool                tool?        @relation(fields: [fk_tool_id], references: [tool_id], onDelete: NoAction, onUpdate: NoAction)
-  users               public_users @relation(fields: [fk_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  checklist_completed Boolean?      @default(false)
+  declared_at         DateTime?     @default(now()) @db.Timestamp(6)
+  tool                tool?         @relation(fields: [fk_tool_id], references: [tool_id], onDelete: NoAction, onUpdate: NoAction)
+  users               public_users? @relation(fields: [fk_user_id], references: [user_id], onUpdate: NoAction)
 
   @@unique([fk_user_id, declaration_date, declaration_type], map: "pilot_declaration_user_date_type_key")
   @@schema("public")
@@ -1714,7 +1714,7 @@ model pilot_declaration {
 model pilot_mission {
   pilot_mission_id          Int                        @id @default(autoincrement())
   fk_planning_id            Int?
-  fk_pilot_user_id          Int
+  fk_pilot_user_id          Int?
   fk_tool_id                Int?
   fk_mission_type_id        Int?
   fk_mission_category_id    Int?
@@ -1760,7 +1760,7 @@ model pilot_mission {
   pilot_mission_status      pilot_mission_status?      @relation(fields: [fk_mission_status_id], references: [status_id], onDelete: NoAction, onUpdate: NoAction)
   pilot_mission_type        pilot_mission_type?        @relation(fields: [fk_mission_type_id], references: [mission_type_id], onDelete: NoAction, onUpdate: NoAction)
   owner                     owner                      @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
-  users                     public_users               @relation(fields: [fk_pilot_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users                     public_users?              @relation(fields: [fk_pilot_user_id], references: [user_id], onUpdate: NoAction)
   planning                  planning?                  @relation(fields: [fk_planning_id], references: [planning_id], onDelete: NoAction, onUpdate: NoAction)
   tool                      tool?                      @relation(fields: [fk_tool_id], references: [tool_id], onUpdate: NoAction)
   pilot_mission_result      pilot_mission_result[]
@@ -1810,7 +1810,7 @@ model pilot_mission_planned_template_logbook {
   is_active            Boolean?      @default(true)
   created_at           DateTime?     @default(now()) @db.Timestamp(6)
   updated_at           DateTime?     @default(now()) @db.Timestamp(6)
-  users                public_users? @relation(fields: [created_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users                public_users? @relation(fields: [created_by_user_id], references: [user_id], onUpdate: NoAction)
 
   @@schema("public")
 }
@@ -1938,7 +1938,7 @@ model planning {
   mission_component                         mission_component[]
   pilot_mission                             pilot_mission[]
   users_planning_assigned_to_user_idTousers public_users?           @relation("planning_assigned_to_user_idTousers", fields: [assigned_to_user_id], references: [user_id], onUpdate: NoAction)
-  users_planning_created_by_user_idTousers  public_users?           @relation("planning_created_by_user_idTousers", fields: [created_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users_planning_created_by_user_idTousers  public_users?           @relation("planning_created_by_user_idTousers", fields: [created_by_user_id], references: [user_id], onUpdate: NoAction)
   client                                    client?                 @relation(fields: [fk_client_id], references: [client_id], onDelete: NoAction, onUpdate: NoAction)
   evaluation                                evaluation?             @relation(fields: [fk_evaluation_id], references: [evaluation_id], onDelete: NoAction, onUpdate: NoAction)
   owner                                     owner                   @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
@@ -2019,12 +2019,12 @@ model planning_test_logbook {
   mission_test_s3_url                                  String?
   evaluation                                           evaluation?       @relation(fields: [fk_evaluation_id], references: [evaluation_id], onDelete: NoAction, onUpdate: NoAction)
   planning_logbook                                     planning_logbook? @relation(fields: [fk_mission_planning_id], references: [mission_planning_id], onDelete: Cascade, onUpdate: NoAction)
-  users_planning_test_logbook_fk_observer_idTousers    public_users?     @relation("planning_test_logbook_fk_observer_idTousers", fields: [fk_observer_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users_planning_test_logbook_fk_observer_idTousers    public_users?     @relation("planning_test_logbook_fk_observer_idTousers", fields: [fk_observer_id], references: [user_id], onUpdate: NoAction)
   owner                                                owner?            @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
-  users_planning_test_logbook_fk_pic_idTousers         public_users?     @relation("planning_test_logbook_fk_pic_idTousers", fields: [fk_pic_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users_planning_test_logbook_fk_pic_idTousers         public_users?     @relation("planning_test_logbook_fk_pic_idTousers", fields: [fk_pic_id], references: [user_id], onUpdate: NoAction)
   planning                                             planning          @relation(fields: [fk_planning_id], references: [planning_id], onDelete: Cascade, onUpdate: NoAction)
-  users_planning_test_logbook_fk_user_idTousers        public_users?     @relation("planning_test_logbook_fk_user_idTousers", fields: [fk_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
-  users_planning_test_logbook_tested_by_user_idTousers public_users?     @relation("planning_test_logbook_tested_by_user_idTousers", fields: [tested_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users_planning_test_logbook_fk_user_idTousers        public_users?     @relation("planning_test_logbook_fk_user_idTousers", fields: [fk_user_id], references: [user_id], onUpdate: NoAction)
+  users_planning_test_logbook_tested_by_user_idTousers public_users?     @relation("planning_test_logbook_tested_by_user_idTousers", fields: [tested_by_user_id], references: [user_id], onUpdate: NoAction)
 
   @@index([fk_mission_planning_id], map: "idx_planning_test_logbook_mission_planning")
   @@index([fk_owner_id], map: "idx_planning_test_logbook_owner")
@@ -2070,7 +2070,7 @@ model repository_file {
   updated_at           DateTime?             @default(now()) @db.Timestamp(6)
   repository_file_type repository_file_type? @relation(fields: [fk_file_type_id], references: [file_type_id], onDelete: NoAction, onUpdate: NoAction)
   owner                owner?                @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
-  users                public_users?         @relation(fields: [uploaded_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users                public_users?         @relation(fields: [uploaded_by_user_id], references: [user_id], onUpdate: NoAction)
 
   @@schema("public")
 }
@@ -2108,9 +2108,9 @@ model safety_action {
   verified_at                                    DateTime?     @db.Timestamp(6)
   created_at                                     DateTime?     @default(now()) @db.Timestamp(6)
   updated_at                                     DateTime?     @default(now()) @db.Timestamp(6)
-  users_safety_action_assigned_to_user_idTousers public_users? @relation("safety_action_assigned_to_user_idTousers", fields: [assigned_to_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users_safety_action_assigned_to_user_idTousers public_users? @relation("safety_action_assigned_to_user_idTousers", fields: [assigned_to_user_id], references: [user_id], onUpdate: NoAction)
   safety_report                                  safety_report @relation(fields: [fk_report_id], references: [report_id], onDelete: Cascade, onUpdate: NoAction)
-  users_safety_action_verified_by_user_idTousers public_users? @relation("safety_action_verified_by_user_idTousers", fields: [verified_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users_safety_action_verified_by_user_idTousers public_users? @relation("safety_action_verified_by_user_idTousers", fields: [verified_by_user_id], references: [user_id], onUpdate: NoAction)
 
   @@schema("public")
 }
@@ -2140,8 +2140,8 @@ model safety_report {
   safety_action                                      safety_action[]
   owner                                              owner?          @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
   pilot_mission                                      pilot_mission?  @relation(fields: [fk_pilot_mission_id], references: [pilot_mission_id], onDelete: NoAction, onUpdate: NoAction)
-  users_safety_report_investigated_by_user_idTousers public_users?   @relation("safety_report_investigated_by_user_idTousers", fields: [investigated_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
-  users_safety_report_reported_by_user_idTousers     public_users?   @relation("safety_report_reported_by_user_idTousers", fields: [reported_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users_safety_report_investigated_by_user_idTousers public_users?   @relation("safety_report_investigated_by_user_idTousers", fields: [investigated_by_user_id], references: [user_id], onUpdate: NoAction)
+  users_safety_report_reported_by_user_idTousers     public_users?   @relation("safety_report_reported_by_user_idTousers", fields: [reported_by_user_id], references: [user_id], onUpdate: NoAction)
 
   @@schema("public")
 }
@@ -2178,7 +2178,7 @@ model spi_kpi {
   created_at          DateTime?          @default(now()) @db.Timestamp(6)
   spi_kpi_definition  spi_kpi_definition @relation(fields: [fk_definition_id], references: [definition_id], onDelete: NoAction, onUpdate: NoAction)
   owner               owner?             @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
-  users               public_users?      @relation(fields: [recorded_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users               public_users?      @relation(fields: [recorded_by_user_id], references: [user_id], onUpdate: NoAction)
   spi_kpi_log         spi_kpi_log[]
 
   @@unique([fk_definition_id, measurement_date])
@@ -2226,7 +2226,7 @@ model spi_kpi_log {
   new_value          Decimal?      @db.Decimal(15, 4)
   changed_by_user_id Int?
   changed_at         DateTime?     @default(now()) @db.Timestamp(6)
-  users              public_users? @relation(fields: [changed_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users              public_users? @relation(fields: [changed_by_user_id], references: [user_id], onUpdate: NoAction)
   spi_kpi            spi_kpi       @relation(fields: [fk_kpi_id], references: [kpi_id], onDelete: Cascade, onUpdate: NoAction)
 
   @@schema("public")
@@ -2246,9 +2246,9 @@ model spi_kpi_target_proposal {
   approved_by_user_id                                      Int?
   approved_at                                              DateTime?          @db.Timestamp(6)
   created_at                                               DateTime?          @default(now()) @db.Timestamp(6)
-  users_spi_kpi_target_proposal_approved_by_user_idTousers public_users?      @relation("spi_kpi_target_proposal_approved_by_user_idTousers", fields: [approved_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users_spi_kpi_target_proposal_approved_by_user_idTousers public_users?      @relation("spi_kpi_target_proposal_approved_by_user_idTousers", fields: [approved_by_user_id], references: [user_id], onUpdate: NoAction)
   spi_kpi_definition                                       spi_kpi_definition @relation(fields: [fk_definition_id], references: [definition_id], onDelete: NoAction, onUpdate: NoAction)
-  users_spi_kpi_target_proposal_proposed_by_user_idTousers public_users?      @relation("spi_kpi_target_proposal_proposed_by_user_idTousers", fields: [proposed_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users_spi_kpi_target_proposal_proposed_by_user_idTousers public_users?      @relation("spi_kpi_target_proposal_proposed_by_user_idTousers", fields: [proposed_by_user_id], references: [user_id], onUpdate: NoAction)
 
   @@schema("public")
 }
@@ -2267,7 +2267,7 @@ model team {
   created_at       DateTime?      @default(now()) @db.Timestamp(6)
   updated_at       DateTime?      @default(now()) @db.Timestamp(6)
   owner            owner          @relation(fields: [fk_owner_id], references: [owner_id], onDelete: Cascade, onUpdate: NoAction)
-  users            public_users?  @relation(fields: [team_leader_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users            public_users?  @relation(fields: [team_leader_id], references: [user_id], onUpdate: NoAction)
   team_members     team_members[]
 
   @@unique([fk_owner_id, team_code])
@@ -2381,12 +2381,13 @@ model tool_component {
   current_maintenance_days    Decimal?                  @default(0) @db.Decimal
   current_maintenance_flights Decimal?                  @default(0) @db.Decimal
   last_maintenance_date       DateTime?                 @db.Timestamp(6)
-  expiration_date             DateTime?                 @db.Date
-  expiry_type                 String?                   @default("EXPIRATION_DATE") @db.Text
-  expiration_flights          Int?
   dcc_drone_id                String?                   @db.Uuid
   drone_registration_code     String?
   drc_synced_at               DateTime?                 @db.Timestamptz(6)
+  expiration_date             DateTime?                 @db.Date
+  expiry_type                 String                    @default("EXPIRATION_DATE")
+  expiration_flights          Int?
+  expiration_flight_hours     Decimal?                  @db.Decimal(7, 2)
   luc_document                luc_document[]
   maintenance_ticket          maintenance_ticket[]
   maintenance_ticket_item     maintenance_ticket_item[]
@@ -2431,7 +2432,7 @@ model tool_maintenance {
   created_at              DateTime?     @default(now()) @db.Timestamp(6)
   updated_at              DateTime?     @default(now()) @db.Timestamp(6)
   tool                    tool          @relation(fields: [fk_tool_id], references: [tool_id], onDelete: Cascade, onUpdate: NoAction)
-  users                   public_users? @relation(fields: [performed_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users                   public_users? @relation(fields: [performed_by_user_id], references: [user_id], onUpdate: NoAction)
 
   @@schema("public")
 }
@@ -2518,7 +2519,7 @@ model training_attendance {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model transaction_signs {
-  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   user_id             Int
   owner_id            Int
   user_name           String?
@@ -2528,9 +2529,9 @@ model transaction_signs {
   jwt_token           String
   payload_preview     Json?
   public_key_snapshot String
+  created_at          DateTime  @default(now()) @db.Timestamptz(6)
   integrity_status    String?   @db.VarChar(10)
   verified_at         DateTime? @db.Timestamptz(6)
-  created_at          DateTime  @default(now()) @db.Timestamptz(6)
 
   @@index([created_at(sort: Desc)], map: "idx_transaction_signs_created")
   @@index([entity_type, entity_id], map: "idx_transaction_signs_entity")
