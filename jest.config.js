@@ -9,8 +9,9 @@ const config = {
   moduleNameMapper: {
     '^@/backend/(.*)$': '<rootDir>/backend/src/$1',
     '^@/(.*)$': '<rootDir>/src/$1',
-    // Prevent server-only from throwing in Node.js test environment
     '^server-only$': '<rootDir>/backend/src/tests/__mocks__/server-only.js',
+    '^uuid$': '<rootDir>/backend/src/tests/__mocks__/uuid.js',
+    '^@mcp-server/(.*)$': '<rootDir>/mcp-server/$1',
   },
   testMatch: ['**/backend/src/tests/**/*.test.ts'],
   testPathIgnorePatterns: ['/node_modules/', '/.next/'],
