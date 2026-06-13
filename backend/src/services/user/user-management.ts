@@ -315,6 +315,7 @@ export async function deleteUser(userId: number, ownerId: number, isSuperAdmin =
       prisma.checklist.updateMany({ where: { fk_user_id: userId }, data: { fk_user_id: null } }),
       prisma.kanban.updateMany({ where: { fk_user_id: userId }, data: { fk_user_id: null } }),
       prisma.planning_logbook.updateMany({ where: { fk_user_id: userId }, data: { fk_user_id: null } }),
+      prisma.training_attendance.deleteMany({ where: { fk_user_id: userId } }),
     ]);
 
     await prisma.public_users.deleteMany({

@@ -86,10 +86,11 @@ jest.mock('@/lib/prisma', () => ({
     user_owner:       { create: jest.fn(), updateMany: jest.fn() },
     users_profile:    { create: jest.fn(), update: jest.fn() },
     user_settings:    { create: jest.fn() },
-    notification:     { deleteMany: jest.fn() },
-    checklist:        { updateMany: jest.fn() },
-    kanban:           { updateMany: jest.fn() },
-    planning_logbook: { updateMany: jest.fn() },
+    notification:        { deleteMany: jest.fn() },
+    checklist:           { updateMany: jest.fn() },
+    kanban:              { updateMany: jest.fn() },
+    planning_logbook:    { updateMany: jest.fn() },
+    training_attendance: { deleteMany: jest.fn() },
   },
 }));
 
@@ -148,6 +149,7 @@ beforeEach(() => {
   mockPrisma.checklist.updateMany.mockResolvedValue({ count: 0 });
   mockPrisma.kanban.updateMany.mockResolvedValue({ count: 0 });
   mockPrisma.planning_logbook.updateMany.mockResolvedValue({ count: 0 });
+  mockPrisma.training_attendance.deleteMany.mockResolvedValue({ count: 0 });
 });
 
 // ─── GET user list ─────────────────────────────────────────────────────────────
