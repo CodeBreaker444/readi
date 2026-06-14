@@ -129,10 +129,20 @@ export async function getOperationLogbookList(
 
 
 export async function getOperationLogbookFilters(owner_id: number) {
+  const pilotMissionUserIds = await prisma.pilot_mission.findMany({
+    where:  { fk_owner_id: owner_id, fk_pilot_user_id: { not: null } },
+    select: { fk_pilot_user_id: true },
+    distinct: ['fk_pilot_user_id'],
+  });
+  const pilotUserIds = pilotMissionUserIds
+    .map((r) => r.fk_pilot_user_id)
+    .filter((id): id is number => id !== null);
+
   const [pilots, clients, drones, missionTypes, missionCategories, missionResults, missionStatuses, missionPlans] =
     await Promise.all([
       prisma.public_users.findMany({
-        where:  { fk_owner_id: owner_id, user_role: 'PIC', user_active: 'Y' },
+        where:  { user_id: { in: pilotUserIds }, user_active: 'Y' },
+        orderBy: [{ last_name: 'asc' }, { first_name: 'asc' }],
         select: { user_id: true, first_name: true, last_name: true },
       }),
       prisma.client.findMany({

@@ -1100,6 +1100,8 @@
       "completed": "COMPLETATO",
       "failed": "FALLITO",
       "filter": {
+        "title": "Filtri",
+        "all": "Tutti",
         "client": "Cliente",
         "allClients": "Tutti i clienti",
         "pic": "PiC",
@@ -1115,6 +1117,7 @@
       },
       "table": {
         "searchPlaceholder": "Cerca in tutte le colonne…",
+        "recordsFound": "record trovati",
         "active": "Attivo",
         "inactive": "Inattivo",
         "noResults": "Nessun piano missione trovato",
@@ -2215,6 +2218,8 @@
       "completed": "COMPLETATO",
       "failed": "FALLITO",
       "filter": {
+        "title": "Filtri",
+        "all": "Tutti",
         "client": "Cliente",
         "allClients": "Tutti i clienti",
         "pic": "PiC",
@@ -2230,6 +2235,7 @@
       },
       "table": {
         "searchPlaceholder": "Cerca in tutte le colonne…",
+        "recordsFound": "record trovati",
         "active": "Attivo",
         "inactive": "Inattivo",
         "noResults": "Nessun piano missione trovato",

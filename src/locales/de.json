@@ -1098,6 +1098,8 @@
       "addNewEntry": "Neue Missionsplanung hinzufügen",
       "progress": "FORTSCHRITT",
       "filter": {
+        "title": "Filter",
+        "all": "Alle",
         "client": "Kunde",
         "allClients": "Alle Kunden",
         "pic": "PiC",
@@ -1113,6 +1115,7 @@
       },
       "table": {
         "searchPlaceholder": "In allen Spalten suchen…",
+        "recordsFound": "Einträge gefunden",
         "active": "Aktiv",
         "inactive": "Inaktiv",
         "noResults": "Keine Missionspläne gefunden",
@@ -2211,6 +2214,8 @@
       "addNewEntry": "Neue Missionsplanung hinzufügen",
       "progress": "FORTSCHRITT",
       "filter": {
+        "title": "Filter",
+        "all": "Alle",
         "client": "Kunde",
         "allClients": "Alle Kunden",
         "pic": "PiC",
@@ -2226,6 +2231,7 @@
       },
       "table": {
         "searchPlaceholder": "In allen Spalten suchen…",
+        "recordsFound": "Einträge gefunden",
         "active": "Aktiv",
         "inactive": "Inaktiv",
         "noResults": "Keine Missionspläne gefunden",

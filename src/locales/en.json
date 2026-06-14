@@ -1098,6 +1098,8 @@
       "addNewEntry": "Add New Mission Planning",
       "progress": "PROGRESS",
       "filter": {
+        "title": "Filters",
+        "all": "All",
         "client": "Client",
         "allClients": "All clients",
         "pic": "PiC",
@@ -1113,6 +1115,7 @@
       },
       "table": {
         "searchPlaceholder": "Search across all columns…",
+        "recordsFound": "records found",
         "active": "Active",
         "inactive": "Inactive",
         "noResults": "No mission plans found",
@@ -2222,6 +2225,8 @@
       "addNewEntry": "Add New Mission Planning",
       "progress": "PROGRESS",
       "filter": {
+        "title": "Filters",
+        "all": "All",
         "client": "Client",
         "allClients": "All clients",
         "pic": "PiC",
@@ -2237,6 +2242,7 @@
       },
       "table": {
         "searchPlaceholder": "Search across all columns…",
+        "recordsFound": "records found",
         "active": "Active",
         "inactive": "Inactive",
         "noResults": "No mission plans found",
