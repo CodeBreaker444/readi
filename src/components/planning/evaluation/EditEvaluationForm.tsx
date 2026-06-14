@@ -37,13 +37,18 @@ export function EditEvaluationForm({ evaluation, onUpdated }: Props) {
 
   useEffect(() => {
     if (!evaluation) return;
+    const rawStatus = (evaluation.evaluation_status ?? 'NEW') as string;
+    const normalizedStatus: EvaluationStatus =
+        rawStatus === 'IN_PROGRESS' ? 'PROGRESS' :
+        rawStatus === 'COMPLETED'   ? 'DONE'     :
+        rawStatus as EvaluationStatus;
     setForm({
       evaluation_request_date: evaluation.evaluation_request_date ?? '',
       evaluation_year: String(evaluation.evaluation_year ?? ''),
       evaluation_desc: evaluation.evaluation_desc ?? '',
       evaluation_offer: evaluation.evaluation_offer ?? '',
       evaluation_sale_manager: evaluation.evaluation_sale_manager ?? '',
-      evaluation_status: evaluation.evaluation_status ?? 'NEW',
+      evaluation_status: normalizedStatus,
       evaluation_result: evaluation.evaluation_result ?? 'PROCESSING',
     });
   }, [evaluation]);

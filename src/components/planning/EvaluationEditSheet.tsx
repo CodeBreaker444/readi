@@ -108,12 +108,20 @@ const form = useForm<UpdateEvaluationFormValues>({
 
     useEffect(() => {
         if (evaluation) {
+            const rawStatus = evaluation.evaluation_status as string;
+            const normalizedStatus: z.infer<typeof EvaluationStatusEnum> =
+                rawStatus === 'IN_PROGRESS' ? 'PROGRESS' :
+                rawStatus === 'COMPLETED'   ? 'DONE'     :
+                EvaluationStatusEnum.safeParse(rawStatus).success
+                    ? (rawStatus as z.infer<typeof EvaluationStatusEnum>)
+                    : 'NEW';
+
             form.reset({
                 evaluation_id: evaluation.evaluation_id,
                 fk_owner_id: evaluation.fk_owner_id,
                 fk_client_id: evaluation.fk_client_id,
                 fk_luc_procedure_id: evaluation.fk_luc_procedure_id,
-                evaluation_status: evaluation.evaluation_status,
+                evaluation_status: normalizedStatus,
                 evaluation_result: evaluation.evaluation_result,
                 evaluation_request_date: evaluation.evaluation_request_date ?? '',
                 evaluation_year: evaluation.evaluation_year,
