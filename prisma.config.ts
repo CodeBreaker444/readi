@@ -2,8 +2,6 @@ import "dotenv/config";
 import path from "node:path";
 import { defineConfig } from "prisma/config";
 
-// Prisma 7 config — connection URLs live here, not in schema.prisma
-//
 // DATABASE_URL : pooler URL in production (PgBouncer port 6543) or direct URL locally
 //                → used by PrismaClient at runtime via PrismaPg adapter (src/lib/prisma.ts)
 //

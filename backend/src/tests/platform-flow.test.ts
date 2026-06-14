@@ -543,7 +543,16 @@ beforeAll(() => {
   jest.spyOn(console, 'warn').mockImplementation(() => {});
 });
 
-afterAll(() => {
+afterAll(async () => {
+  if (createdClientId) {
+    try {
+      const req = makeRequest('/api/client/delete', { method: 'DELETE', body: { client_id: createdClientId } });
+      await clientDeleteDEL(req);
+      console.info(`[afterAll] Deleted client ID=${createdClientId}`);
+    } catch (e) {
+      console.warn(`[afterAll] Failed to delete client ID=${createdClientId}:`, e);
+    }
+  }
   jest.restoreAllMocks();
 });
 
@@ -3359,13 +3368,6 @@ describeIntegration('Full Platform Integration Flow', () => {
     expect(body.code).toBe(1);
   });
 
-  it('Cleanup — deletes the client', async () => {
-    if (!createdClientId) return;
-    const req = makeRequest('/api/client/delete', { method: 'DELETE', body: { client_id: createdClientId } });
-    const res = await clientDeleteDEL(req);
-    expect(res.status).not.toBe(401);
-    console.info(`[Cleanup] Deleted client ID=${createdClientId}`);
-  });
 
   it('Cleanup — deactivates the SPI/KPI', async () => {
     if (!createdSpiKpiId) return;

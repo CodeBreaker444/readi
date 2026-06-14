@@ -127,39 +127,47 @@ export async function getMissionTemplateLogbook(
 export async function getMissionTemplateFilterOptions(ownerId: number) {
   const [clients, pilots, evaluations, plannings] = await Promise.all([
     prisma.client.findMany({
-      where: { fk_owner_id: ownerId, client_active: 'Y' },
+      where: { fk_owner_id: ownerId },
       orderBy: { client_name: 'asc' },
-      select: { client_id: true, client_name: true },
+      select: { client_id: true, client_name: true, client_active: true },
     }),
     prisma.public_users.findMany({
+      where: { fk_owner_id: ownerId , NOT: { user_role: 'CLIENT' }},
       orderBy: { first_name: 'asc' },
-      select: { user_id: true, first_name: true, last_name: true },
+      select: { user_id: true, first_name: true, last_name: true, user_active: true },
     }),
     prisma.evaluation.findMany({
-      where: { fk_owner_id: ownerId, evaluation_active: 'Y' },
+      where: { fk_owner_id: ownerId },
       orderBy: { evaluation_id: 'desc' },
-      select: { evaluation_id: true, evaluation_code: true },
+      select: { evaluation_id: true, evaluation_code: true, evaluation_active: true },
     }),
     prisma.planning.findMany({
-      where: { fk_owner_id: ownerId, planning_active: 'Y' },
+      where: { fk_owner_id: ownerId },
       orderBy: { planning_id: 'desc' },
-      select: { planning_id: true, planning_code: true, planning_name: true },
+      select: { planning_id: true, planning_code: true, planning_name: true, planning_active: true },
     }),
   ]);
 
   return {
-    clients: clients.map((c) => ({ id: c.client_id, name: c.client_name })),
+    clients: clients.map((c) => ({
+      id: c.client_id,
+      name: c.client_name,
+      active: c.client_active === 'Y',
+    })),
     pilots: pilots.map((p) => ({
       id: p.user_id,
       name: `${p.first_name ?? ''} ${p.last_name ?? ''}`.trim(),
+      active: p.user_active === 'Y',
     })),
     evaluations: evaluations.map((e) => ({
       id: e.evaluation_id,
       name: e.evaluation_code ?? `EVAL_${e.evaluation_id}`,
+      active: e.evaluation_active === 'Y',
     })),
     plannings: plannings.map((p) => ({
       id: p.planning_id,
       name: p.planning_code ?? p.planning_name ?? `PLAN_${p.planning_id}`,
+      active: p.planning_active === 'Y',
     })),
   };
 }
