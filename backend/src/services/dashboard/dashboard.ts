@@ -406,10 +406,19 @@ interface SPIKPITrendInput {
 
 export async function getSPIKPITrend(input: SPIKPITrendInput) {
   try {
+    const ownerKpis = await prisma.spi_kpi.findMany({
+      where: { fk_owner_id: input.owner_id },
+      select: { fk_definition_id: true },
+      distinct: ['fk_definition_id'],
+    });
+
+    const ownerDefIds = ownerKpis.map(k => k.fk_definition_id);
+    if (ownerDefIds.length === 0) throw new Error('No indicators found for this owner');
+
     const definition = await prisma.spi_kpi_definition.findFirst({
       where: {
-        fk_owner_id: input.owner_id,
         kpi_name: input.name,
+        definition_id: { in: ownerDefIds },
       },
       select: { definition_id: true },
     });
