@@ -116,7 +116,7 @@ const containerClass = isDark ? "bg-slate-800 border-slate-700 shadow-xl" : "bg-
               <SelectItem value="0">{t('logbooks.missionPlanning.filter.allPilots')}</SelectItem>
               {pilots.map((p) => (
                 <SelectItem key={p.user_id} value={String(p.user_id)}>
-                  {p.fullname} {p.pilot_status_desc ? `[${p.pilot_status_desc}]` : ""}
+                  {p.fullname}
                 </SelectItem>
               ))}
             </SelectContent>

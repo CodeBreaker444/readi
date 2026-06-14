@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import type {
+  ClientOption,
   EvaluationOption,
   FilterParams,
   MissionPlanningLogbookItem,
@@ -80,24 +81,32 @@ export async function getMissionPlanningLogbookList(
   return { code: 200, data: mapped };
 }
 
-export async function getClientList(ownerId: number) {
-  return prisma.client.findMany({
-    where: { fk_owner_id: ownerId, client_active: 'Y' },
+export async function getClientList(ownerId: number): Promise<{ data: ClientOption[] }> {
+  const clients = await prisma.client.findMany({
+    where: { fk_owner_id: ownerId },
     orderBy: { client_name: 'asc' },
     select: { client_id: true, client_name: true, client_code: true },
   });
+  return {
+    data: clients.map((c) => ({
+      client_id: c.client_id,
+      client_name: c.client_name,
+      client_code: c.client_code ?? undefined,
+    })),
+  };
 }
 
 export async function getPilotList(ownerId: number): Promise<{ data: PilotOption[] }> {
   const users = await prisma.public_users.findMany({
     where: { fk_owner_id: ownerId, user_role: 'PIC', user_active: 'Y' },
+    orderBy: [{ last_name: 'asc' }, { first_name: 'asc' }],
     select: { user_id: true, first_name: true, last_name: true },
   });
 
   const data: PilotOption[] = users.map((u) => ({
     user_id: u.user_id,
     fullname: `${u.first_name ?? ''} ${u.last_name ?? ''}`.trim(),
-    pilot_status_desc: 'ACTIVE',
+    pilot_status_desc: 'PIC',
   }));
 
   return { data };
@@ -105,14 +114,16 @@ export async function getPilotList(ownerId: number): Promise<{ data: PilotOption
 
 export async function getEvaluationList(ownerId: number): Promise<{ data: EvaluationOption[] }> {
   const evaluations = await prisma.evaluation.findMany({
-    where: { fk_owner_id: ownerId, evaluation_active: 'Y' },
+    where: { fk_owner_id: ownerId },
     orderBy: { evaluation_name: 'asc' },
-    select: { evaluation_id: true, evaluation_name: true },
+    select: { evaluation_id: true, evaluation_name: true, evaluation_code: true },
   });
 
   const data: EvaluationOption[] = evaluations.map((e) => ({
     evaluation_id: e.evaluation_id,
-    evaluation_desc: e.evaluation_name,
+    evaluation_desc: e.evaluation_code
+      ? `[${e.evaluation_code}] ${e.evaluation_name}`
+      : e.evaluation_name,
   }));
 
   return { data };
@@ -120,14 +131,16 @@ export async function getEvaluationList(ownerId: number): Promise<{ data: Evalua
 
 export async function getPlanningList(ownerId: number): Promise<{ data: PlanningOption[] }> {
   const plannings = await prisma.planning.findMany({
-    where: { fk_owner_id: ownerId, planning_active: 'Y' },
+    where: { fk_owner_id: ownerId },
     orderBy: { planning_name: 'asc' },
-    select: { planning_id: true, planning_name: true },
+    select: { planning_id: true, planning_name: true, planning_code: true },
   });
 
   const data: PlanningOption[] = plannings.map((p) => ({
     planning_id: p.planning_id,
-    planning_desc: p.planning_name ?? '',
+    planning_desc: p.planning_code
+      ? `[${p.planning_code}] ${p.planning_name ?? ''}`
+      : (p.planning_name ?? ''),
   }));
 
   return { data };
