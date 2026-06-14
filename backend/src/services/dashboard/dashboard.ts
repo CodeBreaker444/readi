@@ -401,15 +401,26 @@ interface SPIKPITrendInput {
 
 export async function getSPIKPITrend(input: SPIKPITrendInput) {
   try {
+    const { data: ownerKpis, error: ownerKpiError } = await supabase
+      .from('spi_kpi')
+      .select('fk_definition_id')
+      .eq('fk_owner_id', input.owner_id);
+
+    if (ownerKpiError) throw new Error(ownerKpiError.message);
+
+    const ownerDefIds = [...new Set((ownerKpis || []).map(k => k.fk_definition_id))];
+    if (ownerDefIds.length === 0) throw new Error('No indicators found for this owner');
+
     const { data: definition, error: defError } = await supabase
       .from('spi_kpi_definition')
       .select('definition_id')
-      .eq('fk_owner_id', input.owner_id)
       .eq('kpi_name', input.name)
+      .in('definition_id', ownerDefIds)
       .limit(1)
-      .single();
+      .maybeSingle();
 
-    if (defError || !definition) throw new Error('Indicator not found');
+    if (defError) throw new Error(defError.message);
+    if (!definition) throw new Error('Indicator not found');
 
     const { data: kpiData, error: kpiError } = await supabase
       .from('spi_kpi')
