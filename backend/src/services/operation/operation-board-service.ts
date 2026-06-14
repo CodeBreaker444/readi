@@ -1,5 +1,5 @@
-import { prisma } from '@/lib/prisma';
 import { Mission, MissionBoardData, MissionStatusCode, UpdateMissionStatusPayload } from '@/config/types/operation';
+import { prisma } from '@/lib/prisma';
 import { getToolMaintenanceStatus } from './maintenance-cycle-service';
 
 const BOARD_STATUS_ID_TO_CODE: Record<number, MissionStatusCode> = {
@@ -194,7 +194,7 @@ function transformMissionRow(row: MissionRow | null): Mission | null {
       official_end: actualEnd,
       fk_owner_id: planning?.fk_owner_id ?? 0,
       fk_vehicle_id: tool?.tool_id ?? 0,
-      fk_pic_id: row.fk_pilot_user_id,
+      fk_pic_id: row.fk_pilot_user_id ?? 0,
       fk_status_id: fkMissionStatusId,
       fk_mission_type_id: row.fk_mission_type_id ?? 0,
       fk_mission_category_id: row.fk_mission_category_id ?? 0,

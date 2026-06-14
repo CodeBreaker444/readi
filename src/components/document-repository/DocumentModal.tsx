@@ -401,13 +401,8 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
                             <SelectItem
                               key={s.tool_id}
                               value={String(s.tool_id)}
-<<<<<<< HEAD
-                              disabled={s.tool_status === 'NOT_OPERATIONAL'}
-                              className={s.tool_status === 'NOT_OPERATIONAL' ? 'opacity-50' : ''}
-=======
                               disabled={s.tool_status === 'NOT_OPERATIONAL' || s.tool_status === 'DISMISSED'}
                               className={(s.tool_status === 'NOT_OPERATIONAL' || s.tool_status === 'DISMISSED') ? 'opacity-50' : ''}
->>>>>>> features
                             >
                               <SystemOptionLabel tool={s} isDark={isDark} />
                             </SelectItem>
@@ -460,16 +455,6 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
                 </div>
               </div>
 
-<<<<<<< HEAD
-              {filterSystem !== '__all__' && systems.find(s => String(s.tool_id) === filterSystem)?.tool_status === 'NOT_OPERATIONAL' && (
-                <div className="sm:col-span-2 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 dark:border-red-800 dark:bg-red-950/40">
-                  <span className="mt-0.5 text-red-500 dark:text-red-400 text-sm">⚠</span>
-                  <p className="text-xs text-red-700 dark:text-red-400 leading-snug">
-                    The selected system is <span className="font-semibold">Not Operational</span> — one of its components has expired. This document will still be saved, but the system cannot be used for new missions.
-                  </p>
-                </div>
-              )}
-=======
               {filterSystem !== '__all__' && (() => {
                 const sel = systems.find(s => String(s.tool_id) === filterSystem);
                 if (sel?.tool_status === 'NOT_OPERATIONAL') return (
@@ -490,7 +475,6 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
                 );
                 return null;
               })()}
->>>>>>> features
 
               <div className="space-y-1.5">
                 <Label className={labelCls}>{t('repository.columns.effectiveDate')}</Label>

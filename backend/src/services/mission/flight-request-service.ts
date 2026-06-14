@@ -362,13 +362,18 @@ export async function getFlightRequestsByExternalIds(
   external_mission_ids: string[],
   owner_id: number,
 ): Promise<Array<{ request_id: number; external_mission_id: string; dcc_status: string }>> {
-  const { data, error } = await supabase
-    .from('flight_requests')
-    .select('request_id, external_mission_id, dcc_status')
-    .in('external_mission_id', external_mission_ids)
-    .eq('fk_owner_id', owner_id)
-  if (error) throw new Error(`getFlightRequestsByExternalIds: ${error.message}`)
-  return (data ?? []) as Array<{ request_id: number; external_mission_id: string; dcc_status: string }>
+  const data = await prisma.flight_requests.findMany({
+    where: {
+      external_mission_id: { in: external_mission_ids },
+      fk_owner_id: owner_id,
+    },
+    select: {
+      request_id: true,
+      external_mission_id: true,
+      dcc_status: true,
+    },
+  })
+  return data
 }
 
 export async function cancelFlightRequestByExternalId(
