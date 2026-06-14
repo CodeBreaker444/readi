@@ -8,6 +8,7 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { Evaluation } from '@/config/types/evaluation';
+import { cn } from '@/lib/utils';
 import {
     BookOpen
 } from 'lucide-react';
@@ -32,42 +33,40 @@ const EvaluationDashboard: React.FC<EvaluationProps> = ({ isDark }) => {
 
     return (
         <>
-            <div className="min-h-screen bg-slate-50/60">
-                <div className="border-b border-slate-200 bg-white py-4  top-0 z-10">
+            <div className={cn('min-h-screen', isDark ? 'bg-slate-900' : 'bg-slate-50/60')}>
+                <div className={cn('border-b py-4 top-0 z-10', isDark ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white')}>
                     <div className="mx-4 flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                             <div className="w-1 h-6 rounded-full bg-violet-600" />
+                            <div className="w-1 h-6 rounded-full bg-violet-600" />
                             <div>
-                                <h1 className="text-base font-semibold text-slate-900">
+                                <h1 className={cn('text-base font-semibold', isDark ? 'text-white' : 'text-slate-900')}>
                                     {t("planning.evaluation.dashboardTitle")}
                                 </h1>
-                                <p className="text-xs text-slate-500">{t("planning.evaluation.dashboardSubtitle")}</p>
+                                <p className={cn('text-xs', isDark ? 'text-slate-400' : 'text-slate-500')}>
+                                    {t("planning.evaluation.dashboardSubtitle")}
+                                </p>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <div className="mx-auto px-6 py-6 space-y-5">
-
-                     
-                    <Card className="border-slate-200 shadow-sm">
+                    <Card className={cn('shadow-sm', isDark ? 'bg-slate-800 border-slate-700' : 'border-slate-200')}>
                         <CardHeader className="pb-3">
                             <div className="flex items-center gap-2">
-                                <BookOpen className="w-4 h-4 text-slate-500" />
-                                <CardTitle className="text-sm font-semibold">
+                                <BookOpen className={cn('w-4 h-4', isDark ? 'text-slate-400' : 'text-slate-500')} />
+                                <CardTitle className={cn('text-sm font-semibold', isDark ? 'text-white' : 'text-slate-900')}>
                                     {t("planning.evaluation.logbookTitle")}
                                 </CardTitle>
                             </div>
-                            <CardDescription className="text-xs">
+                            <CardDescription className={cn('text-xs', isDark ? 'text-slate-400' : 'text-slate-500')}>
                                 {t("planning.evaluation.logbookDescription")}
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <EvaluationTable onView={handleView} />
+                            <EvaluationTable onView={handleView} isDark={isDark} />
                         </CardContent>
                     </Card>
-
-                    
                 </div>
             </div>
 
