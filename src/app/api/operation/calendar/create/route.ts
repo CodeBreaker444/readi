@@ -40,15 +40,7 @@ export async function POST(req: NextRequest) {
 
 
     if (dcc.outcome === 'http_error' || dcc.outcome === 'network_error') {
-      await Promise.allSettled(
-        result.missions.map((m) =>
-          deleteOperationCalendarEntry(m.pilotMissionId, session!.user.ownerId),
-        ),
-      )
-      return NextResponse.json(
-        { success: false, error: `DCC rejected the mission creation — ${dcc.message}. Operation rolled back.`, dcc },
-        { status: 502 },
-      )
+      console.warn('[POST /api/operation/calendar/create] DCC notification failed (non-fatal):', dcc.message);
     }
 
     return NextResponse.json({ success: true, operationId: result.firstMissionId, dcc })

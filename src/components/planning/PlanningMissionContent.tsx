@@ -75,7 +75,7 @@ export const PlanningMissionContent: FC<PlanningMissionProps> = ({ user }) => {
 
   useEffect(() => {
     if (!c_id || !e_id || !p_id) {
-      router.replace("/planning-dashboard");
+      router.replace("/planning/planning-dashboard");
     }
   }, [c_id, e_id, p_id, router]);
 
@@ -196,7 +196,7 @@ export const PlanningMissionContent: FC<PlanningMissionProps> = ({ user }) => {
 
   const handleManageLogbook = (row: PlanningLogbookRow) => {
     router.push(
-      `/planning-mission?c_id=${c_id}&e_id=${e_id}&p_id=${p_id}&mp_id=${row.mission_planning_id}`
+      `/planning/planning-mission?c_id=${c_id}&e_id=${e_id}&p_id=${p_id}&mp_id=${row.mission_planning_id}`
     );
   };
 

@@ -138,11 +138,7 @@ export async function POST(req: NextRequest) {
       });
 
       if (dcc.outcome === 'http_error' || dcc.outcome === 'network_error') {
-        await Promise.allSettled(result.missions.map((m) => deleteOperation(m.pilotMissionId)));
-        return NextResponse.json(
-          { success: false, error: `DCC rejected the mission creation — ${dcc.message}. Operation rolled back.`, dcc },
-          { status: 502 },
-        );
+        console.warn('[POST /api/operation] DCC notification failed (non-fatal):', dcc.message);
       }
 
       logEvent({
@@ -188,11 +184,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (dcc.outcome === 'http_error' || dcc.outcome === 'network_error') {
-      await deleteOperation(operation.pilot_mission_id);
-      return NextResponse.json(
-        { success: false, error: `DCC rejected the mission creation — ${dcc.message}. Operation rolled back.`, dcc },
-        { status: 502 },
-      );
+      console.warn('[POST /api/operation] DCC notification failed (non-fatal):', dcc.message);
     }
 
     if (validated.fk_pilot_user_id) {

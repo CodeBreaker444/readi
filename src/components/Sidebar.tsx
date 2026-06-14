@@ -120,6 +120,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
       subItems: [
         { name: t('sidebar.newEvaluationRequest'), href: '/planning/new-evaluation' },
         { name: t('sidebar.evaluation'), href: '/planning/evaluation' },
+        // { name: t('sidebar.planningMission'), href: '/planning/planning-mission' },
         { name: t('sidebar.planningDashboard'), href: '/planning/planning-dashboard' },
         { name: t('sidebar.missionTemplates'), href: '/planning/mission-template' },
       ]

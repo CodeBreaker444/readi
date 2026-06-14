@@ -544,6 +544,60 @@ beforeAll(() => {
 });
 
 afterAll(async () => {
+  if (createdErpLocationGroupId) {
+    try {
+      const req = makeRequest('/api/erp/location-group/delete', { method: 'POST', body: { id: createdErpLocationGroupId } });
+      await erpLocationGroupDeletePOST(req);
+      console.info(`[afterAll] Deleted ERP location group ID=${createdErpLocationGroupId}`);
+    } catch (e) {
+      console.warn(`[afterAll] Failed to delete ERP location group ID=${createdErpLocationGroupId}:`, e);
+    }
+  }
+  if (createdErpId) {
+    try {
+      const req = makeRequest('/api/erp/delete', { method: 'POST', body: { id: createdErpId } });
+      await erpDeletePOST(req);
+      console.info(`[afterAll] Deleted ERP contact ID=${createdErpId}`);
+    } catch (e) {
+      console.warn(`[afterAll] Failed to delete ERP contact ID=${createdErpId}:`, e);
+    }
+  }
+  if (createdMissionTypeId) {
+    try {
+      const req = makeRequest(`/api/mission/type/${createdMissionTypeId}/delete`, { method: 'POST', body: {} });
+      await missionTypeDeletePOST(req, { params: Promise.resolve({ typeId: String(createdMissionTypeId) }) });
+      console.info(`[afterAll] Deleted mission type ID=${createdMissionTypeId}`);
+    } catch (e) {
+      console.warn(`[afterAll] Failed to delete mission type ID=${createdMissionTypeId}:`, e);
+    }
+  }
+  if (createdMissionCategoryId) {
+    try {
+      const req = makeRequest(`/api/mission/category/${createdMissionCategoryId}/delete`, { method: 'POST', body: {} });
+      await missionCategoryDeletePOST(req, { params: Promise.resolve({ id: String(createdMissionCategoryId) }) });
+      console.info(`[afterAll] Deleted mission category ID=${createdMissionCategoryId}`);
+    } catch (e) {
+      console.warn(`[afterAll] Failed to delete mission category ID=${createdMissionCategoryId}:`, e);
+    }
+  }
+  if (createdMissionStatusId) {
+    try {
+      const req = makeRequest(`/api/mission/status/${createdMissionStatusId}/delete`, { method: 'POST', body: {} });
+      await missionStatusDeletePOST(req, { params: Promise.resolve({ id: String(createdMissionStatusId) }) });
+      console.info(`[afterAll] Deleted mission status ID=${createdMissionStatusId}`);
+    } catch (e) {
+      console.warn(`[afterAll] Failed to delete mission status ID=${createdMissionStatusId}:`, e);
+    }
+  }
+  if (createdMissionResultId) {
+    try {
+      const req = makeRequest(`/api/mission/result/${createdMissionResultId}/delete`, { method: 'POST', body: {} });
+      await missionResultDeletePOST(req, { params: Promise.resolve({ id: String(createdMissionResultId) }) });
+      console.info(`[afterAll] Deleted mission result ID=${createdMissionResultId}`);
+    } catch (e) {
+      console.warn(`[afterAll] Failed to delete mission result ID=${createdMissionResultId}:`, e);
+    }
+  }
   if (createdClientId) {
     try {
       const req = makeRequest('/api/client/delete', { method: 'DELETE', body: { client_id: createdClientId } });
@@ -3247,36 +3301,6 @@ describeIntegration('Full Platform Integration Flow', () => {
     console.info(`[Cleanup] Deleted model ID=${createdSystemModelId}`);
   });
 
-  it('Cleanup — deletes mission type', async () => {
-    if (!createdMissionTypeId) return;
-    const req = makeRequest(`/api/mission/type/${createdMissionTypeId}/delete`, { method: 'POST', body: {} });
-    const res = await missionTypeDeletePOST(req, { params: Promise.resolve({ typeId: String(createdMissionTypeId) }) });
-    expect(res.status).not.toBe(401);
-    console.info(`[Cleanup] Deleted mission type ID=${createdMissionTypeId}`);
-  });
-
-  it('Cleanup — deletes mission category', async () => {
-    if (!createdMissionCategoryId) return;
-    const req = makeRequest(`/api/mission/category/${createdMissionCategoryId}/delete`, { method: 'POST', body: {} });
-    const res = await missionCategoryDeletePOST(req, { params: Promise.resolve({ id: String(createdMissionCategoryId) }) });
-    expect(res.status).not.toBe(401);
-    console.info(`[Cleanup] Deleted mission category ID=${createdMissionCategoryId}`);
-  });
-
-  it('Cleanup — deletes mission status', async () => {
-    if (!createdMissionStatusId) return;
-    const req = makeRequest(`/api/mission/status/${createdMissionStatusId}/delete`, { method: 'POST', body: {} });
-    const res = await missionStatusDeletePOST(req, { params: Promise.resolve({ id: String(createdMissionStatusId) }) });
-    expect(res.status).not.toBe(401);
-  });
-
-  it('Cleanup — deletes mission result', async () => {
-    if (!createdMissionResultId) return;
-    const req = makeRequest(`/api/mission/result/${createdMissionResultId}/delete`, { method: 'POST', body: {} });
-    const res = await missionResultDeletePOST(req, { params: Promise.resolve({ id: String(createdMissionResultId) }) });
-    expect(res.status).not.toBe(401);
-  });
-
   it('Cleanup — deletes the org communication', async () => {
     if (!createdOrgCommunicationId) return;
     const req = makeRequest('/api/organization/communication/delete', { method: 'POST', body: { communication_id: createdOrgCommunicationId } });
@@ -3349,25 +3373,6 @@ describeIntegration('Full Platform Integration Flow', () => {
     expect(res.status).toBe(200);
     expect(body.code).toBe(1);
   });
-
-  it('Cleanup — deletes ERP location group', async () => {
-    if (!createdErpLocationGroupId) return;
-    const req = makeRequest('/api/erp/location-group/delete', { method: 'POST', body: { id: createdErpLocationGroupId } });
-    const res = await erpLocationGroupDeletePOST(req);
-    const body = await parseJson(res);
-    expect(res.status).toBe(200);
-    expect(body.code).toBe(1);
-  });
-
-  it('Cleanup — deletes ERP contact', async () => {
-    if (!createdErpId) return;
-    const req = makeRequest('/api/erp/delete', { method: 'POST', body: { id: createdErpId } });
-    const res = await erpDeletePOST(req);
-    const body = await parseJson(res);
-    expect(res.status).toBe(200);
-    expect(body.code).toBe(1);
-  });
-
 
   it('Cleanup — deactivates the SPI/KPI', async () => {
     if (!createdSpiKpiId) return;

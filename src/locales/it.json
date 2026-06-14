@@ -220,6 +220,7 @@
     "planning": "CO-00 - Pianificazione",
     "newEvaluationRequest": "P00 - Nuova richiesta di valutazione",
     "evaluation": "P01 - Valutazione",
+    "planningMission": "P02 - Missione di pianificazione",
     "planningDashboard": "P02 - Dashboard pianificazione",
     "missionTemplates": "P04 - Modelli missione",
     "flightRequests": "Richieste di volo",
@@ -922,6 +923,15 @@
       "searchLogbook": "Cerca nel Registro",
       "edit": "Modifica",
       "delete": "Elimina"
+    },
+    "modal": {
+      "addPlanningTitle": "Aggiungi Richiesta di Pianificazione",
+      "addPlanningSubtitle": "[GO.00.P01] — Compila il modulo per creare una nuova pianificazione da questa valutazione."
+    },
+    "toast": {
+      "loadFormError": "Caricamento dati modulo fallito",
+      "createPlanningSuccess": "Richiesta di pianificazione creata con successo!",
+      "createPlanningFailed": "Creazione pianificazione fallita"
     },
     "columns": {
       "yearRef": "Anno Rif.",
