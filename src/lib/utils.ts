@@ -136,7 +136,7 @@ export function decodeJwtRole(token: string): Role | null {
 }
 
 export function hasRoutePermission(role: Role, entry: RoutePermissionEntry): boolean {
-  if (role === 'SUPERADMIN' || role === 'ADMIN') return true
+  if (role === 'SUPERADMIN') return true
   const perms = Array.isArray(entry) ? entry : [entry]
   return perms.some((p) => roleHasPermission(role, p))
 }

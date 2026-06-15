@@ -972,12 +972,21 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
               )}
             </div>
             <div className="min-w-0">
-              <p className={`text-xs font-semibold truncate ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
-                {userData?.username || 'User'}
-              </p>
-              <p className={`text-[11px] truncate mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`} style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
-                {userData?.email || ''}
-              </p>
+              {!userData ? (
+                <div className="space-y-1.5">
+                  <Skeleton className={`h-3 w-24 rounded ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
+                  <Skeleton className={`h-2.5 w-32 rounded ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
+                </div>
+              ) : (
+                <>
+                  <p className={`text-xs font-semibold truncate ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+                    {userData.username}
+                  </p>
+                  <p className={`text-[11px] truncate mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`} style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+                    {userData.email}
+                  </p>
+                </>
+              )}
             </div>
           </div>
 

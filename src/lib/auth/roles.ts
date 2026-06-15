@@ -42,7 +42,7 @@ export const ROLE_PERMISSIONS: Record<Role, RolePermission[]> = {
     'view_dashboard', 'view_pilot_dashboard', 'view_operations', 'view_compliance',
     'view_training', 'view_safety_mgmt', 'view_config', 'view_repository', 'view_logs',
     'view_planning', 'view_planning_advanced', 'view_logbooks', 'view_notifications',
-    'manage_users', 'view_client', 'add_company', 'view_erp', 'view_drone_atc'
+    'manage_users', 'view_client', 'view_erp', 'view_drone_atc'
   ],
   PIC: [
     'view_pilot_dashboard',
@@ -178,7 +178,7 @@ export function getApiRoutePermission(pathname: string): ApiPermissionEntry | un
 
 export function canAccessRoute(role: Role | null | undefined, pathname: string): boolean {
   if (!role) return false;
-  if (role === 'SUPERADMIN' || role === 'ADMIN') return true;
+  if (role === 'SUPERADMIN') return true;
 
   if (role === 'CLIENT') {
     return pathname.startsWith('/client/');
