@@ -37,7 +37,7 @@ import {
 import { TbBug } from 'react-icons/tb';
 
 
-interface HighlightCard { title: string; icon: string; color: string; description: string }
+interface HighlightCard { title: string; icon: string; color: string; description?: string }
 interface ReleaseLog {
   version: string; date: string; title: string; description: string;
   status: string; releaseType: string; tags: string[];
@@ -499,11 +499,8 @@ export default function ReleasesPage() {
                             <Icon size={15} className={col.text} />
                           </span>
                           <div>
-                            <p className={`text-[12px] font-semibold leading-tight mb-0.5 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
+                            <p className={`text-[12px] font-semibold leading-tight ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
                               {card.title}
-                            </p>
-                            <p className={`text-[11px] leading-relaxed ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
-                              {card.description}
                             </p>
                           </div>
                         </div>
