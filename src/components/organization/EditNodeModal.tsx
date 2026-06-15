@@ -33,8 +33,11 @@ export default function EditNodeModal({
 
   useEffect(() => {
     setPosition(node.data.title);
-    setParentValue(COMPANY_ROOT_VALUE);
-  }, [node]);
+    const parentNode = members.find((m) =>
+      m.children?.some((c) => c.userId === node.userId)
+    );
+    setParentValue(parentNode?.userId !== undefined ? String(parentNode.userId) : COMPANY_ROOT_VALUE);
+  }, [node, members]);
 
   const eligibleParents = members.filter((m) => m.userId !== node.userId);
 
