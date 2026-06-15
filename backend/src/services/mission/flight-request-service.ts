@@ -413,6 +413,10 @@ export async function deleteFlightRequest(request_id: number, owner_id: number):
 }
 
 export async function deleteApiKey(api_key_id: number, owner_id: number): Promise<void> {
+  await prisma.flight_requests.updateMany({
+    where: { fk_api_key_id: api_key_id },
+    data: { fk_api_key_id: null },
+  });
   await prisma.api_keys.deleteMany({
     where: { api_key_id, fk_owner_id: owner_id },
   });

@@ -42,7 +42,7 @@ export const ROLE_PERMISSIONS: Record<Role, RolePermission[]> = {
     'view_dashboard', 'view_pilot_dashboard', 'view_operations', 'view_compliance',
     'view_training', 'view_safety_mgmt', 'view_config', 'view_repository', 'view_logs',
     'view_planning', 'view_planning_advanced', 'view_logbooks', 'view_notifications',
-    'manage_users', 'view_client', 'add_company', 'view_erp', 'view_drone_atc'
+    'manage_users', 'view_client', 'view_erp', 'view_drone_atc'
   ],
   PIC: [
     'view_pilot_dashboard',
@@ -56,7 +56,7 @@ export const ROLE_PERMISSIONS: Record<Role, RolePermission[]> = {
   SM:  ['view_dashboard', 'view_safety_mgmt', 'view_repository', 'view_notifications', 'view_config', 'view_erp'],
   AM:  ['view_dashboard', 'view_logs', 'view_repository', 'view_logbooks', 'view_config', 'view_notifications', 'manage_users', 'view_erp'],
   CMM: ['view_dashboard', 'view_compliance', 'view_repository', 'view_notifications', 'view_erp'],
-  RM:  ['view_operations', 'view_logs', 'view_logbooks', 'view_notifications', 'view_erp'],
+  RM:  ['view_operations', 'view_logs', 'view_logbooks', 'view_notifications', 'view_erp', 'view_config', 'view_drone_atc'],
   TM:  ['view_dashboard', 'view_training', 'view_repository', 'view_notifications', 'view_erp'],
   DC:  ['view_repository', 'view_config', 'view_notifications', 'view_erp'],
   SLA: ['view_dashboard', 'view_logs', 'view_config', 'view_notifications', 'view_erp'],
@@ -178,7 +178,7 @@ export function getApiRoutePermission(pathname: string): ApiPermissionEntry | un
 
 export function canAccessRoute(role: Role | null | undefined, pathname: string): boolean {
   if (!role) return false;
-  if (role === 'SUPERADMIN' || role === 'ADMIN') return true;
+  if (role === 'SUPERADMIN') return true;
 
   if (role === 'CLIENT') {
     return pathname.startsWith('/client/');
