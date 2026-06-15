@@ -8,7 +8,7 @@ export default function EvaluationPage() {
   const { isDark } = useTheme();
 
   return (
-    <div className={`${isDark ? 'bg-slate-900' : 'bg-gray-50'}`}>
+    <div className={`min-h-screen ${isDark ? 'bg-slate-900 text-white' : 'bg-gray-50 text-slate-900'}`}>
       <EvaluationDashboard isDark={isDark} />
     </div>
   );
