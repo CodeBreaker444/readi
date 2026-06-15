@@ -23,10 +23,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { TablePagination } from '../tables/Pagination';
 
+import { useTimezone } from '@/components/TimezoneProvider';
 import { Evaluation } from '@/config/types/evaluation';
 import { cn } from '@/lib/utils';
 import ExportButtons from '../system/ExportButtons';
-import { useTimezone } from '@/components/TimezoneProvider';
 import { getEvaluationColumns } from '../tables/EvaluationColumn';
 
 export function EvaluationTable({ onView, isDark }: { onView?: (ev: Evaluation) => void; isDark?: boolean }) {
@@ -74,8 +74,8 @@ export function EvaluationTable({ onView, isDark }: { onView?: (ev: Evaluation) 
   }
 
   const columns = useMemo(() =>
-    getEvaluationColumns(timezone),
-    [onView, timezone]);
+    getEvaluationColumns(timezone, isDark),
+    [onView, timezone, isDark]);
 
   const table = useReactTable({
     data: evaluations,
@@ -103,7 +103,7 @@ export function EvaluationTable({ onView, isDark }: { onView?: (ev: Evaluation) 
             onChange={(e) => setGlobalFilter(e.target.value)}
             className={cn(
               "pl-8 h-8 text-sm transition-colors",
-              isDark ? "bg-slate-900 border-slate-800 text-slate-200 placeholder:text-slate-600 focus:ring-slate-700" : "bg-white border-slate-200"
+              isDark ? "bg-slate-900 border-slate-800 text-white  placeholder:text-white focus:ring-slate-700" : "bg-white border-slate-200"
             )}
           />
         </div>
@@ -141,7 +141,7 @@ export function EvaluationTable({ onView, isDark }: { onView?: (ev: Evaluation) 
               ))
             ) : table.getRowModel().rows.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-[300px] text-center">
+                <TableCell colSpan={columns.length} className="h-75 text-center">
                   <div className="flex flex-col items-center justify-center space-y-3 animate-in fade-in zoom-in duration-300">
                     <div className={cn("p-4 rounded-full", isDark ? "bg-slate-900" : "bg-slate-50")}>
                       <FileX2 className={cn("h-10 w-10", isDark ? "text-slate-700" : "text-slate-300")} />
