@@ -258,7 +258,10 @@ export async function updateUser(userData: UserUpdateData) {
       : {};
 
     await prisma.public_users.update({
-      where: { user_id: userData.user_id, fk_owner_id: userData.owner_id },
+      where: {
+        user_id: userData.user_id,
+        ...(userData.owner_id > 0 ? { fk_owner_id: userData.owner_id } : {}),
+      },
       data: {
         ...nameData,
         email: userData.email,
@@ -285,7 +288,10 @@ export async function updateUser(userData: UserUpdateData) {
     }
 
     await prisma.user_owner.updateMany({
-      where: { fk_user_id: userData.user_id, fk_owner_id: userData.owner_id },
+      where: {
+        fk_user_id: userData.user_id,
+        ...(userData.owner_id > 0 ? { fk_owner_id: userData.owner_id } : {}),
+      },
       data: { role_in_organization: getRoleLabel(userData.fk_user_profile_id) },
     });
 
