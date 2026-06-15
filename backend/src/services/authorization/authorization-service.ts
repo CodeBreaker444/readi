@@ -1,4 +1,5 @@
-import { supabase } from '@/backend/database/database';
+import { Prisma } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 
 export interface UpsertKeyParams {
   userId: number;
@@ -33,6 +34,8 @@ export interface TransactionSign {
   jwt_token: string;
   payload_preview: Record<string, unknown> | null;
   public_key_snapshot: string;
+  integrity_status: string | null;
+  verified_at: string | null;
   created_at: string;
 }
 
@@ -44,40 +47,46 @@ export interface GetTransactionSignsResult {
 }
 
 export async function upsertAuthorizationKey(params: UpsertKeyParams): Promise<void> {
-  const { error } = await supabase
-    .from('user_authorization_keys')
-    .upsert(
-      {
-        user_id:               params.userId,
-        owner_id:              params.ownerId,
-        encrypted_private_key: params.encryptedPrivateKey,
-        public_key:            params.publicKey,
-        salt:                  params.salt,
-        iv:                    params.iv,
-        key_fingerprint:       params.keyFingerprint,
-        updated_at:            new Date().toISOString(),
-      },
-      { onConflict: 'user_id' }
-    );
-
-  if (error) throw error;
+  await prisma.user_authorization_keys.upsert({
+    where:  { user_id: params.userId },
+    update: {
+      owner_id:              params.ownerId,
+      encrypted_private_key: params.encryptedPrivateKey,
+      public_key:            params.publicKey,
+      salt:                  params.salt,
+      iv:                    params.iv,
+      key_fingerprint:       params.keyFingerprint,
+      updated_at:            new Date(),
+    },
+    create: {
+      user_id:               params.userId,
+      owner_id:              params.ownerId,
+      encrypted_private_key: params.encryptedPrivateKey,
+      public_key:            params.publicKey,
+      salt:                  params.salt,
+      iv:                    params.iv,
+      key_fingerprint:       params.keyFingerprint,
+    },
+  });
 }
 
 export async function getAuthorizationKey(userId: number) {
-  const { data, error } = await supabase
-    .from('user_authorization_keys')
-    .select('encrypted_private_key, public_key, salt, iv, key_fingerprint, created_at')
-    .eq('user_id', userId)
-    .maybeSingle();
-
-  if (error) throw error;
-  return data;
+  return prisma.user_authorization_keys.findUnique({
+    where:  { user_id: userId },
+    select: {
+      encrypted_private_key: true,
+      public_key:            true,
+      salt:                  true,
+      iv:                    true,
+      key_fingerprint:       true,
+      created_at:            true,
+    },
+  });
 }
 
 export async function storeTransactionSign(params: StoreTransactionSignParams): Promise<string> {
-  const { data, error } = await supabase
-    .from('transaction_signs')
-    .insert({
+  const record = await prisma.transaction_signs.create({
+    data: {
       user_id:             params.userId,
       owner_id:            params.ownerId,
       user_name:           params.userName,
@@ -85,14 +94,13 @@ export async function storeTransactionSign(params: StoreTransactionSignParams): 
       entity_type:         params.entityType,
       entity_id:           params.entityId ?? null,
       jwt_token:           params.jwtToken,
-      payload_preview:     params.payloadPreview,
+      payload_preview:     params.payloadPreview as Prisma.InputJsonValue,
       public_key_snapshot: params.publicKeySnapshot,
-    })
-    .select('id')
-    .single();
+    },
+    select: { id: true },
+  });
 
-  if (error) throw error;
-  return data.id;
+  return record.id;
 }
 
 export async function getTransactionSigns(
@@ -108,28 +116,57 @@ export async function getTransactionSigns(
 ): Promise<GetTransactionSignsResult> {
   const page     = filters.page     ?? 1;
   const pageSize = filters.pageSize ?? 50;
-  const from     = (page - 1) * pageSize;
-  const to       = from + pageSize - 1;
+  const skip     = (page - 1) * pageSize;
 
-  let query = supabase
-    .from('transaction_signs')
-    .select('*', { count: 'exact' })
-    .eq('owner_id', ownerId)
-    .order('created_at', { ascending: false })
-    .range(from, to);
+  const where: Prisma.transaction_signsWhereInput = { owner_id: ownerId };
 
-  if (filters.userId)     query = query.eq('user_id', filters.userId);
-  if (filters.entityType) query = query.eq('entity_type', filters.entityType);
-  if (filters.entityId)   query = query.eq('entity_id', filters.entityId);
-  if (filters.actionType) query = query.eq('action_type', filters.actionType);
+  if (filters.userId)     where.user_id     = filters.userId;
+  if (filters.entityType) where.entity_type = filters.entityType;
+  if (filters.entityId)   where.entity_id   = filters.entityId;
+  if (filters.actionType) where.action_type = filters.actionType;
 
-  const { data, error, count } = await query;
-  if (error) throw error;
+  const [rows, total] = await prisma.$transaction([
+    prisma.transaction_signs.findMany({
+      where,
+      orderBy: { created_at: 'desc' },
+      skip,
+      take: pageSize,
+    }),
+    prisma.transaction_signs.count({ where }),
+  ]);
 
   return {
-    data:     (data ?? []) as TransactionSign[],
-    total:    count ?? 0,
+    data: rows.map(r => {
+      const row = r as typeof r & { integrity_status?: string | null; verified_at?: Date | null };
+      return {
+        id:                  row.id,
+        user_id:             row.user_id,
+        owner_id:            row.owner_id,
+        user_name:           row.user_name,
+        action_type:         row.action_type,
+        entity_type:         row.entity_type,
+        entity_id:           row.entity_id,
+        jwt_token:           row.jwt_token,
+        public_key_snapshot: row.public_key_snapshot,
+        payload_preview:     row.payload_preview as Record<string, unknown> | null,
+        integrity_status:    row.integrity_status ?? null,
+        verified_at:         row.verified_at?.toISOString() ?? null,
+        created_at:          row.created_at.toISOString(),
+      };
+    }),
+    total,
     page,
     pageSize,
   };
+}
+
+export async function markTransactionVerified(
+  id: string,
+  ownerId: number,
+  status: 'valid' | 'invalid',
+): Promise<void> {
+  await prisma.transaction_signs.updateMany({
+    where: { id, owner_id: ownerId },
+    data:  { integrity_status: status, verified_at: new Date() },
+  });
 }

@@ -12,9 +12,9 @@ interface DocViewerClientProps {
 export default function DocViewerClient({ doc }: DocViewerClientProps) {
     const { isDark } = useTheme();
 
-    const formattedDate = new Date(doc.created_at).toLocaleDateString('en-US', {
-        year: 'numeric', month: 'short', day: 'numeric',
-    });
+    const formattedDate = doc.created_at
+        ? new Date(doc.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+        : '—';
 
     return (
         <div className={`min-h-screen transition-colors duration-200 ${isDark ? 'dark-doc bg-[#07090f]' : 'light-doc bg-[#f0f2f7]'}`}>

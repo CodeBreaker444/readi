@@ -1,4 +1,4 @@
-import { supabase } from '@/backend/database/database';
+import { prisma } from '@/lib/prisma';
 
 /**
  *
@@ -8,16 +8,23 @@ import { supabase } from '@/backend/database/database';
 export async function refreshMaintenanceDays(toolIds: number[]): Promise<void> {
   if (toolIds.length === 0) return;
 
-  const { data: components, error } = await supabase
-    .from('tool_component')
-    .select('component_id, maintenance_cycle, last_maintenance_date, installation_date, current_maintenance_days, maintenance_cycle_day')
-    .in('fk_tool_id', toolIds)
-    .eq('component_active', 'Y')
-    .in('maintenance_cycle', ['DAYS', 'MIXED'])
-    .not('maintenance_cycle_day', 'is', null)
-    .gt('maintenance_cycle_day', 0);
+  const components = await prisma.tool_component.findMany({
+    where: {
+      fk_tool_id: { in: toolIds },
+      component_active: 'Y',
+      maintenance_cycle: { in: ['DAYS', 'MIXED'] },
+      maintenance_cycle_day: { gt: 0 },
+    },
+    select: {
+      component_id: true,
+      maintenance_cycle_day: true,
+      current_maintenance_days: true,
+      last_maintenance_date: true,
+      installation_date: true,
+    },
+  });
 
-  if (error || !components || components.length === 0) return;
+  if (components.length === 0) return;
 
   const today = new Date();
   today.setUTCHours(0, 0, 0, 0);
@@ -46,13 +53,15 @@ export async function refreshMaintenanceDays(toolIds: number[]): Promise<void> {
     updates.push({ id: comp.component_id, days: newValue });
   }
 
-  await Promise.all(
+  if (updates.length === 0) return;
+
+  await prisma.$transaction(
     updates.map((upd) =>
-      supabase
-        .from('tool_component')
-        .update({ current_maintenance_days: upd.days })
-        .eq('component_id', upd.id),
-    ),
+      prisma.tool_component.update({
+        where: { component_id: upd.id },
+        data: { current_maintenance_days: upd.days },
+      })
+    )
   );
 }
 
@@ -61,12 +70,11 @@ export async function refreshMaintenanceDaysForTool(toolId: number): Promise<voi
 }
 
 export async function refreshMaintenanceDaysForOwner(ownerId: number): Promise<void> {
-  const { data: tools } = await supabase
-    .from('tool')
-    .select('tool_id')
-    .eq('fk_owner_id', ownerId)
-    .eq('tool_active', 'Y');
+  const tools = await prisma.tool.findMany({
+    where: { fk_owner_id: ownerId, tool_active: 'Y' },
+    select: { tool_id: true },
+  });
 
-  if (!tools || tools.length === 0) return;
+  if (tools.length === 0) return;
   return refreshMaintenanceDays(tools.map((t) => t.tool_id));
 }

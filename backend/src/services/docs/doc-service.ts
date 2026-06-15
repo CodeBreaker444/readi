@@ -1,21 +1,26 @@
-import { supabase } from '../../database/database';
+import { prisma } from '@/lib/prisma';
 
 export interface ProcedureDocument {
     doc_key: string;
     section_title: string;
-    section_number: string;
+    section_number: string | null;
     source_file: string;
     html_content: string;
-    created_at: string;
+    created_at: Date | null;
 }
 
 export async function getDocumentByKey(docKey: string): Promise<ProcedureDocument | null> {
-    const { data, error } = await supabase
-        .from('procedure_document')
-        .select('doc_key, section_title, section_number, source_file, html_content, created_at')
-        .eq('doc_key', docKey)
-        .single();
+    const doc = await prisma.procedure_document.findUnique({
+        where: { doc_key: docKey },
+        select: {
+            doc_key: true,
+            section_title: true,
+            section_number: true,
+            source_file: true,
+            html_content: true,
+            created_at: true,
+        },
+    });
 
-    if (error || !data) return null;
-    return data as ProcedureDocument;
+    return doc;
 }

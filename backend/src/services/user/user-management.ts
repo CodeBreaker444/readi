@@ -1,5 +1,7 @@
 import { env } from '@/backend/config/env';
 import { supabase } from '@/backend/database/database';
+import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import { sendUserActivationEmail } from '../../../../lib/resend/mail';
 
@@ -25,8 +27,8 @@ export interface UserUpdateData {
   email: string;
   user_phone?: string;
   fk_user_profile_id: number;
-  fk_territorial_unit?: number;
-  fk_client_id?: number;
+  fk_territorial_unit?: number | null;
+  fk_client_id?: number | null;
   user_type: string;
   active: number;
   is_viewer: 'Y' | 'N';
@@ -37,80 +39,65 @@ export interface UserUpdateData {
 
 export async function getUserListByOwner(ownerId: number, userProfileId: number, currentUserId: number) {
   try {
-    let query = supabase
-      .from('users')
-      .select(`
-        user_id,
-        username,
-        email,
-        first_name,
-        last_name,
-        phone,
-        user_active,
-        user_role,
-        user_unique_code,
-        auth_user_id,
-        is_viewer,
-        is_manager,
-        fk_owner_id,
-        fk_client_id,
-        fk_territorial_unit,
-        fk_user_profile_id,
-        users_profile (
-          fk_user_id,
-          profile_picture,
-          user_signature
-        ),
-        owner (
-          owner_code,
-          owner_name
-        ),
-        owner_territorial_unit!users_fk_territorial_unit_fkey (
-          unit_id,
-          unit_code,
-          unit_name
-        )
-      `);
+    const users = await prisma.public_users.findMany({
+      where: {
+        ...(ownerId > 0 ? { fk_owner_id: ownerId } : {}),
+        NOT: { user_id: currentUserId },
+      },
+      select: {
+        user_id: true,
+        username: true,
+        email: true,
+        first_name: true,
+        last_name: true,
+        phone: true,
+        user_active: true,
+        user_role: true,
+        user_unique_code: true,
+        auth_user_id: true,
+        is_viewer: true,
+        is_manager: true,
+        fk_owner_id: true,
+        fk_client_id: true,
+        fk_territorial_unit: true,
+        fk_user_profile_id: true,
+        users_profile: {
+          select: { profile_picture: true, user_signature: true },
+        },
+        owner: {
+          select: { owner_code: true, owner_name: true },
+        },
+        owner_territorial_unit_users_fk_territorial_unitToowner_territorial_unit: {
+          select: { unit_id: true, unit_code: true, unit_name: true },
+        },
+      },
+    });
 
-    if (ownerId > 0) {
-      query = query.eq('fk_owner_id', ownerId);
-    }
-
-    query = query.neq('user_id', currentUserId);
-
-    const { data, error } = await query;
-
-    if (error) throw error;
-
-    const formattedData = data.map((user: any) => ({
+    const formattedData = users.map((user) => ({
       user_id: user.user_id,
       username: user.username,
-      fullname: `${user.first_name} ${user.last_name}`.trim() || user.username,
+      fullname: `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim() || user.username,
       email: user.email,
       phone: user.phone || '',
       user_role: user.user_role || 'Unknown',
       user_unique_code: user.user_unique_code || '',
-      fk_user_profile_id: user.fk_user_profile_id || getRoleIdFromCode(user.user_role) || 0,
+      fk_user_profile_id: user.fk_user_profile_id || getRoleIdFromCode(user.user_role ?? '') || 0,
       active: user.user_active === 'Y' ? 1 : 0,
-      // Never activated (no auth account yet) = pending invite
       is_pending: user.user_active !== 'Y' && !user.auth_user_id,
       is_viewer: user.is_viewer,
       is_manager: user.is_manager,
+      fk_client_id: user.fk_client_id ?? null,
       fk_territorial_unit: user.fk_territorial_unit,
-      terr_unit_code: user.owner_territorial_unit?.unit_code || '',
-      terr_unit_desc: user.owner_territorial_unit?.unit_name || '',
+      terr_unit_code: user.owner_territorial_unit_users_fk_territorial_unitToowner_territorial_unit?.unit_code || '',
+      terr_unit_desc: user.owner_territorial_unit_users_fk_territorial_unitToowner_territorial_unit?.unit_name || '',
       owner_code: user.owner?.owner_code || '',
       owner_name: user.owner?.owner_name || '',
-      profile_image: user.users_profile?.[0]?.profile_picture || '',
-      user_image: user.users_profile?.[0]?.profile_picture || '',
-      user_signature: user.users_profile?.[0]?.user_signature || '',
+      profile_image: user.users_profile?.profile_picture || '',
+      user_image: user.users_profile?.profile_picture || '',
+      user_signature: user.users_profile?.user_signature || '',
     }));
 
-    return {
-      success: true,
-      data: formattedData,
-      count: formattedData.length,
-    };
+    return { success: true, data: formattedData, count: formattedData.length };
   } catch (error) {
     console.error('Error fetching user list:', error);
     throw new Error('Failed to fetch user list');
@@ -124,19 +111,23 @@ export async function createUser(userData: UserCreateData) {
 
     const userName = userData.username.toLowerCase();
 
-    const { data: existingUser, error: lookupError } = await supabase
-      .from('users')
-      .select('user_id, email, username, user_active, auth_user_id')
-      .or(`email.ilike.${userData.email},username.eq.${userName}`)
-      .maybeSingle();
+    const [byEmail, byUsername] = await Promise.all([
+      prisma.public_users.findFirst({
+        where:  { email: { equals: userData.email, mode: 'insensitive' } },
+        select: { user_id: true, email: true, username: true, user_active: true, auth_user_id: true },
+      }),
+      prisma.public_users.findFirst({
+        where:  { username: userName },
+        select: { user_id: true, email: true, username: true, user_active: true, auth_user_id: true },
+      }),
+    ]);
 
-    if (lookupError) {
-      // PGRST116 = multiple rows matched (email hit one user, username hit another)
-      if (lookupError.code === 'PGRST116') {
-        throw new Error('A user with this email or username already exists');
-      }
-      throw lookupError;
+    // If email and username each match a different existing user
+    if (byEmail && byUsername && byEmail.user_id !== byUsername.user_id) {
+      throw new Error('A user with this email or username already exists');
     }
+
+    const existingUser = byEmail ?? byUsername;
 
     if (existingUser) {
       if (existingUser.email?.toLowerCase() === userData.email.toLowerCase()) {
@@ -157,9 +148,8 @@ export async function createUser(userData: UserCreateData) {
     const saltRounds = 10;
     const hashedPasscode = await bcrypt.hash(uid, saltRounds);
 
-    const { data: newUser, error: insertError } = await supabase
-      .from('users')
-      .insert({
+    const newUser = await prisma.public_users.create({
+      data: {
         username: userName,
         email: userData.email,
         password_hash: hashedPasscode,
@@ -176,78 +166,77 @@ export async function createUser(userData: UserCreateData) {
         is_manager: userData.is_manager,
         user_timezone: userData.timezone,
         user_unique_code: uid,
-        _key_: key,
-      })
-      .select()
-      .single();
+        key_: key,
+      },
+      select: { user_id: true },
+    });
 
-    if (insertError) {
-      console.error('User insert error:', insertError);
-      throw insertError;
-    }
-
-    const { data: userOwner, error: userOwnerError } = await supabase
-      .from('user_owner')
-      .insert({
+    const userOwner = await prisma.user_owner.create({
+      data: {
         fk_user_id: newUser.user_id,
         fk_owner_id: userData.owner_id,
         relationship_type: 'EMPLOYEE',
         role_in_organization: getRoleLabel(userData.fk_user_profile_id),
         is_primary: true,
         is_active: true,
-      })
-      .select()
-      .single();
+      },
+      select: { user_owner_id: true },
+    });
 
-    if (userOwnerError) {
-      console.error('User-owner relationship error:', userOwnerError);
-      throw userOwnerError;
-    }
-    const { error: profileError } = await supabase
-      .from('users_profile')
-      .insert({
+    await prisma.users_profile.create({
+      data: {
         fk_user_id: newUser.user_id,
         address: null,
         city: null,
         state: null,
         postal_code: null,
         fk_country_id: null,
-        certifications: null,
-        skills: null,
-      });
+        certifications: Prisma.JsonNull,
+        skills: Prisma.JsonNull,
+      },
+    });
 
-    if (profileError) {
-      console.error('User profile creation error:', profileError);
-    }
-
-    await supabase
-      .from('user_settings')
-      .insert({ fk_user_id: newUser.user_id, setting_key: 'password_changed', setting_value: 'false' });
+    await prisma.user_settings.create({
+      data: {
+        fk_user_id: newUser.user_id,
+        setting_key: 'password_changed',
+        setting_value: 'false',
+      },
+    });
 
     const activationLink = `${env.APP_URL}/auth/activate?o=${userData.owner_id}&email=${encodeURIComponent(userData.email)}&username=${encodeURIComponent(userData.username)}&id=${key}`;
 
     console.log('activation link:', activationLink);
     console.log('pass:', uid);
 
+    let emailSent = false;
+    let emailError: string | null = null;
 
-    const emailResult = await sendUserActivationEmail(
-      userData.email,
-      userData.fullname,
-      {
-        organization: 'ReADI Control Center',
-        username: userData.username,
-        passcode: uid,
-        loginlink: activationLink,
-      }
-    );
+    try {
+      await sendUserActivationEmail(
+        userData.email,
+        userData.fullname,
+        {
+          organization: 'ReADI Control Center',
+          username: userData.username,
+          passcode: uid,
+          loginlink: activationLink,
+        }
+      );
+      emailSent = true;
+    } catch (err) {
+      emailError = err instanceof Error ? err.message : String(err);
+      console.error('[createUser] activation email failed:', emailError);
+    }
 
     return {
       success: true,
       userId: newUser.user_id,
       userOwnerId: userOwner.user_owner_id,
       activationKey: key,
-      emailSent: emailResult.message,
-      message: 'User created successfully',
+      emailSent,
+      emailError,
+      message: emailSent ? 'User created successfully' : `User created but activation email failed: ${emailError}`,
     };
   } catch (error) {
     console.error('Error creating user:', error);
@@ -263,57 +252,50 @@ export async function updateUser(userData: UserUpdateData) {
       return isNaN(n) ? null : n;
     };
 
-    const updateData: any = {
-      ...(userData.fullname && (() => {
-        const parts = userData.fullname.trim().split(' ');
-        return { first_name: parts[0] || '', last_name: parts.slice(1).join(' ') || '' };
-      })()),
-      email: userData.email,
-      phone: userData.user_phone || null,
-      user_type: userData.user_type || null,
-      user_active: userData.active === 1 ? 'Y' : 'N',
-      is_viewer: userData.is_viewer || null,
-      is_manager: userData.is_manager || null,
-      fk_territorial_unit: toIntOrNull(userData.fk_territorial_unit),
-      fk_client_id: toIntOrNull(userData.fk_client_id),
-      updated_at: new Date().toISOString(),
-    };
+    const nameParts = userData.fullname ? userData.fullname.trim().split(' ') : null;
+    const nameData = nameParts
+      ? { first_name: nameParts[0] || '', last_name: nameParts.slice(1).join(' ') || '' }
+      : {};
 
-    const { error: userError } = await supabase
-      .from('users')
-      .update(updateData)
-      .eq('user_id', userData.user_id)
-      .eq('fk_owner_id', userData.owner_id);
-
-    if (userError) throw userError;
+    await prisma.public_users.update({
+      where: {
+        user_id: userData.user_id,
+        ...(userData.owner_id > 0 ? { fk_owner_id: userData.owner_id } : {}),
+      },
+      data: {
+        ...nameData,
+        email: userData.email,
+        phone: userData.user_phone || null,
+        user_type: userData.user_type || null,
+        user_active: userData.active === 1 ? 'Y' : 'N',
+        is_viewer: userData.is_viewer || null,
+        is_manager: userData.is_manager || null,
+        fk_territorial_unit: toIntOrNull(userData.fk_territorial_unit),
+        fk_client_id: toIntOrNull(userData.fk_client_id),
+        updated_at: new Date(),
+      },
+    });
 
     if (userData.user_image || userData.user_signature) {
-      const profileUpdate: any = {};
+      const profileUpdate: { profile_picture?: string; user_signature?: string } = {};
       if (userData.user_image) profileUpdate.profile_picture = userData.user_image;
       if (userData.user_signature) profileUpdate.user_signature = userData.user_signature;
 
-      const { error: profileError } = await supabase
-        .from('users_profile')
-        .update(profileUpdate)
-        .eq('fk_user_id', userData.user_id);
-
-      if (profileError) throw profileError;
+      await prisma.users_profile.update({
+        where: { fk_user_id: userData.user_id },
+        data: profileUpdate,
+      });
     }
 
-    const { error: userOwnerError } = await supabase
-      .from('user_owner')
-      .update({
-        role_in_organization: getRoleLabel(userData.fk_user_profile_id),
-      })
-      .eq('fk_user_id', userData.user_id)
-      .eq('fk_owner_id', userData.owner_id);
+    await prisma.user_owner.updateMany({
+      where: {
+        fk_user_id: userData.user_id,
+        ...(userData.owner_id > 0 ? { fk_owner_id: userData.owner_id } : {}),
+      },
+      data: { role_in_organization: getRoleLabel(userData.fk_user_profile_id) },
+    });
 
-    if (userOwnerError) throw userOwnerError;
-
-    return {
-      success: true,
-      message: 'User updated successfully',
-    };
+    return { success: true, message: 'User updated successfully' };
   } catch (error) {
     console.error('Error updating user:', error);
     throw new Error('Failed to update user');
@@ -322,51 +304,33 @@ export async function updateUser(userData: UserUpdateData) {
 
 export async function deleteUser(userId: number, ownerId: number, isSuperAdmin = false) {
   try {
-    let lookupQuery = supabase
-      .from('users')
-      .select('auth_user_id, fk_owner_id, first_name, last_name, email')
-      .eq('user_id', userId);
+    const userRecord = await prisma.public_users.findFirst({
+      where: {
+        user_id: userId,
+        ...(!isSuperAdmin ? { fk_owner_id: ownerId } : {}),
+      },
+      select: { auth_user_id: true, first_name: true, last_name: true, email: true },
+    });
 
-    if (!isSuperAdmin) {
-      lookupQuery = lookupQuery.eq('fk_owner_id', ownerId);
-    }
-
-    const { data: userRecord, error: lookupError } = await lookupQuery.maybeSingle();
-
-    if (lookupError) throw lookupError;
     if (!userRecord) throw new Error('User not found or does not belong to this organization');
 
-    const { error: notifError } = await supabase
-      .from('notification')
-      .delete()
-      .eq('fk_user_id', userId);
-    if (notifError) console.warn('[deleteUser] notification cleanup failed:', notifError);
+    await prisma.notification.deleteMany({ where: { fk_user_id: userId } }).catch((e) =>
+      console.warn('[deleteUser] notification cleanup failed:', e)
+    );
 
-    const nullableFkTables: { table: string; column: string }[] = [
-      { table: 'checklist', column: 'fk_user_id' },
-      { table: 'kanban', column: 'fk_user_id' },
-      { table: 'planning_logbook', column: 'fk_user_id' },
-    ];
+    await Promise.allSettled([
+      prisma.checklist.updateMany({ where: { fk_user_id: userId }, data: { fk_user_id: null } }),
+      prisma.kanban.updateMany({ where: { fk_user_id: userId }, data: { fk_user_id: null } }),
+      prisma.planning_logbook.updateMany({ where: { fk_user_id: userId }, data: { fk_user_id: null } }),
+      prisma.training_attendance.deleteMany({ where: { fk_user_id: userId } }),
+    ]);
 
-    for (const { table, column } of nullableFkTables) {
-      const { error: nullifyError } = await supabase
-        .from(table as any)
-        .update({ [column]: null })
-        .eq(column, userId);
-      if (nullifyError) console.warn(`[deleteUser] nullify ${table}.${column} failed:`, nullifyError);
-    }
-
-    let updateQuery = supabase
-      .from('users')
-      .delete()
-      .eq('user_id', userId);
-
-    if (!isSuperAdmin) {
-      updateQuery = updateQuery.eq('fk_owner_id', ownerId);
-    }
-
-    const { error: updateError } = await updateQuery;
-    if (updateError) throw updateError;
+    await prisma.public_users.deleteMany({
+      where: {
+        user_id: userId,
+        ...(!isSuperAdmin ? { fk_owner_id: ownerId } : {}),
+      },
+    });
 
     if (userRecord.auth_user_id) {
       try {
@@ -384,58 +348,25 @@ export async function deleteUser(userId: number, ownerId: number, isSuperAdmin =
   }
 }
 
-const getRoleIdFromCode = (roleCode: string): number => {
-  const codeToId: Record<string, number> = {
-    'PIC': 8, 'OPM': 9, 'SM': 10, 'AM': 11,
-    'CMM': 12, 'RM': 13, 'TM': 14, 'DC': 15, 'SLA': 16, 'ADMIN': 17,
-  };
-  return codeToId[roleCode] || 0;
-};
-
-const getRoleLabel = (profileId: number): string => {
-  const roleMapping: Record<number, string> = {
-    8: 'PIC',
-    9: 'OPM',
-    10: 'SM',
-    11: 'AM',
-    12: 'CMM',
-    13: 'RM',
-    14: 'TM',
-    15: 'DC',
-    16: 'SLA',
-    17: 'ADMIN',
-  };
-  return roleMapping[profileId] || 'Unknown';
-}
-
-const getRoleCode = (profileId: number): string => {
-  return getRoleLabel(profileId);
-}
-
-export const generateUniqueCode = (): string => {
-  return `USR-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`.toUpperCase();
-}
-
-export const generateActivationToken = (length: number): string => {
-  const bytes = length * 2;
-  const array = new Uint8Array(bytes);
-  crypto.getRandomValues(array);
-  return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
-};
-
 export async function resendUserInvite(userId: number, ownerId: number, isSuperAdmin = false) {
-  let lookupQuery = supabase
-    .from('users')
-    .select('user_id, email, username, first_name, last_name, user_active, auth_user_id, user_unique_code, fk_owner_id')
-    .eq('user_id', userId);
+  const user = await prisma.public_users.findFirst({
+    where: {
+      user_id: userId,
+      ...(!isSuperAdmin ? { fk_owner_id: ownerId } : {}),
+    },
+    select: {
+      user_id: true,
+      email: true,
+      username: true,
+      first_name: true,
+      last_name: true,
+      user_active: true,
+      auth_user_id: true,
+      user_unique_code: true,
+      fk_owner_id: true,
+    },
+  });
 
-  if (!isSuperAdmin) {
-    lookupQuery = lookupQuery.eq('fk_owner_id', ownerId);
-  }
-
-  const { data: user, error: fetchError } = await lookupQuery.maybeSingle();
-
-  if (fetchError) throw fetchError;
   if (!user) throw new Error('User not found');
   if (user.user_active === 'Y' || user.auth_user_id) {
     throw new Error('User is already activated');
@@ -443,23 +374,21 @@ export async function resendUserInvite(userId: number, ownerId: number, isSuperA
 
   const newKey = generateActivationToken(128);
 
-  const { error: updateError } = await supabase
-    .from('users')
-    .update({ _key_: newKey, updated_at: new Date().toISOString() })
-    .eq('user_id', userId);
+  await prisma.public_users.update({
+    where: { user_id: userId },
+    data: { key_: newKey, updated_at: new Date() },
+  });
 
-  if (updateError) throw updateError;
-
-  const fullname = `${user.first_name} ${user.last_name}`.trim() || user.username;
-  const activationLink = `${env.APP_URL}/auth/activate?o=${user.fk_owner_id}&email=${encodeURIComponent(user.email)}&username=${encodeURIComponent(user.username)}&id=${newKey}`;
+  const fullname = (`${user.first_name ?? ''} ${user.last_name ?? ''}`.trim()) || (user.username ?? '');
+  const activationLink = `${env.APP_URL}/auth/activate?o=${user.fk_owner_id}&email=${encodeURIComponent(user.email ?? '')}&username=${encodeURIComponent(user.username ?? '')}&id=${newKey}`;
 
   const emailResult = await sendUserActivationEmail(
-    user.email,
+    user.email ?? '',
     fullname,
     {
       organization: 'ReADI Control Center',
-      username: user.username,
-      passcode: user.user_unique_code,
+      username: user.username ?? '',
+      passcode: user.user_unique_code ?? '',
       loginlink: activationLink,
     }
   );
@@ -470,3 +399,34 @@ export async function resendUserInvite(userId: number, ownerId: number, isSuperA
     emailSent: emailResult.message,
   };
 }
+
+const getRoleIdFromCode = (roleCode: string): number => {
+  const codeToId: Record<string, number> = {
+    'PIC': 8, 'OPM': 9, 'SM': 10, 'AM': 11,
+    'CMM': 12, 'RM': 13, 'TM': 14, 'DC': 15, 'SLA': 16, 'ADMIN': 17,
+  };
+  return codeToId[roleCode] || 0;
+};
+
+const getRoleLabel = (profileId: number): string => {
+  const roleMapping: Record<number, string> = {
+    8: 'PIC', 9: 'OPM', 10: 'SM', 11: 'AM',
+    12: 'CMM', 13: 'RM', 14: 'TM', 15: 'DC', 16: 'SLA', 17: 'ADMIN',
+  };
+  return roleMapping[profileId] || 'Unknown';
+};
+
+const getRoleCode = (profileId: number): string => {
+  return getRoleLabel(profileId);
+};
+
+export const generateUniqueCode = (): string => {
+  return `USR-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`.toUpperCase();
+};
+
+export const generateActivationToken = (length: number): string => {
+  const bytes = length * 2;
+  const array = new Uint8Array(bytes);
+  crypto.getRandomValues(array);
+  return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+};

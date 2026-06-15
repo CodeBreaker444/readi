@@ -1,4 +1,4 @@
-import { supabase } from '@/backend/database/database';
+import { prisma } from '@/lib/prisma';
 import { requirePermission } from '@/lib/auth/api-auth';
 import { internalError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
@@ -15,23 +15,29 @@ export async function GET(_req: NextRequest, { params }: Params) {
     const missionId = Number((await params).id);
     if (!missionId) return NextResponse.json({ code: 0, error: 'Invalid ID' }, { status: 400 });
 
-    const { data: mission, error: mErr } = await supabase
-      .from('pilot_mission')
-      .select('pilot_mission_id, fk_luc_procedure_id, luc_procedure_progress, luc_completed_at')
-      .eq('pilot_mission_id', missionId)
-      .eq('fk_owner_id', session!.user.ownerId)
-      .single();
+    const mission = await prisma.pilot_mission.findFirst({
+      where: { pilot_mission_id: missionId, fk_owner_id: session!.user.ownerId },
+      select: {
+        pilot_mission_id:       true,
+        fk_luc_procedure_id:    true,
+        luc_procedure_progress: true,
+        luc_completed_at:       true,
+      },
+    });
 
-    if (mErr || !mission) return NextResponse.json({ code: 0, error: 'Mission not found' }, { status: 404 });
+    if (!mission) return NextResponse.json({ code: 0, error: 'Mission not found' }, { status: 404 });
 
     let procedure_steps = null;
     if (mission.fk_luc_procedure_id) {
-      const { data: proc } = await supabase
-        .from('luc_procedure')
-        .select('procedure_id, procedure_name, procedure_code, procedure_steps')
-        .eq('procedure_id', mission.fk_luc_procedure_id)
-        .single();
-      procedure_steps = proc;
+      procedure_steps = await prisma.luc_procedure.findUnique({
+        where: { procedure_id: mission.fk_luc_procedure_id },
+        select: {
+          procedure_id:   true,
+          procedure_name: true,
+          procedure_code: true,
+          procedure_steps: true,
+        },
+      });
     }
 
     return NextResponse.json({
@@ -59,15 +65,12 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       return NextResponse.json({ code: 0, error: 'task_type and task_code are required' }, { status: 400 });
     }
 
-    // Fetch current progress and the linked procedure id
-    const { data: mission, error: mErr } = await supabase
-      .from('pilot_mission')
-      .select('luc_procedure_progress, fk_luc_procedure_id')
-      .eq('pilot_mission_id', missionId)
-      .eq('fk_owner_id', session!.user.ownerId)
-      .single();
+    const mission = await prisma.pilot_mission.findFirst({
+      where: { pilot_mission_id: missionId, fk_owner_id: session!.user.ownerId },
+      select: { luc_procedure_progress: true, fk_luc_procedure_id: true },
+    });
 
-    if (mErr || !mission) return NextResponse.json({ code: 0, error: 'Mission not found' }, { status: 404 });
+    if (!mission) return NextResponse.json({ code: 0, error: 'Mission not found' }, { status: 404 });
 
     const progress: Record<string, Record<string, string>> = (mission.luc_procedure_progress as any) ?? {
       checklist: {},
@@ -83,15 +86,14 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     // because Object.values({}).every(...) is vacuously true for untouched sections.
     let allDone = false;
     if (mission.fk_luc_procedure_id) {
-      const { data: proc } = await supabase
-        .from('luc_procedure')
-        .select('procedure_steps')
-        .eq('procedure_id', mission.fk_luc_procedure_id)
-        .single();
+      const proc = await prisma.luc_procedure.findUnique({
+        where: { procedure_id: mission.fk_luc_procedure_id },
+        select: { procedure_steps: true },
+      });
 
       if (proc?.procedure_steps) {
-        const rawTasks: any[] = Array.isArray(proc.procedure_steps.tasks)
-          ? proc.procedure_steps.tasks
+        const rawTasks: any[] = Array.isArray((proc.procedure_steps as any).tasks)
+          ? (proc.procedure_steps as any).tasks
           : [];
         const expectedCodes: Record<string, string[]> = {
           checklist:     rawTasks.flatMap((t: any) => (t.checklist     ?? []).map((c: any) => c.checklist_code)),
@@ -105,16 +107,13 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       }
     }
 
-    const { error: uErr } = await supabase
-      .from('pilot_mission')
-      .update({
+    await prisma.pilot_mission.updateMany({
+      where: { pilot_mission_id: missionId, fk_owner_id: session!.user.ownerId },
+      data: {
         luc_procedure_progress: progress,
-        luc_completed_at: allDone ? new Date().toISOString() : null,
-      })
-      .eq('pilot_mission_id', missionId)
-      .eq('fk_owner_id', session!.user.ownerId);
-
-    if (uErr) throw new Error(uErr.message);
+        luc_completed_at: allDone ? new Date() : null,
+      },
+    });
 
     return NextResponse.json({ code: 1, progress, all_completed: allDone });
   } catch (err) {

@@ -46,30 +46,30 @@ function SortableHeader({
 }
 
 const STATUS_LIGHT: Record<string, { label: string; dot: string; bg: string; text: string }> = {
-  NEW:         { label: "New",         dot: "bg-sky-400",     bg: "bg-sky-50 border-sky-200",       text: "text-sky-700"     },
-  IN_PROGRESS: { label: "In Progress", dot: "bg-amber-400",   bg: "bg-amber-50 border-amber-200",   text: "text-amber-700"   },
-  PROGRESS:    { label: "In Progress", dot: "bg-amber-400",   bg: "bg-amber-50 border-amber-200",   text: "text-amber-700"   },
-  REVIEW:      { label: "Review",      dot: "bg-violet-400",  bg: "bg-violet-50 border-violet-200", text: "text-violet-700"  },
+  NEW:         { label: "New",         dot: "bg-sky-400",     bg: "bg-sky-50 border-sky-200",         text: "text-sky-700"     },
+  IN_PROGRESS: { label: "In Progress", dot: "bg-amber-400",   bg: "bg-amber-50 border-amber-200",     text: "text-amber-700"   },
+  PROGRESS:    { label: "In Progress", dot: "bg-amber-400",   bg: "bg-amber-50 border-amber-200",     text: "text-amber-700"   },
+  REVIEW:      { label: "Review",      dot: "bg-violet-400",  bg: "bg-violet-50 border-violet-200",   text: "text-violet-700"  },
   COMPLETED:   { label: "Completed",   dot: "bg-emerald-400", bg: "bg-emerald-50 border-emerald-200", text: "text-emerald-700" },
   DONE:        { label: "Done",        dot: "bg-emerald-400", bg: "bg-emerald-50 border-emerald-200", text: "text-emerald-700" },
-  SUSPENDED:   { label: "Suspended",   dot: "bg-orange-400",  bg: "bg-orange-50 border-orange-200", text: "text-orange-700"  },
-  CANCELLED:   { label: "Cancelled",   dot: "bg-slate-400",   bg: "bg-slate-50 border-slate-200",   text: "text-slate-500"   },
+  SUSPENDED:   { label: "Suspended",   dot: "bg-orange-400",  bg: "bg-orange-50 border-orange-200",   text: "text-orange-700"  },
+  CANCELLED:   { label: "Cancelled",   dot: "bg-slate-400",   bg: "bg-slate-50 border-slate-200",     text: "text-slate-500"   },
 };
 
 const STATUS_DARK: Record<string, { label: string; dot: string; bg: string; text: string }> = {
-  NEW:         { label: "New",         dot: "bg-sky-400",     bg: "bg-sky-500/15 border-sky-500/30",       text: "text-sky-400"     },
-  IN_PROGRESS: { label: "In Progress", dot: "bg-amber-400",   bg: "bg-amber-500/15 border-amber-500/30",   text: "text-amber-400"   },
-  PROGRESS:    { label: "In Progress", dot: "bg-amber-400",   bg: "bg-amber-500/15 border-amber-500/30",   text: "text-amber-400"   },
-  REVIEW:      { label: "Review",      dot: "bg-violet-400",  bg: "bg-violet-500/15 border-violet-500/30", text: "text-violet-400"  },
+  NEW:         { label: "New",         dot: "bg-sky-400",     bg: "bg-sky-500/15 border-sky-500/30",         text: "text-sky-400"     },
+  IN_PROGRESS: { label: "In Progress", dot: "bg-amber-400",   bg: "bg-amber-500/15 border-amber-500/30",     text: "text-amber-400"   },
+  PROGRESS:    { label: "In Progress", dot: "bg-amber-400",   bg: "bg-amber-500/15 border-amber-500/30",     text: "text-amber-400"   },
+  REVIEW:      { label: "Review",      dot: "bg-violet-400",  bg: "bg-violet-500/15 border-violet-500/30",   text: "text-violet-400"  },
   COMPLETED:   { label: "Completed",   dot: "bg-emerald-400", bg: "bg-emerald-500/15 border-emerald-500/30", text: "text-emerald-400" },
   DONE:        { label: "Done",        dot: "bg-emerald-400", bg: "bg-emerald-500/15 border-emerald-500/30", text: "text-emerald-400" },
-  SUSPENDED:   { label: "Suspended",   dot: "bg-orange-400",  bg: "bg-orange-500/15 border-orange-500/30", text: "text-orange-400"  },
-  CANCELLED:   { label: "Cancelled",   dot: "bg-slate-500",   bg: "bg-slate-700/40 border-slate-600",       text: "text-slate-400"   },
+  SUSPENDED:   { label: "Suspended",   dot: "bg-orange-400",  bg: "bg-orange-500/15 border-orange-500/30",   text: "text-orange-400"  },
+  CANCELLED:   { label: "Cancelled",   dot: "bg-slate-500",   bg: "bg-slate-700/40 border-slate-600",         text: "text-slate-400"   },
 };
 
 function EvalStatusBadge({ status, isDark }: { status: string; isDark?: boolean }) {
   const map   = isDark ? STATUS_DARK : STATUS_LIGHT;
-  const fallL = { label: status || "—", dot: "bg-slate-300", bg: "bg-slate-50 border-slate-200",  text: "text-slate-500" };
+  const fallL = { label: status || "—", dot: "bg-slate-300", bg: "bg-slate-50 border-slate-200",     text: "text-slate-500" };
   const fallD = { label: status || "—", dot: "bg-slate-500", bg: "bg-slate-700/40 border-slate-600", text: "text-slate-400" };
   const cfg   = map[status] ?? (isDark ? fallD : fallL);
   return (
@@ -81,21 +81,21 @@ function EvalStatusBadge({ status, isDark }: { status: string; isDark?: boolean 
 }
 
 const RESULT_LIGHT: Record<string, { label: string; bg: string; text: string }> = {
-  PROCESSING:      { label: "Processing", bg: "bg-slate-100",    text: "text-slate-500" },
-  RESULT_POSITIVE: { label: "Positive",   bg: "bg-emerald-500",  text: "text-white"     },
-  RESULT_NEGATIVE: { label: "Negative",   bg: "bg-red-500",      text: "text-white"     },
+  PROCESSING:      { label: "Processing", bg: "bg-slate-100",   text: "text-slate-500" },
+  RESULT_POSITIVE: { label: "Positive",   bg: "bg-emerald-500", text: "text-white"     },
+  RESULT_NEGATIVE: { label: "Negative",   bg: "bg-red-500",     text: "text-white"     },
 };
 
 const RESULT_DARK: Record<string, { label: string; bg: string; text: string }> = {
-  PROCESSING:      { label: "Processing", bg: "bg-slate-700",    text: "text-slate-400" },
-  RESULT_POSITIVE: { label: "Positive",   bg: "bg-emerald-500",  text: "text-white"     },
-  RESULT_NEGATIVE: { label: "Negative",   bg: "bg-red-500",      text: "text-white"     },
+  PROCESSING:      { label: "Processing", bg: "bg-slate-700",   text: "text-slate-400" },
+  RESULT_POSITIVE: { label: "Positive",   bg: "bg-emerald-500", text: "text-white"     },
+  RESULT_NEGATIVE: { label: "Negative",   bg: "bg-red-500",     text: "text-white"     },
 };
 
 function EvalResultBadge({ result, isDark }: { result: string; isDark?: boolean }) {
   const map   = isDark ? RESULT_DARK : RESULT_LIGHT;
-  const fallL = { label: result || "—", bg: "bg-slate-100",  text: "text-slate-400" };
-  const fallD = { label: result || "—", bg: "bg-slate-700",  text: "text-slate-400" };
+  const fallL = { label: result || "—", bg: "bg-slate-100", text: "text-slate-400" };
+  const fallD = { label: result || "—", bg: "bg-slate-700", text: "text-slate-400" };
   const cfg   = map[result] ?? (isDark ? fallD : fallL);
   return (
     <span className={`inline-flex items-center justify-center px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide rounded ${cfg.bg} ${cfg.text}`}>
@@ -114,10 +114,10 @@ function formatDate(raw: unknown, tz?: string): { display: string; relative: str
   const now      = new Date();
   const diffDays = Math.floor((now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24));
   let relative   = "";
-  if (diffDays === 0)       relative = "Today";
-  else if (diffDays === 1)  relative = "Yesterday";
-  else if (diffDays < 30)   relative = `${diffDays}d ago`;
-  else if (diffDays < 365)  relative = `${Math.floor(diffDays / 30)}mo ago`;
+  if (diffDays === 0)      relative = "Today";
+  else if (diffDays === 1) relative = "Yesterday";
+  else if (diffDays < 30)  relative = `${diffDays}d ago`;
+  else if (diffDays < 365) relative = `${Math.floor(diffDays / 30)}mo ago`;
 
   return { display, relative };
 }

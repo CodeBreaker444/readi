@@ -1,10 +1,9 @@
-import { supabase } from '@/backend/database/database';
+import { prisma } from '@/lib/prisma';
 
 import { Evaluation, EvaluationFile, EvaluationTask, SendAssignmentPayload, SendAssignmentResult } from '@/config/types/evaluation';
 import { ProcedureSteps } from '@/config/types/lcuProcedures';
 import { deleteFileFromS3, getPresignedDownloadUrl, uploadFileToS3 } from '@/lib/s3Client';
 
- 
 function normalisePolygonData(raw: any): { type: string; features: any[] } | null {
   if (!raw) return null;
 
@@ -35,39 +34,33 @@ function normalisePolygonData(raw: any): { type: string; features: any[] } | nul
   return null;
 }
 
- 
 export async function getEvaluationById(
   ownerId: number,
-  evaluationId: number,
+  evaluationId: number
 ): Promise<Evaluation> {
-  const { data, error } = await supabase
-    .from('evaluation')
-    .select(`
-      *,
-      client:fk_client_id ( client_name ),
-      luc_procedure:fk_luc_procedure_id ( procedure_code, procedure_version )
-    `)
-    .eq('evaluation_id', evaluationId)
-    .eq('fk_owner_id', ownerId)
-    .single();
+  const data = await prisma.evaluation.findFirst({
+    where: { evaluation_id: evaluationId, fk_owner_id: ownerId },
+    include: {
+      client: { select: { client_name: true } },
+      luc_procedure: { select: { procedure_code: true, procedure_version: true } },
+    },
+  });
 
-  if (error) throw new Error(`getEvaluationById: ${error.message}`);
   if (!data) throw new Error('Evaluation not found');
 
   const metadata =
     typeof data.evaluation_metadata === 'string'
       ? JSON.parse(data.evaluation_metadata)
-      : data.evaluation_metadata ?? {};
+      : (data.evaluation_metadata as Record<string, any>) ?? {};
 
   let procedureCode = data.luc_procedure?.procedure_code ?? '';
   let procedureVersion = data.luc_procedure?.procedure_version ?? '';
 
   if (!procedureCode && metadata.procedure_id) {
-    const { data: procData } = await supabase
-      .from('luc_procedure')
-      .select('procedure_code, procedure_version')
-      .eq('procedure_id', metadata.procedure_id)
-      .single();
+    const procData = await prisma.luc_procedure.findUnique({
+      where: { procedure_id: metadata.procedure_id },
+      select: { procedure_code: true, procedure_version: true },
+    });
 
     if (procData) {
       procedureCode = procData.procedure_code ?? '';
@@ -91,10 +84,9 @@ export async function getEvaluationById(
     evaluation_desc: data.evaluation_description ?? '',
     evaluation_request_date: data.scheduled_date ?? '',
     last_update: data.updated_at ?? '',
-  } as Evaluation;
+  } as unknown as Evaluation;
 }
 
- 
 export interface EvaluationUpdateInput {
   evaluation_id: number;
   fk_owner_id: number;
@@ -111,121 +103,98 @@ export interface EvaluationUpdateInput {
 }
 
 export async function updateEvaluation(
-  payload: EvaluationUpdateInput,
+  payload: EvaluationUpdateInput
 ): Promise<{ success: boolean; message: string; data?: Evaluation }> {
   const {
-    evaluation_id,
-    fk_owner_id,
-    fk_client_id,
-    fk_evaluation_code,
-    evaluation_request_date,
-    evaluation_year,
-    evaluation_desc,
-    evaluation_status,
-    evaluation_result,
-    evaluation_offer,
-    evaluation_sale_manager,
+    evaluation_id, fk_owner_id, fk_client_id, fk_evaluation_code,
+    evaluation_request_date, evaluation_year, evaluation_desc,
+    evaluation_status, evaluation_result, evaluation_offer, evaluation_sale_manager,
   } = payload;
 
   const updateData: Record<string, any> = { fk_client_id };
 
   if (fk_evaluation_code !== undefined) updateData.evaluation_code = fk_evaluation_code;
-  if (evaluation_request_date !== undefined) updateData.scheduled_date = evaluation_request_date;
+  if (evaluation_request_date !== undefined) updateData.scheduled_date = evaluation_request_date ? new Date(evaluation_request_date) : null;
   if (evaluation_year !== undefined) updateData.evaluation_year = evaluation_year;
   if (evaluation_desc !== undefined) updateData.evaluation_description = evaluation_desc;
   if (evaluation_status !== undefined) updateData.evaluation_status = evaluation_status;
   if (evaluation_result !== undefined) updateData.evaluation_result = evaluation_result;
 
   if (evaluation_offer !== undefined || evaluation_sale_manager !== undefined) {
-    const { data: current } = await supabase
-      .from('evaluation')
-      .select('evaluation_metadata')
-      .eq('evaluation_id', evaluation_id)
-      .eq('fk_owner_id', fk_owner_id)
-      .single();
+    const current = await prisma.evaluation.findFirst({
+      where: { evaluation_id, fk_owner_id },
+      select: { evaluation_metadata: true },
+    });
 
     const existingMeta =
       typeof current?.evaluation_metadata === 'string'
         ? JSON.parse(current.evaluation_metadata)
-        : current?.evaluation_metadata ?? {};
+        : (current?.evaluation_metadata as Record<string, any>) ?? {};
 
     if (evaluation_offer !== undefined) existingMeta.offer = evaluation_offer;
     if (evaluation_sale_manager !== undefined) existingMeta.sale_manager = evaluation_sale_manager;
     updateData.evaluation_metadata = existingMeta;
   }
 
-  const { data, error } = await supabase
-    .from('evaluation')
-    .update(updateData)
-    .eq('evaluation_id', evaluation_id)
-    .eq('fk_owner_id', fk_owner_id)
-    .select()
-    .single();
+  const data = await prisma.evaluation.updateMany({
+    where: { evaluation_id, fk_owner_id },
+    data: updateData,
+  });
 
-  if (error) {
-    return { success: false, message: `Update failed: ${error.message}` };
+  if (data.count === 0) {
+    return { success: false, message: 'Update failed: record not found' };
   }
-  return { success: true, message: 'Evaluation updated', data: data as Evaluation };
+
+  const updated = await prisma.evaluation.findUnique({
+    where: { evaluation_id },
+  });
+
+  return { success: true, message: 'Evaluation updated', data: updated as unknown as Evaluation };
 }
 
- 
 export async function deleteEvaluation(
   ownerId: number,
-  evaluationId: number,
+  evaluationId: number
 ): Promise<{ success: boolean; message: string }> {
-  const { data: existing } = await supabase
-    .from('evaluation')
-    .select('evaluation_status')
-    .eq('evaluation_id', evaluationId)
-    .eq('fk_owner_id', ownerId)
-    .single();
+  const existing = await prisma.evaluation.findFirst({
+    where: { evaluation_id: evaluationId, fk_owner_id: ownerId },
+    select: { evaluation_status: true },
+  });
 
   if (existing?.evaluation_status !== 'NEW') {
     return { success: false, message: 'Only NEW evaluations can be deleted' };
   }
 
-  const { error } = await supabase
-    .from('evaluation')
-    .delete()
-    .eq('evaluation_id', evaluationId)
-    .eq('fk_owner_id', ownerId);
+  await prisma.evaluation.deleteMany({
+    where: { evaluation_id: evaluationId, fk_owner_id: ownerId },
+  });
 
-  if (error) {
-    return { success: false, message: `Delete failed: ${error.message}` };
-  }
   return { success: true, message: 'Evaluation deleted' };
 }
-
 
 function buildEvaluationFileKey(evaluationId: number, originalName: string): string {
   const safeName = originalName.replace(/[^a-zA-Z0-9._-]/g, '_');
   return `evaluation/${evaluationId}/${Date.now()}_${safeName}`;
 }
 
- 
 export async function getEvaluationFiles(
   ownerId: number,
-  evaluationId: number,
+  evaluationId: number
 ): Promise<EvaluationFile[]> {
-  const { data: evalCheck } = await supabase
-    .from('evaluation')
-    .select('evaluation_id')
-    .eq('evaluation_id', evaluationId)
-    .eq('fk_owner_id', ownerId)
-    .single();
+  const evalCheck = await prisma.evaluation.findFirst({
+    where: { evaluation_id: evaluationId, fk_owner_id: ownerId },
+    select: { evaluation_id: true },
+  });
 
   if (!evalCheck) throw new Error('Evaluation not found or access denied');
 
-  const { data, error } = await supabase
-    .from('evaluation_file')
-    .select('*')
-    .eq('fk_evaluation_id', evaluationId)
-    .order('uploaded_at', { ascending: false });
-
-  if (error) throw new Error(`getEvaluationFiles: ${error.message}`);
+  const data = await prisma.evaluation_file.findMany({
+    where: { fk_evaluation_id: evaluationId },
+    orderBy: { uploaded_at: 'desc' },
+  });
 
   const files = await Promise.all(
-    (data ?? []).map(async (row) => {
+    data.map(async (row) => {
       let downloadUrl = '';
       if (row.file_path) {
         try {
@@ -243,25 +212,24 @@ export async function getEvaluationFiles(
         evaluation_file_ver: String(row.file_version ?? '1'),
         evaluation_file_folder: row.file_path ?? '',
         evaluation_file_filesize: row.file_size
-          ? Number((row.file_size / (1024 * 1024)).toFixed(2))
+          ? Number((Number(row.file_size) / (1024 * 1024)).toFixed(2))
           : 0,
         last_update: row.uploaded_at ?? '',
         download_url: downloadUrl,
       } as EvaluationFile;
-    }),
+    })
   );
 
   return files;
 }
 
- 
 export async function addEvaluationFile(
   evaluationId: number,
   ownerId: number,
   file: File,
   description: string,
   version: string,
-  uploadedByUserId?: number,
+  uploadedByUserId?: number
 ): Promise<{ success: boolean; data?: EvaluationFile; message?: string }> {
   const s3Key = buildEvaluationFileKey(evaluationId, file.name);
 
@@ -275,24 +243,23 @@ export async function addEvaluationFile(
     };
   }
 
-  const { data: row, error: dbError } = await supabase
-    .from('evaluation_file')
-    .insert({
-      fk_evaluation_id: evaluationId,
-      file_name: file.name,
-      file_path: s3Key,
-      file_type: file.type,
-      file_category: 'document',
-      file_size: file.size,
-      file_description: description,
-      file_version: parseInt(version) || 1,
-      is_latest: true,
-      uploaded_by_user_id: uploadedByUserId ?? null,
-    })
-    .select()
-    .single();
-
-  if (dbError) {
+  let row: any;
+  try {
+    row = await prisma.evaluation_file.create({
+      data: {
+        fk_evaluation_id: evaluationId,
+        file_name: file.name,
+        file_path: s3Key,
+        file_type: file.type,
+        file_category: 'document',
+        file_size: BigInt(file.size),
+        file_description: description,
+        file_version: parseInt(version) || 1,
+        is_latest: true,
+        uploaded_by_user_id: uploadedByUserId ?? null,
+      },
+    });
+  } catch (dbError: any) {
     try { await deleteFileFromS3(s3Key); } catch {}
     return { success: false, message: `DB insert failed: ${dbError.message}` };
   }
@@ -310,7 +277,7 @@ export async function addEvaluationFile(
     evaluation_file_ver: String(row.file_version ?? '1'),
     evaluation_file_folder: row.file_path ?? '',
     evaluation_file_filesize: row.file_size
-      ? Number((row.file_size / (1024 * 1024)).toFixed(2))
+      ? Number((Number(row.file_size) / (1024 * 1024)).toFixed(2))
       : 0,
     last_update: row.uploaded_at ?? '',
     download_url: downloadUrl,
@@ -319,29 +286,24 @@ export async function addEvaluationFile(
   return { success: true, data: mapped };
 }
 
- 
 export async function deleteEvaluationFile(
   ownerId: number,
   evaluationId: number,
-  fileId: number,
+  fileId: number
 ): Promise<{ success: boolean; message?: string }> {
-  const { data: fileRow, error: fetchErr } = await supabase
-    .from('evaluation_file')
-    .select('file_id, file_path, fk_evaluation_id')
-    .eq('file_id', fileId)
-    .eq('fk_evaluation_id', evaluationId)
-    .single();
+  const fileRow = await prisma.evaluation_file.findFirst({
+    where: { file_id: fileId, fk_evaluation_id: evaluationId },
+    select: { file_id: true, file_path: true, fk_evaluation_id: true },
+  });
 
-  if (fetchErr || !fileRow) {
+  if (!fileRow) {
     return { success: false, message: 'File not found' };
   }
 
-  const { data: evalCheck } = await supabase
-    .from('evaluation')
-    .select('evaluation_id')
-    .eq('evaluation_id', evaluationId)
-    .eq('fk_owner_id', ownerId)
-    .single();
+  const evalCheck = await prisma.evaluation.findFirst({
+    where: { evaluation_id: evaluationId, fk_owner_id: ownerId },
+    select: { evaluation_id: true },
+  });
 
   if (!evalCheck) {
     return { success: false, message: 'Access denied' };
@@ -355,42 +317,30 @@ export async function deleteEvaluationFile(
     }
   }
 
-  const { error: deleteErr } = await supabase
-    .from('evaluation_file')
-    .delete()
-    .eq('file_id', fileId);
+  await prisma.evaluation_file.delete({ where: { file_id: fileId } });
 
-  if (deleteErr) {
-    return { success: false, message: `Delete failed: ${deleteErr.message}` };
-  }
   return { success: true };
 }
 
 async function fetchChecklistJsonMap(
   ownerId: number,
-  codes: string[],
+  codes: string[]
 ): Promise<Map<string, object>> {
   const map = new Map<string, object>();
   if (codes.length === 0) return map;
 
-  const { data, error } = await supabase
-    .from('checklist')
-    .select('checklist_code, checklist_json')
-    .eq('fk_owner_id', ownerId)
-    .in('checklist_code', codes);
+  const data = await prisma.checklist.findMany({
+    where: { fk_owner_id: ownerId, checklist_code: { in: codes } },
+    select: { checklist_code: true, checklist_json: true },
+  });
 
-  if (error) {
-    console.warn('[fetchChecklistJsonMap] warning:', error.message);
-    return map;
-  }
-
-  for (const row of data ?? []) {
+  for (const row of data) {
     if (!row.checklist_code) continue;
     const json =
       typeof row.checklist_json === 'string'
         ? JSON.parse(row.checklist_json)
         : row.checklist_json;
-    if (json) map.set(row.checklist_code, json);
+    if (json) map.set(row.checklist_code, json as object);
   }
 
   return map;
@@ -398,18 +348,18 @@ async function fetchChecklistJsonMap(
 
 function buildTasksFromActions(
   rows: Record<string, unknown>[],
-  checklistJsonMap: Map<string, object>,
+  checklistJsonMap: Map<string, object>
 ): { tasks: EvaluationTask[]; allCompleted: boolean } {
   const tasks: EvaluationTask[] = rows.map((r) => {
     const type = r.action_type as EvaluationTask['task_type'];
     const code = r.action_code as string;
     return {
-      task_id:        r.action_id    as number,
-      task_code:      code,
-      task_name:      r.action_title as string,
-      task_type:      type,
-      task_status:    r.action_status as EvaluationTask['task_status'],
-      task_order:     r.action_order as number,
+      task_id: r.action_id as number,
+      task_code: code,
+      task_name: r.action_title as string,
+      task_type: type,
+      task_status: r.action_status as EvaluationTask['task_status'],
+      task_order: r.action_order as number,
       checklist_json: type === 'checklist' ? (checklistJsonMap.get(code) ?? null) : null,
     };
   });
@@ -421,48 +371,38 @@ function buildTasksFromActions(
   return { tasks, allCompleted };
 }
 
-
 export async function getEvaluationTasks(
   ownerId: number,
-  evaluationId: number,
+  evaluationId: number
 ): Promise<{ tasks: EvaluationTask[]; allCompleted: boolean }> {
+  const evalRow = await prisma.evaluation.findFirst({
+    where: { evaluation_id: evaluationId, fk_owner_id: ownerId },
+    select: { evaluation_id: true, fk_luc_procedure_id: true },
+  });
 
-  const { data: evalRow, error: evalErr } = await supabase
-    .from('evaluation')
-    .select('evaluation_id, fk_luc_procedure_id')
-    .eq('evaluation_id', evaluationId)
-    .eq('fk_owner_id', ownerId)
-    .single();
+  if (!evalRow) throw new Error('Evaluation not found or access denied');
 
-  if (evalErr || !evalRow) throw new Error('Evaluation not found or access denied');
+  const existing = await prisma.evaluation_action.findMany({
+    where: { fk_evaluation_id: evaluationId },
+    orderBy: { action_order: 'asc' },
+  });
 
-  const { data: existing, error: existErr } = await supabase
-    .from('evaluation_action')
-    .select('*')
-    .eq('fk_evaluation_id', evaluationId)
-    .order('action_order', { ascending: true });
-
-  if (existErr) throw new Error(`getEvaluationTasks (fetch existing): ${existErr.message}`);
-
-  if ((existing?.length ?? 0) > 0) {
-    const checklistCodes = existing!
+  if (existing.length > 0) {
+    const checklistCodes = existing
       .filter((r) => r.action_type === 'checklist' && r.action_code)
       .map((r) => r.action_code as string);
 
     const checklistJsonMap = await fetchChecklistJsonMap(ownerId, checklistCodes);
-    return buildTasksFromActions(existing!, checklistJsonMap);
+    return buildTasksFromActions(existing as unknown as Record<string, unknown>[], checklistJsonMap);
   }
 
-  const procedureId = (evalRow as any).fk_luc_procedure_id as number | null;
+  const procedureId = evalRow.fk_luc_procedure_id;
   if (!procedureId) return { tasks: [], allCompleted: false };
 
-  const { data: procData, error: procErr } = await supabase
-    .from('luc_procedure')
-    .select('procedure_steps')
-    .eq('procedure_id', procedureId)
-    .single();
-
-  if (procErr) throw new Error(`getEvaluationTasks (fetch procedure): ${procErr.message}`);
+  const procData = await prisma.luc_procedure.findUnique({
+    where: { procedure_id: procedureId },
+    select: { procedure_steps: true },
+  });
 
   const steps = procData?.procedure_steps as ProcedureSteps | null;
 
@@ -478,14 +418,14 @@ export async function getEvaluationTasks(
       for (const cl of procTask.checklist) {
         seedRows.push({
           fk_evaluation_id: evaluationId,
-          action_code:      cl.checklist_code  || `CL_${order}`,
-          action_title:     cl.checklist_name  || procTask.title || 'Checklist item',
-          action_type:      'checklist',
-          action_status:    'pending',
-          action_order:     order++,
+          action_code: cl.checklist_code || `CL_${order}`,
+          action_title: cl.checklist_name || procTask.title || 'Checklist item',
+          action_type: 'checklist',
+          action_status: 'pending',
+          action_order: order++,
           dependencies: {
-            procedure_task_id:    procTask.task_id,
-            procedure_item_id:    cl.checklist_id,
+            procedure_task_id: procTask.task_id,
+            procedure_item_id: cl.checklist_id,
             procedure_task_title: procTask.title,
           },
         });
@@ -496,17 +436,17 @@ export async function getEvaluationTasks(
       for (const asg of procTask.assignment) {
         seedRows.push({
           fk_evaluation_id: evaluationId,
-          action_code:      asg.assignment_code  || `ASG_${order}`,
-          action_title:     asg.assignment_name  || procTask.title || 'Assignment item',
-          action_type:      'assignment',
-          action_status:    'pending',
-          action_order:     order++,
+          action_code: asg.assignment_code || `ASG_${order}`,
+          action_title: asg.assignment_name || procTask.title || 'Assignment item',
+          action_type: 'assignment',
+          action_status: 'pending',
+          action_order: order++,
           dependencies: {
-            procedure_task_id:          procTask.task_id,
-            procedure_item_id:          asg.assignment_id,
-            procedure_task_title:       procTask.title,
+            procedure_task_id: procTask.task_id,
+            procedure_item_id: asg.assignment_id,
+            procedure_task_title: procTask.title,
             default_assignment_message: asg.assignment_message ?? '',
-            assignment_role:            asg.assignment_role ?? '',
+            assignment_role: asg.assignment_role ?? '',
           },
         });
       }
@@ -516,14 +456,14 @@ export async function getEvaluationTasks(
       for (const comm of procTask.communication) {
         seedRows.push({
           fk_evaluation_id: evaluationId,
-          action_code:      comm.communication_code  || `COMM_${order}`,
-          action_title:     comm.communication_name  || procTask.title || 'Communication item',
-          action_type:      'communication',
-          action_status:    'pending',
-          action_order:     order++,
+          action_code: comm.communication_code || `COMM_${order}`,
+          action_title: comm.communication_name || procTask.title || 'Communication item',
+          action_type: 'communication',
+          action_status: 'pending',
+          action_order: order++,
           dependencies: {
-            procedure_task_id:    procTask.task_id,
-            procedure_item_id:    comm.communication_id,
+            procedure_task_id: procTask.task_id,
+            procedure_item_id: comm.communication_id,
             procedure_task_title: procTask.title,
           },
         });
@@ -533,49 +473,38 @@ export async function getEvaluationTasks(
 
   if (seedRows.length === 0) return { tasks: [], allCompleted: false };
 
-  const { error: insertErr } = await supabase.from('evaluation_action').insert(seedRows);
-  if (insertErr) throw new Error(`getEvaluationTasks (seed actions): ${insertErr.message}`);
+  await prisma.evaluation_action.createMany({ data: seedRows as any[] });
 
-  const { data: seeded, error: seededErr } = await supabase
-    .from('evaluation_action')
-    .select('*')
-    .eq('fk_evaluation_id', evaluationId)
-    .order('action_order', { ascending: true });
+  const seeded = await prisma.evaluation_action.findMany({
+    where: { fk_evaluation_id: evaluationId },
+    orderBy: { action_order: 'asc' },
+  });
 
-  if (seededErr) throw new Error(`getEvaluationTasks (re-fetch seeded): ${seededErr.message}`);
-
-  const checklistCodes = (seeded ?? [])
+  const checklistCodes = seeded
     .filter((r) => r.action_type === 'checklist' && r.action_code)
     .map((r) => r.action_code as string);
 
   const checklistJsonMap = await fetchChecklistJsonMap(ownerId, checklistCodes);
-  return buildTasksFromActions(seeded ?? [], checklistJsonMap);
+  return buildTasksFromActions(seeded as unknown as Record<string, unknown>[], checklistJsonMap);
 }
-
 
 export async function updateEvaluationTask(
   ownerId: number,
   evaluationId: number,
   actionId: number,
-  newStatus: 'pending' | 'in_progress' | 'completed' | 'skipped',
+  newStatus: 'pending' | 'in_progress' | 'completed' | 'skipped'
 ): Promise<{ success: boolean; message?: string }> {
-
-  const { data: evalRow } = await supabase
-    .from('evaluation')
-    .select('evaluation_id')
-    .eq('evaluation_id', evaluationId)
-    .eq('fk_owner_id', ownerId)
-    .single();
+  const evalRow = await prisma.evaluation.findFirst({
+    where: { evaluation_id: evaluationId, fk_owner_id: ownerId },
+    select: { evaluation_id: true },
+  });
 
   if (!evalRow) return { success: false, message: 'Evaluation not found or access denied' };
 
-  const { error } = await supabase
-    .from('evaluation_action')
-    .update({ action_status: newStatus })
-    .eq('action_id', actionId)
-    .eq('fk_evaluation_id', evaluationId);
-
-  if (error) return { success: false, message: `updateEvaluationTask: ${error.message}` };
+  await prisma.evaluation_action.updateMany({
+    where: { action_id: actionId, fk_evaluation_id: evaluationId },
+    data: { action_status: newStatus },
+  });
 
   return { success: true };
 }
@@ -589,22 +518,19 @@ export async function moveEvaluationToPlanning(
     planning_description?: string;
     planning_type?: string;
     planned_date?: string;
-  },
+  }
 ): Promise<{ success: boolean; planningId?: number; message?: string }> {
-  const { data: evaluation } = await supabase
-    .from('evaluation')
-    .select('evaluation_id, evaluation_status')
-    .eq('evaluation_id', evaluationId)
-    .eq('fk_owner_id', ownerId)
-    .single();
+  const evaluation = await prisma.evaluation.findFirst({
+    where: { evaluation_id: evaluationId, fk_owner_id: ownerId },
+    select: { evaluation_id: true, evaluation_status: true },
+  });
 
   if (!evaluation) {
     return { success: false, message: 'Evaluation not found' };
   }
 
-  const { data: planning, error } = await supabase
-    .from('planning')
-    .insert({
+  const planning = await prisma.planning.create({
+    data: {
       fk_owner_id: ownerId,
       fk_client_id: clientId,
       fk_evaluation_id: evaluationId,
@@ -612,19 +538,15 @@ export async function moveEvaluationToPlanning(
       planning_description: planningData.planning_description ?? '',
       planning_type: planningData.planning_type ?? 'standard',
       planning_status: 'NEW',
-      planned_date: planningData.planned_date ?? null,
-    })
-    .select('planning_id')
-    .single();
+      planned_date: planningData.planned_date ? new Date(planningData.planned_date) : null,
+    },
+    select: { planning_id: true },
+  });
 
-  if (error) {
-    return { success: false, message: `Planning creation failed: ${error.message}` };
-  }
-
-  await supabase
-    .from('evaluation')
-    .update({ evaluation_status: 'DONE' })
-    .eq('evaluation_id', evaluationId);
+  await prisma.evaluation.updateMany({
+    where: { evaluation_id: evaluationId },
+    data: { evaluation_status: 'DONE' },
+  });
 
   return {
     success: true,
@@ -641,22 +563,19 @@ export async function sendEvaluationCommunication(
     from_user_id: number;
     message: string;
     subject?: string;
-  },
+  }
 ): Promise<{ success: boolean; message?: string }> {
-  const { data: evalCheck } = await supabase
-    .from('evaluation')
-    .select('evaluation_id')
-    .eq('evaluation_id', evaluationId)
-    .eq('fk_owner_id', ownerId)
-    .single();
+  const evalCheck = await prisma.evaluation.findFirst({
+    where: { evaluation_id: evaluationId, fk_owner_id: ownerId },
+    select: { evaluation_id: true },
+  });
 
   if (!evalCheck) {
     return { success: false, message: 'Evaluation not found or access denied' };
   }
 
-  const { error: commError } = await supabase
-    .from('communication_general')
-    .insert({
+  await prisma.communication_general.create({
+    data: {
       fk_owner_id: ownerId,
       subject: params.subject ?? `Evaluation #${evaluationId} Communication`,
       message: params.message,
@@ -664,47 +583,40 @@ export async function sendEvaluationCommunication(
       status: 'sent',
       sent_by_user_id: params.from_user_id,
       recipients: [params.to_user_id],
-      sent_at: new Date().toISOString(),
-    });
-
-  if (commError) {
-    return { success: false, message: `Communication save failed: ${commError.message}` };
-  }
+      sent_at: new Date(),
+    },
+  });
 
   return { success: true };
 }
 
-
 export async function getEvaluationList(ownerId: number): Promise<Evaluation[]> {
-  const { data, error } = await supabase
-    .from('evaluation')
-    .select(`*, client:fk_client_id ( client_name )`)
-    .eq('fk_owner_id', ownerId)
-    .order('evaluation_id', { ascending: false });
+  const data = await prisma.evaluation.findMany({
+    where: { fk_owner_id: ownerId },
+    orderBy: { evaluation_id: 'desc' },
+    include: {
+      client: { select: { client_name: true } },
+    },
+  });
 
-  if (error) throw new Error(`getEvaluationList: ${error.message}`);
-
-  return (data ?? []).map((row) => ({
+  return data.map((row) => ({
     ...row,
     client_name: row.client?.client_name ?? '',
-  })) as Evaluation[];
+  })) as unknown as Evaluation[];
 }
- 
- 
+
 export async function sendAssignment(
-  payload: SendAssignmentPayload,
+  payload: SendAssignmentPayload
 ): Promise<SendAssignmentResult> {
   const {
     evaluationId, ownerId, fromUserUuid,
     taskId, taskCode, taskName, toUserId, message,
   } = payload;
 
-  const { data: evalRow } = await supabase
-    .from('evaluation')
-    .select('evaluation_id, evaluation_code')
-    .eq('evaluation_id', evaluationId)
-    .eq('fk_owner_id', ownerId)
-    .single();
+  const evalRow = await prisma.evaluation.findFirst({
+    where: { evaluation_id: evaluationId, fk_owner_id: ownerId },
+    select: { evaluation_id: true, evaluation_code: true },
+  });
 
   if (!evalRow) {
     return { success: false, message: 'Evaluation not found or access denied' };
@@ -712,61 +624,67 @@ export async function sendAssignment(
 
   let fromUserId: number;
   try {
-    fromUserId =  fromUserUuid
+    fromUserId = fromUserUuid;
   } catch (e: any) {
     return { success: false, message: e.message };
   }
 
   const subject = `[Assignment] ${taskName} — Evaluation ${evalRow.evaluation_code ?? evaluationId}`;
 
-  const { error: msgErr } = await supabase.from('messages').insert({
-    from_user_id:    fromUserId,   
-    to_user_id:      toUserId,
-    message_subject: subject,
-    message_body:    message,
-    message_type:    'assignment',
-  });
-
-  if (msgErr) {
+  try {
+    await prisma.messages.create({
+      data: {
+        from_user_id: fromUserId,
+        to_user_id: toUserId,
+        message_subject: subject,
+        message_body: message,
+        message_type: 'assignment',
+      },
+    });
+  } catch (msgErr: any) {
     return { success: false, message: `Failed to send message: ${msgErr.message}` };
   }
 
-  const { error: asgErr } = await supabase.from('assignment').insert({
-    fk_user_id:      toUserId,
-    fk_owner_id:     ownerId,
-    assignment_code: taskCode,
-    assignment_desc: taskName,
-    assignment_json: {
-      evaluation_id: evaluationId,
-      task_id:       taskId,
-      task_code:     taskCode,
-      task_name:     taskName,
-      from_user_id:  fromUserId,
-      message,
-    },
-    assignment_ver:    1,
-    assignment_active: 'Y',
-  });
-
-  if (asgErr) {
+  try {
+    await prisma.assignment.create({
+      data: {
+        fk_user_id: toUserId,
+        fk_owner_id: ownerId,
+        assignment_code: taskCode,
+        assignment_desc: taskName,
+        assignment_json: {
+          evaluation_id: evaluationId,
+          task_id: taskId,
+          task_code: taskCode,
+          task_name: taskName,
+          from_user_id: fromUserId,
+          message,
+        },
+        assignment_ver: 1,
+        assignment_active: 'Y',
+      },
+    });
+  } catch (asgErr: any) {
     console.warn('[sendAssignment] assignment insert warning:', asgErr.message);
   }
 
-  const { error: notifErr } = await supabase.from('notification').insert({
-    fk_user_id:           toUserId,
-    notification_type:    'assignment',
-    notification_title:   'New Assignment',
-    notification_message: subject,
-    notification_data: {
-      evaluation_id: evaluationId,
-      task_id:       taskId,
-      task_code:     taskCode,
-      from_user_id:  fromUserId,
-    },
-    priority: 'normal',
-  });
-
-  if (notifErr) {
+  try {
+    await prisma.notification.create({
+      data: {
+        fk_user_id: toUserId,
+        notification_type: 'assignment',
+        notification_title: 'New Assignment',
+        notification_message: subject,
+        notification_data: {
+          evaluation_id: evaluationId,
+          task_id: taskId,
+          task_code: taskCode,
+          from_user_id: fromUserId,
+        },
+        priority: 'normal',
+      },
+    });
+  } catch (notifErr: any) {
     console.warn('[sendAssignment] notification insert warning:', notifErr.message);
   }
 

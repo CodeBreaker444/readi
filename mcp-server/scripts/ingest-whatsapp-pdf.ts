@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync, existsSync } from "fs";
 import { resolve } from "path";
-import { createClient } from "@supabase/supabase-js";
+import { prisma } from "../../src/lib/prisma";
 import Groq from "groq-sdk";
 
 const envPath = resolve(process.cwd(), ".env");
@@ -10,11 +10,6 @@ if (existsSync(envPath)) {
         if (match) process.env[match[1]] = match[2];
     }
 }
-
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
@@ -162,14 +157,20 @@ async function main() {
     console.log(`\nSaved translated text to whatsapp_translated_english.txt`);
 
     console.log(`\nUpserting ${allSections.length} process flow sections to procedure_document...`);
-    const { error } = await supabase
-        .from("procedure_document")
-        .upsert(allSections, { onConflict: "doc_key" });
-
-    if (error) {
-        console.error("Upsert Error:", error);
-        return;
-    }
+    await prisma.$transaction(
+        allSections.map((doc) =>
+            prisma.procedure_document.upsert({
+                where: { doc_key: doc.doc_key },
+                create: doc,
+                update: {
+                    section_title: doc.section_title,
+                    html_content: doc.html_content,
+                    plain_text: doc.plain_text,
+                    source_file: doc.source_file,
+                },
+            })
+        )
+    );
 
     console.log("✅ Done! Process flow documents are now in the READI Agent.");
     for (const s of allSections) {

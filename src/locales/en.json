@@ -220,6 +220,7 @@
     "planning": "CO-00 - Planning",
     "newEvaluationRequest": "P00 - New Evaluation Request",
     "evaluation": "P01 - Evaluation",
+    "planningMission": "P02 - Planning Mission",
     "planningDashboard": "P02 - Planning Dashboard",
     "missionTemplates": "P04 - Mission Templates",
     "flightRequests": "Flight Requests",
@@ -923,6 +924,15 @@
       "edit": "Edit",
       "delete": "Delete"
     },
+    "modal": {
+      "addPlanningTitle": "Add Planning Request",
+      "addPlanningSubtitle": "[GO.00.P01] — Fill the form to create a new planning from this evaluation."
+    },
+    "toast": {
+      "loadFormError": "Failed to load form data",
+      "createPlanningSuccess": "Planning request created successfully!",
+      "createPlanningFailed": "Failed to create planning"
+    },
     "columns": {
       "yearRef": "Year Ref",
       "evaluationCode": "Evaluation Code",
@@ -1088,6 +1098,8 @@
       "addNewEntry": "Add New Mission Planning",
       "progress": "PROGRESS",
       "filter": {
+        "title": "Filters",
+        "all": "All",
         "client": "Client",
         "allClients": "All clients",
         "pic": "PiC",
@@ -1103,6 +1115,7 @@
       },
       "table": {
         "searchPlaceholder": "Search across all columns…",
+        "recordsFound": "records found",
         "active": "Active",
         "inactive": "Inactive",
         "noResults": "No mission plans found",
@@ -2212,6 +2225,8 @@
       "addNewEntry": "Add New Mission Planning",
       "progress": "PROGRESS",
       "filter": {
+        "title": "Filters",
+        "all": "All",
         "client": "Client",
         "allClients": "All clients",
         "pic": "PiC",
@@ -2227,6 +2242,7 @@
       },
       "table": {
         "searchPlaceholder": "Search across all columns…",
+        "recordsFound": "records found",
         "active": "Active",
         "inactive": "Inactive",
         "noResults": "No mission plans found",

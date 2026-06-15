@@ -1,4 +1,4 @@
-import { supabase } from '@/backend/database/database';
+import { prisma } from '@/lib/prisma';
 import { forbidden, internalError, unauthorized } from '@/lib/api-error';
 import { getUserSession } from '@/lib/auth/server-session';
 import { E } from '@/lib/error-codes';
@@ -41,12 +41,12 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ code: 0, message: 'Invalid field' }, { status: 400 });
         }
 
-        const { count } = await supabase
-            .from(table)
-            .select('*', { count: 'exact', head: true })
-            .ilike(field, value);
+        const model = table === 'owner' ? prisma.owner : prisma.public_users;
+        const count = await (model as any).count({
+            where: { [field]: { equals: value, mode: 'insensitive' } },
+        });
 
-        const exists = (count ?? 0) > 0;
+        const exists = count > 0;
 
         return NextResponse.json({
             code: 1,

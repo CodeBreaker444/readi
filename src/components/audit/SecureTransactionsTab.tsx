@@ -1,6 +1,7 @@
 'use client';
 
 import { TablePagination } from '@/components/tables/Pagination';
+import { Skeleton } from '@/components/ui/skeleton';
 import { verifyTransactionJWT } from '@/lib/crypto/transactionSign';
 import { cn } from '@/lib/utils';
 import { ColumnDef, getCoreRowModel, useReactTable } from '@tanstack/react-table';
@@ -27,6 +28,8 @@ interface TransactionSign {
   jwt_token: string;
   payload_preview: Record<string, unknown> | null;
   public_key_snapshot: string;
+  integrity_status: string | null;
+  verified_at: string | null;
   created_at: string;
 }
 
@@ -77,8 +80,18 @@ export function SecureTransactionsTab({ isDark }: Props) {
         params: { page: pagination.pageIndex + 1, page_size: pagination.pageSize },
       });
       if (data.code === 1) {
-        setSigns(data.data ?? []);
+        const rows = data.data ?? [];
+        setSigns(rows);
         setTotal(data.total ?? 0);
+        setVerifyMap(prev => {
+          const next = new Map(prev);
+          for (const row of rows) {
+            if (row.integrity_status === 'valid' || row.integrity_status === 'invalid') {
+              next.set(row.id, row.integrity_status as VerifyStatus);
+            }
+          }
+          return next;
+        });
       }
     } catch (err) {
       console.log('Failed to load secure transactions:', err);
@@ -99,12 +112,11 @@ export function SecureTransactionsTab({ isDark }: Props) {
 
   const handleVerify = async (sign: TransactionSign) => {
     setVerifyMap(prev => new Map(prev).set(sign.id, 'loading'));
-    try {
-      const { valid } = await verifyTransactionJWT(sign.jwt_token, sign.public_key_snapshot);
-      setVerifyMap(prev => new Map(prev).set(sign.id, valid ? 'valid' : 'invalid'));
-    } catch {
-      setVerifyMap(prev => new Map(prev).set(sign.id, 'invalid'));
-    }
+    const { valid } = await verifyTransactionJWT(sign.jwt_token, sign.public_key_snapshot);
+    const status: VerifyStatus = valid ? 'valid' : 'invalid';
+    setVerifyMap(prev => new Map(prev).set(sign.id, status));
+    // Fire-and-forget — DB persistence must never affect the displayed result
+    axios.patch('/api/authorization/verify', { id: sign.id, status }).catch(() => {});
   };
 
   const row = cn('border-b transition-colors', isDark ? 'border-white/[0.06] hover:bg-white/[0.02]' : 'border-gray-100 hover:bg-gray-50/50');
@@ -112,8 +124,40 @@ export function SecureTransactionsTab({ isDark }: Props) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <RefreshCw className={cn('h-5 w-5 animate-spin', isDark ? 'text-slate-500' : 'text-slate-400')} />
+      <div className={cn('rounded-xl border overflow-hidden', isDark ? 'bg-[#0f1320] border-white/[0.06]' : 'bg-white border-gray-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.04)]')}>
+        {/* Header skeleton */}
+        <div className={cn('px-5 py-4 border-b flex items-center justify-between', isDark ? 'border-white/[0.06]' : 'border-gray-100')}>
+          <div className="space-y-1.5">
+            <Skeleton className={cn('h-4 w-44', isDark ? 'bg-white/[0.06]' : 'bg-gray-200')} />
+            <Skeleton className={cn('h-3 w-64', isDark ? 'bg-white/[0.04]' : 'bg-gray-100')} />
+          </div>
+          <Skeleton className={cn('h-7 w-20 rounded-lg', isDark ? 'bg-white/[0.06]' : 'bg-gray-200')} />
+        </div>
+
+        {/* Table header skeleton */}
+        <div className={cn('px-4 py-2.5 border-b grid grid-cols-6 gap-4', isDark ? 'border-white/[0.06] bg-white/[0.02]' : 'border-gray-100 bg-gray-50/50')}>
+          {[8, 24, 24, 20, 20, 16].map((w, i) => (
+            <Skeleton key={i} className={cn(`h-3 w-${w}`, isDark ? 'bg-white/[0.06]' : 'bg-gray-200')} />
+          ))}
+        </div>
+
+        {/* Row skeletons */}
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div
+            key={i}
+            className={cn('px-4 py-3 border-b grid grid-cols-6 gap-4 items-center', isDark ? 'border-white/[0.06]' : 'border-gray-100')}
+          >
+            <Skeleton className={cn('h-3 w-3 rounded', isDark ? 'bg-white/[0.06]' : 'bg-gray-200')} />
+            <div className="space-y-1">
+              <Skeleton className={cn('h-3 w-20', isDark ? 'bg-white/[0.06]' : 'bg-gray-200')} />
+              <Skeleton className={cn('h-2.5 w-14', isDark ? 'bg-white/[0.04]' : 'bg-gray-100')} />
+            </div>
+            <Skeleton className={cn('h-5 w-24 rounded-md', isDark ? 'bg-white/[0.06]' : 'bg-gray-200')} />
+            <Skeleton className={cn('h-3 w-20', isDark ? 'bg-white/[0.06]' : 'bg-gray-200')} />
+            <Skeleton className={cn('h-3 w-24', isDark ? 'bg-white/[0.06]' : 'bg-gray-200')} />
+            <Skeleton className={cn('h-6 w-16 rounded', isDark ? 'bg-white/[0.06]' : 'bg-gray-200')} />
+          </div>
+        ))}
       </div>
     );
   }

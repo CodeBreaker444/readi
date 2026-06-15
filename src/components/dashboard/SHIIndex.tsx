@@ -78,8 +78,8 @@ function TrendChartSkeleton({ isDark }: { isDark: boolean }) {
 }
 
 function AreaGaugesSkeleton({ isDark }: { isDark: boolean }) {
-  const card  = isDark ? 'bg-slate-800/80 border-slate-700/60' : 'bg-white border-gray-200';
-  const inner = isDark ? 'bg-slate-700/40 border-slate-700/60' : 'bg-gray-50 border-gray-100';
+  const card    = isDark ? 'bg-slate-800/80 border-slate-700/60' : 'bg-white border-gray-200';
+  const inner   = isDark ? 'bg-slate-700/40 border-slate-700/60' : 'bg-gray-50 border-gray-100';
   const divider = isDark ? 'border-slate-700/60' : 'border-gray-100';
   return (
     <div className={cn('rounded-xl border', card)}>

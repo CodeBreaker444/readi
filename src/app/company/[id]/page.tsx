@@ -29,6 +29,7 @@ import {
     EyeOff,
     HardDrive,
     House,
+    Power,
     Save,
     Shield,
     Trash2,
@@ -220,6 +221,21 @@ export default function CompanyDetailPage() {
         finally { setPwSaving(false); }
     };
 
+    const handleActivate = async () => {
+        if (!owner) return;
+        setSaving(true);
+        try {
+            const res = await axios.put(`/api/owner/${id}`, buildPayload(generalForm, { owner_active: 'Y' }, featuresForm));
+            if (res.data.code === 1) {
+                toast.success('Company activated');
+                await fetchOwner();
+            } else {
+                toast.error(res.data.message || 'Failed to activate company');
+            }
+        } catch { toast.error('Network error'); }
+        finally { setSaving(false); }
+    };
+
     const cancelGeneral = () => { if (owner) populateForms(owner); setGeneralEditing(false); };
     const cancelSecurity = () => { if (owner) populateForms(owner); setSecurityEditing(false); };
     const cancelFeatures = () => { if (owner) populateForms(owner); setFeaturesEditing(false); };
@@ -317,11 +333,18 @@ export default function CompanyDetailPage() {
                                 </p>
                             </div>
                         </div>
-                        <Button size="sm" variant="destructive" className="h-8 gap-1.5 text-xs w-full sm:w-auto shrink-0"
-                            onClick={() => setDeleteOpen(true)} disabled={owner.owner_id === 1}
-                            title={owner.owner_id === 1 ? 'This company cannot be deactivated' : undefined}>
-                            <Trash2 size={13} /> Deactivate Company
-                        </Button>
+                        {owner.owner_active === 'N' ? (
+                            <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs w-full sm:w-auto shrink-0 border-green-500 text-green-600 hover:bg-green-50 hover:text-green-700"
+                                onClick={handleActivate} disabled={saving}>
+                                <Power size={13} /> Activate Company
+                            </Button>
+                        ) : (
+                            <Button size="sm" variant="destructive" className="h-8 gap-1.5 text-xs w-full sm:w-auto shrink-0"
+                                onClick={() => setDeleteOpen(true)} disabled={owner.owner_id === 1}
+                                title={owner.owner_id === 1 ? 'This company cannot be deactivated' : undefined}>
+                                <Trash2 size={13} /> Deactivate Company
+                            </Button>
+                        )}
                     </div>
                 </div>
             </div>

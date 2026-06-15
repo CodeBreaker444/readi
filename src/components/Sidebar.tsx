@@ -1,5 +1,6 @@
 'use client';
 
+import { Skeleton } from '@/components/ui/skeleton';
 import { SessionUser } from '@/lib/auth/server-session';
 import { ChevronsUpDown, LogOut, User, UserCircle } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
@@ -27,7 +28,6 @@ import {
 } from 'react-icons/hi';
 import { MdFlightTakeoff } from 'react-icons/md';
 import { TbLayoutSidebarFilled, TbRadar } from "react-icons/tb";
-import { Skeleton } from '@/components/ui/skeleton';
 import { Permission, Role, roleHasPermission, ROUTE_PERMISSIONS, RoutePermissionEntry } from '../lib/auth/roles';
 import { supabase } from '../lib/supabase/client';
 
@@ -120,6 +120,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
       subItems: [
         { name: t('sidebar.newEvaluationRequest'), href: '/planning/new-evaluation' },
         { name: t('sidebar.evaluation'), href: '/planning/evaluation' },
+        // { name: t('sidebar.planningMission'), href: '/planning/planning-mission' },
         { name: t('sidebar.planningDashboard'), href: '/planning/planning-dashboard' },
         { name: t('sidebar.missionTemplates'), href: '/planning/mission-template' },
       ]
@@ -609,7 +610,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
       >
         {role === null ? (
           isCollapsed ? (
-            /* Collapsed skeleton — icon-only circles */
             <div className="flex flex-col items-center gap-2 pt-1">
               {Array.from({ length: 13 }).map((_, i) => (
                 <Skeleton
@@ -626,7 +626,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
               ))}
             </div>
           ) : (
-            /* Expanded skeleton — icon + label rows */
             <div className="space-y-1 pt-1 px-1">
               {Array.from({ length: 13 }).map((_, i) => (
                 <div key={i} className="flex items-center gap-2.5 px-3 py-2">

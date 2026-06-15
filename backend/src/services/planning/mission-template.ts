@@ -1,4 +1,4 @@
-import { supabase } from "@/backend/database/database";
+import { prisma } from '@/lib/prisma';
 import { getPresignedDownloadUrl } from '@/lib/s3Client';
 
 export interface MissionTemplateRow {
@@ -33,93 +33,83 @@ export interface MissionTemplateFilters {
 
 export async function getMissionTemplateLogbook(
   ownerId: number,
-  filters: MissionTemplateFilters = {},
+  filters: MissionTemplateFilters = {}
 ): Promise<MissionTemplateRow[]> {
-  let query = supabase
-    .from('planning_logbook')
-    .select(
-      `
-      mission_planning_id,
-      mission_planning_code,
-      mission_planning_desc,
-      mission_planning_active,
-      mission_planning_ver,
-      mission_planning_filename,
-      mission_planning_filesize,
-      mission_planning_s3_key,
-      created_at,
-      updated_at,
-      fk_tool_id,
-      planning:fk_planning_id (
-        planning_id,
-        planning_code,
-        planning_name,
-        planning_status,
-        client:fk_client_id ( client_id, client_name ),
-        evaluation:fk_evaluation_id ( evaluation_id, evaluation_code )
-      ),
-      pilot:fk_user_id ( user_id, first_name, last_name )
-    `,
-    )
-    .eq('fk_owner_id', ownerId)
-    .eq('mission_planning_active', 'Y')
-    .order('updated_at', { ascending: false });
+  const data = await prisma.planning_logbook.findMany({
+    where: {
+      fk_owner_id: ownerId,
+      mission_planning_active: 'Y',
+      ...(filters.client_id && filters.client_id > 0 && { fk_client_id: filters.client_id }),
+      ...(filters.pilot_id && filters.pilot_id > 0 && { fk_user_id: filters.pilot_id }),
+      ...(filters.evaluation_id && filters.evaluation_id > 0 && { fk_evaluation_id: filters.evaluation_id }),
+      ...(filters.planning_id && filters.planning_id > 0 && { fk_planning_id: filters.planning_id }),
+      ...(filters.date_start && { updated_at: { gte: new Date(filters.date_start) } }),
+      ...(filters.date_end && { updated_at: { lte: new Date(`${filters.date_end}T23:59:59`) } }),
+    },
+    orderBy: { updated_at: 'desc' },
+    select: {
+      mission_planning_id: true,
+      mission_planning_code: true,
+      mission_planning_desc: true,
+      mission_planning_active: true,
+      mission_planning_ver: true,
+      mission_planning_filename: true,
+      mission_planning_filesize: true,
+      mission_planning_s3_key: true,
+      created_at: true,
+      updated_at: true,
+      fk_tool_id: true,
+      planning: {
+        select: {
+          planning_id: true,
+          planning_code: true,
+          planning_name: true,
+          planning_status: true,
+          client: { select: { client_id: true, client_name: true } },
+          evaluation: { select: { evaluation_id: true, evaluation_code: true } },
+        },
+      },
+      users: {
+        select: { user_id: true, first_name: true, last_name: true },
+      },
+    },
+  });
 
-  if (filters.client_id && filters.client_id > 0) {
-    query = query.eq('fk_client_id', filters.client_id);
-  }
-  if (filters.pilot_id && filters.pilot_id > 0) {
-    query = query.eq('fk_user_id', filters.pilot_id);
-  }
-  if (filters.evaluation_id && filters.evaluation_id > 0) {
-    query = query.eq('fk_evaluation_id', filters.evaluation_id);
-  }
-  if (filters.planning_id && filters.planning_id > 0) {
-    query = query.eq('fk_planning_id', filters.planning_id);
-  }
-  if (filters.date_start) {
-    query = query.gte('updated_at', filters.date_start);
-  }
-  if (filters.date_end) {
-    query = query.lte('updated_at', `${filters.date_end}T23:59:59`);
-  }
-
-  const { data, error } = await query;
-  if (error) throw new Error(`getMissionTemplateLogbook: ${error.message}`);
   if (!data || data.length === 0) return [];
 
-  const toolIds = [...new Set((data as any[]).map((r) => r.fk_tool_id).filter(Boolean))];
-  let toolMap: Record<number, string> = {};
+  const toolIds = [...new Set(data.map((r) => r.fk_tool_id).filter((id): id is number => id !== null))];
+  const toolMap: Record<number, string> = {};
+
   if (toolIds.length > 0) {
-    const { data: tools } = await supabase
-      .from('tool')
-      .select('tool_id, tool_code')
-      .in('tool_id', toolIds);
-    if (tools) {
-      for (const t of tools) toolMap[t.tool_id] = t.tool_code;
-    }
+    const tools = await prisma.tool.findMany({
+      where: { tool_id: { in: toolIds } },
+      select: { tool_id: true, tool_code: true },
+    });
+    for (const t of tools) toolMap[t.tool_id] = t.tool_code ?? '';
   }
 
   const rows: MissionTemplateRow[] = [];
 
-  for (const row of data as any[]) {
+  for (const row of data) {
     const planning = row.planning;
-    const pilot = row.pilot;
+    const pilot = row.users;
 
-    let downloadUrl: string   = await getPresignedDownloadUrl(row.mission_planning_s3_key,3600);
-    
+    let downloadUrl: string = '';
+    try {
+      downloadUrl = await getPresignedDownloadUrl(row.mission_planning_s3_key!, 3600);
+    } catch { /* leave empty */ }
 
     rows.push({
       mission_planning_id: row.mission_planning_id,
       mission_planning_code: row.mission_planning_code ?? `MPL_${row.mission_planning_id}`,
-      mission_planning_desc: row.mission_planning_desc,
-      mission_planning_active: row.mission_planning_active,
+      mission_planning_desc: row.mission_planning_desc ?? null,
+      mission_planning_active: row.mission_planning_active ?? 'Y',
       mission_planning_ver: row.mission_planning_ver ?? 1,
-      mission_planning_filename: row.mission_planning_filename,
-      mission_planning_filesize: row.mission_planning_filesize,
-      mission_planning_s3_key: row.mission_planning_s3_key,
-      created_at: row.created_at,
-      updated_at: row.updated_at,
+      mission_planning_filename: row.mission_planning_filename ?? null,
+      mission_planning_filesize: row.mission_planning_filesize ? Number(row.mission_planning_filesize) : null,
+      mission_planning_s3_key: row.mission_planning_s3_key ?? null,
+      created_at: row.created_at?.toISOString() ?? '',
+      updated_at: row.updated_at?.toISOString() ?? '',
       planning_code: planning?.planning_code ?? null,
       planning_name: planning?.planning_name ?? null,
       planning_status: planning?.planning_status ?? null,
@@ -135,47 +125,49 @@ export async function getMissionTemplateLogbook(
 }
 
 export async function getMissionTemplateFilterOptions(ownerId: number) {
-  const [clientsRes, pilotsRes, evaluationsRes, planningsRes] = await Promise.all([
-    supabase
-      .from('client')
-      .select('client_id, client_name')
-      .eq('fk_owner_id', ownerId)
-      .eq('client_active', 'Y')
-      .order('client_name'),
-    supabase
-      .from('users')
-      .select('user_id, first_name, last_name')
-      .order('first_name'),
-    supabase
-      .from('evaluation')
-      .select('evaluation_id, evaluation_code')
-      .eq('fk_owner_id', ownerId)
-      .eq('evaluation_active', 'Y')
-      .order('evaluation_id', { ascending: false }),
-    supabase
-      .from('planning')
-      .select('planning_id, planning_code, planning_name')
-      .eq('fk_owner_id', ownerId)
-      .eq('planning_active', 'Y')
-      .order('planning_id', { ascending: false }),
+  const [clients, pilots, evaluations, plannings] = await Promise.all([
+    prisma.client.findMany({
+      where: { fk_owner_id: ownerId },
+      orderBy: { client_name: 'asc' },
+      select: { client_id: true, client_name: true, client_active: true },
+    }),
+    prisma.public_users.findMany({
+      where: { fk_owner_id: ownerId , NOT: { user_role: 'CLIENT' }},
+      orderBy: { first_name: 'asc' },
+      select: { user_id: true, first_name: true, last_name: true, user_active: true },
+    }),
+    prisma.evaluation.findMany({
+      where: { fk_owner_id: ownerId },
+      orderBy: { evaluation_id: 'desc' },
+      select: { evaluation_id: true, evaluation_code: true, evaluation_active: true },
+    }),
+    prisma.planning.findMany({
+      where: { fk_owner_id: ownerId },
+      orderBy: { planning_id: 'desc' },
+      select: { planning_id: true, planning_code: true, planning_name: true, planning_active: true },
+    }),
   ]);
 
   return {
-    clients: (clientsRes.data ?? []).map((c) => ({
+    clients: clients.map((c) => ({
       id: c.client_id,
       name: c.client_name,
+      active: c.client_active === 'Y',
     })),
-    pilots: (pilotsRes.data ?? []).map((p) => ({
+    pilots: pilots.map((p) => ({
       id: p.user_id,
       name: `${p.first_name ?? ''} ${p.last_name ?? ''}`.trim(),
+      active: p.user_active === 'Y',
     })),
-    evaluations: (evaluationsRes.data ?? []).map((e) => ({
+    evaluations: evaluations.map((e) => ({
       id: e.evaluation_id,
       name: e.evaluation_code ?? `EVAL_${e.evaluation_id}`,
+      active: e.evaluation_active === 'Y',
     })),
-    plannings: (planningsRes.data ?? []).map((p) => ({
+    plannings: plannings.map((p) => ({
       id: p.planning_id,
       name: p.planning_code ?? p.planning_name ?? `PLAN_${p.planning_id}`,
+      active: p.planning_active === 'Y',
     })),
   };
 }

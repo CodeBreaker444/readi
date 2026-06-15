@@ -1,6 +1,6 @@
 import { readFileSync, existsSync } from "fs";
 import { resolve } from "path";
-import { createClient } from "@supabase/supabase-js";
+import { prisma } from "../../src/lib/prisma";
 
 const envPath = resolve(process.cwd(), ".env");
 if (existsSync(envPath)) {
@@ -11,30 +11,15 @@ if (existsSync(envPath)) {
     }
 }
 
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 const DUMP_PATH = resolve(process.cwd(), "../database-dump.sql");
 
 async function execSQL(sql: string): Promise<{ ok: boolean; error?: string }> {
-    const { data, error } = await supabase.rpc("exec_sql", { query: sql });
-    if (error) 
-        return { 
-            ok: false, 
-            error: error.message 
-        };
-
-    if (data && !data.ok) 
-        return { 
-            ok: false, 
-            error: data.error 
-        };
-
-    return { 
-        ok: true 
-    };
+    try {
+        await prisma.$executeRawUnsafe(sql);
+        return { ok: true };
+    } catch (e: any) {
+        return { ok: false, error: e.message };
+    }
 }
 
 function extractStatements(dump: string): string[] {
@@ -153,32 +138,14 @@ async function main() {
     const dump = readFileSync(DUMP_PATH, "utf8");
     console.log(`Size: ${(dump.length / 1024).toFixed(0)} KB`);
 
-    console.log("\nTesting exec_sql function...");
+    console.log("\nTesting database connection...");
     const test = await execSQL("SELECT 1");
     if (!test.ok) {
-        console.error("exec_sql function not available!");
+        console.error("Database connection failed!");
         console.error("Error:", test.error);
-        console.error("\n   Please run this SQL in the Supabase SQL Editor:");
-        console.error(`
-            CREATE OR REPLACE FUNCTION public.exec_sql(query text)
-            RETURNS json
-            LANGUAGE plpgsql
-            SECURITY DEFINER
-            SET search_path = public
-            AS $$
-            DECLARE
-            result json;
-            BEGIN
-            EXECUTE query;
-            RETURN '{"ok": true}'::json;
-            EXCEPTION WHEN OTHERS THEN
-            RETURN json_build_object('ok', false, 'error', SQLERRM);
-            END;
-            $$;
-`);
         process.exit(1);
     }
-    console.log("exec_sql works");
+    console.log("Connection works");
 
     console.log("\nExtracting statements...");
     const stmts = extractStatements(dump);
@@ -193,17 +160,17 @@ async function main() {
 
     for (const stmt of stmts) {
         const first = stmt.split("\n")[0];
-        if (first.startsWith("CREATE TABLE")) 
+        if (first.startsWith("CREATE TABLE"))
             creates.push(stmt);
-        else if (first.startsWith("CREATE SEQUENCE")) 
+        else if (first.startsWith("CREATE SEQUENCE"))
             creates.push(stmt);
-        else if (first.startsWith("COPY public.")) 
+        else if (first.startsWith("COPY public."))
             copies.push(stmt);
-        else if (first.startsWith("ALTER TABLE")) 
+        else if (first.startsWith("ALTER TABLE"))
             alters.push(stmt);
-        else if (first.startsWith("ALTER SEQUENCE")) 
+        else if (first.startsWith("ALTER SEQUENCE"))
             alters.push(stmt);
-        else if (first.startsWith("SELECT pg_catalog.setval")) 
+        else if (first.startsWith("SELECT pg_catalog.setval"))
             setvals.push(stmt);
         else rest.push(stmt);
     }
@@ -225,7 +192,7 @@ async function main() {
 
     for (const tname of tableNames) {
         const res = await execSQL(`DROP TABLE IF EXISTS public.${tname} CASCADE;`);
-        if (!res.ok) 
+        if (!res.ok)
             console.log(`Drop ${tname}: ${res.error}`);
     }
 
@@ -242,11 +209,9 @@ async function main() {
     for (let i = 0; i < creates.length; i++) {
         const first = creates[i].split("\n")[0].slice(0, 70);
         const res = await execSQL(creates[i]);
-        if (res.ok) 
-            { 
-                ok++; 
-            }
-        else {
+        if (res.ok) {
+            ok++;
+        } else {
             failed++;
             console.log(`${first} — ${res.error?.slice(0, 80)}`);
         }
@@ -259,10 +224,10 @@ async function main() {
     ok = 0; failed = 0;
     for (const d of defaults) {
         const res = await execSQL(d);
-        if (res.ok) 
+        if (res.ok)
             ok++;
         else {
-            failed++
+            failed++;
         }
     }
     console.log(`${ok} defaults set, ${failed} failed`);
@@ -272,15 +237,15 @@ async function main() {
 
     const copyToInsert = (copyBlock: string) => {
         const lines = copyBlock.split("\n");
-        const header = lines[0]; 
+        const header = lines[0];
         const match = header.match(/COPY public\.(\w+) \(([^)]+)\) FROM stdin;/);
         if (!match) return null;
 
         const tableName = match[1];
         const columns = match[2];
-        const dataLines = lines.slice(1, -1); 
+        const dataLines = lines.slice(1, -1);
 
-        if (dataLines.length === 0) 
+        if (dataLines.length === 0)
             return null;
 
         const values = dataLines.map(line => {
@@ -338,9 +303,9 @@ async function main() {
     ok = 0; failed = 0;
     for (const c of constraints) {
         const res = await execSQL(c);
-        if (res.ok) 
+        if (res.ok)
             ok++;
-        else 
+        else
             failed++;
     }
     console.log(`${ok} constraints, ${failed} failed`);
@@ -349,9 +314,9 @@ async function main() {
     ok = 0; failed = 0;
     for (const sv of setvals) {
         const res = await execSQL(sv);
-        if (res.ok) 
+        if (res.ok)
             ok++;
-        else 
+        else
             failed++;
     }
     console.log(`${ok} sequences set, ${failed} failed`);
@@ -360,9 +325,9 @@ async function main() {
     ok = 0; failed = 0;
     for (const fn of rest) {
         const res = await execSQL(fn);
-        if (res.ok) 
+        if (res.ok)
             ok++;
-        else 
+        else
             failed++;
     }
     console.log(`${ok} other, ${failed} failed`);

@@ -1,4 +1,4 @@
-import { supabase } from "@/backend/database/database";
+import { prisma } from '@/lib/prisma';
 import { getChartOverrides } from "./chart-override-service";
 
 export interface OrgNodeData {
@@ -77,56 +77,50 @@ function rowToNode(row: OrgUserRow): OrgNode {
 }
 
 async function verifyOwner(ownerId: number): Promise<string> {
-  const { data, error } = await supabase
-    .from("owner")
-    .select("owner_id, owner_name")
-    .eq("owner_id", ownerId)
-    .single();
-
-  if (error || !data) {
+  const owner = await prisma.owner.findUnique({
+    where: { owner_id: ownerId },
+    select: { owner_id: true, owner_name: true },
+  });
+  if (!owner) {
     throw new Error(
       `owner_id=${ownerId} does not exist in the owner table. ` +
       `This means the session is returning a wrong ownerId. ` +
       `Check getUserSession() — it should return the users.fk_owner_id value, not the user_id.`
     );
   }
-  return (data.owner_name as string) ?? "Organisation";
+  return owner.owner_name ?? "Organisation";
 }
 
 export async function getOrganizationTree(ownerId: number): Promise<OrgNode> {
 
   const ownerName = await verifyOwner(ownerId);
 
-  const { data, error } = await supabase
-    .from("user_owner")
-    .select(`
-      role_in_organization,
-      users!user_owner_fk_user_id_fkey (
-        user_id,
-        first_name,
-        last_name,
-        email,
-        user_active,
-        users_profile (
-          profile_picture
-        )
-      )
-    `)
-    .eq("fk_owner_id", ownerId)
-    .eq("is_active", true);
+  const data = await prisma.user_owner.findMany({
+    where: { fk_owner_id: ownerId, is_active: true },
+    select: {
+      role_in_organization: true,
+      users: {
+        select: {
+          user_id: true,
+          first_name: true,
+          last_name: true,
+          email: true,
+          user_active: true,
+          users_profile: {
+            select: { profile_picture: true },
+          },
+        },
+      },
+    },
+  });
 
-  if (error) {
-    throw new Error(`Supabase query failed: ${error.message} (code: ${error.code})`);
-  }
+  if (data.length === 0) {
+    const directUsers = await prisma.public_users.findMany({
+      where: { fk_owner_id: ownerId, user_active: 'Y' },
+      select: { user_id: true, first_name: true, last_name: true, fk_owner_id: true },
+    });
 
-  if (!data || data.length === 0) {
-    const { data: directUsers } = await supabase
-      .from("users")
-      .select("user_id, first_name, last_name, fk_owner_id")
-      .eq("fk_owner_id", ownerId)
-      .eq("user_active", "Y");
-
-    const hint = directUsers && directUsers.length > 0
+    const hint = directUsers.length > 0
       ? `However, ${directUsers.length} user(s) have fk_owner_id=${ownerId} directly on the users table ` +
         `(e.g. user_id=${directUsers[0].user_id}). ` +
         `These users need rows in user_owner with fk_owner_id=${ownerId} and is_active=true. ` +

@@ -1,4 +1,4 @@
-import { supabase } from '@/backend/database/database';
+import { prisma } from '@/lib/prisma';
 
 type ComplianceStatus = 'COMPLIANT' | 'PARTIAL' | 'NON_COMPLIANT' | 'NOT_APPLICABLE';
 
@@ -59,73 +59,57 @@ interface UpdateComplianceRequirementParams {
   requirement_description?: string | null;
 }
 
-
-/**
- * Fetch a paginated, filtered list of compliance requirements for an owner.
- */
 export async function getComplianceRequirements(
   params: ComplianceRequirementListParams
 ): Promise<ComplianceRequirementListResult> {
   const { owner_id, requirement_type, requirement_status, q, page = 1, limit = 20 } = params;
-  const from = (page - 1) * limit;
-  const to = from + limit - 1;
+  const skip = (page - 1) * limit;
 
-  let query = supabase
-    .from('compliance_requirement')
-    .select('*', { count: 'exact' })
-    .eq('fk_owner_id', owner_id)
-    .order('requirement_code', { ascending: true })
-    .range(from, to);
-
-  if (requirement_type) query = query.eq('requirement_type', requirement_type);
-  if (requirement_status) query = query.eq('requirement_status', requirement_status);
+  const where: any = { fk_owner_id: owner_id };
+  if (requirement_type) where.requirement_type = requirement_type;
+  if (requirement_status) where.requirement_status = requirement_status;
   if (q) {
-    query = query.or(
-      `requirement_code.ilike.%${q}%,requirement_title.ilike.%${q}%,requirement_type.ilike.%${q}%,regulatory_body.ilike.%${q}%`
-    );
+    where.OR = [
+      { requirement_code: { contains: q, mode: 'insensitive' } },
+      { requirement_title: { contains: q, mode: 'insensitive' } },
+      { requirement_type: { contains: q, mode: 'insensitive' } },
+      { regulatory_body: { contains: q, mode: 'insensitive' } },
+    ];
   }
 
-  const { data, error, count } = await query;
-  if (error) throw error;
+  const [data, total] = await Promise.all([
+    prisma.compliance_requirement.findMany({
+      where,
+      orderBy: { requirement_code: 'asc' },
+      skip,
+      take: limit,
+    }),
+    prisma.compliance_requirement.count({ where }),
+  ]);
 
   return {
-    data: (data ?? []) as ComplianceRequirement[],
-    total: count ?? 0,
+    data: data as unknown as ComplianceRequirement[],
+    total,
     page,
     limit,
   };
 }
 
-/**
- * Fetch a single compliance requirement by ID.
- */
 export async function getComplianceRequirementById(
   requirementId: number,
   ownerId: number
 ): Promise<ComplianceRequirement | null> {
-  const { data, error } = await supabase
-    .from('compliance_requirement')
-    .select('*')
-    .eq('requirement_id', requirementId)
-    .eq('fk_owner_id', ownerId)
-    .single();
-
-  if (error) {
-    if (error.code === 'PGRST116') return null; // not found
-    throw error;
-  }
-  return data as ComplianceRequirement;
+  const row = await prisma.compliance_requirement.findFirst({
+    where: { requirement_id: requirementId, fk_owner_id: ownerId },
+  });
+  return row ? (row as unknown as ComplianceRequirement) : null;
 }
 
-/**
- * Create a new compliance requirement.
- */
 export async function createComplianceRequirement(
   params: CreateComplianceRequirementParams
 ): Promise<ComplianceRequirement> {
-  const { data, error } = await supabase
-    .from('compliance_requirement')
-    .insert({
+  const row = await prisma.compliance_requirement.create({
+    data: {
       fk_owner_id: params.owner_id,
       requirement_code: params.requirement_code,
       requirement_title: params.requirement_title,
@@ -133,72 +117,53 @@ export async function createComplianceRequirement(
       regulatory_body: params.regulatory_body ?? null,
       requirement_status: params.requirement_status,
       review_frequency: params.review_frequency ?? null,
-      next_review_date: params.next_review_date ?? null,
+      next_review_date: params.next_review_date ? new Date(params.next_review_date) : null,
       requirement_description: params.requirement_description ?? null,
-    })
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data as ComplianceRequirement;
+    },
+  });
+  return row as unknown as ComplianceRequirement;
 }
 
-/**
- * Update an existing compliance requirement.
- */
 export async function updateComplianceRequirement(
   params: UpdateComplianceRequirementParams
 ): Promise<ComplianceRequirement> {
   const { requirement_id, owner_id, ...fields } = params;
 
-  const updatePayload: Record<string, unknown> = {};
-  if (fields.requirement_code !== undefined) updatePayload.requirement_code = fields.requirement_code;
-  if (fields.requirement_title !== undefined) updatePayload.requirement_title = fields.requirement_title;
-  if (fields.requirement_type !== undefined) updatePayload.requirement_type = fields.requirement_type;
-  if (fields.regulatory_body !== undefined) updatePayload.regulatory_body = fields.regulatory_body;
-  if (fields.requirement_status !== undefined) updatePayload.requirement_status = fields.requirement_status;
-  if (fields.review_frequency !== undefined) updatePayload.review_frequency = fields.review_frequency;
-  if (fields.next_review_date !== undefined) updatePayload.next_review_date = fields.next_review_date;
-  if (fields.requirement_description !== undefined) updatePayload.requirement_description = fields.requirement_description;
+  const existing = await prisma.compliance_requirement.findFirst({
+    where: { requirement_id, fk_owner_id: owner_id },
+  });
+  if (!existing) throw new Error('Requirement not found or access denied');
 
-  const { data, error } = await supabase
-    .from('compliance_requirement')
-    .update(updatePayload)
-    .eq('requirement_id', requirement_id)
-    .eq('fk_owner_id', owner_id)
-    .select()
-    .single();
+  const updateData: Record<string, unknown> = { updated_at: new Date() };
+  if (fields.requirement_code !== undefined) updateData.requirement_code = fields.requirement_code;
+  if (fields.requirement_title !== undefined) updateData.requirement_title = fields.requirement_title;
+  if (fields.requirement_type !== undefined) updateData.requirement_type = fields.requirement_type;
+  if (fields.regulatory_body !== undefined) updateData.regulatory_body = fields.regulatory_body;
+  if (fields.requirement_status !== undefined) updateData.requirement_status = fields.requirement_status;
+  if (fields.review_frequency !== undefined) updateData.review_frequency = fields.review_frequency;
+  if (fields.next_review_date !== undefined) {
+    updateData.next_review_date = fields.next_review_date ? new Date(fields.next_review_date) : null;
+  }
+  if (fields.requirement_description !== undefined) updateData.requirement_description = fields.requirement_description;
 
-  if (error) throw error;
-  return data as ComplianceRequirement;
+  const updated = await prisma.compliance_requirement.update({
+    where: { requirement_id },
+    data: updateData as any,
+  });
+  return updated as unknown as ComplianceRequirement;
 }
 
-/**
- * Delete a compliance requirement.
- */
 export async function deleteComplianceRequirement(
   requirementId: number,
   ownerId: number
 ): Promise<void> {
-  const { error: evidenceError } = await supabase
-    .from('compliance_evidence')
-    .delete()
-    .eq('fk_requirement_id', requirementId);
-
-  if (evidenceError) throw evidenceError;
-
-  const { error } = await supabase
-    .from('compliance_requirement')
-    .delete()
-    .eq('requirement_id', requirementId)
-    .eq('fk_owner_id', ownerId);
-
-  if (error) throw error;
+  await prisma.compliance_status_log.deleteMany({ where: { fk_requirement_id: requirementId } });
+  await prisma.compliance_evidence.deleteMany({ where: { fk_requirement_id: requirementId } });
+  await prisma.compliance_requirement.deleteMany({
+    where: { requirement_id: requirementId, fk_owner_id: ownerId },
+  });
 }
 
-/**
- * Aggregate counts by status for the owner — used for stats cards.
- */
 export async function getComplianceStats(ownerId: number): Promise<{
   total: number;
   compliant: number;
@@ -206,14 +171,11 @@ export async function getComplianceStats(ownerId: number): Promise<{
   non_compliant: number;
   not_applicable: number;
 }> {
-  const { data, error } = await supabase
-    .from('compliance_requirement')
-    .select('requirement_status')
-    .eq('fk_owner_id', ownerId);
+  const rows = await prisma.compliance_requirement.findMany({
+    where: { fk_owner_id: ownerId },
+    select: { requirement_status: true },
+  });
 
-  if (error) throw error;
-
-  const rows = (data ?? []) as { requirement_status: string }[];
   return {
     total: rows.length,
     compliant: rows.filter((r) => r.requirement_status === 'COMPLIANT').length,

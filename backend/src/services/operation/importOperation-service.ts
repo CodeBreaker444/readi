@@ -1,4 +1,4 @@
-import { supabase } from '@/backend/database/database';
+import { prisma } from '@/lib/prisma';
 import JSZip from 'jszip';
 
 
@@ -10,18 +10,18 @@ export interface ImportMissionParams {
   categoryId: number;
   typeId: number;
   planId: number | null;
-  statusId: number;      
+  statusId: number;
   resultId: number;
   pilotId: number;
   groupLabel: string;
   notes: string;
-  location: string;          
+  location: string;
 }
 
 export interface ImportMissionResult {
   newMissionIds: number[];
   operations: any[];
-  skipped: string[];      
+  skipped: string[];
 }
 
 interface GutmaRoot {
@@ -93,7 +93,6 @@ async function processGutmaBuffer(
   filename: string,
   params: ImportMissionParams
 ): Promise<{ missionId: number; operation: any } | { error: string; duplicate?: boolean }> {
-
   let parsed: GutmaRoot;
   try {
     parsed = JSON.parse(new TextDecoder().decode(buffer));
@@ -101,97 +100,81 @@ async function processGutmaBuffer(
     return { error: `Failed to parse JSON in "${filename}": ${(e as Error).message}` };
   }
 
-  const missionCode    = resolveMissionCode(parsed, filename);
+  const missionCode = resolveMissionCode(parsed, filename);
   const { takeoff, landing } = resolveTimes(parsed);
-  const durationSec    = parseDurationSeconds(takeoff, landing);
-  const maxAltitude    = parsed.flight?.max_altitude    ?? parsed.flight_logging?.max_altitude_agl  ?? null;
-  const distanceFlown  = parsed.flight?.flight_distance ?? parsed.flight_logging?.total_distance    ?? null;
+  const durationSec = parseDurationSeconds(takeoff, landing);
+  const distanceFlown = parsed.flight?.flight_distance ?? parsed.flight_logging?.total_distance ?? null;
 
-  const { data: existing } = await supabase
-    .from('pilot_mission')
-    .select('pilot_mission_id')
-    .eq('mission_code', missionCode)
-    .eq('fk_owner_id', params.ownerId)
-    .maybeSingle();
+  const existing = await prisma.pilot_mission.findFirst({
+    where: { mission_code: missionCode, fk_owner_id: params.ownerId },
+    select: { pilot_mission_id: true },
+  });
 
   if (existing) {
-    return {
-      duplicate: true,
-      error: `Duplicate mission_code "${missionCode}" — skipped`,
-    };
+    return { duplicate: true, error: `Duplicate mission_code "${missionCode}" — skipped` };
   }
 
   let statusName: string | null = null;
   if (params.statusId) {
-    const { data: st } = await supabase
-      .from('pilot_mission_status')
-      .select('status_name')
-      .eq('status_id', params.statusId)
-      .single();
+    const st = await prisma.pilot_mission_status.findUnique({
+      where: { status_id: params.statusId },
+      select: { status_name: true },
+    });
     statusName = st?.status_name ?? null;
   }
 
   const notesArr = [
-    params.notes      || null,
+    params.notes || null,
     params.groupLabel ? `Group: ${params.groupLabel}` : null,
     `Platform: ${params.platform}`,
     `Source: ${filename}`,
   ].filter(Boolean);
 
-  const insertPayload: Record<string, any> = {
-    fk_owner_id:             params.ownerId,
-    fk_pilot_user_id:        params.pilotId    || null,
-    fk_tool_id:              params.vehicleId  || null,
-    fk_planning_id:          params.planId     || null,
-    fk_mission_type_id:      params.typeId     || null,
-    fk_mission_category_id:  params.categoryId || null,
-    fk_mission_status_id:    params.statusId   || null,
-    mission_code:            missionCode,
-    mission_name:            missionCode,
-    status_name:             statusName,           
-    location:                params.location || null,  
-    mission_description:     params.notes    || null,
-    scheduled_start:         takeoff,
-    actual_start:            takeoff,
-    actual_end:              landing,
-    flight_duration:         durationSec,
-    max_altitude:            maxAltitude,
-    distance_flown:          distanceFlown,
-    notes:                   notesArr.join(' | ') || null,
-  };
+  const inserted = await prisma.pilot_mission.create({
+    data: {
+      fk_owner_id: params.ownerId,
+      fk_pilot_user_id: params.pilotId || 1,
+      fk_tool_id: params.vehicleId || null,
+      fk_planning_id: params.planId || null,
+      fk_mission_type_id: params.typeId || null,
+      fk_mission_category_id: params.categoryId || null,
+      fk_mission_status_id: params.statusId || null,
+      mission_code: missionCode,
+      mission_name: missionCode,
+      status_name: statusName,
+      location: params.location || null,
+      mission_description: params.notes || null,
+      scheduled_start: takeoff ? new Date(takeoff) : null,
+      actual_start: takeoff ? new Date(takeoff) : null,
+      actual_end: landing ? new Date(landing) : null,
+      flight_duration: durationSec,
+      distance_flown: distanceFlown,
+      notes: notesArr.join(' | ') || null,
+    } as any,
+    select: { pilot_mission_id: true },
+  });
 
-  const { data: inserted, error: insertError } = await supabase
-    .from('pilot_mission')
-    .insert(insertPayload)
-    .select('pilot_mission_id')
-    .single();
-
-  if (insertError) {
-    return { error: `DB insert failed for "${filename}": ${insertError.message}` };
-  }
-
-  const { data: full } = await supabase
-    .from('pilot_mission')
-    .select(`
-      pilot_mission_id,
-      mission_code,
-      mission_name,
-      status_name,
-      scheduled_start,
-      location,
-      notes,
-      pilot:users!fk_pilot_user_id ( first_name, last_name ),
-      tool:tool!fk_tool_id ( tool_code )
-    `)
-    .eq('pilot_mission_id', inserted.pilot_mission_id)
-    .single();
+  const full = await prisma.pilot_mission.findUnique({
+    where: { pilot_mission_id: inserted.pilot_mission_id },
+    select: {
+      pilot_mission_id: true,
+      mission_code: true,
+      mission_name: true,
+      status_name: true,
+      scheduled_start: true,
+      location: true,
+      notes: true,
+      users: { select: { first_name: true, last_name: true } },
+      tool: { select: { tool_code: true } },
+    },
+  });
 
   const operation = full ? {
     ...full,
-    pilot_name: full.pilot
-      ? `${(full.pilot as any).first_name ?? ''} ${(full.pilot as any).last_name ?? ''}`.trim()
+    pilot_name: full.users
+      ? `${full.users.first_name ?? ''} ${full.users.last_name ?? ''}`.trim()
       : null,
-    tool_code: (full.tool as any)?.tool_code ?? null,
+    tool_code: full.tool?.tool_code ?? null,
   } : null;
 
   return { missionId: inserted.pilot_mission_id, operation };
@@ -203,10 +186,10 @@ export async function importMissionFromLog(
   params: ImportMissionParams
 ): Promise<ImportMissionResult> {
   const buffer = await file.arrayBuffer();
-  const ext    = file.name.split('.').pop()?.toLowerCase();
+  const ext = file.name.split('.').pop()?.toLowerCase();
 
   const successes: Array<{ missionId: number; operation: any }> = [];
-  const errors: string[]    = [];
+  const errors: string[] = [];
   const duplicates: string[] = [];
 
   if (ext === 'gutma') {
@@ -217,7 +200,6 @@ export async function importMissionFromLog(
     } else {
       successes.push(res);
     }
-
   } else if (ext === 'zip') {
     let zip: JSZip;
     try {
@@ -252,141 +234,122 @@ export async function importMissionFromLog(
 
   return {
     newMissionIds: successes.map((r) => r.missionId),
-    operations:    successes.map((r) => r.operation).filter(Boolean),
-    skipped:       duplicates,
+    operations: successes.map((r) => r.operation).filter(Boolean),
+    skipped: duplicates,
   };
 }
 
 
 export async function importClinets(ownerId: number) {
-    const { data, error } = await supabase
-        .from('client')
-        .select('client_id, client_name, client_code')
-        .eq('fk_owner_id', ownerId)
-        .eq('client_active', 'Y')
-        .order('client_name');
-    if (error) throw error;
-
-    return data
+  return prisma.client.findMany({
+    where: { fk_owner_id: ownerId, client_active: 'Y' },
+    orderBy: { client_name: 'asc' },
+    select: { client_id: true, client_name: true, client_code: true },
+  });
 }
+
 export async function importDrones(ownerId: number, clientId?: number) {
-    const { data, error } = await supabase
-        .from('tool')
-        .select('tool_id, tool_code, tool_name, tool_metadata')
-        .eq('fk_owner_id', ownerId)
-        .eq('tool_active', 'Y')
-        .order('tool_code');
-    if (error) throw error;
+  const tools = await prisma.tool.findMany({
+    where: { fk_owner_id: ownerId, tool_active: 'Y' },
+    orderBy: { tool_code: 'asc' },
+    select: { tool_id: true, tool_code: true, tool_name: true, tool_metadata: true },
+  });
 
-    const toolIds = (data || []).map((t: any) => t.tool_id);
-    const inMaintenanceSet = new Set<number>();
-    const maintenanceDueSet = new Set<number>();
-    const nonOperationalSet = new Set<number>();
+  const toolIds = tools.map((t) => t.tool_id);
+  const inMaintenanceSet = new Set<number>();
+  const maintenanceDueSet = new Set<number>();
+  const nonOperationalSet = new Set<number>();
 
-    if (toolIds.length > 0) {
-        const today = new Date().toISOString().split('T')[0];
-        const [{ data: openTickets }, { data: maintComps }, { data: expiredComps }] = await Promise.all([
-            supabase
-                .from('maintenance_ticket')
-                .select('fk_tool_id')
-                .in('fk_tool_id', toolIds)
-                .neq('ticket_status', 'CLOSED'),
-            supabase
-                .from('tool_component')
-                .select('fk_tool_id, maintenance_cycle_day, maintenance_cycle_hour, maintenance_cycle_flight, current_maintenance_days, current_usage_hours, current_maintenance_flights')
-                .in('fk_tool_id', toolIds)
-                .eq('component_active', 'Y'),
-            supabase
-                .from('tool_component')
-                .select('fk_tool_id')
-                .in('fk_tool_id', toolIds)
-                .eq('component_active', 'Y')
-                .lte('expiration_date', today)
-                .not('expiration_date', 'is', null),
-        ]);
-        (openTickets || []).forEach((t: any) => inMaintenanceSet.add(t.fk_tool_id));
-        (expiredComps || []).forEach((c: any) => nonOperationalSet.add(c.fk_tool_id));
-        (maintComps || []).forEach((c: any) => {
-            if (inMaintenanceSet.has(c.fk_tool_id)) return;
-            const dayDue = c.maintenance_cycle_day > 0 && Number(c.current_maintenance_days) >= Number(c.maintenance_cycle_day);
-            const hourDue = c.maintenance_cycle_hour > 0 && Number(c.current_usage_hours) >= Number(c.maintenance_cycle_hour);
-            const flightDue = c.maintenance_cycle_flight > 0 && Number(c.current_maintenance_flights) >= Number(c.maintenance_cycle_flight);
-            if (dayDue || hourDue || flightDue) maintenanceDueSet.add(c.fk_tool_id);
-        });
-    }
+  if (toolIds.length > 0) {
+    const [openTickets, maintComps, expiredComps] = await Promise.all([
+      prisma.maintenance_ticket.findMany({
+        where:  { fk_tool_id: { in: toolIds }, ticket_status: { not: 'CLOSED' } },
+        select: { fk_tool_id: true },
+      }),
+      prisma.tool_component.findMany({
+        where:  { fk_tool_id: { in: toolIds }, component_active: 'Y' },
+        select: {
+          fk_tool_id:                  true,
+          maintenance_cycle_day:       true,
+          maintenance_cycle_hour:      true,
+          maintenance_cycle_flight:    true,
+          current_maintenance_days:    true,
+          current_usage_hours:         true,
+          current_maintenance_flights: true,
+        },
+      }),
+      prisma.tool_component.findMany({
+        where:  { fk_tool_id: { in: toolIds }, component_active: 'Y', expiration_date: { lte: new Date(), not: null } },
+        select: { fk_tool_id: true },
+      }),
+    ]);
+    openTickets.forEach((t) => { if (t.fk_tool_id != null) inMaintenanceSet.add(t.fk_tool_id); });
+    expiredComps.forEach((c) => { if (c.fk_tool_id != null) nonOperationalSet.add(c.fk_tool_id); });
+    maintComps.forEach((c) => {
+      if (c.fk_tool_id == null || inMaintenanceSet.has(c.fk_tool_id)) return;
+      const dayDue    = Number(c.maintenance_cycle_day    ?? 0) > 0 && Number(c.current_maintenance_days)    >= Number(c.maintenance_cycle_day);
+      const hourDue   = Number(c.maintenance_cycle_hour   ?? 0) > 0 && Number(c.current_usage_hours)         >= Number(c.maintenance_cycle_hour);
+      const flightDue = Number(c.maintenance_cycle_flight ?? 0) > 0 && Number(c.current_maintenance_flights) >= Number(c.maintenance_cycle_flight);
+      if (dayDue || hourDue || flightDue) maintenanceDueSet.add(c.fk_tool_id);
+    });
+  }
 
-    let filtered = data || [];
-    if (clientId && clientId > 0) {
-        filtered = filtered.filter((t: any) => Number(t.tool_metadata?.clientId) === clientId);
-    }
-
-    return filtered.map((t: any) => ({
-        tool_id: t.tool_id,
-        tool_code: t.tool_code,
-        tool_name: t.tool_name,
-        in_maintenance: inMaintenanceSet.has(t.tool_id),
-        maintenance_due: maintenanceDueSet.has(t.tool_id),
-        is_non_operational: nonOperationalSet.has(t.tool_id),
-        is_dismissed: t.tool_metadata?.status === 'DISMISSED',
-    }));
+  return tools.map((t) => ({
+    tool_id: t.tool_id,
+    tool_code: t.tool_code,
+    tool_name: t.tool_name,
+    in_maintenance: inMaintenanceSet.has(t.tool_id),
+    maintenance_due: maintenanceDueSet.has(t.tool_id),
+    is_non_operational: nonOperationalSet.has(t.tool_id),
+    is_dismissed: (t.tool_metadata as any)?.status === 'DISMISSED',
+  }));
 }
 
 export async function importPlans(ownerId: number, clientId?: number, vehicleId?: number) {
-    let query = supabase
-        .from('planning_logbook')
-        .select('mission_planning_id, mission_planning_code, mission_planning_desc')
-        .eq('fk_owner_id', ownerId)
-        .eq('mission_planning_active', 'Y')
-        .order('mission_planning_code');
-    if (clientId) query = query.eq('fk_client_id', clientId);
-    if (vehicleId) query = query.eq('fk_tool_id', vehicleId);
-    const { data, error } = await query;
-    if (error) throw error;
-
-    return data
+  return prisma.planning_logbook.findMany({
+    where: {
+      fk_owner_id: ownerId,
+      mission_planning_active: 'Y',
+      ...(clientId && { fk_client_id: clientId }),
+      ...(vehicleId && { fk_tool_id: vehicleId }),
+    },
+    orderBy: { mission_planning_code: 'asc' },
+    select: {
+      mission_planning_id: true,
+      mission_planning_code: true,
+      mission_planning_desc: true,
+    },
+  });
 }
 
 export async function importCategories(ownerId: number) {
-    const { data, error } = await supabase
-        .from('pilot_mission_category')
-        .select('category_id, category_name')
-        .eq('fk_owner_id', ownerId)
-        .eq('is_active', true)
-        .order('category_name');
-    if (error) throw error;
-    return data
+  return prisma.pilot_mission_category.findMany({
+    where: { fk_owner_id: ownerId, is_active: true },
+    orderBy: { category_name: 'asc' },
+    select: { category_id: true, category_name: true },
+  });
 }
 
 export async function importTypes(ownerId: number) {
-    const { data, error } = await supabase
-        .from('pilot_mission_type')
-        .select('mission_type_id, type_name')
-        .eq('fk_owner_id', ownerId)
-        .eq('is_active', true)
-        .order('type_name');
-    if (error) throw error;
-    return data
+  return prisma.pilot_mission_type.findMany({
+    where: { fk_owner_id: ownerId, is_active: true },
+    orderBy: { type_name: 'asc' },
+    select: { mission_type_id: true, type_name: true },
+  });
 }
 
 export async function importStatus(ownerId: number) {
-    const { data, error } = await supabase
-        .from('pilot_mission_status')
-        .select('status_id, status_name')
-        .eq('fk_owner_id', ownerId)
-        .eq('is_active', true)
-        .order('status_order');
-    if (error) throw error;
-    return data
+  return prisma.pilot_mission_status.findMany({
+    where: { fk_owner_id: ownerId, is_active: true },
+    orderBy: { status_order: 'asc' },
+    select: { status_id: true, status_name: true },
+  });
 }
 
 export async function importPilots(ownerId: number) {
-    const { data, error } = await supabase
-        .from('users')
-        .select('user_id, first_name, last_name')
-        .eq('fk_owner_id', ownerId)
-        .eq('user_role', 'PIC')
-        .eq('user_active', 'Y')
-        .order('first_name');
-    if (error) throw error;
-    return data
+  return prisma.public_users.findMany({
+    where: { fk_owner_id: ownerId, user_role: 'PIC', user_active: 'Y' },
+    orderBy: { first_name: 'asc' },
+    select: { user_id: true, first_name: true, last_name: true },
+  });
 }

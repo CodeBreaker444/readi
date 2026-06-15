@@ -1,12 +1,12 @@
 "use client";
 
-import '@/lib/i18n/config';
 import { BatteryFilterPanel } from "@/components/logbook/BatteryFilterPanel";
 import { BatteryLogbookTable } from "@/components/logbook/BatteryLogbookTable";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTheme } from "@/components/useTheme";
 import { BatteryFilterParams, BatteryLogbookItem, BatterySystemOption } from "@/config/types/logbook";
+import '@/lib/i18n/config';
 import axios from "axios";
 import { Loader2, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
@@ -23,8 +23,8 @@ export default function BatteryLogbookPage() {
   const { t } = useTranslation();
   const [data, setData] = useState<BatteryLogbookItem[]>([]);
   const [filters, setFilters] = useState<FiltersState>({ systems: [], statuses: [] });
-  const [loading, setLoading] = useState(false);
-  const [filtersLoading, setFiltersLoading] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [filtersLoading, setFiltersLoading] = useState<boolean>(false);
 
   const fetchFilters = useCallback(async () => {
     setFiltersLoading(true);

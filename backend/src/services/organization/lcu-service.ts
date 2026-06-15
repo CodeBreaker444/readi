@@ -1,97 +1,59 @@
-import { supabase } from '@/backend/database/database';
+import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import type {
   CreateLucProcedurePayload,
   LucProcedure,
   UpdateLucProcedurePayload,
 } from '@/config/types/lcuProcedures';
 
-export async function getLucProcedures(
-  ownerId: number,
-  sector?: string
-): Promise<LucProcedure[]> {
-  let query = supabase
-    .from('luc_procedure')
-    .select('*')
-    .eq('fk_owner_id', ownerId)
-    .order('procedure_id', { ascending: true });
-
-  if (sector) {
-    query = query.eq('procedure_status', sector);
-  }
-
-  const { data, error } = await query;
-  if (error) throw new Error(`Failed to fetch procedures: ${error.message}`);
-  return data ?? [];
+export async function getLucProcedures(ownerId: number, sector?: string): Promise<LucProcedure[]> {
+  const rows = await prisma.luc_procedure.findMany({
+    where: {
+      fk_owner_id: ownerId,
+      ...(sector && { procedure_status: sector }),
+    },
+    orderBy: { procedure_id: 'asc' },
+  });
+  return rows as unknown as LucProcedure[];
 }
 
-export async function getLucProcedureById(
-  procedureId: number
-): Promise<LucProcedure | null> {
-  const { data, error } = await supabase
-    .from('luc_procedure')
-    .select('*')
-    .eq('procedure_id', procedureId)
-    .single();
-
-  if (error) {
-    if (error.code === 'PGRST116') return null;
-    throw new Error(`Failed to fetch Procedure: ${error.message}`);
-  }
-  return data;
+export async function getLucProcedureById(procedureId: number): Promise<LucProcedure | null> {
+  const row = await prisma.luc_procedure.findUnique({
+    where: { procedure_id: procedureId },
+  });
+  return row as unknown as LucProcedure | null;
 }
 
-export async function createLucProcedure(
-  payload: CreateLucProcedurePayload
-): Promise<LucProcedure> {
-  const { data, error } = await supabase
-    .from('luc_procedure')
-    .insert([payload])
-    .select()
-    .single();
-
-  if (error) throw new Error(`Failed to create Procedure: ${error.message}`);
-  return data;
+export async function createLucProcedure(payload: CreateLucProcedurePayload): Promise<LucProcedure> {
+  const row = await prisma.luc_procedure.create({ data: payload as any });
+  return row as unknown as LucProcedure;
 }
 
-export async function updateLucProcedure(
-  payload: UpdateLucProcedurePayload
-): Promise<LucProcedure> {
+export async function updateLucProcedure(payload: UpdateLucProcedurePayload): Promise<LucProcedure> {
   const { procedure_id, ...fields } = payload;
-
-  const { data, error } = await supabase
-    .from('luc_procedure')
-    .update({ ...fields, updated_at: new Date().toISOString() })
-    .eq('procedure_id', procedure_id)
-    .select()
-    .single();
-
-  if (error) throw new Error(`Failed to update Procedure: ${error.message}`);
-  return data;
+  const row = await prisma.luc_procedure.update({
+    where: { procedure_id },
+    data: { ...fields, updated_at: new Date() } as any,
+  });
+  return row as unknown as LucProcedure;
 }
 
 export async function deleteLucProcedure(procedureId: number): Promise<boolean> {
-  const { error } = await supabase
-    .from('luc_procedure')
-    .delete()
-    .eq('procedure_id', procedureId);
-
-  if (error) {
-    if (error.code === '23503') {
+  try {
+    await prisma.luc_procedure.delete({ where: { procedure_id: procedureId } });
+    return true;
+  } catch (e: any) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2003') {
       throw new Error('This procedure is linked to one or more evaluations and cannot be deleted. Remove the linked evaluations first.');
     }
-    throw new Error(`Failed to delete Procedure: ${error.message}`);
+    throw new Error(`Failed to delete Procedure: ${e.message}`);
   }
-  return true;
 }
 
 export async function deactivateLucProcedure(procedureId: number): Promise<LucProcedure> {
-  const { data, error } = await supabase
-    .from('luc_procedure')
-    .update({ procedure_active: 'N', updated_at: new Date().toISOString() })
-    .eq('procedure_id', procedureId)
-    .select()
-    .single();
-
-  if (error) throw new Error(`Failed to deactivate Procedure: ${error.message}`);
-  return data;
+  const row = await prisma.luc_procedure.update({
+    where: { procedure_id: procedureId },
+    data: { procedure_active: 'N', updated_at: new Date() },
+  });
+  return row as unknown as LucProcedure;
 }

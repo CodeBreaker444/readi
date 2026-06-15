@@ -84,7 +84,7 @@ export function TaskCompletionTable({
     }, [evaluationId]);
 
     function handleOpenAction(task: EvaluationTask) {
-        if (task.task_type === 'checklist')     setModal({ type: 'checklist', task });
+        if (task.task_type === 'checklist')          setModal({ type: 'checklist', task });
         else if (task.task_type === 'assignment')    setModal({ type: 'assignment', task });
         else if (task.task_type === 'communication') setModal({ type: 'communication', task });
     }
@@ -207,7 +207,9 @@ export function TaskCompletionTable({
                                     key={hg.id}
                                     className={cn(
                                         'hover:bg-transparent border-b',
-                                        isDark ? 'bg-slate-800/60 border-slate-700' : 'bg-slate-50 hover:bg-slate-50 border-slate-200'
+                                        isDark
+                                            ? 'bg-slate-800/60 border-slate-700'
+                                            : 'bg-slate-50 hover:bg-slate-50 border-slate-200'
                                     )}
                                 >
                                     {hg.headers.map((header) => (

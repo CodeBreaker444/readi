@@ -31,6 +31,7 @@ import {
     flexRender,
     getCoreRowModel,
     getFilteredRowModel,
+    getPaginationRowModel,
     getSortedRowModel,
     type SortingState,
     useReactTable,
@@ -44,6 +45,7 @@ import { toast } from 'sonner';
 interface FilterOption {
     id: number;
     name: string;
+    active: boolean;
 }
 
 interface Filters {
@@ -73,6 +75,10 @@ const MissionTemplateDashboard: React.FC<MissionTemplateDashboardProps> = ({
     const [pilots, setPilots] = useState<FilterOption[]>([]);
     const [evaluations, setEvaluations] = useState<FilterOption[]>([]);
     const [plannings, setPlannings] = useState<FilterOption[]>([]);
+    const [pagination, setPagination] = useState({
+        pageIndex: 0,
+        pageSize: 8,
+    });
 
     const [filters, setFilters] = useState<Filters>({
         clientId: 0,
@@ -136,14 +142,19 @@ const MissionTemplateDashboard: React.FC<MissionTemplateDashboardProps> = ({
     const table = useReactTable({
         data,
         columns,
-        state: { sorting, globalFilter },
+        state: {
+            sorting,
+            globalFilter,
+            pagination,
+        },
         onSortingChange: setSorting,
         onGlobalFilterChange: setGlobalFilter,
+        onPaginationChange: setPagination,
         getCoreRowModel: getCoreRowModel(),
         getSortedRowModel: getSortedRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
+        getPaginationRowModel: getPaginationRowModel(),
     });
-
     return (
         <div className={`min-h-screen  ${isDark ? 'bg-slate-950' : 'bg-slate-50'}`}>
             <div
@@ -189,7 +200,9 @@ const MissionTemplateDashboard: React.FC<MissionTemplateDashboardProps> = ({
                                     <SelectContent className={isDark ? 'bg-slate-800 border-slate-700' : ''}>
                                         <SelectItem value="0" className={isDark ? 'text-slate-200 focus:bg-slate-700' : ''}>{t('planning.missionTemplate.allClients')}</SelectItem>
                                         {clients.map((c) => (
-                                            <SelectItem key={c.id} value={String(c.id)} className={isDark ? 'text-slate-200 focus:bg-slate-700' : ''}>{c.name}</SelectItem>
+                                            <SelectItem key={c.id} value={String(c.id)} className={isDark ? 'text-slate-200 focus:bg-slate-700' : ''}>
+                                                {c.name}{!c.active && <span className="ml-1.5 text-[10px] text-orange-500 font-medium">(Inactive)</span>}
+                                            </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
@@ -212,7 +225,9 @@ const MissionTemplateDashboard: React.FC<MissionTemplateDashboardProps> = ({
                                     <SelectContent className={isDark ? 'bg-slate-800 border-slate-700' : ''}>
                                         <SelectItem value="0" className={isDark ? 'text-slate-200 focus:bg-slate-700' : ''}>{t('planning.missionTemplate.allPilots')}</SelectItem>
                                         {pilots.map((p) => (
-                                            <SelectItem key={p.id} value={String(p.id)} className={isDark ? 'text-slate-200 focus:bg-slate-700' : ''}>{p.name}</SelectItem>
+                                            <SelectItem key={p.id} value={String(p.id)} className={isDark ? 'text-slate-200 focus:bg-slate-700' : ''}>
+                                                {p.name}{!p.active && <span className="ml-1.5 text-[10px] text-orange-500 font-medium">(Inactive)</span>}
+                                            </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
@@ -237,7 +252,9 @@ const MissionTemplateDashboard: React.FC<MissionTemplateDashboardProps> = ({
                                     <SelectContent className={isDark ? 'bg-slate-800 border-slate-700' : ''}>
                                         <SelectItem value="0" className={isDark ? 'text-slate-200 focus:bg-slate-700' : ''}>{t('planning.missionTemplate.allEvaluations')}</SelectItem>
                                         {evaluations.map((ev) => (
-                                            <SelectItem key={ev.id} value={String(ev.id)} className={isDark ? 'text-slate-200 focus:bg-slate-700' : ''}>{ev.name}</SelectItem>
+                                            <SelectItem key={ev.id} value={String(ev.id)} className={isDark ? 'text-slate-200 focus:bg-slate-700' : ''}>
+                                                {ev.name}{!ev.active && <span className="ml-1.5 text-[10px] text-orange-500 font-medium">(Inactive)</span>}
+                                            </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
@@ -281,7 +298,9 @@ const MissionTemplateDashboard: React.FC<MissionTemplateDashboardProps> = ({
                                     <SelectContent className={isDark ? 'bg-slate-800 border-slate-700' : ''}>
                                         <SelectItem value="0" className={isDark ? 'text-slate-200 focus:bg-slate-700' : ''}>{t('planning.missionTemplate.allPlannings')}</SelectItem>
                                         {plannings.map((pl) => (
-                                            <SelectItem key={pl.id} value={String(pl.id)} className={isDark ? 'text-slate-200 focus:bg-slate-700' : ''}>{pl.name}</SelectItem>
+                                            <SelectItem key={pl.id} value={String(pl.id)} className={isDark ? 'text-slate-200 focus:bg-slate-700' : ''}>
+                                                {pl.name}{!pl.active && <span className="ml-1.5 text-[10px] text-orange-500 font-medium">(Inactive)</span>}
+                                            </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>

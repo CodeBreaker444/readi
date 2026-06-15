@@ -220,6 +220,7 @@
     "planning": "CO-00 - Planung",
     "newEvaluationRequest": "P00 - Neue Bewertungsanfrage",
     "evaluation": "P01 - Bewertung",
+    "planningMission": "P02 - Planungsmission",
     "planningDashboard": "P02 - Planungsdashboard",
     "missionTemplates": "P04 - Missionsvorlagen",
     "flightRequests": "Fluganfragen",
@@ -923,6 +924,15 @@
       "edit": "Bearbeiten",
       "delete": "Löschen"
     },
+    "modal": {
+      "addPlanningTitle": "Planungsantrag hinzufügen",
+      "addPlanningSubtitle": "[GO.00.P01] — Füllen Sie das Formular aus, um eine neue Planung aus dieser Bewertung zu erstellen."
+    },
+    "toast": {
+      "loadFormError": "Formulardaten konnten nicht geladen werden",
+      "createPlanningSuccess": "Planungsantrag erfolgreich erstellt!",
+      "createPlanningFailed": "Planung konnte nicht erstellt werden"
+    },
     "columns": {
       "yearRef": "Jahresreferenz",
       "evaluationCode": "Bewertungscode",
@@ -1088,6 +1098,8 @@
       "addNewEntry": "Neue Missionsplanung hinzufügen",
       "progress": "FORTSCHRITT",
       "filter": {
+        "title": "Filter",
+        "all": "Alle",
         "client": "Kunde",
         "allClients": "Alle Kunden",
         "pic": "PiC",
@@ -1103,6 +1115,7 @@
       },
       "table": {
         "searchPlaceholder": "In allen Spalten suchen…",
+        "recordsFound": "Einträge gefunden",
         "active": "Aktiv",
         "inactive": "Inaktiv",
         "noResults": "Keine Missionspläne gefunden",
@@ -2201,6 +2214,8 @@
       "addNewEntry": "Neue Missionsplanung hinzufügen",
       "progress": "FORTSCHRITT",
       "filter": {
+        "title": "Filter",
+        "all": "Alle",
         "client": "Kunde",
         "allClients": "Alle Kunden",
         "pic": "PiC",
@@ -2216,6 +2231,7 @@
       },
       "table": {
         "searchPlaceholder": "In allen Spalten suchen…",
+        "recordsFound": "Einträge gefunden",
         "active": "Aktiv",
         "inactive": "Inaktiv",
         "noResults": "Keine Missionspläne gefunden",

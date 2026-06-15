@@ -58,8 +58,6 @@ export default function OperationLogbookPage() {
     try {
       const res = await axios.post("/api/logbooks/operation/filter", {});
       const json = res.data;
-      console.log('fileter:',json);
-      
       if (json.code === 200) {
         setFilters({
           pilots: json.pilots?.data ?? [],

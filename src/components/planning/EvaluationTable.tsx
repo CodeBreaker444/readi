@@ -103,7 +103,7 @@ export function EvaluationTable({ onView, isDark }: { onView?: (ev: Evaluation) 
             onChange={(e) => setGlobalFilter(e.target.value)}
             className={cn(
               "pl-8 h-8 text-sm transition-colors",
-              isDark ? "bg-slate-900 border-slate-800 text-white  placeholder:text-white focus:ring-slate-700" : "bg-white border-slate-200"
+              isDark ? "bg-slate-800 border-slate-800 text-white  placeholder:text-white focus:ring-slate-700" : "bg-white border-slate-200"
             )}
           />
         </div>

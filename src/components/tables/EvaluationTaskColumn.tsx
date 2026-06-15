@@ -98,16 +98,16 @@ export const getEvaluationTaskColumns = (
 
       const statusConfig: Record<string, { label: string; icon: React.ReactNode; className: string }> = isDark
         ? {
-            pending:     { label: t('planning.status.onHold'),    icon: <Circle className="h-3 w-3" />,                        className: 'border border-slate-600 text-slate-400 bg-transparent' },
-            in_progress: { label: t('planning.status.inProgress'), icon: <Clock className="h-3 w-3 text-amber-400" />,          className: 'border border-amber-500/30 text-amber-400 bg-amber-500/10' },
+            pending:     { label: t('planning.status.onHold'),    icon: <Circle className="h-3 w-3" />,                        className: 'border border-slate-600 text-slate-400 bg-transparent'         },
+            in_progress: { label: t('planning.status.inProgress'), icon: <Clock className="h-3 w-3 text-amber-400" />,          className: 'border border-amber-500/30 text-amber-400 bg-amber-500/10'    },
             completed:   { label: t('planning.status.done'),       icon: <CheckCircle2 className="h-3 w-3 text-emerald-400" />, className: 'border border-emerald-500/30 text-emerald-400 bg-emerald-500/10' },
-            skipped:     { label: t('planning.status.suspended'),  icon: <SkipForward className="h-3 w-3 text-slate-500" />,    className: 'border border-slate-600 text-slate-500 bg-slate-700/30' },
+            skipped:     { label: t('planning.status.suspended'),  icon: <SkipForward className="h-3 w-3 text-slate-500" />,    className: 'border border-slate-600 text-slate-500 bg-slate-700/30'        },
           }
         : {
-            pending:     { label: t('planning.status.onHold'),    icon: <Circle className="h-3 w-3" />,                        className: 'border border-slate-300 text-slate-500 bg-white' },
-            in_progress: { label: t('planning.status.inProgress'), icon: <Clock className="h-3 w-3 text-amber-500" />,          className: 'border border-amber-200 text-amber-700 bg-amber-50' },
+            pending:     { label: t('planning.status.onHold'),    icon: <Circle className="h-3 w-3" />,                        className: 'border border-slate-300 text-slate-500 bg-white'       },
+            in_progress: { label: t('planning.status.inProgress'), icon: <Clock className="h-3 w-3 text-amber-500" />,          className: 'border border-amber-200 text-amber-700 bg-amber-50'    },
             completed:   { label: t('planning.status.done'),       icon: <CheckCircle2 className="h-3 w-3 text-emerald-500" />, className: 'border border-emerald-200 text-emerald-700 bg-emerald-50' },
-            skipped:     { label: t('planning.status.suspended'),  icon: <SkipForward className="h-3 w-3 text-slate-400" />,    className: 'border border-slate-200 text-slate-400 bg-slate-50' },
+            skipped:     { label: t('planning.status.suspended'),  icon: <SkipForward className="h-3 w-3 text-slate-400" />,    className: 'border border-slate-200 text-slate-400 bg-slate-50'     },
           };
 
       const cfg = statusConfig[status] ?? statusConfig.pending;

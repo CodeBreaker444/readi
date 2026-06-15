@@ -1,4 +1,5 @@
-import { supabase } from '@/backend/database/database';
+import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { createHash, randomUUID } from 'crypto';
 
 export function hashApiKey(rawKey: string): string {
@@ -38,60 +39,85 @@ export interface FlightRequest {
   created_at: string;
 }
 
+function mapFlightRequest(row: {
+  request_id: number;
+  fk_owner_id: number;
+  external_mission_id: string;
+  mission_type: string | null;
+  target: string | null;
+  localization: Prisma.JsonValue | null;
+  waypoint: Prisma.JsonValue | null;
+  start_datetime: Date | null;
+  priority: string | null;
+  notes: string | null;
+  operator: string | null;
+  dcc_status: string;
+  fk_planning_id: number | null;
+  assigned_by_user_id: number | null;
+  assigned_at: Date | null;
+  created_at: Date;
+}): FlightRequest {
+  return {
+    request_id: row.request_id,
+    fk_owner_id: row.fk_owner_id,
+    external_mission_id: row.external_mission_id,
+    mission_type: row.mission_type,
+    target: row.target,
+    localization: row.localization as Record<string, unknown> | null,
+    waypoint: row.waypoint as Record<string, unknown> | null,
+    start_datetime: row.start_datetime?.toISOString() ?? null,
+    priority: row.priority,
+    notes: row.notes,
+    operator: row.operator,
+    dcc_status: row.dcc_status,
+    fk_planning_id: row.fk_planning_id,
+    assigned_by_user_id: row.assigned_by_user_id,
+    assigned_at: row.assigned_at?.toISOString() ?? null,
+    created_at: row.created_at.toISOString(),
+  };
+}
 
 export async function flightRequestExists(
   external_mission_id: string,
   owner_id: number,
 ): Promise<boolean> {
-  const { data } = await supabase
-    .from('flight_requests')
-    .select('request_id')
-    .eq('external_mission_id', external_mission_id)
-    .eq('fk_owner_id', owner_id)
-    .limit(1)
-    .single();
-
-  return !!data;
+  const row = await prisma.flight_requests.findFirst({
+    where: { external_mission_id, fk_owner_id: owner_id },
+    select: { request_id: true },
+  });
+  return !!row;
 }
 
 export async function createFlightRequest(input: CreateFlightRequestInput): Promise<{ request_id: number }> {
-  const { data, error } = await supabase
-    .from('flight_requests')
-    .insert({
+  const row = await prisma.flight_requests.create({
+    data: {
       fk_owner_id:         input.owner_id,
       fk_api_key_id:       input.api_key_id,
       external_mission_id: input.external_mission_id,
       mission_type:        input.mission_type ?? null,
       target:              input.target ?? null,
-      localization:        input.localization ?? null,
-      waypoint:            input.waypoint ?? null,
-      start_datetime:      input.start_datetime ?? null,
+      localization:        input.localization ? (input.localization as unknown as Prisma.InputJsonValue) : Prisma.JsonNull,
+      waypoint:            input.waypoint ? (input.waypoint as unknown as Prisma.InputJsonValue) : Prisma.JsonNull,
+      start_datetime:      input.start_datetime ? new Date(input.start_datetime) : null,
       priority:            input.priority ?? null,
       notes:               input.notes ?? null,
       operator:            input.operator ?? null,
       dcc_status:          'NEW',
-    })
-    .select('request_id')
-    .single();
-
-  if (error || !data) throw new Error(`createFlightRequest: ${error?.message}`);
-  return { request_id: data.request_id };
+    },
+    select: { request_id: true },
+  });
+  return { request_id: row.request_id };
 }
 
 export async function listFlightRequests(owner_id: number, status?: string): Promise<FlightRequest[]> {
-  let query = supabase
-    .from('flight_requests')
-    .select('*')
-    .eq('fk_owner_id', owner_id)
-    .order('created_at', { ascending: false });
-
-  if (status && status !== 'ALL') {
-    query = query.eq('dcc_status', status);
-  }
-
-  const { data, error } = await query;
-  if (error) throw new Error(`listFlightRequests: ${error.message}`);
-  return (data ?? []) as FlightRequest[];
+  const rows = await prisma.flight_requests.findMany({
+    where: {
+      fk_owner_id: owner_id,
+      ...(status && status !== 'ALL' ? { dcc_status: status } : {}),
+    },
+    orderBy: { created_at: 'desc' },
+  });
+  return rows.map(mapFlightRequest);
 }
 
 export async function assignFlightRequest(
@@ -100,19 +126,16 @@ export async function assignFlightRequest(
   assigned_by_user_id: number,
   planning_id?: number,
 ): Promise<void> {
-  const { error } = await supabase
-    .from('flight_requests')
-    .update({
+  await prisma.flight_requests.updateMany({
+    where: { request_id, fk_owner_id: owner_id },
+    data: {
       dcc_status:          planning_id ? 'ASSIGNED' : 'ACKNOWLEDGED',
       fk_planning_id:      planning_id ?? null,
       assigned_by_user_id,
-      assigned_at:         new Date().toISOString(),
-      updated_at:          new Date().toISOString(),
-    })
-    .eq('request_id', request_id)
-    .eq('fk_owner_id', owner_id);
-
-  if (error) throw new Error(`assignFlightRequest: ${error.message}`);
+      assigned_at:         new Date(),
+      updated_at:          new Date(),
+    },
+  });
 }
 
 export async function updateFlightRequestStatus(
@@ -120,25 +143,37 @@ export async function updateFlightRequestStatus(
   owner_id: number,
   dcc_status: string,
 ): Promise<void> {
-  const { error } = await supabase
-    .from('flight_requests')
-    .update({ dcc_status, updated_at: new Date().toISOString() })
-    .eq('request_id', request_id)
-    .eq('fk_owner_id', owner_id);
-
-  if (error) throw new Error(`updateFlightRequestStatus: ${error.message}`);
+  await prisma.flight_requests.updateMany({
+    where: { request_id, fk_owner_id: owner_id },
+    data: { dcc_status, updated_at: new Date() },
+  });
 }
 
-
 export async function listApiKeys(owner_id: number) {
-  const { data, error } = await supabase
-    .from('api_keys')
-    .select('api_key_id, key_name, key_prefix, key_scope, is_active, last_used_at, expires_at, created_at')
-    .eq('fk_owner_id', owner_id)
-    .order('created_at', { ascending: false });
-
-  if (error) throw new Error(`listApiKeys: ${error.message}`);
-  return data ?? [];
+  const rows = await prisma.api_keys.findMany({
+    where: { fk_owner_id: owner_id },
+    select: {
+      api_key_id: true,
+      key_name: true,
+      key_prefix: true,
+      key_scope: true,
+      is_active: true,
+      last_used_at: true,
+      expires_at: true,
+      created_at: true,
+    },
+    orderBy: { created_at: 'desc' },
+  });
+  return rows.map((r) => ({
+    api_key_id: r.api_key_id,
+    key_name: r.key_name,
+    key_prefix: r.key_prefix,
+    key_scope: r.key_scope,
+    is_active: r.is_active,
+    last_used_at: r.last_used_at?.toISOString() ?? null,
+    expires_at: r.expires_at?.toISOString() ?? null,
+    created_at: r.created_at.toISOString(),
+  }));
 }
 
 export async function createApiKey(
@@ -149,11 +184,10 @@ export async function createApiKey(
 ): Promise<{ api_key_id: number; key_value: string }> {
   const rawKey  = `rdi_${randomUUID().replace(/-/g, '')}`;
   const keyHash = hashApiKey(rawKey);
-  const prefix  = rawKey.slice(0, 8);  
+  const prefix  = rawKey.slice(0, 8);
 
-  const { data, error } = await supabase
-    .from('api_keys')
-    .insert({
+  const row = await prisma.api_keys.create({
+    data: {
       fk_owner_id:         owner_id,
       key_name,
       key_value:           keyHash,
@@ -161,38 +195,29 @@ export async function createApiKey(
       key_scope:           'mission_request',
       is_active:           true,
       created_by_user_id,
-      expires_at:          expires_at ?? null,
-    })
-    .select('api_key_id')
-    .single();
-
-  if (error || !data) throw new Error(`createApiKey: ${error?.message}`);
-  return { api_key_id: data.api_key_id, key_value: rawKey };
+      expires_at:          expires_at ? new Date(expires_at) : null,
+    },
+    select: { api_key_id: true },
+  });
+  return { api_key_id: row.api_key_id, key_value: rawKey };
 }
 
 export async function revokeApiKey(api_key_id: number, owner_id: number): Promise<void> {
-  const { error } = await supabase
-    .from('api_keys')
-    .update({ is_active: false })
-    .eq('api_key_id', api_key_id)
-    .eq('fk_owner_id', owner_id);
-
-  if (error) throw new Error(`revokeApiKey: ${error.message}`);
+  await prisma.api_keys.updateMany({
+    where: { api_key_id, fk_owner_id: owner_id },
+    data: { is_active: false },
+  });
 }
 
 export async function getFlightRequestsByPlanningId(
   planning_id: number,
   owner_id: number,
 ): Promise<FlightRequest[]> {
-  const { data, error } = await supabase
-    .from('flight_requests')
-    .select('*')
-    .eq('fk_planning_id', planning_id)
-    .eq('fk_owner_id', owner_id)
-    .order('created_at', { ascending: false });
-
-  if (error) throw new Error(`getFlightRequestsByPlanningId: ${error.message}`);
-  return (data ?? []) as FlightRequest[];
+  const rows = await prisma.flight_requests.findMany({
+    where: { fk_planning_id: planning_id, fk_owner_id: owner_id },
+    orderBy: { created_at: 'desc' },
+  });
+  return rows.map(mapFlightRequest);
 }
 
 export interface AssignablePlanning {
@@ -205,56 +230,58 @@ export interface AssignablePlanning {
 }
 
 export async function listAssignablePlannings(owner_id: number): Promise<AssignablePlanning[]> {
-  const { data: plannings, error: pe } = await supabase
-    .from('planning')
-    .select('planning_id, planning_code, planning_description, planning_status, client:fk_client_id(client_name)')
-    .eq('fk_owner_id', owner_id)
-    .order('planning_id', { ascending: false });
-  if (pe) throw new Error(`listAssignablePlannings (plannings): ${pe.message}`);
+  const [plannings, missions] = await Promise.all([
+    prisma.planning.findMany({
+      where: { fk_owner_id: owner_id },
+      select: {
+        planning_id: true,
+        planning_code: true,
+        planning_description: true,
+        planning_status: true,
+        client: { select: { client_name: true } },
+      },
+      orderBy: { planning_id: 'desc' },
+    }),
+    prisma.pilot_mission.findMany({
+      where: {
+        fk_owner_id: owner_id,
+        fk_planning_id: { not: null },
+        fk_tool_id: { not: null },
+      },
+      select: { fk_planning_id: true, fk_tool_id: true },
+    }),
+  ]);
 
-  // Pilot missions that have a tool and belong to a planning
-  const { data: missions, error: me } = await supabase
-    .from('pilot_mission')
-    .select('fk_planning_id, fk_tool_id')
-    .eq('fk_owner_id', owner_id)
-    .not('fk_planning_id', 'is', null)
-    .not('fk_tool_id', 'is', null);
-  if (me) throw new Error(`listAssignablePlannings (missions): ${me.message}`);
+  const toolIds = [...new Set(missions.map((m) => m.fk_tool_id as number))];
 
-  //  Tool IDs from those missions
-  const toolIds = [...new Set((missions ?? []).map((m: any) => m.fk_tool_id as number))];
-
-  //. DRONE components with dcc_drone_id set, for those tools
   const validToolIds = new Set<number>();
   if (toolIds.length > 0) {
-    const { data: components } = await supabase
-      .from('tool_component')
-      .select('fk_tool_id')
-      .in('fk_tool_id', toolIds)
-      .eq('component_type', 'DRONE')
-      .eq('component_active', 'Y')
-      .not('dcc_drone_id', 'is', null);
-    (components ?? []).forEach((c: any) => validToolIds.add(c.fk_tool_id as number));
+    const components = await prisma.tool_component.findMany({
+      where: {
+        fk_tool_id: { in: toolIds },
+        component_type: 'DRONE',
+        component_active: 'Y',
+        dcc_drone_id: { not: null },
+      },
+      select: { fk_tool_id: true },
+    });
+    components.forEach((c) => validToolIds.add(c.fk_tool_id));
   }
 
-  // Planning IDs that have at least one mission with a valid drone
   const validPlanningIds = new Set<number>(
-    (missions ?? [])
-      .filter((m: any) => validToolIds.has(m.fk_tool_id as number))
-      .map((m: any) => m.fk_planning_id as number),
+    missions
+      .filter((m) => validToolIds.has(m.fk_tool_id as number))
+      .map((m) => m.fk_planning_id as number),
   );
 
-  return (plannings ?? []).map((p: any) => {
-    const client = Array.isArray(p.client) ? p.client[0] : p.client;
-    return {
-      planning_id:     p.planning_id,
-      planning_code:   p.planning_code ?? '',
-      planning_desc:   p.planning_description ?? '',
-      planning_status: p.planning_status ?? '',
-      client_name:     client?.client_name ?? '',
-      has_valid_drone: validPlanningIds.has(p.planning_id),
-    };
-  });
+  return plannings.map((p) => ({
+    planning_id:     p.planning_id,
+    planning_code:   p.planning_code ?? '',
+    planning_desc:   p.planning_description ?? '',
+    planning_status: p.planning_status ?? '',
+    client_name:     p.client?.client_name ?? '',
+    has_valid_drone: validPlanningIds.has(p.planning_id),
+  }));
 }
 
 export interface FlightRequestWithPlanning {
@@ -267,28 +294,22 @@ export async function getFlightRequestById(
   request_id: number,
   owner_id: number,
 ): Promise<FlightRequestWithPlanning | null> {
-  const { data } = await supabase
-    .from('flight_requests')
-    .select('fk_planning_id, dcc_status, external_mission_id')
-    .eq('request_id', request_id)
-    .eq('fk_owner_id', owner_id)
-    .single();
-
-  return data ?? null;
+  const row = await prisma.flight_requests.findFirst({
+    where: { request_id, fk_owner_id: owner_id },
+    select: { fk_planning_id: true, dcc_status: true, external_mission_id: true },
+  });
+  return row ?? null;
 }
 
 export async function getPilotMissionByPlanningId(
   planning_id: number,
 ): Promise<{ pilot_mission_id: number } | null> {
-  const { data } = await supabase
-    .from('pilot_mission')
-    .select('pilot_mission_id')
-    .eq('fk_planning_id', planning_id)
-    .order('pilot_mission_id', { ascending: true })
-    .limit(1)
-    .single();
-
-  return data ?? null;
+  const row = await prisma.pilot_mission.findFirst({
+    where: { fk_planning_id: planning_id },
+    orderBy: { pilot_mission_id: 'asc' },
+    select: { pilot_mission_id: true },
+  });
+  return row ?? null;
 }
 
 export interface MissionFlightLog {
@@ -302,65 +323,75 @@ export interface MissionFlightLog {
 export async function getMissionFlightLogs(
   mission_id: number,
 ): Promise<MissionFlightLog[]> {
-  const { data, error } = await supabase
-    .from('mission_flight_logs')
-    .select('log_id, log_source, original_filename, flytbase_flight_id, uploaded_at')
-    .eq('fk_mission_id', mission_id)
-    .order('uploaded_at', { ascending: false });
-
-  if (error) throw new Error(`getMissionFlightLogs: ${error.message}`);
-  return data ?? [];
+  const rows = await prisma.mission_flight_logs.findMany({
+    where: { fk_mission_id: BigInt(mission_id) },
+    select: {
+      log_id: true,
+      log_source: true,
+      original_filename: true,
+      flytbase_flight_id: true,
+      uploaded_at: true,
+    },
+    orderBy: { uploaded_at: 'desc' },
+  });
+  return rows.map((r) => ({
+    log_id: Number(r.log_id),
+    log_source: r.log_source,
+    original_filename: r.original_filename,
+    flytbase_flight_id: r.flytbase_flight_id,
+    uploaded_at: r.uploaded_at?.toISOString() ?? null,
+  }));
 }
 
 export async function getLatestFlightLogForMission(
   mission_id: number,
 ): Promise<{ flytbase_flight_id: string } | null> {
-  const { data } = await supabase
-    .from('mission_flight_logs')
-    .select('flytbase_flight_id')
-    .eq('fk_mission_id', mission_id)
-    .not('flytbase_flight_id', 'is', null)
-    .order('uploaded_at', { ascending: false })
-    .limit(1)
-    .single();
-
-  return data ?? null;
+  const row = await prisma.mission_flight_logs.findFirst({
+    where: {
+      fk_mission_id: BigInt(mission_id),
+      flytbase_flight_id: { not: null },
+    },
+    orderBy: { uploaded_at: 'desc' },
+    select: { flytbase_flight_id: true },
+  });
+  if (!row?.flytbase_flight_id) return null;
+  return { flytbase_flight_id: row.flytbase_flight_id };
 }
 
 export async function getFlightRequestsByExternalIds(
   external_mission_ids: string[],
   owner_id: number,
 ): Promise<Array<{ request_id: number; external_mission_id: string; dcc_status: string }>> {
-  const { data, error } = await supabase
-    .from('flight_requests')
-    .select('request_id, external_mission_id, dcc_status')
-    .in('external_mission_id', external_mission_ids)
-    .eq('fk_owner_id', owner_id)
-  if (error) throw new Error(`getFlightRequestsByExternalIds: ${error.message}`)
-  return (data ?? []) as Array<{ request_id: number; external_mission_id: string; dcc_status: string }>
+  const data = await prisma.flight_requests.findMany({
+    where: {
+      external_mission_id: { in: external_mission_ids },
+      fk_owner_id: owner_id,
+    },
+    select: {
+      request_id: true,
+      external_mission_id: true,
+      dcc_status: true,
+    },
+  })
+  return data
 }
 
 export async function cancelFlightRequestByExternalId(
   external_mission_id: string,
   owner_id: number,
 ): Promise<'cancelled' | 'not_found' | 'already_cancelled'> {
-  const { data } = await supabase
-    .from('flight_requests')
-    .select('request_id, dcc_status')
-    .eq('external_mission_id', external_mission_id)
-    .eq('fk_owner_id', owner_id)
-    .single();
+  const row = await prisma.flight_requests.findFirst({
+    where: { external_mission_id, fk_owner_id: owner_id },
+    select: { request_id: true, dcc_status: true },
+  });
 
-  if (!data) return 'not_found';
-  if (data.dcc_status === 'CANCELLED') return 'already_cancelled';
+  if (!row) return 'not_found';
+  if (row.dcc_status === 'CANCELLED') return 'already_cancelled';
 
-  const { error } = await supabase
-    .from('flight_requests')
-    .update({ dcc_status: 'CANCELLED', updated_at: new Date().toISOString() })
-    .eq('request_id', data.request_id)
-    .eq('fk_owner_id', owner_id);
-
-  if (error) throw new Error(`cancelFlightRequestByExternalId: ${error.message}`);
+  await prisma.flight_requests.update({
+    where: { request_id: row.request_id },
+    data: { dcc_status: 'CANCELLED', updated_at: new Date() },
+  });
   return 'cancelled';
 }
 
@@ -368,31 +399,21 @@ export async function verifyFlightRequestOwnership(
   request_id: number,
   owner_id: number,
 ): Promise<boolean> {
-  const { data } = await supabase
-    .from('flight_requests')
-    .select('request_id')
-    .eq('request_id', request_id)
-    .eq('fk_owner_id', owner_id)
-    .single();
-  return !!data;
+  const row = await prisma.flight_requests.findFirst({
+    where: { request_id, fk_owner_id: owner_id },
+    select: { request_id: true },
+  });
+  return !!row;
 }
 
 export async function deleteFlightRequest(request_id: number, owner_id: number): Promise<void> {
-  const { error } = await supabase
-    .from('flight_requests')
-    .delete()
-    .eq('request_id', request_id)
-    .eq('fk_owner_id', owner_id);
-
-  if (error) throw new Error(`deleteFlightRequest: ${error.message}`);
+  await prisma.flight_requests.deleteMany({
+    where: { request_id, fk_owner_id: owner_id },
+  });
 }
 
 export async function deleteApiKey(api_key_id: number, owner_id: number): Promise<void> {
-  const { error } = await supabase
-    .from('api_keys')
-    .delete()
-    .eq('api_key_id', api_key_id)
-    .eq('fk_owner_id', owner_id);
-
-  if (error) throw new Error(`deleteApiKey: ${error.message}`);
+  await prisma.api_keys.deleteMany({
+    where: { api_key_id, fk_owner_id: owner_id },
+  });
 }

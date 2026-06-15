@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useTheme } from '@/components/useTheme';
 import axios from 'axios';
 import { Plus } from 'lucide-react';
+import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -37,6 +38,39 @@ export default function OwnersPage() {
     fetchOwners();
   }, []);
 
+  const handleActivate = async (owner: OwnerData) => {
+    try {
+      const res = await axios.put(`/api/owner/${owner.owner_id}`, {
+        owner_name: owner.owner_name,
+        owner_legal_name: owner.owner_legal_name,
+        owner_type: owner.owner_type,
+        owner_address: owner.owner_address,
+        owner_city: owner.owner_city,
+        owner_state: owner.owner_state,
+        owner_postal_code: owner.owner_postal_code,
+        owner_phone: owner.owner_phone,
+        owner_email: owner.owner_email,
+        owner_website: owner.owner_website,
+        owner_active: 'Y',
+        drone_atc_enabled: owner.drone_atc_enabled,
+        email_notifications_enabled: owner.email_notifications_enabled,
+        easa_operator_code: owner.easa_operator_code,
+        tax_id: owner.tax_id,
+        registration_number: owner.registration_number,
+        license_number: owner.license_number,
+        license_expiry: owner.license_expiry,
+      });
+      if (res.data.code === 1) {
+        toast.success(`${owner.owner_name} activated`);
+        fetchOwners();
+      } else {
+        toast.error(res.data.message || 'Failed to activate company');
+      }
+    } catch {
+      toast.error('Failed to activate company');
+    }
+  };
+
   const columns = useMemo(
     () =>
       ownerColumns({
@@ -45,7 +79,9 @@ export default function OwnersPage() {
           setSelectedOwner(owner);
           setDeleteOpen(true);
         },
+        onActivate: handleActivate,
       }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [router]
   );
 
