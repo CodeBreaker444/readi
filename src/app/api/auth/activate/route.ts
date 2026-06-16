@@ -22,7 +22,11 @@ export async function POST(request: NextRequest) {
     const { id: activationKey, email, username } = validation.data;
 
     const user = await prisma.public_users.findFirst({
-      where: { key_: activationKey, email, username },
+      where: {
+        key_:     activationKey,
+        email:    { equals: email,    mode: 'insensitive' },
+        username: { equals: username, mode: 'insensitive' },
+      },
       select: {
         user_id:       true,
         user_active:   true,
@@ -39,7 +43,7 @@ export async function POST(request: NextRequest) {
     if (!user) return apiError(E.NF001, 404);
 
     const isActive = user.user_active?.trim() === 'Y';
-    if (isActive) return apiError(E.BL002, 400);
+    if (isActive) return NextResponse.json({ code: 0, title: 'alreadyActivated', message: 'This account is already activated.' }, { status: 400 });
 
     let authUserId = user.auth_user_id;
     let authUserCreatedNow = false;
