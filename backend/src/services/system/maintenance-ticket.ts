@@ -337,10 +337,11 @@ export async function assignTicket(payload: AssignTicketPayload): Promise<void> 
     data: { assigned_to_user_id: payload.assigned_to },
   });
 
+  const techName = payload.technician_name ?? `User #${payload.assigned_to}`;
   await addTicketEvent(
     payload.ticket_id,
     'ASSIGNED',
-    `Ticket assigned to user #${payload.assigned_to}`
+    `Ticket assigned to ${techName}`
   );
 }
 
@@ -548,13 +549,7 @@ async function addTicketEvent(
   });
 }
 
-async function getToolCode(toolId: number): Promise<string> {
-  const data = await prisma.tool.findUnique({
-    where: { tool_id: toolId },
-    select: { tool_code: true },
-  });
-  return data?.tool_code ?? `System #${toolId}`;
-}
+export { getToolName as getToolCode, getUserName as getTechnicianName } from '@/backend/services/shared/entity-names';
 
 export async function setSystemOperationalStatus(toolId: number, status: string): Promise<void> {
   const tool = await prisma.tool.findUnique({

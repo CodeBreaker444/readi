@@ -1,4 +1,5 @@
 import { logEvent } from "@/backend/services/auditLog/audit-log";
+import { getToolName, getUserName } from "@/backend/services/shared/entity-names";
 import type { DccCallbackResult } from "@/types/dcc-callback";
 import { notifyDccExecution, notifyDccTermination } from "@/backend/services/mission/dcc-callback-service";
 import { updateMissionStatus } from "@/backend/services/operation/operation-board-service";
@@ -68,11 +69,17 @@ export async function POST(req: NextRequest) {
         _END: 'completed',
         _REVERT: 'reverted to in-progress',
       };
+
+      const [vehicleName, pilotName] = await Promise.all([
+        parsed.data.vehicle_id ? getToolName(parsed.data.vehicle_id) : Promise.resolve(null),
+        parsed.data.pilot_id ? getUserName(parsed.data.pilot_id) : Promise.resolve(null),
+      ]);
+
       logEvent({
         eventType: 'UPDATE',
         entityType: 'operation',
         entityId: parsed.data.mission_id,
-        description: `Mission #${parsed.data.mission_id} ${actionMap[parsed.data.workflow_mission_status] ?? 'status updated'}${parsed.data.vehicle_id ? ` — vehicle #${parsed.data.vehicle_id}` : ''}${parsed.data.pilot_id ? `, pilot #${parsed.data.pilot_id}` : ''}`,
+        description: `Mission #${parsed.data.mission_id} ${actionMap[parsed.data.workflow_mission_status] ?? 'status updated'}${vehicleName ? ` — ${vehicleName}` : ''}${pilotName ? `, pilot: ${pilotName}` : ''}`,
         userId: session!.user.userId,
         userName: session!.user.fullname,
         userEmail: session!.user.email,

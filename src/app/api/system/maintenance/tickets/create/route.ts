@@ -1,5 +1,5 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
-import { assertNoOpenTicketForTool, createTicket } from '@/backend/services/system/maintenance-ticket';
+import { assertNoOpenTicketForTool, createTicket, getTechnicianName, getToolCode } from '@/backend/services/system/maintenance-ticket';
 import { CreateTicketPayload } from '@/config/types/maintenance';
 import { requirePermission } from '@/lib/auth/api-auth';
 import { apiError, internalError, zodError } from '@/lib/api-error';
@@ -42,11 +42,21 @@ export async function POST(req: NextRequest) {
       reporter_email: session!.user.email,
     });
 
+    const [systemCode, techName] = await Promise.all([
+      getToolCode(body.fk_tool_id),
+      body.assigned_to ? getTechnicianName(body.assigned_to) : Promise.resolve(null),
+    ]);
+
+    const techPart = techName ? ` — assigned to ${techName}` : '';
+    const notePart = validation.data.issue_description
+      ? ` — "${validation.data.issue_description.slice(0, 80)}${validation.data.issue_description.length > 80 ? '…' : ''}"`
+      : '';
+
     logEvent({
       eventType: 'CREATE',
       entityType: 'maintenance_ticket',
       entityId: ticket_id,
-      description: `Opened maintenance ticket #${ticket_id} for system #${body.fk_tool_id}${validation.data.issue_description ? ` — "${validation.data.issue_description.slice(0, 80)}${validation.data.issue_description.length > 80 ? '…' : ''}"` : ''}`,
+      description: `Opened maintenance ticket #${ticket_id} for ${systemCode}${techPart}${notePart}`,
       userId: session!.user.userId,
       userName: session!.user.fullname,
       userEmail: session!.user.email,

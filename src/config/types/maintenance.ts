@@ -142,6 +142,7 @@ export interface CloseTicketPayload {
 export interface AssignTicketPayload {
   ticket_id: number;
   assigned_to: number;
+  technician_name?: string;
 }
 
 export interface AddReportPayload {
