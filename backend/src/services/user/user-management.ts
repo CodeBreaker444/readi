@@ -204,7 +204,7 @@ export async function createUser(userData: UserCreateData) {
       },
     });
 
-    const activationLink = `${env.APP_URL}/auth/activate?o=${userData.owner_id}&email=${encodeURIComponent(userData.email)}&username=${encodeURIComponent(userData.username)}&id=${key}`;
+    const activationLink = `${env.APP_URL}/auth/activate?o=${userData.owner_id}&email=${encodeURIComponent(userData.email)}&username=${encodeURIComponent(userName)}&id=${key}`;
 
     console.log('activation link:', activationLink);
     console.log('pass:', uid);
@@ -218,7 +218,7 @@ export async function createUser(userData: UserCreateData) {
         userData.fullname,
         {
           organization: 'ReADI Control Center',
-          username: userData.username,
+          username: userName,
           passcode: uid,
           loginlink: activationLink,
         }
@@ -368,7 +368,7 @@ export async function resendUserInvite(userId: number, ownerId: number, isSuperA
   });
 
   if (!user) throw new Error('User not found');
-  if (user.user_active === 'Y' || user.auth_user_id) {
+  if (user.user_active === 'Y') {
     throw new Error('User is already activated');
   }
 
