@@ -128,6 +128,7 @@ export interface CreateTicketPayload {
   reporter_name?: string;
   reporter_email?: string;
   assigned_to?: number;
+  technician_name?: string;
   note?: string;
   latitude?: number | null;
   longitude?: number | null;

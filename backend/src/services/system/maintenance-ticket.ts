@@ -245,6 +245,17 @@ export async function createTicket(payload: CreateTicketPayload): Promise<number
     )
   );
 
+  if (payload.assigned_to) {
+    const systemCode = await getToolName(payload.fk_tool_id);
+    const techName = payload.technician_name ?? `User #${payload.assigned_to}`;
+    sendNotificationToUser(
+      payload.assigned_to,
+      `Maintenance Ticket Assigned — ${systemCode}`,
+      `${reporter} opened a maintenance ticket on ${systemCode} and assigned it to you.${payload.note ? ` Note: ${payload.note}` : ''}`,
+      '/systems/maintenance-tickets'
+    ).catch(() => {});
+  }
+
   return created[0].ticket_id;
 }
 
@@ -333,9 +344,10 @@ export async function closeTicket(payload: CloseTicketPayload): Promise<void> {
 
 
 export async function assignTicket(payload: AssignTicketPayload): Promise<void> {
-  await prisma.maintenance_ticket.update({
+  const ticket = await prisma.maintenance_ticket.update({
     where: { ticket_id: payload.ticket_id },
     data: { assigned_to_user_id: payload.assigned_to },
+    select: { fk_tool_id: true },
   });
 
   const techName = payload.technician_name ?? `User #${payload.assigned_to}`;
@@ -344,6 +356,24 @@ export async function assignTicket(payload: AssignTicketPayload): Promise<void> 
     'ASSIGNED',
     `Ticket assigned to ${techName}`
   );
+
+  if (ticket.fk_tool_id) {
+    const systemCode = await getToolName(ticket.fk_tool_id);
+    sendNotificationToUser(
+      payload.assigned_to,
+      `Maintenance Ticket Assigned — ${systemCode}`,
+      `A maintenance ticket on ${systemCode} has been assigned to you.`,
+      '/systems/maintenance-tickets'
+    ).catch(() => {});
+  }
+}
+
+export async function getTicketAssignee(ticketId: number): Promise<number | null> {
+  const row = await prisma.maintenance_ticket.findUnique({
+    where: { ticket_id: ticketId },
+    select: { assigned_to_user_id: true },
+  });
+  return row?.assigned_to_user_id ?? null;
 }
 
 
@@ -550,7 +580,13 @@ async function addTicketEvent(
   });
 }
 
-export { getToolName as getToolCode, getUserName as getTechnicianName } from '@/backend/services/shared/entity-names';
+export async function getToolCode(toolId: number): Promise<string> {
+  return getToolName(toolId);
+}
+
+export async function getTechnicianName(userId: number): Promise<string> {
+  return getUserName(userId);
+}
 
 export async function setSystemOperationalStatus(toolId: number, status: string): Promise<void> {
   const tool = await prisma.tool.findUnique({
