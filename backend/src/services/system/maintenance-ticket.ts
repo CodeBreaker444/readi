@@ -2,6 +2,7 @@
 
 import { supabase } from '@/backend/database/database';
 import { sendNotificationToRoles, sendNotificationToUser } from '@/backend/services/notification/notification-service';
+import { getToolName, getUserName } from '@/backend/services/shared/entity-names';
 import { refreshMaintenanceDaysForTool } from '@/backend/utils/refresh-maintenance-days';
 import type {
   AddReportPayload,
@@ -299,7 +300,7 @@ export async function closeTicket(payload: CloseTicketPayload): Promise<void> {
 
   await addTicketEvent(payload.ticket_id, 'CLOSED', payload.note ?? 'Ticket closed');
 
-  const systemCode = await getToolCode(ticket.fk_tool_id!);
+  const systemCode = await getToolName(ticket.fk_tool_id!);
   const notifTitle = `Maintenance Complete — ${systemCode}`;
   const notifMsg = `Maintenance ticket closed. ${systemCode} is now operational.${payload.note ? ` Note: ${payload.note}` : ''}`;
   const actionUrl = '/systems/maintenance-tickets';
