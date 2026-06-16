@@ -1,4 +1,5 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
+import { getToolName, getUserName } from '@/backend/services/shared/entity-names';
 import { notifyDccMissionCreation } from '@/backend/services/mission/dcc-callback-service';
 import { notifyPilotAssignment } from '@/backend/services/notification/notification-service';
 import { createOperation, createRecurringOperations, deleteOperation, listOperations } from '@/backend/services/operation/operation-service';
@@ -141,10 +142,15 @@ export async function POST(req: NextRequest) {
         console.warn('[POST /api/operation] DCC notification failed (non-fatal):', dcc.message);
       }
 
+      const [systemName, pilotName] = await Promise.all([
+        validated.fk_tool_id ? getToolName(validated.fk_tool_id) : Promise.resolve(null),
+        validated.fk_pilot_user_id ? getUserName(validated.fk_pilot_user_id) : Promise.resolve(null),
+      ]);
+
       logEvent({
         eventType: 'CREATE',
         entityType: 'operation',
-        description: `Created ${result.count} recurring operation(s) '${validated.mission_name}'${validated.fk_tool_id ? ` — system #${validated.fk_tool_id}` : ''}${validated.fk_pilot_user_id ? `, pilot #${validated.fk_pilot_user_id}` : ''}${validated.location ? `, location: ${validated.location}` : ''}`,
+        description: `Created ${result.count} recurring operation(s) '${validated.mission_name}'${systemName ? ` — ${systemName}` : ''}${pilotName ? `, pilot: ${pilotName}` : ''}${validated.location ? `, location: ${validated.location}` : ''}`,
         userId: session.user.userId,
         userName: session.user.fullname,
         userEmail: session.user.email,
@@ -196,10 +202,15 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    const [systemName, pilotName] = await Promise.all([
+      validated.fk_tool_id ? getToolName(validated.fk_tool_id) : Promise.resolve(null),
+      validated.fk_pilot_user_id ? getUserName(validated.fk_pilot_user_id) : Promise.resolve(null),
+    ]);
+
     logEvent({
       eventType: 'CREATE',
       entityType: 'operation',
-      description: `Created operation '${validated.mission_code}'${validated.mission_name ? ` — ${validated.mission_name}` : ''} (status: ${validated.status_name}${validated.fk_tool_id ? `, system: #${validated.fk_tool_id}` : ''}${validated.fk_pilot_user_id ? `, pilot: #${validated.fk_pilot_user_id}` : ''})`,
+      description: `Created operation '${validated.mission_code}'${validated.mission_name ? ` — ${validated.mission_name}` : ''} (status: ${validated.status_name}${systemName ? `, system: ${systemName}` : ''}${pilotName ? `, pilot: ${pilotName}` : ''})`,
       userId: session.user.userId,
       userName: session.user.fullname,
       userEmail: session.user.email,

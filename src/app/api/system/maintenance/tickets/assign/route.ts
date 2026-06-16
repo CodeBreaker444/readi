@@ -1,5 +1,5 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
-import { assignTicket } from '@/backend/services/system/maintenance-ticket';
+import { assignTicket, getTechnicianName } from '@/backend/services/system/maintenance-ticket';
 import { requirePermission } from '@/lib/auth/api-auth';
 import { internalError, zodError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
@@ -22,16 +22,19 @@ export async function POST(req: NextRequest) {
       return zodError(E.VL001, validation.error);
     }
 
+    const techName = await getTechnicianName(validation.data.assigned_to);
+
     await assignTicket({
       ticket_id: validation.data.ticket_id,
-      assigned_to: validation.data.assigned_to
+      assigned_to: validation.data.assigned_to,
+      technician_name: techName,
     });
 
     logEvent({
       eventType: 'UPDATE',
       entityType: 'maintenance_ticket',
       entityId: validation.data.ticket_id,
-      description: `Assigned maintenance ticket #${validation.data.ticket_id} to technician (user ID ${validation.data.assigned_to})`,
+      description: `Assigned maintenance ticket #${validation.data.ticket_id} to ${techName}`,
       userId: session!.user.userId,
       userName: session!.user.fullname,
       userEmail: session!.user.email,
