@@ -42,6 +42,7 @@ export async function POST(request: NextRequest) {
     if (isActive) return apiError(E.BL002, 400);
 
     let authUserId = user.auth_user_id;
+    let authUserCreatedNow = false;
 
     if (!authUserId) {
       const { data: authData, error: authError } = await supabase.auth.admin.createUser({
@@ -58,15 +59,30 @@ export async function POST(request: NextRequest) {
       });
 
       if (authError) {
-        console.error('[AU008] auth user creation failed:', authError);
-        return apiError(E.AU008, 500);
+        // A prior activation attempt may have created the Supabase auth user but failed
+        // to write auth_user_id back to the DB. Recover by looking up the existing user.
+        const existingAuthUser = await prisma.auth_users.findFirst({
+          where: { email: user.email! },
+          select: { id: true },
+        });
+        if (existingAuthUser) {
+          authUserId = existingAuthUser.id;
+          await supabase.auth.admin.updateUserById(authUserId, {
+            email_confirm: true,
+            user_metadata: { activated_at: new Date().toISOString() },
+          }).catch(() => {});
+        } else {
+          console.error('[AU008] auth user creation failed:', authError);
+          return apiError(E.AU008, 500);
+        }
+      } else {
+        if (!authData.user) {
+          console.error('[AU008] no user data returned from auth creation');
+          return apiError(E.AU008, 500);
+        }
+        authUserId = authData.user.id;
+        authUserCreatedNow = true;
       }
-      if (!authData.user) {
-        console.error('[AU008] no user data returned from auth creation');
-        return apiError(E.AU008, 500);
-      }
-
-      authUserId = authData.user.id;
     } else {
       const { error: updateAuthError } = await supabase.auth.admin.updateUserById(authUserId, {
         email_confirm:  true,
@@ -90,7 +106,8 @@ export async function POST(request: NextRequest) {
       });
     } catch (updateErr) {
       console.error('[DB003] activation update failed:', updateErr);
-      if (authUserId && !user.auth_user_id) {
+      // Only delete the Supabase auth user if we just created it — not if we recovered a pre-existing one.
+      if (authUserCreatedNow && authUserId) {
         await supabase.auth.admin.deleteUser(authUserId).catch((e) =>
           console.error('[DB003] auth cleanup failed:', e),
         );
