@@ -55,6 +55,7 @@ export async function getUserListByOwner(ownerId: number, userProfileId: number,
         user_role: true,
         user_unique_code: true,
         auth_user_id: true,
+        key_: true,
         is_viewer: true,
         is_manager: true,
         fk_owner_id: true,
@@ -83,7 +84,7 @@ export async function getUserListByOwner(ownerId: number, userProfileId: number,
       user_unique_code: user.user_unique_code || '',
       fk_user_profile_id: user.fk_user_profile_id || getRoleIdFromCode(user.user_role ?? '') || 0,
       active: user.user_active === 'Y' ? 1 : 0,
-      is_pending: user.user_active !== 'Y' && !user.auth_user_id,
+      is_pending: user.user_active !== 'Y' && !user.auth_user_id && user.key_ !== null,
       is_viewer: user.is_viewer,
       is_manager: user.is_manager,
       fk_client_id: user.fk_client_id ?? null,
@@ -107,7 +108,7 @@ export async function getUserListByOwner(ownerId: number, userProfileId: number,
 export async function createUser(userData: UserCreateData) {
   try {
     const uid = generateUniqueCode();
-    const key = generateActivationToken(128);
+    const key = generateActivationToken(32);
 
     const userName = userData.username.toLowerCase();
 
@@ -372,7 +373,7 @@ export async function resendUserInvite(userId: number, ownerId: number, isSuperA
     throw new Error('User is already activated');
   }
 
-  const newKey = generateActivationToken(128);
+  const newKey = generateActivationToken(32);
 
   await prisma.public_users.update({
     where: { user_id: userId },
