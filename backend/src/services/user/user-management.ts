@@ -257,7 +257,7 @@ export async function updateUser(userData: UserUpdateData) {
       ? { first_name: nameParts[0] || '', last_name: nameParts.slice(1).join(' ') || '' }
       : {};
 
-    await prisma.public_users.update({
+    await prisma.public_users.updateMany({
       where: {
         user_id: userData.user_id,
         ...(userData.owner_id > 0 ? { fk_owner_id: userData.owner_id } : {}),
