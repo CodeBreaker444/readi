@@ -62,7 +62,11 @@ export async function POST(request: NextRequest) {
         // A prior activation attempt may have created the Supabase auth user but failed
         // to write auth_user_id back to the DB. Recover by looking up the existing user.
         const existingAuthUser = await prisma.auth_users.findFirst({
-          where: { email: user.email! },
+          where: {
+            email:       { equals: user.email!, mode: 'insensitive' },
+            is_sso_user: false,
+            deleted_at:  null,
+          },
           select: { id: true },
         });
         if (existingAuthUser) {
