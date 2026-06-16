@@ -34,17 +34,20 @@ export async function POST(req: NextRequest) {
 
     const userId= session!.user.userId
     const ownerId = session!.user.ownerId
+
+    const techName = body.assigned_to ? await getTechnicianName(body.assigned_to) : null;
+
     const ticket_id = await createTicket({
       ...body,
       fk_user_id: userId,
       fk_owner_id: ownerId,
       reporter_name: session!.user.fullname,
       reporter_email: session!.user.email,
+      technician_name: techName ?? undefined,
     });
 
-    const [systemCode, techName] = await Promise.all([
+    const [systemCode] = await Promise.all([
       getToolCode(body.fk_tool_id),
-      body.assigned_to ? getTechnicianName(body.assigned_to) : Promise.resolve(null),
     ]);
 
     const techPart = techName ? ` — assigned to ${techName}` : '';
