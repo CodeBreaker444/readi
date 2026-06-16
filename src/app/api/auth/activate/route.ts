@@ -22,7 +22,11 @@ export async function POST(request: NextRequest) {
     const { id: activationKey, email, username } = validation.data;
 
     const user = await prisma.public_users.findFirst({
-      where: { key_: activationKey, email, username },
+      where: {
+        key_:     activationKey,
+        email:    { equals: email,    mode: 'insensitive' },
+        username: { equals: username, mode: 'insensitive' },
+      },
       select: {
         user_id:       true,
         user_active:   true,
@@ -39,7 +43,7 @@ export async function POST(request: NextRequest) {
     if (!user) return apiError(E.NF001, 404);
 
     const isActive = user.user_active?.trim() === 'Y';
-    if (isActive) return apiError(E.BL002, 400);
+    if (isActive) return NextResponse.json({ code: 0, title: 'alreadyActivated', message: 'This account is already activated.' }, { status: 400 });
 
     let authUserId = user.auth_user_id;
     let authUserCreatedNow = false;
@@ -62,7 +66,11 @@ export async function POST(request: NextRequest) {
         // A prior activation attempt may have created the Supabase auth user but failed
         // to write auth_user_id back to the DB. Recover by looking up the existing user.
         const existingAuthUser = await prisma.auth_users.findFirst({
-          where: { email: user.email! },
+          where: {
+            email:       { equals: user.email!, mode: 'insensitive' },
+            is_sso_user: false,
+            deleted_at:  null,
+          },
           select: { id: true },
         });
         if (existingAuthUser) {
