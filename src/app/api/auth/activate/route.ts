@@ -1,4 +1,3 @@
-import { supabase } from '@/backend/database/database';
 import { apiError, internalError, zodError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
 import { prisma } from '@/lib/prisma';
@@ -28,104 +27,51 @@ export async function POST(request: NextRequest) {
         username: { equals: username, mode: 'insensitive' },
       },
       select: {
-        user_id:       true,
-        user_active:   true,
-        auth_user_id:  true,
-        email:         true,
-        username:      true,
-        password_hash: true,
-        first_name:    true,
-        last_name:     true,
-        user_role:     true,
+        user_id:     true,
+        user_active: true,
       },
     });
 
-    if (!user) return apiError(E.NF001, 404);
-
-    const isActive = user.user_active?.trim() === 'Y';
-    if (isActive) return NextResponse.json({ code: 0, title: 'alreadyActivated', message: 'This account is already activated.' }, { status: 400 });
-
-    let authUserId = user.auth_user_id;
-    let authUserCreatedNow = false;
-
-    if (!authUserId) {
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email:         user.email!,
-        password:      user.password_hash!,
-        email_confirm: true,
-        user_metadata: {
-          first_name:   user.first_name ?? '',
-          last_name:    user.last_name ?? '',
-          username:     user.username,
-          role:         user.user_role ?? '',
-          activated_at: new Date().toISOString(),
+    if (!user) {
+      // The key may have already been cleared after a successful prior activation.
+      // Check by email + username so we can return the correct message.
+      const alreadyActive = await prisma.public_users.findFirst({
+        where: {
+          email:       { equals: email,    mode: 'insensitive' },
+          username:    { equals: username, mode: 'insensitive' },
+          user_active: 'Y',
         },
+        select: { user_id: true },
       });
-
-      if (authError) {
-        // A prior activation attempt may have created the Supabase auth user but failed
-        // to write auth_user_id back to the DB. Recover by looking up the existing user.
-        const existingAuthUser = await prisma.auth_users.findFirst({
-          where: {
-            email:       { equals: user.email!, mode: 'insensitive' },
-            is_sso_user: false,
-            deleted_at:  null,
-          },
-          select: { id: true },
-        });
-        if (existingAuthUser) {
-          authUserId = existingAuthUser.id;
-          await supabase.auth.admin.updateUserById(authUserId, {
-            email_confirm: true,
-            user_metadata: { activated_at: new Date().toISOString() },
-          }).catch(() => {});
-        } else {
-          console.error('[AU008] auth user creation failed:', authError);
-          return apiError(E.AU008, 500);
-        }
-      } else {
-        if (!authData.user) {
-          console.error('[AU008] no user data returned from auth creation');
-          return apiError(E.AU008, 500);
-        }
-        authUserId = authData.user.id;
-        authUserCreatedNow = true;
+      if (alreadyActive) {
+        return NextResponse.json(
+          { code: 0, title: 'alreadyActivated', message: 'This account is already activated.' },
+          { status: 400 },
+        );
       }
-    } else {
-      const { error: updateAuthError } = await supabase.auth.admin.updateUserById(authUserId, {
-        email_confirm:  true,
-        user_metadata:  { activated_at: new Date().toISOString() },
-      });
-      if (updateAuthError) {
-        console.error('[AU008] auth email confirmation failed:', updateAuthError);
-      }
+      return apiError(E.NF001, 404);
     }
 
-    const updateData: Record<string, unknown> = {
-      user_active: 'Y',
-      updated_at:  new Date(),
-    };
-    if (authUserId && !user.auth_user_id) updateData.auth_user_id = authUserId;
+    if (user.user_active?.trim() === 'Y') {
+      return NextResponse.json(
+        { code: 0, title: 'alreadyActivated', message: 'This account is already activated.' },
+        { status: 400 },
+      );
+    }
 
     try {
       await prisma.public_users.update({
         where: { user_id: user.user_id },
-        data:  updateData as any,
+        data:  { user_active: 'Y', key_: null, updated_at: new Date() },
       });
     } catch (updateErr) {
       console.error('[DB003] activation update failed:', updateErr);
-      // Only delete the Supabase auth user if we just created it — not if we recovered a pre-existing one.
-      if (authUserCreatedNow && authUserId) {
-        await supabase.auth.admin.deleteUser(authUserId).catch((e) =>
-          console.error('[DB003] auth cleanup failed:', e),
-        );
-      }
       return internalError(E.DB003, updateErr);
     }
 
     const verifyUser = await prisma.public_users.findUnique({
       where:  { user_id: user.user_id },
-      select: { user_id: true, user_active: true, auth_user_id: true },
+      select: { user_active: true },
     });
 
     if (!verifyUser || verifyUser.user_active?.trim() !== 'Y') {
