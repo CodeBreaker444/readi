@@ -952,7 +952,7 @@ export async function updateComponent(componentId: number, componentData: any) {
     data: {
       fk_tool_id: componentData.fk_tool_id,
       component_type: componentData.component_type,
-      component_name: componentData.component_name || null,
+      component_name: componentData.component_name || componentData.component_code || componentData.component_type,
       component_code: componentData.component_code || null,
       component_description: componentData.component_desc || null,
       serial_number: normalizedSerial || null,
