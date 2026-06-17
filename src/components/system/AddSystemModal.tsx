@@ -147,6 +147,7 @@ export default function AddSystemModal({ open, onClose, onSuccess, models, clien
                     <SelectItem value="OPERATIONAL">{t('systems.components.addSystem.statusOptions.operational')}</SelectItem>
                     <SelectItem value="NOT_OPERATIONAL">{t('systems.components.addSystem.statusOptions.notOperational')}</SelectItem>
                     <SelectItem value="MAINTENANCE">{t('systems.components.addSystem.statusOptions.maintenance')}</SelectItem>
+                    <SelectItem value="DISMISSED">{t('systems.components.addSystem.statusOptions.dismissed')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

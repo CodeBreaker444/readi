@@ -3970,7 +3970,8 @@
         "statusOptions": {
           "operational": "Operational",
           "notOperational": "Not Operational",
-          "maintenance": "Maintenance"
+          "maintenance": "Maintenance",
+          "dismissed": "Dismissed"
         },
         "buttons": {
           "cancel": "Cancel",

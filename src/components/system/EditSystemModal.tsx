@@ -311,6 +311,7 @@ export default function EditSystemModal({ open, toolId, onClose, onSuccess, clie
                         <SelectItem value="OPERATIONAL">{t('systems.components.common.statusOptions.operational')}</SelectItem>
                         <SelectItem value="NOT_OPERATIONAL">{t('systems.components.common.statusOptions.notOperational')}</SelectItem>
                         <SelectItem value="MAINTENANCE">{t('systems.components.common.statusOptions.maintenance')}</SelectItem>
+                        <SelectItem value="DISMISSED">{t('systems.components.common.statusOptions.dismissed')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
