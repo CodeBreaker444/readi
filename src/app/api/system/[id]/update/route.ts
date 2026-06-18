@@ -38,10 +38,17 @@ export async function POST(
     const result = await updateTool(Number(id), parsed.data);
 
     if (result.code === 1) {
+      const lat = parsed.data.tool_latitude;
+      const lng = parsed.data.tool_longitude;
+      const hasCoords = lat != null && lng != null;
+      const locationPart = hasCoords
+        ? ` — position: ${lat}, ${lng}${parsed.data.location ? ` (${parsed.data.location})` : ''}`
+        : parsed.data.location ? ` — location: ${parsed.data.location}` : '';
+      const statusPart = parsed.data.tool_status ? `, status: ${parsed.data.tool_status}` : '';
       logEvent({
         eventType: 'UPDATE',
         entityType: 'system',
-        description: `Updated system '${parsed.data.tool_code}'${parsed.data.location ? ` — location: ${parsed.data.location}` : ''}${parsed.data.tool_status ? `, status: ${parsed.data.tool_status}` : ''}`,
+        description: `Updated system '${parsed.data.tool_code}'${locationPart}${statusPart}`,
         userId: session!.user.userId,
         userName: session!.user.fullname,
         userEmail: session!.user.email,
