@@ -21,6 +21,7 @@ export interface SessionUser {
   timezone?: string
   avatar?: string | null;
   droneAtcEnabled: boolean;
+  dFlightEnabled: boolean;
   companyEasaCode: string | null;
   ownerName?: string | null;
 }
@@ -108,18 +109,21 @@ export const getUserSession = cache(async (): Promise<Session | null> => {
     const avatarUrl = await resolveAvatarUrl(userData.users_profile?.profile_picture);
 
     let droneAtcEnabled = false;
+    let dFlightEnabled = false;
     let companyEasaCode: string | null = null;
     let ownerName: string | null = null;
     if (userData.user_role !== 'SUPERADMIN' && userData.fk_owner_id) {
       const ownerData = await prisma.owner.findUnique({
         where: { owner_id: userData.fk_owner_id },
-        select: { drone_atc_enabled: true, easa_operator_code: true, owner_name: true },
+        select: { drone_atc_enabled: true, d_flight_enabled: true, easa_operator_code: true, owner_name: true },
       });
       droneAtcEnabled = ownerData?.drone_atc_enabled ?? false;
+      dFlightEnabled  = ownerData?.d_flight_enabled  ?? false;
       companyEasaCode = ownerData?.easa_operator_code ?? null;
       ownerName = ownerData?.owner_name ?? null;
     } else if (userData.user_role === 'SUPERADMIN') {
       droneAtcEnabled = true;
+      dFlightEnabled  = true;
     }
 
     const sessionUser: SessionUser = {
@@ -136,7 +140,9 @@ export const getUserSession = cache(async (): Promise<Session | null> => {
       timezone: userData.user_timezone ?? undefined,
       avatar: avatarUrl,
       droneAtcEnabled,
+      dFlightEnabled,
       companyEasaCode,
+
       ownerName,
     };
 

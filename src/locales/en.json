@@ -274,6 +274,9 @@
     "integrations": "Integrations",
     "configuration": "Configuration",
     "droneAtc": "Drone ATC",
+    "dflight": "D-Flight",
+    "dflightSettings": "Settings",
+    "dflightFleet": "Fleet",
     "collapse": "Collapse sidebar",
     "expand": "Expand sidebar",
     "appSubtitle": "Drone Control"
@@ -4704,6 +4707,70 @@
           "deleted": "API key deleted",
           "deleteFailed": "Failed to delete key"
         }
+      }
+    }
+  },
+  "dflight": {
+    "settings": {
+      "pageTitle": "D-Flight Settings",
+      "pageSubtitle": "Configure D-Flight USSP connection credentials",
+      "title": "D-Flight Integration",
+      "subtitle": "Configure the M2M connection to the D-Flight USSP platform",
+      "sectionConnection": "Connection",
+      "sectionCredentials": "OAuth 2.0 Credentials",
+      "sectionNri": "NRI (Network Remote Identification)",
+      "baseUrl": "Base URL",
+      "baseUrlPlaceholder": "https://dflight.example.com",
+      "websocketUrl": "WebSocket URL",
+      "websocketUrlPlaceholder": "wss://dflight.example.com/ws",
+      "username": "Username",
+      "usernamePlaceholder": "your.username@operator.com",
+      "password": "Password",
+      "passwordPlaceholder": "Enter password",
+      "passwordKeep": "Leave blank to keep current password",
+      "passwordSet": "set",
+      "clientId": "Client ID",
+      "clientIdPlaceholder": "dflight-client-id",
+      "authCode": "Auth Code",
+      "authCodePlaceholder": "NRI authentication code",
+      "secureId": "Secure ID",
+      "secureIdPlaceholder": "NRI secure identifier",
+      "save": "Save Settings",
+      "saved": "Saved",
+      "toast": {
+        "loadFailed": "Failed to load D-Flight configuration",
+        "saved": "D-Flight settings saved",
+        "saveFailed": "Failed to save D-Flight settings",
+        "validationError": "Base URL, username and client ID are required",
+        "passwordRequired": "Password is required for first-time setup"
+      }
+    },
+    "fleet": {
+      "pageTitle": "D-Flight Fleet",
+      "pageSubtitle": "Systems matched against D-Flight drone registry",
+      "tableTitle": "Fleet Matching",
+      "tableSubtitle": "Readi components matched to D-Flight drones by serial number",
+      "refresh": "Refresh",
+      "loading": "Fetching D-Flight fleet data…",
+      "retry": "Try again",
+      "empty": "No components found for this organisation",
+      "stat": {
+        "total": "Total Components",
+        "linked": "Linked to D-Flight",
+        "unlinked": "Not Found in D-Flight"
+      },
+      "col": {
+        "link": "Linked",
+        "system": "System",
+        "component": "Component",
+        "serialNumber": "Serial Number",
+        "drc": "DRC (D-Flight ID)",
+        "dFlightName": "D-Flight Name",
+        "model": "Model",
+        "status": "Status"
+      },
+      "error": {
+        "generic": "Failed to load fleet data"
       }
     }
   }
