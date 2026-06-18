@@ -175,10 +175,14 @@ export async function getSystemList(
           client_name: clientMap[metaClientId] || '',
           tool_latitude: (item.tool_metadata as any)?.latitude,
           tool_longitude: (item.tool_metadata as any)?.longitude,
-          tool_status: toolsNonOperational.has(item.tool_id) ? 'NOT_OPERATIONAL'
-            : (item.tool_metadata as any)?.status === 'DISMISSED' ? 'DISMISSED'
-            : toolsInMaintenance.has(item.tool_id) ? 'MAINTENANCE'
-            : ((item.tool_metadata as any)?.status || 'OPERATIONAL'),
+          tool_status: (() => {
+            const stored = (item.tool_metadata as any)?.status as string | undefined;
+            if (stored === 'DISMISSED') return 'DISMISSED';
+            if (stored && stored !== 'OPERATIONAL') return stored;
+            if (toolsNonOperational.has(item.tool_id)) return 'NOT_OPERATIONAL';
+            if (toolsInMaintenance.has(item.tool_id)) return 'MAINTENANCE';
+            return stored || 'OPERATIONAL';
+          })(),
           tot_mission: missionData[item.tool_id]?.count || 0,
           tot_flown_time: missionData[item.tool_id]?.time || 0,
           tot_flown_meter: missionData[item.tool_id]?.distance || 0,
@@ -952,7 +956,7 @@ export async function updateComponent(componentId: number, componentData: any) {
     data: {
       fk_tool_id: componentData.fk_tool_id,
       component_type: componentData.component_type,
-      component_name: componentData.component_name || null,
+      component_name: componentData.component_name || componentData.component_code || componentData.component_type,
       component_code: componentData.component_code || null,
       component_description: componentData.component_desc || null,
       serial_number: normalizedSerial || null,
@@ -974,28 +978,7 @@ export async function updateComponent(componentId: number, componentData: any) {
         ...baseMeta,
         cc_platform: componentData.cc_platform || null,
         gcs_type: componentData.gcs_type || null,
-        component_status: (() => {
-          const today = new Date().toISOString().split('T')[0];
-          const expiryType: string = componentData.expiry_type || 'EXPIRATION_DATE';
-          const isDateExpired = componentData.expiration_date && componentData.expiration_date <= today;
-          const currentFlights = componentData.initial_maintenance_flights ?? Number((existing?.component_metadata as any)?.current_maintenance_flights ?? 0);
-          const currentHours = componentData.initial_usage_hours ?? Number(existing?.current_usage_hours ?? 0);
-          const isFlightExpired =
-            componentData.expiration_flights != null &&
-            currentFlights >= componentData.expiration_flights;
-          const isFlightHoursExpired =
-            componentData.expiration_flight_hours != null &&
-            currentHours >= componentData.expiration_flight_hours;
-          const isExpired =
-            expiryType === 'FLIGHTS'
-              ? isFlightExpired
-              : expiryType === 'FLIGHT_HOURS'
-              ? isFlightHoursExpired
-              : expiryType === 'MIXED'
-              ? isDateExpired || isFlightExpired || isFlightHoursExpired
-              : isDateExpired;
-          return isExpired ? 'DECOMMISSIONED' : (componentData.component_status || 'OPERATIONAL');
-        })(),
+        component_status: componentData.component_status || 'OPERATIONAL',
         component_category: componentData.component_category || 'STANDARD',
         fk_tool_model_id: componentData.fk_tool_model_id || null,
         fk_parent_component_id: componentData.fk_parent_component_id ?? null,

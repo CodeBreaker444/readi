@@ -3962,7 +3962,8 @@
         "statusOptions": {
           "operational": "Operativo",
           "notOperational": "Non Operativo",
-          "maintenance": "Manutenzione"
+          "maintenance": "Manutenzione",
+          "dismissed": "Dismesso (Ritiro)"
         },
         "buttons": {
           "cancel": "Annulla",

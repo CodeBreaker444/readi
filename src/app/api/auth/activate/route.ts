@@ -20,6 +20,11 @@ export async function POST(request: NextRequest) {
 
     const { id: activationKey, email, username } = validation.data;
 
+    // Temporary diagnostic — remove after DB connection is confirmed
+    const dbUrl = process.env.DATABASE_URL ?? '';
+    const dbHost = dbUrl.replace(/^.*@/, '').replace(/\/.*$/, '');
+    console.log(`[activate] DB host: ${dbHost} | key[:8]=${activationKey.slice(0, 8)} email=${email} username=${username}`);
+
     const user = await prisma.public_users.findFirst({
       where: {
         key_:     activationKey,
@@ -31,6 +36,8 @@ export async function POST(request: NextRequest) {
         user_active: true,
       },
     });
+
+    console.log(`[activate] findFirst result: ${user ? `user_id=${user.user_id} active=${user.user_active}` : 'null — no match'}`);
 
     if (!user) {
       // The key may have already been cleared after a successful prior activation.

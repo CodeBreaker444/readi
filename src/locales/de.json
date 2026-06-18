@@ -3882,7 +3882,8 @@
         "statusOptions": {
           "operational": "Einsatzbereit",
           "notOperational": "Nicht einsatzbereit",
-          "maintenance": "Wartung"
+          "maintenance": "Wartung",
+          "dismissed": "Stillgelegt"
         },
         "buttons": {
           "cancel": "Abbrechen",
