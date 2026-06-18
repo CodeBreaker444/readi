@@ -150,7 +150,7 @@ export function LoginForm() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full h-10 rounded-lg text-white text-sm font-semibold transition-all duration-150 active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2"
+                className="w-full cursor-pointer h-10 rounded-lg text-white text-sm font-semibold transition-all duration-150 active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2"
                 style={{ background: 'linear-gradient(135deg, #7c3aed, #6d28d9)', boxShadow: '0 2px 12px rgba(124,58,237,0.25)' }}
               >
                 {loading ? <><Loader2Icon className="h-4 w-4 animate-spin" /> Signing in…</> : 'Sign in'}

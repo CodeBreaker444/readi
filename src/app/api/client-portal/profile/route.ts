@@ -1,5 +1,5 @@
 import { getProfile } from '@/backend/services/user/user-profile';
-import { supabase } from '@/backend/database/database';
+import { prisma } from '@/lib/prisma';
 import { internalError } from '@/lib/api-error';
 import { requirePermission } from '@/lib/auth/api-auth';
 import { E } from '@/lib/error-codes';
@@ -15,12 +15,22 @@ export async function GET() {
     const [userProfile, clientRow] = await Promise.all([
       getProfile(userId),
       clientId
-        ? supabase
-            .from('client')
-            .select('client_name, client_legal_name, client_code, client_email, client_phone, client_website, client_city, client_state, client_postal_code, contract_start_date, contract_end_date')
-            .eq('client_id', clientId)
-            .single()
-            .then(({ data }) => data)
+        ? prisma.client.findUnique({
+            where: { client_id: clientId },
+            select: {
+              client_name: true,
+              client_legal_name: true,
+              client_code: true,
+              client_email: true,
+              client_phone: true,
+              client_website: true,
+              client_city: true,
+              client_state: true,
+              client_postal_code: true,
+              contract_start_date: true,
+              contract_end_date: true,
+            },
+          })
         : Promise.resolve(null),
     ]);
 
@@ -43,13 +53,16 @@ export async function PATCH(req: NextRequest) {
     const body = await req.json().catch(() => ({}));
     const phone = typeof body.client_phone === 'string' ? body.client_phone.trim() : '';
 
-    const [clientUpdate, userUpdate] = await Promise.all([
-      supabase.from('client').update({ client_phone: phone || null }).eq('client_id', clientId),
-      supabase.from('users').update({ phone: phone || null }).eq('user_id', userId),
+    await Promise.all([
+      prisma.client.update({
+        where: { client_id: clientId },
+        data: { client_phone: phone || null },
+      }),
+      prisma.public_users.update({
+        where: { user_id: userId },
+        data: { phone: phone || null },
+      }),
     ]);
-
-    if (clientUpdate.error) return NextResponse.json({ error: clientUpdate.error.message }, { status: 500 });
-    if (userUpdate.error) return NextResponse.json({ error: userUpdate.error.message }, { status: 500 });
 
     return NextResponse.json({ success: true });
   } catch (err) {

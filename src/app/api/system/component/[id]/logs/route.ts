@@ -1,6 +1,6 @@
 import { getAuditLogs } from '@/backend/services/auditLog/audit-log';
 import { getComponentMissions, getComponentTicketEvents } from '@/backend/services/system/maintenance-ticket';
-import { supabase } from '@/backend/database/database';
+import { prisma } from '@/lib/prisma';
 import { internalError } from '@/lib/api-error';
 import { requirePermission } from '@/lib/auth/api-auth';
 import { E } from '@/lib/error-codes';
@@ -28,15 +28,14 @@ export async function GET(
       }),
       getComponentTicketEvents(componentId),
       getComponentMissions(componentId),
-      supabase
-        .from('tool_component')
-        .select('component_metadata')
-        .eq('component_id', componentId)
-        .single(),
+      prisma.tool_component.findUnique({
+        where: { component_id: componentId },
+        select: { component_metadata: true },
+      }),
     ]);
 
     const locationHistory: { latitude: number; longitude: number; changed_at: string }[] =
-      compMeta.data?.component_metadata?.location_history ?? [];
+      (compMeta?.component_metadata as any)?.location_history ?? [];
 
     return NextResponse.json({
       code: 1,

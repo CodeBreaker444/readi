@@ -28,7 +28,9 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { useTheme } from '@/components/useTheme';
 import { EvaluationTask } from '@/config/types/evaluation';
+import { cn } from '@/lib/utils';
 import { AddPlanningModal } from './AddPlanningModal';
 import { AssignmentActionModal } from './AssignmentActionModal';
 import { ChecklistTaskModal } from './ChecklistTaskModal';
@@ -54,11 +56,12 @@ export function TaskCompletionTable({
     ownerId,
     onAllCompleted,
 }: Props) {
+    const { isDark } = useTheme();
     const [tasks, setTasks] = useState<EvaluationTask[]>([]);
     const [allCompleted, setAllCompleted] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [modal, setModal] = useState<ModalState>({ type: 'none' });
-    const { t } = useTranslation();  
+    const { t } = useTranslation();
 
     async function fetchTasks() {
         if (evaluationId <= 0) return;
@@ -81,8 +84,8 @@ export function TaskCompletionTable({
     }, [evaluationId]);
 
     function handleOpenAction(task: EvaluationTask) {
-        if (task.task_type === 'checklist') setModal({ type: 'checklist', task });
-        else if (task.task_type === 'assignment') setModal({ type: 'assignment', task });
+        if (task.task_type === 'checklist')          setModal({ type: 'checklist', task });
+        else if (task.task_type === 'assignment')    setModal({ type: 'assignment', task });
         else if (task.task_type === 'communication') setModal({ type: 'communication', task });
     }
 
@@ -133,8 +136,8 @@ export function TaskCompletionTable({
     }
 
     const columns = useMemo(
-        () => getEvaluationTaskColumns(t, handleOpenAction),
-        [evaluationId, t],
+        () => getEvaluationTaskColumns(t, handleOpenAction, isDark),
+        [evaluationId, t, isDark],
     );
 
     const table = useReactTable({
@@ -150,8 +153,8 @@ export function TaskCompletionTable({
             <div className="space-y-3">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        <ListChecks className="h-4 w-4 text-slate-500" />
-                        <h3 className="text-sm font-semibold text-slate-700">
+                        <ListChecks className={cn('h-4 w-4', isDark ? 'text-slate-400' : 'text-slate-500')} />
+                        <h3 className={cn('text-sm font-semibold', isDark ? 'text-slate-200' : 'text-slate-700')}>
                             {t('planning.evaluation.taskCompletion')}
                         </h3>
                         <Badge variant="secondary" className="text-xs">
@@ -168,7 +171,6 @@ export function TaskCompletionTable({
                                         {t('planning.tasks.allCompleted')}
                                     </span>
                                 </div>
-
                                 <Button
                                     size="sm"
                                     className="h-7 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
@@ -183,7 +185,12 @@ export function TaskCompletionTable({
                         <Button
                             size="sm"
                             variant="outline"
-                            className="h-7 text-xs gap-1.5 border-violet-200 text-violet-700 bg-violet-50 hover:bg-violet-100"
+                            className={cn(
+                                'h-7 text-xs gap-1.5',
+                                isDark
+                                    ? 'border-violet-500/40 text-violet-400 bg-violet-500/10 hover:bg-violet-500/20'
+                                    : 'border-violet-200 text-violet-700 bg-violet-50 hover:bg-violet-100'
+                            )}
                             onClick={() => setModal({ type: 'communication' })}
                         >
                             <MessageSquarePlus className="h-3.5 w-3.5" />
@@ -192,17 +199,25 @@ export function TaskCompletionTable({
                     </div>
                 </div>
 
-                <div className="rounded-md border border-slate-200 overflow-hidden">
+                <div className={cn('rounded-md border overflow-hidden', isDark ? 'border-slate-700' : 'border-slate-200')}>
                     <Table>
                         <TableHeader>
                             {table.getHeaderGroups().map((hg) => (
-                                <TableRow key={hg.id} className="bg-slate-50 hover:bg-slate-50">
+                                <TableRow
+                                    key={hg.id}
+                                    className={cn(
+                                        'hover:bg-transparent border-b',
+                                        isDark
+                                            ? 'bg-slate-800/60 border-slate-700'
+                                            : 'bg-slate-50 hover:bg-slate-50 border-slate-200'
+                                    )}
+                                >
                                     {hg.headers.map((header) => (
-                                        <TableHead key={header.id} className="text-xs h-8 px-3">
-                                            {flexRender(
-                                                header.column.columnDef.header,
-                                                header.getContext(),
-                                            )}
+                                        <TableHead
+                                            key={header.id}
+                                            className={cn('text-xs h-8 px-3', isDark ? 'text-slate-400' : 'text-slate-600')}
+                                        >
+                                            {flexRender(header.column.columnDef.header, header.getContext())}
                                         </TableHead>
                                     ))}
                                 </TableRow>
@@ -211,10 +226,10 @@ export function TaskCompletionTable({
                         <TableBody>
                             {isLoading ? (
                                 Array.from({ length: 3 }).map((_, i) => (
-                                    <TableRow key={i}>
+                                    <TableRow key={i} className={cn('border-b', isDark ? 'border-slate-700/60' : '')}>
                                         {columns.map((_, j) => (
                                             <TableCell key={j} className="px-3 py-2">
-                                                <Skeleton className="h-4 w-full" />
+                                                <Skeleton className={cn('h-4 w-full', isDark ? 'bg-slate-700' : 'bg-slate-100')} />
                                             </TableCell>
                                         ))}
                                     </TableRow>
@@ -223,7 +238,7 @@ export function TaskCompletionTable({
                                 <TableRow>
                                     <TableCell
                                         colSpan={columns.length}
-                                        className="text-center text-xs text-slate-400 py-8"
+                                        className={cn('text-center text-xs py-8', isDark ? 'text-slate-500' : 'text-slate-400')}
                                     >
                                         {t('planning.tasks.noTasks')}
                                     </TableCell>
@@ -232,17 +247,16 @@ export function TaskCompletionTable({
                                 table.getRowModel().rows.map((row) => (
                                     <TableRow
                                         key={row.id}
-                                        className="hover:bg-slate-50/50"
+                                        className={cn(
+                                            'border-b transition-colors',
+                                            isDark
+                                                ? 'border-slate-700/60 hover:bg-slate-800/60'
+                                                : 'border-slate-100 hover:bg-slate-50/50'
+                                        )}
                                     >
                                         {row.getVisibleCells().map((cell) => (
-                                            <TableCell
-                                                key={cell.id}
-                                                className="px-3 py-2"
-                                            >
-                                                {flexRender(
-                                                    cell.column.columnDef.cell,
-                                                    cell.getContext(),
-                                                )}
+                                            <TableCell key={cell.id} className="px-3 py-2">
+                                                {flexRender(cell.column.columnDef.cell, cell.getContext())}
                                             </TableCell>
                                         ))}
                                     </TableRow>
@@ -278,13 +292,9 @@ export function TaskCompletionTable({
                 <EvaluationCommunicationModal
                     open
                     evaluationId={evaluationId}
-                    task={modal.task ?? null}
+                    task={modal.type === 'communication' ? (modal.task ?? null) : null}
                     onClose={closeModal}
-                    onSent={() =>
-                        handleCommunicationSent(
-                            modal.type === 'communication' ? modal.task : undefined,
-                        )
-                    }
+                    onSent={() => handleCommunicationSent(modal.type === 'communication' ? modal.task : undefined)}
                 />
             )}
 

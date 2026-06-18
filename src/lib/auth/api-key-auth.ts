@@ -1,4 +1,4 @@
-import { supabase } from '@/backend/database/database';
+import { prisma } from '@/lib/prisma';
 import { hashApiKey } from '@/backend/services/mission/flight-request-service';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -29,13 +29,19 @@ export async function requireApiKey(req: NextRequest): Promise<ApiKeyAuthResult>
 
   const keyHash = hashApiKey(rawKey);
 
-  const { data, error } = await supabase
-    .from('api_keys')
-    .select('api_key_id, fk_owner_id, key_name, key_scope, is_active, expires_at')
-    .eq('key_value', keyHash)
-    .single();
+  const data = await prisma.api_keys.findUnique({
+    where: { key_value: keyHash },
+    select: {
+      api_key_id: true,
+      fk_owner_id: true,
+      key_name: true,
+      key_scope: true,
+      is_active: true,
+      expires_at: true,
+    },
+  });
 
-  if (error || !data) {
+  if (!data) {
     return {
       session: null,
       error: NextResponse.json(
@@ -70,10 +76,8 @@ export async function requireApiKey(req: NextRequest): Promise<ApiKeyAuthResult>
   }
 
   // Fire-and-forget last_used_at update
-  supabase
-    .from('api_keys')
-    .update({ last_used_at: new Date().toISOString() })
-    .eq('api_key_id', data.api_key_id)
+  prisma.api_keys
+    .update({ where: { api_key_id: data.api_key_id }, data: { last_used_at: new Date() } })
     .then(() => {});
 
   return {

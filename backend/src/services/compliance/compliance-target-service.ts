@@ -1,4 +1,4 @@
-import { supabase } from '@/backend/database/database';
+import { prisma } from '@/lib/prisma';
 
 export type ProposalStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
@@ -49,10 +49,6 @@ export interface ApproveTargetProposalParams {
   justification?: string | null;
 }
 
-/**
- * Generate (or refresh) target proposals for all active SPI/KPI definitions
- * by analysing the last N months of actual measurements.
- */
 export async function generateTargetProposals(
   months: number,
   proposedByUserId: number
@@ -61,14 +57,10 @@ export async function generateTargetProposals(
   months: number;
   data: EnrichedTargetProposal[];
 }> {
-  const { data: defs, error: defsError } = await supabase
-    .from('spi_kpi_definition')
-    .select('definition_id, target_value')
-    .eq('is_active', true);
-
-  if (defsError) throw defsError;
-
-  const definitions = defs ?? [];
+  const defs = await prisma.spi_kpi_definition.findMany({
+    where: { is_active: true },
+    select: { definition_id: true, target_value: true },
+  });
 
   const now = new Date();
   const proposalYear = now.getFullYear();
@@ -76,78 +68,73 @@ export async function generateTargetProposals(
 
   const cutoff = new Date();
   cutoff.setMonth(cutoff.getMonth() - months);
-  const cutoffDate = cutoff.toISOString().slice(0, 10);
 
-  for (const def of definitions) {
-    const { data: existing } = await supabase
-      .from('spi_kpi_target_proposal')
-      .select('proposal_id')
-      .eq('fk_definition_id', def.definition_id)
-      .eq('proposal_year', proposalYear)
-      .eq('proposal_period', proposalPeriod)
-      .eq('proposal_status', 'PENDING')
-      .maybeSingle();
-
+  for (const def of defs) {
+    const existing = await prisma.spi_kpi_target_proposal.findFirst({
+      where: {
+        fk_definition_id: def.definition_id,
+        proposal_year: proposalYear,
+        proposal_period: proposalPeriod,
+        proposal_status: 'PENDING',
+      },
+    });
     if (existing) continue;
 
-    const { data: measurements } = await supabase
-      .from('spi_kpi_measurement')
-      .select('actual_value')
-      .eq('fk_definition_id', def.definition_id)
-      .gte('measurement_date', cutoffDate);
+    const measurements = await prisma.spi_kpi.findMany({
+      where: {
+        fk_definition_id: def.definition_id,
+        measurement_date: { gte: cutoff },
+      },
+      select: { actual_value: true },
+    });
 
-    const values = (measurements ?? [])
-      .map((m: { actual_value: unknown }) => Number(m.actual_value))
+    const values = measurements
+      .map((m) => Number(m.actual_value))
       .filter((v) => !isNaN(v));
 
+    const currentTarget = Number(def.target_value ?? 0);
     const suggested =
       values.length > 0
         ? Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 10000) / 10000
-        : def.target_value;
+        : currentTarget;
 
-    await supabase.from('spi_kpi_target_proposal').insert({
-      fk_definition_id: def.definition_id,
-      proposal_year: proposalYear,
-      proposal_period: proposalPeriod,
-      proposed_target: suggested,
-      proposed_by_user_id: proposedByUserId,
-      justification: `Auto-generated from average of last ${months} month(s) of measurements.`,
-      proposal_status: 'PENDING',
+    await prisma.spi_kpi_target_proposal.create({
+      data: {
+        fk_definition_id: def.definition_id,
+        proposal_year: proposalYear,
+        proposal_period: proposalPeriod,
+        proposed_target: suggested,
+        proposed_by_user_id: proposedByUserId,
+        justification: `Auto-generated from average of last ${months} month(s) of measurements.`,
+        proposal_status: 'PENDING',
+      },
     });
   }
 
-  const { data: proposals, error: listError } = await supabase
-    .from('spi_kpi_target_proposal')
-    .select('*')
-    .order('created_at', { ascending: false });
+  const proposals = await prisma.spi_kpi_target_proposal.findMany({
+    orderBy: { created_at: 'desc' },
+  });
 
-  if (listError) throw listError;
+  const defIds = [...new Set(proposals.map((r) => r.fk_definition_id))];
+  const defRows = defIds.length
+    ? await prisma.spi_kpi_definition.findMany({
+        where: { definition_id: { in: defIds } },
+        select: {
+          definition_id: true,
+          kpi_name: true,
+          kpi_category: true,
+          kpi_type: true,
+          target_value: true,
+        },
+      })
+    : [];
 
-  const rows = (proposals ?? []) as SafetyTargetProposal[];
+  const defMap = new Map(defRows.map((d) => [d.definition_id, d]));
 
-  // Fetch all referenced definitions to enrich the proposals
-  const defIds = [...new Set(rows.map((r) => r.fk_definition_id))];
-  const { data: defRows } = defIds.length
-    ? await supabase
-        .from('spi_kpi_definition')
-        .select('definition_id, kpi_name, kpi_category, kpi_type, target_value')
-        .in('definition_id', defIds)
-    : { data: [] };
-
-  const defMap = new Map(
-    (defRows ?? []).map((d: {
-      definition_id: number;
-      kpi_name: string;
-      kpi_category: string;
-      kpi_type: string;
-      target_value: number;
-    }) => [d.definition_id, d])
-  );
-
-  const enriched: EnrichedTargetProposal[] = rows.map((r) => {
+  const enriched: EnrichedTargetProposal[] = proposals.map((r) => {
     const def = defMap.get(r.fk_definition_id);
-    const current = def?.target_value ?? 0;
-    const suggested = r.proposed_target ?? 0;
+    const current = Number(def?.target_value ?? 0);
+    const suggested = Number(r.proposed_target ?? 0);
     return {
       proposal_id: r.proposal_id,
       fk_definition_id: r.fk_definition_id,
@@ -158,11 +145,11 @@ export async function generateTargetProposals(
       target_suggested: suggested,
       diff: Math.round((suggested - current) * 100) / 100,
       months_analyzed: months,
-      status: r.proposal_status ?? 'PENDING',
+      status: (r.proposal_status ?? 'PENDING') as ProposalStatus,
       notes: r.justification,
       approved_by: r.approved_by_user_id ? String(r.approved_by_user_id) : null,
-      approved_at: r.approved_at,
-      created_at: r.created_at ?? '',
+      approved_at: r.approved_at ? r.approved_at.toISOString() : null,
+      created_at: r.created_at ? r.created_at.toISOString() : '',
     };
   });
 
@@ -170,15 +157,11 @@ export async function generateTargetProposals(
   return { total_pending: pending, months, data: enriched };
 }
 
-/**
- * Manually create a single target proposal.
- */
 export async function createTargetProposal(
   params: CreateTargetProposalParams
 ): Promise<SafetyTargetProposal> {
-  const { data, error } = await supabase
-    .from('spi_kpi_target_proposal')
-    .insert({
+  const row = await prisma.spi_kpi_target_proposal.create({
+    data: {
       fk_definition_id: params.fk_definition_id,
       proposal_year: params.proposal_year,
       proposal_period: params.proposal_period,
@@ -186,121 +169,79 @@ export async function createTargetProposal(
       proposed_by_user_id: params.proposed_by_user_id,
       justification: params.justification ?? null,
       proposal_status: 'PENDING',
-    })
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data as SafetyTargetProposal;
+    },
+  });
+  return row as unknown as SafetyTargetProposal;
 }
 
-/**
- * List all proposals, optionally filtered by status.
- */
 export async function listTargetProposals(filters?: {
   proposal_status?: ProposalStatus;
   fk_definition_id?: number;
   proposal_year?: number;
 }): Promise<SafetyTargetProposal[]> {
-  let query = supabase
-    .from('spi_kpi_target_proposal')
-    .select('*')
-    .order('created_at', { ascending: false });
+  const where: any = {};
+  if (filters?.proposal_status) where.proposal_status = filters.proposal_status;
+  if (filters?.fk_definition_id) where.fk_definition_id = filters.fk_definition_id;
+  if (filters?.proposal_year) where.proposal_year = filters.proposal_year;
 
-  if (filters?.proposal_status) query = query.eq('proposal_status', filters.proposal_status);
-  if (filters?.fk_definition_id) query = query.eq('fk_definition_id', filters.fk_definition_id);
-  if (filters?.proposal_year) query = query.eq('proposal_year', filters.proposal_year);
-
-  const { data, error } = await query;
-  if (error) throw error;
-  return (data ?? []) as SafetyTargetProposal[];
+  const rows = await prisma.spi_kpi_target_proposal.findMany({
+    where,
+    orderBy: { created_at: 'desc' },
+  });
+  return rows as unknown as SafetyTargetProposal[];
 }
 
-/**
- * Fetch a single proposal by ID.
- */
 export async function getTargetProposalById(
   proposalId: number
 ): Promise<SafetyTargetProposal | null> {
-  const { data, error } = await supabase
-    .from('spi_kpi_target_proposal')
-    .select('*')
-    .eq('proposal_id', proposalId)
-    .single();
-
-  if (error) {
-    if (error.code === 'PGRST116') return null;
-    throw error;
-  }
-  return data as SafetyTargetProposal;
+  const row = await prisma.spi_kpi_target_proposal.findUnique({
+    where: { proposal_id: proposalId },
+  });
+  return row ? (row as unknown as SafetyTargetProposal) : null;
 }
 
-/**
- * Approve or reject a target proposal.
- * On APPROVED: updates the target_value in spi_kpi_definition.
- */
 export async function approveTargetProposal(
   params: ApproveTargetProposalParams
 ): Promise<SafetyTargetProposal> {
   const { proposal_id, action, approved_by_user_id, justification } = params;
 
-  const { data: proposal, error: fetchError } = await supabase
-    .from('spi_kpi_target_proposal')
-    .select('*')
-    .eq('proposal_id', proposal_id)
-    .single();
-
-  if (fetchError || !proposal) throw new Error('Proposal not found');
+  const proposal = await prisma.spi_kpi_target_proposal.findUnique({
+    where: { proposal_id },
+  });
+  if (!proposal) throw new Error('Proposal not found');
   if (proposal.proposal_status !== 'PENDING') throw new Error('Proposal is no longer pending');
 
-  const { data: updated, error: updateError } = await supabase
-    .from('spi_kpi_target_proposal')
-    .update({
-      proposal_status: action,
-      approved_by_user_id,
-      approved_at: new Date().toISOString(),
-      ...(justification !== undefined ? { justification } : {}),
-    })
-    .eq('proposal_id', proposal_id)
-    .select()
-    .single();
+  const updateData: any = {
+    proposal_status: action,
+    approved_by_user_id,
+    approved_at: new Date(),
+  };
+  if (justification !== undefined) updateData.justification = justification;
 
-  if (updateError) throw updateError;
+  const updated = await prisma.spi_kpi_target_proposal.update({
+    where: { proposal_id },
+    data: updateData,
+  });
 
   if (action === 'APPROVED' && proposal.proposed_target !== null) {
-    const { error: defUpdateError } = await supabase
-      .from('spi_kpi_definition')
-      .update({
-        target_value: proposal.proposed_target,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('definition_id', proposal.fk_definition_id);
-
-    if (defUpdateError) throw defUpdateError;
+    await prisma.spi_kpi_definition.update({
+      where: { definition_id: proposal.fk_definition_id },
+      data: { target_value: proposal.proposed_target, updated_at: new Date() },
+    });
   }
 
-  return updated as SafetyTargetProposal;
+  return updated as unknown as SafetyTargetProposal;
 }
 
-/**
- * Delete a proposal (only if still PENDING).
- */
 export async function deleteTargetProposal(proposalId: number): Promise<void> {
-  const { data: proposal, error: fetchError } = await supabase
-    .from('spi_kpi_target_proposal')
-    .select('proposal_status')
-    .eq('proposal_id', proposalId)
-    .single();
-
-  if (fetchError || !proposal) throw new Error('Proposal not found');
+  const proposal = await prisma.spi_kpi_target_proposal.findUnique({
+    where: { proposal_id: proposalId },
+    select: { proposal_status: true },
+  });
+  if (!proposal) throw new Error('Proposal not found');
   if (proposal.proposal_status !== 'PENDING') {
     throw new Error('Only PENDING proposals can be deleted');
   }
 
-  const { error } = await supabase
-    .from('spi_kpi_target_proposal')
-    .delete()
-    .eq('proposal_id', proposalId);
-
-  if (error) throw error;
+  await prisma.spi_kpi_target_proposal.delete({ where: { proposal_id: proposalId } });
 }

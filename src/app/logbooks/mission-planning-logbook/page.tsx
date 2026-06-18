@@ -77,39 +77,46 @@ export default function MissionPlanningLogbookPage() {
     fetchData({});
   }, [fetchFilters, fetchData]);
 
- return (
-  <div className={`min-h-screen transition-colors duration-300 ${
-    isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-gray-900'
-  } font-sans`}>
-    
-    <div className={` top-0 z-10   backdrop-blur-md transition-colors ${
-      isDark 
-        ? 'bg-slate-900/80 border-slate-800 text-white' 
-        : 'bg-white/80 border-slate-200 text-slate-900 shadow-[0_1px_3px_rgba(0,0,0,0.06)]'
-    } px-6 py-5`}>
-      <div className="mx-auto max-w-[1600px]">
-        <div className="flex items-center justify-between">
+  return (
+    <div
+      className={`min-h-screen transition-colors duration-300 ${
+        isDark ? "bg-slate-950 text-white" : "bg-slate-50 text-gray-900"
+      } font-sans`}
+    >
+      <div
+        className={`top-0 z-10 backdrop-blur-md transition-colors ${
+          isDark
+            ? "bg-slate-900/80 border-b border-slate-800 text-white"
+            : "bg-white/80 border-b border-slate-200 text-slate-900 shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
+        } px-6 py-4`}
+      >
+        <div className="mx-auto max-w-[1800px] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="w-1 h-6 rounded-full bg-violet-600" />
             <div>
-              <h1 className={`font-semibold text-base tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+              <h1
+                className={`font-semibold text-base tracking-tight ${
+                  isDark ? "text-white" : "text-slate-900"
+                }`}
+              >
                 {t('logbooks.missionPlanning.logbook')}
               </h1>
-              <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+              <p className={`text-xs ${isDark ? "text-slate-500" : "text-slate-400"}`}>
                 {t('logbooks.missionPlanning.logbookSubtitle')}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+
+          <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
               onClick={() => fetchData({})}
               disabled={loading}
               className={`h-8 gap-1.5 text-xs transition-all ${
-                isDark 
-                  ? 'border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white' 
-                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                isDark
+                  ? "border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white"
+                  : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
               }`}
             >
               {loading ? (
@@ -122,42 +129,47 @@ export default function MissionPlanningLogbookPage() {
           </div>
         </div>
       </div>
-    </div>
 
-    <div className="mx-auto max-w-[1600px] space-y-4 px-6 py-5 animate-slide-up">
-      {filtersLoading ? (
-        <div className={`grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 rounded-xl border p-5 shadow-sm transition-colors ${
-          isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
-        }`}>
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="space-y-2">
-              <Skeleton className={`h-3 w-16 ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`} />
-              <Skeleton className={`h-9 w-full ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`} />
+      <div className="mx-auto max-w-[1800px] space-y-4 px-6 py-5">
+        {filtersLoading ? (
+          <div
+            className={`rounded-xl border p-5 ${
+              isDark
+                ? "border-slate-800 bg-slate-900/60"
+                : "border-slate-200 bg-white shadow-sm"
+            }`}
+          >
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="space-y-1.5">
+                  <Skeleton className={`h-2.5 w-16 ${isDark ? "bg-slate-800" : "bg-slate-100"}`} />
+                  <Skeleton className={`h-8 w-full ${isDark ? "bg-slate-800" : "bg-slate-100"}`} />
+                </div>
+              ))}
             </div>
-          ))}
-          <div className="flex items-end gap-2 sm:col-span-2">
-            <Skeleton className={`h-9 w-28 ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`} />
-            <Skeleton className={`h-9 w-28 ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`} />
+            <div
+              className={`mt-5 pt-4 border-t flex gap-2 ${
+                isDark ? "border-slate-800" : "border-slate-200"
+              }`}
+            >
+              <Skeleton className={`h-8 w-24 ${isDark ? "bg-slate-800" : "bg-slate-100"}`} />
+              <Skeleton className={`h-8 w-20 ${isDark ? "bg-slate-800" : "bg-slate-100"}`} />
+            </div>
           </div>
-        </div>
-      ) : (
-        <FilterPanel
-          clients={filters.clients}
-          pilots={filters.pilots}
-          evaluations={filters.evaluations}
-          plannings={filters.plannings}
-          loading={loading}
-          onSearch={(params) => fetchData(params)}
-          isDark={isDark}
-        />
-      )}
+        ) : (
+          <FilterPanel
+            clients={filters.clients}
+            pilots={filters.pilots}
+            evaluations={filters.evaluations}
+            plannings={filters.plannings}
+            loading={loading}
+            onSearch={(params) => fetchData(params)}
+            isDark={isDark}
+          />
+        )}
 
-      <div className={` ${
-        isDark ? 'bg-slate-900 border-slate-800 ' : '  '
-      }`}>
         <MissionLogbookTable data={data} loading={loading} isDark={isDark} />
       </div>
     </div>
-  </div>
-);
+  );
 }

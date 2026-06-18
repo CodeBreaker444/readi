@@ -1,4 +1,5 @@
-import { supabase } from '@/backend/database/database';
+import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 
 export interface PostFlightData {
   flight_duration: number | null;
@@ -18,28 +19,67 @@ export interface PostFlightData {
 export interface PostFlightUpdatePayload extends Partial<PostFlightData> {}
 
 export async function getPostFlightData(missionId: number): Promise<PostFlightData> {
-  const { data, error } = await supabase
-    .from('pilot_mission')
-    .select(
-      'flight_duration, actual_end, distance_flown, battery_charge_start, battery_charge_end, incident_flag, rth_unplanned, link_loss, deviation_flag, weather_temperature, notes, fk_mission_result_type_id'
-    )
-    .eq('pilot_mission_id', missionId)
-    .single();
+  const row = await prisma.pilot_mission.findUniqueOrThrow({
+    where: { pilot_mission_id: missionId },
+    select: {
+      flight_duration: true,
+      actual_end: true,
+      distance_flown: true,
+      battery_charge_start: true,
+      battery_charge_end: true,
+      incident_flag: true,
+      rth_unplanned: true,
+      link_loss: true,
+      deviation_flag: true,
+      weather_temperature: true,
+      notes: true,
+      fk_mission_result_type_id: true,
+    },
+  });
 
-  if (error) throw error;
-  return data as PostFlightData;
+  return {
+    flight_duration: row.flight_duration,
+    actual_end: row.actual_end?.toISOString() ?? null,
+    distance_flown: row.distance_flown !== null ? Number(row.distance_flown) : null,
+    battery_charge_start: row.battery_charge_start !== null ? Number(row.battery_charge_start) : null,
+    battery_charge_end: row.battery_charge_end !== null ? Number(row.battery_charge_end) : null,
+    incident_flag: row.incident_flag,
+    rth_unplanned: row.rth_unplanned,
+    link_loss: row.link_loss,
+    deviation_flag: row.deviation_flag,
+    weather_temperature: row.weather_temperature !== null ? Number(row.weather_temperature) : null,
+    notes: row.notes,
+    fk_mission_result_type_id: row.fk_mission_result_type_id,
+  };
 }
 
 export async function updatePostFlightData(
   missionId: number,
   payload: PostFlightUpdatePayload
 ): Promise<void> {
-  const { error } = await supabase
-    .from('pilot_mission')
-    .update(payload)
-    .eq('pilot_mission_id', missionId);
+  const data: Prisma.pilot_missionUpdateInput = {};
 
-  if (error) throw error;
+  if (payload.flight_duration !== undefined) data.flight_duration = payload.flight_duration;
+  if (payload.actual_end !== undefined) data.actual_end = payload.actual_end ? new Date(payload.actual_end) : null;
+  if (payload.distance_flown !== undefined) data.distance_flown = payload.distance_flown;
+  if (payload.battery_charge_start !== undefined) data.battery_charge_start = payload.battery_charge_start;
+  if (payload.battery_charge_end !== undefined) data.battery_charge_end = payload.battery_charge_end;
+  if (payload.incident_flag !== undefined) data.incident_flag = payload.incident_flag;
+  if (payload.rth_unplanned !== undefined) data.rth_unplanned = payload.rth_unplanned;
+  if (payload.link_loss !== undefined) data.link_loss = payload.link_loss;
+  if (payload.deviation_flag !== undefined) data.deviation_flag = payload.deviation_flag;
+  if (payload.weather_temperature !== undefined) data.weather_temperature = payload.weather_temperature;
+  if (payload.notes !== undefined) data.notes = payload.notes;
+  if (payload.fk_mission_result_type_id !== undefined) {
+    data.pilot_mission_result_type = payload.fk_mission_result_type_id
+      ? { connect: { result_type_id: payload.fk_mission_result_type_id } }
+      : { disconnect: true };
+  }
+
+  await prisma.pilot_mission.update({
+    where: { pilot_mission_id: missionId },
+    data,
+  });
 }
 
 function computeQualityScore(flags: {
@@ -71,14 +111,19 @@ export async function upsertMissionResult(
     deviation_flag?: boolean | null;
   }
 ): Promise<void> {
-  const { data: resultType } = await supabase
-    .from('pilot_mission_result_type')
-    .select('result_type_desc')
-    .eq('result_type_id', resultTypeId)
-    .single();
+  const resultType = await prisma.pilot_mission_result_type.findUnique({
+    where: { result_type_id: resultTypeId },
+    select: { result_type_desc: true },
+  });
+
+  const resultMetadata = {
+    flight_duration_min: metadata.flight_duration ?? null,
+    distance_flown_m: metadata.distance_flown ?? null,
+    battery_charge_start: metadata.battery_charge_start ?? null,
+    battery_charge_end: metadata.battery_charge_end ?? null,
+  };
 
   const record = {
-    fk_pilot_mission_id: missionId,
     result_type: resultType?.result_type_desc ?? null,
     result_description: metadata.notes ?? null,
     processing_status: 'completed',
@@ -88,30 +133,22 @@ export async function upsertMissionResult(
       link_loss: metadata.link_loss,
       deviation_flag: metadata.deviation_flag,
     }),
-    result_metadata: {
-      flight_duration_min: metadata.flight_duration ?? null,
-      distance_flown_m: metadata.distance_flown ?? null,
-      battery_charge_start: metadata.battery_charge_start ?? null,
-      battery_charge_end: metadata.battery_charge_end ?? null,
-    },
+    result_metadata: resultMetadata as unknown as Prisma.InputJsonValue,
   };
 
-  const { data: existing } = await supabase
-    .from('pilot_mission_result')
-    .select('result_id')
-    .eq('fk_pilot_mission_id', missionId)
-    .maybeSingle();
+  const existing = await prisma.pilot_mission_result.findFirst({
+    where: { fk_pilot_mission_id: missionId },
+    select: { result_id: true },
+  });
 
   if (existing) {
-    const { error } = await supabase
-      .from('pilot_mission_result')
-      .update(record)
-      .eq('result_id', existing.result_id);
-    if (error) throw error;
+    await prisma.pilot_mission_result.update({
+      where: { result_id: existing.result_id },
+      data: record,
+    });
   } else {
-    const { error } = await supabase
-      .from('pilot_mission_result')
-      .insert(record);
-    if (error) throw error;
+    await prisma.pilot_mission_result.create({
+      data: { fk_pilot_mission_id: missionId, ...record },
+    });
   }
 }

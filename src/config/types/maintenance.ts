@@ -85,6 +85,8 @@ export interface MaintenanceTicket {
   system_components?: Array<{ component_type: string; component_sn: string }>;
   location_latitude?:  number | null;
   location_longitude?: number | null;
+  intervention_started_at?: string | null;
+  intervention_ended_at?: string | null;
 }
 
 export interface TicketEvent {
@@ -128,6 +130,7 @@ export interface CreateTicketPayload {
   reporter_name?: string;
   reporter_email?: string;
   assigned_to?: number;
+  technician_name?: string;
   note?: string;
   latitude?: number | null;
   longitude?: number | null;
@@ -142,6 +145,7 @@ export interface CloseTicketPayload {
 export interface AssignTicketPayload {
   ticket_id: number;
   assigned_to: number;
+  technician_name?: string;
 }
 
 export interface AddReportPayload {

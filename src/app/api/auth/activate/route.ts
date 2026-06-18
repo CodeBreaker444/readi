@@ -1,14 +1,14 @@
-import { supabase } from '@/backend/database/database';
-import { apiError, dbError, internalError, zodError } from '@/lib/api-error';
+import { apiError, internalError, zodError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
+import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
 const validateSchema = z.object({
-  id: z.string().min(1, 'Activation key is required'),
-  email: z.string().email('Invalid email format'),
+  id:       z.string().min(1, 'Activation key is required'),
+  email:    z.string().email('Invalid email format'),
   username: z.string().min(1, 'Username is required'),
-  o: z.string().optional(),
+  o:        z.string().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -20,99 +20,79 @@ export async function POST(request: NextRequest) {
 
     const { id: activationKey, email, username } = validation.data;
 
-    const { data: user, error: findError } = await supabase
-      .from('users')
-      .select('user_id, user_active, auth_user_id, email, username, _key_, password_hash, first_name, last_name, user_role')
-      .eq('_key_', activationKey)
-      .eq('email', email)
-      .eq('username', username)
-      .maybeSingle();
+    // Temporary diagnostic — remove after DB connection is confirmed
+    const dbUrl = process.env.DATABASE_URL ?? '';
+    const dbHost = dbUrl.replace(/^.*@/, '').replace(/\/.*$/, '');
+    console.log(`[activate] DB host: ${dbHost} | key[:8]=${activationKey.slice(0, 8)} email=${email} username=${username}`);
 
-    if (findError) {
-      console.error('[AU011] activation db lookup:', findError);
-      return dbError(E.DB001, findError);
-    }
+    const user = await prisma.public_users.findFirst({
+      where: {
+        key_:     activationKey,
+        email:    { equals: email,    mode: 'insensitive' },
+        username: { equals: username, mode: 'insensitive' },
+      },
+      select: {
+        user_id:     true,
+        user_active: true,
+      },
+    });
 
-    if (!user) return apiError(E.NF001, 404);
+    console.log(`[activate] findFirst result: ${user ? `user_id=${user.user_id} active=${user.user_active}` : 'null — no match'}`);
 
-    const isActive = user.user_active?.trim() === 'Y';
-    if (isActive) return apiError(E.BL002, 400);
-
-    let authUserId = user.auth_user_id;
-
-    if (!authUserId) {
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: user.email,
-        password: user.password_hash,
-        email_confirm: true,
-        user_metadata: {
-          first_name: user.first_name || '',
-          last_name: user.last_name || '',
-          username: user.username,
-          role: user.user_role || '',
-          activated_at: new Date().toISOString(),
+    if (!user) {
+      // The key may have already been cleared after a successful prior activation.
+      // Check by email + username so we can return the correct message.
+      const alreadyActive = await prisma.public_users.findFirst({
+        where: {
+          email:       { equals: email,    mode: 'insensitive' },
+          username:    { equals: username, mode: 'insensitive' },
+          user_active: 'Y',
         },
+        select: { user_id: true },
       });
-
-      if (authError) {
-        console.error('[AU008] auth user creation failed:', authError);
-        return apiError(E.AU008, 500);
-      }
-      if (!authData.user) {
-        console.error('[AU008] no user data returned from auth creation');
-        return apiError(E.AU008, 500);
-      }
-
-      authUserId = authData.user.id;
-    } else {
-      const { error: updateAuthError } = await supabase.auth.admin.updateUserById(authUserId, {
-        email_confirm: true,
-        user_metadata: { activated_at: new Date().toISOString() },
-      });
-      if (updateAuthError) {
-        console.error('[AU008] auth email confirmation failed:', updateAuthError);
-      }
-    }
-
-    const updateData: Record<string, unknown> = {
-      user_active: 'Y',
-      updated_at: new Date().toISOString(),
-    };
-    if (authUserId && !user.auth_user_id) updateData.auth_user_id = authUserId;
-
-    const { error: updateError } = await supabase
-      .from('users')
-      .update(updateData)
-      .eq('user_id', user.user_id);
-
-    if (updateError) {
-      console.error('[DB003] activation update failed:', updateError);
-      if (authUserId && !user.auth_user_id) {
-        await supabase.auth.admin.deleteUser(authUserId).catch((e) =>
-          console.error('[DB003] auth cleanup failed:', e),
+      if (alreadyActive) {
+        return NextResponse.json(
+          { code: 0, title: 'alreadyActivated', message: 'This account is already activated.' },
+          { status: 400 },
         );
       }
-      return dbError(E.DB003, updateError);
+      return apiError(E.NF001, 404);
     }
 
-    const { data: verifyUser, error: verifyError } = await supabase
-      .from('users')
-      .select('user_id, user_active, auth_user_id')
-      .eq('user_id', user.user_id)
-      .single();
+    if (user.user_active?.trim() === 'Y') {
+      return NextResponse.json(
+        { code: 0, title: 'alreadyActivated', message: 'This account is already activated.' },
+        { status: 400 },
+      );
+    }
 
-    if (verifyError || !verifyUser || verifyUser.user_active?.trim() !== 'Y') {
-      console.error('[DB001] activation verification failed:', verifyError);
-      return dbError(E.DB001, verifyError);
+    try {
+      await prisma.public_users.update({
+        where: { user_id: user.user_id },
+        data:  { user_active: 'Y', key_: null, updated_at: new Date() },
+      });
+    } catch (updateErr) {
+      console.error('[DB003] activation update failed:', updateErr);
+      return internalError(E.DB003, updateErr);
+    }
+
+    const verifyUser = await prisma.public_users.findUnique({
+      where:  { user_id: user.user_id },
+      select: { user_active: true },
+    });
+
+    if (!verifyUser || verifyUser.user_active?.trim() !== 'Y') {
+      console.error('[DB001] activation verification failed');
+      return internalError(E.DB001, new Error('Activation verification failed'));
     }
 
     return NextResponse.json({
-      code: 1,
-      status: 'SUCCESS',
-      message: 'Account activated successfully',
-      title: 'activateAccount',
+      code:      1,
+      status:    'SUCCESS',
+      message:   'Account activated successfully',
+      title:     'activateAccount',
       timestamp: Math.floor(Date.now() / 1000),
-      param: [{ data: { username, email } }],
+      param:     [{ data: { username, email } }],
     });
   } catch (err) {
     return internalError(E.SV001, err);

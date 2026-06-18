@@ -1,4 +1,4 @@
-import { supabase } from '@/backend/database/database';
+import { prisma } from '@/lib/prisma';
 import { createToken } from '@/lib/auth/jwt-utils';
 import { Role } from '@/lib/auth/roles';
 import { apiError, internalError } from '@/lib/api-error';
@@ -15,73 +15,71 @@ export async function POST(request: NextRequest) {
       return apiError(E.AU004, 400);
     }
 
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('user_id, username, email, user_active, user_role, password_hash, auth_user_id, fk_owner_id, fk_client_id')
-      .eq('email', email)
-      .single();
+    const userData = await prisma.public_users.findUnique({
+      where: { email },
+      select: {
+        user_id:       true,
+        username:      true,
+        email:         true,
+        user_active:   true,
+        user_role:     true,
+        password_hash: true,
+        auth_user_id:  true,
+        fk_owner_id:   true,
+        fk_client_id:  true,
+      },
+    });
 
-    if (userError || !userData) {
-      return apiError(E.AU005, 401);
-    }
+    if (!userData) return apiError(E.AU005, 401);
 
-    const isPasswordValid = await bcrypt.compare(password, userData.password_hash);
-    if (!isPasswordValid) {
-      return apiError(E.AU006, 401);
-    }
+    const isPasswordValid = await bcrypt.compare(password, userData.password_hash ?? '');
+    if (!isPasswordValid) return apiError(E.AU006, 401);
 
-    if (userData.user_active !== 'Y') {
-      return apiError(E.AU007, 403);
-    }
+    if (userData.user_active !== 'Y') return apiError(E.AU007, 403);
 
     let droneAtcEnabled = false;
-    if (userData.user_role !== 'SUPERADMIN' && userData.user_role !== 'CLIENT') {
-      const { data: ownerData, error: ownerError } = await supabase
-        .from('owner')
-        .select('owner_name, owner_active, drone_atc_enabled')
-        .eq('owner_id', userData.fk_owner_id)
-        .single();
 
-      if (ownerError || !ownerData || ownerData.owner_active !== 'Y') {
-        if (!ownerData) return apiError(E.NF002, 404);
-        return apiError(E.BL002, 403);
-      }
+    if (userData.user_role !== 'SUPERADMIN' && userData.user_role !== 'CLIENT') {
+      const ownerData = await prisma.owner.findUnique({
+        where:  { owner_id: userData.fk_owner_id! },
+        select: { owner_name: true, owner_active: true, drone_atc_enabled: true },
+      });
+
+      if (!ownerData) return apiError(E.NF002, 404);
+      if (ownerData.owner_active !== 'Y') return apiError(E.BL002, 403);
 
       droneAtcEnabled = ownerData.drone_atc_enabled ?? false;
     } else if (userData.user_role === 'CLIENT') {
       if (userData.fk_client_id) {
-        const { data: clientData, error: clientError } = await supabase
-          .from('client')
-          .select('client_active')
-          .eq('client_id', userData.fk_client_id)
-          .single();
+        const clientData = await prisma.client.findUnique({
+          where:  { client_id: userData.fk_client_id },
+          select: { client_active: true },
+        });
 
-        if (clientError || !clientData) return apiError(E.NF010, 404);
+        if (!clientData) return apiError(E.NF010, 404);
         if (clientData.client_active !== 'Y') return apiError(E.AU012, 403);
       }
     } else if (userData.user_role === 'SUPERADMIN') {
       droneAtcEnabled = true;
     }
 
-    await supabase
-      .from('users')
-      .update({ last_login: new Date().toISOString() })
-      .eq('user_id', userData.user_id);
+    await prisma.public_users.update({
+      where: { user_id: userData.user_id },
+      data:  { last_login: new Date() },
+    });
 
-    const { data: settingsData } = await supabase
-      .from('user_settings')
-      .select('setting_value')
-      .eq('fk_user_id', userData.user_id)
-      .eq('setting_key', 'password_changed')
-      .maybeSingle();
+    const settingsData = await prisma.user_settings.findFirst({
+      where:  { fk_user_id: userData.user_id, setting_key: 'password_changed' },
+      select: { setting_value: true },
+    });
 
     const needsPasswordChange = !settingsData || settingsData.setting_value !== 'true';
 
     const jwtToken = createToken({
-      sub: userData.user_id,
-      email: userData.email,
-      username: userData.username,
-      role: userData.user_role as Role,
+      sub:   String(userData.user_id),
+      email: userData.email!,
+      username: userData.username!,
+      role:  userData.user_role as Role,
       droneAtcEnabled,
       ...(userData.fk_client_id ? { clientId: userData.fk_client_id } : {}),
     });
@@ -89,19 +87,19 @@ export async function POST(request: NextRequest) {
     const cookieStore = await cookies();
     cookieStore.set('readi_auth_token', jwtToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure:   process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7,
-      path: '/',
+      maxAge:   60 * 60 * 24 * 7,
+      path:     '/',
     });
 
     if (needsPasswordChange) {
       cookieStore.set('force_pw_change', '1', {
         httpOnly: false,
-        secure: process.env.NODE_ENV === 'production',
+        secure:   process.env.NODE_ENV === 'production',
         sameSite: 'lax',
-        maxAge: 60 * 30,
-        path: '/',
+        maxAge:   60 * 30,
+        path:     '/',
       });
       return NextResponse.json({ success: true, redirect: '/auth/change-password' });
     }

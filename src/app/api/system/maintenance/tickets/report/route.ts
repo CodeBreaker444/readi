@@ -1,5 +1,6 @@
-import { addReport, uploadAttachment } from '@/backend/services/system/maintenance-ticket';
-import { requirePermission } from '@/lib/auth/api-auth';
+import { addReport, getTicketAssignee, uploadAttachment } from '@/backend/services/system/maintenance-ticket';
+import { requireAuth, userHasSubRole } from '@/lib/auth/api-auth';
+import { roleHasPermission } from '@/lib/auth/roles';
 import { apiError, forbidden, internalError, zodError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
@@ -20,8 +21,8 @@ const MAX_SIZE_BYTES = 10 * 1024 * 1024;
 
 export async function POST(req: NextRequest) {
   try {
-       const { session, error } = await requirePermission('view_config');
-       if (error) return error;
+    const { session, error } = await requireAuth();
+    if (error) return error;
 
     const formData = await req.formData();
 
@@ -38,7 +39,23 @@ export async function POST(req: NextRequest) {
       return zodError(E.VL001, validation.error);
     }
 
-    if (validation.data.close_report === 'Y' && !CLOSE_TICKET_ROLES.includes(session!.user.role ?? '')) {
+    const userId = session!.user.userId;
+    const role = session!.user.role;
+    const hasConfig = roleHasPermission(role, 'view_config');
+
+    if (!hasConfig) {
+      // PIC_TECHNICIAN assigned to this ticket may submit reports but cannot close
+      const [assignee, hasTechSubRole] = await Promise.all([
+        getTicketAssignee(validation.data.ticket_id),
+        userHasSubRole(userId, 'PIC_TECHNICIAN'),
+      ]);
+      if (assignee !== userId || !hasTechSubRole) {
+        return forbidden(E.PX001);
+      }
+      if (validation.data.close_report === 'Y') {
+        return forbidden(E.PX001);
+      }
+    } else if (validation.data.close_report === 'Y' && !CLOSE_TICKET_ROLES.includes(role ?? '')) {
       return forbidden(E.PX001);
     }
 

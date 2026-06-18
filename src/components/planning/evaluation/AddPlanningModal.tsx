@@ -93,7 +93,7 @@ export function AddPlanningModal({
                 setProcedures(procRes.data.data ?? []);
                 setPilots(pilotRes.data.data ?? []);
             } catch {
-                toast.error('Failed to load form data');
+                toast.error(t('planning.toast.loadFormError'));
             } finally {
                 setLoadingDropdowns(false);
             }
@@ -163,15 +163,15 @@ export function AddPlanningModal({
             setSubmitting(true);
             const res = await axios.post('/api/evaluation/planning', payload);
             if (res.data.code === 1) {
-                toast.success('Planning request created successfully!');
+                toast.success(t('planning.toast.createPlanningSuccess'));
                 onCreated?.(res.data.data.planning_id);
                 handleClose();
             } else {
-                toast.error(res.data.message ?? 'Failed to create planning');
+                toast.error(res.data.message ?? t('planning.toast.createPlanningFailed'));
             }
         } catch (err: any) {
             const msg =
-                err?.response?.data?.message ?? 'Failed to create planning';
+                err?.response?.data?.message ?? t('planning.toast.createPlanningFailed');
             toast.error(msg);
         } finally {
             setSubmitting(false);
@@ -195,10 +195,10 @@ export function AddPlanningModal({
                         </div>
                         <div>
                             <DialogTitle className="text-base font-semibold">
-                                Add Planning Request
+                                {t('planning.modal.addPlanningTitle')}
                             </DialogTitle>
                             <DialogDescription className="text-xs mt-0.5">
-                                [GO.00.P01] — Fill the form to create a new planning from this evaluation.
+                                {t('planning.modal.addPlanningSubtitle')}
                             </DialogDescription>
                         </div>
                     </div>

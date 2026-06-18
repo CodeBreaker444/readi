@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { supabase } from '@/backend/database/database';
+import { prisma } from '@/lib/prisma';
 import type { DccCallbackResult } from '@/types/dcc-callback';
 import { getDccCallbackUrl } from './dcc-settings-service';
 
@@ -17,16 +17,12 @@ function truncateBody(text: string): string {
  * by finding the flight_request linked to a given planning_id.
  */
 async function getExternalMissionIdForPlanning(planningId: number): Promise<string | null> {
-  const { data, error } = await supabase
-    .from('flight_requests')
-    .select('external_mission_id')
-    .eq('fk_planning_id', planningId)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .single();
-
-  if (error || !data) return null;
-  return data.external_mission_id as string;
+  const row = await prisma.flight_requests.findFirst({
+    where: { fk_planning_id: planningId },
+    orderBy: { created_at: 'desc' },
+    select: { external_mission_id: true },
+  });
+  return row?.external_mission_id ?? null;
 }
 
 /**
@@ -37,51 +33,45 @@ async function getExternalMissionIdForPlanning(planningId: number): Promise<stri
  * PMVD-generated UUID assigned at creation time).
  */
 export async function getExternalMissionIdForMission(missionId: number): Promise<string | null> {
-  const { data, error } = await supabase
-    .from('pilot_mission')
-    .select('fk_planning_id, mission_code')
-    .eq('pilot_mission_id', missionId)
-    .single();
+  const row = await prisma.pilot_mission.findUnique({
+    where: { pilot_mission_id: missionId },
+    select: { fk_planning_id: true, mission_code: true },
+  });
 
-  if (error || !data) return null;
+  if (!row) return null;
 
-  if (data.fk_planning_id) {
-    const externalId = await getExternalMissionIdForPlanning(data.fk_planning_id as number);
+  if (row.fk_planning_id) {
+    const externalId = await getExternalMissionIdForPlanning(row.fk_planning_id);
     if (externalId) return externalId;
   }
 
   // Fallback: PMVD-initiated missions store their DCC ID in mission_code
-  return (data.mission_code as string | null) ?? null;
+  return row.mission_code ?? null;
 }
 
 /**
  * Returns the external_mission_id ONLY if the mission was initiated by a
- * third-party service (i.e., it has a linked flight_request). Returns null
- * for client-dashboard / PMVD-initiated missions.
+ * third-party service .  
  */
 async function getExternalMissionIdFromFlightRequest(missionId: number): Promise<string | null> {
-  const { data, error } = await supabase
-    .from('pilot_mission')
-    .select('fk_planning_id')
-    .eq('pilot_mission_id', missionId)
-    .single();
+  const row = await prisma.pilot_mission.findUnique({
+    where: { pilot_mission_id: missionId },
+    select: { fk_planning_id: true },
+  });
 
-  if (error || !data || !data.fk_planning_id) return null;
-
-  return getExternalMissionIdForPlanning(data.fk_planning_id as number);
+  if (!row?.fk_planning_id) return null;
+  return getExternalMissionIdForPlanning(row.fk_planning_id);
 }
 
 /**
  * Returns owner_id for a given pilot_mission — needed to look up DCC URL.
  */
 async function getOwnerIdForMission(missionId: number): Promise<number | null> {
-  const { data } = await supabase
-    .from('pilot_mission')
-    .select('planning!pilot_mission_fk_planning_id_fkey(fk_owner_id)')
-    .eq('pilot_mission_id', missionId)
-    .single();
-
-  return (data?.planning as any)?.fk_owner_id ?? null;
+  const row = await prisma.pilot_mission.findUnique({
+    where: { pilot_mission_id: missionId },
+    select: { planning: { select: { fk_owner_id: true } } },
+  });
+  return row?.planning?.fk_owner_id ?? null;
 }
 
 /**
@@ -91,33 +81,30 @@ async function getOwnerIdForMission(missionId: number): Promise<number | null> {
  */
 async function getDccDroneIdForPlanning(planningId: number): Promise<string | null> {
   try {
-    const { data: mission } = await supabase
-      .from('pilot_mission')
-      .select('fk_tool_id')
-      .eq('fk_planning_id', planningId)
-      .not('fk_tool_id', 'is', null)
-      .limit(1)
-      .single();
+    const mission = await prisma.pilot_mission.findFirst({
+      where: { fk_planning_id: planningId, fk_tool_id: { not: null } },
+      select: { fk_tool_id: true },
+    });
 
-    const toolId = (mission as any)?.fk_tool_id;
+    const toolId = mission?.fk_tool_id;
     if (!toolId) return null;
 
-    const { data: component } = await supabase
-      .from('tool_component')
-      .select('dcc_drone_id')
-      .eq('fk_tool_id', toolId)
-      .eq('component_type', 'DRONE')
-      .eq('component_active', 'Y')
-      .not('dcc_drone_id', 'is', null)
-      .limit(1)
-      .single();
+    const component = await prisma.tool_component.findFirst({
+      where: {
+        fk_tool_id: toolId,
+        component_type: 'DRONE',
+        component_active: 'Y',
+        dcc_drone_id: { not: null },
+      },
+      select: { dcc_drone_id: true },
+    });
 
-    return (component as any)?.dcc_drone_id ?? null;
+    return component?.dcc_drone_id ?? null;
   } catch {
     return null;
   }
 }
- 
+
 
 async function dccPost(ownerId: number, path: string, body?: unknown): Promise<DccCallbackResult> {
   const base = await getDccCallbackUrl(ownerId);
@@ -138,8 +125,7 @@ async function dccPost(ownerId: number, path: string, body?: unknown): Promise<D
       signal: AbortSignal.timeout(10_000),
     });
 
-    console.log('dcc response:', res.status, res.statusText,res.body);
-    
+    console.log('dcc response:', res.status, res.statusText, res.body);
 
     const text = await res.text().catch(() => '');
     const responseBody = text ? truncateBody(text) : undefined;
@@ -174,7 +160,7 @@ async function dccPost(ownerId: number, path: string, body?: unknown): Promise<D
   }
 }
 
- 
+
 /**
  * POST /dcc/missions/{missionId}/acceptance
  * Called when OPM assigns a flight_request to a planning mission.
@@ -334,8 +320,6 @@ export interface DccMissionCreationPayload {
 /**
  * POST /dcc/missions
  * Called when PMVD creates a scheduled or on-demand mission.
- * Sends the full list of pre-generated mission IDs and their planned start times
- * so DCC can persist them on its side. On DCC failure the caller should roll back.
  */
 export async function notifyDccMissionCreation(
   ownerId: number,
@@ -353,8 +337,6 @@ export async function notifyDccMissionCreation(
 /**
  * POST /dcc/missions/cancel
  * Called when PMVD cancels a scheduled program.
- * Sends the complete list of mission IDs belonging to the program so DCC can
- * remove them from its own systems.
  */
 export async function notifyDccBulkCancellation(
   ownerId: number,

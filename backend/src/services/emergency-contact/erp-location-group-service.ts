@@ -1,26 +1,5 @@
-import { supabase } from "@/backend/database/database";
+import { prisma } from '@/lib/prisma';
 import { LocationGroup, LocationGroupCreateInput } from "@/config/types/erp";
-
-async function fetchGroup(groupId: number): Promise<LocationGroup | null> {
-  const { data, error } = await supabase
-    .from('erp_location_group')
-    .select(`
-      group_id, name, notes, is_active, fk_owner_id, created_at, updated_at,
-      locations:erp_location_group_location(location_id, location_name, lat, lng),
-      contacts:erp_location_group_contact(
-        fk_erp_id,
-        erp:emergency_response_plan!fk_erp_id(erp_id, contact, erp_type, description)
-      )
-    `)
-    .eq('group_id', groupId)
-    .single()
-
-  if (error) {
-    if (error.code === 'PGRST116') return null
-    throw new Error(error.message)
-  }
-  return mapRow(data)
-}
 
 function mapRow(g: any): LocationGroup {
   return {
@@ -29,141 +8,155 @@ function mapRow(g: any): LocationGroup {
     notes: g.notes ?? null,
     is_active: g.is_active,
     owner_id: g.fk_owner_id,
-    locations: (g.locations ?? []).map((l: any) => ({
+    locations: (g.erp_location_group_location ?? []).map((l: any) => ({
       location_id: l.location_id,
       name: l.location_name,
       lat: l.lat ?? null,
       lng: l.lng ?? null,
     })),
-    contacts: (g.contacts ?? [])
-      .filter((c: any) => c.erp)
+    contacts: (g.erp_location_group_contact ?? [])
+      .filter((c: any) => c.emergency_response_plan)
       .map((c: any) => ({
-        id: c.erp.erp_id,
-        contact: c.erp.contact,
-        type: c.erp.erp_type,
-        description: c.erp.description,
+        id: Number(c.emergency_response_plan.erp_id),
+        contact: c.emergency_response_plan.contact,
+        type: c.emergency_response_plan.erp_type,
+        description: c.emergency_response_plan.description,
       })),
-    created_at: g.created_at,
-    updated_at: g.updated_at,
-  }
+    created_at: g.created_at?.toISOString() ?? null,
+    updated_at: g.updated_at?.toISOString() ?? null,
+  };
+}
+
+const groupInclude = {
+  erp_location_group_location: true,
+  erp_location_group_contact: {
+    include: { emergency_response_plan: true },
+  },
+} as const;
+
+async function fetchGroup(groupId: number): Promise<LocationGroup | null> {
+  const g = await prisma.erp_location_group.findUnique({
+    where: { group_id: groupId },
+    include: groupInclude,
+  });
+  if (!g) return null;
+  return mapRow(g);
 }
 
 export async function listLocationGroups(ownerId: number): Promise<LocationGroup[]> {
-  const { data, error } = await supabase
-    .from('erp_location_group')
-    .select(`
-      group_id, name, notes, is_active, fk_owner_id, created_at, updated_at,
-      locations:erp_location_group_location(location_id, location_name, lat, lng),
-      contacts:erp_location_group_contact(
-        fk_erp_id,
-        erp:emergency_response_plan!fk_erp_id(erp_id, contact, erp_type, description)
-      )
-    `)
-    .eq('fk_owner_id', ownerId)
-    .order('created_at', { ascending: false })
-
-  if (error) throw new Error(error.message)
-  return (data ?? []).map(mapRow)
+  const rows = await prisma.erp_location_group.findMany({
+    where: { fk_owner_id: ownerId },
+    include: groupInclude,
+    orderBy: { created_at: 'desc' },
+  });
+  return rows.map(mapRow);
 }
 
 export async function createLocationGroup(input: LocationGroupCreateInput, ownerId: number): Promise<LocationGroup> {
-  const newErpIds: number[] = []
+  const newErpIds: bigint[] = [];
   for (const nc of input.new_contacts) {
-    const { data, error } = await supabase
-      .from('emergency_response_plan')
-      .insert({ description: nc.description, contact: nc.contact, erp_type: nc.type, fk_owner_id: ownerId })
-      .select('erp_id')
-      .single()
-    if (error) throw new Error(error.message)
-    newErpIds.push(data.erp_id)
+    const erp = await prisma.emergency_response_plan.create({
+      data: {
+        description: nc.description,
+        contact: nc.contact,
+        erp_type: nc.type,
+        fk_owner_id: ownerId,
+      },
+    });
+    newErpIds.push(erp.erp_id);
   }
 
-  const allContactIds = [...input.existing_contact_ids, ...newErpIds]
+  const allContactIds = [
+    ...input.existing_contact_ids.map((id) => BigInt(id)),
+    ...newErpIds,
+  ];
 
-  const { data: group, error: groupError } = await supabase
-    .from('erp_location_group')
-    .insert({ name: input.name, notes: input.notes ?? null, is_active: input.is_active, fk_owner_id: ownerId })
-    .select('group_id')
-    .single()
-  if (groupError) throw new Error(groupError.message)
+  const group = await prisma.erp_location_group.create({
+    data: {
+      name: input.name,
+      notes: input.notes ?? null,
+      is_active: input.is_active,
+      fk_owner_id: ownerId,
+      ...(input.locations.length > 0 && {
+        erp_location_group_location: {
+          create: input.locations.map((l) => ({
+            location_name: l.name,
+            lat: l.lat ?? null,
+            lng: l.lng ?? null,
+          })),
+        },
+      }),
+      ...(allContactIds.length > 0 && {
+        erp_location_group_contact: {
+          create: allContactIds.map((eid) => ({ fk_erp_id: eid })),
+        },
+      }),
+    },
+  });
 
-  if (input.locations.length > 0) {
-    const { error: locError } = await supabase
-      .from('erp_location_group_location')
-      .insert(input.locations.map(l => ({
-        fk_group_id: group.group_id,
-        location_name: l.name,
-        lat: l.lat ?? null,
-        lng: l.lng ?? null,
-      })))
-    if (locError) throw new Error(locError.message)
-  }
-
-  if (allContactIds.length > 0) {
-    const { error: contactError } = await supabase
-      .from('erp_location_group_contact')
-      .insert(allContactIds.map(id => ({ fk_group_id: group.group_id, fk_erp_id: id })))
-    if (contactError) throw new Error(contactError.message)
-  }
-
-  const result = await fetchGroup(group.group_id)
-  if (!result) throw new Error('Failed to fetch created group')
-  return result
+  const result = await fetchGroup(group.group_id);
+  if (!result) throw new Error('Failed to fetch created group');
+  return result;
 }
 
 export async function updateLocationGroup(id: number, input: LocationGroupCreateInput, ownerId: number): Promise<LocationGroup> {
-  const newErpIds: number[] = []
+  const newErpIds: bigint[] = [];
   for (const nc of input.new_contacts) {
-    const { data, error } = await supabase
-      .from('emergency_response_plan')
-      .insert({ description: nc.description, contact: nc.contact, erp_type: nc.type, fk_owner_id: ownerId })
-      .select('erp_id')
-      .single()
-    if (error) throw new Error(error.message)
-    newErpIds.push(data.erp_id)
+    const erp = await prisma.emergency_response_plan.create({
+      data: {
+        description: nc.description,
+        contact: nc.contact,
+        erp_type: nc.type,
+        fk_owner_id: ownerId,
+      },
+    });
+    newErpIds.push(erp.erp_id);
   }
 
-  const allContactIds = [...input.existing_contact_ids, ...newErpIds]
+  const allContactIds = [
+    ...input.existing_contact_ids.map((eid) => BigInt(eid)),
+    ...newErpIds,
+  ];
 
-  const { error: updateError } = await supabase
-    .from('erp_location_group')
-    .update({ name: input.name, notes: input.notes ?? null, is_active: input.is_active, updated_at: new Date().toISOString() })
-    .eq('group_id', id)
-    .eq('fk_owner_id', ownerId)
-  if (updateError) throw new Error(updateError.message)
+  await prisma.$transaction(async (tx) => {
+    await tx.erp_location_group.update({
+      where: { group_id: id },
+      data: {
+        name: input.name,
+        notes: input.notes ?? null,
+        is_active: input.is_active,
+        updated_at: new Date(),
+      },
+    });
 
-  await supabase.from('erp_location_group_location').delete().eq('fk_group_id', id)
-  await supabase.from('erp_location_group_contact').delete().eq('fk_group_id', id)
+    await tx.erp_location_group_location.deleteMany({ where: { fk_group_id: id } });
+    await tx.erp_location_group_contact.deleteMany({ where: { fk_group_id: id } });
 
-  if (input.locations.length > 0) {
-    const { error: locError } = await supabase
-      .from('erp_location_group_location')
-      .insert(input.locations.map(l => ({
-        fk_group_id: id,
-        location_name: l.name,
-        lat: l.lat ?? null,
-        lng: l.lng ?? null,
-      })))
-    if (locError) throw new Error(locError.message)
-  }
+    if (input.locations.length > 0) {
+      await tx.erp_location_group_location.createMany({
+        data: input.locations.map((l) => ({
+          fk_group_id: id,
+          location_name: l.name,
+          lat: l.lat ?? null,
+          lng: l.lng ?? null,
+        })),
+      });
+    }
 
-  if (allContactIds.length > 0) {
-    const { error: contactError } = await supabase
-      .from('erp_location_group_contact')
-      .insert(allContactIds.map(eid => ({ fk_group_id: id, fk_erp_id: eid })))
-    if (contactError) throw new Error(contactError.message)
-  }
+    if (allContactIds.length > 0) {
+      await tx.erp_location_group_contact.createMany({
+        data: allContactIds.map((eid) => ({ fk_group_id: id, fk_erp_id: eid })),
+      });
+    }
+  });
 
-  const result = await fetchGroup(id)
-  if (!result) throw new Error('Failed to fetch updated group')
-  return result
+  const result = await fetchGroup(id);
+  if (!result) throw new Error('Failed to fetch updated group');
+  return result;
 }
 
 export async function deleteLocationGroup(id: number, ownerId: number): Promise<void> {
-  const { error } = await supabase
-    .from('erp_location_group')
-    .delete()
-    .eq('group_id', id)
-    .eq('fk_owner_id', ownerId)
-  if (error) throw new Error(error.message)
+  await prisma.erp_location_group.deleteMany({
+    where: { group_id: id, fk_owner_id: ownerId },
+  });
 }

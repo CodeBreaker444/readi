@@ -5,6 +5,7 @@ import { Loader2Icon } from 'lucide-react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { getUserIdByAuthId, saveMfaSettings } from './actions'
 
 export default function Setup2FAPage() {
   const router = useRouter()
@@ -23,8 +24,8 @@ export default function Setup2FAPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/auth/login'); return }
 
-      const { data: userData } = await supabase.from('users').select('user_id').eq('auth_user_id', user.id).single()
-      if (userData) setUserId(userData.user_id)
+      const uid = await getUserIdByAuthId(user.id)
+      if (uid) setUserId(uid)
 
       const { data: enrollData, error: enrollError } = await supabase.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'Authenticator App' })
       if (enrollError) throw enrollError
@@ -49,10 +50,7 @@ export default function Setup2FAPage() {
       const { error: verifyError } = await supabase.auth.mfa.verify({ factorId, challengeId: challengeData.id, code })
       if (verifyError) throw verifyError
 
-      await supabase.from('user_settings').upsert([
-        { fk_user_id: userId, setting_key: 'mfa_enabled', setting_value: 'true', setting_type: 'boolean', updated_at: new Date().toISOString() },
-        { fk_user_id: userId, setting_key: 'mfa_setup_shown', setting_value: 'true', setting_type: 'boolean', updated_at: new Date().toISOString() }
-      ], { onConflict: 'fk_user_id,setting_key' })
+      await saveMfaSettings(userId, true)
 
       document.cookie = 'mfa_verified=true; path=/; max-age=604800; samesite=strict'
       router.push('/dashboard')
@@ -68,10 +66,7 @@ export default function Setup2FAPage() {
     if (!userId) { setError('User ID not found'); return }
     setLoading(true)
     try {
-      await supabase.from('user_settings').upsert([
-        { fk_user_id: userId, setting_key: 'mfa_enabled', setting_value: 'false', setting_type: 'boolean', updated_at: new Date().toISOString() },
-        { fk_user_id: userId, setting_key: 'mfa_setup_shown', setting_value: 'true', setting_type: 'boolean', updated_at: new Date().toISOString() }
-      ], { onConflict: 'fk_user_id,setting_key' })
+      await saveMfaSettings(userId, false)
       if (factorId) { try { await supabase.auth.mfa.unenroll({ factorId }) } catch {} }
       router.push('/dashboard')
     } catch (err: any) {

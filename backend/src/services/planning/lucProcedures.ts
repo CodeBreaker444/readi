@@ -1,48 +1,38 @@
-import { supabase } from '../../database/database';
+import { prisma } from '@/lib/prisma';
 
 export async function getLUCProceduresList(ownerId: number, sector?: string) {
   try {
-    console.log('Fetching procedures for owner:', ownerId, 'sector:', sector);
-    
-    let query = supabase
-      .from('luc_procedure')
-      .select(`
-        procedure_id,
-        procedure_code,
-        procedure_name,
-        procedure_description,
-        procedure_version,
-        procedure_status,
-        procedure_steps,
-        effective_date,
-        procedure_active
-      `)
-      .eq('fk_owner_id', ownerId)
-      .eq('procedure_active', 'Y');
-
-    if (sector) {
-      query = query.eq('procedure_status', sector);
-    }
-
-    const { data, error } = await query.order('procedure_name', { ascending: true });
-
-    if (error) {
-      console.error('Supabase error:', error);
-      throw error;
-    }
-
+    const procedures = await prisma.luc_procedure.findMany({
+      where: {
+        fk_owner_id: ownerId,
+        procedure_active: 'Y',
+        ...(sector && { procedure_status: sector }),
+      },
+      orderBy: { procedure_name: 'asc' },
+      select: {
+        procedure_id: true,
+        procedure_code: true,
+        procedure_name: true,
+        procedure_description: true,
+        procedure_version: true,
+        procedure_status: true,
+        procedure_steps: true,
+        effective_date: true,
+        procedure_active: true,
+      },
+    });
 
     return {
       success: true,
-      procedures: data.map(proc => ({
+      procedures: procedures.map(proc => ({
         id: proc.procedure_id,
         name: proc.procedure_name,
         code: proc.procedure_code,
         description: proc.procedure_description,
         version: proc.procedure_version,
         status: proc.procedure_status,
-        steps: proc.procedure_steps
-      }))
+        steps: proc.procedure_steps,
+      })),
     };
   } catch (error) {
     console.error('Error fetching procedures:', error);
@@ -52,13 +42,11 @@ export async function getLUCProceduresList(ownerId: number, sector?: string) {
 
 export async function getLUCProcedureById(procedureId: number) {
   try {
-    const { data, error } = await supabase
-      .from('luc_procedure')
-      .select('*')
-      .eq('procedure_id', procedureId)
-      .single();
+    const data = await prisma.luc_procedure.findUnique({
+      where: { procedure_id: procedureId },
+    });
 
-    if (error) throw error;
+    if (!data) throw new Error('Procedure not found');
 
     return {
       success: true,
@@ -72,8 +60,8 @@ export async function getLUCProcedureById(procedureId: number) {
         steps: data.procedure_steps,
         effectiveDate: data.effective_date,
         reviewDate: data.review_date,
-        active: data.procedure_active
-      }
+        active: data.procedure_active,
+      },
     };
   } catch (error) {
     console.error('Error fetching Procedure:', error);

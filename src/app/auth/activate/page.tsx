@@ -9,7 +9,7 @@ import { toast } from 'sonner'
 export default function ActivatePage() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
+  const [status, setStatus] = useState<'loading' | 'success' | 'already_active' | 'error'>('loading')
   const [username, setUsername] = useState('')
 
   useEffect(() => {
@@ -40,6 +40,8 @@ export default function ActivatePage() {
           setStatus('success')
           toast.success('Your account has been activated successfully!')
           setTimeout(() => router.push(`/auth/login?activated=true&username=${usernameParam}`), 3000)
+        } else if (data.title === 'alreadyActivated') {
+          setStatus('already_active')
         } else {
           setStatus('error')
           toast.error(data.message || 'Activation failed.')
@@ -146,6 +148,25 @@ export default function ActivatePage() {
                   Continue to login
                 </button>
                 <p className="text-xs text-slate-400 mt-3">Redirecting automatically in 3 seconds…</p>
+              </div>
+            )}
+
+            {status === 'already_active' && (
+              <div className="flex flex-col items-center text-center py-4">
+                <div className="w-16 h-16 rounded-full flex items-center justify-center mb-5" style={{ background: 'linear-gradient(135deg, #d1fae5, #a7f3d0)' }}>
+                  <CheckCircle className="h-7 w-7 text-emerald-600" />
+                </div>
+                <h2 className="text-lg font-bold text-slate-900 mb-1">Already activated</h2>
+                <p className="text-sm text-slate-400 leading-relaxed mb-6">
+                  Your account is already active. You can log in directly.
+                </p>
+                <button
+                  onClick={() => router.push('/auth/login')}
+                  className="w-full cursor-pointer h-10 rounded-lg text-white text-sm font-semibold transition-all duration-150 active:scale-[0.99] flex items-center justify-center"
+                  style={{ background: 'linear-gradient(135deg, #7c3aed, #6d28d9)', boxShadow: '0 2px 12px rgba(124,58,237,0.25)' }}
+                >
+                  Go to login
+                </button>
               </div>
             )}
 

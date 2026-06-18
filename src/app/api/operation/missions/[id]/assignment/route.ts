@@ -1,4 +1,4 @@
-import { supabase } from '@/backend/database/database';
+import { prisma } from '@/lib/prisma';
 import { internalError } from '@/lib/api-error';
 import { requirePermission } from '@/lib/auth/api-auth';
 import { E } from '@/lib/error-codes';
@@ -30,48 +30,54 @@ export async function POST(req: NextRequest, { params }: Params) {
 
     const subject = `[Mission Assignment] ${body.task_name} — Mission #${missionId}`;
 
-    const { error: msgErr } = await supabase.from('messages').insert({
-      from_user_id:    fromUserId,
-      to_user_id:      body.to_user_id,
-      message_subject: subject,
-      message_body:    body.message,
-      message_type:    'assignment',
-    });
-
-    if (msgErr) {
+    try {
+      await prisma.messages.create({
+        data: {
+          from_user_id:    fromUserId,
+          to_user_id:      body.to_user_id,
+          message_subject: subject,
+          message_body:    body.message,
+          message_type:    'assignment',
+        },
+      });
+    } catch (msgErr: any) {
       return NextResponse.json(
         { code: 0, message: `Failed to send message: ${msgErr.message}` },
         { status: 422 },
       );
     }
 
-    await supabase.from('assignment').insert({
-      fk_user_id:        body.to_user_id,
-      fk_owner_id:       ownerId,
-      assignment_code:   body.task_code,
-      assignment_desc:   body.task_name,
-      assignment_json: {
-        mission_id:   missionId,
-        task_code:    body.task_code,
-        task_name:    body.task_name,
-        from_user_id: fromUserId,
-        message:      body.message,
+    await prisma.assignment.create({
+      data: {
+        fk_user_id:        body.to_user_id,
+        fk_owner_id:       ownerId,
+        assignment_code:   body.task_code,
+        assignment_desc:   body.task_name,
+        assignment_json: {
+          mission_id:   missionId,
+          task_code:    body.task_code,
+          task_name:    body.task_name,
+          from_user_id: fromUserId,
+          message:      body.message,
+        },
+        assignment_ver:    1,
+        assignment_active: 'Y',
       },
-      assignment_ver:    1,
-      assignment_active: 'Y',
     });
 
-    await supabase.from('notification').insert({
-      fk_user_id:           body.to_user_id,
-      notification_type:    'assignment',
-      notification_title:   'New Assignment',
-      notification_message: subject,
-      notification_data: {
-        mission_id:   missionId,
-        task_code:    body.task_code,
-        from_user_id: fromUserId,
+    await prisma.notification.create({
+      data: {
+        fk_user_id:           body.to_user_id,
+        notification_type:    'assignment',
+        notification_title:   'New Assignment',
+        notification_message: subject,
+        notification_data: {
+          mission_id:   missionId,
+          task_code:    body.task_code,
+          from_user_id: fromUserId,
+        },
+        priority: 'normal',
       },
-      priority: 'normal',
     });
 
     return NextResponse.json({ code: 1, message: 'Assignment sent' });

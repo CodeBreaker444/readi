@@ -54,14 +54,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       code: 1,
       status: 'SUCCESS',
-      message: 'success',
+      message: result.message,
       title: 'userDataAdd',
       timestamp: Math.floor(Date.now() / 1000),
       newId: result.userId,
       new_user_owner_id: result.userOwnerId,
       send_mail_to_new_user: result.emailSent,
+      email_error: result.emailError ?? null,
       x_api_token: result.activationKey,
-      error_list: [],
+      error_list: result.emailError ? [result.emailError] : [],
       param: body,
     });
   } catch (err) {

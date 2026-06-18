@@ -1,8 +1,8 @@
 'use client';
 
-import '@/lib/i18n/config';
 import { useTheme } from '@/components/useTheme';
 import { Session } from '@/lib/auth/server-session';
+import '@/lib/i18n/config';
 import {
   flexRender,
   getCoreRowModel,
@@ -12,8 +12,8 @@ import {
 } from '@tanstack/react-table';
 import axios from 'axios';
 import { Building2, Filter, Plus, Search, User } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import ExportButtons from '../system/ExportButtons';
 import { TablePagination } from '../tables/Pagination';
@@ -202,6 +202,17 @@ export default function UserManagement({ session }: UserManagementProps) {
             });
           } catch {
             toast.warning(t('team.personnel.toast.ccTokenWarning'));
+          }
+        }
+        if (formData.grant_pic_technician && data.newId) {
+          try {
+            await axios.post('/api/team/user/subrole', {
+              user_id: data.newId,
+              subrole: 'PIC_TECHNICIAN',
+              action: 'grant',
+            });
+          } catch {
+            toast.warning('User created but PIC-Technician sub-role could not be granted. You can grant it from the edit user panel.');
           }
         }
         toast.success(t('team.personnel.toast.created'));
@@ -450,10 +461,10 @@ export default function UserManagement({ session }: UserManagementProps) {
       </div>
 
       {showAddModal && (
-        <UserFormModal isOpen={showAddModal} clients={clients} owners={owners} isSuperAdmin={isSuperAdmin} onClose={() => setShowAddModal(false)} mode="add" onSubmit={handleAddUser} isDark={isDark} canEditEmail={canEditEmail} />
+        <UserFormModal isOpen={showAddModal} clients={clients} owners={owners} isSuperAdmin={isSuperAdmin} onClose={() => setShowAddModal(false)} mode="add" onSubmit={handleAddUser} isDark={isDark} canEditEmail={canEditEmail} sessionRole={session.user.role} />
       )}
       {showEditModal && selectedUser && (
-        <UserFormModal isOpen={showEditModal} clients={clients} onClose={() => { setShowEditModal(false); setSelectedUser(null); }} mode="edit" userData={selectedUser} onSubmit={handleUpdateUser} isDark={isDark} canEditEmail={canEditEmail} />
+        <UserFormModal isOpen={showEditModal} clients={clients} onClose={() => { setShowEditModal(false); setSelectedUser(null); }} mode="edit" userData={selectedUser} onSubmit={handleUpdateUser} isDark={isDark} canEditEmail={canEditEmail} sessionRole={session.user.role} />
       )}
 
       <AlertDialog open={showDeleteDialog} onOpenChange={(open) => { if (!open) { setShowDeleteDialog(false); setUserToDelete(null); } }}>

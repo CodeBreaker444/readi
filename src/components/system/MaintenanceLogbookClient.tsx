@@ -21,9 +21,13 @@ import { useTranslation } from 'react-i18next';
 
 interface Props {
   canClose: boolean;
+  canAssign?: boolean;
+  canCreate?: boolean;
+  canDownload?: boolean;
+  canIntervene?: boolean;
 }
 
-export default function MaintenanceLogbookClient({ canClose }: Props) {
+export default function MaintenanceLogbookClient({ canClose, canAssign = false, canCreate = false, canDownload = false, canIntervene = false }: Props) {
   const { isDark } = useTheme();
   const { t } = useTranslation();
 
@@ -59,6 +63,7 @@ export default function MaintenanceLogbookClient({ canClose }: Props) {
     handleAssignTicket,
     handleAddReport,
     handleUploadFile,
+    handleIntervention,
   } = useMaintenanceLogbook();
 
   useEffect(() => { loadTickets(); }, [loadTickets]);
@@ -132,20 +137,22 @@ export default function MaintenanceLogbookClient({ canClose }: Props) {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              onClick={openNewTicketModal}
-              className={`h-8 cursor-pointer gap-1.5 text-xs font-semibold transition-all shadow-sm ${
-                isDark
-                  ? "bg-white hover:bg-white/90 text-black"
-                  : "bg-violet-600 hover:bg-violet-700 text-white"
-              }`}
-            >
-              <Plus size={14} />
-              <span>{t('systems.maintenanceLogbook.newTicket')}</span>
-            </Button>
-          </div>
+          {canCreate && (
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                onClick={openNewTicketModal}
+                className={`h-8 cursor-pointer gap-1.5 text-xs font-semibold transition-all shadow-sm ${
+                  isDark
+                    ? "bg-white hover:bg-white/90 text-black"
+                    : "bg-violet-600 hover:bg-violet-700 text-white"
+                }`}
+              >
+                <Plus size={14} />
+                <span>{t('systems.maintenanceLogbook.newTicket')}</span>
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -175,6 +182,10 @@ export default function MaintenanceLogbookClient({ canClose }: Props) {
             onClose={openCloseModal}
             onDownload={openDownloadModal}
             canClose={canClose}
+            canAssign={canAssign}
+            canDownload={canDownload}
+            canIntervene={canIntervene}
+            onIntervention={handleIntervention}
             isDark={isDark}
           />
 
@@ -204,6 +215,7 @@ export default function MaintenanceLogbookClient({ canClose }: Props) {
         onSubmit={handleCloseTicket}
         isDark={isDark}
         loading={modalLoading}
+        isInProgress={tickets.find((t) => t.ticket_id === activeTicketId)?.ticket_status === 'IN_PROGRESS'}
       />
 
       <AssignTicketModal

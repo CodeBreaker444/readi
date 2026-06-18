@@ -1,11 +1,12 @@
-import { unstable_cache, revalidateTag } from "next/cache";
 import { supabase } from "@/backend/database/database";
-import { sendNotificationEmail } from "../../../../lib/resend/mail";
 import type {
-    MarkReadPayload,
-    Notification,
-    NotificationListFilters,
+  MarkReadPayload,
+  Notification,
+  NotificationListFilters,
 } from "@/config/types/notification";
+import { prisma } from "@/lib/prisma";
+import { revalidateTag, unstable_cache } from "next/cache";
+import { sendNotificationEmail } from "../../../../lib/resend/mail";
 
 
 async function fetchUnreadNotifications(userId: number): Promise<Notification[]> {
@@ -160,23 +161,18 @@ export async function deleteNotification(
   notification_id: number,
   userId: number
 ): Promise<void> {
-  const { error } = await supabase
-    .from("notification")
-    .delete()
-    .eq("notification_id", notification_id)
-    .eq("fk_user_id", userId);
-
-  if (error) throw new Error(error.message);
+  await prisma.notification.deleteMany({
+    where: { notification_id, fk_user_id: userId },
+  });
 }
 
 
 async function isEmailNotificationsEnabled(ownerId: number): Promise<boolean> {
-  const { data } = await supabase
-    .from("owner")
-    .select("email_notifications_enabled")
-    .eq("owner_id", ownerId)
-    .single();
-  return data?.email_notifications_enabled === true;
+  const owner = await prisma.owner.findUnique({
+    where: { owner_id: ownerId },
+    select: { email_notifications_enabled: true },
+  });
+  return owner?.email_notifications_enabled === true;
 }
 
 /**
@@ -189,30 +185,28 @@ export async function sendNotificationToRoles(
   message: string,
   actionUrl?: string
 ): Promise<void> {
-  const { data: users } = await supabase
-    .from("users")
-    .select("user_id, email")
-    .eq("fk_owner_id", ownerId)
-    .eq("user_active", "Y")
-    .in("user_role", roles);
+  const users = await prisma.public_users.findMany({
+    where: { fk_owner_id: ownerId, user_active: "Y", user_role: { in: roles } },
+    select: { user_id: true, email: true },
+  });
 
-  if (!users?.length) return;
+  if (!users.length) return;
 
-  const notifications = users.map((u: { user_id: number; email: string }) => ({
-    fk_user_id: u.user_id,
-    notification_title: title,
-    notification_message: message,
-    notification_type: "MAINTENANCE",
-    is_read: false,
-    action_url: actionUrl ?? null,
-    created_at: new Date().toISOString(),
-  }));
-
-  await supabase.from("notification").insert(notifications);
+  await prisma.notification.createMany({
+    data: users.map((u) => ({
+      fk_user_id: u.user_id,
+      notification_title: title,
+      notification_message: message,
+      notification_type: "MAINTENANCE",
+      is_read: false,
+      action_url: actionUrl ?? null,
+      created_at: new Date(),
+    })),
+  });
 
   const emailEnabled = await isEmailNotificationsEnabled(ownerId);
   if (emailEnabled) {
-    const emails = users.map((u: { user_id: number; email: string }) => u.email).filter(Boolean);
+    const emails = users.map((u) => u.email).filter((e): e is string => !!e);
     sendNotificationEmail(emails, title, message, "MAINTENANCE", actionUrl ?? null);
   }
 }
@@ -228,24 +222,26 @@ export async function notifyPilotAssignment(
   assignments: AssignmentNotificationPayload | AssignmentNotificationPayload[]
 ): Promise<void> {
   const rows = (Array.isArray(assignments) ? assignments : [assignments]).map((a) => ({
-    fk_user_id:           a.pilotUserId,
-    notification_type:    'assignment',
-    notification_title:   'New Assignment',
+    fk_user_id: a.pilotUserId,
+    notification_type: "assignment",
+    notification_title: "New Assignment",
     notification_message: `You have been assigned to operation ${a.missionCode}`,
     notification_data: {
-      mission_id:   a.missionId,
-      task_code:    a.missionCode,
+      mission_id: a.missionId,
+      task_code: a.missionCode,
       from_user_id: a.fromUserId,
     },
-    priority:  'normal',
-    is_read:   false,
-    created_at: new Date().toISOString(),
+    priority: "normal",
+    is_read: false,
+    created_at: new Date(),
   }));
 
-  console.log('[notifyPilotAssignment] inserting', rows.length, 'notification(s) for user', rows[0]?.fk_user_id);
-  const { error } = await supabase.from('notification').insert(rows);
-  if (error) {
-    console.error('[notifyPilotAssignment] insert failed:', error.message, error.details, error.hint);
+  console.log("[notifyPilotAssignment] inserting", rows.length, "notification(s) for user", rows[0]?.fk_user_id);
+
+  try {
+    await prisma.notification.createMany({ data: rows });
+  } catch (error: any) {
+    console.error("[notifyPilotAssignment] insert failed:", error.message);
   }
 }
 
@@ -258,21 +254,22 @@ export async function sendNotificationToUser(
   message: string,
   actionUrl?: string
 ): Promise<void> {
-  await supabase.from("notification").insert({
-    fk_user_id: userId,
-    notification_title: title,
-    notification_message: message,
-    notification_type: "MAINTENANCE",
-    is_read: false,
-    action_url: actionUrl ?? null,
-    created_at: new Date().toISOString(),
+  await prisma.notification.create({
+    data: {
+      fk_user_id: userId,
+      notification_title: title,
+      notification_message: message,
+      notification_type: "MAINTENANCE",
+      is_read: false,
+      action_url: actionUrl ?? null,
+      created_at: new Date(),
+    },
   });
 
-  const { data: user } = await supabase
-    .from("users")
-    .select("email, fk_owner_id")
-    .eq("user_id", userId)
-    .single();
+  const user = await prisma.public_users.findUnique({
+    where: { user_id: userId },
+    select: { email: true, fk_owner_id: true },
+  });
 
   if (user?.fk_owner_id) {
     const emailEnabled = await isEmailNotificationsEnabled(user.fk_owner_id);

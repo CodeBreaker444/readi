@@ -15,7 +15,7 @@ import type {
   UserOption,
 } from '@/config/types/maintenance';
 import { cn } from '@/lib/utils';
-import { CheckCircle2, Loader2 } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react';
 import { useRef } from 'react';
 import { toast } from 'sonner';
 import type { NewTicketForm, ReportForm } from './useMaintenance';
@@ -286,7 +286,7 @@ export function NewTicketModal({
 }
 
 export function CloseTicketModal({
-  open, onClose, note, onNoteChange, onSubmit, isDark, loading,
+  open, onClose, note, onNoteChange, onSubmit, isDark, loading, isInProgress,
 }: {
   open: boolean;
   onClose: () => void;
@@ -295,6 +295,7 @@ export function CloseTicketModal({
   onSubmit: () => void;
   isDark?: boolean;
   loading?: boolean;
+  isInProgress?: boolean;
 }) {
   const { t } = useTranslation();
   return (
@@ -345,6 +346,13 @@ export function CloseTicketModal({
               )}
             />
           </div>
+
+          {isInProgress && (
+            <div className="flex items-start gap-2 rounded-lg px-3 py-2.5 text-[11px] bg-yellow-400/20 border border-yellow-400/40 text-yellow-600 dark:text-yellow-400">
+              <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+              <span>This ticket is still <strong>In Progress</strong> — the technician has an active intervention that has not been ended. Closing now will override it.</span>
+            </div>
+          )}
 
           <div className={cn(
             'flex items-start gap-2 rounded-lg px-3 py-2.5 text-[11px]',

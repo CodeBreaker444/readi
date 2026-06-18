@@ -1,9 +1,10 @@
-import { supabase } from "@/backend/database/database";
+import { Prisma } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 
 export interface PilotDeclarationPayload {
   fk_user_id: number;
   fk_tool_id?: number | null;
-  declaration_type: string;        
+  declaration_type: string;
   declaration_data: Record<string, unknown>;
 }
 
@@ -18,102 +19,78 @@ export interface PilotDeclaration {
   declared_at: string | null;
 }
 
-/**
- * Returns true if the pilot has already submitted a declaration today.
- */
-export async function checkDailyDeclaration(userId: number): Promise<boolean> {
-  const today = new Date().toISOString().split("T")[0];
-
-  const { data, error } = await supabase
-    .from("pilot_declaration")
-    .select("declaration_id")
-    .eq("fk_user_id", userId)
-    .eq("declaration_date", today)
-    .eq("checklist_completed", true)
-    .maybeSingle();
-
-  if (error) {
-    throw new Error(`Failed to check daily declaration: ${error.message}`);
-  }
-
-  return data !== null;
+function mapDeclaration(row: any): PilotDeclaration {
+  return {
+    declaration_id: row.declaration_id,
+    fk_user_id: row.fk_user_id,
+    fk_tool_id: row.fk_tool_id ?? null,
+    declaration_type: row.declaration_type ?? null,
+    declaration_date: row.declaration_date?.toISOString().slice(0, 10) ?? null,
+    declaration_data: row.declaration_data as Record<string, unknown> | null,
+    checklist_completed: row.checklist_completed ?? false,
+    declared_at: row.declared_at?.toISOString() ?? null,
+  };
 }
 
-/**
- * Saves a pilot declaration for today.
- * If one already exists for (user, date, type) it updates it; otherwise inserts a new row.
- */
+export async function checkDailyDeclaration(userId: number): Promise<boolean> {
+  const today = new Date().toISOString().split('T')[0];
+
+  const record = await prisma.pilot_declaration.findFirst({
+    where: {
+      fk_user_id: userId,
+      declaration_date: new Date(today),
+      checklist_completed: true,
+    },
+    select: { declaration_id: true },
+  });
+
+  return record !== null;
+}
+
 export async function insertPilotDeclaration(
-  payload: PilotDeclarationPayload
+  payload: PilotDeclarationPayload,
 ): Promise<PilotDeclaration> {
-  const today = new Date().toISOString().split("T")[0];
-  const now = new Date().toISOString();
+  const today = new Date().toISOString().split('T')[0];
 
-  const { data: existing } = await supabase
-    .from("pilot_declaration")
-    .select("declaration_id")
-    .eq("fk_user_id", payload.fk_user_id)
-    .eq("declaration_date", today)
-    .eq("declaration_type", payload.declaration_type)
-    .maybeSingle();
-
-  if (existing) {
-    const { data, error } = await supabase
-      .from("pilot_declaration")
-      .update({
-        fk_tool_id: payload.fk_tool_id ?? null,
-        declaration_data: payload.declaration_data,
-        checklist_completed: true,
-        declared_at: now,
-      })
-      .eq("declaration_id", existing.declaration_id)
-      .select()
-      .single();
-
-    if (error) throw new Error(`Failed to update pilot declaration: ${error.message}`);
-    return data as PilotDeclaration;
-  }
-
-  const { data, error } = await supabase
-    .from("pilot_declaration")
-    .insert({
+  const row = await prisma.pilot_declaration.upsert({
+    where: {
+      fk_user_id_declaration_date_declaration_type: {
+        fk_user_id: payload.fk_user_id,
+        declaration_date: new Date(today),
+        declaration_type: payload.declaration_type,
+      },
+    },
+    update: {
+      fk_tool_id: payload.fk_tool_id ?? null,
+      declaration_data: payload.declaration_data as unknown as Prisma.InputJsonValue,
+      checklist_completed: true,
+      declared_at: new Date(),
+    },
+    create: {
       fk_user_id: payload.fk_user_id,
       fk_tool_id: payload.fk_tool_id ?? null,
       declaration_type: payload.declaration_type,
-      declaration_date: today,
-      declaration_data: payload.declaration_data,
+      declaration_date: new Date(today),
+      declaration_data: payload.declaration_data as unknown as Prisma.InputJsonValue,
       checklist_completed: true,
-      declared_at: now,
-    })
-    .select()
-    .single();
+      declared_at: new Date(),
+    },
+  });
 
-  if (error) throw new Error(`Failed to insert pilot declaration: ${error.message}`);
-  return data as PilotDeclaration;
+  return mapDeclaration(row);
 }
 
-/**
- * Returns all declarations for a pilot, optionally filtered by date.
- */
 export async function getPilotDeclarations(
   userId: number,
-  date?: string
+  date?: string,
 ): Promise<PilotDeclaration[]> {
-  let query = supabase
-    .from("pilot_declaration")
-    .select("*")
-    .eq("fk_user_id", userId)
-    .order("declared_at", { ascending: false });
+  const rows = await prisma.pilot_declaration.findMany({
+    where: {
+      fk_user_id: userId,
+      ...(date && { declaration_date: new Date(date) }),
+    },
+    orderBy: { declared_at: 'desc' },
+  });
 
-  if (date) {
-    query = query.eq("declaration_date", date);
-  }
-
-  const { data, error } = await query;
-
-  if (error) {
-    throw new Error(`Failed to fetch pilot declarations: ${error.message}`);
-  }
-
-  return (data ?? []) as PilotDeclaration[];
+  return rows.map(mapDeclaration);
 }

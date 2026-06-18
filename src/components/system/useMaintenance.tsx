@@ -328,6 +328,20 @@ export function useMaintenanceLogbook() {
     }
   }, [activeTicketId, uploadDesc, closeModal]);
 
+  const handleIntervention = useCallback(async (ticketId: number, action: 'start' | 'end') => {
+    try {
+      await axios.post('/api/system/maintenance/tickets/intervention', { ticket_id: ticketId, action });
+      const now = new Date().toISOString();
+      updateLocalTicket(ticketId, action === 'start'
+        ? { intervention_started_at: now, ticket_status: 'IN_PROGRESS' }
+        : { intervention_ended_at: now, ticket_status: 'OPEN' }
+      );
+      toast.success(action === 'start' ? 'Intervention started' : 'Intervention ended');
+    } catch (e: any) {
+      toast.error(e.response?.data?.message ?? e.message);
+    }
+  }, [updateLocalTicket]);
+
   return {
     tickets,
     ticketsLoading,
@@ -363,5 +377,6 @@ export function useMaintenanceLogbook() {
     handleAssignTicket,
     handleAddReport,
     handleUploadFile,
+    handleIntervention,
   };
 }

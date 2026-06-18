@@ -16,6 +16,7 @@ export interface OwnerData {
   owner_website: string;
   owner_active: string;
   drone_atc_enabled: boolean;
+  d_flight_enabled: boolean;
   email_notifications_enabled: boolean;
   easa_operator_code: string | null;
   tax_id: string | null;
@@ -37,9 +38,10 @@ export interface OwnerData {
 interface OwnerColumnActions {
   onOpen: (owner: OwnerData) => void;
   onDelete: (owner: OwnerData) => void;
+  onActivate: (owner: OwnerData) => void;
 }
 
-export const ownerColumns = ({ onOpen, onDelete }: OwnerColumnActions): ColumnDef<OwnerData>[] => [
+export const ownerColumns = ({ onOpen, onDelete, onActivate }: OwnerColumnActions): ColumnDef<OwnerData>[] => [
   {
     header: 'Code',
     accessorKey: 'owner_code',
@@ -120,27 +122,40 @@ export const ownerColumns = ({ onOpen, onDelete }: OwnerColumnActions): ColumnDe
     header: 'Actions',
     id: 'actions',
     cell: ({ row }) => {
-      const isProtected = row.original.owner_id === 1;
+      const owner = row.original;
+      const isActive = owner.owner_active === 'Y';
+      const isProtected = owner.owner_id === 1 && isActive;
       return (
         <div className="flex items-center gap-2">
           <Button
             size="sm"
             variant="outline"
             className="h-7 text-xs"
-            onClick={() => onOpen(row.original)}
+            onClick={() => onOpen(owner)}
           >
             Open
           </Button>
-          <Button
-            size="sm"
-            variant="destructive"
-            className="h-7 text-xs"
-            onClick={() => onDelete(row.original)}
-            disabled={isProtected}
-            title={isProtected ? 'This company cannot be deactivated' : undefined}
-          >
-            Deactivate
-          </Button>
+          {isActive ? (
+            <Button
+              size="sm"
+              variant="destructive"
+              className="h-7 text-xs"
+              onClick={() => onDelete(owner)}
+              disabled={isProtected}
+              title={isProtected ? 'This company cannot be deactivated' : undefined}
+            >
+              Deactivate
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs border-green-500 text-green-600 hover:bg-green-50 hover:text-green-700"
+              onClick={() => onActivate(owner)}
+            >
+              Activate
+            </Button>
+          )}
         </div>
       );
     },

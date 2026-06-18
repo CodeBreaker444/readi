@@ -4,6 +4,7 @@ import { useTheme } from '@/components/useTheme';
 import axios from 'axios';
 import {
   AlertTriangle,
+  Archive,
   ArrowLeft,
   AtSign,
   Bell,
@@ -36,7 +37,7 @@ import {
 import { TbBug } from 'react-icons/tb';
 
 
-interface HighlightCard { title: string; icon: string; color: string; description: string }
+interface HighlightCard { title: string; icon: string; color: string; description?: string }
 interface ReleaseLog {
   version: string; date: string; title: string; description: string;
   status: string; releaseType: string; tags: string[];
@@ -50,7 +51,7 @@ type TabKey = "What's New" | 'Improvements' | 'Bug Fixes' | 'Details';
 const HIGHLIGHT_ICON: Record<string, React.ElementType> = {
   bell: Bell, 'at-sign': AtSign, 'layout-grid': LayoutGrid,
   filter: Filter, shield: Shield, 'shield-alert': ShieldAlert, bug: Bug, rocket: Rocket,
-  file: FileText, warning: AlertTriangle, timer: Timer,
+  file: FileText, warning: AlertTriangle, timer: Timer, archive: Archive,
 };
 
 const HIGHLIGHT_COLOR: Record<string, { bg: string; text: string }> = {
@@ -61,6 +62,7 @@ const HIGHLIGHT_COLOR: Record<string, { bg: string; text: string }> = {
   violet: { bg: 'bg-violet-500/10', text: 'text-violet-600' },
   blue: { bg: 'bg-blue-500/10', text: 'text-blue-600' },
   amber: { bg: 'bg-amber-500/10', text: 'text-amber-600' },
+  slate: { bg: 'bg-slate-500/10', text: 'text-slate-500' },
 };
 
 const SECTION_META: Record<string, {
@@ -497,11 +499,8 @@ export default function ReleasesPage() {
                             <Icon size={15} className={col.text} />
                           </span>
                           <div>
-                            <p className={`text-[12px] font-semibold leading-tight mb-0.5 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
+                            <p className={`text-[12px] font-semibold leading-tight ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
                               {card.title}
-                            </p>
-                            <p className={`text-[11px] leading-relaxed ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
-                              {card.description}
                             </p>
                           </div>
                         </div>

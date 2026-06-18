@@ -1,4 +1,4 @@
-import { supabase } from '@/backend/database/database';
+import { prisma } from '@/lib/prisma';
 
 export type EvidenceType = 'DOC' | 'RECORD' | 'AUDIT' | 'LINK';
 
@@ -26,50 +26,32 @@ export interface CreateEvidenceParams {
   submitted_by_user_id?: number | null;
 }
 
-/**
- * List all evidence items for a given requirement.
- */
 export async function listEvidenceByRequirement(
   requirementId: number,
   ownerId: number
 ): Promise<ComplianceEvidence[]> {
-  const { data: req, error: reqError } = await supabase
-    .from('compliance_requirement')
-    .select('requirement_id')
-    .eq('requirement_id', requirementId)
-    .eq('fk_owner_id', ownerId)
-    .single();
+  const req = await prisma.compliance_requirement.findFirst({
+    where: { requirement_id: requirementId, fk_owner_id: ownerId },
+    select: { requirement_id: true },
+  });
+  if (!req) throw new Error('Requirement not found or access denied');
 
-  if (reqError || !req) throw new Error('Requirement not found or access denied');
-
-  const { data, error } = await supabase
-    .from('compliance_evidence')
-    .select('*')
-    .eq('fk_requirement_id', requirementId)
-    .order('submitted_at', { ascending: false });
-
-  if (error) throw error;
-  return (data ?? []) as ComplianceEvidence[];
+  const rows = await prisma.compliance_evidence.findMany({
+    where: { fk_requirement_id: requirementId },
+    orderBy: { submitted_at: 'desc' },
+  });
+  return rows as unknown as ComplianceEvidence[];
 }
 
-/**
- * Add a new evidence item to a compliance requirement.
- */
-export async function addEvidence(
-  params: CreateEvidenceParams
-): Promise<ComplianceEvidence> {
-  const { data: req, error: reqError } = await supabase
-    .from('compliance_requirement')
-    .select('requirement_id')
-    .eq('requirement_id', params.requirement_id)
-    .eq('fk_owner_id', params.owner_id)
-    .single();
+export async function addEvidence(params: CreateEvidenceParams): Promise<ComplianceEvidence> {
+  const req = await prisma.compliance_requirement.findFirst({
+    where: { requirement_id: params.requirement_id, fk_owner_id: params.owner_id },
+    select: { requirement_id: true },
+  });
+  if (!req) throw new Error('Requirement not found or access denied');
 
-  if (reqError || !req) throw new Error('Requirement not found or access denied');
-
-  const { data, error } = await supabase
-    .from('compliance_evidence')
-    .insert({
+  const row = await prisma.compliance_evidence.create({
+    data: {
       fk_requirement_id: params.requirement_id,
       evidence_type: params.evidence_type,
       evidence_description: params.evidence_description ?? null,
@@ -77,49 +59,27 @@ export async function addEvidence(
       notes: params.notes ?? null,
       submitted_by_user_id: params.submitted_by_user_id ?? null,
       verification_status: 'PENDING',
-    })
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data as ComplianceEvidence;
+    },
+  });
+  return row as unknown as ComplianceEvidence;
 }
 
-/**
- * Delete an evidence item.
- */
-export async function deleteEvidence(
-  evidenceId: number,
-  ownerId: number
-): Promise<void> {
-  const { data: ev, error: evError } = await supabase
-    .from('compliance_evidence')
-    .select('evidence_id, fk_requirement_id')
-    .eq('evidence_id', evidenceId)
-    .single();
+export async function deleteEvidence(evidenceId: number, ownerId: number): Promise<void> {
+  const ev = await prisma.compliance_evidence.findUnique({
+    where: { evidence_id: evidenceId },
+    select: { evidence_id: true, fk_requirement_id: true },
+  });
+  if (!ev) throw new Error('Evidence not found');
 
-  if (evError || !ev) throw new Error('Evidence not found');
+  const req = await prisma.compliance_requirement.findFirst({
+    where: { requirement_id: ev.fk_requirement_id, fk_owner_id: ownerId },
+    select: { requirement_id: true },
+  });
+  if (!req) throw new Error('Access denied');
 
-  const { data: req, error: reqError } = await supabase
-    .from('compliance_requirement')
-    .select('requirement_id')
-    .eq('requirement_id', ev.fk_requirement_id)
-    .eq('fk_owner_id', ownerId)
-    .single();
-
-  if (reqError || !req) throw new Error('Access denied');
-
-  const { error } = await supabase
-    .from('compliance_evidence')
-    .delete()
-    .eq('evidence_id', evidenceId);
-
-  if (error) throw error;
+  await prisma.compliance_evidence.delete({ where: { evidence_id: evidenceId } });
 }
 
-/**
- * Update the status of a compliance requirement and record it in the status log.
- */
 export async function updateRequirementStatus(params: {
   requirement_id: number;
   owner_id: number;
@@ -129,28 +89,24 @@ export async function updateRequirementStatus(params: {
 }): Promise<void> {
   const { requirement_id, owner_id, new_status, changed_by_user_id, comment } = params;
 
-  const { data: current, error: fetchError } = await supabase
-    .from('compliance_requirement')
-    .select('requirement_status')
-    .eq('requirement_id', requirement_id)
-    .eq('fk_owner_id', owner_id)
-    .single();
+  const current = await prisma.compliance_requirement.findFirst({
+    where: { requirement_id, fk_owner_id: owner_id },
+    select: { requirement_status: true },
+  });
+  if (!current) throw new Error('Requirement not found or access denied');
 
-  if (fetchError || !current) throw new Error('Requirement not found or access denied');
+  await prisma.compliance_requirement.update({
+    where: { requirement_id },
+    data: { requirement_status: new_status, updated_at: new Date() },
+  });
 
-  const { error: updateError } = await supabase
-    .from('compliance_requirement')
-    .update({ requirement_status: new_status, updated_at: new Date().toISOString() })
-    .eq('requirement_id', requirement_id)
-    .eq('fk_owner_id', owner_id);
-
-  if (updateError) throw updateError;
-
-  await supabase.from('compliance_status_log').insert({
-    fk_requirement_id: requirement_id,
-    status_from: current.requirement_status,
-    status_to: new_status,
-    changed_by_user_id,
-    change_reason: comment ?? null,
+  await prisma.compliance_status_log.create({
+    data: {
+      fk_requirement_id: requirement_id,
+      status_from: current.requirement_status,
+      status_to: new_status,
+      changed_by_user_id,
+      change_reason: comment ?? null,
+    },
   });
 }

@@ -49,7 +49,7 @@ export const EvaluationDetailContent: FC<Props> = ({ ownerId }) => {
     const { isDark } = useTheme();
     const searchParams = useSearchParams();
     const router = useRouter();
-    const { t } = useTranslation();  
+    const { t } = useTranslation();
 
     const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -123,20 +123,24 @@ export const EvaluationDetailContent: FC<Props> = ({ ownerId }) => {
         setTaskTableKey((k) => k + 1);
     }
 
-    if (isLoading) return <EvaluationDetailSkeleton />;
+    if (isLoading) return <EvaluationDetailSkeleton isDark={isDark} />;
+
+    const card     = cn('shadow-sm', isDark ? 'bg-slate-800 border-slate-700' : 'border-slate-200');
+    const cardText = isDark ? 'text-white' : 'text-slate-900';
+    const cardDesc = isDark ? 'text-slate-400' : 'text-slate-500';
 
     return (
         <>
-            <div className="min-h-screen bg-slate-50/60">
-                <div className="border-b border-slate-200 bg-white py-3  top-0 z-10">
+            <div className={cn('min-h-screen', isDark ? 'bg-slate-900' : 'bg-slate-50/60')}>
+                <div className={cn('border-b py-3 top-0 z-10', isDark ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white')}>
                     <div className="mx-4 flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <div className="w-1 h-6 rounded-full bg-violet-600" />
                             <div>
-                                <h1 className="text-base font-semibold text-slate-900">
+                                <h1 className={cn('text-base font-semibold', isDark ? 'text-white' : 'text-slate-900')}>
                                     {t('planning.evaluation.detailTitle')}
                                 </h1>
-                                <p className="text-xs text-slate-500 leading-none mt-0.5">
+                                <p className={cn('text-xs leading-none mt-0.5', isDark ? 'text-slate-400' : 'text-slate-500')}>
                                     {t('planning.evaluation.detailSubtitle')}
                                 </p>
                             </div>
@@ -162,30 +166,32 @@ export const EvaluationDetailContent: FC<Props> = ({ ownerId }) => {
                 <div className="px-6 py-6 space-y-5">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                         <Collapsible open={editOpen} onOpenChange={setEditOpen}>
-                            <Card className="border-slate-200 shadow-sm">
+                            <Card className={card}>
                                 <CollapsibleTrigger asChild>
-                                    <CardHeader className="pb-3 cursor-pointer select-none hover:bg-slate-50/80 transition-colors rounded-t-xl">
+                                    <CardHeader className={cn(
+                                        'pb-3 cursor-pointer select-none transition-colors rounded-t-xl',
+                                        isDark ? 'hover:bg-slate-700/50' : 'hover:bg-slate-50/80'
+                                    )}>
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2">
                                                 <Pencil className="w-4 h-4 text-violet-500" />
-                                                <CardTitle className="text-sm font-semibold">
+                                                <CardTitle className={cn('text-sm font-semibold', cardText)}>
                                                     {t('planning.evaluation.editTitle')}
                                                 </CardTitle>
                                             </div>
-                                            <ChevronDown
-                                                className={cn(
-                                                    'w-4 h-4 text-slate-400 transition-transform duration-200',
-                                                    editOpen && 'rotate-180',
-                                                )}
-                                            />
+                                            <ChevronDown className={cn(
+                                                'w-4 h-4 transition-transform duration-200',
+                                                isDark ? 'text-slate-500' : 'text-slate-400',
+                                                editOpen && 'rotate-180',
+                                            )} />
                                         </div>
-                                        <CardDescription className="text-xs mt-0.5">
+                                        <CardDescription className={cn('text-xs mt-0.5', cardDesc)}>
                                             {t('planning.evaluation.editSubtitle')}
                                         </CardDescription>
                                     </CardHeader>
                                 </CollapsibleTrigger>
                                 <CollapsibleContent>
-                                    <Separator />
+                                    <Separator className={isDark ? 'bg-slate-700' : ''} />
                                     <CardContent className="pt-5">
                                         <EditEvaluationForm
                                             evaluation={evaluation}
@@ -196,15 +202,15 @@ export const EvaluationDetailContent: FC<Props> = ({ ownerId }) => {
                             </Card>
                         </Collapsible>
 
-                        <Card className="border-slate-200 shadow-sm">
+                        <Card className={card}>
                             <CardHeader className="pb-3">
                                 <div className="flex items-center gap-2">
                                     <Map className="w-4 h-4 text-emerald-500" />
-                                    <CardTitle className="text-sm font-semibold">
+                                    <CardTitle className={cn('text-sm font-semibold', cardText)}>
                                         {t('planning.evaluation.operationArea')}
                                     </CardTitle>
                                 </div>
-                                <CardDescription className="text-xs">
+                                <CardDescription className={cn('text-xs', cardDesc)}>
                                     {t('planning.evaluation.operationAreaDesc')}
                                 </CardDescription>
                             </CardHeader>
@@ -217,15 +223,15 @@ export const EvaluationDetailContent: FC<Props> = ({ ownerId }) => {
                         </Card>
                     </div>
 
-                    <Card className="border-slate-200 shadow-sm">
+                    <Card className={card}>
                         <CardHeader className="pb-3">
                             <div className="flex items-center gap-2">
                                 <ClipboardList className="w-4 h-4 text-blue-500" />
-                                <CardTitle className="text-sm font-semibold">
+                                <CardTitle className={cn('text-sm font-semibold', cardText)}>
                                     {t('planning.evaluation.taskCompletion')}
                                 </CardTitle>
                             </div>
-                            <CardDescription className="text-xs">
+                            <CardDescription className={cn('text-xs', cardDesc)}>
                                 {t('planning.evaluation.taskCompletionDesc')}
                             </CardDescription>
                         </CardHeader>
@@ -233,18 +239,20 @@ export const EvaluationDetailContent: FC<Props> = ({ ownerId }) => {
                             <TaskCompletionTable
                                 key={taskTableKey}
                                 evaluationId={evaluationId}
-                                clientId={clientId}     
+                                clientId={clientId}
                                 ownerId={ownerId}
                                 onAllCompleted={() => {}}
                             />
                         </CardContent>
                     </Card>
 
-                    <Card className="border-slate-200 shadow-sm">
+                    <Card className={card}>
                         <CardHeader className="pb-3">
                             <div className="flex items-center gap-2">
                                 <FileText className="w-4 h-4 text-amber-500" />
-                                <CardTitle className="text-sm font-semibold">{t('planning.evaluation.files')}</CardTitle>
+                                <CardTitle className={cn('text-sm font-semibold', cardText)}>
+                                    {t('planning.evaluation.files')}
+                                </CardTitle>
                             </div>
                         </CardHeader>
                         <CardContent>
@@ -255,13 +263,15 @@ export const EvaluationDetailContent: FC<Props> = ({ ownerId }) => {
                         </CardContent>
                     </Card>
 
-                    <Card className="border-slate-200 shadow-sm">
+                    <Card className={card}>
                         <CardHeader className="pb-3">
                             <div className="flex items-center gap-2">
                                 <Send className="w-4 h-4 text-violet-500" />
-                                <CardTitle className="text-sm font-semibold">{t('planning.evaluation.linkedFlightRequests')}</CardTitle>
+                                <CardTitle className={cn('text-sm font-semibold', cardText)}>
+                                    {t('planning.evaluation.linkedFlightRequests')}
+                                </CardTitle>
                             </div>
-                            <CardDescription className="text-xs">
+                            <CardDescription className={cn('text-xs', cardDesc)}>
                                 {t('planning.evaluation.linkedFlightRequestsDesc')}
                             </CardDescription>
                         </CardHeader>
@@ -271,23 +281,28 @@ export const EvaluationDetailContent: FC<Props> = ({ ownerId }) => {
                                     {[1, 2, 3].map((i) => <Skeleton key={i} className="h-10 w-full rounded-lg" />)}
                                 </div>
                             ) : flightRequests.length === 0 ? (
-                                <p className="text-xs text-slate-400 py-4 text-center">{t('planning.evaluation.noFlightRequests')}</p>
+                                <p className={cn('text-xs py-4 text-center', isDark ? 'text-slate-500' : 'text-slate-400')}>
+                                    {t('planning.evaluation.noFlightRequests')}
+                                </p>
                             ) : (
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-xs">
                                         <thead>
-                                            <tr className="border-b border-slate-100">
+                                            <tr className={cn('border-b', isDark ? 'border-slate-700' : 'border-slate-100')}>
                                                 {['Mission ID', 'Type', 'Target', 'Priority', 'Operator', 'Status', 'Received'].map((h) => (
-                                                    <th key={h} className="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-400">{h}</th>
+                                                    <th key={h} className={cn(
+                                                        'px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wider',
+                                                        isDark ? 'text-slate-500' : 'text-slate-400'
+                                                    )}>{h}</th>
                                                 ))}
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-slate-50">
+                                        <tbody className={cn('divide-y', isDark ? 'divide-slate-700/60' : 'divide-slate-50')}>
                                             {flightRequests.map((r: any) => (
-                                                <tr key={r.request_id} className="hover:bg-slate-50/60">
+                                                <tr key={r.request_id} className={cn(isDark ? 'hover:bg-slate-700/50' : 'hover:bg-slate-50/60')}>
                                                     <td className="px-3 py-2.5 font-mono font-semibold text-violet-600">{r.external_mission_id}</td>
-                                                    <td className="px-3 py-2.5 text-slate-600">{r.mission_type ?? '—'}</td>
-                                                    <td className="px-3 py-2.5 text-slate-600">{r.target ?? '—'}</td>
+                                                    <td className={cn('px-3 py-2.5', isDark ? 'text-slate-300' : 'text-slate-600')}>{r.mission_type ?? '—'}</td>
+                                                    <td className={cn('px-3 py-2.5', isDark ? 'text-slate-300' : 'text-slate-600')}>{r.target ?? '—'}</td>
                                                     <td className="px-3 py-2.5">
                                                         {r.priority ? (
                                                             <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold
@@ -296,13 +311,15 @@ export const EvaluationDetailContent: FC<Props> = ({ ownerId }) => {
                                                             </span>
                                                         ) : '—'}
                                                     </td>
-                                                    <td className="px-3 py-2.5 font-mono text-slate-500">{r.operator ?? '—'}</td>
+                                                    <td className={cn('px-3 py-2.5 font-mono', isDark ? 'text-slate-400' : 'text-slate-500')}>{r.operator ?? '—'}</td>
                                                     <td className="px-3 py-2.5">
                                                         <span className="inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold bg-violet-100 text-violet-700">
                                                             {r.dcc_status}
                                                         </span>
                                                     </td>
-                                                    <td className="px-3 py-2.5 text-slate-400">{format(new Date(r.created_at), 'dd MMM yyyy HH:mm')}</td>
+                                                    <td className={cn('px-3 py-2.5', isDark ? 'text-slate-500' : 'text-slate-400')}>
+                                                        {format(new Date(r.created_at), 'dd MMM yyyy HH:mm')}
+                                                    </td>
                                                 </tr>
                                             ))}
                                         </tbody>

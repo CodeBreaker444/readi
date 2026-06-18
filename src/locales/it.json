@@ -220,6 +220,7 @@
     "planning": "CO-00 - Pianificazione",
     "newEvaluationRequest": "P00 - Nuova richiesta di valutazione",
     "evaluation": "P01 - Valutazione",
+    "planningMission": "P02 - Missione di pianificazione",
     "planningDashboard": "P02 - Dashboard pianificazione",
     "missionTemplates": "P04 - Modelli missione",
     "flightRequests": "Richieste di volo",
@@ -273,6 +274,9 @@
     "integrations": "Integrazioni",
     "configuration": "Configurazione",
     "droneAtc": "Drone ATC",
+    "dflight": "D-Flight",
+    "dflightSettings": "Impostazioni",
+    "dflightFleet": "Flotta",
     "collapse": "Comprimi barra laterale",
     "expand": "Espandi barra laterale",
     "appSubtitle": "Controllo droni"
@@ -923,6 +927,15 @@
       "edit": "Modifica",
       "delete": "Elimina"
     },
+    "modal": {
+      "addPlanningTitle": "Aggiungi Richiesta di Pianificazione",
+      "addPlanningSubtitle": "[GO.00.P01] — Compila il modulo per creare una nuova pianificazione da questa valutazione."
+    },
+    "toast": {
+      "loadFormError": "Caricamento dati modulo fallito",
+      "createPlanningSuccess": "Richiesta di pianificazione creata con successo!",
+      "createPlanningFailed": "Creazione pianificazione fallita"
+    },
     "columns": {
       "yearRef": "Anno Rif.",
       "evaluationCode": "Codice Valutazione",
@@ -1090,6 +1103,8 @@
       "completed": "COMPLETATO",
       "failed": "FALLITO",
       "filter": {
+        "title": "Filtri",
+        "all": "Tutti",
         "client": "Cliente",
         "allClients": "Tutti i clienti",
         "pic": "PiC",
@@ -1105,6 +1120,7 @@
       },
       "table": {
         "searchPlaceholder": "Cerca in tutte le colonne…",
+        "recordsFound": "record trovati",
         "active": "Attivo",
         "inactive": "Inattivo",
         "noResults": "Nessun piano missione trovato",
@@ -2205,6 +2221,8 @@
       "completed": "COMPLETATO",
       "failed": "FALLITO",
       "filter": {
+        "title": "Filtri",
+        "all": "Tutti",
         "client": "Cliente",
         "allClients": "Tutti i clienti",
         "pic": "PiC",
@@ -2220,6 +2238,7 @@
       },
       "table": {
         "searchPlaceholder": "Cerca in tutte le colonne…",
+        "recordsFound": "record trovati",
         "active": "Attivo",
         "inactive": "Inattivo",
         "noResults": "Nessun piano missione trovato",
@@ -3946,7 +3965,8 @@
         "statusOptions": {
           "operational": "Operativo",
           "notOperational": "Non Operativo",
-          "maintenance": "Manutenzione"
+          "maintenance": "Manutenzione",
+          "dismissed": "Dismesso (Ritiro)"
         },
         "buttons": {
           "cancel": "Annulla",
@@ -4677,6 +4697,70 @@
           "deleted": "Chiave API eliminata",
           "deleteFailed": "Eliminazione chiave non riuscita"
         }
+      }
+    }
+  },
+  "dflight": {
+    "settings": {
+      "pageTitle": "Impostazioni D-Flight",
+      "pageSubtitle": "Configura le credenziali di connessione USSP D-Flight",
+      "title": "Integrazione D-Flight",
+      "subtitle": "Configura la connessione M2M con la piattaforma USSP D-Flight",
+      "sectionConnection": "Connessione",
+      "sectionCredentials": "Credenziali OAuth 2.0",
+      "sectionNri": "NRI (Network Remote Identification)",
+      "baseUrl": "URL Base",
+      "baseUrlPlaceholder": "https://dflight.esempio.com",
+      "websocketUrl": "URL WebSocket",
+      "websocketUrlPlaceholder": "wss://dflight.esempio.com/ws",
+      "username": "Nome utente",
+      "usernamePlaceholder": "utente@operatore.com",
+      "password": "Password",
+      "passwordPlaceholder": "Inserisci la password",
+      "passwordKeep": "Lascia vuoto per mantenere la password attuale",
+      "passwordSet": "impostata",
+      "clientId": "Client ID",
+      "clientIdPlaceholder": "dflight-client-id",
+      "authCode": "Auth Code",
+      "authCodePlaceholder": "Codice di autenticazione NRI",
+      "secureId": "Secure ID",
+      "secureIdPlaceholder": "Identificatore sicuro NRI",
+      "save": "Salva Impostazioni",
+      "saved": "Salvato",
+      "toast": {
+        "loadFailed": "Caricamento configurazione D-Flight non riuscito",
+        "saved": "Impostazioni D-Flight salvate",
+        "saveFailed": "Salvataggio impostazioni D-Flight non riuscito",
+        "validationError": "URL base, nome utente e client ID sono obbligatori",
+        "passwordRequired": "La password è obbligatoria per la prima configurazione"
+      }
+    },
+    "fleet": {
+      "pageTitle": "Flotta D-Flight",
+      "pageSubtitle": "Sistemi abbinati al registro droni D-Flight",
+      "tableTitle": "Abbinamento Flotta",
+      "tableSubtitle": "Componenti Readi abbinati ai droni D-Flight tramite numero di serie",
+      "refresh": "Aggiorna",
+      "loading": "Recupero dati flotta D-Flight…",
+      "retry": "Riprova",
+      "empty": "Nessun componente trovato per questa organizzazione",
+      "stat": {
+        "total": "Componenti Totali",
+        "linked": "Collegati a D-Flight",
+        "unlinked": "Non Trovati in D-Flight"
+      },
+      "col": {
+        "link": "Collegato",
+        "system": "Sistema",
+        "component": "Componente",
+        "serialNumber": "Numero di Serie",
+        "drc": "DRC (ID D-Flight)",
+        "dFlightName": "Nome D-Flight",
+        "model": "Modello",
+        "status": "Stato"
+      },
+      "error": {
+        "generic": "Caricamento dati flotta non riuscito"
       }
     }
   }

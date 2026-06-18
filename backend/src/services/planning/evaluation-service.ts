@@ -1,106 +1,75 @@
-import { supabase } from "@/backend/database/database";
-import { Client, Evaluation, EvaluationFile, LucProcedure } from "@/config/types/evaluation";
-import { deleteFileFromS3 } from "@/lib/s3Client";
+import { prisma } from '@/lib/prisma';
+import { Client, Evaluation, EvaluationFile, LucProcedure } from '@/config/types/evaluation';
+import { deleteFileFromS3 } from '@/lib/s3Client';
 
-/**
- * Fetch all evaluations for an owner, joining client, user and luc_procedure.
- */
 export async function getEvaluationList(ownerId: number): Promise<Evaluation[]> {
-  const { data, error } = await supabase
-    .from('evaluation')
-    .select(`
-      evaluation_id,
-      fk_owner_id,
-      fk_client_id,
-      fk_luc_procedure_id,
-      evaluation_code,
-      evaluation_name,
-      evaluation_description,
-      evaluation_type,
-      evaluation_status,
-      evaluation_result,
-      evaluation_year,
-      evaluation_active,
-      evaluation_metadata,
-      scheduled_date,
-      coordinates,
-      created_by_user_id,
-      created_at,
-      updated_at,
-      client:fk_client_id ( client_name ),
-      luc_procedure:fk_luc_procedure_id ( procedure_code, procedure_version ),
-      creator:created_by_user_id ( username )
-    `)
-    .eq('fk_owner_id', ownerId)
-    .order('evaluation_id', { ascending: false });
+  const data = await prisma.evaluation.findMany({
+    where: { fk_owner_id: ownerId },
+    orderBy: { evaluation_id: 'desc' },
+    include: {
+      client: { select: { client_name: true } },
+      luc_procedure: { select: { procedure_code: true, procedure_version: true } },
+      users: { select: { username: true } },
+    },
+  });
 
-  if (error) throw new Error(`getEvaluationList: ${error.message}`);
-
-  return (data ?? []).map((row: any) => {
+  return data.map((row) => {
     const metadata =
       typeof row.evaluation_metadata === 'string'
         ? JSON.parse(row.evaluation_metadata)
-        : row.evaluation_metadata ?? {};
+        : (row.evaluation_metadata as Record<string, any>) ?? {};
 
     return {
       ...row,
       client_name: row.client?.client_name ?? '',
       luc_procedure_code: row.luc_procedure?.procedure_code ?? '',
       luc_procedure_ver: row.luc_procedure?.procedure_version ?? '',
-      user_name: row.creator?.username ?? '',
-
+      user_name: row.users?.username ?? '',
       evaluation_desc: row.evaluation_description ?? '',
       evaluation_request_date: row.scheduled_date ?? '',
       last_update: row.updated_at ?? '',
-
       evaluation_offer: metadata.offer ?? '',
       evaluation_sale_manager: metadata.sale_manager ?? '',
     };
-  }) as Evaluation[];
+  }) as unknown as Evaluation[];
 }
 
-/**
- * Delete an evaluation (only allowed when status = 'NEW').
- */
 export async function deleteEvaluation(
   evaluationId: number,
   ownerId: number
 ): Promise<void> {
-  const { data: existing } = await supabase
-    .from('evaluation')
-    .select('evaluation_status')
-    .eq('evaluation_id', evaluationId)
-    .eq('fk_owner_id', ownerId)
-    .single();
+  const existing = await prisma.evaluation.findFirst({
+    where: { evaluation_id: evaluationId, fk_owner_id: ownerId },
+    select: { evaluation_status: true },
+  });
 
   if (!existing) throw new Error('Evaluation not found');
   if (existing.evaluation_status !== 'NEW') {
     throw new Error('Only evaluations with status NEW can be deleted');
   }
 
-  const { error } = await supabase
-    .from('evaluation')
-    .delete()
-    .eq('evaluation_id', evaluationId)
-    .eq('fk_owner_id', ownerId);
-
-  if (error) throw new Error(`deleteEvaluation: ${error.message}`);
+  await prisma.evaluation.deleteMany({
+    where: { evaluation_id: evaluationId, fk_owner_id: ownerId },
+  });
 }
-
 
 export async function getEvaluationFiles(
   evaluationId: number,
-  ownerId: number,
+  ownerId: number
 ): Promise<EvaluationFile[]> {
-  const { data, error } = await supabase
-    .from('evaluation_file')
-    .select('*')
-    .eq('fk_evaluation_id', evaluationId)
-    .eq('fk_owner_id', ownerId)
-    .order('evaluation_file_id', { ascending: false });
+  const evalCheck = await prisma.evaluation.findFirst({
+    where: { evaluation_id: evaluationId, fk_owner_id: ownerId },
+    select: { evaluation_id: true },
+  });
 
-  if (error) throw new Error(`getEvaluationFiles: ${error.message}`);
-  return (data ?? []) as EvaluationFile[];
+  if (!evalCheck) throw new Error('Evaluation not found');
+
+  const data = await prisma.evaluation_file.findMany({
+    where: { fk_evaluation_id: evaluationId },
+    orderBy: { file_id: 'desc' },
+  });
+
+  return data as unknown as EvaluationFile[];
 }
 
 export async function addEvaluationFile(payload: {
@@ -114,79 +83,85 @@ export async function addEvaluationFile(payload: {
   evaluation_file_filesize: number;
   evaluation_file_ver: string;
 }): Promise<EvaluationFile> {
-  const { data, error } = await supabase
-    .from('evaluation_file')
-    .insert({ ...payload, last_update: new Date().toISOString() })
-    .select()
-    .single();
+  const data = await prisma.evaluation_file.create({
+    data: {
+      fk_evaluation_id: payload.fk_evaluation_id,
+      file_name: payload.evaluation_file_filename,
+      file_path: payload.evaluation_file_folder,
+      file_description: payload.evaluation_file_desc,
+      file_size: BigInt(payload.evaluation_file_filesize),
+      file_version: parseInt(payload.evaluation_file_ver) || 1,
+      uploaded_by_user_id: payload.fk_user_id,
+      file_category: 'Upload',
+      is_latest: true,
+      uploaded_at: new Date(),
+    },
+  });
 
-  if (error) throw new Error(`addEvaluationFile: ${error.message}`);
-  return data as EvaluationFile;
+  return data as unknown as EvaluationFile;
 }
 
 export async function deleteEvaluationFile(
   fileId: number,
-  ownerId: number,
+  ownerId: number
 ): Promise<{ file_folder: string }> {
-  const { data: existing } = await supabase
-    .from('evaluation_file')
-    .select('evaluation_file_folder')
-    .eq('evaluation_file_id', fileId)
-    .eq('fk_owner_id', ownerId)
-    .single();
+  const existing = await prisma.evaluation_file.findUnique({
+    where: { file_id: fileId },
+    select: { file_path: true, fk_evaluation_id: true },
+  });
 
   if (!existing) throw new Error('File not found');
 
-  const { error } = await supabase
-    .from('evaluation_file')
-    .delete()
-    .eq('evaluation_file_id', fileId)
-    .eq('fk_owner_id', ownerId);
+  const evalCheck = await prisma.evaluation.findFirst({
+    where: { evaluation_id: existing.fk_evaluation_id, fk_owner_id: ownerId },
+    select: { evaluation_id: true },
+  });
 
-  if (error) throw new Error(`deleteEvaluationFile: ${error.message}`);
-  return { file_folder: existing.evaluation_file_folder };
+  if (!evalCheck) throw new Error('Access denied');
+
+  await prisma.evaluation_file.delete({ where: { file_id: fileId } });
+
+  return { file_folder: existing.file_path ?? '' };
 }
 
-
 export async function getClientList(ownerId: number): Promise<Client[]> {
-  const { data, error } = await supabase
-    .from('client')
-    .select('client_id, client_name, client_code')
-    .eq('fk_owner_id', ownerId)
-    .eq('client_active', 'Y')
-    .order('client_name');
+  const data = await prisma.client.findMany({
+    where: { fk_owner_id: ownerId, client_active: 'Y' },
+    orderBy: { client_name: 'asc' },
+    select: { client_id: true, client_name: true, client_code: true },
+  });
 
-  if (error) throw new Error(`getClientList: ${error.message}`);
-  return (data ?? []) as Client[];
+  return data as unknown as Client[];
 }
 
 export async function getLucProcedureList(
   ownerId: number,
-  sector?: string,
+  sector?: string
 ): Promise<LucProcedure[]> {
-  let query = supabase
-    .from('luc_procedure')
-    .select('procedure_id, procedure_code, procedure_name, procedure_version, procedure_status')
-    .eq('fk_owner_id', ownerId)
-    .eq('procedure_active', 'Y')
-    .order('procedure_code');
+  const data = await prisma.luc_procedure.findMany({
+    where: {
+      fk_owner_id: ownerId,
+      procedure_active: 'Y',
+      ...(sector && { procedure_status: sector }),
+    },
+    orderBy: { procedure_code: 'asc' },
+    select: {
+      procedure_id: true,
+      procedure_code: true,
+      procedure_name: true,
+      procedure_version: true,
+      procedure_status: true,
+    },
+  });
 
-  if (sector) {
-    query = query.eq('procedure_status', sector);
-  }
-
-  const { data, error } = await query;
-  if (error) throw new Error(`getLucProcedureList: ${error.message}`);
-
-  return (data ?? []).map((row: Record<string, unknown>) => ({
-    luc_procedure_id: row.procedure_id as number,
-    luc_procedure_desc: row.procedure_name as string,
-    luc_procedure_code: row.procedure_code as string,
-    luc_procedure_ver: row.procedure_version as string ?? '1.0',
-    luc_procedure_sector: row.procedure_status as string ?? '',
-  }));
+  return data.map((row) => ({
+    luc_procedure_id: row.procedure_id,
+    luc_procedure_desc: row.procedure_name,
+    luc_procedure_code: row.procedure_code ?? '',
+    luc_procedure_ver: row.procedure_version ?? '1.0',
+    luc_procedure_sector: row.procedure_status ?? '',
+  })) as LucProcedure[];
 }
-
 
 export async function deleteLogbookFile(
   missionPlanningId: number,
@@ -196,21 +171,20 @@ export async function deleteLogbookFile(
     try {
       await deleteFileFromS3(s3Key);
     } catch (err) {
-      console.error("S3 delete failed:", err);
+      console.error('S3 delete failed:', err);
     }
   }
 
-  const { error } = await supabase
-    .from("planning_logbook")
-    .update({
+  await prisma.planning_logbook.updateMany({
+    where: { mission_planning_id: missionPlanningId },
+    data: {
       mission_planning_filename: null,
       mission_planning_filesize: null,
       mission_planning_folder: null,
       mission_planning_s3_key: null,
       mission_planning_s3_url: null,
-    })
-    .eq("mission_planning_id", missionPlanningId);
+    },
+  });
 
-  if (error) throw new Error(error.message);
   return { success: true };
 }

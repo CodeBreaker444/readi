@@ -1,6 +1,8 @@
 import { internalError } from "@/lib/api-error";
+import { Role } from "@/lib/auth/roles";
 import { getUserSession } from "@/lib/auth/server-session";
 import { E } from "@/lib/error-codes";
+import { prisma } from "@/lib/prisma";
 import { checkTokenLimits, recordTokenUsage } from "@/lib/token-tracker";
 import { ROLE_ALLOWED_TABLES } from "@mcp-server/lib/constants";
 import { getGroq } from "@mcp-server/lib/groq";
@@ -32,39 +34,35 @@ class TokenAccumulator {
 
 async function handleDecommissioned(ownerID: number) {
     try {
-        const supabase = getSupabase();
-        const today = new Date().toISOString().slice(0, 10);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
-        const { data, error } = await supabase
-            .from('tool_component')
-            .select(`
-                component_id,
-                component_name,
-                component_type,
-                serial_number,
-                expiration_date,
-                component_active,
-                tool:tool!fk_tool_id (
-                    tool_id,
-                    tool_name,
-                    tool_code,
-                    fk_owner_id
-                )
-            `)
-            .lte('expiration_date', today)
-            .not('expiration_date', 'is', null);
+        const data = await prisma.tool_component.findMany({
+            where: {
+                expiration_date: { lte: today, not: null },
+                tool: { fk_owner_id: ownerID },
+            },
+            select: {
+                component_id:     true,
+                component_name:   true,
+                component_type:   true,
+                serial_number:    true,
+                expiration_date:  true,
+                component_active: true,
+                tool: {
+                    select: { tool_id: true, tool_name: true, tool_code: true, fk_owner_id: true },
+                },
+            },
+        });
 
-        if (error) {
-            console.error("Decommissioned query error:", error);
-            return null;
-        }
+        if (!data.length) return null;
 
-        const ownerFiltered = (data || []).filter((c: any) => c.tool?.fk_owner_id === ownerID);
-        if (ownerFiltered.length === 0) return null;
-
-        return ownerFiltered;
+        return data.map(c => ({
+            ...c,
+            expiration_date: c.expiration_date?.toISOString().split('T')[0] ?? null,
+        }));
     } catch (e) {
-        console.error("Decommissioned handler error:", e);
+        console.error('[handleDecommissioned] error:', e);
         return null;
     }
 }
@@ -285,24 +283,24 @@ export async function POST(req: NextRequest) {
                 return NextResponse.json({ error: "Select an OPM user to chat as." }, { status: 400 });
             }
 
-            const supabase = getSupabase();
-            const { data: opmUser, error: opmError } = await supabase
-                .from('users')
-                .select('user_id, fk_owner_id, user_role')
-                .eq('email', impersonateEmail)
-                .eq('fk_owner_id', session.user.ownerId)
-                .eq('user_role', 'OPM')
-                .eq('user_active', 'Y')
-                .single();
+            const opmUser = await prisma.public_users.findFirst({
+                where: {
+                    email: impersonateEmail,
+                    fk_owner_id: session.user.ownerId,
+                    user_role: 'OPM',
+                    user_active: 'Y',
+                },
+                select: { user_id: true, fk_owner_id: true, user_role: true },
+            });
 
-            if (opmError || !opmUser) {
+            if (!opmUser) {
                 return NextResponse.json({ error: "OPM user not found or inactive." }, { status: 403 });
             }
 
             user = {
-                role: opmUser.user_role,
+                role: (opmUser.user_role ?? 'OPM') as Role,
                 userId: opmUser.user_id,
-                ownerID: opmUser.fk_owner_id,
+                ownerID: opmUser.fk_owner_id ?? session.user.ownerId,
             };
         }
 

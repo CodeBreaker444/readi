@@ -1,6 +1,6 @@
 'use server';
 
-import { supabase } from '@/backend/database/database';
+import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { cache } from 'react';
 import { getPresignedDownloadUrl } from '../s3Client';
@@ -21,6 +21,7 @@ export interface SessionUser {
   timezone?: string
   avatar?: string | null;
   droneAtcEnabled: boolean;
+  dFlightEnabled: boolean;
   companyEasaCode: string | null;
   ownerName?: string | null;
 }
@@ -67,35 +68,29 @@ export const getUserSession = cache(async (): Promise<Session | null> => {
       return null;
     }
 
-    const userId = payload.sub;
+    const userId = Number(payload.sub);
 
-    const { data: userData, error: userDataError } = await supabase
-      .from('users')
-      .select(
-        `
-        user_id,
-        username,
-        email,
-        first_name,
-        last_name,
-        phone,
-        user_active,
-        user_role,
-        auth_user_id,
-        fk_owner_id,
-        user_timezone,
-        fk_client_id,
-        last_logout_at,
-        users_profile!fk_user_id (
-          profile_picture
-        )
-      `,
-      )
-      .eq('user_id', userId)
-      .eq('user_active', 'Y')
-      .single();
+    const userData = await prisma.public_users.findFirst({
+      where: { user_id: userId, user_active: 'Y' },
+      select: {
+        user_id: true,
+        username: true,
+        email: true,
+        first_name: true,
+        last_name: true,
+        phone: true,
+        user_active: true,
+        user_role: true,
+        auth_user_id: true,
+        fk_owner_id: true,
+        user_timezone: true,
+        fk_client_id: true,
+        last_logout_at: true,
+        users_profile: { select: { profile_picture: true } },
+      },
+    });
 
-    if (userDataError || !userData) {
+    if (!userData) {
       return null;
     }
 
@@ -105,48 +100,49 @@ export const getUserSession = cache(async (): Promise<Session | null> => {
       : 0;
     if (payload.iat && payload.iat < logoutEpoch) return null;
 
-    const profileData = Array.isArray(userData.users_profile)
-      ? userData.users_profile[0]
-      : userData.users_profile;
-
     const fullname =
       [userData.first_name, userData.last_name].filter(Boolean).join(' ') ||
       userData.username ||
-      userData.email;
+      userData.email ||
+      '';
 
-    const avatarUrl = await resolveAvatarUrl(profileData?.profile_picture);
+    const avatarUrl = await resolveAvatarUrl(userData.users_profile?.profile_picture);
 
     let droneAtcEnabled = false;
+    let dFlightEnabled = false;
     let companyEasaCode: string | null = null;
     let ownerName: string | null = null;
     if (userData.user_role !== 'SUPERADMIN' && userData.fk_owner_id) {
-      const { data: ownerData } = await supabase
-        .from('owner')
-        .select('drone_atc_enabled, easa_operator_code, owner_name')
-        .eq('owner_id', userData.fk_owner_id)
-        .single();
+      const ownerData = await prisma.owner.findUnique({
+        where: { owner_id: userData.fk_owner_id },
+        select: { drone_atc_enabled: true, d_flight_enabled: true, easa_operator_code: true, owner_name: true },
+      });
       droneAtcEnabled = ownerData?.drone_atc_enabled ?? false;
-      companyEasaCode = (ownerData as any)?.easa_operator_code ?? null;
-      ownerName = (ownerData as any)?.owner_name ?? null;
+      dFlightEnabled  = ownerData?.d_flight_enabled  ?? false;
+      companyEasaCode = ownerData?.easa_operator_code ?? null;
+      ownerName = ownerData?.owner_name ?? null;
     } else if (userData.user_role === 'SUPERADMIN') {
       droneAtcEnabled = true;
+      dFlightEnabled  = true;
     }
 
     const sessionUser: SessionUser = {
-      id: userData.auth_user_id,
+      id: userData.auth_user_id ?? '',
       userId: userData.user_id,
-      ownerId: userData.fk_owner_id,
-      email: userData.email,
+      ownerId: userData.fk_owner_id ?? 0,
+      email: userData.email ?? '',
       fullname,
-      username: userData.username,
+      username: userData.username ?? undefined,
       role: userData.user_role as Role,
-      clientId: userData.fk_client_id,
-      phone: userData.phone,
-      userActive: userData.user_active,
+      clientId: userData.fk_client_id ?? 0,
+      phone: userData.phone ?? undefined,
+      userActive: userData.user_active as 'Y' | 'N',
       timezone: userData.user_timezone ?? undefined,
       avatar: avatarUrl,
       droneAtcEnabled,
+      dFlightEnabled,
       companyEasaCode,
+
       ownerName,
     };
 

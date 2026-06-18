@@ -67,10 +67,13 @@ export async function POST(
 
     if (result.code === 1) {
       const systemCode = await getToolCode(parsed.data.fk_tool_id, session!.user.ownerId);
+      const lat = parsed.data.latitude;
+      const lng = parsed.data.longitude;
+      const posPart = (lat != null && lng != null) ? ` — position: ${lat}, ${lng}` : '';
       logEvent({
         eventType: 'UPDATE',
         entityType: 'system_component',
-        description: `Updated component '${parsed.data.component_code ?? parsed.data.component_name ?? parsed.data.component_type}' (type: ${parsed.data.component_type}) on system '${systemCode ?? parsed.data.fk_tool_id}'${parsed.data.component_sn ? ` — SN: ${parsed.data.component_sn}` : ''}`,
+        description: `Updated component '${parsed.data.component_code ?? parsed.data.component_name ?? parsed.data.component_type}' (type: ${parsed.data.component_type}) on system '${systemCode ?? parsed.data.fk_tool_id}'${parsed.data.component_sn ? ` — SN: ${parsed.data.component_sn}` : ''}${posPart}`,
         userId: session!.user.userId,
         userName: session!.user.fullname,
         userEmail: session!.user.email,

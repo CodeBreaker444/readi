@@ -1,4 +1,4 @@
-import { supabase } from "@/backend/database/database";
+import { prisma } from "@/lib/prisma";
 import { refreshMaintenanceDays } from "@/backend/utils/refresh-maintenance-days";
 import {
   MaintenanceComponent,
@@ -81,167 +81,151 @@ export async function getMaintenanceDashboard(
 ): Promise<MaintenanceDrone[]> {
   const { owner_id, threshold_alert } = params;
 
-let toolQuery = supabase
-  .from("tool")
-  .select(`
-    tool_id,
-    tool_code,
-    tool_description,
-    fk_owner_id,
-    fk_model_id,
-    tool_metadata,
-    tool_model:fk_model_id (
-      model_id,
-      manufacturer,
-      model_name,
-      specifications
-    )
-  `)
-  .eq("tool_active", "Y");
+  const rawTools = await prisma.tool.findMany({
+    where: {
+      tool_active: "Y",
+      ...(owner_id > 0 && { fk_owner_id: owner_id }),
+    },
+    select: {
+      tool_id: true,
+      tool_code: true,
+      tool_name: true,
+      tool_description: true,
+      fk_owner_id: true,
+      fk_model_id: true,
+      tool_metadata: true,
+      tool_model: {
+        select: {
+          model_id: true,
+          manufacturer: true,
+          model_name: true,
+          specifications: true,
+        },
+      },
+    },
+  });
 
-  if (owner_id > 0) toolQuery = toolQuery.eq("fk_owner_id", owner_id);
-
-  const { data: rawTools, error: toolError } = await toolQuery;
-  if (toolError) throw new Error(`Tools fetch failed: ${toolError.message}`);
   if (!rawTools || rawTools.length === 0) return [];
 
   const tools = rawTools.filter(
-    (t: { tool_metadata?: Record<string, unknown> }) =>
-      t.tool_metadata?.deleted !== true &&
-      t.tool_metadata?.is_warehouse !== true
+    (t) =>
+      (t.tool_metadata as any)?.deleted !== true &&
+      (t.tool_metadata as any)?.is_warehouse !== true
   );
   if (tools.length === 0) return [];
 
-  const toolIds = tools.map((t: { tool_id: number }) => t.tool_id);
+  const toolIds = tools.map((t) => t.tool_id);
 
   await refreshMaintenanceDays(toolIds);
 
-  // Detecting tools and components with open (non-closed) maintenance tickets
-  const { data: openTickets } = await supabase
-    .from('maintenance_ticket')
-    .select('fk_tool_id, fk_component_id')
-    .in('fk_tool_id', toolIds)
-    .neq('ticket_status', 'CLOSED');
+  const openTickets = await prisma.maintenance_ticket.findMany({
+    where: {
+      fk_tool_id: { in: toolIds },
+      ticket_status: { not: 'CLOSED' },
+    },
+    select: { fk_tool_id: true, fk_component_id: true },
+  });
 
   const toolsInMaintenance = new Set<number>(
-    (openTickets ?? []).map((t: { fk_tool_id: number }) => t.fk_tool_id)
+    openTickets.filter((t) => t.fk_tool_id != null).map((t) => t.fk_tool_id!)
   );
   const componentsInMaintenance = new Set<number>(
-    (openTickets ?? [])
-      .filter((t: { fk_component_id: number | null }) => t.fk_component_id != null)
-      .map((t: { fk_component_id: number }) => t.fk_component_id)
+    openTickets
+      .filter((t) => t.fk_component_id != null)
+      .map((t) => t.fk_component_id!)
   );
 
-  const { data: maintenanceRecords } = await supabase
-    .from("tool_maintenance")
-    .select("fk_tool_id, completed_date")
-    .in("fk_tool_id", toolIds)
-    .eq("maintenance_status", "COMPLETED")
-    .order("completed_date", { ascending: false });
+  const maintenanceRecords = await prisma.tool_maintenance.findMany({
+    where: {
+      fk_tool_id: { in: toolIds },
+      maintenance_status: 'COMPLETED',
+    },
+    select: { fk_tool_id: true, completed_date: true },
+    orderBy: { completed_date: 'desc' },
+  });
 
   const lastMaintenanceMap: Record<number, string> = {};
-  for (const rec of maintenanceRecords ?? []) {
-    const r = rec as { fk_tool_id: number; completed_date: string };
-    if (!lastMaintenanceMap[r.fk_tool_id]) {
-      lastMaintenanceMap[r.fk_tool_id] = r.completed_date;
+  for (const rec of maintenanceRecords) {
+    if (!lastMaintenanceMap[rec.fk_tool_id] && rec.completed_date) {
+      lastMaintenanceMap[rec.fk_tool_id] = rec.completed_date.toISOString().slice(0, 10);
     }
   }
 
-  const { data: missionStats } = await supabase
-    .from("pilot_mission")
-    .select("fk_tool_id, flight_duration")
-    .in("fk_tool_id", toolIds)
-    .not("actual_end", "is", null);
+  const missionStats = await prisma.pilot_mission.findMany({
+    where: {
+      fk_tool_id: { in: toolIds },
+      actual_end: { not: null },
+    },
+    select: { fk_tool_id: true, flight_duration: true },
+  });
 
   const statsMap: Record<number, { totalHours: number; totalFlights: number }> = {};
-  for (const stat of missionStats ?? []) {
-    const s = stat as { fk_tool_id: number; flight_duration: number | null };
-    if (!statsMap[s.fk_tool_id]) {
-      statsMap[s.fk_tool_id] = { totalHours: 0, totalFlights: 0 };
+  for (const stat of missionStats) {
+    if (stat.fk_tool_id == null) continue;
+    if (!statsMap[stat.fk_tool_id]) {
+      statsMap[stat.fk_tool_id] = { totalHours: 0, totalFlights: 0 };
     }
-    statsMap[s.fk_tool_id].totalHours += (s.flight_duration ?? 0) / 60;
-    statsMap[s.fk_tool_id].totalFlights += 1;
+    statsMap[stat.fk_tool_id].totalHours += (stat.flight_duration ?? 0) / 60;
+    statsMap[stat.fk_tool_id].totalFlights += 1;
   }
 
-  const { data: components } = await supabase
-    .from("tool_component")
-    .select(`
-      component_id,
-      fk_tool_id,
-      component_code,
-      component_name,
-      component_type,
-      serial_number,
-      installation_date,
-      maintenance_cycle_hour,
-      maintenance_cycle_flight,
-      maintenance_cycle_day,
-      current_maintenance_hours,
-      current_maintenance_days,
-      current_maintenance_flights,
-      last_maintenance_date,
-      component_metadata
-    `)
-    .in("fk_tool_id", toolIds)
-    .eq("component_active", "Y");
+  const components = await prisma.tool_component.findMany({
+    where: {
+      fk_tool_id: { in: toolIds },
+      component_active: 'Y',
+    },
+    select: {
+      component_id: true,
+      fk_tool_id: true,
+      component_code: true,
+      component_name: true,
+      component_type: true,
+      serial_number: true,
+      installation_date: true,
+      maintenance_cycle_hour: true,
+      maintenance_cycle_flight: true,
+      maintenance_cycle_day: true,
+      current_maintenance_hours: true,
+      current_maintenance_days: true,
+      current_maintenance_flights: true,
+      last_maintenance_date: true,
+      component_metadata: true,
+    },
+  });
 
   const compsByTool: Record<number, MaintenanceComponent[]> = {};
 
-  for (const rawComp of components ?? []) {
-    const comp = rawComp as {
-      component_id: number;
-      fk_tool_id: number;
-      component_code: string | null;
-      component_name: string;
-      component_type: string | null;
-      serial_number: string | null;
-      installation_date: string | null;
-      maintenance_cycle_hour: number | null;
-      maintenance_cycle_flight: number | null;
-      maintenance_cycle_day: number | null;
-      current_maintenance_hours: number | null;
-      current_maintenance_days: number | null;
-      current_maintenance_flights: number | null;
-      last_maintenance_date: string | null;
-      component_metadata: unknown;
-    };
-
-    const meta = parseComponentMeta(comp.component_metadata);
+  for (const rawComp of components) {
+    const meta = parseComponentMeta(rawComp.component_metadata);
     if (meta.system_detached === true) continue;
     if (meta.component_status === "DECOMMISSIONED") continue;
 
     const compModel: MaintenanceModel = {
       factory_serie: null,
-      factory_model: comp.component_name,
-      maintenance_cycle_hour: Number(comp.maintenance_cycle_hour ?? 0),
-      maintenance_cycle_flight: Number(comp.maintenance_cycle_flight ?? 0),
-      maintenance_cycle_day: Number(comp.maintenance_cycle_day ?? 0),
+      factory_model: rawComp.component_name,
+      maintenance_cycle_hour: Number(rawComp.maintenance_cycle_hour ?? 0),
+      maintenance_cycle_flight: Number(rawComp.maintenance_cycle_flight ?? 0),
+      maintenance_cycle_day: Number(rawComp.maintenance_cycle_day ?? 0),
     };
-    const lastMaint = comp.last_maintenance_date ?? null;
+    const lastMaint = rawComp.last_maintenance_date?.toISOString() ?? null;
 
-    const compHours = Number(comp.current_maintenance_hours ?? 0);
-    const compFlights = Number(comp.current_maintenance_flights ?? 0);
-    const compDays = Number(comp.current_maintenance_days ?? 0);
+    const compHours = Number(rawComp.current_maintenance_hours ?? 0);
+    const compFlights = Number(rawComp.current_maintenance_flights ?? 0);
+    const compDays = Number(rawComp.current_maintenance_days ?? 0);
 
-    const computed = computeStatus(
-      compHours,
-      compFlights,
-      compDays,
-      compModel,
-      threshold_alert
-    );
+    const computed = computeStatus(compHours, compFlights, compDays, compModel, threshold_alert);
 
-    const compStatus: MaintenanceStatus = componentsInMaintenance.has(comp.component_id)
+    const compStatus: MaintenanceStatus = componentsInMaintenance.has(rawComp.component_id)
       ? "IN_MAINTENANCE"
       : computed.status;
 
     const compEntry: MaintenanceComponent = {
-      tool_component_id: comp.component_id,
-      component_name: comp.component_name,
-      component_type: comp.component_type,
-      serial_number: comp.serial_number,
+      tool_component_id: rawComp.component_id,
+      component_name: rawComp.component_name,
+      component_type: rawComp.component_type,
+      serial_number: rawComp.serial_number,
       last_maintenance: lastMaint,
-      activation_date: comp.installation_date ?? null,
+      activation_date: rawComp.installation_date?.toISOString().slice(0, 10) ?? null,
       total_hours: compHours,
       total_flights: compFlights,
       total_days: compDays,
@@ -250,12 +234,12 @@ let toolQuery = supabase
       model: compModel,
     };
 
-    if (!compsByTool[comp.fk_tool_id]) compsByTool[comp.fk_tool_id] = [];
-    compsByTool[comp.fk_tool_id].push(compEntry);
+    if (!compsByTool[rawComp.fk_tool_id]) compsByTool[rawComp.fk_tool_id] = [];
+    compsByTool[rawComp.fk_tool_id].push(compEntry);
   }
 
-  const result: MaintenanceDrone[] = tools.map((tool: Record<string, unknown>) => {
-    const toolId = tool.tool_id as number;
+  const result: MaintenanceDrone[] = tools.map((tool) => {
+    const toolId = tool.tool_id;
     const model = extractModel(tool.tool_model as Record<string, unknown> | null);
     const stats = statsMap[toolId] ?? { totalHours: 0, totalFlights: 0 };
     const lastMaint = lastMaintenanceMap[toolId] ?? null;
@@ -263,13 +247,7 @@ let toolQuery = supabase
       ? Math.floor((Date.now() - new Date(lastMaint).getTime()) / 86400000)
       : 0;
 
-    const computed = computeStatus(
-      stats.totalHours,
-      stats.totalFlights,
-      droneDays,
-      model,
-      threshold_alert
-    );
+    const computed = computeStatus(stats.totalHours, stats.totalFlights, droneDays, model, threshold_alert);
 
     const droneStatus: MaintenanceStatus = toolsInMaintenance.has(toolId)
       ? "IN_MAINTENANCE"
@@ -280,7 +258,7 @@ let toolQuery = supabase
       tool_id: toolId,
       code: String(tool.tool_code ?? `#${toolId}`),
       serial_number: String(tool.tool_name ?? ""),
-      description: (tool.tool_description as string | null) ?? null,
+      description: tool.tool_description ?? null,
       last_maintenance: lastMaint,
       activation_date: (toolMeta.activationDate as string | null) ?? null,
       total_hours: Math.round(stats.totalHours * 100) / 100,

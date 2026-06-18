@@ -1,5 +1,5 @@
 import { getTicketEvents } from '@/backend/services/system/maintenance-ticket';
-import { requirePermission } from '@/lib/auth/api-auth';
+import { requireAnyPermission } from '@/lib/auth/api-auth';
 import { internalError, zodError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
@@ -10,7 +10,7 @@ const getEventsSchema = z.object({
 });
 
 export async function GET(req: NextRequest) {
-  const { error } = await requirePermission('view_config');
+  const { error } = await requireAnyPermission('view_config', 'view_maintenance_tickets');
   if (error) return error;
 
   try {

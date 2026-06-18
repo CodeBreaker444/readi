@@ -83,6 +83,18 @@ const Icons = {
       <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
     </svg>
   ),
+  startIntervention: (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  ),
+  endIntervention: (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 10h6v4H9z" />
+    </svg>
+  ),
 };
 
 interface Props {
@@ -94,7 +106,11 @@ interface Props {
   onUpload: (id: number) => void;
   onClose: (id: number) => void;
   onDownload?: (id: number) => void;
+  onIntervention?: (id: number, action: 'start' | 'end') => void;
   canClose?: boolean;
+  canAssign?: boolean;
+  canDownload?: boolean;
+  canIntervene?: boolean;
   isDark: boolean;
 }
 
@@ -107,7 +123,11 @@ export function TicketTable({
   onUpload,
   onClose,
   onDownload,
+  onIntervention,
   canClose = false,
+  canAssign = false,
+  canDownload = false,
+  canIntervene = false,
   isDark,
 }: Props) {
   const { t } = useTranslation();
@@ -326,6 +346,7 @@ export function TicketTable({
         cell: ({ row }) => {
           const ticket = row.original;
           const isOpen = ticket.ticket_status === "OPEN";
+          const isActive = ticket.ticket_status !== "CLOSED";
 
           return (
             <div className="flex items-center gap-0.5">
@@ -333,14 +354,17 @@ export function TicketTable({
                 {Icons.events}
               </ActionIcon>
 
-              {isOpen && (
+              {isOpen && canAssign && (
+                <ActionIcon
+                  label={t('systems.maintenanceLogbook.actions.assign')}
+                  onClick={() => onAssign(ticket.ticket_id)}
+                >
+                  {Icons.assign}
+                </ActionIcon>
+              )}
+
+              {isActive && (
                 <>
-                  <ActionIcon
-                    label={t('systems.maintenanceLogbook.actions.assign')}
-                    onClick={() => onAssign(ticket.ticket_id)}
-                  >
-                    {Icons.assign}
-                  </ActionIcon>
                   <ActionIcon
                     label={t('systems.maintenanceLogbook.actions.report')}
                     onClick={() => onReport(ticket.ticket_id)}
@@ -356,7 +380,27 @@ export function TicketTable({
                 </>
               )}
 
-              {onDownload && (
+              {isActive && canIntervene && onIntervention && !ticket.intervention_started_at && (
+                <ActionIcon
+                  label="Start"
+                  onClick={() => onIntervention(ticket.ticket_id, 'start')}
+                  variant="success"
+                >
+                  {Icons.startIntervention}
+                </ActionIcon>
+              )}
+
+              {isActive && canIntervene && onIntervention && ticket.intervention_started_at && !ticket.intervention_ended_at && (
+                <ActionIcon
+                  label="End"
+                  onClick={() => onIntervention(ticket.ticket_id, 'end')}
+                  variant="danger"
+                >
+                  {Icons.endIntervention}
+                </ActionIcon>
+              )}
+
+              {onDownload && canDownload && (
                 <ActionIcon
                   label={t('systems.maintenanceLogbook.actions.downloadFiles')}
                   onClick={() => onDownload(ticket.ticket_id)}
@@ -366,7 +410,7 @@ export function TicketTable({
                 </ActionIcon>
               )}
 
-              {isOpen && canClose && (
+              {isActive && canClose && (
                 <ActionIcon
                   label={t('systems.maintenanceLogbook.actions.closeTicket')}
                   onClick={() => onClose(ticket.ticket_id)}
@@ -380,7 +424,7 @@ export function TicketTable({
         },
       },
     ],
-    [isDark, onEvents, onAssign, onReport, onUpload, onClose, onDownload, canClose, t]
+    [isDark, onEvents, onAssign, onReport, onUpload, onClose, onDownload, onIntervention, canClose, canAssign, canDownload, canIntervene, t]
   );
 
   const table = useReactTable({

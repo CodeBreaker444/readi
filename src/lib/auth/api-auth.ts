@@ -1,7 +1,8 @@
 import { unauthorized, forbidden } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
+import { prisma } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
-import { Permission, roleHasPermission } from './roles';
+import { Permission, SubRole, roleHasPermission } from './roles';
 import { getUserSession, SessionUser } from './server-session';
 
 export interface ApiAuthResult {
@@ -44,6 +45,17 @@ export async function requireAnyPermission(...permissions: Permission[]): Promis
   }
 
   return { session, error: null };
+}
+
+/**
+ * Returns true if the user currently holds the given active sub-role.
+ */
+export async function userHasSubRole(userId: number, subrole: SubRole): Promise<boolean> {
+  const row = await prisma.user_subroles.findFirst({
+    where: { fk_user_id: userId, subrole, is_active: true },
+    select: { id: true },
+  });
+  return !!row;
 }
 
 /**

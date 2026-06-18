@@ -1,5 +1,6 @@
 'use client';
 
+import { Skeleton } from '@/components/ui/skeleton';
 import { SessionUser } from '@/lib/auth/server-session';
 import { ChevronsUpDown, LogOut, User, UserCircle } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
@@ -26,8 +27,7 @@ import {
   HiOutlineUsers
 } from 'react-icons/hi';
 import { MdFlightTakeoff } from 'react-icons/md';
-import { TbLayoutSidebarFilled, TbRadar } from "react-icons/tb";
-import { Skeleton } from '@/components/ui/skeleton';
+import { TbLayoutSidebarFilled, TbRadar, TbDrone } from "react-icons/tb";
 import { Permission, Role, roleHasPermission, ROUTE_PERMISSIONS, RoutePermissionEntry } from '../lib/auth/roles';
 import { supabase } from '../lib/supabase/client';
 
@@ -120,6 +120,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
       subItems: [
         { name: t('sidebar.newEvaluationRequest'), href: '/planning/new-evaluation' },
         { name: t('sidebar.evaluation'), href: '/planning/evaluation' },
+        // { name: t('sidebar.planningMission'), href: '/planning/planning-mission' },
         { name: t('sidebar.planningDashboard'), href: '/planning/planning-dashboard' },
         { name: t('sidebar.missionTemplates'), href: '/planning/mission-template' },
       ]
@@ -182,6 +183,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
       name: t('sidebar.droneAtc'),
       href: '/drone-atc',
       icon: TbRadar,
+    }] : []),
+    ...(userData?.dFlightEnabled ? [{
+      name: t('sidebar.dflight'),
+      href: '/dflight/fleet',
+      icon: TbDrone,
+      subItems: [
+        { name: t('sidebar.dflightSettings'), href: '/dflight/settings' },
+        { name: t('sidebar.dflightFleet'),    href: '/dflight/fleet' },
+      ],
     }] : []),
     {
       name: t('sidebar.training'),
@@ -609,7 +619,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
       >
         {role === null ? (
           isCollapsed ? (
-            /* Collapsed skeleton — icon-only circles */
             <div className="flex flex-col items-center gap-2 pt-1">
               {Array.from({ length: 13 }).map((_, i) => (
                 <Skeleton
@@ -626,7 +635,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
               ))}
             </div>
           ) : (
-            /* Expanded skeleton — icon + label rows */
             <div className="space-y-1 pt-1 px-1">
               {Array.from({ length: 13 }).map((_, i) => (
                 <div key={i} className="flex items-center gap-2.5 px-3 py-2">
@@ -886,7 +894,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
               <span style={{ fontSize: '0.72rem', fontWeight: 500 }}>Release Logs</span>
               <span className={`ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
                 isDark ? 'bg-amber-500/15 text-amber-400' : 'bg-amber-100 text-amber-600'
-              }`}>v1.0</span>
+              }`}>v1.2</span>
             </a>
           )}
         </div>
@@ -973,12 +981,21 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
               )}
             </div>
             <div className="min-w-0">
-              <p className={`text-xs font-semibold truncate ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
-                {userData?.username || 'User'}
-              </p>
-              <p className={`text-[11px] truncate mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`} style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
-                {userData?.email || ''}
-              </p>
+              {!userData ? (
+                <div className="space-y-1.5">
+                  <Skeleton className={`h-3 w-24 rounded ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
+                  <Skeleton className={`h-2.5 w-32 rounded ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
+                </div>
+              ) : (
+                <>
+                  <p className={`text-xs font-semibold truncate ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+                    {userData.username}
+                  </p>
+                  <p className={`text-[11px] truncate mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`} style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+                    {userData.email}
+                  </p>
+                </>
+              )}
             </div>
           </div>
 

@@ -1,4 +1,4 @@
-import { supabase } from '@/backend/database/database';
+import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
@@ -82,29 +82,28 @@ export const authOptions: NextAuthOptions = {
           throw new Error('Email and password are required');
         }
 
-        const { data: userData, error } = await supabase
-          .from('users')
-          .select(`
-            user_id,
-            username,
-            email,
-            password_hash,
-            first_name,
-            last_name,
-            phone,
-            user_active,
-            user_role,
-            auth_user_id,
-            fk_owner_id,
-            users_profile!fk_user_id (
-              profile_picture
-            )
-          `)
-          .eq('email', credentials.email.toLowerCase().trim())
-          .eq('user_active', 'Y')
-          .single();
+        const userData = await prisma.public_users.findFirst({
+          where: {
+            email: credentials.email.toLowerCase().trim(),
+            user_active: 'Y',
+          },
+          select: {
+            user_id: true,
+            username: true,
+            email: true,
+            password_hash: true,
+            first_name: true,
+            last_name: true,
+            phone: true,
+            user_active: true,
+            user_role: true,
+            auth_user_id: true,
+            fk_owner_id: true,
+            users_profile: { select: { profile_picture: true } },
+          },
+        });
 
-        if (error || !userData) {
+        if (!userData) {
           throw new Error('Invalid email or password');
         }
 
@@ -116,26 +115,23 @@ export const authOptions: NextAuthOptions = {
           throw new Error('Invalid email or password');
         }
 
-        const profileData = Array.isArray(userData.users_profile)
-          ? userData.users_profile[0]
-          : userData.users_profile;
-
         const fullname =
           [userData.first_name, userData.last_name].filter(Boolean).join(' ') ||
           userData.username ||
-          userData.email;
+          userData.email ||
+          '';
 
         return {
-          id:         userData.auth_user_id,   
+          id:         userData.auth_user_id ?? '',
           userId:     userData.user_id,
-          ownerId:    userData.fk_owner_id,
-          email:      userData.email,
+          ownerId:    userData.fk_owner_id ?? 0,
+          email:      userData.email ?? '',
           fullname,
-          username:   userData.username,
+          username:   userData.username ?? undefined,
           role:       userData.user_role as Role,
-          phone:      userData.phone,
-          userActive: userData.user_active,
-          avatar:     profileData?.profile_picture ?? null,
+          phone:      userData.phone ?? undefined,
+          userActive: userData.user_active as 'Y' | 'N',
+          avatar:     userData.users_profile?.profile_picture ?? null,
         };
       },
     }),

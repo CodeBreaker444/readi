@@ -1,0 +1,87 @@
+{
+  "$schema": "https://mintlify.com/schema.json",
+  "name": "Readi Platform",
+  "logo": {
+    "dark": "/logo/dark.svg",
+    "light": "/logo/light.svg"
+  },
+  "favicon": "/favicon.ico",
+  "colors": {
+    "primary": "#1a56db",
+    "light": "#3f83f8",
+    "dark": "#1e40af",
+    "anchors": {
+      "from": "#1a56db",
+      "to": "#0e9f6e"
+    }
+  },
+  "topbarCtaButton": {
+    "name": "Open Platform",
+    "url": "https://readi.theun1t.com"
+  },
+  "navigation": [
+    {
+      "group": "Introduction",
+      "pages": [
+        "introduction",
+        "start-guide/getting-started",
+        "start-guide/system-requirements",
+        "start-guide/key-features"
+      ]
+    },
+    {
+      "group": "Core Modules",
+      "pages": [
+        "modules/dashboard",
+        "modules/operations",
+        "modules/planning",
+        "modules/logbooks",
+        "modules/safety-management",
+        "modules/compliance",
+        "modules/training",
+        "modules/flytbase"
+      ]
+    },
+    {
+      "group": "Configuration",
+      "pages": [
+        "configuration/organization",
+        "configuration/mission-definitions",
+        "configuration/systems",
+        "configuration/team",
+        "configuration/company",
+        "configuration/settings-security"
+      ]
+    },
+    {
+      "group": "Records",
+      "pages": [
+        "records/document-repository",
+        "records/audit-logs"
+      ]
+    },
+    {
+      "group": "Business Logic",
+      "pages": [
+        "business-logic/systems",
+        "business-logic/mission-lifecycle",
+        "business-logic/pilot-logic",
+        "business-logic/checklist-logic",
+        "business-logic/platform-flow",
+        "business-logic/agent-api",
+        "business-logic/role-glossary",
+        "business-logic/db-tables"
+      ]
+    },
+    {
+      "group": "Platform Rules",
+      "pages": [
+        "platform-rules/authorization-code",
+        "platform-rules/mission-status-gates",
+        "platform-rules/system-status-rules",
+        "platform-rules/operation-board-flow"
+      ]
+    }
+  ],
+  "footerSocials": {}
+}

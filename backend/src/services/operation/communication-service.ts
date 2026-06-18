@@ -1,9 +1,6 @@
-import { supabase } from '@/backend/database/database';
+import { prisma } from '@/lib/prisma';
 import { sendNotificationEmail } from '../../../../lib/resend/mail';
-import {
-    buildS3Url,
-    uploadFileToS3
-} from '@/lib/s3Client';
+import { buildS3Url, uploadFileToS3 } from '@/lib/s3Client';
 
 
 export interface SendCommunicationParams {
@@ -18,7 +15,7 @@ export interface SendCommunicationParams {
   fkClientId: number;
   communicationLevel: string;
   communicationMessage: string;
-  communicationTo: number[];          
+  communicationTo: number[];
   file: File | null;
 }
 
@@ -26,12 +23,7 @@ export interface SendCommunicationResult {
   newId: number;
 }
 
- 
-function buildCommS3Key(
-  procedureName: string,
-  contextId: number,
-  filename: string
-): string {
+function buildCommS3Key(procedureName: string, contextId: number, filename: string): string {
   const sanitized = filename.replace(/[^a-z0-9._-]/gi, '_');
   return `communication/${procedureName}/${contextId}/${Date.now()}_${sanitized}`;
 }
@@ -66,137 +58,107 @@ export async function sendGeneralCommunication(
     attachmentSize = params.file.size;
   }
 
-  const { data: commRecord, error: commErr } = await supabase
-    .from('communication_general')
-    .insert({
-      fk_owner_id:       params.ownerId,
-      subject:           `[${params.procedureName.toUpperCase()}] Message`,
-      message:           params.communicationMessage,
+  const priority =
+    params.communicationLevel === 'danger' ? 'HIGH' :
+    params.communicationLevel === 'warning' ? 'MEDIUM' : 'LOW';
+
+  const commRecord = await prisma.communication_general.create({
+    data: {
+      fk_owner_id: params.ownerId,
+      subject: `[${params.procedureName.toUpperCase()}] Message`,
+      message: params.communicationMessage,
       communication_type: params.procedureName,
-      priority:          params.communicationLevel === 'danger'
-                           ? 'HIGH'
-                           : params.communicationLevel === 'warning'
-                           ? 'MEDIUM'
-                           : 'LOW',
-      status:            'SENT',
-      sent_by_user_id:   params.userId,
-      recipients:        params.communicationTo,   // stored as JSONB array of user_ids
+      priority,
+      status: 'SENT',
+      sent_by_user_id: params.userId,
+      recipients: params.communicationTo,
       attachments: attachmentPath
-        ? [{
-            filename: attachmentFilename,
-            path:     attachmentPath,
-            size:     attachmentSize,
-          }]
-        : null,
-      sent_at: new Date().toISOString(),
-    })
-    .select('communication_id')
-    .single();
+        ? [{ filename: attachmentFilename, path: attachmentPath, size: attachmentSize }]
+        : undefined,
+      sent_at: new Date(),
+    },
+    select: { communication_id: true },
+  });
 
-  if (commErr) {
-    throw new Error(`Failed to save communication: ${commErr.message}`);
-  }
-
-  const newId = commRecord.communication_id as number;
+  const newId = commRecord.communication_id;
 
   if (params.communicationTo.length > 0) {
-    const notifications = params.communicationTo.map((recipientId) => ({
-      fk_user_id:           recipientId,
-      notification_type:    'COMMUNICATION',
-      notification_title:   `New ${params.procedureName.replace(/_/g, ' ')} message`,
-      notification_message: params.communicationMessage.slice(0, 200),
-      notification_data: {
-        communication_id: newId,
-        procedure:        params.procedureName,
-        level:            params.communicationLevel,
-        from_user_id:     params.userId,
-        fk_evaluation_id: params.fkEvaluationId || null,
-        fk_planning_id:   params.fkPlanningId   || null,
-        fk_mission_id:    params.fkMissionId    || null,
-      },
-      priority: params.communicationLevel === 'danger'
-        ? 'HIGH'
-        : params.communicationLevel === 'warning'
-        ? 'MEDIUM'
-        : 'LOW',
-      is_read: false,
-    }));
+    await prisma.notification.createMany({
+      data: params.communicationTo.map((recipientId) => ({
+        fk_user_id: recipientId,
+        notification_type: 'COMMUNICATION',
+        notification_title: `New ${params.procedureName.replace(/_/g, ' ')} message`,
+        notification_message: params.communicationMessage.slice(0, 200),
+        notification_data: {
+          communication_id: newId,
+          procedure: params.procedureName,
+          level: params.communicationLevel,
+          from_user_id: params.userId,
+          fk_evaluation_id: params.fkEvaluationId || null,
+          fk_planning_id: params.fkPlanningId || null,
+          fk_mission_id: params.fkMissionId || null,
+        },
+        priority,
+        is_read: false,
+      })),
+    });
 
-    const { error: notifErr } = await supabase
-      .from('notification')
-      .insert(notifications);
-
-    if (notifErr) {
-      console.warn('[communicationService] Failed to create notifications:', notifErr.message);
-    }
-
-    const { data: ownerRow } = await supabase
-      .from('owner')
-      .select('email_notifications_enabled')
-      .eq('owner_id', params.ownerId)
-      .single();
+    const ownerRow = await prisma.owner.findUnique({
+      where: { owner_id: params.ownerId },
+      select: { email_notifications_enabled: true },
+    });
 
     if (ownerRow?.email_notifications_enabled) {
-      const { data: recipientUsers } = await supabase
-        .from('users')
-        .select('email')
-        .in('user_id', params.communicationTo)
-        .eq('user_active', 'Y');
+      const recipientUsers = await prisma.public_users.findMany({
+        where: { user_id: { in: params.communicationTo }, user_active: 'Y' },
+        select: { email: true },
+      });
 
-      const emails = (recipientUsers ?? []).map((u: { email: string }) => u.email).filter(Boolean);
+      const emails = recipientUsers.map((u) => u.email).filter(Boolean) as string[];
       if (emails.length) {
         const emailTitle = `New ${params.procedureName.replace(/_/g, ' ')} message`;
-        sendNotificationEmail(
-          emails,
-          emailTitle,
-          params.communicationMessage,
-          params.procedureName.toUpperCase(),
-          null
-        );
+        sendNotificationEmail(emails, emailTitle, params.communicationMessage, params.procedureName.toUpperCase(), null);
       }
     }
-  }
 
-  const userComms = params.communicationTo.map((recipientId) => ({
-    fk_user_id:          recipientId,
-    fk_owner_id:         params.ownerId,
-    communication_code:  `COMM-${newId}`,
-    communication_desc:  params.communicationMessage.slice(0, 255),
-    communication_json: {
-      communication_id:   newId,
-      procedure:          params.procedureName,
-      level:              params.communicationLevel,
-      from_user_id:       params.userId,
-      from_email:         params.userEmail,
-      fk_evaluation_id:   params.fkEvaluationId || null,
-      fk_planning_id:     params.fkPlanningId   || null,
-      fk_mission_id:      params.fkMissionId    || null,
-      fk_vehicle_id:      params.fkVehicleId    || null,
-      fk_client_id:       params.fkClientId     || null,
-      attachment_path:    attachmentPath,
-    },
-    communication_ver:    1,
-    communication_active: 'Y',
-  }));
-
-  if (userComms.length > 0) {
-    const { error: ucErr } = await supabase.from('communication').insert(userComms);
-    if (ucErr) {
-      console.warn('[communicationService] Failed to insert user comms:', ucErr.message);
+    if (params.communicationTo.length > 0) {
+      await prisma.communication.createMany({
+        data: params.communicationTo.map((recipientId) => ({
+          fk_user_id: recipientId,
+          fk_owner_id: params.ownerId,
+          communication_code: `COMM-${newId}`,
+          communication_desc: params.communicationMessage.slice(0, 255),
+          communication_json: {
+            communication_id: newId,
+            procedure: params.procedureName,
+            level: params.communicationLevel,
+            from_user_id: params.userId,
+            from_email: params.userEmail,
+            fk_evaluation_id: params.fkEvaluationId || null,
+            fk_planning_id: params.fkPlanningId || null,
+            fk_mission_id: params.fkMissionId || null,
+            fk_vehicle_id: params.fkVehicleId || null,
+            fk_client_id: params.fkClientId || null,
+            attachment_path: attachmentPath,
+          },
+          communication_ver: 1,
+          communication_active: 'Y',
+        })),
+      }).catch((err) => {
+        console.warn('[communicationService] Failed to insert user comms:', err.message);
+      });
     }
   }
 
   return { newId };
 }
 
-export async function fetchUsers(ownerId:number) {
-     const { data, error } = await supabase
-      .from('users')
-      .select('user_id, first_name, last_name, email, user_role')
-      .eq('fk_owner_id', ownerId)
-      .eq('user_active', 'Y')
-      .order('first_name');
+export async function fetchUsers(ownerId: number) {
+  const data = await prisma.public_users.findMany({
+    where: { fk_owner_id: ownerId, user_active: 'Y' },
+    orderBy: { first_name: 'asc' },
+    select: { user_id: true, first_name: true, last_name: true, email: true, user_role: true },
+  });
 
-    if (error) throw error;
-    return data
+  return data;
 }

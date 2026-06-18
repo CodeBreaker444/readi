@@ -2,7 +2,7 @@ import { forbidden } from '@/lib/api-error';
 import { requireAuth } from '@/lib/auth/api-auth';
 import { E } from '@/lib/error-codes';
 import { embedBatch } from '@mcp-server/lib/embeddings/generate';
-import { getSupabase } from '@mcp-server/lib/supabase';
+import { prisma } from '@/lib/prisma';
 import { upsertChunks } from '@mcp-server/lib/vectorstore/supabase';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -20,18 +20,15 @@ export async function GET() {
     if (!adminOnly(session!.user.role)) return forbidden(E.PX001);
 
     try {
-        const supabase = getSupabase();
-        const { data, error: dbError } = await supabase
-            .from('procedure_document')
-            .select('doc_key, section_title, source_file, created_at')
-            .order('created_at', { ascending: false });
+        const data = await prisma.procedure_document.findMany({
+            select: { doc_key: true, section_title: true, source_file: true, created_at: true },
+            orderBy: { created_at: 'desc' },
+        });
 
-        if (dbError) throw dbError;
-
-        const fileMap: Record<string, { count: number; created_at: string }> = {};
-        for (const doc of data ?? []) {
+        const fileMap: Record<string, { count: number; created_at: string | null }> = {};
+        for (const doc of data) {
             if (!fileMap[doc.source_file]) {
-                fileMap[doc.source_file] = { count: 0, created_at: doc.created_at };
+                fileMap[doc.source_file] = { count: 0, created_at: doc.created_at?.toISOString() ?? null };
             }
             fileMap[doc.source_file].count += 1;
         }
@@ -76,13 +73,12 @@ export async function POST(req: NextRequest) {
 
         // Hard limit 2: max 10 unique PDF files in the knowledge base
         if (isPdf) {
-            const supabase = getSupabase();
-            const { data: existing } = await supabase
-                .from('procedure_document')
-                .select('source_file')
-                .order('created_at', { ascending: true });
+            const existing = await prisma.procedure_document.findMany({
+                select: { source_file: true },
+                orderBy: { created_at: 'asc' },
+            });
 
-            const uniqueFiles = new Set((existing ?? []).map((d: any) => d.source_file));
+            const uniqueFiles = new Set(existing.map((d) => d.source_file));
 
             if (!uniqueFiles.has(file.name) && uniqueFiles.size >= MAX_PDF_FILES) {
                 return NextResponse.json(
@@ -110,7 +106,6 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'No readable content found in file' }, { status: 400 });
         }
 
-        const supabase = getSupabase();
         const batchId = Date.now().toString();
         const sourceFile = file.name;
 
@@ -127,8 +122,21 @@ export async function POST(req: NextRequest) {
             };
         });
 
-        const { error: procError } = await supabase.from('procedure_document').upsert(procedureDocs);
-        if (procError) throw procError;
+        await prisma.$transaction(
+            procedureDocs.map((doc) =>
+                prisma.procedure_document.upsert({
+                    where: { doc_key: doc.doc_key },
+                    create: doc,
+                    update: {
+                        section_title: doc.section_title,
+                        section_number: doc.section_number,
+                        html_content: doc.html_content,
+                        plain_text: doc.plain_text,
+                        source_file: doc.source_file,
+                    },
+                })
+            )
+        );
 
         // Generate and store vector embeddings
         console.log(`[ingest] Generating embeddings for ${chunks.length} chunks…`);
@@ -160,23 +168,16 @@ export async function DELETE(req: NextRequest) {
         const source = req.nextUrl.searchParams.get('source');
         if (!source) return NextResponse.json({ error: 'source query param required' }, { status: 400 });
 
-        const supabase = getSupabase();
+        const docsToDelete = await prisma.procedure_document.findMany({
+            where: { source_file: source },
+            select: { doc_key: true },
+        });
 
-        const { data: docsToDelete } = await supabase
-            .from('procedure_document')
-            .select('doc_key')
-            .eq('source_file', source);
+        await prisma.procedure_document.deleteMany({ where: { source_file: source } });
 
-        const { error: procError } = await supabase
-            .from('procedure_document')
-            .delete()
-            .eq('source_file', source);
-
-        if (procError) throw procError;
-
-        if (docsToDelete && docsToDelete.length > 0) {
-            const chunkIds = docsToDelete.map((d: any) => d.doc_key.replace(/^dyn_/, 'dyn_chunk_'));
-            await supabase.from('schema_chunks').delete().in('id', chunkIds);
+        if (docsToDelete.length > 0) {
+            const chunkIds = docsToDelete.map((d) => d.doc_key.replace(/^dyn_/, 'dyn_chunk_'));
+            await prisma.schema_chunks.deleteMany({ where: { id: { in: chunkIds } } });
         }
 
         return NextResponse.json({ success: true });

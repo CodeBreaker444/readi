@@ -1,6 +1,6 @@
-import { supabase } from "@/backend/database/database";
-import { refreshMaintenanceDaysForTool } from "@/backend/utils/refresh-maintenance-days";
-import { MaintenanceStatus } from "@/config/types/maintenance";
+import { prisma } from '@/lib/prisma';
+import { refreshMaintenanceDaysForTool } from '@/backend/utils/refresh-maintenance-days';
+import { MaintenanceStatus } from '@/config/types/maintenance';
 
 
 interface UpdateComponentInput {
@@ -22,7 +22,7 @@ interface ComponentMaintenanceInfo {
   limit_day: number;
   maintenance_cycle_type: string;
   last_maintenance_date: string | null;
-  status: "OK" | "ALERT" | "DUE";
+  status: 'OK' | 'ALERT' | 'DUE';
   trigger: string[];
   battery_cycle_ratio: number;
 }
@@ -31,10 +31,9 @@ interface SystemData {
   tool_id: number;
   tool_code: string;
   tool_name: string;
-  system_status: "OK" | "ALERT" | "DUE";
+  system_status: 'OK' | 'ALERT' | 'DUE';
   components: ComponentMaintenanceInfo[];
 }
-
 
 function hhmmToMinutes(hhmm: number): number {
   const h = Math.floor(hhmm);
@@ -52,23 +51,23 @@ function computeComponentStatus(
   currentFlights: number,
   currentDays: number,
   limits: { hour: number; flight: number; day: number }
-): { status: "OK" | "ALERT" | "DUE"; trigger: string[] } {
+): { status: 'OK' | 'ALERT' | 'DUE'; trigger: string[] } {
   const trigger: string[] = [];
-  let status: "OK" | "ALERT" | "DUE" = "OK";
+  let status: 'OK' | 'ALERT' | 'DUE' = 'OK';
 
-  const checks: { current: number; limit: number; name: string }[] = [];
-  if (limits.hour > 0) checks.push({ current: currentHours, limit: limits.hour, name: "hours" });
-  if (limits.flight > 0) checks.push({ current: currentFlights, limit: limits.flight, name: "flights" });
-  if (limits.day > 0) checks.push({ current: currentDays, limit: limits.day, name: "days" });
+  const checks = [
+    ...(limits.hour > 0 ? [{ current: currentHours, limit: limits.hour, name: 'hours' }] : []),
+    ...(limits.flight > 0 ? [{ current: currentFlights, limit: limits.flight, name: 'flights' }] : []),
+    ...(limits.day > 0 ? [{ current: currentDays, limit: limits.day, name: 'days' }] : []),
+  ];
 
   for (const c of checks) {
-    if (c.limit <= 0) continue;
     const ratio = c.current / c.limit;
     if (ratio >= 1) {
-      status = "DUE";
+      status = 'DUE';
       trigger.push(`${c.name} exceeded (${c.current}/${c.limit})`);
-    } else if (ratio >= 0.8 && status !== "DUE") {
-      status = "ALERT";
+    } else if (ratio >= 0.8 && status !== 'DUE') {
+      status = 'ALERT';
       trigger.push(`${c.name} approaching (${c.current}/${c.limit})`);
     }
   }
@@ -76,59 +75,51 @@ function computeComponentStatus(
   return { status, trigger };
 }
 
-const COMPONENT_SELECT = `
-  component_id,
-  component_type,
-  component_code,
-  component_name,
-  serial_number,
-  current_usage_hours,
-  installation_date,
-  component_metadata,
-  component_active,
-  maintenance_cycle,
-  maintenance_cycle_hour,
-  maintenance_cycle_day,
-  maintenance_cycle_flight,
-  current_maintenance_hours,
-  current_maintenance_days,
-  current_maintenance_flights,
-  last_maintenance_date
-`;
-
 
 export async function getComponentsForMaintenanceCycle(
   toolId: number,
   ownerId: number
 ): Promise<SystemData> {
-  const { data: tool, error: toolErr } = await supabase
-    .from("tool")
-    .select("tool_id, tool_code, tool_name")
-    .eq("tool_id", toolId)
-    .eq("fk_owner_id", ownerId)
-    .single();
+  const tool = await prisma.tool.findFirst({
+    where: { tool_id: toolId, fk_owner_id: ownerId },
+    select: { tool_id: true, tool_code: true, tool_name: true },
+  });
 
-  if (toolErr || !tool) throw new Error("System not found or unauthorized");
+  if (!tool) throw new Error('System not found or unauthorized');
 
-  // Refresh days before reading
   await refreshMaintenanceDaysForTool(toolId);
 
-  const { data: comps, error: compErr } = await supabase
-    .from("tool_component")
-    .select(COMPONENT_SELECT)
-    .eq("fk_tool_id", toolId)
-    .eq("component_active", "Y");
-
-  if (compErr) throw compErr;
+  const comps = await prisma.tool_component.findMany({
+    where: { fk_tool_id: toolId, component_active: 'Y' },
+    select: {
+      component_id: true,
+      component_type: true,
+      component_code: true,
+      component_name: true,
+      serial_number: true,
+      current_usage_hours: true,
+      installation_date: true,
+      component_metadata: true,
+      component_active: true,
+      maintenance_cycle: true,
+      maintenance_cycle_hour: true,
+      maintenance_cycle_day: true,
+      maintenance_cycle_flight: true,
+      current_maintenance_hours: true,
+      current_maintenance_days: true,
+      current_maintenance_flights: true,
+      last_maintenance_date: true,
+    },
+  });
 
   const components: ComponentMaintenanceInfo[] = [];
-  let worstStatus: "OK" | "ALERT" | "DUE" = "OK";
+  let worstStatus: 'OK' | 'ALERT' | 'DUE' = 'OK';
 
-  for (const comp of comps || []) {
+  for (const comp of comps) {
     const limitHour = Number(comp.maintenance_cycle_hour ?? 0);
     const limitFlight = Number(comp.maintenance_cycle_flight ?? 0);
     const limitDay = Number(comp.maintenance_cycle_day ?? 0);
-    const cycleType = comp.maintenance_cycle || "NONE";
+    const cycleType = comp.maintenance_cycle || 'NONE';
 
     const currentHours = Number(comp.current_maintenance_hours ?? 0);
     const currentFlights = Number(comp.current_maintenance_flights ?? 0);
@@ -137,31 +128,27 @@ export async function getComponentsForMaintenanceCycle(
     const rawMeta = comp.component_metadata;
     let meta: Record<string, unknown> = {};
     if (rawMeta) {
-      if (typeof rawMeta === "string") {
+      if (typeof rawMeta === 'string') {
         try { meta = JSON.parse(rawMeta); } catch { meta = {}; }
-      } else if (typeof rawMeta === "object" && !Array.isArray(rawMeta)) {
+      } else if (typeof rawMeta === 'object' && !Array.isArray(rawMeta)) {
         meta = rawMeta as Record<string, unknown>;
       }
     }
-    const batteryCycleRatio = typeof meta.battery_cycle_ratio === "number" ? meta.battery_cycle_ratio : 1;
+    const batteryCycleRatio = typeof meta.battery_cycle_ratio === 'number' ? meta.battery_cycle_ratio : 1;
 
     const hasLimits = limitHour > 0 || limitFlight > 0 || limitDay > 0;
     const { status, trigger } = hasLimits
-      ? computeComponentStatus(currentHours, currentFlights, currentDays, {
-        hour: limitHour,
-        flight: limitFlight,
-        day: limitDay,
-      })
-      : { status: "OK" as const, trigger: [] };
+      ? computeComponentStatus(currentHours, currentFlights, currentDays, { hour: limitHour, flight: limitFlight, day: limitDay })
+      : { status: 'OK' as const, trigger: [] };
 
-    if (status === "DUE") worstStatus = "DUE";
-    else if (status === "ALERT" && worstStatus !== "DUE") worstStatus = "ALERT";
+    if (status === 'DUE') worstStatus = 'DUE';
+    else if (status === 'ALERT' && worstStatus !== 'DUE') worstStatus = 'ALERT';
 
     components.push({
       component_id: comp.component_id,
-      component_type: comp.component_type,
+      component_type: comp.component_type ?? null,
       component_code: comp.component_code || comp.component_name,
-      serial_number: comp.serial_number,
+      serial_number: comp.serial_number ?? null,
       current_hours: currentHours,
       current_flights: currentFlights,
       current_days: currentDays,
@@ -169,7 +156,7 @@ export async function getComponentsForMaintenanceCycle(
       limit_flight: limitFlight,
       limit_day: limitDay,
       maintenance_cycle_type: cycleType,
-      last_maintenance_date: comp.last_maintenance_date || null,
+      last_maintenance_date: comp.last_maintenance_date?.toISOString() ?? null,
       status,
       trigger,
       battery_cycle_ratio: batteryCycleRatio,
@@ -178,8 +165,8 @@ export async function getComponentsForMaintenanceCycle(
 
   return {
     tool_id: tool.tool_id,
-    tool_code: tool.tool_code,
-    tool_name: tool.tool_name,
+    tool_code: tool.tool_code ?? '',
+    tool_name: tool.tool_name ?? '',
     system_status: worstStatus,
     components,
   };
@@ -192,40 +179,51 @@ export async function updateComponentMaintenanceCycle(
   ownerId: number,
   updates: UpdateComponentInput[]
 ): Promise<{ code: number; message: string; components: ComponentMaintenanceInfo[] }> {
-  const { data: tool, error: toolErr } = await supabase
-    .from("tool")
-    .select("tool_id")
-    .eq("tool_id", toolId)
-    .eq("fk_owner_id", ownerId)
-    .single();
+  const tool = await prisma.tool.findFirst({
+    where: { tool_id: toolId, fk_owner_id: ownerId },
+    select: { tool_id: true },
+  });
 
-  if (toolErr || !tool) throw new Error("System not found or unauthorized");
+  if (!tool) throw new Error('System not found or unauthorized');
 
-  // Refresh days before reading baselines
   await refreshMaintenanceDaysForTool(toolId);
 
   const results = await Promise.all(
     updates.map(async (upd): Promise<ComponentMaintenanceInfo | null> => {
-      const { data: comp, error: compErr } = await supabase
-        .from("tool_component")
-        .select(COMPONENT_SELECT)
-        .eq("component_id", upd.component_id)
-        .eq("fk_tool_id", toolId)
-        .maybeSingle();
+      const comp = await prisma.tool_component.findFirst({
+        where: { component_id: upd.component_id, fk_tool_id: toolId },
+        select: {
+          component_id: true,
+          component_type: true,
+          component_code: true,
+          component_name: true,
+          serial_number: true,
+          current_usage_hours: true,
+          component_metadata: true,
+          maintenance_cycle: true,
+          maintenance_cycle_hour: true,
+          maintenance_cycle_day: true,
+          maintenance_cycle_flight: true,
+          current_maintenance_hours: true,
+          current_maintenance_days: true,
+          current_maintenance_flights: true,
+          last_maintenance_date: true,
+        },
+      });
 
-      if (compErr || !comp) return null;
+      if (!comp) return null;
 
       const rawMeta = comp.component_metadata;
       let meta: Record<string, unknown> = {};
       if (rawMeta) {
-        if (typeof rawMeta === "string") {
+        if (typeof rawMeta === 'string') {
           try { meta = JSON.parse(rawMeta); } catch { meta = {}; }
-        } else if (typeof rawMeta === "object" && !Array.isArray(rawMeta)) {
+        } else if (typeof rawMeta === 'object' && !Array.isArray(rawMeta)) {
           meta = rawMeta as Record<string, unknown>;
         }
       }
-      const cycleType = comp.maintenance_cycle || "NONE";
 
+      const cycleType = comp.maintenance_cycle || 'NONE';
       const limitHour = Number(comp.maintenance_cycle_hour ?? 0);
       const limitFlight = Number(comp.maintenance_cycle_flight ?? 0);
       const limitDay = Number(comp.maintenance_cycle_day ?? 0);
@@ -235,43 +233,34 @@ export async function updateComponentMaintenanceCycle(
       const currentDays = Number(comp.current_maintenance_days ?? 0);
       const prevLifetimeHours = Number(comp.current_usage_hours ?? 0);
 
-      // Applying battery_cycle_ratio: 1 flight may equal <1 battery cycle (0.87)
-      const batteryCycleRatio = typeof meta.battery_cycle_ratio === "number" ? meta.battery_cycle_ratio : 1;
+      const batteryCycleRatio = typeof meta.battery_cycle_ratio === 'number' ? meta.battery_cycle_ratio : 1;
       const effectiveFlightCycles = Math.round((upd.add_flights || 0) * batteryCycleRatio * 100) / 100;
 
       const newHours = addHhmmHours(prevHours, upd.add_hours || 0);
       const newFlights = Math.round((prevFlights + effectiveFlightCycles) * 100) / 100;
       const newLifetimeHours = addHhmmHours(prevLifetimeHours, upd.add_hours || 0);
 
-      const now = new Date().toISOString();
+      const now = new Date();
 
       const updatePayload: Record<string, any> = {
         current_usage_hours: newLifetimeHours,
         component_metadata: JSON.stringify({
           ...meta,
           last_mission_id: missionId,
-          last_maintenance_update: now,
+          last_maintenance_update: now.toISOString(),
         }),
       };
 
-      if (upd.add_hours > 0) {
-        updatePayload.current_maintenance_hours = newHours;
-      }
-      if (upd.add_flights > 0) {
-        updatePayload.current_maintenance_flights = newFlights;
-      }
+      if (upd.add_hours > 0) updatePayload.current_maintenance_hours = newHours;
+      if (upd.add_flights > 0) updatePayload.current_maintenance_flights = newFlights;
 
+      const updated = await prisma.tool_component.updateMany({
+        where: { component_id: upd.component_id, fk_tool_id: toolId },
+        data: updatePayload,
+      });
 
-      const { data: updated, error: updateErr } = await supabase
-        .from("tool_component")
-        .update(updatePayload)
-        .eq("component_id", upd.component_id)
-        .eq("fk_tool_id", toolId)
-        .select("component_id, current_maintenance_hours, current_maintenance_flights")
-        .maybeSingle();
-
-      if (updateErr || !updated) {
-        console.error(`[maintenance-cycle] update failed for component ${upd.component_id}:`, updateErr, 'updated:', updated);
+      if (updated.count === 0) {
+        console.error(`[maintenance-cycle] update failed for component ${upd.component_id}`);
         return null;
       }
 
@@ -280,14 +269,14 @@ export async function updateComponentMaintenanceCycle(
 
       const { status, trigger } = computeComponentStatus(
         finalHours, finalFlights, currentDays,
-        { hour: limitHour, flight: limitFlight, day: limitDay },
+        { hour: limitHour, flight: limitFlight, day: limitDay }
       );
 
       return {
         component_id: comp.component_id,
-        component_type: comp.component_type,
+        component_type: comp.component_type ?? null,
         component_code: comp.component_code || comp.component_name,
-        serial_number: comp.serial_number,
+        serial_number: comp.serial_number ?? null,
         current_hours: finalHours,
         current_flights: finalFlights,
         current_days: currentDays,
@@ -295,60 +284,52 @@ export async function updateComponentMaintenanceCycle(
         limit_flight: limitFlight,
         limit_day: limitDay,
         maintenance_cycle_type: cycleType,
-        last_maintenance_date: comp.last_maintenance_date || null,
+        last_maintenance_date: comp.last_maintenance_date?.toISOString() ?? null,
         status,
         trigger,
         battery_cycle_ratio: batteryCycleRatio,
       };
-    }),
+    })
   );
 
   return {
     code: 1,
-    message: "Maintenance tracking updated successfully",
+    message: 'Maintenance tracking updated successfully',
     components: results.filter((r): r is ComponentMaintenanceInfo => r !== null),
   };
 }
 
 
-export async function getToolMaintenanceStatus(
-  toolId: number
-): Promise<MaintenanceStatus> {
-  // Open maintenance ticket takes highest priority
-  const { data: openTicket } = await supabase
-    .from("maintenance_ticket")
-    .select("ticket_id")
-    .eq("fk_tool_id", toolId)
-    .neq("ticket_status", "CLOSED")
-    .limit(1)
-    .maybeSingle();
+export async function getToolMaintenanceStatus(toolId: number): Promise<MaintenanceStatus> {
+  const openTicket = await prisma.maintenance_ticket.findFirst({
+    where: { fk_tool_id: toolId, NOT: { ticket_status: 'CLOSED' } },
+    select: { ticket_id: true },
+  });
 
-  if (openTicket) return "IN_MAINTENANCE";
+  if (openTicket) return 'IN_MAINTENANCE';
 
   await refreshMaintenanceDaysForTool(toolId);
 
-  const { data: components } = await supabase
-    .from("tool_component")
-    .select(`
-      component_id,
-      maintenance_cycle,
-      maintenance_cycle_hour,
-      maintenance_cycle_day,
-      maintenance_cycle_flight,
-      current_maintenance_hours,
-      current_maintenance_days,
-      current_maintenance_flights
-    `)
-    .eq("fk_tool_id", toolId)
-    .eq("component_active", "Y");
+  const components = await prisma.tool_component.findMany({
+    where: { fk_tool_id: toolId, component_active: 'Y' },
+    select: {
+      maintenance_cycle: true,
+      maintenance_cycle_hour: true,
+      maintenance_cycle_day: true,
+      maintenance_cycle_flight: true,
+      current_maintenance_hours: true,
+      current_maintenance_days: true,
+      current_maintenance_flights: true,
+    },
+  });
 
-  if (!components || components.length === 0) return "OK";
+  if (!components || components.length === 0) return 'OK';
 
-  let worst: MaintenanceStatus = "OK";
+  let worst: MaintenanceStatus = 'OK';
 
   for (const comp of components) {
-    const cycleType = comp.maintenance_cycle || "NONE";
-    if (cycleType === "NONE") continue;
+    const cycleType = comp.maintenance_cycle || 'NONE';
+    if (cycleType === 'NONE') continue;
 
     const limitHour = Number(comp.maintenance_cycle_hour ?? 0);
     const limitFlight = Number(comp.maintenance_cycle_flight ?? 0);
@@ -359,14 +340,12 @@ export async function getToolMaintenanceStatus(
     const currentDays = Number(comp.current_maintenance_days ?? 0);
 
     const { status } = computeComponentStatus(
-      currentHours,
-      currentFlights,
-      currentDays,
+      currentHours, currentFlights, currentDays,
       { hour: limitHour, flight: limitFlight, day: limitDay }
     );
 
-    if (status === "DUE") { worst = "DUE"; break; }
-    if (status === "ALERT") worst = "ALERT";
+    if (status === 'DUE') { worst = 'DUE'; break; }
+    if (status === 'ALERT') worst = 'ALERT';
   }
 
   return worst;

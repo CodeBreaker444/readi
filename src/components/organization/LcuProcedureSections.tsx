@@ -113,10 +113,10 @@ export function LcuEditModal({ open, procedure, onClose, onSave, saving }: EditM
 
   return (
     <Dialog open={open} onOpenChange={v => !v && onClose()}>
-      <DialogContent className={`max-w-2xl gap-0 p-0 overflow-hidden
+      <DialogContent className={`max-w-2xl gap-0 p-0 overflow-hidden flex flex-col max-h-[88vh]
         ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
 
-        <DialogHeader className={`px-6 py-4 border-b space-y-0.5
+        <DialogHeader className={`px-6 py-4 border-b space-y-0.5 shrink-0
           ${isDark ? 'bg-slate-800 border-slate-700/60' : 'bg-slate-50 border-slate-100'}`}>
           <DialogTitle className={`text-base font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>
             {procedure ? 'Edit Procedure' : 'New Procedure'}
@@ -128,8 +128,8 @@ export function LcuEditModal({ open, procedure, onClose, onSave, saving }: EditM
           )}
         </DialogHeader>
 
-        <form onSubmit={handleSubmit}>
-          <div className="p-6 space-y-5 max-h-[70vh] overflow-y-auto">
+        <form onSubmit={handleSubmit} className="flex flex-col min-h-0 flex-1">
+          <div className="p-6 space-y-5 overflow-y-auto flex-1 min-h-0">
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
@@ -211,7 +211,7 @@ export function LcuEditModal({ open, procedure, onClose, onSave, saving }: EditM
             </div>
           </div>
 
-          <DialogFooter className={`px-6 py-4 border-t
+          <DialogFooter className={`px-6 py-4 border-t shrink-0
             ${isDark ? 'bg-slate-800 border-slate-700/60' : 'bg-slate-50 border-slate-100'}`}>
             <Button type="button" variant="outline" onClick={onClose}
               className={`h-9 text-sm cursor-pointer

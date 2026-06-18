@@ -1,6 +1,7 @@
-import { supabase } from '@/backend/database/database';
 import { refreshMaintenanceDaysForOwner, refreshMaintenanceDaysForTool } from '@/backend/utils/refresh-maintenance-days';
+import { prisma } from '@/lib/prisma';
 import { buildS3Url, getPresignedDownloadUrl, uploadFileToS3 } from '@/lib/s3Client';
+import { Prisma } from '@prisma/client';
 
 export interface StoredFile {
   filename: string;
@@ -29,127 +30,112 @@ export async function getSystemList(
   clientId?: number,
   active: string = 'ALL',
 ) {
-  let query = supabase
-    .from('tool')
-    .select('*')
-    .eq('fk_owner_id', ownerId);
+  const rawTools = await prisma.tool.findMany({
+    where: {
+      fk_owner_id: ownerId,
+      ...(active !== 'ALL' && { tool_active: active }),
+    },
+    orderBy: { tool_id: 'desc' },
+  });
 
-  if (active !== 'ALL') query = query.eq('tool_active', active);
-
-  const { data: rawTools, error } = await query.order('tool_id', { ascending: false });
-  if (error) throw error;
-
-  const data = (rawTools || []).filter(
-    t => t.tool_metadata?.deleted !== true && t.tool_metadata?.is_warehouse !== true,
+  const data = rawTools.filter(
+    (t) => (t.tool_metadata as any)?.deleted !== true && (t.tool_metadata as any)?.is_warehouse !== true,
   );
 
   const clientIds = [
     ...new Set(
-      (data || []).map((t) => t.tool_metadata?.clientId).filter(Boolean) as number[],
+      data.map((t) => (t.tool_metadata as any)?.clientId).filter(Boolean) as number[],
     ),
   ];
 
   let clientMap: Record<number, string> = {};
   if (clientIds.length > 0) {
-    const { data: clients } = await supabase
-      .from('client')
-      .select('client_id, client_name')
-      .in('client_id', clientIds);
-
-    clientMap =
-      clients?.reduce(
-        (acc, c) => { acc[c.client_id] = c.client_name; return acc; },
-        {} as Record<number, string>,
-      ) ?? {};
+    const clients = await prisma.client.findMany({
+      where: { client_id: { in: clientIds } },
+      select: { client_id: true, client_name: true },
+    });
+    clientMap = clients.reduce(
+      (acc, c) => { acc[c.client_id] = c.client_name; return acc; },
+      {} as Record<number, string>,
+    );
   }
 
-  const toolIds = (data || []).map((t) => t.tool_id);
+  const toolIds = data.map((t) => t.tool_id);
   let missionData: Record<number, { count: number; time: number; distance: number }> = {};
   const toolsInMaintenance = new Set<number>();
   const toolsNonOperational = new Set<number>();
 
   if (toolIds.length > 0) {
-    const today = new Date().toISOString().split('T')[0];
-    const [
-      { data: missions },
-      { data: openTickets },
-      { data: openComponentTickets },
-      { data: expiredComps },
-      { data: flightExpirableComps },
-    ] = await Promise.all([
-      supabase
-        .from('pilot_mission')
-        .select('fk_tool_id, fk_mission_status_id, flight_duration, distance_flown')
-        .eq('fk_owner_id', ownerId)
-        .in('fk_tool_id', toolIds),
+    const [missions, openTickets, openComponentTickets, expiredComps, flightExpirableComps] = await Promise.all([
+      // Mission stats per tool
+      prisma.pilot_mission.findMany({
+        where:  { fk_owner_id: ownerId, fk_tool_id: { in: toolIds } },
+        select: { fk_tool_id: true, fk_mission_status_id: true, flight_duration: true, distance_flown: true },
+      }),
       // Tools with open maintenance tickets
-      supabase
-        .from('maintenance_ticket')
-        .select('fk_tool_id')
-        .in('fk_tool_id', toolIds)
-        .neq('ticket_status', 'CLOSED'),
+      prisma.maintenance_ticket.findMany({
+        where:  { fk_tool_id: { in: toolIds }, ticket_status: { not: 'CLOSED' } },
+        select: { fk_tool_id: true },
+      }),
       // Tools whose components are in maintenance
-      supabase
-        .from('tool_component')
-        .select('fk_tool_id')
-        .in('fk_tool_id', toolIds)
-        .eq('component_metadata->>component_status', 'MAINTENANCE'),
+      prisma.tool_component.findMany({
+        where:  { fk_tool_id: { in: toolIds }, component_metadata: { path: ['component_status'], equals: 'MAINTENANCE' } },
+        select: { fk_tool_id: true },
+      }),
       // Tools with at least one date-expired component
-      supabase
-        .from('tool_component')
-        .select('fk_tool_id, component_id, component_name, expiration_date')
-        .in('fk_tool_id', toolIds)
-        .eq('component_active', 'Y')
-        .lte('expiration_date', today)
-        .not('expiration_date', 'is', null),
-      // Tools with components that may be flight-expired (FLIGHTS or MIXED expiry type)
-      supabase
-        .from('tool_component')
-        .select('fk_tool_id, expiration_flights, current_maintenance_flights, expiration_flight_hours, current_usage_hours')
-        .in('fk_tool_id', toolIds)
-        .eq('component_active', 'Y')
-        .in('expiry_type', ['FLIGHTS', 'FLIGHT_HOURS', 'MIXED']),
+      prisma.tool_component.findMany({
+        where:  { fk_tool_id: { in: toolIds }, component_active: 'Y', expiration_date: { lte: new Date(), not: null } },
+        select: { fk_tool_id: true, component_id: true, component_name: true, expiration_date: true },
+      }),
+      // Tools with components that may be flight-expired
+      prisma.tool_component.findMany({
+        where:  { fk_tool_id: { in: toolIds }, component_active: 'Y', expiry_type: { in: ['FLIGHTS', 'FLIGHT_HOURS', 'MIXED'] } },
+        select: { fk_tool_id: true, expiration_flights: true, current_maintenance_flights: true, expiration_flight_hours: true, current_usage_hours: true },
+      }),
     ]);
 
-    (missions || []).forEach((m) => {
+    missions.forEach((m) => {
+      if (m.fk_tool_id == null) return;
       if (!missionData[m.fk_tool_id]) {
         missionData[m.fk_tool_id] = { count: 0, time: 0, distance: 0 };
       }
       missionData[m.fk_tool_id].count++;
       missionData[m.fk_tool_id].time += m.flight_duration || 0;
-      missionData[m.fk_tool_id].distance += m.distance_flown || 0;
+      missionData[m.fk_tool_id].distance += Number(m.distance_flown) || 0;
     });
 
-    (openTickets || []).forEach((t) => toolsInMaintenance.add(t.fk_tool_id));
-    (openComponentTickets || []).forEach((c) => toolsInMaintenance.add(c.fk_tool_id));
-    (expiredComps || []).forEach((c) => toolsNonOperational.add(c.fk_tool_id));
-    (flightExpirableComps || [])
+    openTickets.forEach((t) => { if (t.fk_tool_id != null) toolsInMaintenance.add(t.fk_tool_id); });
+    openComponentTickets.forEach((c) => { if (c.fk_tool_id != null) toolsInMaintenance.add(c.fk_tool_id); });
+    expiredComps.forEach((c) => { if (c.fk_tool_id != null) toolsNonOperational.add(c.fk_tool_id); });
+    flightExpirableComps
       .filter((c) =>
         (c.expiration_flights != null && Number(c.current_maintenance_flights) >= Number(c.expiration_flights)) ||
         (c.expiration_flight_hours != null && Number(c.current_usage_hours) >= Number(c.expiration_flight_hours))
       )
-      .forEach((c) => toolsNonOperational.add(c.fk_tool_id));
+      .forEach((c) => { if (c.fk_tool_id != null) toolsNonOperational.add(c.fk_tool_id); });
 
     // Fire-and-forget expiration notifications for managers
-    if ((expiredComps || []).length > 0) {
+    if (expiredComps.length > 0) {
       const { sendExpirationNotifications } = await import('@/backend/services/system/expiration-notification');
-      const expiredItems = (expiredComps || []).map((c: any) => {
-        const tool = data.find((t) => t.tool_id === c.fk_tool_id);
-        return {
-          tool_component_id: c.component_id,
-          component_name: c.component_name,
-          tool_id: c.fk_tool_id,
-          tool_code: tool?.tool_code ?? String(c.fk_tool_id),
-          expiration_date: c.expiration_date,
-        };
-      });
+      const expiredItems = expiredComps
+        .filter((c) => c.fk_tool_id != null)
+        .map((c) => {
+          const tool = data.find((t) => t.tool_id === c.fk_tool_id);
+          return {
+            tool_component_id: c.component_id,
+            component_name:    c.component_name,
+            tool_id:           c.fk_tool_id as number,
+            tool_code:         tool?.tool_code ?? String(c.fk_tool_id),
+            expiration_date:   c.expiration_date?.toISOString() ?? '',
+          };
+        });
       sendExpirationNotifications(ownerId, expiredItems).catch(() => {});
     }
   }
 
-  let filtered = data || [];
+  let filtered = data;
   if (clientId && clientId !== 0) {
-    filtered = filtered.filter((t) => t.tool_metadata?.clientId === clientId);
+    filtered = filtered.filter((t) => (t.tool_metadata as any)?.clientId === clientId);
   }
 
   return {
@@ -158,9 +144,9 @@ export async function getSystemList(
     dataRows: filtered.length,
     data: await Promise.all(
       filtered.map(async (item) => {
-        const metaClientId = item.tool_metadata?.clientId;
+        const metaClientId = (item.tool_metadata as any)?.clientId;
 
-        const storedFiles: StoredFile[] = item.tool_metadata?.files ?? [];
+        const storedFiles: StoredFile[] = (item.tool_metadata as any)?.files ?? [];
         const filesWithUrls = await Promise.all(
           storedFiles.map(async (f: StoredFile) => {
             let downloadUrl = '#';
@@ -185,18 +171,22 @@ export async function getSystemList(
           tool_desc: item.tool_description,
           active: item.tool_active,
           location: item.location || '',
-          date_activation: item.tool_metadata?.activationDate || '',
+          date_activation: (item.tool_metadata as any)?.activationDate || '',
           client_name: clientMap[metaClientId] || '',
-          tool_latitude: item.tool_metadata?.latitude,
-          tool_longitude: item.tool_metadata?.longitude,
-          tool_status: toolsNonOperational.has(item.tool_id) ? 'NOT_OPERATIONAL'
-            : item.tool_metadata?.status === 'DISMISSED' ? 'DISMISSED'
-            : toolsInMaintenance.has(item.tool_id) ? 'MAINTENANCE'
-            : (item.tool_metadata?.status || 'OPERATIONAL'),
+          tool_latitude: (item.tool_metadata as any)?.latitude,
+          tool_longitude: (item.tool_metadata as any)?.longitude,
+          tool_status: (() => {
+            const stored = (item.tool_metadata as any)?.status as string | undefined;
+            if (stored === 'DISMISSED') return 'DISMISSED';
+            if (stored && stored !== 'OPERATIONAL') return stored;
+            if (toolsNonOperational.has(item.tool_id)) return 'NOT_OPERATIONAL';
+            if (toolsInMaintenance.has(item.tool_id)) return 'MAINTENANCE';
+            return stored || 'OPERATIONAL';
+          })(),
           tot_mission: missionData[item.tool_id]?.count || 0,
           tot_flown_time: missionData[item.tool_id]?.time || 0,
           tot_flown_meter: missionData[item.tool_id]?.distance || 0,
-          tool_maintenance_logbook: item.tool_metadata?.maintenanceLogbook || 'N',
+          tool_maintenance_logbook: (item.tool_metadata as any)?.maintenanceLogbook || 'N',
           files: filesWithUrls,
           file_count: filesWithUrls.length,
           file_key: item.filekey ?? null,
@@ -210,7 +200,7 @@ export async function getSystemList(
 const sanitizeFilename = (original: string): string => {
   return original
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[̀-ͯ]/g, '')
     .replace(/[^\x20-\x7E]/g, '_')
     .replace(/['"\\/:*?<>|()[\]{},;@!]/g, '_')
     .replace(/\s+/g, '_')
@@ -220,13 +210,12 @@ const sanitizeFilename = (original: string): string => {
 }
 
 export async function addSystem(toolData: AddSystemInput) {
-  const { data: existingTools } = await supabase
-    .from('tool')
-    .select('tool_id, tool_metadata')
-    .eq('fk_owner_id', toolData.fk_owner_id)
-    .eq('tool_code', toolData.tool_code);
+  const existingTools = await prisma.tool.findMany({
+    where: { fk_owner_id: toolData.fk_owner_id, tool_code: toolData.tool_code },
+    select: { tool_id: true, tool_metadata: true },
+  });
 
-  const existing = (existingTools || []).find(t => t.tool_metadata?.deleted !== true);
+  const existing = existingTools.find((t) => (t.tool_metadata as any)?.deleted !== true);
   if (existing) throw new Error('System code already exists for this owner');
 
   const filesToUpload: File[] = Array.isArray(toolData.files)
@@ -236,7 +225,7 @@ export async function addSystem(toolData: AddSystemInput) {
   const uploadedFiles: StoredFile[] = [];
 
   for (const f of filesToUpload) {
-    const safeFilename = sanitizeFilename(f.name)
+    const safeFilename = sanitizeFilename(f.name);
     const key = `system/${toolData.fk_owner_id}/${toolData.tool_code}/${Date.now()}_${safeFilename}`;
     await uploadFileToS3(key, f);
     const url = buildS3Url(key);
@@ -251,9 +240,8 @@ export async function addSystem(toolData: AddSystemInput) {
 
   const primaryFile = uploadedFiles[0] ?? null;
 
-  const { data, error } = await supabase
-    .from('tool')
-    .insert({
+  const data = await prisma.tool.create({
+    data: {
       fk_owner_id: toolData.fk_owner_id,
       tool_code: toolData.tool_code,
       tool_name: toolData.tool_name || toolData.tool_code,
@@ -269,157 +257,143 @@ export async function addSystem(toolData: AddSystemInput) {
         activationDate: toolData.activationDate || null,
         maintenanceLogbook: 'N',
         files: uploadedFiles,
-      },
-    })
-    .select()
-    .single();
+      } as unknown as Prisma.InputJsonValue,
+    },
+  });
 
-  if (error) throw error;
   return { code: 1, message: 'System added successfully', data };
 }
 
 
 export async function updateTool(toolId: number, toolData: any) {
-  const { data: current, error: fetchError } = await supabase
-    .from('tool')
-    .select('tool_metadata')
-    .eq('tool_id', toolId)
-    .single();
+  const current = await prisma.tool.findUnique({
+    where: { tool_id: toolId },
+    select: { tool_metadata: true },
+  });
 
-  if (fetchError) throw fetchError;
-
-  const { data, error } = await supabase
-    .from('tool')
-    .update({
+  const data = await prisma.tool.update({
+    where: { tool_id: toolId },
+    data: {
       tool_code: toolData.tool_code,
       tool_description: toolData.tool_desc,
       location: toolData.location || null,
       tool_active: toolData.tool_active,
       tool_metadata: {
-        ...current?.tool_metadata,
+        ...(current?.tool_metadata as Record<string, unknown> ?? {}),
         clientId: toolData.fk_client_id,
         latitude: toolData.tool_latitude,
         longitude: toolData.tool_longitude,
         activationDate: toolData.date_activation || null,
         status: toolData.tool_status,
         maintenanceLogbook: toolData.tool_maintenance_logbook,
-      },
-    })
-    .eq('tool_id', toolId)
-    .select()
-    .single();
+      } as Prisma.InputJsonValue,
+    },
+  });
 
-  if (error) throw error;
   return { code: 1, message: 'system updated successfully', data };
 }
 
 
 export async function getOrCreateWarehouseTool(ownerId: number): Promise<number> {
-  const { data: existing } = await supabase
-    .from('tool')
-    .select('tool_id')
-    .eq('fk_owner_id', ownerId)
-    .eq('tool_metadata->>is_warehouse', 'true')
-    .maybeSingle();
+  const tools = await prisma.tool.findMany({
+    where: { fk_owner_id: ownerId },
+    select: { tool_id: true, tool_metadata: true },
+  });
 
+  const existing = tools.find((t) => (t.tool_metadata as any)?.is_warehouse === true);
   if (existing) return existing.tool_id;
 
-  const { data: created, error } = await supabase
-    .from('tool')
-    .insert({
+  const created = await prisma.tool.create({
+    data: {
       fk_owner_id: ownerId,
       tool_code: '__WAREHOUSE__',
       tool_name: 'Warehouse',
       tool_active: 'Y',
-      tool_metadata: { is_warehouse: true },
-    })
-    .select('tool_id')
-    .single();
+      tool_metadata: { is_warehouse: true } as Prisma.InputJsonValue,
+    },
+    select: { tool_id: true },
+  });
 
-  if (error) throw error;
   return created.tool_id;
 }
 
 
 export async function deleteSystem(ownerId: number, toolId: number) {
-  const { data: tool, error: fetchError } = await supabase
-    .from('tool')
-    .select('tool_id, tool_code, tool_metadata')
-    .eq('tool_id', toolId)
-    .eq('fk_owner_id', ownerId)
-    .maybeSingle() as { data: { tool_id: number; tool_code: string; tool_metadata: any } | null; error: any };
+  const tool = await prisma.tool.findFirst({
+    where: { tool_id: toolId, fk_owner_id: ownerId },
+    select: { tool_id: true, tool_code: true, tool_metadata: true },
+  });
 
-  if (fetchError || !tool) throw new Error('System not found or unauthorized');
+  if (!tool) throw new Error('System not found or unauthorized');
 
-  const currentStatus = tool.tool_metadata?.status || 'OPERATIONAL';
+  const currentStatus = (tool.tool_metadata as any)?.status || 'OPERATIONAL';
 
   if (currentStatus !== 'NOT_OPERATIONAL') {
-    const { error } = await supabase
-      .from('tool')
-      .update({ tool_metadata: { ...tool.tool_metadata, status: 'NOT_OPERATIONAL' } })
-      .eq('tool_id', toolId)
-      .eq('fk_owner_id', ownerId);
-
-    if (error) throw error;
+    await prisma.tool.update({
+      where: { tool_id: toolId },
+      data: {
+        tool_metadata: {
+          ...(tool.tool_metadata as Record<string, unknown> ?? {}),
+          status: 'NOT_OPERATIONAL',
+        } as Prisma.InputJsonValue,
+      },
+    });
     return { code: 2, message: 'System set to non-operational. Delete again to permanently remove it.' };
   }
 
-  const { data: components, error: compFetchError } = await supabase
-    .from('tool_component')
-    .select('component_id, component_metadata')
-    .eq('fk_tool_id', toolId);
+  const components = await prisma.tool_component.findMany({
+    where: { fk_tool_id: toolId },
+    select: { component_id: true, component_metadata: true },
+  });
 
-  if (compFetchError) throw compFetchError;
-
-  if ((components || []).length > 0) {
-    // Relocate all attached components to the hidden warehouse tool.
-    // This satisfies the FK NOT NULL + CASCADE constraint while keeping
-    // every component intact with its current status.
+  if (components.length > 0) {
     const warehouseToolId = await getOrCreateWarehouseTool(ownerId);
 
-    for (const comp of components) {
-      const { error: moveErr } = await supabase
-        .from('tool_component')
-        .update({
-          fk_tool_id: warehouseToolId,
-          component_metadata: {
-            ...comp.component_metadata,
-            system_detached: true,
+    await prisma.$transaction(
+      components.map((comp) =>
+        prisma.tool_component.update({
+          where: { component_id: comp.component_id },
+          data: {
+            fk_tool_id: warehouseToolId,
+            component_metadata: {
+              ...(comp.component_metadata as Record<string, unknown> ?? {}),
+              system_detached: true,
+            } as Prisma.InputJsonValue,
           },
         })
-        .eq('component_id', comp.component_id);
-
-      if (moveErr) throw moveErr;
-    }
+      )
+    );
   }
 
-  // With no components left referencing this tool, hard-delete is safe.
-  const { error: deleteError } = await supabase
-    .from('tool')
-    .delete()
-    .eq('tool_id', toolId)
-    .eq('fk_owner_id', ownerId);
+  await prisma.tool.delete({ where: { tool_id: toolId } });
 
-  if (deleteError) throw deleteError;
   return { code: 1, message: 'System permanently deleted. All components moved to warehouse.', toolCode: tool.tool_code };
 }
 
 
 export async function getModelList(ownerId: number) {
-  const { data, error } = await supabase
-    .from('tool_model')
-    .select('model_id, model_code, model_name, manufacturer, specifications, model_description, model_active')
-    .eq('specifications->>fk_owner_id', String(ownerId))
-    .order('model_id', { ascending: false });
-
-  if (error) throw error;
+  const data = await prisma.tool_model.findMany({
+    where: {
+      specifications: { path: ['fk_owner_id'], equals: ownerId },
+    },
+    select: {
+      model_id: true,
+      model_code: true,
+      model_name: true,
+      manufacturer: true,
+      specifications: true,
+      model_description: true,
+      model_active: true,
+    },
+    orderBy: { model_id: 'desc' },
+  });
 
   return {
     code: 1,
     message: 'Success',
-    dataRows: data?.length || 0,
-    data: (data || []).map((item) => {
-      const specs = item.specifications || {};
+    dataRows: data.length,
+    data: data.map((item) => {
+      const specs = (item.specifications as Record<string, any>) || {};
       const notes: string = typeof specs.notes === 'string' ? specs.notes : '';
       const cycleMatch = notes.match(/^Maintenance Cycle:\s*(.+)$/m);
       const hoursMatch = notes.match(/^Maint\. Hours:\s*([\d.]+)$/m);
@@ -450,71 +424,68 @@ export async function getModelList(ownerId: number) {
 
 
 export async function deleteModel(ownerId: number, modelId: number) {
-  const { data: modelRow } = await supabase
-    .from('tool_model')
-    .select('model_code, model_name')
-    .eq('model_id', modelId)
-    .maybeSingle();
+  const modelRow = await prisma.tool_model.findUnique({
+    where: { model_id: modelId },
+    select: { model_code: true, model_name: true },
+  });
 
-  const { data: ownerTools } = await supabase
-    .from('tool')
-    .select('tool_id')
-    .eq('fk_owner_id', ownerId);
+  const ownerTools = await prisma.tool.findMany({
+    where: { fk_owner_id: ownerId },
+    select: { tool_id: true },
+  });
 
-  const toolIds = (ownerTools || []).map((t: any) => t.tool_id);
+  const toolIds = ownerTools.map((t) => t.tool_id);
 
   if (toolIds.length > 0) {
-    const { data: comps } = await supabase
-      .from('tool_component')
-      .select('component_id, component_metadata')
-      .in('fk_tool_id', toolIds);
+    const comps = await prisma.tool_component.findMany({
+      where: { fk_tool_id: { in: toolIds } },
+      select: { component_id: true, component_metadata: true },
+    });
 
-    const referencing = (comps || []).filter(
-      (c: any) => c.component_metadata?.fk_tool_model_id == modelId,
+    const referencing = comps.filter(
+      (c) => (c.component_metadata as any)?.fk_tool_model_id == modelId,
     );
 
-    for (const comp of referencing) {
-      const { error: updateErr } = await supabase
-        .from('tool_component')
-        .update({
-          component_metadata: { ...comp.component_metadata, fk_tool_model_id: null },
-        })
-        .eq('component_id', comp.component_id);
-
-      if (updateErr) throw updateErr;
+    if (referencing.length > 0) {
+      await prisma.$transaction(
+        referencing.map((comp) =>
+          prisma.tool_component.update({
+            where: { component_id: comp.component_id },
+            data: {
+              component_metadata: {
+                ...(comp.component_metadata as Record<string, unknown> ?? {}),
+                fk_tool_model_id: null,
+              } as Prisma.InputJsonValue,
+            },
+          })
+        )
+      );
     }
   }
 
-  const { error } = await supabase
-    .from('tool_model')
-    .delete()
-    .eq('model_id', modelId);
+  await prisma.tool_model.delete({ where: { model_id: modelId } });
 
-  if (error) throw error;
   return { code: 1, message: 'Model deleted successfully', modelCode: modelRow?.model_code ?? null, modelName: modelRow?.model_name ?? null };
 }
 
 
 export async function deleteComponent(ownerId: number, componentId: number, force: boolean = false) {
-  const { data: comp, error: compError } = await supabase
-    .from('tool_component')
-    .select('component_id, fk_tool_id, component_code, component_name, component_type, component_metadata')
-    .eq('component_id', componentId)
-    .single();
+  const comp = await prisma.tool_component.findUnique({
+    where: { component_id: componentId },
+    select: { component_id: true, fk_tool_id: true, component_code: true, component_name: true, component_type: true, component_metadata: true },
+  });
 
-  if (compError || !comp) throw new Error('Component not found');
+  if (!comp) throw new Error('Component not found');
 
   if (comp.fk_tool_id !== null) {
-    const { data: tool } = await supabase
-      .from('tool')
-      .select('tool_id, tool_code')
-      .eq('tool_id', comp.fk_tool_id)
-      .eq('fk_owner_id', ownerId)
-      .maybeSingle();
+    const tool = await prisma.tool.findFirst({
+      where: { tool_id: comp.fk_tool_id, fk_owner_id: ownerId },
+      select: { tool_id: true, tool_code: true },
+    });
 
     if (!tool) throw new Error('Component not found or unauthorized');
 
-    const isDetached = comp.component_metadata?.system_detached === true;
+    const isDetached = (comp.component_metadata as any)?.system_detached === true;
 
     if (!force && !isDetached) {
       return {
@@ -525,12 +496,8 @@ export async function deleteComponent(ownerId: number, componentId: number, forc
     }
   }
 
-  const { error } = await supabase
-    .from('tool_component')
-    .delete()
-    .eq('component_id', componentId);
+  await prisma.tool_component.delete({ where: { component_id: componentId } });
 
-  if (error) throw error;
   return {
     code: 1,
     message: 'Component deleted successfully',
@@ -542,78 +509,69 @@ export async function deleteComponent(ownerId: number, componentId: number, forc
 
 
 export async function getToolCode(toolId: number, ownerId: number): Promise<string | null> {
-  const { data } = await supabase
-    .from('tool')
-    .select('tool_code')
-    .eq('tool_id', toolId)
-    .eq('fk_owner_id', ownerId)
-    .maybeSingle();
-  return (data as any)?.tool_code ?? null;
+  const data = await prisma.tool.findFirst({
+    where: { tool_id: toolId, fk_owner_id: ownerId },
+    select: { tool_code: true },
+  });
+  return data?.tool_code ?? null;
 }
 
 
 export async function detachComponent(ownerId: number, componentId: number) {
-  const { data: comp, error: compError } = await supabase
-    .from('tool_component')
-    .select('component_id, fk_tool_id, component_code, component_name, component_type, component_metadata')
-    .eq('component_id', componentId)
-    .single();
+  const comp = await prisma.tool_component.findUnique({
+    where: { component_id: componentId },
+    select: { component_id: true, fk_tool_id: true, component_code: true, component_name: true, component_type: true, component_metadata: true },
+  });
 
-  if (compError || !comp) throw new Error('Component not found');
+  if (!comp) throw new Error('Component not found');
 
-  const { data: tool } = await supabase
-    .from('tool')
-    .select('tool_id, tool_code, tool_metadata')
-    .eq('tool_id', comp.fk_tool_id)
-    .eq('fk_owner_id', ownerId)
-    .maybeSingle();
+  const tool = await prisma.tool.findFirst({
+    where: { tool_id: comp.fk_tool_id ?? undefined, fk_owner_id: ownerId },
+    select: { tool_id: true, tool_code: true, tool_metadata: true },
+  });
 
   if (!tool) throw new Error('Component not found or unauthorized');
 
   const updatedMetadata = {
-    ...(comp.component_metadata || {}),
+    ...(comp.component_metadata as Record<string, unknown> ?? {}),
     system_detached: true,
     component_status: 'DISMISSED',
   };
 
-  const { error } = await supabase
-    .from('tool_component')
-    .update({ component_metadata: updatedMetadata })
-    .eq('component_id', componentId);
-
-  if (error) throw error;
+  await prisma.tool_component.update({
+    where: { component_id: componentId },
+    data: { component_metadata: updatedMetadata as Prisma.InputJsonValue },
+  });
 
   // Cascade: also detach all children that reference this component as parent
-  const { data: siblings } = await supabase
-    .from('tool_component')
-    .select('component_id, component_metadata')
-    .eq('fk_tool_id', comp.fk_tool_id)
-    .neq('component_id', componentId);
+  const siblings = await prisma.tool_component.findMany({
+    where: { fk_tool_id: comp.fk_tool_id ?? undefined, component_id: { not: componentId } },
+    select: { component_id: true, component_metadata: true },
+  });
 
-  const children = (siblings || []).filter(
-    (c) => c.component_metadata?.fk_parent_component_id === componentId,
+  const children = siblings.filter(
+    (c) => (c.component_metadata as any)?.fk_parent_component_id === componentId,
   );
 
   for (const child of children) {
     const childMeta = {
-      ...(child.component_metadata || {}),
+      ...(child.component_metadata as Record<string, unknown> ?? {}),
       system_detached: true,
       component_status: 'DISMISSED',
     };
-    const { error: childErr } = await supabase
-      .from('tool_component')
-      .update({ component_metadata: childMeta })
-      .eq('component_id', child.component_id);
-    if (childErr) throw childErr;
+    await prisma.tool_component.update({
+      where: { component_id: child.component_id },
+      data: { component_metadata: childMeta as Prisma.InputJsonValue },
+    });
   }
 
   // Set the system itself to DISMISSED
-  const toolMeta = (tool as any).tool_metadata || {};
+  const toolMeta = (tool.tool_metadata as Record<string, unknown>) ?? {};
   if (toolMeta.status !== 'DISMISSED') {
-    await supabase
-      .from('tool')
-      .update({ tool_metadata: { ...toolMeta, status: 'DISMISSED' } })
-      .eq('tool_id', comp.fk_tool_id);
+    await prisma.tool.update({
+      where: { tool_id: tool.tool_id },
+      data: { tool_metadata: { ...toolMeta, status: 'DISMISSED' } as Prisma.InputJsonValue },
+    });
   }
 
   return {
@@ -622,7 +580,7 @@ export async function detachComponent(ownerId: number, componentId: number) {
     componentCode: comp.component_code ?? null,
     componentName: comp.component_name ?? null,
     componentType: comp.component_type ?? null,
-    toolCode: (tool as any)?.tool_code ?? null,
+    toolCode: tool.tool_code ?? null,
     childrenDetached: children.length,
   };
 }
@@ -634,33 +592,29 @@ export async function addModel(modelData: any) {
     fk_owner_id: modelData.fk_owner_id,
   };
 
-  const { data, error } = await supabase
-    .from('tool_model')
-    .insert({
+  const data = await prisma.tool_model.create({
+    data: {
       model_code: modelData.factory_serie,
       model_name: modelData.factory_model,
       manufacturer: modelData.factory_type,
       model_description: modelData.model_type || null,
-      specifications: specsWithOwner,
+      specifications: specsWithOwner as Prisma.InputJsonValue,
       model_active: 'Y',
-    })
-    .select()
-    .single();
+    },
+  });
 
-  if (error) throw error;
   return { code: 1, message: 'Model added successfully', data };
 }
 
 
 export async function updateModel(modelId: number, modelData: any) {
-  const { data: existing } = await supabase
-    .from('tool_model')
-    .select('specifications')
-    .eq('model_id', modelId)
-    .single();
+  const existing = await prisma.tool_model.findUnique({
+    where: { model_id: modelId },
+    select: { specifications: true },
+  });
 
   const updatedSpecs = {
-    ...(existing?.specifications || {}),
+    ...(existing?.specifications as Record<string, unknown> ?? {}),
     ...(modelData.max_flight_time !== undefined ? { max_flight_time: modelData.max_flight_time } : {}),
     ...(modelData.max_speed !== undefined ? { max_speed: modelData.max_speed } : {}),
     ...(modelData.max_altitude !== undefined ? { max_altitude: modelData.max_altitude } : {}),
@@ -668,31 +622,27 @@ export async function updateModel(modelId: number, modelData: any) {
     ...(modelData.notes !== undefined ? { notes: modelData.notes } : {}),
   };
 
-  const updatePayload: Record<string, any> = {
+  const updatePayload: any = {
     manufacturer: modelData.manufacturer,
     model_code: modelData.model_code,
     model_name: modelData.model_name,
     model_description: modelData.model_type || null,
-    specifications: updatedSpecs,
+    specifications: updatedSpecs as Prisma.InputJsonValue,
   };
   if (modelData.model_active !== undefined) {
     updatePayload.model_active = modelData.model_active;
   }
 
-  const { data, error } = await supabase
-    .from('tool_model')
-    .update(updatePayload)
-    .eq('model_id', modelId)
-    .select()
-    .single();
+  const data = await prisma.tool_model.update({
+    where: { model_id: modelId },
+    data: updatePayload,
+  });
 
-  if (error) throw error;
   return { code: 1, message: 'Model updated successfully', data };
 }
 
 
 export async function getComponentList(ownerId: number, toolId?: number) {
-  
   if (toolId && toolId !== 0) {
     await refreshMaintenanceDaysForTool(toolId);
   } else {
@@ -730,45 +680,36 @@ export async function getComponentList(ownerId: number, toolId?: number) {
 
   // Specific system view: non-detached components for that tool only
   if (toolId && toolId !== 0) {
-    const { data: ownerTool } = await supabase
-      .from('tool')
-      .select('tool_id')
-      .eq('fk_owner_id', ownerId)
-      .eq('tool_id', toolId)
-      .maybeSingle();
+    const ownerTool = await prisma.tool.findFirst({
+      where: { fk_owner_id: ownerId, tool_id: toolId },
+      select: { tool_id: true },
+    });
 
     if (!ownerTool) return { code: 1, message: 'Success', dataRows: 0, data: [] };
 
-    const { data: rawData, error } = await supabase
-      .from('tool_component')
-      .select(selectFields)
-      .eq('fk_tool_id', toolId)
-      .order('component_id', { ascending: false });
+    const rawData = await prisma.tool_component.findMany({
+      where: { fk_tool_id: toolId },
+      orderBy: { component_id: 'desc' },
+    });
 
-    if (error) throw error;
-    const data = (rawData || []).filter(item => item.component_metadata?.system_detached !== true);
-    return buildComponentListResult(data);
+    const filteredData = rawData.filter((item) => (item.component_metadata as any)?.system_detached !== true);
+    return buildComponentListResult(filteredData);
   }
 
-  // All-components view: every component across all owner tools (active and inactive)
-  const { data: allTools, error: toolsError } = await supabase
-    .from('tool')
-    .select('tool_id')
-    .eq('fk_owner_id', ownerId);
+  const allTools = await prisma.tool.findMany({
+    where: { fk_owner_id: ownerId },
+    select: { tool_id: true },
+  });
 
-  if (toolsError) throw toolsError;
-  const allToolIds = (allTools || []).map((t) => t.tool_id);
-
+  const allToolIds = allTools.map((t) => t.tool_id);
   if (allToolIds.length === 0) return { code: 1, message: 'Success', dataRows: 0, data: [] };
 
-  const { data: rawData, error } = await supabase
-    .from('tool_component')
-    .select(selectFields)
-    .in('fk_tool_id', allToolIds)
-    .order('component_id', { ascending: false });
+  const rawData = await prisma.tool_component.findMany({
+    where: { fk_tool_id: { in: allToolIds } },
+    orderBy: { component_id: 'desc' },
+  });
 
-  if (error) throw error;
-  return buildComponentListResult(rawData || []);
+  return buildComponentListResult(rawData);
 }
 
 function buildComponentListResult(data: any[]) {
@@ -856,14 +797,11 @@ export async function addComponent(componentData: any) {
     : '';
 
   if (normalizedSerial) {
-    const { data: duplicate, error: duplicateError } = await supabase
-      .from('tool_component')
-      .select('component_id')
-      .ilike('serial_number', normalizedSerial)
-      .limit(1)
-      .maybeSingle();
+    const duplicate = await prisma.tool_component.findFirst({
+      where: { serial_number: { equals: normalizedSerial, mode: 'insensitive' } },
+      select: { component_id: true },
+    });
 
-    if (duplicateError) throw duplicateError;
     if (duplicate) {
       return { code: 0, message: `Component serial number "${normalizedSerial}" already exists.` };
     }
@@ -875,14 +813,13 @@ export async function addComponent(componentData: any) {
   let maintenanceCycleFlight: number | null = null;
 
   if (componentData.fk_tool_model_id) {
-    const { data: model } = await supabase
-      .from('tool_model')
-      .select('specifications')
-      .eq('model_id', componentData.fk_tool_model_id)
-      .single();
+    const model = await prisma.tool_model.findUnique({
+      where: { model_id: componentData.fk_tool_model_id },
+      select: { specifications: true },
+    });
 
-    if (model?.specifications?.notes) {
-      const notes: string = model.specifications.notes;
+    if ((model?.specifications as any)?.notes) {
+      const notes: string = (model!.specifications as any).notes;
       const cycleMatch = notes.match(/^Maintenance Cycle:\s*(.+)$/m);
       const hoursMatch = notes.match(/^Maint\. Hours:\s*([\d.]+)$/m);
       const daysMatch = notes.match(/^Maint\. Days:\s*([\d.]+)$/m);
@@ -900,18 +837,16 @@ export async function addComponent(componentData: any) {
   const finalDay = componentData.maintenance_cycle_day ?? maintenanceCycleDay;
   const finalFlight = componentData.maintenance_cycle_flight ?? maintenanceCycleFlight;
 
-  const { data, error } = await supabase
-    .from('tool_component')
-    .insert({
+  const data = await prisma.tool_component.create({
+    data: {
       fk_tool_id: componentData.fk_tool_id,
       component_name: componentData.component_code || componentData.component_type,
       component_type: componentData.component_type,
       component_code: componentData.component_code || componentData.component_type,
       component_description: componentData.component_desc || componentData.component_vendor || null,
       serial_number: normalizedSerial || null,
-      installation_date: componentData.component_activation_date || null,
+      installation_date: componentData.component_activation_date ? new Date(componentData.component_activation_date) : null,
       component_active: 'Y',
-
       maintenance_cycle: finalCycle || null,
       maintenance_cycle_hour: finalHour ?? null,
       maintenance_cycle_day: finalDay ?? null,
@@ -962,12 +897,10 @@ export async function addComponent(componentData: any) {
           ? [{ latitude: componentData.latitude, longitude: componentData.longitude, changed_at: new Date().toISOString() }]
           : [],
         ...(componentData.system_detached ? { system_detached: true } : {}),
-      },
-    })
-    .select()
-    .single();
+      } as Prisma.InputJsonValue,
+    },
+  });
 
-  if (error) throw error;
   return { code: 1, message: 'Component added successfully', data };
 }
 
@@ -978,15 +911,14 @@ export async function updateComponent(componentId: number, componentData: any) {
     : '';
 
   if (normalizedSerial) {
-    const { data: duplicate, error: duplicateError } = await supabase
-      .from('tool_component')
-      .select('component_id')
-      .ilike('serial_number', normalizedSerial)
-      .neq('component_id', componentId)
-      .limit(1)
-      .maybeSingle();
+    const duplicate = await prisma.tool_component.findFirst({
+      where: {
+        serial_number: { equals: normalizedSerial, mode: 'insensitive' },
+        component_id: { not: componentId },
+      },
+      select: { component_id: true },
+    });
 
-    if (duplicateError) throw duplicateError;
     if (duplicate) {
       return { code: 0, message: `Component serial number "${normalizedSerial}" already exists.` };
     }
@@ -996,13 +928,12 @@ export async function updateComponent(componentId: number, componentData: any) {
     await refreshMaintenanceDaysForTool(componentData.fk_tool_id);
   }
 
-  const { data: existing } = await supabase
-    .from('tool_component')
-    .select('component_metadata, fk_tool_id, current_usage_hours')
-    .eq('component_id', componentId)
-    .single();
+  const existing = await prisma.tool_component.findUnique({
+    where: { component_id: componentId },
+    select: { component_metadata: true, fk_tool_id: true, current_usage_hours: true },
+  });
 
-  const existingMeta = existing?.component_metadata || {};
+  const existingMeta = (existing?.component_metadata as Record<string, unknown>) || {};
   const { system_detached: _ignored, ...existingMetaWithoutDetached } = existingMeta;
   const baseMeta = componentData.system_detached ? existingMeta : existingMetaWithoutDetached;
 
@@ -1020,16 +951,16 @@ export async function updateComponent(componentId: number, componentData: any) {
     ? [...existingHistory, { latitude: newLat, longitude: newLon, changed_at: new Date().toISOString() }]
     : existingHistory;
 
-  const { data, error } = await supabase
-    .from('tool_component')
-    .update({
+  const data = await prisma.tool_component.update({
+    where: { component_id: componentId },
+    data: {
       fk_tool_id: componentData.fk_tool_id,
       component_type: componentData.component_type,
-      component_name: componentData.component_name || null,
+      component_name: componentData.component_name || componentData.component_code || componentData.component_type,
       component_code: componentData.component_code || null,
       component_description: componentData.component_desc || null,
       serial_number: normalizedSerial || null,
-      installation_date: componentData.component_activation_date || null,
+      installation_date: componentData.component_activation_date ? new Date(componentData.component_activation_date) : null,
       dcc_drone_id: componentData.dcc_drone_id ?? null,
       drone_registration_code: componentData.drone_registration_code || null,
       expiration_date: componentData.expiration_date || null,
@@ -1047,28 +978,7 @@ export async function updateComponent(componentId: number, componentData: any) {
         ...baseMeta,
         cc_platform: componentData.cc_platform || null,
         gcs_type: componentData.gcs_type || null,
-        component_status: (() => {
-          const today = new Date().toISOString().split('T')[0];
-          const expiryType: string = componentData.expiry_type || 'EXPIRATION_DATE';
-          const isDateExpired = componentData.expiration_date && componentData.expiration_date <= today;
-          const currentFlights = componentData.initial_maintenance_flights ?? Number(existing?.component_metadata?.current_maintenance_flights ?? 0);
-          const currentHours = componentData.initial_usage_hours ?? Number(existing?.current_usage_hours ?? 0);
-          const isFlightExpired =
-            componentData.expiration_flights != null &&
-            currentFlights >= componentData.expiration_flights;
-          const isFlightHoursExpired =
-            componentData.expiration_flight_hours != null &&
-            currentHours >= componentData.expiration_flight_hours;
-          const isExpired =
-            expiryType === 'FLIGHTS'
-              ? isFlightExpired
-              : expiryType === 'FLIGHT_HOURS'
-              ? isFlightHoursExpired
-              : expiryType === 'MIXED'
-              ? isDateExpired || isFlightExpired || isFlightHoursExpired
-              : isDateExpired;
-          return isExpired ? 'DECOMMISSIONED' : (componentData.component_status || 'OPERATIONAL');
-        })(),
+        component_status: componentData.component_status || 'OPERATIONAL',
         component_category: componentData.component_category || 'STANDARD',
         fk_tool_model_id: componentData.fk_tool_model_id || null,
         fk_parent_component_id: componentData.fk_parent_component_id ?? null,
@@ -1081,13 +991,10 @@ export async function updateComponent(componentId: number, componentData: any) {
         drone_classes: componentData.drone_classes ?? baseMeta.drone_classes ?? null,
         location_history: updatedHistory,
         ...(componentData.system_detached ? { system_detached: true } : {}),
-      },
-    })
-    .eq('component_id', componentId)
-    .select()
-    .single();
+      } as Prisma.InputJsonValue,
+    },
+  });
 
-  if (error) throw error;
   return { code: 1, message: 'Component updated successfully', data };
 }
 
@@ -1096,28 +1003,30 @@ export async function syncDroneRegistrationCodes(
   ownerId: number,
   drones: { serial_number: string; drone_registration_code: string }[],
 ): Promise<{ updated: number; not_found: string[] }> {
-  const { data: tools } = await supabase
-    .from('tool')
-    .select('tool_id')
-    .eq('fk_owner_id', ownerId);
+  const tools = await prisma.tool.findMany({
+    where: { fk_owner_id: ownerId },
+    select: { tool_id: true },
+  });
 
-  const toolIds = (tools || []).map((t) => t.tool_id);
+  const toolIds = tools.map((t) => t.tool_id);
   if (toolIds.length === 0) {
     return { updated: 0, not_found: drones.map((d) => d.serial_number) };
   }
 
-  const { data: components } = await supabase
-    .from('tool_component')
-    .select('component_id, serial_number')
-    .in('fk_tool_id', toolIds)
-    .not('serial_number', 'is', null);
+  const components = await prisma.tool_component.findMany({
+    where: {
+      fk_tool_id: { in: toolIds },
+      serial_number: { not: null },
+    },
+    select: { component_id: true, serial_number: true },
+  });
 
   const snToId = new Map<string, number>();
-  for (const c of components || []) {
+  for (const c of components) {
     if (c.serial_number) snToId.set(c.serial_number.toLowerCase(), c.component_id);
   }
 
-  const now = new Date().toISOString();
+  const now = new Date();
   const not_found: string[] = [];
   let updated = 0;
 
@@ -1127,11 +1036,13 @@ export async function syncDroneRegistrationCodes(
       not_found.push(drone.serial_number);
       continue;
     }
-    const { error } = await supabase
-      .from('tool_component')
-      .update({ drone_registration_code: drone.drone_registration_code, drc_synced_at: now })
-      .eq('component_id', componentId);
-    if (!error) updated++;
+    try {
+      await prisma.tool_component.update({
+        where: { component_id: componentId },
+        data: { drone_registration_code: drone.drone_registration_code, drc_synced_at: now },
+      });
+      updated++;
+    } catch {}
   }
 
   return { updated, not_found };
@@ -1143,32 +1054,37 @@ export async function getMaintenanceDashboard(
   clientId?: number,
   thresholdAlert: number = 80
 ) {
-  
   await refreshMaintenanceDaysForOwner(ownerId);
 
-  const { data: tools, error } = await supabase
-    .from('tool')
-    .select(`
-        tool_id, tool_code, tool_name, tool_metadata,
-        tool_component (
-          component_id, component_name, component_type,
-          current_usage_hours, expected_lifespan_hours
-        )
-      `)
-    .eq('fk_owner_id', ownerId)
+  const tools = await prisma.tool.findMany({
+    where: { fk_owner_id: ownerId },
+    select: {
+      tool_id: true,
+      tool_code: true,
+      tool_name: true,
+      tool_metadata: true,
+      tool_component: {
+        select: {
+          component_id: true,
+          component_name: true,
+          component_type: true,
+          current_usage_hours: true,
+          expected_lifespan_hours: true,
+        },
+      },
+    },
+  });
 
-  if (error) throw error;
-
-  let filtered = tools || [];
+  let filtered = tools;
   if (clientId && clientId !== 0) {
-    filtered = filtered.filter((t) => t.tool_metadata?.clientId === clientId);
+    filtered = filtered.filter((t) => (t.tool_metadata as any)?.clientId === clientId);
   }
 
   const maintenanceNeeded = filtered.filter((tool) => {
-    const components: any[] = tool.tool_component || [];
+    const components = tool.tool_component;
     return components.some((comp) => {
       if (!comp.expected_lifespan_hours || comp.expected_lifespan_hours === 0) return false;
-      return (comp.current_usage_hours / comp.expected_lifespan_hours) * 100 >= thresholdAlert;
+      return (Number(comp.current_usage_hours) / comp.expected_lifespan_hours) * 100 >= thresholdAlert;
     });
   });
 
@@ -1193,57 +1109,55 @@ export async function getComponentFlightLogs(
   componentId: number,
   ownerId: number,
 ): Promise<{ code: number; message: string; data: ComponentFlightLog[] }> {
-  const { data: component } = await supabase
-    .from('tool_component')
-    .select('component_id, fk_tool_id')
-    .eq('component_id', componentId)
-    .maybeSingle();
+  const component = await prisma.tool_component.findUnique({
+    where: { component_id: componentId },
+    select: { component_id: true, fk_tool_id: true },
+  });
 
   if (!component) return { code: 0, message: 'Component not found', data: [] };
 
   const toolId = component.fk_tool_id;
   if (!toolId) return { code: 1, message: 'Component not attached to a system', data: [] };
 
-  const { data: tool } = await supabase
-    .from('tool')
-    .select('tool_id')
-    .eq('tool_id', toolId)
-    .eq('fk_owner_id', ownerId)
-    .maybeSingle();
+  const tool = await prisma.tool.findFirst({
+    where: { tool_id: toolId, fk_owner_id: ownerId },
+    select: { tool_id: true },
+  });
 
   if (!tool) return { code: 0, message: 'Access denied', data: [] };
 
-  const { data: missions } = await supabase
-    .from('pilot_mission')
-    .select('pilot_mission_id, mission_code, actual_start, actual_end, flight_duration, distance_flown')
-    .eq('fk_tool_id', toolId)
-    .order('actual_start', { ascending: false, nullsFirst: false });
+  const missions = await prisma.pilot_mission.findMany({
+    where: { fk_tool_id: toolId },
+    select: { pilot_mission_id: true, mission_code: true, actual_start: true, actual_end: true, flight_duration: true, distance_flown: true },
+    orderBy: { actual_start: 'desc' },
+  });
 
-  if (!missions || missions.length === 0) return { code: 1, message: 'No missions found', data: [] };
+  if (!missions.length) return { code: 1, message: 'No missions found', data: [] };
 
-  const missionIds = missions.map((m) => m.pilot_mission_id);
+  const missionIds = missions.map((m) => BigInt(m.pilot_mission_id));
   const missionMap = new Map(missions.map((m) => [m.pilot_mission_id, m]));
 
-  const { data: logs } = await supabase
-    .from('mission_flight_logs')
-    .select('log_id, fk_mission_id, log_source, original_filename, flytbase_flight_id, uploaded_at')
-    .in('fk_mission_id', missionIds)
-    .order('uploaded_at', { ascending: false });
+  const logs = await prisma.mission_flight_logs.findMany({
+    where: { fk_mission_id: { in: missionIds } },
+    select: { log_id: true, fk_mission_id: true, log_source: true, original_filename: true, flytbase_flight_id: true, uploaded_at: true },
+    orderBy: { uploaded_at: 'desc' },
+  });
 
-  const data: ComponentFlightLog[] = (logs ?? []).map((log) => {
-    const mission = missionMap.get(log.fk_mission_id);
+  const data: ComponentFlightLog[] = logs.map((log) => {
+    const missionId = Number(log.fk_mission_id);
+    const mission = missionMap.get(missionId);
     return {
-      log_id: log.log_id,
-      mission_id: log.fk_mission_id,
+      log_id: Number(log.log_id),
+      mission_id: missionId,
       mission_code: mission?.mission_code ?? null,
       log_source: log.log_source,
-      original_filename: log.original_filename,
-      flytbase_flight_id: log.flytbase_flight_id,
-      uploaded_at: log.uploaded_at,
+      original_filename: log.original_filename ?? '',
+      flytbase_flight_id: log.flytbase_flight_id ?? null,
+      uploaded_at: log.uploaded_at?.toISOString() ?? '',
       flight_duration: mission?.flight_duration ?? null,
-      distance_flown: mission?.distance_flown ?? null,
-      actual_start: mission?.actual_start ?? null,
-      actual_end: mission?.actual_end ?? null,
+      distance_flown: mission?.distance_flown != null ? Number(mission.distance_flown) : null,
+      actual_start: mission?.actual_start?.toISOString() ?? null,
+      actual_end: mission?.actual_end?.toISOString() ?? null,
     };
   });
 

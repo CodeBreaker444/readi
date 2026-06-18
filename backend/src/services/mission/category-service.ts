@@ -1,4 +1,4 @@
-import { supabase } from '@/backend/database/database';
+import { prisma } from '@/lib/prisma';
 
 export interface MissionCategory {
   mission_category_id: number;
@@ -8,82 +8,66 @@ export interface MissionCategory {
 }
 
 export async function getMissionCategoryList(ownerId: number) {
-  const { data, error } = await supabase
-    .from('pilot_mission_category')
-    .select(`
-      category_id,
-      category_code,
-      category_name,
-      category_description,
-      is_active
-    `)
-    .eq('fk_owner_id', ownerId)
-    .eq('is_active', true)
-    .order('category_id', { ascending: true });
+  const data = await prisma.pilot_mission_category.findMany({
+    where: { fk_owner_id: ownerId, is_active: true },
+    orderBy: { category_id: 'asc' },
+    select: {
+      category_id:          true,
+      category_code:        true,
+      category_name:        true,
+      category_description: true,
+      is_active:            true,
+    },
+  });
 
-  if (error) throw error;
-  
   return {
-    code: 1,
-    message: 'Success',
-    dataRows: data?.length || 0,
-    data: data?.map(item => ({
-      mission_category_id: item.category_id,
+    code:     1,
+    message:  'Success',
+    dataRows: data.length,
+    data:     data.map((item) => ({
+      mission_category_id:   item.category_id,
       mission_category_code: item.category_code,
       mission_category_name: item.category_name,
       mission_category_desc: item.category_description,
-      tot_mission: 0
-    })) || []
+      tot_mission:           0,
+    })),
   };
 }
 
-export async function addMissionCategory(ownerId: number, categoryData: { code: string; name: string; description?: string }) {
-  const { data: existing } = await supabase
-    .from('pilot_mission_category')
-    .select('category_code')
-    .eq('fk_owner_id', ownerId)
-    .eq('category_code', categoryData.code)
-    .eq('is_active', true)
-    .single();
+export async function addMissionCategory(
+  ownerId: number,
+  categoryData: { code: string; name: string; description?: string },
+) {
+  const existing = await prisma.pilot_mission_category.findFirst({
+    where: { fk_owner_id: ownerId, category_code: categoryData.code, is_active: true },
+    select: { category_id: true },
+  });
 
-  if (existing) {
-    throw new Error('Category code already exists');
-  }
+  if (existing) throw new Error('Category code already exists');
 
-  const { data, error } = await supabase
-    .from('pilot_mission_category')
-    .insert({
-      fk_owner_id: ownerId,
-      category_code: categoryData.code,
-      category_name: categoryData.name,
-      category_description: categoryData.description || categoryData.name,
-      is_active: true
-    })
-    .select()
-    .single();
+  const created = await prisma.pilot_mission_category.create({
+    data: {
+      fk_owner_id:          ownerId,
+      category_code:        categoryData.code,
+      category_name:        categoryData.name,
+      category_description: categoryData.description ?? categoryData.name,
+      is_active:            true,
+    },
+  });
 
-  if (error) throw error;
-  
-  return {
-    code: 1,
-    message: 'Mission category added successfully',
-    data
-  };
+  return { code: 1, message: 'Mission category added successfully', data: created };
 }
 
 export async function deleteMissionCategory(ownerId: number, categoryId: number) {
-  const { data: row } = await supabase
-    .from('pilot_mission_category')
-    .select('category_code, category_name')
-    .eq('category_id', categoryId)
-    .maybeSingle();
+  const row = await prisma.pilot_mission_category.findFirst({
+    where:  { category_id: categoryId, fk_owner_id: ownerId },
+    select: { category_code: true, category_name: true },
+  });
 
-  const { error } = await supabase
-    .from('pilot_mission_category')
-    .update({ is_active: false })
-    .eq('category_id', categoryId);
-
-  if (error) throw error;
+  await prisma.pilot_mission_category.update({
+    where: { category_id: categoryId },
+    data:  { is_active: false },
+  });
 
   return {
     code: 1,
@@ -93,39 +77,33 @@ export async function deleteMissionCategory(ownerId: number, categoryId: number)
   };
 }
 
-export async function updateMissionCategory(ownerId: number, categoryId: number, categoryData: { code?: string; name?: string; description?: string }) {
+export async function updateMissionCategory(
+  ownerId: number,
+  categoryId: number,
+  categoryData: { code?: string; name?: string; description?: string },
+) {
   if (categoryData.code) {
-    const { data: existing } = await supabase
-      .from('pilot_mission_category')
-      .select('category_id')
-      .eq('fk_owner_id', ownerId)
-      .eq('category_code', categoryData.code)
-      .eq('is_active', true)
-      .neq('category_id', categoryId)
-      .single();
+    const existing = await prisma.pilot_mission_category.findFirst({
+      where: {
+        fk_owner_id:   ownerId,
+        category_code: categoryData.code,
+        is_active:     true,
+        NOT:           { category_id: categoryId },
+      },
+      select: { category_id: true },
+    });
 
-    if (existing) {
-      throw new Error('Category code already exists');
-    }
+    if (existing) throw new Error('Category code already exists');
   }
 
-  const updateData: any = {};
-  if (categoryData.code) updateData.category_code = categoryData.code;
-  if (categoryData.name) updateData.category_name = categoryData.name;
-  if (categoryData.description !== undefined) updateData.category_description = categoryData.description;
+  const updated = await prisma.pilot_mission_category.update({
+    where: { category_id: categoryId },
+    data: {
+      ...(categoryData.code        && { category_code:        categoryData.code }),
+      ...(categoryData.name        && { category_name:        categoryData.name }),
+      ...(categoryData.description !== undefined && { category_description: categoryData.description }),
+    },
+  });
 
-  const { data, error } = await supabase
-    .from('pilot_mission_category')
-    .update(updateData)
-    .eq('category_id', categoryId)
-    .select()
-    .single();
-
-  if (error) throw error;
-  
-  return {
-    code: 1,
-    message: 'Mission category updated successfully',
-    data
-  };
+  return { code: 1, message: 'Mission category updated successfully', data: updated };
 }

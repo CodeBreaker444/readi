@@ -1,4 +1,5 @@
-import { supabase } from "@/backend/database/database";
+import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 
 interface ExpiredComponentItem {
   tool_component_id: number;
@@ -11,28 +12,34 @@ interface ExpiredComponentItem {
 async function getAlreadyNotifiedTodayForExpiry(ownerId: number): Promise<Set<number>> {
   const today = new Date().toISOString().slice(0, 10);
 
-  const { data: ownerUsers } = await supabase
-    .from("users")
-    .select("user_id")
-    .eq("fk_owner_id", ownerId)
-    .eq("user_active", "Y")
-    .in("user_role", ["OPM", "RM", "ADMIN"]);
+  const ownerUsers = await prisma.public_users.findMany({
+    where: {
+      fk_owner_id: ownerId,
+      user_active: "Y",
+      user_role: { in: ["OPM", "RM", "ADMIN"] },
+    },
+    select: { user_id: true },
+  });
 
-  const userIds = (ownerUsers ?? []).map((u: any) => u.user_id as number);
+  const userIds = ownerUsers.map((u) => u.user_id);
   if (!userIds.length) return new Set();
 
-  const { data } = await supabase
-    .from("notification")
-    .select("notification_data")
-    .eq("notification_type", "SYSTEM")
-    .in("fk_user_id", userIds)
-    .gte("created_at", `${today}T00:00:00.000Z`)
-    .lte("created_at", `${today}T23:59:59.999Z`)
-    .not("notification_data", "is", null);
+  const startOfDay = new Date(`${today}T00:00:00.000Z`);
+  const endOfDay = new Date(`${today}T23:59:59.999Z`);
+
+  const notifications = await prisma.notification.findMany({
+    where: {
+      notification_type: "SYSTEM",
+      fk_user_id: { in: userIds },
+      created_at: { gte: startOfDay, lte: endOfDay },
+      notification_data: { not: Prisma.JsonNull },
+    },
+    select: { notification_data: true },
+  });
 
   const ids = new Set<number>();
-  for (const row of data ?? []) {
-    const cid = (row as any).notification_data?.component_id;
+  for (const row of notifications) {
+    const cid = (row.notification_data as any)?.component_id;
     if (typeof cid === "number") ids.add(cid);
   }
   return ids;
@@ -47,18 +54,18 @@ async function insertExpirationNotifications(
 ): Promise<void> {
   if (!userIds.length) return;
 
-  const rows = userIds.map((userId) => ({
-    fk_user_id: userId,
-    notification_title: title,
-    notification_message: message,
-    notification_type: "SYSTEM",
-    is_read: false,
-    action_url: "/systems/manage",
-    notification_data: { component_id: componentId, tool_id: toolId, event: "COMPONENT_EXPIRED" },
-    created_at: new Date().toISOString(),
-  }));
-
-  await supabase.from("notification").insert(rows);
+  await prisma.notification.createMany({
+    data: userIds.map((userId) => ({
+      fk_user_id: userId,
+      notification_title: title,
+      notification_message: message,
+      notification_type: "SYSTEM",
+      is_read: false,
+      action_url: "/systems/manage",
+      notification_data: { component_id: componentId, tool_id: toolId, event: "COMPONENT_EXPIRED" },
+      created_at: new Date(),
+    })),
+  });
 }
 
 export async function sendExpirationNotifications(
@@ -74,16 +81,18 @@ export async function sendExpirationNotifications(
 
   if (!toNotify.length) return;
 
-  const { data: managers } = await supabase
-    .from("users")
-    .select("user_id")
-    .eq("fk_owner_id", ownerId)
-    .eq("user_active", "Y")
-    .in("user_role", ["OPM", "RM", "ADMIN"]);
+  const managers = await prisma.public_users.findMany({
+    where: {
+      fk_owner_id: ownerId,
+      user_active: "Y",
+      user_role: { in: ["OPM", "RM", "ADMIN"] },
+    },
+    select: { user_id: true },
+  });
 
-  if (!managers?.length) return;
+  if (!managers.length) return;
 
-  const managerIds = (managers as { user_id: number }[]).map((u) => u.user_id);
+  const managerIds = managers.map((u) => u.user_id);
 
   for (const item of toNotify) {
     const title = `Component Expired — ${item.tool_code}`;
