@@ -94,11 +94,12 @@ export async function assertToolNotNonOperational(toolId: number): Promise<void>
   }
 }
 
-export async function getTicketList(owner_id: number, tool_id?: number): Promise<MaintenanceTicket[]> {
+export async function getTicketList(owner_id: number, tool_id?: number, assignedToUserId?: number): Promise<MaintenanceTicket[]> {
   const rows = await prisma.maintenance_ticket.findMany({
     where: {
       ...(owner_id && { fk_owner_id: owner_id }),
       ...(tool_id && { fk_tool_id: tool_id }),
+      ...(assignedToUserId && { assigned_to_user_id: assignedToUserId }),
     },
     select: {
       ticket_id: true,
@@ -114,6 +115,8 @@ export async function getTicketList(owner_id: number, tool_id?: number): Promise
       resolution_notes: true,
       location_latitude: true,
       location_longitude: true,
+      intervention_started_at: true,
+      intervention_ended_at: true,
       created_at: true,
       updated_at: true,
       tool: {
@@ -202,8 +205,10 @@ export async function getTicketList(owner_id: number, tool_id?: number): Promise
         : 'Unassigned',
       assigner_email:     assignee?.email ?? '',
       trigger_params:     null,
-      location_latitude:  row.location_latitude != null ? Number(row.location_latitude) : null,
-      location_longitude: row.location_longitude != null ? Number(row.location_longitude) : null,
+      location_latitude:       row.location_latitude != null ? Number(row.location_latitude) : null,
+      location_longitude:      row.location_longitude != null ? Number(row.location_longitude) : null,
+      intervention_started_at: row.intervention_started_at?.toISOString() ?? null,
+      intervention_ended_at:   row.intervention_ended_at?.toISOString() ?? null,
     } as MaintenanceTicket;
   });
 }
@@ -770,4 +775,49 @@ export async function getComponentTicketEvents(componentId: number) {
       created_at: e.created_at?.toISOString() ?? null,
     })),
   }));
+}
+
+export async function startIntervention(ticketId: number, userId: number, userEmail: string): Promise<void> {
+  const ticket = await prisma.maintenance_ticket.findUnique({
+    where: { ticket_id: ticketId },
+    select: { assigned_to_user_id: true, ticket_status: true, intervention_started_at: true },
+  });
+
+  if (!ticket) throw new Error('Ticket not found');
+  if (ticket.ticket_status === 'CLOSED') throw new Error('Cannot start intervention on a closed ticket');
+  if (ticket.intervention_started_at) throw new Error('Intervention already started for this ticket');
+
+  await prisma.maintenance_ticket.update({
+    where: { ticket_id: ticketId },
+    data: {
+      intervention_started_at: new Date(),
+      intervention_started_by: userId,
+      ticket_status: 'IN_PROGRESS',
+      updated_at: new Date(),
+    },
+  });
+
+  await addTicketEvent(ticketId, 'INTERVENTION_STARTED', 'Technician started intervention', userEmail, userId);
+}
+
+export async function endIntervention(ticketId: number, userId: number, userEmail: string): Promise<void> {
+  const ticket = await prisma.maintenance_ticket.findUnique({
+    where: { ticket_id: ticketId },
+    select: { assigned_to_user_id: true, ticket_status: true, intervention_started_at: true, intervention_ended_at: true },
+  });
+
+  if (!ticket) throw new Error('Ticket not found');
+  if (ticket.ticket_status === 'CLOSED') throw new Error('Cannot end intervention on a closed ticket');
+  if (!ticket.intervention_started_at) throw new Error('Intervention has not been started yet');
+  if (ticket.intervention_ended_at) throw new Error('Intervention already ended for this ticket');
+
+  await prisma.maintenance_ticket.update({
+    where: { ticket_id: ticketId },
+    data: {
+      intervention_ended_at: new Date(),
+      updated_at: new Date(),
+    },
+  });
+
+  await addTicketEvent(ticketId, 'INTERVENTION_ENDED', 'Technician ended intervention', userEmail, userId);
 }

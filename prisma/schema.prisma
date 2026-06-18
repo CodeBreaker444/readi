@@ -919,6 +919,21 @@ model dcc_integrations {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model d_flight_integrations {
+  id                 Int       @id @default(autoincrement())
+  fk_owner_id        Int       @unique
+  base_url           String    @db.VarChar(500)
+  username           String    @db.VarChar(255)
+  password           String    @db.VarChar(500)
+  client_id          String    @db.VarChar(255)
+  easa_operator_code String?   @db.VarChar(255)
+  created_at         DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model deleted_owner {
   deleted_id          Int           @id @default(autoincrement())
   owner_id            Int
@@ -1362,6 +1377,9 @@ model maintenance_ticket {
   fk_component_id                                     Int?
   location_latitude                                   Decimal?                        @db.Decimal(10, 7)
   location_longitude                                  Decimal?                        @db.Decimal(10, 7)
+  intervention_started_at                             DateTime?                       @db.Timestamp(6)
+  intervention_ended_at                               DateTime?                       @db.Timestamp(6)
+  intervention_started_by                             Int?
   users_maintenance_ticket_assigned_to_user_idTousers public_users?                   @relation("maintenance_ticket_assigned_to_user_idTousers", fields: [assigned_to_user_id], references: [user_id], onUpdate: NoAction)
   tool_component                                      tool_component?                 @relation(fields: [fk_component_id], references: [component_id], onUpdate: NoAction)
   owner                                               owner?                          @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
@@ -1592,6 +1610,7 @@ model owner {
   created_at                  DateTime?                   @default(now()) @db.Timestamp(6)
   updated_at                  DateTime?                   @default(now()) @db.Timestamp(6)
   drone_atc_enabled           Boolean                     @default(false)
+  d_flight_enabled            Boolean                     @default(false)
   easa_operator_code          String?
   email_notifications_enabled Boolean                     @default(false)
   api_keys                    api_keys[]
@@ -2648,6 +2667,21 @@ model user_permessi {
   @@schema("public")
 }
 
+model user_subroles {
+  id         Int          @id @default(autoincrement())
+  fk_user_id Int
+  subrole    String       @db.VarChar(50)
+  granted_by Int?
+  granted_at DateTime     @default(now()) @db.Timestamp(6)
+  is_active  Boolean      @default(true)
+  revoked_at DateTime?    @db.Timestamp(6)
+  revoked_by Int?
+  user       public_users @relation("user_subroles_fk_user_idTousers", fields: [fk_user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([fk_user_id, subrole], map: "idx_user_subroles_user_subrole")
+  @@schema("public")
+}
+
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model user_qualification {
   qualification_id   Int          @id @default(autoincrement())
@@ -2805,6 +2839,7 @@ model public_users {
   user_owner                                                                 user_owner[]
   user_permessi_user_permessi_fk_user_idTousers                              user_permessi[]                          @relation("user_permessi_fk_user_idTousers")
   user_permessi_user_permessi_granted_byTousers                              user_permessi[]                          @relation("user_permessi_granted_byTousers")
+  user_subroles                                                              user_subroles[]                          @relation("user_subroles_fk_user_idTousers")
   user_qualification                                                         user_qualification[]
   user_session                                                               user_session[]
   user_settings                                                              user_settings[]

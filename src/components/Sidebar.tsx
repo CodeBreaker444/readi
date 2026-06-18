@@ -27,7 +27,7 @@ import {
   HiOutlineUsers
 } from 'react-icons/hi';
 import { MdFlightTakeoff } from 'react-icons/md';
-import { TbLayoutSidebarFilled, TbRadar } from "react-icons/tb";
+import { TbLayoutSidebarFilled, TbRadar, TbDrone } from "react-icons/tb";
 import { Permission, Role, roleHasPermission, ROUTE_PERMISSIONS, RoutePermissionEntry } from '../lib/auth/roles';
 import { supabase } from '../lib/supabase/client';
 
@@ -183,6 +183,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
       name: t('sidebar.droneAtc'),
       href: '/drone-atc',
       icon: TbRadar,
+    }] : []),
+    ...(userData?.dFlightEnabled ? [{
+      name: t('sidebar.dflight'),
+      href: '/dflight/fleet',
+      icon: TbDrone,
+      subItems: [
+        { name: t('sidebar.dflightSettings'), href: '/dflight/settings' },
+        { name: t('sidebar.dflightFleet'),    href: '/dflight/fleet' },
+      ],
     }] : []),
     {
       name: t('sidebar.training'),

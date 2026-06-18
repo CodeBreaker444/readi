@@ -71,6 +71,7 @@ type SecurityForm = { owner_active: string };
 
 type FeaturesForm = {
     drone_atc_enabled: boolean;
+    d_flight_enabled: boolean;
     email_notifications_enabled: boolean;
     easa_operator_code: string;
 };
@@ -102,6 +103,7 @@ function buildPayload(general: GeneralForm, security: SecurityForm, features: Fe
         license_expiry: general.license_expiry || null,
         owner_active: security.owner_active,
         drone_atc_enabled: features.drone_atc_enabled,
+        d_flight_enabled: features.d_flight_enabled,
         email_notifications_enabled: features.email_notifications_enabled,
         easa_operator_code: features.easa_operator_code || null,
     };
@@ -138,7 +140,7 @@ export default function CompanyDetailPage() {
     });
     const [securityForm, setSecurityForm] = useState<SecurityForm>({ owner_active: 'Y' });
     const [featuresForm, setFeaturesForm] = useState<FeaturesForm>({
-        drone_atc_enabled: false, email_notifications_enabled: false, easa_operator_code: '',
+        drone_atc_enabled: false, d_flight_enabled: false, email_notifications_enabled: false, easa_operator_code: '',
     });
 
     // Password reset state
@@ -163,6 +165,7 @@ export default function CompanyDetailPage() {
         setSecurityForm({ owner_active: o.owner_active });
         setFeaturesForm({
             drone_atc_enabled: o.drone_atc_enabled ?? false,
+            d_flight_enabled: o.d_flight_enabled ?? false,
             email_notifications_enabled: o.email_notifications_enabled ?? false,
             easa_operator_code: toStr(o.easa_operator_code),
         });
@@ -588,6 +591,7 @@ export default function CompanyDetailPage() {
                             <div className="space-y-6">
                                 {[
                                     { key: 'drone_atc_enabled' as const, label: 'Drone ATC', desc: 'Enables Air Traffic Control integration for drone operations' },
+                                    { key: 'd_flight_enabled' as const, label: 'D-Flight', desc: 'Enables D-Flight USSP integration for drone registration and fleet management' },
                                     { key: 'email_notifications_enabled' as const, label: 'Email Notifications', desc: 'Send email alerts to users for important events' },
                                 ].map(({ key, label, desc }) => (
                                     <div key={key}>
@@ -698,6 +702,7 @@ export default function CompanyDetailPage() {
                                         { label: 'Company Code', value: owner.owner_code },
                                         { label: 'Created', value: new Date(owner.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) },
                                         { label: 'Drone ATC', value: owner.drone_atc_enabled ? 'Enabled' : 'Disabled' },
+                                        { label: 'D-Flight', value: owner.d_flight_enabled ? 'Enabled' : 'Disabled' },
                                         { label: 'Email Notifications', value: owner.email_notifications_enabled ? 'Enabled' : 'Disabled' },
                                         { label: 'EASA Code', value: owner.easa_operator_code || 'Not set' },
                                         { label: 'Status', value: owner.owner_active === 'Y' ? 'Active' : 'Disabled' },

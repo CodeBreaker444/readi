@@ -12,6 +12,16 @@ export type Role =
   | 'SLA'
   | 'CLIENT';
 
+export type SubRole = 'PIC_TECHNICIAN';
+
+export const SUBROLES: Record<SubRole, SubRole> = {
+  PIC_TECHNICIAN: 'PIC_TECHNICIAN',
+};
+
+export const SUBROLE_PARENT_ROLE: Record<SubRole, Role> = {
+  PIC_TECHNICIAN: 'PIC',
+};
+
 export type Permission =
   | 'view_dashboard'
   | 'view_pilot_dashboard'
@@ -31,7 +41,8 @@ export type Permission =
   | 'view_client'
   | 'view_erp'
   | 'view_drone_atc'
-  | 'view_client_portal';
+  | 'view_client_portal'
+  | 'view_maintenance_tickets';
 
 type WildcardPermission = '*';
 export type RolePermission = Permission | WildcardPermission;
@@ -51,6 +62,7 @@ export const ROLE_PERMISSIONS: Record<Role, RolePermission[]> = {
     'view_notifications',
     'view_repository',
     'view_drone_atc',
+    'view_maintenance_tickets',
   ],
   OPM: ['view_dashboard', 'view_operations', 'view_logs', 'view_repository', 'view_planning', 'view_planning_advanced', 'view_logbooks', 'view_safety_mgmt', 'view_config', 'view_notifications', 'view_client', 'manage_users', 'view_erp', 'view_drone_atc'],
   SM:  ['view_dashboard', 'view_safety_mgmt', 'view_repository', 'view_notifications', 'view_config', 'view_erp'],
@@ -109,8 +121,8 @@ export const ROUTE_PERMISSIONS: Record<string, RoutePermissionEntry> = {
   '/mission/result': 'view_config',
   '/systems/manage': 'view_config',
   '/systems/map': 'view_config',
-  '/systems/maintenance-dashboard': 'view_config',
-  '/systems/maintenance-tickets': 'view_config',
+  '/systems/maintenance-dashboard': ['view_config', 'view_maintenance_tickets'],
+  '/systems/maintenance-tickets': ['view_config', 'view_maintenance_tickets'],
   '/team/personnel': 'manage_users',
   '/team/crew-shift': 'manage_users',
   '/team/client': 'view_client',
@@ -151,6 +163,7 @@ export const API_ROUTE_PERMISSIONS: Array<{ prefix: string; permission: ApiPermi
   { prefix: '/api/luc-procedures', permission: ['view_config', 'view_planning'] },
   { prefix: '/api/organization', permission: 'view_config' },
   { prefix: '/api/mission', permission: 'view_config' },
+  { prefix: '/api/system/maintenance/tickets', permission: ['view_config', 'view_maintenance_tickets'] },
   { prefix: '/api/system', permission: 'view_config' },
   { prefix: '/api/team/shift', permission: 'manage_users' },
   { prefix: '/api/team/user/qualifications', permission: null },

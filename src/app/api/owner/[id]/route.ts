@@ -35,6 +35,7 @@ const editOwnerValidation = z.object({
     owner_postal_code: z.string().optional().nullable(),
     owner_active: z.enum(['Y', 'N']),
     drone_atc_enabled: z.boolean().optional(),
+    d_flight_enabled: z.boolean().optional(),
     email_notifications_enabled: z.boolean().optional(),
     easa_operator_code: z.string().max(100).optional().nullable(),
     tax_id: z.string().optional().nullable(),

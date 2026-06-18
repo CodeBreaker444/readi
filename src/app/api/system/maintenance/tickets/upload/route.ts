@@ -1,5 +1,5 @@
 import { getTicketAssignee, uploadAttachment } from '@/backend/services/system/maintenance-ticket';
-import { requireAuth } from '@/lib/auth/api-auth';
+import { requireAuth, userHasSubRole } from '@/lib/auth/api-auth';
 import { roleHasPermission } from '@/lib/auth/roles';
 import { apiError, forbidden, internalError, zodError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
@@ -33,8 +33,11 @@ export async function POST(req: NextRequest) {
 
     const hasConfig = roleHasPermission(session!.user.role, 'view_config');
     if (!hasConfig) {
-      const assignee = await getTicketAssignee(Number(validation.data.ticket_id));
-      if (assignee !== session!.user.userId) {
+      const [assignee, hasTechSubRole] = await Promise.all([
+        getTicketAssignee(Number(validation.data.ticket_id)),
+        userHasSubRole(session!.user.userId, 'PIC_TECHNICIAN'),
+      ]);
+      if (assignee !== session!.user.userId || !hasTechSubRole) {
         return forbidden(E.PX001);
       }
     }
