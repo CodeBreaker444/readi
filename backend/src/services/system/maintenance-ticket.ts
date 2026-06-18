@@ -815,6 +815,7 @@ export async function endIntervention(ticketId: number, userId: number, userEmai
     where: { ticket_id: ticketId },
     data: {
       intervention_ended_at: new Date(),
+      ticket_status: 'OPEN',
       updated_at: new Date(),
     },
   });

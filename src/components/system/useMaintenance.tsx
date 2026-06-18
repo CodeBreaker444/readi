@@ -334,7 +334,7 @@ export function useMaintenanceLogbook() {
       const now = new Date().toISOString();
       updateLocalTicket(ticketId, action === 'start'
         ? { intervention_started_at: now, ticket_status: 'IN_PROGRESS' }
-        : { intervention_ended_at: now }
+        : { intervention_ended_at: now, ticket_status: 'OPEN' }
       );
       toast.success(action === 'start' ? 'Intervention started' : 'Intervention ended');
     } catch (e: any) {
