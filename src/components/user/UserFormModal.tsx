@@ -104,6 +104,7 @@ export function UserFormModal({
   const [subLoading, setSubLoading] = useState(false);
   const [subHasTech, setSubHasTech] = useState<boolean | null>(null);
   const [subSaving, setSubSaving] = useState(false);
+  const [subGrantOnCreate, setSubGrantOnCreate] = useState(false);
 
   const [ccExpanded, setCcExpanded] = useState(false);
   const [ccHasToken, setCcHasToken] = useState<boolean | null>(null);
@@ -307,6 +308,9 @@ export function UserFormModal({
       payload.ccOrgId = ccOrgIdInput.trim();
       payload.ccTokenName = ccNameInput.trim() || undefined;
     }
+    if (mode === 'add' && formData.fk_user_profile_id === 8) {
+      payload.grant_pic_technician = subGrantOnCreate;
+    }
 
     setIsSubmitting(true);
     Promise.resolve(onSubmit(payload)).then((result: any) => {
@@ -464,8 +468,14 @@ export function UserFormModal({
               <Select
                 value={formData.fk_user_profile_id?.toString()}
                 onValueChange={(value) => {
-                  setFormData({ ...formData, fk_user_profile_id: parseInt(value) });
+                  const id = parseInt(value);
+                  setFormData({ ...formData, fk_user_profile_id: id });
                   clearFieldError('fk_user_profile_id');
+                  if (mode === 'add') {
+                    const isPic = id === 8;
+                    setSubExpanded(isPic);
+                    if (!isPic) setSubGrantOnCreate(false);
+                  }
                 }}
                 disabled={mode === 'edit'}
               >
@@ -654,8 +664,8 @@ export function UserFormModal({
             </div>
           )}
 
-          {/* PIC-Technician sub-role section — edit mode, PIC users only, RM/ADMIN/SUPERADMIN only */}
-          {mode === 'edit' && userData?.user_role === 'PIC' && SUBROLE_MANAGER_ROLES.includes(sessionRole ?? '') && (
+          {/* PIC-Technician sub-role section — PIC users only, RM/ADMIN/SUPERADMIN only */}
+          {((mode === 'edit' && userData?.user_role === 'PIC') || (mode === 'add' && formData.fk_user_profile_id === 8)) && SUBROLE_MANAGER_ROLES.includes(sessionRole ?? '') && (
             <div className={`rounded-lg border ${isDark ? 'border-slate-600 bg-slate-900/40' : 'border-slate-200 bg-slate-50'}`}>
               <button
                 type="button"
@@ -680,14 +690,31 @@ export function UserFormModal({
 
               {subExpanded && (
                 <div className={`px-4 pb-4 space-y-3 border-t ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
-                  {subLoading && (
+                  {mode === 'add' && (
+                    <div className="pt-3 space-y-3">
+                      <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                        Granting <strong>PIC-Technician</strong> allows this pilot to upload maintenance documents and submit intervention reports on tickets assigned to them. Only RM can close the ticket.
+                      </p>
+                      <label className={`flex items-center gap-2.5 cursor-pointer select-none text-xs font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                        <input
+                          type="checkbox"
+                          checked={subGrantOnCreate}
+                          onChange={(e) => setSubGrantOnCreate(e.target.checked)}
+                          className="w-3.5 h-3.5 accent-violet-600 cursor-pointer"
+                        />
+                        Grant PIC-Technician sub-role on create
+                      </label>
+                    </div>
+                  )}
+
+                  {mode === 'edit' && subLoading && (
                     <div className="pt-4 space-y-2">
                       <Skeleton className="h-3 w-48" />
                       <Skeleton className="h-8 w-32" />
                     </div>
                   )}
 
-                  {!subLoading && subHasTech === false && (
+                  {mode === 'edit' && !subLoading && subHasTech === false && (
                     <div className="pt-3 space-y-3">
                       <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                         Granting <strong>PIC-Technician</strong> allows this pilot to upload maintenance documents and submit intervention reports on tickets assigned to them. Only RM can close the ticket.
@@ -704,7 +731,7 @@ export function UserFormModal({
                     </div>
                   )}
 
-                  {!subLoading && subHasTech === true && (
+                  {mode === 'edit' && !subLoading && subHasTech === true && (
                     <div className="pt-3 space-y-3">
                       <div className={`flex items-start gap-2 text-xs rounded-md px-3 py-2.5 ${isDark ? 'bg-violet-900/20 text-violet-300' : 'bg-violet-50 text-violet-700'}`}>
                         <CheckCircle size={13} className="shrink-0 mt-0.5" />

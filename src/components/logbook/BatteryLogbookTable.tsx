@@ -59,6 +59,7 @@ function CycleSubTable({
     t('logbooks.batteryLogbook.cycleLog.columns.date'),
     t('logbooks.batteryLogbook.cycleLog.columns.duration'),
     t('logbooks.batteryLogbook.cycleLog.columns.cycles'),
+    'Cycle Ratio',
     t('logbooks.batteryLogbook.cycleLog.columns.pilot'),
   ];
 
@@ -113,7 +114,10 @@ function CycleSubTable({
                   {c.flight_duration_min > 0 ? `${c.flight_duration_min} min` : "—"}
                 </td>
                 <td className={`px-3 py-2 font-mono font-semibold ${isDark ? "text-violet-400" : "text-violet-600"}`}>
-                  {c.cycles_consumed.toFixed(2)}
+                  {i + 1}
+                </td>
+                <td className={`px-3 py-2 font-mono ${isDark ? "text-slate-300" : "text-slate-600"}`}>
+                  {c.cycles_consumed.toFixed(2)} cycle ratio
                 </td>
                 <td className={`px-3 py-2 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
                   {c.pilot_name}

@@ -215,6 +215,7 @@ export default function MaintenanceLogbookClient({ canClose, canAssign = false, 
         onSubmit={handleCloseTicket}
         isDark={isDark}
         loading={modalLoading}
+        isInProgress={tickets.find((t) => t.ticket_id === activeTicketId)?.ticket_status === 'IN_PROGRESS'}
       />
 
       <AssignTicketModal

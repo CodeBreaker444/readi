@@ -50,13 +50,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ status: 'OK', message: `${subrole} granted` });
     }
 
-    const { hadOpenIntervention } = await revokeSubRole(user_id, subrole as SubRole, session!.user.userId);
+    const { hasOpenTicket, blockingTicketId } = await revokeSubRole(user_id, subrole as SubRole, session!.user.userId);
 
-    if (hadOpenIntervention) {
+    if (hasOpenTicket) {
       return NextResponse.json(
         {
           status: 'ERROR',
-          error: 'Cannot revoke: this technician has an active intervention in progress. End the intervention first, then revoke the sub-role.',
+          error: `Cannot revoke: ticket #${blockingTicketId} is still open or in-progress and is assigned to this technician. Close that ticket first, then revoke the sub-role.`,
         },
         { status: 409 }
       );

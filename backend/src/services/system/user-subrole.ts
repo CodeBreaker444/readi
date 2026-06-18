@@ -40,27 +40,25 @@ export async function revokeSubRole(
   userId: number,
   subrole: SubRole,
   revokedBy: number
-): Promise<{ hadOpenIntervention: boolean }> {
+): Promise<{ hasOpenTicket: boolean; blockingTicketId?: number }> {
   const activeRow = await prisma.user_subroles.findFirst({
     where: { fk_user_id: userId, subrole, is_active: true },
     select: { id: true },
   });
 
-  if (!activeRow) return { hadOpenIntervention: false };
+  if (!activeRow) return { hasOpenTicket: false };
 
-  // Block revoke if user has a ticket with an open intervention (started but not ended)
-  const openIntervention = await prisma.maintenance_ticket.findFirst({
+  // Block revoke if user has any non-closed ticket assigned to them
+  const openTicket = await prisma.maintenance_ticket.findFirst({
     where: {
       assigned_to_user_id: userId,
-      intervention_started_at: { not: null },
-      intervention_ended_at: null,
       ticket_status: { not: 'CLOSED' },
     },
-    select: { ticket_id: true },
+    select: { ticket_id: true, ticket_status: true },
   });
 
-  if (openIntervention) {
-    return { hadOpenIntervention: true };
+  if (openTicket) {
+    return { hasOpenTicket: true, blockingTicketId: openTicket.ticket_id };
   }
 
   await prisma.user_subroles.update({
@@ -72,5 +70,5 @@ export async function revokeSubRole(
     },
   });
 
-  return { hadOpenIntervention: false };
+  return { hasOpenTicket: false };
 }

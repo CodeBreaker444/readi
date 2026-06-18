@@ -204,6 +204,17 @@ export default function UserManagement({ session }: UserManagementProps) {
             toast.warning(t('team.personnel.toast.ccTokenWarning'));
           }
         }
+        if (formData.grant_pic_technician && data.newId) {
+          try {
+            await axios.post('/api/team/user/subrole', {
+              user_id: data.newId,
+              subrole: 'PIC_TECHNICIAN',
+              action: 'grant',
+            });
+          } catch {
+            toast.warning('User created but PIC-Technician sub-role could not be granted. You can grant it from the edit user panel.');
+          }
+        }
         toast.success(t('team.personnel.toast.created'));
         setShowAddModal(false);
         fetchUsers();

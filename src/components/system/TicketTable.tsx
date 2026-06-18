@@ -410,7 +410,7 @@ export function TicketTable({
                 </ActionIcon>
               )}
 
-              {isOpen && canClose && (
+              {isActive && canClose && (
                 <ActionIcon
                   label={t('systems.maintenanceLogbook.actions.closeTicket')}
                   onClick={() => onClose(ticket.ticket_id)}
