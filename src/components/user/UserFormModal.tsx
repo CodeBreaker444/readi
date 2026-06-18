@@ -17,10 +17,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import axios from 'axios';
-import { CheckCircle, ChevronDown, ChevronRight, Eye, EyeOff, Link2, Link2Off, Loader2, XCircle } from 'lucide-react';
+import { CheckCircle, ChevronDown, ChevronRight, Eye, EyeOff, Link2, Link2Off, Loader2, ShieldCheck, XCircle } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Skeleton } from '../ui/skeleton';
+
+const SUBROLE_MANAGER_ROLES = ['RM', 'ADMIN', 'SUPERADMIN'];
 
 const ROLE_OPTIONS = [
   { value: 8, label: 'Pilot in Command (PIC)' },
@@ -46,6 +48,7 @@ interface UserFormModalProps {
   onSubmit: (data: any) => Promise<{ fieldErrors?: Record<string, string> } | void> | void;
   isDark: boolean;
   canEditEmail?: boolean;
+  sessionRole?: string;
 }
 
 type CcStep = 'idle' | 'verifying' | 'confirmed' | 'saving';
@@ -62,6 +65,7 @@ export function UserFormModal({
   onSubmit,
   isDark,
   canEditEmail = true,
+  sessionRole,
 }: UserFormModalProps) {
   const [formData, setFormData] = useState(() => {
     const defaults = {
@@ -94,6 +98,12 @@ export function UserFormModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [usernameStatus, setUsernameStatus] = useState<UsernameStatus>('idle');
+
+  // Sub-role section state
+  const [subExpanded, setSubExpanded] = useState(false);
+  const [subLoading, setSubLoading] = useState(false);
+  const [subHasTech, setSubHasTech] = useState<boolean | null>(null);
+  const [subSaving, setSubSaving] = useState(false);
 
   const [ccExpanded, setCcExpanded] = useState(false);
   const [ccHasToken, setCcHasToken] = useState<boolean | null>(null);
@@ -152,6 +162,50 @@ export function UserFormModal({
       delete next[field];
       return next;
     });
+  };
+
+  const fetchSubRoleStatus = useCallback(async () => {
+    if (mode !== 'edit' || !userData?.user_id) return;
+    setSubLoading(true);
+    try {
+      const res = await axios.get(`/api/team/user/subrole?user_id=${userData.user_id}`);
+      const active = (res.data.subroles ?? []).some((s: any) => s.subrole === 'PIC_TECHNICIAN');
+      setSubHasTech(active);
+    } catch {
+      setSubHasTech(false);
+    } finally {
+      setSubLoading(false);
+    }
+  }, [mode, userData?.user_id]);
+
+  useEffect(() => {
+    if (subExpanded) fetchSubRoleStatus();
+  }, [subExpanded, fetchSubRoleStatus]);
+
+  const handleSubRoleToggle = async (action: 'grant' | 'revoke') => {
+    if (!userData?.user_id) return;
+    setSubSaving(true);
+    try {
+      await axios.post('/api/team/user/subrole', {
+        user_id: userData.user_id,
+        subrole: 'PIC_TECHNICIAN',
+        action,
+      });
+      setSubHasTech(action === 'grant');
+      toast.success(action === 'grant' ? 'PIC-Technician sub-role granted' : 'PIC-Technician sub-role revoked');
+    } catch (err: any) {
+      const isBlockedByIntervention = err?.response?.status === 409;
+      const message = err?.response?.data?.error ?? 'Failed to update sub-role';
+      if (isBlockedByIntervention) {
+        toast.warning(message, {
+          duration: 6000,
+        });
+      } else {
+        toast.error(message);
+      }
+    } finally {
+      setSubSaving(false);
+    }
   };
 
   const fetchCcStatus = useCallback(async () => {
@@ -592,6 +646,79 @@ export function UserFormModal({
                       </div>
                       <Button type="button" variant="outline" size="sm" className="h-7 text-xs" onClick={handleCcCancel}>
                         Clear
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* PIC-Technician sub-role section — edit mode, PIC users only, RM/ADMIN/SUPERADMIN only */}
+          {mode === 'edit' && userData?.user_role === 'PIC' && SUBROLE_MANAGER_ROLES.includes(sessionRole ?? '') && (
+            <div className={`rounded-lg border ${isDark ? 'border-slate-600 bg-slate-900/40' : 'border-slate-200 bg-slate-50'}`}>
+              <button
+                type="button"
+                onClick={() => setSubExpanded((v) => !v)}
+                className={`cursor-pointer w-full flex items-center justify-between px-4 py-3 text-sm font-medium ${isDark ? 'text-slate-200' : 'text-slate-700'}`}
+              >
+                <span className="flex items-center gap-2">
+                  <ShieldCheck size={15} className={subHasTech ? 'text-violet-500' : isDark ? 'text-slate-500' : 'text-slate-400'} />
+                  Technician Sub-role
+                  {subHasTech === true && (
+                    <span className="text-xs px-1.5 py-0.5 rounded-full bg-violet-500/15 text-violet-600 font-normal">Active</span>
+                  )}
+                  {subHasTech === false && (
+                    <span className={`text-xs px-1.5 py-0.5 rounded-full font-normal ${isDark ? 'bg-slate-700 text-slate-400' : 'bg-slate-200 text-slate-500'}`}>Not assigned</span>
+                  )}
+                  {subHasTech === null && !subExpanded && (
+                    <span className={`text-xs px-1.5 py-0.5 rounded-full font-normal ${isDark ? 'bg-slate-700 text-slate-400' : 'bg-slate-200 text-slate-500'}`}>PIC promotion</span>
+                  )}
+                </span>
+                {subExpanded ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
+              </button>
+
+              {subExpanded && (
+                <div className={`px-4 pb-4 space-y-3 border-t ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
+                  {subLoading && (
+                    <div className="pt-4 space-y-2">
+                      <Skeleton className="h-3 w-48" />
+                      <Skeleton className="h-8 w-32" />
+                    </div>
+                  )}
+
+                  {!subLoading && subHasTech === false && (
+                    <div className="pt-3 space-y-3">
+                      <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                        Granting <strong>PIC-Technician</strong> allows this pilot to upload maintenance documents and submit intervention reports on tickets assigned to them. Only RM can close the ticket.
+                      </p>
+                      <Button
+                        type="button"
+                        size="sm"
+                        disabled={subSaving}
+                        onClick={() => handleSubRoleToggle('grant')}
+                        className="h-7 text-xs bg-violet-600 hover:bg-violet-500 text-white"
+                      >
+                        {subSaving ? <><Loader2 size={12} className="animate-spin mr-1.5" />Saving…</> : 'Grant PIC-Technician'}
+                      </Button>
+                    </div>
+                  )}
+
+                  {!subLoading && subHasTech === true && (
+                    <div className="pt-3 space-y-3">
+                      <div className={`flex items-start gap-2 text-xs rounded-md px-3 py-2.5 ${isDark ? 'bg-violet-900/20 text-violet-300' : 'bg-violet-50 text-violet-700'}`}>
+                        <CheckCircle size={13} className="shrink-0 mt-0.5" />
+                        <span>This pilot has PIC-Technician access — they can upload documents and submit intervention reports on assigned tickets.</span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={subSaving}
+                        onClick={() => handleSubRoleToggle('revoke')}
+                        className="h-7 text-xs border-rose-400/40 text-rose-500 hover:bg-rose-500/10"
+                      >
+                        {subSaving ? <><Loader2 size={12} className="animate-spin mr-1.5" />Revoking…</> : 'Revoke sub-role'}
                       </Button>
                     </div>
                   )}

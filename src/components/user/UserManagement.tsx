@@ -450,10 +450,10 @@ export default function UserManagement({ session }: UserManagementProps) {
       </div>
 
       {showAddModal && (
-        <UserFormModal isOpen={showAddModal} clients={clients} owners={owners} isSuperAdmin={isSuperAdmin} onClose={() => setShowAddModal(false)} mode="add" onSubmit={handleAddUser} isDark={isDark} canEditEmail={canEditEmail} />
+        <UserFormModal isOpen={showAddModal} clients={clients} owners={owners} isSuperAdmin={isSuperAdmin} onClose={() => setShowAddModal(false)} mode="add" onSubmit={handleAddUser} isDark={isDark} canEditEmail={canEditEmail} sessionRole={session.user.role} />
       )}
       {showEditModal && selectedUser && (
-        <UserFormModal isOpen={showEditModal} clients={clients} onClose={() => { setShowEditModal(false); setSelectedUser(null); }} mode="edit" userData={selectedUser} onSubmit={handleUpdateUser} isDark={isDark} canEditEmail={canEditEmail} />
+        <UserFormModal isOpen={showEditModal} clients={clients} onClose={() => { setShowEditModal(false); setSelectedUser(null); }} mode="edit" userData={selectedUser} onSubmit={handleUpdateUser} isDark={isDark} canEditEmail={canEditEmail} sessionRole={session.user.role} />
       )}
 
       <AlertDialog open={showDeleteDialog} onOpenChange={(open) => { if (!open) { setShowDeleteDialog(false); setUserToDelete(null); } }}>
