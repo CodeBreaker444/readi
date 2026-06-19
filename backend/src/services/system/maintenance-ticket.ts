@@ -1,7 +1,7 @@
 'use server';
 
 import { supabase } from '@/backend/database/database';
-import { sendNotificationToRoles, sendNotificationToUser } from '@/backend/services/notification/notification-service';
+import { sendNotificationToClientManagers, sendNotificationToRoles, sendNotificationToUser } from '@/backend/services/notification/notification-service';
 import { getToolName, getUserName } from '@/backend/services/shared/entity-names';
 import { refreshMaintenanceDaysForTool } from '@/backend/utils/refresh-maintenance-days';
 import type {
@@ -250,9 +250,9 @@ export async function createTicket(payload: CreateTicketPayload): Promise<number
     )
   );
 
+  const systemCode = await getToolName(payload.fk_tool_id);
+
   if (payload.assigned_to) {
-    const systemCode = await getToolName(payload.fk_tool_id);
-    const techName = payload.technician_name ?? `User #${payload.assigned_to}`;
     sendNotificationToUser(
       payload.assigned_to,
       `Maintenance Ticket Assigned — ${systemCode}`,
@@ -260,6 +260,14 @@ export async function createTicket(payload: CreateTicketPayload): Promise<number
       '/systems/maintenance-tickets'
     ).catch(() => {});
   }
+
+  sendNotificationToClientManagers(
+    payload.fk_tool_id,
+    payload.fk_owner_id,
+    `New Maintenance Ticket — ${systemCode}`,
+    `A new maintenance ticket was opened on ${systemCode} by ${reporter}.${payload.note ? ` Note: ${payload.note}` : ''}`,
+    '/systems/maintenance-tickets'
+  ).catch(() => {});
 
   return created[0].ticket_id;
 }
@@ -324,6 +332,9 @@ export async function closeTicket(payload: CloseTicketPayload): Promise<void> {
   if (ticket.reported_by_user_id) {
     sendNotificationToUser(ticket.reported_by_user_id, notifTitle, notifMsg, actionUrl).catch(() => {});
   }
+  if (ticket.fk_tool_id && ticket.fk_owner_id) {
+    sendNotificationToClientManagers(ticket.fk_tool_id, ticket.fk_owner_id, notifTitle, notifMsg, actionUrl).catch(() => {});
+  }
   if (ticket.fk_owner_id) {
     sendNotificationToRoles(ticket.fk_owner_id, ['OPM'], notifTitle, notifMsg, actionUrl).catch(() => {});
 
@@ -352,7 +363,7 @@ export async function assignTicket(payload: AssignTicketPayload): Promise<void> 
   const ticket = await prisma.maintenance_ticket.update({
     where: { ticket_id: payload.ticket_id },
     data: { assigned_to_user_id: payload.assigned_to },
-    select: { fk_tool_id: true },
+    select: { fk_tool_id: true, fk_owner_id: true },
   });
 
   const techName = payload.technician_name ?? `User #${payload.assigned_to}`;
@@ -370,6 +381,16 @@ export async function assignTicket(payload: AssignTicketPayload): Promise<void> 
       `A maintenance ticket on ${systemCode} has been assigned to you.`,
       '/systems/maintenance-tickets'
     ).catch(() => {});
+
+    if (ticket.fk_owner_id) {
+      sendNotificationToClientManagers(
+        ticket.fk_tool_id,
+        ticket.fk_owner_id,
+        `Maintenance Ticket Assigned — ${systemCode}`,
+        `A maintenance ticket on ${systemCode} has been assigned to ${techName}.`,
+        '/systems/maintenance-tickets'
+      ).catch(() => {});
+    }
   }
 }
 
@@ -780,7 +801,7 @@ export async function getComponentTicketEvents(componentId: number) {
 export async function startIntervention(ticketId: number, userId: number, userEmail: string): Promise<void> {
   const ticket = await prisma.maintenance_ticket.findUnique({
     where: { ticket_id: ticketId },
-    select: { assigned_to_user_id: true, ticket_status: true, intervention_started_at: true },
+    select: { assigned_to_user_id: true, ticket_status: true, intervention_started_at: true, fk_tool_id: true, fk_owner_id: true },
   });
 
   if (!ticket) throw new Error('Ticket not found');
@@ -798,12 +819,23 @@ export async function startIntervention(ticketId: number, userId: number, userEm
   });
 
   await addTicketEvent(ticketId, 'INTERVENTION_STARTED', 'Technician started intervention', userEmail, userId);
+
+  if (ticket.fk_tool_id && ticket.fk_owner_id) {
+    const systemCode = await getToolName(ticket.fk_tool_id);
+    sendNotificationToClientManagers(
+      ticket.fk_tool_id,
+      ticket.fk_owner_id,
+      `Maintenance In Progress — ${systemCode}`,
+      `Maintenance intervention on ${systemCode} has started.`,
+      '/systems/maintenance-tickets'
+    ).catch(() => {});
+  }
 }
 
 export async function endIntervention(ticketId: number, userId: number, userEmail: string): Promise<void> {
   const ticket = await prisma.maintenance_ticket.findUnique({
     where: { ticket_id: ticketId },
-    select: { assigned_to_user_id: true, ticket_status: true, intervention_started_at: true, intervention_ended_at: true },
+    select: { assigned_to_user_id: true, ticket_status: true, intervention_started_at: true, intervention_ended_at: true, fk_tool_id: true, fk_owner_id: true },
   });
 
   if (!ticket) throw new Error('Ticket not found');
@@ -821,4 +853,15 @@ export async function endIntervention(ticketId: number, userId: number, userEmai
   });
 
   await addTicketEvent(ticketId, 'INTERVENTION_ENDED', 'Technician ended intervention', userEmail, userId);
+
+  if (ticket.fk_tool_id && ticket.fk_owner_id) {
+    const systemCode = await getToolName(ticket.fk_tool_id);
+    sendNotificationToClientManagers(
+      ticket.fk_tool_id,
+      ticket.fk_owner_id,
+      `Maintenance Intervention Ended — ${systemCode}`,
+      `Maintenance intervention on ${systemCode} has ended and awaits closure.`,
+      '/systems/maintenance-tickets'
+    ).catch(() => {});
+  }
 }

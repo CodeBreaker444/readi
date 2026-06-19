@@ -672,7 +672,7 @@ export async function getToolOptions(ownerId: number) {
         maintenance_cycle_hour:      true,
         maintenance_cycle_flight:    true,
         current_maintenance_days:    true,
-        current_usage_hours:         true,
+        current_maintenance_hours:   true,
         current_maintenance_flights: true,
       },
     }),
@@ -696,7 +696,7 @@ export async function getToolOptions(ownerId: number) {
   maintComps.forEach((c) => {
     if (c.fk_tool_id == null || inMaintenanceSet.has(c.fk_tool_id)) return;
     const dayDue    = Number(c.maintenance_cycle_day)    > 0 && Number(c.current_maintenance_days)    >= Number(c.maintenance_cycle_day);
-    const hourDue   = Number(c.maintenance_cycle_hour)   > 0 && Number(c.current_usage_hours)         >= Number(c.maintenance_cycle_hour);
+    const hourDue   = Number(c.maintenance_cycle_hour)   > 0 && Number(c.current_maintenance_hours)   >= Number(c.maintenance_cycle_hour);
     const flightDue = Number(c.maintenance_cycle_flight) > 0 && Number(c.current_maintenance_flights) >= Number(c.maintenance_cycle_flight);
     if (dayDue || hourDue || flightDue) maintenanceDueSet.add(c.fk_tool_id);
   });

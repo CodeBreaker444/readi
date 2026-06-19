@@ -12,8 +12,8 @@ async function searchOpenWeather(q: string, apiKey: string) {
     clearTimeout(timeout);
     if (!res.ok) return null;
     const data = await res.json();
-    if (!data?.length) return null;
-    return (data as any[]).map((item, i) => ({
+    if (!Array.isArray(data) || !data.length) return null;
+    return data.map((item: any, i: number) => ({
       place_id:     i,
       display_name: [item.name, item.state, item.country].filter(Boolean).join(', '),
       lat:          String(item.lat),
@@ -48,17 +48,18 @@ export async function GET(req: NextRequest) {
   if (!q || q.trim().length < 3) return NextResponse.json([]);
 
   const query = q.trim();
-  const apiKey = env.OPENWEATHER_API_KEY;
 
+  // Nominatim is primary — it ranks by importance so "Rome" returns Rome, Italy, not a small US town.
+  // OpenWeather geocoding does not rank by relevance and frequently returns wrong countries first.
+  const nominatimResults = await searchNominatim(query);
+  if (nominatimResults.length > 0) return NextResponse.json(nominatimResults);
+
+  // Fall back to OpenWeather only when Nominatim returns nothing.
+  const apiKey = env.OPENWEATHER_API_KEY;
   if (apiKey) {
     const owResults = await searchOpenWeather(query, apiKey);
-    if (owResults) {
-      console.log('[geocode] OpenWeather —', query, ':', owResults.length, 'results');
-      return NextResponse.json(owResults);
-    }
+    if (owResults?.length) return NextResponse.json(owResults);
   }
 
-  console.log('[geocode] Nominatim fallback —', query);
-  const results = await searchNominatim(query);
-  return NextResponse.json(results);
+  return NextResponse.json([]);
 }
