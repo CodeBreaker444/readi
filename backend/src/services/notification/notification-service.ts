@@ -246,6 +246,57 @@ export async function notifyPilotAssignment(
 }
 
 /**
+ * Fire-and-forget: notify all AM and OPM users that belong to the same client
+ * as the given tool (via tool.assigned_client_id ↔ user.fk_client_id).
+ * No-ops silently when the tool has no assigned client.
+ */
+export async function sendNotificationToClientManagers(
+  toolId: number,
+  ownerId: number,
+  title: string,
+  message: string,
+  actionUrl?: string
+): Promise<void> {
+  const tool = await prisma.tool.findUnique({
+    where: { tool_id: toolId },
+    select: { assigned_client_id: true },
+  });
+
+  const clientId = tool?.assigned_client_id;
+  if (!clientId) return;
+
+  const users = await prisma.public_users.findMany({
+    where: {
+      fk_owner_id: ownerId,
+      fk_client_id: clientId,
+      user_active: 'Y',
+      user_role: { in: ['AM', 'OPM'] },
+    },
+    select: { user_id: true, email: true },
+  });
+
+  if (!users.length) return;
+
+  await prisma.notification.createMany({
+    data: users.map((u) => ({
+      fk_user_id: u.user_id,
+      notification_title: title,
+      notification_message: message,
+      notification_type: 'MAINTENANCE',
+      is_read: false,
+      action_url: actionUrl ?? null,
+      created_at: new Date(),
+    })),
+  });
+
+  const emailEnabled = await isEmailNotificationsEnabled(ownerId);
+  if (emailEnabled) {
+    const emails = users.map((u) => u.email).filter((e): e is string => !!e);
+    if (emails.length) sendNotificationEmail(emails, title, message, 'MAINTENANCE', actionUrl ?? null);
+  }
+}
+
+/**
  * Fire-and-forget: send a notification to a specific user.
  */
 export async function sendNotificationToUser(

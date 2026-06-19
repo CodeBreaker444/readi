@@ -88,14 +88,14 @@ export default function MapFilters({ filters, clients, onChange }: MapFiltersPro
         <Label htmlFor="only-dock" className={checkLabelCls}>{t('systems.map.filters.docksOnly')}</Label>
       </div>
 
-      <div className="flex items-center gap-2 cursor-pointer pb-0.5">
+      {/* <div className="flex items-center gap-2 cursor-pointer pb-0.5">
         <Checkbox
           id="only-installed"
           checked={filters.onlyInstalled}
           onCheckedChange={(checked) => onChange({ onlyInstalled: !!checked })}
         />
         <Label htmlFor="only-installed" className={checkLabelCls}>{t('systems.map.filters.installedOnly')}</Label>
-      </div>
+      </div> */}
 
     </div>
   );

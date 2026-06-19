@@ -60,6 +60,7 @@ const EMPTY_FORM = {
   component_code: '',
   component_desc: '',
   fk_tool_model_id: '',
+  maintenance_cycle: '',
   component_sn: '',
   cc_platform: '',
   gcs_type: '',
@@ -166,6 +167,7 @@ export default function EditComponentModal({
       component_code: comp.component_code || '',
       component_desc: comp.component_desc || '',
       fk_tool_model_id: comp.fk_tool_model_id ? String(comp.fk_tool_model_id) : '',
+      maintenance_cycle: comp.maintenance_cycle || '',
       component_sn: comp.component_sn || '',
       cc_platform: comp.cc_platform || '',
       gcs_type: comp.gcs_type || '',
@@ -249,9 +251,9 @@ export default function EditComponentModal({
   };
 
   const selectedModel = models.find(m => String(m.tool_model_id) === formData.fk_tool_model_id);
-  const selectedModelCycle = selectedModel?.maintenance_cycle || '';
-  const showHours = selectedModelCycle === 'HOURS' || selectedModelCycle === 'MIXED';
-  const showFlights = selectedModelCycle === 'FLIGHTS' || selectedModelCycle === 'MIXED';
+  const effectiveCycle = selectedModel?.maintenance_cycle || formData.maintenance_cycle || '';
+  const showHours = effectiveCycle === 'HOURS' || effectiveCycle === 'MIXED';
+  const showFlights = effectiveCycle === 'FLIGHTS' || effectiveCycle === 'MIXED';
 
   const handleSystemChange = async (v: string) => {
     handleChange('fk_tool_id', v);
