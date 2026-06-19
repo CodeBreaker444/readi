@@ -245,11 +245,6 @@ export async function notifyPilotAssignment(
   }
 }
 
-/**
- * Fire-and-forget: notify all AM and OPM users that belong to the same client
- * as the given tool (via tool.assigned_client_id ↔ user.fk_client_id).
- * No-ops silently when the tool has no assigned client.
- */
 export async function sendNotificationToClientManagers(
   toolId: number,
   ownerId: number,
@@ -295,7 +290,6 @@ export async function sendNotificationToClientManagers(
     if (emails.length) sendNotificationEmail(emails, title, message, 'MAINTENANCE', actionUrl ?? null);
   }
 }
-
 /**
  * Fire-and-forget: send a notification to a specific user.
  */

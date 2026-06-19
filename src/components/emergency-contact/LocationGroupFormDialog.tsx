@@ -88,14 +88,8 @@ export function LocationGroupFormDialog({ open, onClose, onSubmit, loading, isDa
     if (query.trim().length < 3) { setLocationResults([]); setShowLocationResults(false); return }
     setSearchingLocation(true)
     try {
-      let data: NominatimResult[] = []
-      try {
-        const res = await fetch(`/api/geocode?q=${encodeURIComponent(query)}`, { headers: { 'Accept-Language': 'en' } })
-        data = await res.json()
-      } catch {
-        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`, { headers: { 'Accept-Language': 'en' } })
-        data = await res.json()
-      }
+      const res = await fetch(`/api/geocode?q=${encodeURIComponent(query)}`)
+      const data: NominatimResult[] = await res.json()
       setLocationResults(data); setShowLocationResults(data.length > 0)
     } catch { setLocationResults([]) }
     finally { setSearchingLocation(false) }
