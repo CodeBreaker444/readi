@@ -20,7 +20,7 @@ jest.mock('@/backend/config/env', () => ({
 
 jest.mock('@/lib/prisma', () => ({
   prisma: {
-    public_users:     { findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn(), deleteMany: jest.fn() },
+    public_users:     { findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn(), updateMany: jest.fn(), deleteMany: jest.fn() },
     user_owner:       { create: jest.fn(), updateMany: jest.fn() },
     users_profile:    { create: jest.fn(), update: jest.fn() },
     user_settings:    { create: jest.fn() },
@@ -273,7 +273,7 @@ const validUpdatePayload = {
 
 describe('updateUser', () => {
   beforeEach(() => {
-    mockPrisma.public_users.update.mockResolvedValue({});
+    mockPrisma.public_users.updateMany.mockResolvedValue({ count: 1 });
     mockPrisma.users_profile.update.mockResolvedValue({});
     mockPrisma.user_owner.updateMany.mockResolvedValue({ count: 1 });
   });
@@ -286,7 +286,7 @@ describe('updateUser', () => {
 
   it('updates public_users with correct active flag', async () => {
     await updateUser({ ...validUpdatePayload, active: 0 });
-    expect(mockPrisma.public_users.update).toHaveBeenCalledWith(
+    expect(mockPrisma.public_users.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({ user_active: 'N' }),
       })
@@ -308,13 +308,13 @@ describe('updateUser', () => {
   });
 
   it('throws when Prisma update fails', async () => {
-    mockPrisma.public_users.update.mockRejectedValue(new Error('constraint violation'));
+    mockPrisma.public_users.updateMany.mockRejectedValue(new Error('constraint violation'));
     await expect(updateUser(validUpdatePayload)).rejects.toThrow('Failed to update user');
   });
 
   it('converts nullable fields to null correctly', async () => {
     await updateUser({ ...validUpdatePayload, fk_territorial_unit: undefined, fk_client_id: undefined });
-    const callArgs = mockPrisma.public_users.update.mock.calls[0][0];
+    const callArgs = mockPrisma.public_users.updateMany.mock.calls[0][0];
     expect(callArgs.data.fk_territorial_unit).toBeNull();
     expect(callArgs.data.fk_client_id).toBeNull();
   });

@@ -62,6 +62,22 @@ export function makeRequest(
   });
 }
 
+export function makeFormDataRequest(
+  url: string,
+  fields: Record<string, string | Blob>,
+  method = 'POST'
+): NextRequest {
+  const fd = new FormData();
+  for (const [key, value] of Object.entries(fields)) {
+    if (value instanceof Blob) {
+      fd.append(key, value, (value as File).name ?? key);
+    } else {
+      fd.append(key, value);
+    }
+  }
+  return new NextRequest(`http://localhost${url}`, { method, body: fd });
+}
+
 export async function parseJson<T = any>(response: Response): Promise<T> {
   return response.json() as Promise<T>;
 }

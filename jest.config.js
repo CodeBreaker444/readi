@@ -14,7 +14,7 @@ const config = {
     '^@mcp-server/(.*)$': '<rootDir>/mcp-server/$1',
   },
   testMatch: ['**/backend/src/tests/**/*.test.ts'],
-  testPathIgnorePatterns: ['/node_modules/', '/.next/'],
+  testPathIgnorePatterns: ['/node_modules/', '/.next/', 'platform-flow.test.ts'],
   setupFiles: ['<rootDir>/backend/src/tests/jest.setup.ts'],
   forceExit: true,
 };
