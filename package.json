@@ -6,7 +6,7 @@
     "dev": "next dev",
     "test": "jest",
     "test:integration": "jest --config jest.integration.config.js --no-coverage",
-    "build": "next build",
+    "build": "npm run test:integration && next build",
     "ci": "npm run test && npm run test:integration && next build",
     "start": "next start",
     "lint": "eslint",
