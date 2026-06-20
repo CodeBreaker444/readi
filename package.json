@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "test": "jest",
-    "test:integration": "jest --config jest.integration.config.js --no-coverage",
+    "test:integration": "jest --config jest.integration.config.js --no-coverage --env-file=.env.test.local",
     "build": "npm run test:integration && next build",
     "ci": "npm run test && npm run test:integration && next build",
     "start": "next start",
