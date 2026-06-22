@@ -1651,7 +1651,9 @@
         "hmin": "h.min",
         "daysTracked": "I giorni vengono tracciati automaticamente dalla data dell'ultima manutenzione.",
         "overdue": "La manutenzione è in ritardo — pianifica la manutenzione al più presto",
-        "autoSynced": "Sincronizzato automaticamente"
+        "autoSynced": "Sincronizzato automaticamente",
+        "manualInput": "Inserimento manuale",
+        "cycles": "Cicli"
       },
       "logs": {
         "attachedLogs": "Log allegati",

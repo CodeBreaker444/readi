@@ -7,6 +7,7 @@ const componentSchema = z.object({
   component_id: z.number().int().positive(),
   add_flights: z.number().min(0).default(0),
   add_hours: z.number().min(0).default(0),
+  manual_cycles_input: z.boolean().optional(),
 });
 
 const bodySchema = z.object({
