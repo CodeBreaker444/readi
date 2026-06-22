@@ -1,3 +1,4 @@
+'use client';
 import { Operation } from "@/app/operations/table/page";
 import { useTimezone } from "@/components/TimezoneProvider";
 import { cn, formatDateInTz } from "@/lib/utils";
