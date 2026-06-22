@@ -27,7 +27,7 @@ import {
   HiOutlineUsers
 } from 'react-icons/hi';
 import { MdFlightTakeoff } from 'react-icons/md';
-import { TbLayoutSidebarFilled, TbRadar, TbDrone } from "react-icons/tb";
+import { TbDrone, TbLayoutSidebarFilled, TbRadar } from "react-icons/tb";
 import { Permission, Role, roleHasPermission, ROUTE_PERMISSIONS, RoutePermissionEntry } from '../lib/auth/roles';
 import { supabase } from '../lib/supabase/client';
 
@@ -190,7 +190,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
       icon: TbDrone,
       subItems: [
         { name: t('sidebar.dflightSettings'), href: '/dflight/settings' },
-        { name: t('sidebar.dflightFleet'),    href: '/dflight/fleet' },
+        { name: t('sidebar.dflightFleet'), href: '/dflight/fleet' },
       ],
     }] : []),
     {
@@ -275,7 +275,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
     { name: t('clientPortal.dashboard'), href: '/client/dashboard', icon: HiOutlineHome },
     { name: t('clientPortal.missions'), href: '/client/missions', icon: HiOutlineClipboardList },
     { name: t('clientPortal.analytics', 'Analytics'), href: '/client/analytics', icon: HiOutlineChartBar },
-    { name: t('clientPortal.requestFlight', 'Request Flight'), href: '/client/request-flight', icon: MdFlightTakeoff  },
+    { name: t('clientPortal.requestFlight', 'Request Flight'), href: '/client/request-flight', icon: MdFlightTakeoff },
   ] : [];
 
   useEffect(() => {
@@ -587,8 +587,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
             <button
               onClick={onToggleCollapse}
               className={`cursor-pointer p-1 rounded-md transition-all duration-150 ${isDark
-                  ? 'hover:bg-slate-800 text-slate-500 hover:text-slate-300'
-                  : 'hover:bg-slate-100 text-slate-400 hover:text-slate-600'
+                ? 'hover:bg-slate-800 text-slate-500 hover:text-slate-300'
+                : 'hover:bg-slate-100 text-slate-400 hover:text-slate-600'
                 }`}
               title={t('sidebar.collapse')}
             >
@@ -603,8 +603,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
           <button
             onClick={onToggleCollapse}
             className={`cursor-pointer p-1 rounded-md transition-all duration-150 ${isDark
-                ? 'hover:bg-slate-800 text-slate-500 hover:text-slate-300'
-                : 'hover:bg-slate-100 text-slate-400 hover:text-slate-600'
+              ? 'hover:bg-slate-800 text-slate-500 hover:text-slate-300'
+              : 'hover:bg-slate-100 text-slate-400 hover:text-slate-600'
               }`}
             title={t('sidebar.expand')}
           >
@@ -871,11 +871,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
             <button
               title="Release Logs"
               onClick={() => { setActiveItem('/releases'); router.push('/releases'); }}
-              className={`w-full flex justify-center items-center p-2 rounded-lg transition-all duration-150 ${
-                activeItem === '/releases'
+              className={`w-full flex justify-center items-center p-2 rounded-lg transition-all duration-150 ${activeItem === '/releases'
                   ? isDark ? 'bg-amber-500/10 text-amber-400' : 'bg-amber-50 text-amber-600'
                   : isDark ? 'text-slate-500 hover:bg-slate-800 hover:text-slate-300' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'
-              }`}
+                }`}
             >
               <HiOutlineDocumentText size={16} />
             </button>
@@ -883,18 +882,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
             <a
               href="/releases"
               onClick={(e) => { e.preventDefault(); setActiveItem('/releases'); router.push('/releases'); }}
-              className={`flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all duration-150 cursor-pointer ${
-                activeItem === '/releases'
+              className={`flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all duration-150 cursor-pointer ${activeItem === '/releases'
                   ? isDark ? 'bg-amber-500/10 text-amber-400' : 'bg-amber-50 text-amber-600'
                   : isDark ? 'text-slate-500 hover:bg-slate-800 hover:text-slate-300' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'
-              }`}
+                }`}
               style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}
             >
               <HiOutlineDocumentText size={15} className="shrink-0" />
               <span style={{ fontSize: '0.72rem', fontWeight: 500 }}>Release Logs</span>
-              <span className={`ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
-                isDark ? 'bg-amber-500/15 text-amber-400' : 'bg-amber-100 text-amber-600'
-              }`}>v1.2</span>
+              <span className={`ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${isDark ? 'bg-amber-500/15 text-amber-400' : 'bg-amber-100 text-amber-600'
+                }`}>v1.2</span>
             </a>
           )}
         </div>
@@ -909,11 +906,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
           <div className="flex justify-center">
             <button
               onClick={handleOpenUserMenu}
-              className={`w-9 h-9 cursor-pointer rounded-full overflow-hidden flex items-center justify-center border-2 transition-all duration-150 ${
-                showUserMenu
+              className={`w-9 h-9 cursor-pointer rounded-full overflow-hidden flex items-center justify-center border-2 transition-all duration-150 ${showUserMenu
                   ? isDark ? 'border-violet-500 ring-2 ring-violet-500/30' : 'border-violet-400 ring-2 ring-violet-400/20'
                   : isDark ? 'border-slate-700 hover:border-violet-500/60' : 'border-slate-200 hover:border-violet-400/60'
-              } bg-linear-to-br ${isDark ? 'from-violet-600 to-indigo-600' : 'from-violet-500 to-indigo-500'}`}
+                } bg-linear-to-br ${isDark ? 'from-violet-600 to-indigo-600' : 'from-violet-500 to-indigo-500'}`}
             >
               {userData?.avatar ? (
                 <img src={userData.avatar} alt="Profile" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
@@ -925,32 +921,51 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
         ) : (
           <button
             onClick={handleOpenUserMenu}
-            className={`w-full flex items-center cursor-pointer gap-2.5 px-2 py-2.5 rounded-lg transition-all duration-150 ${
-              showUserMenu
+            className={`w-full flex items-center cursor-pointer gap-2.5 px-2 py-2.5 rounded-lg transition-all duration-150 ${showUserMenu
                 ? isDark ? 'bg-slate-800' : 'bg-slate-100'
                 : isDark ? 'hover:bg-slate-800/70' : 'hover:bg-slate-50'
-            }`}
+              }`}
+            disabled={!userData} // Optional: disable interaction while loading
           >
-            <div className={`w-10 h-10 rounded-full overflow-hidden flex items-center justify-center shrink-0 border bg-linear-to-br ${
-              isDark ? 'border-slate-700 from-violet-600 to-indigo-600' : 'border-slate-200 from-violet-500 to-indigo-500'
-            }`}>
-              {userData?.avatar ? (
-                <img src={userData.avatar} alt="Profile" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+            {/* Avatar / Skeleton Avatar */}
+            {!userData ? (
+              <Skeleton className={`w-10 h-10 rounded-full shrink-0 ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
+            ) : (
+              <div className={`w-10 h-10 rounded-full overflow-hidden flex items-center justify-center shrink-0 border bg-linear-to-br ${isDark ? 'border-slate-700 from-violet-600 to-indigo-600' : 'border-slate-200 from-violet-500 to-indigo-500'
+                }`}>
+                {userData?.avatar ? (
+                  <img src={userData.avatar} alt="Profile" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                ) : (
+                  <User size={18} className="text-white" />
+                )}
+              </div>
+            )}
+
+            <div className="flex-1 min-w-0 text-left">
+              {!userData ? (
+                <div className="space-y-1.5 py-0.5">
+                  <Skeleton className={`h-4 w-24 original-class-redefined ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
+                  <Skeleton className={`h-3 w-32 ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`} />
+                </div>
               ) : (
-                <User size={18} className="text-white" />
+                <>
+                  <p className={`text-sm font-semibold truncate ${isDark ? 'text-slate-200' : 'text-slate-700'}`} style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+                    {userData.username}
+                  </p>
+                  {userData.email && (
+                    <p className={`text-[11px] truncate ${isDark ? 'text-slate-400' : 'text-slate-500'}`} style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+                      {userData.email}
+                    </p>
+                  )}
+                  {userData.role && (
+                    <p className={`text-[11px] truncate ${isDark ? 'text-slate-500' : 'text-slate-400'}`} style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+                      {userData.role}
+                    </p>
+                  )}
+                </>
               )}
             </div>
-            <div className="flex-1 min-w-0 text-left">
-              <p className={`text-sm font-semibold truncate ${isDark ? 'text-slate-200' : 'text-slate-700'}`} style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
-                {userData?.username || 'User'}
-              </p>
-              <p className={`text-[11px] truncate ${isDark ? 'text-slate-400' : 'text-slate-500'}`} style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
-                {userData?.email || ''}
-              </p>
-              <p className={`text-[11px] truncate ${isDark ? 'text-slate-500' : 'text-slate-400'}`} style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
-                {userData?.role || ''}
-              </p>
-            </div>
+
             <ChevronsUpDown size={14} className={`shrink-0 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
           </button>
         )}
@@ -960,9 +975,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
       {showUserMenu && menuPos && (
         <div
           ref={userMenuPopupRef}
-          className={`fixed z-[200] w-64 rounded-xl border overflow-hidden ${
-            isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'
-          }`}
+          className={`fixed z-[200] w-64 rounded-xl border overflow-hidden ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'
+            }`}
           style={{
             bottom: menuPos.bottom,
             left: menuPos.left,
@@ -971,9 +985,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
         >
           {/* User info header */}
           <div className={`flex items-center gap-3 px-4 py-3 border-b ${isDark ? 'border-slate-700' : 'border-slate-100'}`}>
-            <div className={`w-9 h-9 rounded-full overflow-hidden flex items-center justify-center shrink-0 border bg-linear-to-br ${
-              isDark ? 'border-slate-600 from-violet-600 to-indigo-600' : 'border-slate-200 from-violet-500 to-indigo-500'
-            }`}>
+            <div className={`w-9 h-9 rounded-full overflow-hidden flex items-center justify-center shrink-0 border bg-linear-to-br ${isDark ? 'border-slate-600 from-violet-600 to-indigo-600' : 'border-slate-200 from-violet-500 to-indigo-500'
+              }`}>
               {userData?.avatar ? (
                 <img src={userData.avatar} alt="Profile" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
               ) : (
@@ -1003,9 +1016,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
           <div className="p-1.5 space-y-0.5">
             <button
               onClick={() => { setShowUserMenu(false); router.push('/profile'); }}
-              className={`w-full cursor-pointer flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-colors ${
-                isDark ? 'text-slate-300 hover:bg-slate-700 hover:text-white' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-              }`}
+              className={`w-full cursor-pointer flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-colors ${isDark ? 'text-slate-300 hover:bg-slate-700 hover:text-white' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                }`}
               style={{ fontSize: '0.78rem', fontFamily: "'DM Sans', system-ui, sans-serif" }}
             >
               <UserCircle size={15} />
@@ -1017,9 +1029,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
             <button
               onClick={handleLogout}
               disabled={isLoggingOut}
-              className={`w-full cursor-pointer flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-colors mt-1.5 ${
-                isDark ? 'text-red-400 hover:bg-red-500/10 hover:text-red-300' : 'text-red-500 hover:bg-red-50 hover:text-red-600'
-              } ${isLoggingOut ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`w-full cursor-pointer flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-colors mt-1.5 ${isDark ? 'text-red-400 hover:bg-red-500/10 hover:text-red-300' : 'text-red-500 hover:bg-red-50 hover:text-red-600'
+                } ${isLoggingOut ? 'opacity-50 cursor-not-allowed' : ''}`}
               style={{ fontSize: '0.78rem', fontFamily: "'DM Sans', system-ui, sans-serif" }}
             >
               <LogOut size={15} />
