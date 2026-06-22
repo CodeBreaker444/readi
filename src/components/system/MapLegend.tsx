@@ -19,7 +19,7 @@ const { t } = useTranslation();
   return (
     <div className={`flex flex-wrap gap-x-6 gap-y-2 text-xs items-center ${textCls}`}>
 
-      <span className="flex items-center gap-1.5">
+      {/* <span className="flex items-center gap-1.5">
         <svg width="18" height="20" viewBox="0 0 30 34" xmlns="http://www.w3.org/2000/svg">
           <rect x="8" y="12" width="14" height="11" rx="2" fill="#5c6bc0" fillOpacity={isDark ? "0.4" : "0.25"} stroke="#3949ab" strokeWidth="2"/>
           <rect x="12.5" y="8" width="5" height="4" rx="1" fill="#5c6bc0" stroke="#3949ab" strokeWidth="2"/>
@@ -27,7 +27,7 @@ const { t } = useTranslation();
           <circle cx="15" cy="3.2" r="1.2" fill="#3949ab"/>
         </svg>
        {t('systems.map.legend.controlCenter')}
-      </span>
+      </span> */}
 
       <span className="flex items-center gap-1.5">
         <svg width="18" height="18" viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg">
@@ -50,7 +50,7 @@ const { t } = useTranslation();
       {t('systems.map.legend.drone')}
       </span>
 
-      <span className="flex items-center gap-1.5">
+      {/* <span className="flex items-center gap-1.5">
         <span
           className="inline-flex items-center justify-center rounded-full text-white font-semibold"
           style={{ width: 22, height: 22, fontSize: 10, background: "#2e7d32", border: "2.5px solid #1976d2", boxShadow: "0 1px 4px rgba(0,0,0,.2)" }}
@@ -58,7 +58,7 @@ const { t } = useTranslation();
           N
         </span>
         {t('systems.map.legend.cluster')}
-      </span>
+      </span> */}
 
       <span className={`select-none ${dividerCls}`}>|</span>
 

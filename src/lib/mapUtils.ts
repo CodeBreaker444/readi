@@ -131,3 +131,4 @@ export const DEFAULT_CONTROL_CENTER = {
   lon: 12.5,
   label: "Control Center — Via Nizza 53, Roma",
 };
+
