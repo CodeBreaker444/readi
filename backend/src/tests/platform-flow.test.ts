@@ -9,22 +9,41 @@
  *   $env:TEST_ADMIN_EMAIL  = admin email in test DB
  *   $env:TEST_ADMIN_PASSWORD = plaintext password
  *   $env:TEST_OWNER_ID     = fk_owner_id of that admin
- *   $env:RUN_INTEGRATION_TESTS = "true"
- *
  * Run:
- *   $env:RUN_INTEGRATION_TESTS="true"; npx jest --no-coverage -- platform-flow
+ *   npm run test:integration
+ *
+ * Requires in .env (or shell):
+ *   TEST_ADMIN_EMAIL, TEST_ADMIN_PASSWORD, TEST_OWNER_ID
  *
  * WARNING: NEVER point DATABASE_URL at production.
  */
 
-import { clearAllCookies, getCookieStore, makeRequest, parseJson } from './helpers';
+import { clearAllCookies, getCookieStore, makeFormDataRequest, makeRequest, parseJson } from './helpers';
 
 // ─── Guard ────────────────────────────────────────────────────────────────────
 
-const INTEGRATION = process.env.RUN_INTEGRATION_TESTS === 'true';
-const describeIntegration = INTEGRATION ? describe : describe.skip;
+const RUNNING_PLATFORM_FLOW_ONLY = process.argv.some((arg) => arg.includes('platform-flow'));
+const INTEGRATION = process.env.RUN_INTEGRATION_TESTS === 'true' || RUNNING_PLATFORM_FLOW_ONLY;
+
+/** Strip whitespace and curly/smart quotes often pasted from docs or chat apps. */
+function sanitizeCredential(value: string): string {
+  return value
+    .trim()
+    .replace(/^[\u201C\u201D\u2018\u2019"']+/, '')
+    .replace(/[\u201C\u201D\u2018\u2019"']+$/, '');
+}
+
+const ADMIN_EMAIL    = sanitizeCredential(process.env.TEST_ADMIN_EMAIL    ?? '');
+const ADMIN_PASSWORD = sanitizeCredential(process.env.TEST_ADMIN_PASSWORD ?? '');
+const OWNER_ID       = Number(process.env.TEST_OWNER_ID ?? '0');
+const HAS_INTEGRATION_CREDENTIALS = Boolean(ADMIN_EMAIL && ADMIN_PASSWORD && OWNER_ID > 0);
+const CAN_RUN_INTEGRATION = INTEGRATION && HAS_INTEGRATION_CREDENTIALS;
+const describeIntegration = CAN_RUN_INTEGRATION ? describe : describe.skip;
+
 if (!INTEGRATION) {
   test.skip('Set RUN_INTEGRATION_TESTS=true to run platform flow tests', () => {});
+} else if (!HAS_INTEGRATION_CREDENTIALS) {
+  test.skip('Set TEST_ADMIN_EMAIL, TEST_ADMIN_PASSWORD, and TEST_OWNER_ID to run platform flow tests', () => {});
 }
 
 // ─── Mocks ────────────────────────────────────────────────────────────────────
@@ -83,7 +102,12 @@ jest.mock('@/backend/database/database', () => {
   return {
     supabase: {
       from:  () => chainProxy,
-      auth:  { admin: { deleteUser: jest.fn().mockResolvedValue({}) } },
+      auth:  {
+        admin: {
+          deleteUser: jest.fn().mockResolvedValue({}),
+          updateUserById: jest.fn().mockResolvedValue({ data: { user: {} }, error: null }),
+        },
+      },
     },
   };
 });
@@ -94,6 +118,7 @@ jest.mock('@/backend/database/database', () => {
 import { POST as loginPOST } from '@/app/api/auth/login/route';
 import { POST as logoutPOST } from '@/app/api/auth/logout/route';
 import { POST as updatePasswordPOST } from '@/app/api/auth/update-password/route';
+import { getUserSession } from '@/lib/auth/server-session';
 // Agent
 import { POST as agentAskPOST } from '@/app/api/agent/ask/route';
 import { GET as agentIngestGET } from '@/app/api/agent/ingest/route';
@@ -448,7 +473,7 @@ import {
   PUT as ownerByIdPUT,
 } from '@/app/api/owner/[id]/route';
 import { POST as ownerCreatePOST } from '@/app/api/owner/route';
-// Planning additional
+
 import { GET as flightRequestLogStatusGET } from '@/app/api/planning/flight-requests/[id]/log-status/route';
 import {
   DELETE as flightRequestByIdDEL,
@@ -457,11 +482,10 @@ import {
 import { POST as flightRequestAssignPOST } from '@/app/api/planning/flight-requests/assign/route';
 import { POST as flightRequestDenyPOST } from '@/app/api/planning/flight-requests/deny/route';
 import { POST as flightRequestLogsPOST } from '@/app/api/planning/flight-requests/logs/route';
-// Profile additional
+
 import { POST as profilePOST } from '@/app/api/profile/route';
-// Settings additional
 import { PATCH as apiKeyPatchPATCH } from '@/app/api/settings/api-keys/[id]/route';
-// System additional
+
 import { POST as systemByIdDeletePOST } from '@/app/api/system/[id]/delete/route';
 import { POST as systemByIdUpdatePOST } from '@/app/api/system/[id]/update/route';
 import { POST as systemAddPOST } from '@/app/api/system/add/route';
@@ -486,20 +510,22 @@ import { POST as maintenanceTicketAssignPOST } from '@/app/api/system/maintenanc
 import { GET as maintenanceTicketAttachmentGET } from '@/app/api/system/maintenance/tickets/attachment/route';
 import { POST as maintenanceTicketReportPOST } from '@/app/api/system/maintenance/tickets/report/route';
 import { POST as maintenanceTicketUploadPOST } from '@/app/api/system/maintenance/tickets/upload/route';
-// Team additional
 import {
   DELETE as controlCenterTokenDEL,
   GET as controlCenterTokenGET,
   POST as controlCenterTokenPOST,
 } from '@/app/api/team/user/control-center-token/route';
 import { DELETE as userQualificationDeleteDEL } from '@/app/api/team/user/qualifications/[id]/route';
-// Training additional
 import { POST as trainingAttendancePOST } from '@/app/api/training/attendance/route';
 
+const SESSION_SKIP_PATTERNS = [
+  'Auth — Login: sets auth cookie on valid credentials',
+  'Auth — Post-logout: protected routes return 401',
+];
 
-const ADMIN_EMAIL    = process.env.TEST_ADMIN_EMAIL    ?? '';
-const ADMIN_PASSWORD = process.env.TEST_ADMIN_PASSWORD ?? '';
-const OWNER_ID       = Number(process.env.TEST_OWNER_ID ?? '0');
+function shouldSkipSessionSetup(testName: string): boolean {
+  return SESSION_SKIP_PATTERNS.some((pattern) => testName.includes(pattern));
+}
 
 let createdUserId:               number;
 let createdChecklistId:          number;
@@ -534,6 +560,32 @@ let createdDroneClassId:         number;
 let createdQualificationId:      number;
 let createdFlightRequestId:      number;
 let createdOwnerId:              number;
+
+async function loginAsAdmin(): Promise<void> {
+  clearAllCookies();
+  const req = makeRequest('/api/auth/login', {
+    method: 'POST',
+    body: { email: ADMIN_EMAIL, password: ADMIN_PASSWORD },
+  });
+  const res = await loginPOST(req);
+  if (res.status !== 200) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(
+      `Integration login failed (${res.status}) for "${ADMIN_EMAIL}". ` +
+      'Verify TEST_ADMIN_EMAIL and TEST_ADMIN_PASSWORD match an active user in your test DB. ' +
+      `Response: ${JSON.stringify(body)}`
+    );
+  }
+}
+
+async function ensureLoggedIn(): Promise<void> {
+  if (!HAS_INTEGRATION_CREDENTIALS) return;
+
+  const session = await getUserSession();
+  if (session) return;
+
+  await loginAsAdmin();
+}
 
 // ─── Setup ────────────────────────────────────────────────────────────────────
 
@@ -614,11 +666,23 @@ afterAll(async () => {
 
 describeIntegration('Full Platform Integration Flow', () => {
 
+  beforeAll(async () => {
+    await loginAsAdmin();
+  });
+
+  beforeEach(async () => {
+    const testName = expect.getState().currentTestName ?? '';
+    if (!shouldSkipSessionSetup(testName)) {
+      await ensureLoggedIn();
+    }
+  });
+
   // ══════════════════════════════════════════════════════════════════════════
   // AUTH
   // ══════════════════════════════════════════════════════════════════════════
 
   it('Auth — Login: sets auth cookie on valid credentials', async () => {
+    clearAllCookies();
     const req  = makeRequest('/api/auth/login', { method: 'POST', body: { email: ADMIN_EMAIL, password: ADMIN_PASSWORD } });
     const res  = await loginPOST(req);
     const body = await parseJson(res);
@@ -2002,13 +2066,13 @@ describeIntegration('Full Platform Integration Flow', () => {
     const req = makeRequest('/api/flytbase/verify', { method: 'POST', body: { token: 'fake-token', orgId: 'fake-org' } });
     const res = await flytbaseVerifyPOST(req);
     expect(res.status).not.toBe(401);
-  });
+  }, 15_000);
 
   it('FlytBase — flights GET', async () => {
     const req = makeRequest('/api/flytbase/flights', { method: 'GET' });
     const res = await flytbaseFlightsGET(req);
     expect(res.status).not.toBe(401);
-  });
+  }, 15_000);
 
   // ══════════════════════════════════════════════════════════════════════════
   // DRONE ATC (external)
@@ -2029,7 +2093,7 @@ describeIntegration('Full Platform Integration Flow', () => {
     const req = makeRequest('/api/drone-atc/weather?lat=51.5&lon=-0.12', { method: 'GET' });
     const res = await droneAtcWeatherGET(req);
     expect(res.status).not.toBe(401);
-  });
+  }, 10_000);
 
   // ══════════════════════════════════════════════════════════════════════════
   // GEOCODE
@@ -2039,7 +2103,7 @@ describeIntegration('Full Platform Integration Flow', () => {
     const req = makeRequest('/api/geocode?q=London', { method: 'GET' });
     const res = await geocodeGET(req);
     expect(res.status).not.toBe(500);
-  });
+  }, 12_000);
 
   // ══════════════════════════════════════════════════════════════════════════
   // EXPORT
@@ -2719,10 +2783,7 @@ describeIntegration('Full Platform Integration Flow', () => {
   });
 
   it('Operations — import POST', async () => {
-    const req = makeRequest('/api/operation/import', {
-      method: 'POST',
-      body: {},
-    });
+    const req = makeFormDataRequest('/api/operation/import', {});
     const res = await opImportPOST(req);
     expect(res.status).not.toBe(401);
   });
@@ -2955,9 +3016,10 @@ describeIntegration('Full Platform Integration Flow', () => {
   // ══════════════════════════════════════════════════════════════════════════
 
   it('Profile — POST (update profile)', async () => {
-    const req = makeRequest('/api/profile', {
-      method: 'POST',
-      body: { first_name: 'Flow', last_name: 'Tester' },
+    const req = makeFormDataRequest('/api/profile', {
+      fullname: 'Flow Tester',
+      phone: '',
+      timezone: 'Europe/Berlin',
     });
     const res = await profilePOST(req);
     expect(res.status).not.toBe(401);
@@ -2985,12 +3047,12 @@ describeIntegration('Full Platform Integration Flow', () => {
     const ts = Date.now().toString().slice(-6);
     const req = makeRequest('/api/system/component-types', {
       method: 'POST',
-      body: { component_type_name: `FlowCompType${ts}`, component_type_code: `FCT${ts}` },
+      body: { type_value: `FCT${ts}`, type_label: `FlowCompType${ts}` },
     });
     const res = await systemComponentTypeCreatePOST(req);
     const body = await parseJson(res);
     expect(res.status).not.toBe(401);
-    createdComponentTypeId = body.data?.id ?? body.id;
+    createdComponentTypeId = body.data?.type_id ?? body.data?.id ?? body.id;
     console.info(`[Systems] Created component type ID=${createdComponentTypeId} status=${res.status}`);
   });
 
@@ -2998,7 +3060,7 @@ describeIntegration('Full Platform Integration Flow', () => {
     if (!createdComponentTypeId) return;
     const req = makeRequest(`/api/system/component-types/${createdComponentTypeId}`, {
       method: 'PATCH',
-      body: { component_type_name: 'FlowCompTypeUpdated' },
+      body: { type_label: 'FlowCompTypeUpdated' },
     });
     const res = await systemComponentTypeUpdatePATCH(req, { params: Promise.resolve({ id: String(createdComponentTypeId) }) });
     expect(res.status).not.toBe(401);
@@ -3008,12 +3070,12 @@ describeIntegration('Full Platform Integration Flow', () => {
     const ts = Date.now().toString().slice(-6);
     const req = makeRequest('/api/system/drone-classes', {
       method: 'POST',
-      body: { drone_class_name: `FlowDroneClass${ts}`, drone_class_code: `FDC${ts}` },
+      body: { class_value: `FDC${ts}`, class_label: `FlowDroneClass${ts}` },
     });
     const res = await systemDroneClassCreatePOST(req);
     const body = await parseJson(res);
     expect(res.status).not.toBe(401);
-    createdDroneClassId = body.data?.id ?? body.id;
+    createdDroneClassId = body.data?.class_id ?? body.data?.id ?? body.id;
     console.info(`[Systems] Created drone class ID=${createdDroneClassId} status=${res.status}`);
   });
 
@@ -3021,7 +3083,7 @@ describeIntegration('Full Platform Integration Flow', () => {
     if (!createdDroneClassId) return;
     const req = makeRequest(`/api/system/drone-classes/${createdDroneClassId}`, {
       method: 'PATCH',
-      body: { drone_class_name: 'FlowDroneClassUpdated' },
+      body: { class_label: 'FlowDroneClassUpdated' },
     });
     const res = await systemDroneClassUpdatePATCH(req, { params: Promise.resolve({ id: String(createdDroneClassId) }) });
     expect(res.status).not.toBe(401);
@@ -3029,15 +3091,14 @@ describeIntegration('Full Platform Integration Flow', () => {
 
   it('Systems — add POST (create system/drone)', async () => {
     const ts = Date.now().toString().slice(-6);
-    const req = makeRequest('/api/system/add', {
-      method: 'POST',
-      body: {
+    const req = makeFormDataRequest('/api/system/add', {
+      data: JSON.stringify({
         tool_code: `FS${ts}`, tool_name: `FlowSystem${ts}`,
         tool_description: 'Flow test drone system',
-        tool_active: true, clientId: null, location: 'Flow Location',
+        tool_active: 'Y', clientId: null, location: 'Flow Location',
         latitude: 51.5, longitude: -0.12,
         activationDate: '2026-06-01',
-      },
+      }),
     });
     const res = await systemAddPOST(req);
     const body = await parseJson(res);
@@ -3061,13 +3122,19 @@ describeIntegration('Full Platform Integration Flow', () => {
     const req = makeRequest('/api/system/component/add', {
       method: 'POST',
       body: {
-        component_serial: `COMP${ts}`, component_name: `FlowComponent${ts}`,
-        tool_id: createdSystemId ?? 1,
+        component_type: 'DOCK',
+        component_sn: `COMP${ts}`,
+        fk_tool_id: createdSystemId ?? 1,
+        // Include expiration_date as a date-only string — regression guard for the Prisma DateTime coercion bug
+        expiration_date: '2030-06-01',
+        expiry_type: 'EXPIRATION_DATE',
       },
     });
     const res = await systemComponentAddPOST(req);
     const body = await parseJson(res);
+    // 500 here would mean Prisma rejected the date-only string (the original bug)
     expect(res.status).not.toBe(401);
+    expect(res.status).not.toBe(500);
     createdComponentId = body.data?.component_id ?? body.data?.id ?? body.id;
     console.info(`[Systems] Created component ID=${createdComponentId} status=${res.status}`);
   });
@@ -3080,6 +3147,28 @@ describeIntegration('Full Platform Integration Flow', () => {
     });
     const res = await systemComponentUpdatePOST(req, { params: Promise.resolve({ id: String(createdComponentId) }) });
     expect(res.status).not.toBe(401);
+  });
+
+  // Regression: Prisma rejected date-only strings ("YYYY-MM-DD") for DateTime fields.
+  // The bug was only triggered when expiration_date was actually sent — tests that omit the field
+  // evaluate to null and never hit the Prisma coercion. This test ensures date-only strings
+  // are converted to Date objects before being handed to Prisma.
+  it('Systems — component/[id]/update POST with expiration_date (date-only string)', async () => {
+    if (!createdComponentId) return;
+    const req = makeRequest(`/api/system/component/${createdComponentId}/update`, {
+      method: 'POST',
+      body: {
+        component_name: 'FlowComponentWithExpiry',
+        fk_tool_id: createdSystemId ?? 1,
+        component_type: 'DOCK',
+        expiration_date: '2028-11-03',
+        expiry_type: 'EXPIRATION_DATE',
+      },
+    });
+    const res = await systemComponentUpdatePOST(req, { params: Promise.resolve({ id: String(createdComponentId) }) });
+    // 401 → auth broke; 500 → Prisma rejected the date-only string (the original bug)
+    expect(res.status).not.toBe(401);
+    expect(res.status).not.toBe(500);
   });
 
   it('Systems — component/[id]/flight-logs GET', async () => {
@@ -3122,18 +3211,18 @@ describeIntegration('Full Platform Integration Flow', () => {
   });
 
   it('Systems — maintenance/tickets/report POST', async () => {
-    const req = makeRequest('/api/system/maintenance/tickets/report', {
-      method: 'POST',
-      body: { ticket_id: createdMaintenanceTicketId ?? 1 },
+    const req = makeFormDataRequest('/api/system/maintenance/tickets/report', {
+      ticket_id: String(createdMaintenanceTicketId ?? 1),
+      report_text: 'Flow test report',
     });
     const res = await maintenanceTicketReportPOST(req);
     expect(res.status).not.toBe(401);
   });
 
   it('Systems — maintenance/tickets/upload POST', async () => {
-    const req = makeRequest('/api/system/maintenance/tickets/upload', {
-      method: 'POST',
-      body: { ticket_id: createdMaintenanceTicketId ?? 1, file_name: 'ticket.pdf', s3_key: 'fake/ticket-key', file_size: 512 },
+    const req = makeFormDataRequest('/api/system/maintenance/tickets/upload', {
+      ticket_id: String(createdMaintenanceTicketId ?? 1),
+      file: new File(['dummy attachment'], 'ticket.pdf', { type: 'application/pdf' }),
     });
     const res = await maintenanceTicketUploadPOST(req);
     expect(res.status).not.toBe(401);
@@ -3183,6 +3272,10 @@ describeIntegration('Full Platform Integration Flow', () => {
   // ══════════════════════════════════════════════════════════════════════════
   // CLEANUP — reverse dependency order
   // ══════════════════════════════════════════════════════════════════════════
+
+  it('Cleanup — re-authenticates admin before cleanup', async () => {
+    await loginAsAdmin();
+  });
 
   it('Cleanup — detaches component', async () => {
     if (!createdComponentId) return;

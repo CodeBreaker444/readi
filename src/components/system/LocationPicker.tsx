@@ -19,6 +19,7 @@ interface NominatimResult {
   display_name: string;
   lat: string;
   lon: string;
+  boundingbox?: [string, string, string, string];
 }
 
 const PIN_ICON = L.divIcon({
@@ -59,6 +60,7 @@ export default function LocationPicker({ lat, lng, onChange, isDark = false }: L
 
   const [draftLat, setDraftLat] = useState(lat);
   const [draftLng, setDraftLng] = useState(lng);
+  const [showClickHint, setShowClickHint] = useState(false);
 
   useEffect(() => { setDraftLat(lat); }, [lat]);
   useEffect(() => { setDraftLng(lng); }, [lng]);
@@ -96,8 +98,9 @@ export default function LocationPicker({ lat, lng, onChange, isDark = false }: L
 
     map.on('click', (e) => {
       if (blockMapClickRef.current) return;
-      const { lat: clat, lng: clng } = e.latlng.wrap(); // clamp lon to [-180, 180]
+      const { lat: clat, lng: clng } = e.latlng.wrap();
       placeOrMoveMarker(map, clat, clng);
+      setShowClickHint(false);
       onChange(clat.toFixed(6), clng.toFixed(6));
     });
 
@@ -135,7 +138,11 @@ export default function LocationPicker({ lat, lng, onChange, isDark = false }: L
       if (justSelectedRef.current) { justSelectedRef.current = false; return; }
       setSearching(true);
       try {
-        const res = await fetch(`/api/geocode?q=${encodeURIComponent(query)}`);
+        const center = mapRef.current?.getCenter();
+        const bias = center
+          ? `&lat=${center.lat.toFixed(4)}&lon=${center.lng.toFixed(4)}`
+          : '';
+        const res = await fetch(`/api/geocode?q=${encodeURIComponent(query)}${bias}`);
         const data: NominatimResult[] = await res.json();
         setResults(data);
         if (data.length > 0) {
@@ -155,16 +162,21 @@ export default function LocationPicker({ lat, lng, onChange, isDark = false }: L
     const rlat = parseFloat(r.lat);
     const rlng = parseFloat(r.lon);
     const shortLabel = r.display_name.split(',').slice(0, 3).join(', ').trim();
-    justSelectedRef.current = true;  // prevent the query change from reopening the dropdown
-    blockMapClickRef.current = true;  // prevent the map click (fired after mousedown) from overriding coords
-    setTimeout(() => { blockMapClickRef.current = false; }, 300);
+    justSelectedRef.current = true;
     setQuery(shortLabel);
     setShowDropdown(false);
+    // Navigate the map to the found area — do NOT store coordinates yet.
+    // Geocoded centroids are approximate (50–500 m off). Only a map click or
+    // GPS sets real coordinates, giving the user explicit control over precision.
     if (mapRef.current) {
-      mapRef.current.setView([rlat, rlng], 14);
-      placeOrMoveMarker(mapRef.current, rlat, rlng);
+      if (r.boundingbox) {
+        const [minLat, maxLat, minLon, maxLon] = r.boundingbox.map(Number);
+        mapRef.current.fitBounds([[minLat, minLon], [maxLat, maxLon]], { maxZoom: 16, padding: [20, 20] });
+      } else {
+        mapRef.current.setView([rlat, rlng], 16);
+      }
     }
-    onChange(r.lat, r.lon, shortLabel);
+    if (!lat || !lng) setShowClickHint(true);
   };
 
   const handleUseMyLocation = () => {
@@ -177,6 +189,7 @@ export default function LocationPicker({ lat, lng, onChange, isDark = false }: L
           mapRef.current.setView([mlat, mlng], 15);
           placeOrMoveMarker(mapRef.current, mlat, mlng);
         }
+        setShowClickHint(false);
         onChange(mlat.toFixed(6), mlng.toFixed(6));
         setLocating(false);
       },
@@ -188,6 +201,7 @@ export default function LocationPicker({ lat, lng, onChange, isDark = false }: L
     setQuery('');
     setResults([]);
     setShowDropdown(false);
+    setShowClickHint(false);
     if (markerRef.current) { markerRef.current.remove(); markerRef.current = null; }
     onChange('', '', '');
   };
@@ -276,11 +290,20 @@ export default function LocationPicker({ lat, lng, onChange, isDark = false }: L
       </div>
 
       {/* Map */}
-      <div
-        ref={containerRef}
-        className="w-full rounded-lg overflow-hidden"
-        style={{ height: 220, border: isDark ? '1px solid #334155' : '1px solid #e5e7eb' }}
-      />
+      <div className="relative w-full">
+        <div
+          ref={containerRef}
+          className="w-full rounded-lg overflow-hidden"
+          style={{ height: 220, border: isDark ? '1px solid #334155' : '1px solid #e5e7eb' }}
+        />
+        {showClickHint && (
+          <div className="pointer-events-none absolute inset-0 flex items-end justify-center pb-3 z-9999">
+            <span className={`rounded-full px-3 py-1 text-xs font-medium shadow ${isDark ? 'bg-slate-900/80 text-slate-200' : 'bg-white/90 text-slate-700'}`}>
+              {t('systems.components.common.clickMapToPlace')}
+            </span>
+          </div>
+        )}
+      </div>
 
       {/* Use my location */}
       <button

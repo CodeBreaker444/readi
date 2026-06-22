@@ -157,10 +157,21 @@ export async function verifyFlytbaseTokenAndGetUser(
   const org = orgId.trim();
 
   const params = new URLSearchParams({ page: '1', limit: '1', archived: 'false' });
-  const response = await fetch(`${env.FLYTBASE_URL}/v2/flight?${params.toString()}`, {
-    method: 'GET',
-    headers: flytbaseHeaders(token, org),
-  });
+  const controller = new AbortController();
+  const t = setTimeout(() => controller.abort(), 10_000);
+  let response: Response;
+  try {
+    response = await fetch(`${env.FLYTBASE_URL}/v2/flight?${params.toString()}`, {
+      method: 'GET',
+      headers: flytbaseHeaders(token, org),
+      signal: controller.signal,
+    });
+  } catch (e: any) {
+    clearTimeout(t);
+    if (e.name === 'AbortError') throw new Error('FlytBase API timed out. Please try again.');
+    throw e;
+  }
+  clearTimeout(t);
 
   const responseText = await response.text();
 
@@ -242,10 +253,21 @@ export async function fetchLatestFlights(
 ): Promise<{ flights: FlytbaseFlight[]; total: number }> {
   const params = new URLSearchParams({ page: '1', limit: '20', archived: 'false' });
 
-  const response = await fetch(`${env.FLYTBASE_URL}/v2/flight?${params.toString()}`, {
-    method: 'GET',
-    headers: flytbaseHeaders(token, orgId),
-  });
+  const controller = new AbortController();
+  const t = setTimeout(() => controller.abort(), 10_000);
+  let response: Response;
+  try {
+    response = await fetch(`${env.FLYTBASE_URL}/v2/flight?${params.toString()}`, {
+      method: 'GET',
+      headers: flytbaseHeaders(token, orgId),
+      signal: controller.signal,
+    });
+  } catch (e: any) {
+    clearTimeout(t);
+    if (e.name === 'AbortError') throw new Error('FlytBase API timed out.');
+    throw e;
+  }
+  clearTimeout(t);
 
   if (!response.ok) {
     const text = await response.text().catch(() => response.statusText);
@@ -276,10 +298,21 @@ export async function fetchRecentFlights(
     endDate: String(now),
   });
 
-  const response = await fetch(`${env.FLYTBASE_URL}/v2/flight?${params.toString()}`, {
-    method: 'GET',
-    headers: flytbaseHeaders(token, orgId),
-  });
+  const controller = new AbortController();
+  const t = setTimeout(() => controller.abort(), 10_000);
+  let response: Response;
+  try {
+    response = await fetch(`${env.FLYTBASE_URL}/v2/flight?${params.toString()}`, {
+      method: 'GET',
+      headers: flytbaseHeaders(token, orgId),
+      signal: controller.signal,
+    });
+  } catch (e: any) {
+    clearTimeout(t);
+    if (e.name === 'AbortError') throw new Error('FlytBase API timed out.');
+    throw e;
+  }
+  clearTimeout(t);
 
   if (!response.ok) {
     const text = await response.text().catch(() => response.statusText);
