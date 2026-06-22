@@ -3845,6 +3845,20 @@
         "locate": "Locate",
         "detail": "Detail"
       },
+      "panel": {
+        "tabs": {
+          "systems": "Systems",
+          "warehouse": "Warehouse"
+        },
+        "componentCount": "{{count}} component(s)",
+        "noComponentsAttached": "No components attached to this system.",
+        "noWarehouseComponents": "No components in warehouse.",
+        "noLocation": "No map location available for this item.",
+        "warehouseHeaders": {
+          "component": "Component",
+          "serial": "Serial"
+        }
+      },
       "filters": {
         "status": "Status",
         "client": "Client",

@@ -3757,6 +3757,20 @@
         "locate": "Lokalisieren",
         "detail": "Details"
       },
+      "panel": {
+        "tabs": {
+          "systems": "Systeme",
+          "warehouse": "Lager"
+        },
+        "componentCount": "{{count}} Komponente(n)",
+        "noComponentsAttached": "Keine Komponenten an dieses System angehängt.",
+        "noWarehouseComponents": "Keine Komponenten im Lager.",
+        "noLocation": "Für dieses Element ist kein Standort auf der Karte verfügbar.",
+        "warehouseHeaders": {
+          "component": "Komponente",
+          "serial": "Seriennummer"
+        }
+      },
       "filters": {
         "status": "Status",
         "client": "Mandant",

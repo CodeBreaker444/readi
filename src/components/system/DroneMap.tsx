@@ -1,7 +1,7 @@
 "use client";
 
 import type { ToolsResponse } from "@/config/types/types";
-import { colorByStatus, DEFAULT_CONTROL_CENTER, isDock, isValidCoord } from "@/lib/mapUtils";
+import { colorByStatus, isDock, isValidCoord } from "@/lib/mapUtils";
 import L from "leaflet";
 import "leaflet.markercluster";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
@@ -10,7 +10,7 @@ import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 
 
 export interface DroneMapHandle {
-  panTo: (lat: number, lon: number, zoom?: number) => void;
+  panTo: (lat: number, lon: number, zoom?: number, popupHtml?: string) => void;
 }
 
 
@@ -116,7 +116,6 @@ const DroneMap = forwardRef<DroneMapHandle, DroneMapProps>(function DroneMap(
     height = "480px",
     center = [42.0, 12.5],
     zoom = 6,
-    controlCenter = DEFAULT_CONTROL_CENTER,
     onToolClick,
   },
   ref
@@ -125,9 +124,10 @@ const DroneMap = forwardRef<DroneMapHandle, DroneMapProps>(function DroneMap(
   const mapRef = useRef<L.Map | null>(null);
   const clusterRef = useRef<any>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
+  const focusMarkerRef = useRef<L.Marker | null>(null);
 
   useImperativeHandle(ref, () => ({
-    panTo: (lat: number, lon: number, flyZoom = 16) => {
+    panTo: (lat: number, lon: number, flyZoom = 16, popupHtml?: string) => {
       const map = mapRef.current;
       if (!map) return;
 
@@ -135,6 +135,8 @@ const DroneMap = forwardRef<DroneMapHandle, DroneMapProps>(function DroneMap(
 
       setTimeout(() => {
         const cluster = clusterRef.current;
+        let opened = false;
+
         if (cluster) {
           cluster.eachLayer((layer: any) => {
             const ll = layer.getLatLng?.();
@@ -143,6 +145,7 @@ const DroneMap = forwardRef<DroneMapHandle, DroneMapProps>(function DroneMap(
                 layer.zoomToBounds();
               }
               layer.openPopup();
+              opened = true;
             }
           });
         }
@@ -151,6 +154,26 @@ const DroneMap = forwardRef<DroneMapHandle, DroneMapProps>(function DroneMap(
         const marker = markersRef.current.get(key);
         if (marker) {
           marker.openPopup();
+          opened = true;
+        }
+
+        if (!opened) {
+          if (focusMarkerRef.current) {
+            focusMarkerRef.current.remove();
+            focusMarkerRef.current = null;
+          }
+          const focusMarker = L.marker([lat, lon], {
+            icon: droneDivIcon("OPERATIONAL"),
+            zIndexOffset: 2000,
+          });
+          if (popupHtml) {
+            focusMarker.bindPopup(popupHtml);
+          }
+          focusMarker.addTo(map);
+          focusMarkerRef.current = focusMarker;
+          if (popupHtml) {
+            focusMarker.openPopup();
+          }
         }
       }, 1300);
     },
@@ -173,12 +196,12 @@ const DroneMap = forwardRef<DroneMapHandle, DroneMapProps>(function DroneMap(
     osm.addTo(map);
     L.control.layers({ OSM: osm, Satellite: sat }, {}, { collapsed: true }).addTo(map);
 
-    L.marker([controlCenter.lat, controlCenter.lon], {
-      icon: controlCenterDivIcon(),
-      zIndexOffset: 1000,
-    })
-      .bindPopup(`<div style="font-weight:600">${controlCenter.label}</div>`)
-      .addTo(map);
+    // L.marker([controlCenter.lat, controlCenter.lon], {
+    //   icon: controlCenterDivIcon(),
+    //   zIndexOffset: 1000,
+    // })
+    //   .bindPopup(`<div style="font-weight:600">${controlCenter.label}</div>`)
+    //   .addTo(map);
 
     const cluster = (L as any).markerClusterGroup({
       chunkedLoading: true,
@@ -249,12 +272,12 @@ const DroneMap = forwardRef<DroneMapHandle, DroneMapProps>(function DroneMap(
 
     if (markers.length > 0) {
       const bounds = cluster.getBounds();
-      bounds.extend([controlCenter.lat, controlCenter.lon]);
+      // bounds.extend([controlCenter.lat, controlCenter.lon]);
       map.fitBounds(bounds.pad(0.15));
     } else {
-      map.setView([controlCenter.lat, controlCenter.lon], zoom);
+      // map.setView([controlCenter.lat, controlCenter.lon], zoom);
     }
-  }, [tools, controlCenter, zoom, onToolClick]);
+  }, [tools, zoom, onToolClick]);
 
   return (
     <>
