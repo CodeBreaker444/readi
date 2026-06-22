@@ -1,13 +1,11 @@
 "use client";
 
-import AddComponentModal from "@/components/system/AddComponentModal";
-import AddModelModal from "@/components/system/AddModelModal";
-import AddSystemModal from "@/components/system/AddSystemModal";
+import DroneMapSkeleton from "@/components/system/DroneMapSkeleton";
 import type { DroneMapHandle } from "@/components/system/DroneMap";
 import MapFilters from "@/components/system/MapFilters";
 import MapLegend from "@/components/system/MapLegend";
+import MapSystemPanel from "@/components/system/MapSystemPanel";
 import ToolDetailModal from "@/components/system/ToolDetailModal";
-import ToolList from "@/components/system/ToolList";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/useTheme";
 import type { Client, MapFiltersType, ToolsResponse } from "@/config/types/types";
@@ -19,6 +17,9 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 const DroneMap = lazy(() => import("@/components/system/DroneMap"));
+const AddComponentModal = lazy(() => import("@/components/system/AddComponentModal"));
+const AddModelModal = lazy(() => import("@/components/system/AddModelModal"));
+const AddSystemModal = lazy(() => import("@/components/system/AddSystemModal"));
 
 
 const STORAGE_KEY = "droneMapFilters.v2";
@@ -49,9 +50,11 @@ export default function DroneToolMapPage() {
   const { t } = useTranslation();
 
   const [allTools, setAllTools] = useState<ToolsResponse[]>([]);
+  const [componentData, setComponentData] = useState<any[]>([]);
   const [models, setModels] = useState([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingComponents, setLoadingComponents] = useState(true);
 
   const [filters, setFilters] = useState<MapFiltersType>(defaultFilters);
   const [selectedTool, setSelectedTool] = useState<ToolsResponse | null>(null);
@@ -120,24 +123,54 @@ export default function DroneToolMapPage() {
     }
   }, []);
 
+  const fetchAllComponents = useCallback(async () => {
+    setLoadingComponents(true);
+    try {
+      const response = await fetch("/api/system/component/list", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const result = await response.json();
+      if (result.code === 1) setComponentData(result.data);
+    } catch (error) {
+      console.error("Error fetching components:", error);
+    } finally {
+      setLoadingComponents(false);
+    }
+  }, []);
+
 
   useEffect(() => {
     fetchToolData();
     fetchModels();
     fetchClients();
-  }, [fetchToolData, fetchModels, fetchClients]);
+    fetchAllComponents();
+  }, [fetchToolData, fetchModels, fetchClients, fetchAllComponents]);
 
 
-  const filteredTools = useMemo(() => {
+  const panelTools = useMemo(() => {
     return allTools.filter((t) => {
       if (filters.status && t.tool_status !== filters.status) return false;
       if (filters.clientId && String(t.fk_client_id ?? "") !== filters.clientId) return false;
-      if (filters.onlyDock && !isDock(t)) return false;
-      if (filters.onlyInstalled && !isValidCoord(t.tool_latitude, t.tool_longitude)) return false;
       if (filters.search && !matchSearch(t, filters.search)) return false;
       return true;
     });
   }, [allTools, filters]);
+
+  const filteredTools = useMemo(() => {
+    return panelTools.filter((t) => {
+      if (filters.onlyDock && !isDock(t)) return false;
+      if (filters.onlyInstalled && !isValidCoord(t.tool_latitude, t.tool_longitude)) return false;
+      return true;
+    });
+  }, [panelTools, filters]);
+
+  const toolsById = useMemo(() => {
+    const map = new Map<number, ToolsResponse>();
+    allTools.forEach((t) => map.set(t.tool_id, t));
+    return map;
+  }, [allTools]);
 
 
   const handleFilterChange = useCallback((partial: Partial<MapFiltersType>) => {
@@ -148,15 +181,70 @@ export default function DroneToolMapPage() {
     });
   }, []);
 
-  const handlePanTo = useCallback((tool: ToolsResponse) => {
-    if (!isValidCoord(tool.tool_latitude, tool.tool_longitude)) return;
+  const scrollToMap = useCallback(() => {
     document.getElementById("drone-map-container")?.scrollIntoView({ behavior: "smooth" });
-    droneMapRef.current?.panTo(tool.tool_latitude!, tool.tool_longitude!);
   }, []);
+
+  const handlePanTo = useCallback((tool: ToolsResponse) => {
+    if (!isValidCoord(tool.tool_latitude, tool.tool_longitude)) {
+      toast.error(t("systems.map.panel.noLocation"));
+      return;
+    }
+    scrollToMap();
+    const label = tool.tool_code || `#${tool.tool_id}`;
+    droneMapRef.current?.panTo(
+      tool.tool_latitude!,
+      tool.tool_longitude!,
+      16,
+      `<div style="font-weight:600">${label}</div>`,
+    );
+  }, [scrollToMap, t]);
+
+  const handleLocateComponent = useCallback((
+    comp: { tool_component_id: number; component_name?: string | null; component_code?: string | null; component_type?: string | null; latitude?: number | null; longitude?: number | null; fk_tool_id?: number | null },
+    parentToolId?: number | null,
+  ) => {
+    let lat = comp.latitude;
+    let lon = comp.longitude;
+
+    if (!isValidCoord(lat, lon) && parentToolId) {
+      const parent = toolsById.get(parentToolId);
+      lat = parent?.tool_latitude ?? undefined;
+      lon = parent?.tool_longitude ?? undefined;
+    }
+
+    if (!isValidCoord(lat, lon)) {
+      toast.error(t("systems.map.panel.noLocation"));
+      return;
+    }
+
+    scrollToMap();
+    const name = comp.component_name || comp.component_code || `#${comp.tool_component_id}`;
+    const type = comp.component_type ? `<div style="font-size:12px;color:#666;margin-top:2px">${comp.component_type}</div>` : "";
+    droneMapRef.current?.panTo(
+      lat!,
+      lon!,
+      16,
+      `<div style="font-weight:600">${name}</div>${type}`,
+    );
+  }, [scrollToMap, t, toolsById]);
 
   const handleDetail = useCallback((tool: ToolsResponse) => {
     setSelectedTool(tool);
   }, []);
+
+  const modelMap = useMemo(() => {
+    const map: Record<number, string> = {};
+    models.forEach((m: any) => { map[m.tool_model_id] = `${m.factory_type} ${m.factory_model}`; });
+    return map;
+  }, [models]);
+
+  const refreshAll = useCallback(() => {
+    fetchToolData();
+    fetchModels();
+    fetchClients();
+    fetchAllComponents();
+  }, [fetchToolData, fetchModels, fetchClients, fetchAllComponents]);
 
 
   return (
@@ -167,7 +255,7 @@ export default function DroneToolMapPage() {
           : "bg-white border-b border-slate-200 text-slate-900 shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
           } px-3 sm:px-6 py-4`}
       >
-        <div className="mx-auto max-w-[1800px] space-y-2 sm:space-y-0 sm:flex sm:items-center sm:justify-between sm:gap-3">
+        <div className="mx-auto space-y-2 sm:space-y-0 sm:flex sm:items-center sm:justify-between sm:gap-3">
           <div className="flex items-center justify-between sm:justify-start gap-3">
             <div className="flex items-center gap-3">
               <div className="w-1 h-6 shrink-0 rounded-full bg-violet-600" />
@@ -183,7 +271,7 @@ export default function DroneToolMapPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => { fetchToolData(); fetchModels(); fetchClients(); }}
+              onClick={refreshAll}
               disabled={loading}
               className={`sm:hidden h-8 gap-1.5 text-xs transition-all ${isDark
                 ? "border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white"
@@ -197,7 +285,7 @@ export default function DroneToolMapPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => { fetchToolData(); fetchModels(); fetchClients(); }}
+              onClick={refreshAll}
               disabled={loading}
               className={`hidden sm:flex h-8 gap-1.5 text-xs transition-all ${isDark
                 ? "border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white"
@@ -225,7 +313,7 @@ export default function DroneToolMapPage() {
         </div>
       </div>
 
-      <main className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4 space-y-4">
+      <main className=" mx-auto px-3 sm:px-4 py-3 sm:py-4 space-y-4">
         <section className={`rounded-xl border shadow-sm p-4
     ${isDark ? "bg-slate-800 border-slate-700" : "bg-white border-gray-200"}`}>
           <MapFilters filters={filters} clients={clients} onChange={handleFilterChange} />
@@ -234,10 +322,16 @@ export default function DroneToolMapPage() {
         <section className="grid grid-cols-1 lg:grid-cols-12 gap-4">
           <div className={`lg:col-span-4 rounded-xl border shadow-sm p-4
       ${isDark ? "bg-slate-800 border-slate-700" : "bg-white border-gray-200"}`}>
-            <ToolList
-              tools={filteredTools}
+            <MapSystemPanel
+              tools={panelTools}
+              components={componentData}
+              modelMap={modelMap}
+              toolsById={toolsById}
               height={MAP_HEIGHT}
+              loadingTools={loading}
+              loadingComponents={loadingComponents}
               onPanTo={handlePanTo}
+              onLocateComponent={handleLocateComponent}
               onDetail={handleDetail}
             />
           </div>
@@ -245,17 +339,11 @@ export default function DroneToolMapPage() {
           <div id="drone-map-container" className={`lg:col-span-8 rounded-xl border shadow-sm p-4
       ${isDark ? "bg-slate-800 border-slate-700" : "bg-white border-gray-200"}`}>
             {loading ? (
-              <div className={`flex items-center justify-center ${isDark ? "text-slate-500" : "text-gray-400"}`}
-                style={{ height: MAP_HEIGHT }}>
-                {t('systems.map.loadingMapData')}
-              </div>
+              <DroneMapSkeleton height={isFullscreen ? "100vh" : MAP_HEIGHT} />
             ) : (
               <div className="relative">
                 <Suspense fallback={
-                  <div className={`flex items-center justify-center ${isDark ? "text-slate-500" : "text-gray-400"}`}
-                    style={{ height: isFullscreen ? "100vh" : MAP_HEIGHT }}>
-                    {t('systems.map.loadingMap')}
-                  </div>
+                  <DroneMapSkeleton height={isFullscreen ? "100vh" : MAP_HEIGHT} />
                 }>
                   <DroneMap
                     ref={droneMapRef}
@@ -286,37 +374,46 @@ export default function DroneToolMapPage() {
 
 
       {showAddTool && (
-        <AddSystemModal
-          open={showAddTool}
-          onClose={() => setShowAddTool(false)}
-          onSuccess={() => {
-            setShowAddTool(false);
-            fetchToolData();
-          }}
-          models={models}
-          clients={clients}
-        />
+        <Suspense fallback={null}>
+          <AddSystemModal
+            open={showAddTool}
+            onClose={() => setShowAddTool(false)}
+            onSuccess={() => {
+              setShowAddTool(false);
+              fetchToolData();
+            }}
+            models={models}
+            clients={clients}
+          />
+        </Suspense>
       )}
 
       {showAddModel && (
-        <AddModelModal
-          open={showAddModel}
-          onClose={() => setShowAddModel(false)}
-          onSuccess={() => {
-            setShowAddModel(false);
-            fetchModels();
-          }}
-        />
+        <Suspense fallback={null}>
+          <AddModelModal
+            open={showAddModel}
+            onClose={() => setShowAddModel(false)}
+            onSuccess={() => {
+              setShowAddModel(false);
+              fetchModels();
+            }}
+          />
+        </Suspense>
       )}
 
       {showAddComponent && (
-        <AddComponentModal
-          open={showAddComponent}
-          onClose={() => setShowAddComponent(false)}
-          onSuccess={() => setShowAddComponent(false)}
-          tools={allTools as any[]}
-          models={models}
-        />
+        <Suspense fallback={null}>
+          <AddComponentModal
+            open={showAddComponent}
+            onClose={() => setShowAddComponent(false)}
+            onSuccess={() => {
+              setShowAddComponent(false);
+              fetchAllComponents();
+            }}
+            tools={allTools as any[]}
+            models={models}
+          />
+        </Suspense>
       )}
 
       <ToolDetailModal

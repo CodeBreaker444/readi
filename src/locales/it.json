@@ -3837,6 +3837,20 @@
         "locate": "Localizza",
         "detail": "Dettaglio"
       },
+      "panel": {
+        "tabs": {
+          "systems": "Sistemi",
+          "warehouse": "Magazzino"
+        },
+        "componentCount": "{{count}} componente/i",
+        "noComponentsAttached": "Nessun componente collegato a questo sistema.",
+        "noWarehouseComponents": "Nessun componente in magazzino.",
+        "noLocation": "Nessuna posizione disponibile sulla mappa per questo elemento.",
+        "warehouseHeaders": {
+          "component": "Componente",
+          "serial": "Seriale"
+        }
+      },
       "filters": {
         "status": "Stato",
         "client": "Cliente",
@@ -4093,7 +4107,8 @@
         "latitude": "Latitudine",
         "longitude": "Longitudine",
         "latPlaceholder": "es. 41.902782",
-        "lngPlaceholder": "es. 12.496366"
+        "lngPlaceholder": "es. 12.496366",
+        "clickMapToPlace": "Clicca sulla mappa per posizionare il punto esatto"
       },
       "editSystem": {
         "title": "Modifica Sistema",
