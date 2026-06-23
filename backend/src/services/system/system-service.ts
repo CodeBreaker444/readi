@@ -177,8 +177,9 @@ export async function getSystemList(
           tool_longitude: (item.tool_metadata as any)?.longitude,
           tool_status: (() => {
             const stored = (item.tool_metadata as any)?.status as string | undefined;
-            if (stored === 'DISMISSED') return 'DISMISSED';
+            // If an explicit status is set (not OPERATIONAL), use it
             if (stored && stored !== 'OPERATIONAL') return stored;
+            // Otherwise compute based on component/maintenance state
             if (toolsNonOperational.has(item.tool_id)) return 'NOT_OPERATIONAL';
             if (toolsInMaintenance.has(item.tool_id)) return 'MAINTENANCE';
             return stored || 'OPERATIONAL';
@@ -642,7 +643,7 @@ export async function updateModel(modelId: number, modelData: any) {
 }
 
 
-export async function getComponentList(ownerId: number, toolId?: number) {
+export async function getComponentList(ownerId: number, toolId?: number, includeDetached: boolean = false) {
   if (toolId && toolId !== 0) {
     await refreshMaintenanceDaysForTool(toolId);
   } else {
@@ -692,7 +693,8 @@ export async function getComponentList(ownerId: number, toolId?: number) {
       orderBy: { component_id: 'desc' },
     });
 
-    const filteredData = rawData.filter((item) => (item.component_metadata as any)?.system_detached !== true);
+    // Only filter out detached components if includeDetached is false
+    const filteredData = includeDetached ? rawData : rawData.filter((item) => (item.component_metadata as any)?.system_detached !== true);
     return buildComponentListResult(filteredData);
   }
 

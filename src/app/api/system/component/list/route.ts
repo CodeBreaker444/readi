@@ -12,8 +12,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const ownerId = body.o_id || session!.user.ownerId;
     const toolId = body.tool_id;
+    const includeDetached = body.include_detached === true;
 
-    const result = await getComponentList(ownerId, toolId);
+    const result = await getComponentList(ownerId, toolId, includeDetached);
 
     return NextResponse.json(result);
   } catch (err) {
