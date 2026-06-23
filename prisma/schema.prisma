@@ -1611,6 +1611,7 @@ model owner {
   updated_at                  DateTime?                   @default(now()) @db.Timestamp(6)
   drone_atc_enabled           Boolean                     @default(false)
   d_flight_enabled            Boolean                     @default(false)
+  flytrelay_enabled           Boolean                     @default(false)
   easa_operator_code          String?
   email_notifications_enabled Boolean                     @default(false)
   api_keys                    api_keys[]

@@ -17,6 +17,7 @@ export interface OwnerData {
   owner_active: string;
   drone_atc_enabled: boolean;
   d_flight_enabled: boolean;
+  flytrelay_enabled: boolean;
   email_notifications_enabled: boolean;
   easa_operator_code: string | null;
   tax_id: string | null;

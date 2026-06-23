@@ -12,6 +12,6 @@ export default async function FlightsPage() {
     : null;
 
   return (
-    <FlightsTabs flytbaseToken={creds?.token ?? null} />
+    <FlightsTabs flytbaseToken={creds?.token ?? null} flytrelayEnabled={session?.user.flytrelayEnabled ?? false} />
   );
 }

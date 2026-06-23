@@ -42,7 +42,8 @@ export async function fetchFlytrelayFlights(
   companyId?: string,
   droneId?: string,
   page?: number,
-): Promise<{ flights: FlytrelayFlight[] }> {
+  pageSize?: number,
+): Promise<{ flights: FlytrelayFlight[]; total: number }> {
   const baseUrl = env.FLYTRELAY_BASE_URL;
   if (!baseUrl) throw new Error('FLYTRELAY_BASE_URL is not configured');
 
@@ -52,6 +53,7 @@ export async function fetchFlytrelayFlights(
   if (companyId !== undefined) params.set('companyId', String(companyId));
   if (droneId) params.set('droneId', droneId);
   if (page !== undefined) params.set('page', String(page));
+  if (pageSize !== undefined) params.set('limit', String(pageSize));
 
   const url = `${baseUrl}/api/logs${params.toString() ? `?${params.toString()}` : ''}`;
 
@@ -89,7 +91,7 @@ export async function fetchFlytrelayFlights(
     throw new Error(`FlytRelay flights API returned error: ${responseText}`);
   }
 
-  return { flights: body.flights ?? [] };
+  return { flights: body.flights ?? [], total: body.total ?? body.flights?.length ?? 0 };
 }
 
 export async function fetchFlytrelayGutma(

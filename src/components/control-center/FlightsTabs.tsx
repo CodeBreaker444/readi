@@ -7,7 +7,7 @@ import { useState } from 'react';
 
 type Tab = 'flytbase' | 'flytrelay';
 
-export function FlightsTabs({ flytbaseToken }: { flytbaseToken: string | null }) {
+export function FlightsTabs({ flytbaseToken, flytrelayEnabled }: { flytbaseToken: string | null; flytrelayEnabled: boolean }) {
   const { isDark } = useTheme();
   const [activeTab, setActiveTab] = useState<Tab>('flytbase');
 
@@ -43,18 +43,20 @@ export function FlightsTabs({ flytbaseToken }: { flytbaseToken: string | null })
                 >
                   FlytBase
                 </button>
-                <button
-                  onClick={() => setActiveTab('flytrelay')}
-                  className={`px-3 py-1.5 cursor-pointer rounded-md text-xs font-medium transition-colors ${
-                    activeTab === 'flytrelay'
-                      ? 'bg-violet-600 text-white'
-                      : isDark
-                      ? 'text-slate-400 hover:bg-slate-800'
-                      : 'text-slate-600 hover:bg-slate-100'
-                  }`}
-                >
-                  FlytRelay
-                </button>
+                {flytrelayEnabled && (
+                  <button
+                    onClick={() => setActiveTab('flytrelay')}
+                    className={`px-3 py-1.5 cursor-pointer rounded-md text-xs font-medium transition-colors ${
+                      activeTab === 'flytrelay'
+                        ? 'bg-violet-600 text-white'
+                        : isDark
+                        ? 'text-slate-400 hover:bg-slate-800'
+                        : 'text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    FlytRelay
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -64,7 +66,7 @@ export function FlightsTabs({ flytbaseToken }: { flytbaseToken: string | null })
       <div className="flex-1 overflow-hidden px-6 pb-6">
         <div className="mx-auto max-w-[1800px] h-full">
           {activeTab === 'flytbase' && <FlytbaseFlights token={flytbaseToken} isActive={true} />}
-          {activeTab === 'flytrelay' && <FlytrelayFlights token={flytbaseToken} isActive={true} />}
+          {flytrelayEnabled && activeTab === 'flytrelay' && <FlytrelayFlights token={flytbaseToken} isActive={true} />}
         </div>
       </div>
     </div>

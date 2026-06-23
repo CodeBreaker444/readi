@@ -63,6 +63,7 @@ export function FlytbaseFlights({ token, isActive = true }: Props) {
   const [filterMode, setFilterMode] = useState<FilterMode>('window');
   const [flights, setFlights] = useState<Flight[]>([]);
   const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
@@ -74,7 +75,7 @@ export function FlytbaseFlights({ token, isActive = true }: Props) {
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [archiveError, setArchiveError] = useState<{ message: string; missing_sns: string[] } | null>(null);
 
-  const fetchFlights = useCallback(async (win: number, mode: FilterMode) => {
+  const fetchFlights = useCallback(async (win: number, mode: FilterMode, pageNum: number = 1) => {
     if (!token) {
       setError('no_token');
       setLoading(false);
@@ -89,8 +90,8 @@ export function FlytbaseFlights({ token, isActive = true }: Props) {
     setArchiveError(null);
     try {
       const url = mode === 'latest'
-        ? '/api/flytbase/flights?mode=latest'
-        : `/api/flytbase/flights?window=${win}`;
+        ? `/api/flytbase/flights?mode=latest&page=${pageNum}`
+        : `/api/flytbase/flights?window=${win}&page=${pageNum}`;
       const res = await axios.get(url);
       setFlights(res.data.flights ?? []);
       setTotal(res.data.total ?? 0);
@@ -104,9 +105,15 @@ export function FlytbaseFlights({ token, isActive = true }: Props) {
 
   useEffect(() => {
     if (isActive) {
-      fetchFlights(window, filterMode);
+      setPage(1);
+      fetchFlights(window, filterMode, 1);
     }
   }, [fetchFlights, window, filterMode, isActive]);
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+    fetchFlights(window, filterMode, newPage);
+  };
 
   async function handleSelectFlight(flight: Flight) {
     if (selectedFlight?.flight_id === flight.flight_id) return;
@@ -345,6 +352,42 @@ export function FlytbaseFlights({ token, isActive = true }: Props) {
                 );
               })}
             </div>
+
+            {total > 20 && (
+              <div className={`flex items-center justify-between px-4 py-3 border-t ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
+                <span className={`text-[11px] ${textSecondary}`}>
+                  Page {page} of {Math.ceil(total / 20)}
+                </span>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => handlePageChange(Math.max(1, page - 1))}
+                    disabled={page === 1}
+                    className={`px-2 py-1 rounded text-[11px] font-medium cursor-pointer transition-colors ${
+                      page === 1
+                        ? 'opacity-50 cursor-not-allowed'
+                        : isDark
+                        ? 'text-slate-300 hover:bg-slate-800'
+                        : 'text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() => handlePageChange(Math.min(Math.ceil(total / 20), page + 1))}
+                    disabled={page >= Math.ceil(total / 20)}
+                    className={`px-2 py-1 rounded text-[11px] font-medium cursor-pointer transition-colors ${
+                      page >= Math.ceil(total / 20)
+                        ? 'opacity-50 cursor-not-allowed'
+                        : isDark
+                        ? 'text-slate-300 hover:bg-slate-800'
+                        : 'text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex-1 min-w-0 overflow-y-auto">

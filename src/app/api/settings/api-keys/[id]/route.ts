@@ -1,12 +1,12 @@
 import { deleteApiKey, revokeApiKey } from '@/backend/services/mission/flight-request-service';
-import { requirePermission } from '@/lib/auth/api-auth';
 import { internalError } from '@/lib/api-error';
+import { requireAuth } from '@/lib/auth/api-auth';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { session, error } = await requirePermission('view_config');
+    const { session, error } = await requireAuth();
     if (error) return error;
 
     const { id } = await params;
@@ -19,7 +19,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { session, error } = await requirePermission('view_config');
+    const { session, error } = await requireAuth();
     if (error) return error;
 
     const { id } = await params;

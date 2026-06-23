@@ -126,7 +126,7 @@ export async function GET(req: NextRequest) {
     );
 
     const data = parseGutma(flightId, rawData);
-    console.log('parsed gutma data:', data);
+    // console.log('parsed gutma data:', data);
     return NextResponse.json({ success: true, data });
   } catch (err: any) {
     console.error('[GET /api/flytrelay/flights/gutma]', err);
