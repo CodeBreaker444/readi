@@ -52,14 +52,14 @@ export function ChecklistRenderer({
 
   if (!surveyModel) {
     return (
-      <div className="w-full max-w-4xl mx-auto p-6 space-y-6 animate-pulse">
+      <div className="w-full p-2 sm:p-6 space-y-6 animate-pulse">
         <div className="space-y-3">
           <div className="h-8 bg-gray-200 rounded-md w-3/4"></div>
           <div className="h-4 bg-gray-100 rounded-md w-1/2"></div>
         </div>
 
         {[1, 2, 3].map((i) => (
-          <div key={i} className="p-6 border border-gray-100 rounded-lg space-y-4">
+          <div key={i} className="p-4 sm:p-6 border border-gray-100 rounded-lg space-y-4">
             <div className="h-5 bg-gray-200 rounded w-1/3"></div>
             <div className="space-y-2">
               <div className="h-10 bg-gray-50 rounded w-full"></div>
@@ -75,7 +75,7 @@ export function ChecklistRenderer({
   }
 
   return (
-    <div className={`checklist-container ${isDark ? 'survey-dark' : ''}`}>
+    <div className={`w-full checklist-container ${isDark ? 'survey-dark' : ''}`}>
       <Survey model={surveyModel} />
     </div>
   );

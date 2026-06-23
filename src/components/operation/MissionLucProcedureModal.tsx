@@ -148,7 +148,7 @@ function MissionChecklistModal({
   return (
     <>
       <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0">
+        <DialogContent className="w-full sm:max-w-4xl max-h-[90vh] overflow-y-auto p-0 md:rounded-lg">
           <DialogHeader className="px-6 pt-5 pb-3 border-b border-slate-100 dark:border-slate-700">
             <div className="flex items-start gap-3">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-50 border border-emerald-100">
@@ -162,7 +162,8 @@ function MissionChecklistModal({
               </div>
             </div>
           </DialogHeader>
-          <div className="px-6 py-4">
+
+          <div className="px-4 py-4 sm:px-6">
             {loading ? (
               <div className="flex items-center justify-center py-16">
                 <Loader2 className="h-6 w-6 animate-spin text-violet-500" />
@@ -187,6 +188,7 @@ function MissionChecklistModal({
               />
             )}
           </div>
+
           {saving && (
             <div className="px-6 pb-4 flex items-center gap-2 text-xs text-slate-400">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -545,25 +547,22 @@ function TaskRow({
   const ActionIcon = actionIcon[section];
 
   return (
-    <div className={`flex items-center gap-3 px-4 py-3 rounded-lg border transition-colors ${
-      done
+    <div className={`flex items-center gap-3 px-4 py-3 rounded-lg border transition-colors ${done
         ? isDark ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-emerald-200 bg-emerald-50'
         : isDark ? 'border-slate-700 bg-slate-800/40' : 'border-gray-200 bg-white'
-    }`}>
-      <div className={`shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-        done
+      }`}>
+      <div className={`shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center ${done
           ? 'border-emerald-500 bg-emerald-500'
           : isDark ? 'border-slate-500' : 'border-gray-300'
-      }`}>
+        }`}>
         {done && <CheckCircle2 className="h-3.5 w-3.5 text-white" />}
       </div>
 
       <div className="flex-1 min-w-0">
-        <p className={`text-xs font-medium leading-snug ${
-          done
+        <p className={`text-xs font-medium leading-snug ${done
             ? isDark ? 'text-emerald-400 line-through' : 'text-emerald-700 line-through'
             : isDark ? 'text-slate-200' : 'text-slate-800'
-        }`}>{name}</p>
+          }`}>{name}</p>
         <p className={`text-[10px] font-mono mt-0.5 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{code}</p>
       </div>
 
@@ -571,13 +570,12 @@ function TaskRow({
         <Button
           size="sm"
           onClick={onAction}
-          className={`shrink-0 h-7 px-2.5 text-[11px] font-semibold gap-1 ${
-            section === 'checklist'
+          className={`shrink-0 h-7 px-2.5 text-[11px] font-semibold gap-1 ${section === 'checklist'
               ? 'bg-violet-600 hover:bg-violet-700 text-white'
               : section === 'assignment'
-              ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-              : 'bg-blue-600 hover:bg-blue-700 text-white'
-          }`}
+                ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                : 'bg-blue-600 hover:bg-blue-700 text-white'
+            }`}
         >
           <ActionIcon className="h-3 w-3" />
           {actionLabel[section]}
@@ -603,9 +601,9 @@ export function MissionLucProcedureModal({ mission, isDark, onClose }: Props) {
   const [activeModal, setActiveModal] = useState<ActiveModal>({ type: 'none' });
 
   const SECTIONS: { key: Section; label: string; icon: React.ElementType; color: string }[] = [
-    { key: 'checklist',     label: t('planning.tasks.checklist'),     icon: ClipboardList,  color: 'text-violet-500' },
-    { key: 'communication', label: t('planning.tasks.communication'), icon: MessageSquare,  color: 'text-blue-500'   },
-    { key: 'assignment',    label: t('planning.tasks.assignment'),    icon: Users,          color: 'text-emerald-500' },
+    { key: 'checklist', label: t('planning.tasks.checklist'), icon: ClipboardList, color: 'text-violet-500' },
+    { key: 'communication', label: t('planning.tasks.communication'), icon: MessageSquare, color: 'text-blue-500' },
+    { key: 'assignment', label: t('planning.tasks.assignment'), icon: Users, color: 'text-emerald-500' },
   ];
 
   useEffect(() => {
@@ -621,8 +619,8 @@ export function MissionLucProcedureModal({ mission, isDark, onClose }: Props) {
             ? raw.procedure_steps.tasks
             : [];
           raw.procedure_steps.tasks = {
-            checklist:     rawTasks.flatMap((t: any) => t.checklist     ?? []),
-            assignment:    rawTasks.flatMap((t: any) => t.assignment    ?? []),
+            checklist: rawTasks.flatMap((t: any) => t.checklist ?? []),
+            assignment: rawTasks.flatMap((t: any) => t.assignment ?? []),
             communication: rawTasks.flatMap((t: any) => t.communication ?? []),
           };
         }
@@ -646,7 +644,7 @@ export function MissionLucProcedureModal({ mission, isDark, onClose }: Props) {
         setProgress(data.luc_procedure_progress ?? { checklist: {}, communication: {}, assignment: {} });
         setAllDone(!!data.luc_completed_at);
       })
-      .catch(() => {});
+      .catch(() => { });
   }
 
   const tasks = procedure?.procedure_steps?.tasks;
@@ -656,17 +654,17 @@ export function MissionLucProcedureModal({ mission, isDark, onClose }: Props) {
     return acc + Object.values(group).filter((v) => v === 'Y').length;
   }, 0);
 
-  const bg      = isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-gray-200';
+  const bg = isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-gray-200';
   const divider = isDark ? 'border-slate-700/60' : 'border-gray-100';
 
   return (
     <>
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
         onClick={onClose}
       >
         <div
-          className={`w-full max-w-5xl rounded-2xl border shadow-2xl flex flex-col max-h-[90vh] ${bg}`}
+          className={`w-full max-w-4xl rounded-2xl border shadow-2xl flex flex-col max-h-[90vh] ${bg}`}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -684,11 +682,10 @@ export function MissionLucProcedureModal({ mission, isDark, onClose }: Props) {
             </div>
             <div className="flex items-center gap-3 ml-4 shrink-0">
               {totalCount > 0 && (
-                <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
-                  allDone
+                <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${allDone
                     ? 'bg-emerald-500/15 text-emerald-500'
                     : isDark ? 'bg-slate-700 text-slate-300' : 'bg-gray-100 text-gray-600'
-                }`}>
+                  }`}>
                   {completedCount}/{totalCount}
                 </span>
               )}
@@ -703,9 +700,8 @@ export function MissionLucProcedureModal({ mission, isDark, onClose }: Props) {
 
           {/* All done banner */}
           {allDone && (
-            <div className={`mx-6 mt-4 rounded-xl border px-4 py-3 flex items-center gap-2.5 ${
-              isDark ? 'border-emerald-500/30 bg-emerald-500/10' : 'border-emerald-200 bg-emerald-50'
-            }`}>
+            <div className={`mx-6 mt-4 rounded-xl border px-4 py-3 flex items-center gap-2.5 ${isDark ? 'border-emerald-500/30 bg-emerald-500/10' : 'border-emerald-200 bg-emerald-50'
+              }`}>
               <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
               <p className={`text-xs font-medium ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>
                 {t('planning.tasks.allCompleted')}

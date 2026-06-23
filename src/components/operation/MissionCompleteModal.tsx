@@ -598,7 +598,7 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
     <Dialog open={open} onOpenChange={(o) => { if (!o) (onSkip ?? onClose)(); }}>
       <DialogContent
         className={cn(
-          "max-w-175! w-[95vw] max-h-[90vh] overflow-hidden flex flex-col p-0",
+          "max-w-[1200px] w-[95vw] max-h-[90vh] overflow-hidden flex flex-col p-0",
           isDark ? "bg-[#0f1419] border-white/8" : "bg-white border-slate-200"
         )}
       >
