@@ -23,10 +23,13 @@ export async function GET(req: NextRequest) {
     }
 
     const mode = req.nextUrl.searchParams.get('mode');
+    const pageParam = req.nextUrl.searchParams.get('page');
+    const page = Math.max(1, parseInt(pageParam ?? '1', 10) || 1);
+    const pageSize = 20;
 
     if (mode === 'latest') {
-      const { flights, total } = await fetchLatestFlights(creds.token, creds.orgId);
-      return NextResponse.json({ success: true, flights, total, mode: 'latest' });
+      const { flights, total } = await fetchLatestFlights(creds.token, creds.orgId, page, pageSize);
+      return NextResponse.json({ success: true, flights, total, mode: 'latest', page, pageSize });
     }
 
     const windowParam = req.nextUrl.searchParams.get('window');
@@ -35,8 +38,8 @@ export async function GET(req: NextRequest) {
       1440,
     );
 
-    const { flights, total } = await fetchRecentFlights(creds.token, creds.orgId, windowMinutes);
-    return NextResponse.json({ success: true, flights, total, windowMinutes });
+    const { flights, total } = await fetchRecentFlights(creds.token, creds.orgId, windowMinutes, page, pageSize);
+    return NextResponse.json({ success: true, flights, total, windowMinutes, page, pageSize });
   } catch (err: any) {
     console.error('[GET /api/integrations/flytbase/flights]', err);
     return NextResponse.json({ success: false, message: err.message }, { status: 500 });

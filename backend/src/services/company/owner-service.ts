@@ -15,6 +15,7 @@ export interface OwnerData {
     owner_active: string;
     drone_atc_enabled: boolean;
     d_flight_enabled: boolean;
+    flytrelay_enabled: boolean;
     email_notifications_enabled: boolean;
     easa_operator_code: string | null;
     created_at: string;
@@ -34,6 +35,7 @@ export interface AddOwnerWithAdminPayload {
     owner_website: string;
     owner_active: string;
     drone_atc_enabled?: boolean;
+    flytrelay_enabled?: boolean;
     email_notifications_enabled?: boolean;
     easa_operator_code?: string;
     tax_id?: string;
@@ -71,6 +73,7 @@ export interface UpdateOwnerPayload {
     owner_active: string;
     drone_atc_enabled?: boolean;
     d_flight_enabled?: boolean;
+    flytrelay_enabled?: boolean;
     email_notifications_enabled?: boolean;
     easa_operator_code?: string | null;
     tax_id?: string | null;
@@ -281,6 +284,7 @@ export async function updateOwner(id: string, payload: UpdateOwnerPayload) {
             owner_active: payload.owner_active,
             drone_atc_enabled: payload.drone_atc_enabled ?? false,
             d_flight_enabled: payload.d_flight_enabled ?? false,
+            flytrelay_enabled: payload.flytrelay_enabled ?? false,
             email_notifications_enabled: payload.email_notifications_enabled ?? false,
             easa_operator_code: payload.easa_operator_code ?? null,
             tax_id: payload.tax_id ?? null,
@@ -446,6 +450,7 @@ export async function addOwnerWithAdmin(payload: AddOwnerWithAdminPayload) {
             owner_website: payload.owner_website,
             owner_active: payload.owner_active,
             drone_atc_enabled: payload.drone_atc_enabled ?? false,
+            flytrelay_enabled: payload.flytrelay_enabled ?? false,
             email_notifications_enabled: payload.email_notifications_enabled ?? false,
             tax_id: payload.tax_id || null,
             registration_number: payload.registration_number || null,

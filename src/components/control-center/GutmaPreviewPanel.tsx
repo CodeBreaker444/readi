@@ -6,15 +6,15 @@ import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-    HiChip,
-    HiClock,
-    HiFlag,
-    HiInformationCircle,
-    HiLocationMarker,
-    HiMap,
-    HiOutlineDocumentText,
-    HiTable,
-    HiUser,
+  HiChip,
+  HiClock,
+  HiFlag,
+  HiInformationCircle,
+  HiLocationMarker,
+  HiMap,
+  HiOutlineDocumentText,
+  HiTable,
+  HiUser,
 } from 'react-icons/hi';
 
 const FlightPathMapDynamic = dynamic(
@@ -127,7 +127,7 @@ export function GutmaPreviewPanel({
     preview.waypoints.some((wp) => wp.latitude != null && wp.longitude != null)
   );
 
-  const totalWaypointRows = preview?.waypoints.length ?? 0;
+  const totalWaypointRows = preview?.waypoints?.length ?? 0;
   const totalWaypointPages = Math.max(1, Math.ceil(totalWaypointRows / waypointPageSize));
   const safeWaypointPage = Math.min(waypointPage, totalWaypointPages);
   const waypointStart = (safeWaypointPage - 1) * waypointPageSize;

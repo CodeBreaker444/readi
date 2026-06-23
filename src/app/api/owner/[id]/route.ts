@@ -1,7 +1,7 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { deleteOwner, getOwnerById, updateOwner } from '@/backend/services/company/owner-service';
-import { getUserSession } from '@/lib/auth/server-session';
 import { apiError, forbidden, internalError, notFound, unauthorized, zodError } from '@/lib/api-error';
+import { getUserSession } from '@/lib/auth/server-session';
 import { E } from '@/lib/error-codes';
 import { NextResponse } from 'next/server';
 import z from 'zod';
@@ -35,6 +35,7 @@ const editOwnerValidation = z.object({
     owner_postal_code: z.string().optional().nullable(),
     owner_active: z.enum(['Y', 'N']),
     drone_atc_enabled: z.boolean().optional(),
+    flytrelay_enabled: z.boolean().optional(),
     d_flight_enabled: z.boolean().optional(),
     email_notifications_enabled: z.boolean().optional(),
     easa_operator_code: z.string().max(100).optional().nullable(),

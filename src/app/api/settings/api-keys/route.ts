@@ -1,6 +1,6 @@
 import { createApiKey, listApiKeys } from '@/backend/services/mission/flight-request-service';
-import { requirePermission } from '@/lib/auth/api-auth';
-import { apiError, internalError, zodError } from '@/lib/api-error';
+import { internalError, zodError } from '@/lib/api-error';
+import { requireAuth } from '@/lib/auth/api-auth';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -12,7 +12,7 @@ const CreateSchema = z.object({
 
 export async function GET() {
   try {
-    const { session, error } = await requirePermission('view_config');
+    const { session, error } = await requireAuth();
     if (error) return error;
 
     const keys = await listApiKeys(session!.user.ownerId);
@@ -24,7 +24,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const { session, error } = await requirePermission('view_config');
+   const { session, error } = await requireAuth();
     if (error) return error;
 
     const body = await req.json();

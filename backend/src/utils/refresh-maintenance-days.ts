@@ -61,7 +61,8 @@ export async function refreshMaintenanceDays(toolIds: number[]): Promise<void> {
         where: { component_id: upd.id },
         data: { current_maintenance_days: upd.days },
       })
-    )
+    ),
+    { timeout: 30000 } // 30 seconds
   );
 }
 

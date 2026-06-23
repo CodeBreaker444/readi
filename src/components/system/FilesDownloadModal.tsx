@@ -101,7 +101,7 @@ export function FilesDownloadModal({
         fetch('/api/system/component/list', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tool_id: toolId }),
+            body: JSON.stringify({ tool_id: toolId, include_detached: true }),
         })
             .then(r => r.json())
             .then(async (compData) => {

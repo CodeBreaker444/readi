@@ -1649,7 +1649,9 @@
         "hmin": "h.min",
         "daysTracked": "Tage werden automatisch ab dem letzten Wartungsdatum erfasst.",
         "overdue": "Wartung ist überfällig — Wartung bald einplanen",
-        "autoSynced": "Auto-synchronisiert"
+        "autoSynced": "Auto-synchronisiert",
+        "manualInput": "Manuelle Eingabe",
+        "cycles": "Zyklen"
       },
       "logs": {
         "attachedLogs": "Angehängte Protokolle",
@@ -1985,6 +1987,10 @@
         "noPlansForClient": "— keine Pläne für diesen Kunden",
         "noPlansAvailable": "Keine Pläne verfügbar",
         "selectMissionPlan": "Missionsplan auswählen…",
+        "missionPlanning": "Geplante Mission",
+        "noMissionsForPlan": "— keine Missionen in diesem Plan",
+        "noMissionsAvailable": "Keine Missionen verfügbar",
+        "selectMission": "Mission auswählen…",
         "flightMode": "Flugmodus",
         "flightModeRC": "RC (Fernsteuerung)",
         "flightModeDock": "DOCK (Dockingstation)",
