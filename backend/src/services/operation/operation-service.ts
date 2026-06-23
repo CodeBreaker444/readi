@@ -72,6 +72,7 @@ export async function listOperations(
         fk_tool_id: true,
         fk_mission_status_id: true,
         fk_planning_id: true,
+        fk_mission_planning_id: true,
         fk_erp_group_id: true,
         fk_mission_type_id: true,
         fk_mission_category_id: true,
@@ -233,6 +234,7 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
     fk_tool_id: (input as any).fk_tool_id ?? null,
     fk_client_id: (input as any).fk_client_id ?? null,
     fk_planning_id: input.fk_planning_id ?? null,
+    fk_mission_planning_id: (input as any).fk_mission_planning_id ?? null,
     fk_mission_type_id: (input as any).fk_mission_type_id ?? null,
     fk_mission_category_id: (input as any).fk_mission_category_id ?? null,
     fk_luc_procedure_id: fkLuc,
@@ -267,6 +269,7 @@ export async function updateOperation(id: number, input: UpdateOperationSchema):
   if (input.fk_tool_id !== undefined) updatePayload.fk_tool_id = input.fk_tool_id;
   if ((input as any).fk_client_id !== undefined) updatePayload.fk_client_id = (input as any).fk_client_id;
   if (input.fk_planning_id !== undefined) updatePayload.fk_planning_id = input.fk_planning_id;
+  if ((input as any).fk_mission_planning_id !== undefined) updatePayload.fk_mission_planning_id = (input as any).fk_mission_planning_id;
   if (input.fk_mission_status_id !== undefined) updatePayload.fk_mission_status_id = input.fk_mission_status_id;
   if ((input as any).fk_mission_type_id !== undefined) updatePayload.fk_mission_type_id = (input as any).fk_mission_type_id;
   if ((input as any).fk_mission_category_id !== undefined) updatePayload.fk_mission_category_id = (input as any).fk_mission_category_id;

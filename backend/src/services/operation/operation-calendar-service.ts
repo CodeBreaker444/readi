@@ -2,10 +2,10 @@ import { supabase } from '@/backend/database/database';
 import { seedLucProcedureProgressFromSteps } from '@/backend/services/operation/luc-procedure-progress';
 import { assertToolNotInMaintenance, assertToolNotNonOperational } from '@/backend/services/system/maintenance-ticket';
 import {
-  CreateOperationCalendarInput,
-  OperationCalendarEvent,
-  OperationCalenderStatus,
-  OperationItem
+    CreateOperationCalendarInput,
+    OperationCalendarEvent,
+    OperationCalenderStatus,
+    OperationItem
 } from '@/config/types/operation';
 import { prisma } from '@/lib/prisma';
 
@@ -47,6 +47,7 @@ export const getOperationCalendarEvents = async (
       fk_mission_type_id: true,
       fk_mission_category_id: true,
       fk_planning_id: true,
+      fk_mission_planning_id: true,
       fk_owner_id: true,
       recurring_group_id: true,
       mission_group_label: true,
