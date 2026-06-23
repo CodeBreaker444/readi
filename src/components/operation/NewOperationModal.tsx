@@ -446,7 +446,6 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
 
             const title = data?.error || err.message || fallback
 
-            // Combine the error message with field description for a single clear toast
             const errorMessage = fieldDescription ? `${title}\n\n${fieldDescription}` : title
 
             toastWithDcc({ title: errorMessage, variant: 'error' }, data?.dcc)
