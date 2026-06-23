@@ -1,7 +1,7 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
- 
+import { Checkbox } from "@/components/ui/checkbox";
 import { useTimezone } from "@/components/TimezoneProvider";
 import { cn, formatDateInTz } from "@/lib/utils";
 import {
@@ -31,6 +31,7 @@ interface ComponentInfo {
   last_maintenance_date: string | null;
   status: "OK" | "ALERT" | "DUE";
   trigger: string[];
+  battery_cycle_ratio: number;
 }
 
 interface SystemData {
@@ -45,6 +46,7 @@ interface ComponentInput {
   component_id: number;
   add_flights: number;
   add_hours: number;
+  manual_cycles_input?: boolean;
 }
 
 const STATUS_CONFIG = {
@@ -149,9 +151,13 @@ interface MaintenanceTabProps {
   systemData: SystemData | null;
   inputs: Record<number, ComponentInput>;
   hoursRaw: Record<number, string>;
+  cyclesRaw: Record<number, string>;
+  manualCyclesInput: Record<number, boolean>;
   autoSyncedIds: Set<number>;
   isDark: boolean;
   onToggleFlight: (compId: number) => void;
+  onManualCyclesToggle: (compId: number, checked: boolean) => void;
+  onCyclesChange: (compId: number, value: string) => void;
   onHoursChange: (compId: number, value: string) => void;
   onResetHours: (compId: number) => void;
 }
@@ -161,9 +167,13 @@ export function MaintenanceTab({
   systemData,
   inputs,
   hoursRaw,
+  cyclesRaw,
+  manualCyclesInput,
   autoSyncedIds,
   isDark,
   onToggleFlight,
+  onManualCyclesToggle,
+  onCyclesChange,
   onHoursChange,
   onResetHours,
 }: MaintenanceTabProps) {
@@ -213,8 +223,13 @@ export function MaintenanceTab({
         {systemData!.components.map((comp) => {
           const cfg = STATUS_CONFIG[comp.status];
           const inp = inputs[comp.component_id];
+          const ratio = comp.battery_cycle_ratio ?? 1;
+          const isManualCycles = manualCyclesInput[comp.component_id] ?? false;
+          const effectiveCycles = isManualCycles
+            ? Math.round((inp?.add_flights || 0) * 100) / 100
+            : Math.round((inp?.add_flights || 0) * ratio * 100) / 100;
           const previewHours = addHhmmHours(comp.current_hours, inp?.add_hours || 0);
-          const previewFlights = comp.current_flights + (inp?.add_flights || 0);
+          const previewFlights = Math.round((comp.current_flights + effectiveCycles) * 100) / 100;
           const hasFlightLimit = comp.limit_flight > 0;
           const hasHourLimit = comp.limit_hour > 0;
           const hasDayLimit = comp.limit_day > 0;
@@ -271,7 +286,7 @@ export function MaintenanceTab({
                   <CycleProgressBar
                     current={previewFlights}
                     limit={comp.limit_flight}
-                    label={t("operations.missionComplete.maintenance.flights")}
+                    label={ratio !== 1 ? t("operations.missionComplete.maintenance.cycles") : t("operations.missionComplete.maintenance.flights")}
                     icon={Plane}
                     status={comp.status}
                     isDark={isDark}
@@ -307,24 +322,65 @@ export function MaintenanceTab({
                   </p>
                   <div className="flex flex-wrap gap-3">
                     {hasFlightLimit && (
-                      <div className="flex items-center gap-2">
-                        <span className={cn("text-[10px] font-medium w-10", isDark ? "text-slate-400" : "text-slate-500")}>
-                          {t("operations.missionComplete.maintenance.flights")}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => onToggleFlight(comp.component_id)}
-                          className={cn(
-                            "h-7 px-3 cursor-pointer rounded-md text-xs font-semibold border transition-colors",
-                            inp?.add_flights === 1
-                              ? isDark ? "border-violet-500 bg-violet-500/20 text-violet-300" : "border-violet-500 bg-violet-50 text-violet-700"
-                              : isDark ? "border-slate-600 bg-slate-700 text-slate-200 hover:bg-slate-600" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                      <div className="space-y-1">
+                        {ratio !== 1 && (
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <Checkbox
+                              checked={isManualCycles}
+                              onCheckedChange={(checked) => onManualCyclesToggle(comp.component_id, checked === true)}
+                            />
+                            <span className={cn("text-[10px] font-medium", isDark ? "text-slate-400" : "text-slate-500")}>
+                              {t("operations.missionComplete.maintenance.manualInput")}
+                            </span>
+                          </label>
+                        )}
+                        <div className="flex items-center gap-2">
+                          {isManualCycles ? (
+                            <>
+                              <span className={cn("text-[10px] font-medium w-10", isDark ? "text-slate-400" : "text-slate-500")}>
+                                {t("operations.missionComplete.maintenance.cycles")}
+                              </span>
+                              <input
+                                type="text"
+                                inputMode="decimal"
+                                placeholder="0.00"
+                                value={cyclesRaw[comp.component_id] ?? ""}
+                                onChange={(e) => onCyclesChange(comp.component_id, e.target.value)}
+                                className={cn(
+                                  "h-7 w-20 rounded-md text-xs font-semibold border transition-colors text-center tabular-nums outline-none",
+                                  isDark
+                                    ? "border-slate-600 bg-slate-700 text-slate-200 placeholder:text-slate-600 focus:border-violet-500 focus:ring-1 focus:ring-violet-500/30"
+                                    : "border-slate-200 bg-white text-slate-700 placeholder:text-slate-300 focus:border-violet-500 focus:ring-1 focus:ring-violet-500/30"
+                                )}
+                              />
+                            </>
+                          ) : (
+                            <>
+                              <span className={cn("text-[10px] font-medium w-10", isDark ? "text-slate-400" : "text-slate-500")}>
+                                {t("operations.missionComplete.maintenance.flights")}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => onToggleFlight(comp.component_id)}
+                                className={cn(
+                                  "h-7 px-3 cursor-pointer rounded-md text-xs font-semibold border transition-colors",
+                                  inp?.add_flights === 1
+                                    ? isDark ? "border-violet-500 bg-violet-500/20 text-violet-300" : "border-violet-500 bg-violet-50 text-violet-700"
+                                    : isDark ? "border-slate-600 bg-slate-700 text-slate-200 hover:bg-slate-600" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                                )}
+                              >+1</button>
+                            </>
                           )}
-                        >+1</button>
-                        {inp?.add_flights > 0 && (
-                          <span className={cn("text-[10px] tabular-nums", isDark ? "text-slate-400" : "text-slate-500")}>
-                            {comp.current_flights} → {previewFlights}
-                          </span>
+                          {inp?.add_flights > 0 && (
+                            <span className={cn("text-[10px] tabular-nums", isDark ? "text-slate-400" : "text-slate-500")}>
+                              {comp.current_flights} → {previewFlights}
+                            </span>
+                          )}
+                        </div>
+                        {ratio !== 1 && !isManualCycles && (
+                          <p className={cn("text-[10px]", isDark ? "text-slate-500" : "text-slate-400")}>
+                            1 flight = {ratio} cycle{ratio !== 1 ? "s" : ""}
+                          </p>
                         )}
                       </div>
                     )}

@@ -40,6 +40,7 @@ interface ComponentInfo {
   last_maintenance_date: string | null;
   status: "OK" | "ALERT" | "DUE";
   trigger: string[];
+  battery_cycle_ratio: number;
 }
 
 interface SystemData {
@@ -54,6 +55,7 @@ interface ComponentInput {
   component_id: number;
   add_flights: number;
   add_hours: number;
+  manual_cycles_input?: boolean;
 }
 
 interface FlightLog {
@@ -127,6 +129,8 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
   const [systemData, setSystemData] = useState<SystemData | null>(null);
   const [inputs, setInputs] = useState<Record<number, ComponentInput>>({});
   const [hoursRaw, setHoursRaw] = useState<Record<number, string>>({});
+  const [cyclesRaw, setCyclesRaw] = useState<Record<number, string>>({});
+  const [manualCyclesInput, setManualCyclesInput] = useState<Record<number, boolean>>({});
 
   // Logs state
   const [logs, setLogs] = useState<FlightLog[]>([]);
@@ -171,12 +175,18 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
         setSystemData(sys);
         const init: Record<number, ComponentInput> = {};
         const initRaw: Record<number, string> = {};
+        const initCyclesRaw: Record<number, string> = {};
+        const initManual: Record<number, boolean> = {};
         for (const c of sys.components) {
           init[c.component_id] = { component_id: c.component_id, add_flights: 0, add_hours: 0 };
           initRaw[c.component_id] = "";
+          initCyclesRaw[c.component_id] = "";
+          initManual[c.component_id] = false;
         }
         setInputs(init);
         setHoursRaw(initRaw);
+        setCyclesRaw(initCyclesRaw);
+        setManualCyclesInput(initManual);
       }
     } catch (e: any) {
       toast.error(e.response?.data?.message ?? t("operations.missionComplete.toast.loadError"));
@@ -265,6 +275,54 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
       ...prev,
       [compId]: { ...prev[compId], add_flights: prev[compId]?.add_flights === 1 ? 0 : 1 },
     }));
+  };
+
+  const handleManualCyclesToggle = (compId: number, checked: boolean) => {
+    setManualCyclesInput((prev) => ({ ...prev, [compId]: checked }));
+    setCyclesRaw((prev) => ({ ...prev, [compId]: "" }));
+    setInputs((prev) => ({
+      ...prev,
+      [compId]: {
+        ...prev[compId],
+        add_flights: 0,
+        manual_cycles_input: checked,
+      },
+    }));
+    setAutoSyncedIds((prev) => {
+      const next = new Set(prev);
+      next.delete(compId);
+      return next;
+    });
+  };
+
+  const handleCyclesChange = (compId: number, rawValue: string) => {
+    if (rawValue === "") {
+      setCyclesRaw((prev) => ({ ...prev, [compId]: "" }));
+      setInputs((prev) => ({
+        ...prev,
+        [compId]: { ...prev[compId], add_flights: 0, manual_cycles_input: true },
+      }));
+      return;
+    }
+    if (!/^\d{0,4}(\.\d{0,2})?$/.test(rawValue)) return;
+
+    const numValue = parseFloat(rawValue) || 0;
+    const comp = systemData?.components.find((c) => c.component_id === compId);
+    if (comp && comp.limit_flight > 0) {
+      const remaining = Math.round((comp.limit_flight - comp.current_flights) * 100) / 100;
+      if (numValue > remaining) return;
+    }
+
+    setCyclesRaw((prev) => ({ ...prev, [compId]: rawValue }));
+    setInputs((prev) => ({
+      ...prev,
+      [compId]: { ...prev[compId], add_flights: numValue, manual_cycles_input: true },
+    }));
+    setAutoSyncedIds((prev) => {
+      const next = new Set(prev);
+      next.delete(compId);
+      return next;
+    });
   };
 
   const handleResetHours = (compId: number) => {
@@ -465,6 +523,7 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
                 if (!comp.serial_number) continue;
                 const sn = comp.serial_number.trim();
                 if (!gutmaSnMap.has(sn)) continue;
+                if (manualCyclesInput[comp.component_id]) continue;
                 newSyncedIds.add(comp.component_id);
                 const current = next[comp.component_id] ?? { component_id: comp.component_id, add_flights: 0, add_hours: 0 };
                 next[comp.component_id] = {
@@ -598,9 +657,13 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
               systemData={systemData}
               inputs={inputs}
               hoursRaw={hoursRaw}
+              cyclesRaw={cyclesRaw}
+              manualCyclesInput={manualCyclesInput}
               autoSyncedIds={autoSyncedIds}
               isDark={isDark}
               onToggleFlight={handleToggleFlight}
+              onManualCyclesToggle={handleManualCyclesToggle}
+              onCyclesChange={handleCyclesChange}
               onHoursChange={handleHoursChange}
               onResetHours={handleResetHours}
             />
