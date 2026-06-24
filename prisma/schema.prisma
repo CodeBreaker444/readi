@@ -2777,6 +2777,7 @@ model public_users {
   flytbase_api_token                                                         String?
   flytbase_org_id                                                            String?
   flytbase_token_name                                                        String?
+  flytrelay_access                                                           Boolean?                                 @default(false)
   alert_log_alert_log_acknowledged_by_user_idTousers                         alert_log[]                              @relation("alert_log_acknowledged_by_user_idTousers")
   alert_log_alert_log_assigned_to_user_idTousers                             alert_log[]                              @relation("alert_log_assigned_to_user_idTousers")
   alert_log_alert_log_resolved_by_user_idTousers                             alert_log[]                              @relation("alert_log_resolved_by_user_idTousers")

@@ -7,7 +7,7 @@ import { useState } from 'react';
 
 type Tab = 'flytbase' | 'flytrelay';
 
-export function FlightsTabs({ flytbaseToken, flytrelayEnabled }: { flytbaseToken: string | null; flytrelayEnabled: boolean }) {
+export function FlightsTabs({ flytbaseToken, flytrelayAccess }: { flytbaseToken: string | null; flytrelayAccess: boolean }) {
   const { isDark } = useTheme();
   const [activeTab, setActiveTab] = useState<Tab>('flytbase');
 
@@ -43,7 +43,7 @@ export function FlightsTabs({ flytbaseToken, flytrelayEnabled }: { flytbaseToken
                 >
                   FlytBase
                 </button>
-                {flytrelayEnabled && (
+                {flytrelayAccess && (
                   <button
                     onClick={() => setActiveTab('flytrelay')}
                     className={`px-3 py-1.5 cursor-pointer rounded-md text-xs font-medium transition-colors ${
@@ -66,7 +66,7 @@ export function FlightsTabs({ flytbaseToken, flytrelayEnabled }: { flytbaseToken
       <div className="flex-1 overflow-hidden px-6 pb-6">
         <div className="mx-auto max-w-[1800px] h-full">
           {activeTab === 'flytbase' && <FlytbaseFlights token={flytbaseToken} isActive={true} />}
-          {flytrelayEnabled && activeTab === 'flytrelay' && <FlytrelayFlights token={flytbaseToken} isActive={true} />}
+          {flytrelayAccess && activeTab === 'flytrelay' && <FlytrelayFlights token={flytbaseToken} isActive={true} />}
         </div>
       </div>
     </div>

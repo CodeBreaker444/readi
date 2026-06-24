@@ -190,9 +190,9 @@ export async function addClient(input: CreateClientInput): Promise<{ code: numbe
     const passwordHash = await bcrypt.hash(temp_password, 10);
 
     try {
-      await prisma.public_users.update({
-        where: { auth_user_id: authData.user.id },
+      await prisma.public_users.create({
         data: {
+          auth_user_id: authData.user.id,
           fk_owner_id: clientFields.fk_owner_id,
           fk_client_id: clientRow.client_id,
           username,
@@ -203,7 +203,7 @@ export async function addClient(input: CreateClientInput): Promise<{ code: numbe
       });
     } catch (userError: any) {
       await prisma.client.delete({ where: { client_id: clientRow.client_id } });
-      await supabase.auth.admin.deleteUser(authData.user.id).catch(() => {});
+      await supabase.auth.admin.deleteUser(authData.user.id).catch(() => { });
       return { code: 0, error: userError.message };
     }
 
@@ -214,7 +214,7 @@ export async function addClient(input: CreateClientInput): Promise<{ code: numbe
       username,
       passcode: temp_password,
       loginlink: activationLink,
-    }).catch(() => {});
+    }).catch(() => { });
 
     return { code: 1, data: clientRow as unknown as ClientData, temp_password };
   } catch (e: any) {
