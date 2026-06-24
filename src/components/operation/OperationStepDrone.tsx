@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils'
 import { AlertTriangle, Shield } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { inputCls, labelCls, scCls, SectionTitle, siCls } from './OperationModalHelpers'
-import { Drone, FlightMode, OpType, PlanningOption } from './OperationModalTypes'
+import { Drone, FlightMode, MissionPlanningOption, OpType, PlanningOption } from './OperationModalTypes'
 
 interface Props {
     opType: OpType
@@ -19,6 +19,10 @@ interface Props {
     planId: string
     onPlanChange: (id: string) => void
     clientPlannings: PlanningOption[]
+    missionPlannings: MissionPlanningOption[]
+    missionPlanningId: string
+    onMissionPlanningChange: (id: string) => void
+    loadingMissionPlannings: boolean
     selectedPlanName?: string
     flightMode: FlightMode
     onFlightModeChange: (m: FlightMode) => void
@@ -32,7 +36,7 @@ interface Props {
 
 export function OperationStepDrone({
     opType, onOpTypeChange, droneId, onDroneChange, drones, loadingDrones,
-    planId, onPlanChange, clientPlannings, selectedPlanName, flightMode, onFlightModeChange,
+    planId, onPlanChange, clientPlannings, missionPlannings, missionPlanningId, onMissionPlanningChange, loadingMissionPlannings, selectedPlanName, flightMode, onFlightModeChange,
     loadingOptions, isDark, erpGroups, erpGroupId, onErpGroupChange, loadingErpGroups,
 }: Props) {
     const { t } = useTranslation()
@@ -218,6 +222,47 @@ export function OperationStepDrone({
                                         <SelectItem key={p.planning_id} value={String(p.planning_id)} disabled={!isActive} className={cn(siCls(isDark), !isActive && 'opacity-50')}>
                                             <span className="flex items-center gap-2">
                                                 <span>{p.planning_name}</span>
+                                                {!isActive && (
+                                                    <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 border border-slate-200 rounded px-1.5 py-0.5 leading-none">
+                                                        Inactive
+                                                    </span>
+                                                )}
+                                            </span>
+                                        </SelectItem>
+                                    )
+                                })}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div>
+                        <Label className={labelCls(isDark)}>
+                            {t('operations.newOperation.drone.missionPlanning')} <span className="text-red-500">*</span>
+                            {planId && missionPlannings.length === 0 && !loadingMissionPlannings && (
+                                <span className="ml-1 text-[11px] text-amber-500 font-normal">{t('operations.newOperation.drone.noMissionsForPlan')}</span>
+                            )}
+                        </Label>
+                        <Select
+                            value={missionPlanningId}
+                            onValueChange={onMissionPlanningChange}
+                            disabled={loadingMissionPlannings || (missionPlannings.length === 0 && !missionPlanningId)}
+                        >
+                            <SelectTrigger className={inputCls(isDark)}>
+                                <SelectValue placeholder={
+                                    loadingMissionPlannings
+                                        ? t('operations.newOperation.scheduler.missionIdPlaceholder')
+                                        : missionPlannings.length === 0
+                                            ? t('operations.newOperation.drone.noMissionsAvailable')
+                                            : t('operations.newOperation.drone.selectMission')
+                                } />
+                            </SelectTrigger>
+                            <SelectContent className={scCls(isDark)}>
+                                {missionPlannings.map(m => {
+                                    const isActive = !m.mission_planning_active || m.mission_planning_active === 'Y'
+                                    return (
+                                        <SelectItem key={m.mission_planning_id} value={String(m.mission_planning_id)} disabled={!isActive} className={cn(siCls(isDark), !isActive && 'opacity-50')}>
+                                            <span className="flex items-center gap-2">
+                                                <span>{m.mission_planning_code} — {m.mission_planning_desc}</span>
                                                 {!isActive && (
                                                     <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 border border-slate-200 rounded px-1.5 py-0.5 leading-none">
                                                         Inactive

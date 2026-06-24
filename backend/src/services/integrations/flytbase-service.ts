@@ -250,8 +250,10 @@ function mapFlightLog(f: Record<string, unknown>): FlytbaseFlight {
 export async function fetchLatestFlights(
   token: string,
   orgId: string,
+  page = 1,
+  pageSize = 20,
 ): Promise<{ flights: FlytbaseFlight[]; total: number }> {
-  const params = new URLSearchParams({ page: '1', limit: '20', archived: 'false' });
+  const params = new URLSearchParams({ page: String(page), limit: String(pageSize), archived: 'false' });
 
   const controller = new AbortController();
   const t = setTimeout(() => controller.abort(), 10_000);
@@ -286,13 +288,15 @@ export async function fetchRecentFlights(
   token: string,
   orgId: string,
   windowMinutes = 30,
+  page = 1,
+  pageSize = 20,
 ): Promise<{ flights: FlytbaseFlight[]; total: number }> {
   const now = Date.now();
   const startDate = now - windowMinutes * 60 * 1000;
 
   const params = new URLSearchParams({
-    page: '1',
-    limit: '50',
+    page: String(page),
+    limit: String(pageSize),
     archived: 'false',
     startDate: String(startDate),
     endDate: String(now),

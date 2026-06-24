@@ -33,11 +33,12 @@ import {
     FlightMode,
     GenericOption,
     LucOption,
+    MissionPlanningOption,
     OpType,
     PilotOption,
     PlanningOption,
     SchedulerFormData,
-    STEPS,
+    STEPS
 } from './OperationModalTypes'
 import { OperationStepClient } from './OperationStepClient'
 import { OperationStepDrone } from './OperationStepDrone'
@@ -87,6 +88,9 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
     const [loadingDrones, setLoadingDrones] = useState(false)
     const [plannings, setPlannings] = useState<PlanningOption[]>([])
     const [planId, setPlanId] = useState('')
+    const [missionPlannings, setMissionPlannings] = useState<MissionPlanningOption[]>([])
+    const [missionPlanningId, setMissionPlanningId] = useState('')
+    const [loadingMissionPlannings, setLoadingMissionPlannings] = useState(false)
     const [flightMode, setFlightMode] = useState<FlightMode>('RC')
 
     const [types, setTypes] = useState<GenericOption[]>([])
@@ -202,7 +206,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
 
     useEffect(() => {
         if (!clientId) {
-            setDrones([]); setDroneId(''); setPlanId('')
+            setDrones([]); setDroneId(''); setPlanId(''); setMissionPlanningId('')
             return
         }
         // On initial edit load the ref is set — fetch drones but keep pre-filled selections
@@ -215,6 +219,24 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
             .catch(() => toast.error(t('operations.newOperation.toast.loadOptionsError')))
             .finally(() => setLoadingDrones(false))
     }, [clientId])
+
+    useEffect(() => {
+        if (!planId || opType !== 'PDRA') {
+            setMissionPlannings([]); setMissionPlanningId('')
+            return
+        }
+        setLoadingMissionPlannings(true)
+        axios.post('/api/evaluation/planning/logbook', { p_id: parseInt(planId) })
+            .then(r => {
+                const missions = (r.data.data ?? []) as MissionPlanningOption[]
+                setMissionPlannings(missions)
+                if (missions.length > 0 && !missionPlanningId) {
+                    setMissionPlanningId(String(missions[0].mission_planning_id))
+                }
+            })
+            .catch(() => toast.error(t('operations.newOperation.toast.loadOptionsError')))
+            .finally(() => setLoadingMissionPlannings(false))
+    }, [planId, opType])
 
     useEffect(() => {
         if (step === 3 && !schedulerForm.missionCode) refreshMissionId()
@@ -316,8 +338,9 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
 
     function resetForm() {
         setStep(1); setEditTab('data'); setIsSubmitting(false)
-        setClientId(''); setOpType('OPEN'); setDroneId(''); setPlanId(''); setFlightMode('RC')
+        setClientId(''); setOpType('OPEN'); setDroneId(''); setPlanId(''); setMissionPlanningId(''); setFlightMode('RC')
         setPilotId(''); setVisualObserverIds([]); setDrones([]); setClients([]); setPlannings([])
+        setMissionPlannings([]); setLoadingMissionPlannings(false)
         setTypes([]); setCategories([]); setLucProcedures([]); setPilots([])
         setExistingMissionCodes(new Set()); setGeneratingId(false)
         setConflicts([]); setConflictChecked(false)
@@ -390,6 +413,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                     fk_mission_type_id: schedulerForm.typeId ? parseInt(schedulerForm.typeId) : null,
                     fk_mission_category_id: schedulerForm.categoryId ? parseInt(schedulerForm.categoryId) : null,
                     fk_planning_id: planId ? parseInt(planId) : null,
+                    fk_mission_planning_id: missionPlanningId ? parseInt(missionPlanningId) : null,
                     fk_erp_group_id: erpGroupId && erpGroupId !== 'none' ? parseInt(erpGroupId) : null,
                     location: schedulerForm.location || undefined,
                     notes: schedulerForm.notes || undefined,
@@ -413,6 +437,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                 fk_mission_type_id: schedulerForm.typeId ? parseInt(schedulerForm.typeId) : null,
                 fk_mission_category_id: schedulerForm.categoryId ? parseInt(schedulerForm.categoryId) : null,
                 fk_planning_id: planId ? parseInt(planId) : null,
+                fk_mission_planning_id: missionPlanningId ? parseInt(missionPlanningId) : null,
                 fk_luc_procedure_id: parseInt(schedulerForm.lucId),
                 fk_erp_group_id: erpGroupId && erpGroupId !== 'none' ? parseInt(erpGroupId) : null,
                 location: schedulerForm.location || undefined,
@@ -446,12 +471,9 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
 
             const title = data?.error || err.message || fallback
 
-            toastWithDcc({ title, variant: 'error' }, data?.dcc)
+            const errorMessage = fieldDescription ? `${title}\n\n${fieldDescription}` : title
 
-            // showing field errors as a follow-up description toast when validation fails
-            if (fieldDescription) {
-                toast.error(title, { description: fieldDescription, duration: 6000 })
-            }
+            toastWithDcc({ title: errorMessage, variant: 'error' }, data?.dcc)
         } finally {
             setIsSubmitting(false)
         }
@@ -586,14 +608,18 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                     {(!isEdit || editTab === 'data') && step === 2 && (
                         <OperationStepDrone
                             opType={opType}
-                            onOpTypeChange={t => { setOpType(t); setPlanId(''); setFlightMode('RC') }}
+                            onOpTypeChange={t => { setOpType(t); setPlanId(''); setMissionPlanningId(''); setFlightMode('RC') }}
                             droneId={droneId}
-                            onDroneChange={id => { setDroneId(id); setPlanId('') }}
+                            onDroneChange={id => { setDroneId(id); setPlanId(''); setMissionPlanningId('') }}
                             drones={drones}
                             loadingDrones={loadingDrones}
                             planId={planId}
                             onPlanChange={setPlanId}
                             clientPlannings={clientPlannings}
+                            missionPlannings={missionPlannings}
+                            missionPlanningId={missionPlanningId}
+                            onMissionPlanningChange={setMissionPlanningId}
+                            loadingMissionPlannings={loadingMissionPlannings}
                             flightMode={flightMode}
                             onFlightModeChange={setFlightMode}
                             loadingOptions={loadingOptions}

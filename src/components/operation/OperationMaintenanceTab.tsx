@@ -2,6 +2,7 @@
 
 import { useTimezone } from '@/components/TimezoneProvider'
 import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
 import { cn, formatDateInTz } from '@/lib/utils'
 import axios from 'axios'
 import { AlertTriangle, CalendarDays, CheckCircle2, Clock, Loader2, Plane } from 'lucide-react'
@@ -40,6 +41,7 @@ interface ComponentInput {
     component_id: number
     add_flights: number
     add_hours: number
+    manual_cycles_input?: boolean
 }
 
 interface Props {
@@ -126,6 +128,8 @@ export const OperationMaintenanceTab = forwardRef<OperationMaintenanceTabHandle,
         const [systemData, setSystemData] = useState<SystemData | null>(null)
         const [inputs, setInputs] = useState<Record<number, ComponentInput>>({})
         const [hoursRaw, setHoursRaw] = useState<Record<number, string>>({})
+        const [cyclesRaw, setCyclesRaw] = useState<Record<number, string>>({})
+        const [manualCyclesInput, setManualCyclesInput] = useState<Record<number, boolean>>({})
 
         const loadData = useCallback(async () => {
             if (!toolId) return
@@ -137,12 +141,18 @@ export const OperationMaintenanceTab = forwardRef<OperationMaintenanceTabHandle,
                     setSystemData(sys)
                     const init: Record<number, ComponentInput> = {}
                     const initRaw: Record<number, string> = {}
+                    const initCyclesRaw: Record<number, string> = {}
+                    const initManual: Record<number, boolean> = {}
                     for (const c of sys.components) {
                         init[c.component_id] = { component_id: c.component_id, add_flights: 0, add_hours: 0 }
                         initRaw[c.component_id] = ''
+                        initCyclesRaw[c.component_id] = ''
+                        initManual[c.component_id] = false
                     }
                     setInputs(init)
                     setHoursRaw(initRaw)
+                    setCyclesRaw(initCyclesRaw)
+                    setManualCyclesInput(initManual)
                 }
             } catch {
                 toast.error(t('operations.board.toast.loadError'))
@@ -181,6 +191,44 @@ export const OperationMaintenanceTab = forwardRef<OperationMaintenanceTabHandle,
             setInputs(p => ({
                 ...p,
                 [compId]: { ...p[compId], add_flights: p[compId]?.add_flights === 1 ? 0 : 1 },
+            }))
+        }
+
+        const handleManualCyclesToggle = (compId: number, checked: boolean) => {
+            setManualCyclesInput(p => ({ ...p, [compId]: checked }))
+            setCyclesRaw(p => ({ ...p, [compId]: '' }))
+            setInputs(p => ({
+                ...p,
+                [compId]: {
+                    ...p[compId],
+                    add_flights: 0,
+                    manual_cycles_input: checked,
+                },
+            }))
+        }
+
+        const handleCyclesChange = (compId: number, raw: string) => {
+            if (raw === '') {
+                setCyclesRaw(p => ({ ...p, [compId]: '' }))
+                setInputs(p => ({
+                    ...p,
+                    [compId]: { ...p[compId], add_flights: 0, manual_cycles_input: true },
+                }))
+                return
+            }
+            if (!/^\d{0,4}(\.\d{0,2})?$/.test(raw)) return
+
+            const num = parseFloat(raw) || 0
+            const comp = systemData?.components.find(c => c.component_id === compId)
+            if (comp && comp.limit_flight > 0) {
+                const remaining = Math.round((comp.limit_flight - comp.current_flights) * 100) / 100
+                if (num > remaining) return
+            }
+
+            setCyclesRaw(p => ({ ...p, [compId]: raw }))
+            setInputs(p => ({
+                ...p,
+                [compId]: { ...p[compId], add_flights: num, manual_cycles_input: true },
             }))
         }
 
@@ -272,7 +320,10 @@ export const OperationMaintenanceTab = forwardRef<OperationMaintenanceTabHandle,
                     const cfg = STATUS_CONFIG[comp.status]
                     const inp = inputs[comp.component_id]
                     const ratio = comp.battery_cycle_ratio ?? 1
-                    const effectiveCycles = Math.round((inp?.add_flights || 0) * ratio * 100) / 100
+                    const isManualCycles = manualCyclesInput[comp.component_id] ?? false
+                    const effectiveCycles = isManualCycles
+                        ? Math.round((inp?.add_flights || 0) * 100) / 100
+                        : Math.round((inp?.add_flights || 0) * ratio * 100) / 100
                     const previewFlights = Math.round((comp.current_flights + effectiveCycles) * 100) / 100
                     const previewHours = addHhmmHours(comp.current_hours, inp?.add_hours || 0)
 
@@ -355,26 +406,58 @@ export const OperationMaintenanceTab = forwardRef<OperationMaintenanceTabHandle,
                                     <div className="flex flex-wrap gap-4">
                                         {comp.limit_flight > 0 && (
                                             <div className="space-y-1">
+                                                {ratio !== 1 && (
+                                                    <label className="flex items-center gap-2 cursor-pointer">
+                                                        <Checkbox
+                                                            checked={isManualCycles}
+                                                            onCheckedChange={(checked) => handleManualCyclesToggle(comp.component_id, checked === true)}
+                                                        />
+                                                        <span className={cn('text-[10px] font-medium', isDark ? 'text-slate-400' : 'text-slate-500')}>
+                                                            {t('operations.missionComplete.maintenance.manualInput')}
+                                                        </span>
+                                                    </label>
+                                                )}
                                                 <div className="flex items-center gap-2">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleToggleFlight(comp.component_id)}
-                                                        className={cn(
-                                                            'h-7 px-3 rounded-md cursor-pointer text-xs font-semibold border transition-colors',
-                                                            inp?.add_flights === 1
-                                                                ? isDark ? 'border-violet-500 bg-violet-500/20 text-violet-300' : 'border-violet-500 bg-violet-50 text-violet-700'
-                                                                : isDark ? 'border-slate-600 bg-slate-700 text-slate-200 hover:bg-slate-600' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-                                                        )}
-                                                    >
-                                                        +1 {t('operations.missionComplete.maintenance.flights')}
-                                                    </button>
+                                                    {isManualCycles ? (
+                                                        <>
+                                                            <span className={cn('text-[10px] font-medium', isDark ? 'text-slate-400' : 'text-slate-500')}>
+                                                                {t('operations.missionComplete.maintenance.cycles')}
+                                                            </span>
+                                                            <input
+                                                                type="text"
+                                                                inputMode="decimal"
+                                                                placeholder="0.00"
+                                                                value={cyclesRaw[comp.component_id] ?? ''}
+                                                                onChange={e => handleCyclesChange(comp.component_id, e.target.value)}
+                                                                className={cn(
+                                                                    'h-7 w-20 rounded-md text-xs font-semibold border text-center tabular-nums outline-none transition-colors',
+                                                                    isDark
+                                                                        ? 'border-slate-600 bg-slate-700 text-slate-200 placeholder:text-slate-600 focus:border-violet-500'
+                                                                        : 'border-slate-200 bg-white text-slate-700 placeholder:text-slate-300 focus:border-violet-500'
+                                                                )}
+                                                            />
+                                                        </>
+                                                    ) : (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleToggleFlight(comp.component_id)}
+                                                            className={cn(
+                                                                'h-7 px-3 rounded-md cursor-pointer text-xs font-semibold border transition-colors',
+                                                                inp?.add_flights === 1
+                                                                    ? isDark ? 'border-violet-500 bg-violet-500/20 text-violet-300' : 'border-violet-500 bg-violet-50 text-violet-700'
+                                                                    : isDark ? 'border-slate-600 bg-slate-700 text-slate-200 hover:bg-slate-600' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                                                            )}
+                                                        >
+                                                            +1 {t('operations.missionComplete.maintenance.flights')}
+                                                        </button>
+                                                    )}
                                                     {inp?.add_flights > 0 && (
                                                         <span className={cn('text-[10px] tabular-nums', isDark ? 'text-slate-400' : 'text-slate-500')}>
                                                             {comp.current_flights} → {previewFlights}
                                                         </span>
                                                     )}
                                                 </div>
-                                                {ratio !== 1 && (
+                                                {ratio !== 1 && !isManualCycles && (
                                                     <p className={cn('text-[10px]', isDark ? 'text-slate-500' : 'text-slate-400')}>
                                                         1 flight = {ratio} cycle{ratio !== 1 ? 's' : ''}
                                                     </p>

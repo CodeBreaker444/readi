@@ -7,6 +7,7 @@ interface UpdateComponentInput {
   component_id: number;
   add_flights: number;
   add_hours: number;
+  manual_cycles_input?: boolean;
 }
 
 interface ComponentMaintenanceInfo {
@@ -234,7 +235,9 @@ export async function updateComponentMaintenanceCycle(
       const prevLifetimeHours = Number(comp.current_usage_hours ?? 0);
 
       const batteryCycleRatio = typeof meta.battery_cycle_ratio === 'number' ? meta.battery_cycle_ratio : 1;
-      const effectiveFlightCycles = Math.round((upd.add_flights || 0) * batteryCycleRatio * 100) / 100;
+      const effectiveFlightCycles = upd.manual_cycles_input
+        ? Math.round((upd.add_flights || 0) * 100) / 100
+        : Math.round((upd.add_flights || 0) * batteryCycleRatio * 100) / 100;
 
       const newHours = addHhmmHours(prevHours, upd.add_hours || 0);
       const newFlights = Math.round((prevFlights + effectiveFlightCycles) * 100) / 100;

@@ -3,6 +3,7 @@
 import { useTimezone } from "@/components/TimezoneProvider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -55,6 +56,7 @@ interface ComponentInput {
   component_id: number;
   add_flights: number;
   add_hours: number;
+  manual_cycles_input?: boolean;
 }
 
 interface Props {
@@ -162,6 +164,8 @@ export function MaintenanceCycleModal({
   const [systemData, setSystemData] = useState<SystemData | null>(null);
   const [inputs, setInputs] = useState<Record<number, ComponentInput>>({});
   const [hoursRaw, setHoursRaw] = useState<Record<number, string>>({});
+  const [cyclesRaw, setCyclesRaw] = useState<Record<number, string>>({});
+  const [manualCyclesInput, setManualCyclesInput] = useState<Record<number, boolean>>({});
 
   const STATUS_CONFIG = {
     OK: {
@@ -204,6 +208,8 @@ export function MaintenanceCycleModal({
         setSystemData(sys);
         const initial: Record<number, ComponentInput> = {};
         const initialRaw: Record<number, string> = {};
+        const initialCyclesRaw: Record<number, string> = {};
+        const initialManual: Record<number, boolean> = {};
         for (const comp of sys.components) {
           initial[comp.component_id] = {
             component_id: comp.component_id,
@@ -211,9 +217,13 @@ export function MaintenanceCycleModal({
             add_hours: 0,
           };
           initialRaw[comp.component_id] = "";
+          initialCyclesRaw[comp.component_id] = "";
+          initialManual[comp.component_id] = false;
         }
         setInputs(initial);
         setHoursRaw(initialRaw);
+        setCyclesRaw(initialCyclesRaw);
+        setManualCyclesInput(initialManual);
       }
     } catch (e: any) {
       toast.error(t("operations.board.toast.loadError"));
@@ -256,6 +266,44 @@ export function MaintenanceCycleModal({
     setInputs((prev) => ({
       ...prev,
       [compId]: { ...prev[compId], add_hours: numValue },
+    }));
+  };
+
+  const handleManualCyclesToggle = (compId: number, checked: boolean) => {
+    setManualCyclesInput((prev) => ({ ...prev, [compId]: checked }));
+    setCyclesRaw((prev) => ({ ...prev, [compId]: "" }));
+    setInputs((prev) => ({
+      ...prev,
+      [compId]: {
+        ...prev[compId],
+        add_flights: 0,
+        manual_cycles_input: checked,
+      },
+    }));
+  };
+
+  const handleCyclesChange = (compId: number, rawValue: string) => {
+    if (rawValue === "") {
+      setCyclesRaw((prev) => ({ ...prev, [compId]: "" }));
+      setInputs((prev) => ({
+        ...prev,
+        [compId]: { ...prev[compId], add_flights: 0, manual_cycles_input: true },
+      }));
+      return;
+    }
+    if (!/^\d{0,4}(\.\d{0,2})?$/.test(rawValue)) return;
+
+    const numValue = parseFloat(rawValue) || 0;
+    const comp = systemData?.components.find((c) => c.component_id === compId);
+    if (comp && comp.limit_flight > 0) {
+      const remaining = Math.round((comp.limit_flight - comp.current_flights) * 100) / 100;
+      if (numValue > remaining) return;
+    }
+
+    setCyclesRaw((prev) => ({ ...prev, [compId]: rawValue }));
+    setInputs((prev) => ({
+      ...prev,
+      [compId]: { ...prev[compId], add_flights: numValue, manual_cycles_input: true },
     }));
   };
 
@@ -384,7 +432,10 @@ export function MaintenanceCycleModal({
 
                 const previewHours = addHhmmHours(comp.current_hours, inp?.add_hours || 0);
                 const ratio = comp.battery_cycle_ratio ?? 1;
-                const effectiveCycles = Math.round((inp?.add_flights || 0) * ratio * 100) / 100;
+                const isManualCycles = manualCyclesInput[comp.component_id] ?? false;
+                const effectiveCycles = isManualCycles
+                  ? Math.round((inp?.add_flights || 0) * 100) / 100
+                  : Math.round((inp?.add_flights || 0) * ratio * 100) / 100;
                 const previewFlights = Math.round((comp.current_flights + effectiveCycles) * 100) / 100;
 
                 return (
@@ -472,32 +523,64 @@ export function MaintenanceCycleModal({
                       <div className="flex flex-wrap gap-3">
                         {comp.limit_flight > 0 && (
                           <div className="flex flex-col gap-1">
+                            {ratio !== 1 && (
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <Checkbox
+                                  checked={isManualCycles}
+                                  onCheckedChange={(checked) =>
+                                    handleManualCyclesToggle(comp.component_id, checked === true)
+                                  }
+                                />
+                                <span className={cn("text-[10px] font-medium", isDark ? "text-slate-400" : "text-slate-500")}>
+                                  {t("operations.missionComplete.maintenance.manualInput")}
+                                </span>
+                              </label>
+                            )}
                             <div className="flex items-center gap-2">
-                              <button
-                                type="button"
-                                onClick={() => setInputs((prev) => ({
-                                  ...prev,
-                                  [comp.component_id]: {
-                                    ...prev[comp.component_id],
-                                    add_flights: prev[comp.component_id]?.add_flights === 1 ? 0 : 1,
-                                  },
-                                }))}
-                                className={cn(
-                                  "h-7 px-3 cursor-pointer rounded-md text-xs font-semibold border transition-colors",
-                                  inp?.add_flights === 1
-                                    ? (isDark ? "border-violet-500 bg-violet-500/20 text-violet-300" : "border-violet-500 bg-violet-50 text-violet-700")
-                                    : (isDark ? "border-slate-600 bg-slate-700 text-slate-200" : "border-slate-200 bg-white text-slate-700")
-                                )}
-                              >
-                                +1 flight
-                              </button>
-                              {ratio !== 1 && inp?.add_flights === 1 && (
+                              {isManualCycles ? (
+                                <>
+                                  <span className={cn("text-[10px] font-medium", isDark ? "text-slate-400" : "text-slate-500")}>
+                                    {t("operations.missionComplete.maintenance.cycles")}
+                                  </span>
+                                  <input
+                                    type="text"
+                                    inputMode="decimal"
+                                    placeholder="0.00"
+                                    value={cyclesRaw[comp.component_id] ?? ""}
+                                    onChange={(e) => handleCyclesChange(comp.component_id, e.target.value)}
+                                    className={cn(
+                                      "h-7 w-[80px] rounded-md text-xs font-semibold border transition-colors text-center tabular-nums outline-none",
+                                      isDark ? "border-slate-600 bg-slate-700 text-slate-200" : "border-slate-200 bg-white text-slate-700"
+                                    )}
+                                  />
+                                </>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => setInputs((prev) => ({
+                                    ...prev,
+                                    [comp.component_id]: {
+                                      ...prev[comp.component_id],
+                                      add_flights: prev[comp.component_id]?.add_flights === 1 ? 0 : 1,
+                                    },
+                                  }))}
+                                  className={cn(
+                                    "h-7 px-3 cursor-pointer rounded-md text-xs font-semibold border transition-colors",
+                                    inp?.add_flights === 1
+                                      ? (isDark ? "border-violet-500 bg-violet-500/20 text-violet-300" : "border-violet-500 bg-violet-50 text-violet-700")
+                                      : (isDark ? "border-slate-600 bg-slate-700 text-slate-200" : "border-slate-200 bg-white text-slate-700")
+                                  )}
+                                >
+                                  +1 flight
+                                </button>
+                              )}
+                              {!isManualCycles && ratio !== 1 && inp?.add_flights === 1 && (
                                 <span className={cn("text-[10px] tabular-nums", isDark ? "text-violet-400" : "text-violet-600")}>
                                   = +{ratio} cycles
                                 </span>
                               )}
                             </div>
-                            {ratio !== 1 && (
+                            {ratio !== 1 && !isManualCycles && (
                               <span className={cn("text-[10px]", isDark ? "text-slate-500" : "text-slate-400")}>
                                 1 flight = {ratio} cycle
                               </span>

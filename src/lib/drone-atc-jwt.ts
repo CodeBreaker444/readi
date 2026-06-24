@@ -30,6 +30,23 @@ export function signReadiDroneJwt(
   });
 }
 
+export function signReadiControlJwt(
+  userId: string,
+  companyId?: string,
+): string {
+  if (!env.READI_DRONE_PRIVATE_KEY) {
+    throw new Error('READI_DRONE_PRIVATE_KEY is not configured');
+  }
+  const payload: Record<string, string | number> = { userId };
+  if (companyId !== undefined) payload.companyId = Number(companyId);
+  
+  return jwt.sign(payload, env.READI_DRONE_PRIVATE_KEY, {
+    algorithm: 'RS256',
+    expiresIn: '1h',
+    issuer: 'readi-app',
+  });
+}
+
 export function verifyFlytrelayJwt(token: string): { userId: string } | null {
   if (!env.FLYTRELAY_PUBLIC_KEY) {
     console.error('FLYTRELAY_PUBLIC_KEY is not configured');
