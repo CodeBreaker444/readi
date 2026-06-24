@@ -69,6 +69,9 @@ export async function updateSession(request: NextRequest) {
     '/auth/verify-mfa'
   ]
 
+  // Docs routes require authentication
+  const isDocsRoute = pathname.startsWith('/docs')
+
   const isPublicRoute = publicRoutes.includes(pathname)
   const isAuthFlowRoute = authFlowRoutes.includes(pathname)
 
@@ -98,6 +101,14 @@ export async function updateSession(request: NextRequest) {
       return response
     }
     return NextResponse.redirect(new URL('/auth/login', request.url))
+  }
+
+  // Protect docs routes - require authentication
+  if (isDocsRoute) {
+    if (!jwtToken || isJwtExpired(jwtToken)) {
+      return NextResponse.redirect(new URL('/auth/login', request.url))
+    }
+    return response
   }
 
   if (jwtToken) {

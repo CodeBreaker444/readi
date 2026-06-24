@@ -16,6 +16,10 @@ function createClient() {
       process.env.NODE_ENV === "development"
         ? ["query", "error", "warn"]
         : ["error"],
+    transactionOptions: {
+      maxWait: 5000,
+      timeout: 60000,
+    },
   });
 }
 
