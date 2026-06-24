@@ -31,7 +31,7 @@ export interface AuditLogFilters {
 
 /**
  * Fire-and-forget audit event logger.
- * Never throws — errors are swallowed so they never block the caller.
+ * Never throws — errors are logged but never block the caller.
  */
 export function logEvent(params: LogEventParams): void {
   // Intentionally not awaited — runs asynchronously in the background
@@ -52,8 +52,12 @@ export function logEvent(params: LogEventParams): void {
           ip_address:  params.ipAddress ?? null,
         },
       });
-    } catch {
-      // Silently swallow — audit logging must never break business logic
+    } catch (error) {
+      // Log errors for tracing but don't block business logic
+      console.error('[AuditLog] Failed to log event:', {
+        error: error instanceof Error ? error.message : String(error),
+        params,
+      });
     }
   })();
 }

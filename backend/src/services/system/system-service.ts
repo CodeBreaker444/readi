@@ -177,12 +177,10 @@ export async function getSystemList(
           tool_longitude: (item.tool_metadata as any)?.longitude,
           tool_status: (() => {
             const stored = (item.tool_metadata as any)?.status as string | undefined;
-            // If an explicit status is set (not OPERATIONAL), use it
-            if (stored && stored !== 'OPERATIONAL') return stored;
-            // Otherwise compute based on component/maintenance state
+            if (stored) return stored;
             if (toolsNonOperational.has(item.tool_id)) return 'NOT_OPERATIONAL';
             if (toolsInMaintenance.has(item.tool_id)) return 'MAINTENANCE';
-            return stored || 'OPERATIONAL';
+            return 'OPERATIONAL';
           })(),
           tot_mission: missionData[item.tool_id]?.count || 0,
           tot_flown_time: missionData[item.tool_id]?.time || 0,
