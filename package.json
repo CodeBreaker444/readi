@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "dev:with-docs": "npm run build:docs && next dev",
+    "dev:docs": "cd platform-docs && npm run dev",
     "test": "jest",
     "test:integration": "jest --config jest.integration.config.js --no-coverage --env-file=.env.test.local",
     "build": "npm run build:docs && next build",
