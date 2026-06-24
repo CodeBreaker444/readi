@@ -18,6 +18,7 @@ export interface UserCreateData {
   fk_client_id?: number;
   fk_territorial_unit?: number;
   owner_id: number;
+  flytrelay_access?: boolean;
 }
 
 export interface UserUpdateData {
@@ -35,6 +36,7 @@ export interface UserUpdateData {
   is_manager: 'Y' | 'N';
   user_image?: string;
   user_signature?: string;
+  flytrelay_access?: boolean;
 }
 
 export async function getUserListByOwner(ownerId: number, userProfileId: number, currentUserId: number) {
@@ -168,6 +170,7 @@ export async function createUser(userData: UserCreateData) {
         user_timezone: userData.timezone,
         user_unique_code: uid,
         key_: key,
+        flytrelay_access: userData.flytrelay_access ?? false,
       },
       select: { user_id: true },
     });
@@ -273,6 +276,7 @@ export async function updateUser(userData: UserUpdateData) {
         is_manager: userData.is_manager || null,
         fk_territorial_unit: toIntOrNull(userData.fk_territorial_unit),
         fk_client_id: toIntOrNull(userData.fk_client_id),
+        flytrelay_access: userData.flytrelay_access,
         updated_at: new Date(),
       },
     });

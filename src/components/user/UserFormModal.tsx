@@ -49,6 +49,7 @@ interface UserFormModalProps {
   isDark: boolean;
   canEditEmail?: boolean;
   sessionRole?: string;
+  companyFlytrelayEnabled?: boolean;
 }
 
 type CcStep = 'idle' | 'verifying' | 'confirmed' | 'saving';
@@ -65,6 +66,7 @@ export function UserFormModal({
   onSubmit,
   isDark,
   canEditEmail = true,
+  companyFlytrelayEnabled = false,
   sessionRole,
 }: UserFormModalProps) {
   const [formData, setFormData] = useState(() => {
@@ -80,6 +82,7 @@ export function UserFormModal({
       is_viewer: 'N',
       is_manager: 'N',
       active: 1,
+      flytrelay_access: false,
     };
     if (!userData) return defaults;
     return {
@@ -92,6 +95,7 @@ export function UserFormModal({
       is_viewer: userData.is_viewer || 'N',
       is_manager: userData.is_manager || 'N',
       active: userData.active ?? 1,
+      flytrelay_access: userData.flytrelay_access ?? false,
     };
   });
 
@@ -561,6 +565,26 @@ export function UserFormModal({
                   <SelectItem value="0">Inactive</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+          )}
+
+          {/* Flytrelay Access section - only show if company has flytrelay enabled */}
+          {companyFlytrelayEnabled && (
+            <div className={`rounded-lg border ${isDark ? 'border-slate-600 bg-slate-900/40' : 'border-slate-200 bg-slate-50'}`}>
+              <div className="px-4 py-3">
+                <label className={`flex items-center gap-2.5 cursor-pointer select-none text-sm font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                  <input
+                    type="checkbox"
+                    checked={formData.flytrelay_access}
+                    onChange={(e) => setFormData({ ...formData, flytrelay_access: e.target.checked })}
+                    className="w-4 h-4 accent-violet-600 cursor-pointer"
+                  />
+                  Grant Flytrelay Access
+                </label>
+                <p className={`text-xs mt-2 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
+                  Allow this user to access Flytrelay flight logs from Control Center
+                </p>
+              </div>
             </div>
           )}
 
