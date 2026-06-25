@@ -9,6 +9,7 @@
     "test:integration": "jest --config jest.integration.config.js --no-coverage --env-file=.env.test.local",
     "build": "npm run build:docs && next build",
     "build:docs": "cd platform-docs && npx mintlify export --output ../public/docs",
+    "prenext:build": "npm run build:docs",
     "ci": "npm run test && npm run test:integration && npm run build",
     "start": "next start",
     "lint": "eslint",
