@@ -323,7 +323,7 @@ export function MaintenanceTab({
                   <div className="flex flex-wrap gap-3">
                     {hasFlightLimit && (
                       <div className="space-y-1">
-                        {ratio !== 1 && (
+                        {(comp.component_type?.toLowerCase() === 'battery' || ratio !== 1) && (
                           <label className="flex items-center gap-2 cursor-pointer">
                             <Checkbox
                               checked={isManualCycles}

@@ -523,7 +523,7 @@ export function MaintenanceCycleModal({
                       <div className="flex flex-wrap gap-3">
                         {comp.limit_flight > 0 && (
                           <div className="flex flex-col gap-1">
-                            {ratio !== 1 && (
+                            {(comp.component_type?.toLowerCase() === 'battery' || ratio !== 1) && (
                               <label className="flex items-center gap-2 cursor-pointer">
                                 <Checkbox
                                   checked={isManualCycles}
