@@ -4,10 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "mintlify dev",
-    "build": "npm run generate-routes-json && next build",
+    "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "generate-routes-json": "tsc src/lib/navigation.ts --outDir . && node ./generate-routes-json.js && del navigation.js"
+    "lint": "next lint"
   },
   "browserslist": "defaults, not ie <= 11",
   "dependencies": {

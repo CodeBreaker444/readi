@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
 
 import { createLucProcedure, getLucProcedures } from '@/backend/services/organization/lcu-service';
+import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { internalError, zodError } from '@/lib/api-error';
 import { requirePermission } from '@/lib/auth/api-auth';
 import { E } from '@/lib/error-codes';
@@ -15,6 +16,18 @@ export async function GET(request: NextRequest) {
         if (error) return error;
 
         const procedures = await getLucProcedures(session!.user.ownerId, sector);
+
+        logEvent({
+            eventType: 'CREATE',
+            entityType: 'luc_procedure',
+            description: `Viewed LUC procedures${sector ? ` (sector: ${sector})` : ''}`,
+            userId: session!.user.userId,
+            userName: session!.user.fullname,
+            userEmail: session!.user.email,
+            userRole: session!.user.role,
+            ownerId: session!.user.ownerId,
+            metadata: { count: procedures.length, sector },
+        });
 
         return NextResponse.json({
             data: procedures,
@@ -57,6 +70,19 @@ export async function POST(request: NextRequest) {
             fk_owner_id: session!.user.ownerId,
             procedure_version: validation.data.procedure_version ?? '1.0',
             procedure_active: validation.data.procedure_active ?? 'Y',
+        });
+
+        logEvent({
+            eventType: 'CREATE',
+            entityType: 'luc_procedure',
+            entityId: created.procedure_id,
+            description: `Created LUC procedure '${validation.data.procedure_code}' - ${validation.data.procedure_name}`,
+            userId: session!.user.userId,
+            userName: session!.user.fullname,
+            userEmail: session!.user.email,
+            userRole: session!.user.role,
+            ownerId: session!.user.ownerId,
+            metadata: { procedure_code: validation.data.procedure_code, procedure_status: validation.data.procedure_status },
         });
 
         return NextResponse.json({

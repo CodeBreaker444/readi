@@ -23,6 +23,7 @@ export interface SessionUser {
   droneAtcEnabled: boolean;
   dFlightEnabled: boolean;
   flytrelayEnabled: boolean;
+  flytrelayAccess: boolean;
   companyEasaCode: string | null;
   ownerName?: string | null;
 }
@@ -87,6 +88,7 @@ export const getUserSession = cache(async (): Promise<Session | null> => {
         user_timezone: true,
         fk_client_id: true,
         last_logout_at: true,
+        flytrelay_access: true,
         users_profile: { select: { profile_picture: true } },
       },
     });
@@ -112,6 +114,7 @@ export const getUserSession = cache(async (): Promise<Session | null> => {
     let droneAtcEnabled = false;
     let dFlightEnabled = false;
     let flytrelayEnabled = false;
+    let flytrelayAccess = false;
     let companyEasaCode: string | null = null;
     let ownerName: string | null = null;
     if (userData.user_role !== 'SUPERADMIN' && userData.fk_owner_id) {
@@ -122,12 +125,15 @@ export const getUserSession = cache(async (): Promise<Session | null> => {
       droneAtcEnabled = ownerData?.drone_atc_enabled ?? false;
       dFlightEnabled  = ownerData?.d_flight_enabled  ?? false;
       flytrelayEnabled = ownerData?.flytrelay_enabled ?? false;
+      // User has flytrelay access only if both company has it enabled AND user has access granted
+      flytrelayAccess = (ownerData?.flytrelay_enabled ?? false) && (userData.flytrelay_access ?? false);
       companyEasaCode = ownerData?.easa_operator_code ?? null;
       ownerName = ownerData?.owner_name ?? null;
     } else if (userData.user_role === 'SUPERADMIN') {
       droneAtcEnabled = true;
       dFlightEnabled  = true;
       flytrelayEnabled = true;
+      flytrelayAccess = true;
     }
 
     const sessionUser: SessionUser = {
@@ -146,6 +152,7 @@ export const getUserSession = cache(async (): Promise<Session | null> => {
       droneAtcEnabled,
       dFlightEnabled,
       flytrelayEnabled,
+      flytrelayAccess,
       companyEasaCode,
       ownerName,
     };

@@ -1,4 +1,5 @@
 import { deleteLucProcedure, getLucProcedureById, updateLucProcedure } from '@/backend/services/organization/lcu-service';
+import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { requirePermission } from '@/lib/auth/api-auth';
 import { internalError, notFound } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
@@ -36,7 +37,20 @@ export async function PUT(
     const body = await request.json();
     const updated = await updateLucProcedure({ ...body, procedure_id: Number(id) });
 
-    return NextResponse.json( 
+    logEvent({
+      eventType: 'UPDATE',
+      entityType: 'luc_procedure',
+      entityId: Number(id),
+      description: `Updated LUC procedure ${id}`,
+      userId: session!.user.userId,
+      userName: session!.user.fullname,
+      userEmail: session!.user.email,
+      userRole: session!.user.role,
+      ownerId: session!.user.ownerId,
+      metadata: { updates: body },
+    });
+
+    return NextResponse.json(
       { code: 1, message: 'Updated successfully', data: updated, dataRows: 1 },
       { status: 200 }
     );
@@ -55,6 +69,18 @@ export async function DELETE(
     if (error) return error;
 
     await deleteLucProcedure(Number(id));
+
+    logEvent({
+      eventType: 'DELETE',
+      entityType: 'luc_procedure',
+      entityId: Number(id),
+      description: `Deleted LUC procedure ${id}`,
+      userId: session!.user.userId,
+      userName: session!.user.fullname,
+      userEmail: session!.user.email,
+      userRole: session!.user.role,
+      ownerId: session!.user.ownerId,
+    });
 
     return NextResponse.json(
       { data: null, message: 'Deleted successfully', code: 1, dataRows: 0 },

@@ -188,6 +188,7 @@ export default function UserManagement({ session }: UserManagementProps) {
         user_viewer: formData.is_viewer,
         user_manager: formData.is_manager,
         timezone: 'Europe/Berlin',
+        flytrelay_access: formData.flytrelay_access,
         ...(isSuperAdmin && { owner_id: formData.owner_id }),
       });
       const data = res.data;
@@ -251,6 +252,7 @@ export default function UserManagement({ session }: UserManagementProps) {
         active: formData.active,
         is_viewer: formData.is_viewer,
         is_manager: formData.is_manager,
+        flytrelay_access: formData.flytrelay_access,
       });
       const data = res.data;
       if (data.code === 1) {
@@ -461,10 +463,10 @@ export default function UserManagement({ session }: UserManagementProps) {
       </div>
 
       {showAddModal && (
-        <UserFormModal isOpen={showAddModal} clients={clients} owners={owners} isSuperAdmin={isSuperAdmin} onClose={() => setShowAddModal(false)} mode="add" onSubmit={handleAddUser} isDark={isDark} canEditEmail={canEditEmail} sessionRole={session.user.role} />
+        <UserFormModal isOpen={showAddModal} clients={clients} owners={owners} isSuperAdmin={isSuperAdmin} onClose={() => setShowAddModal(false)} mode="add" onSubmit={handleAddUser} isDark={isDark} canEditEmail={canEditEmail} sessionRole={session.user.role} companyFlytrelayEnabled={session.user.flytrelayEnabled} />
       )}
       {showEditModal && selectedUser && (
-        <UserFormModal isOpen={showEditModal} clients={clients} onClose={() => { setShowEditModal(false); setSelectedUser(null); }} mode="edit" userData={selectedUser} onSubmit={handleUpdateUser} isDark={isDark} canEditEmail={canEditEmail} sessionRole={session.user.role} />
+        <UserFormModal isOpen={showEditModal} clients={clients} onClose={() => { setShowEditModal(false); setSelectedUser(null); }} mode="edit" userData={selectedUser} onSubmit={handleUpdateUser} isDark={isDark} canEditEmail={canEditEmail} sessionRole={session.user.role} companyFlytrelayEnabled={session.user.flytrelayEnabled} />
       )}
 
       <AlertDialog open={showDeleteDialog} onOpenChange={(open) => { if (!open) { setShowDeleteDialog(false); setUserToDelete(null); } }}>

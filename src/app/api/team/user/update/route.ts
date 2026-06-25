@@ -25,6 +25,7 @@ const UpdateUserSchema = z.object({
   owner_id: z.number().int().positive().optional(),
   user_image: z.string().optional().nullable(),
   user_signature: z.string().optional().nullable(),
+  flytrelay_access: z.boolean().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -55,6 +56,7 @@ export async function POST(request: NextRequest) {
       is_manager: d.is_manager || d.user_manager || 'N',
       user_image: d.user_image || undefined,
       user_signature: d.user_signature || undefined,
+      flytrelay_access: d.flytrelay_access,
     });
 
     return NextResponse.json({
