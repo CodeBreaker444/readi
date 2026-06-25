@@ -29,6 +29,10 @@ export async function createFlytbaseOrganization(
   apiToken: string,
   companyId: number,
 ): Promise<FlytbaseOrganization> {
+  if (!companyId || companyId <= 0) {
+    throw new Error('Invalid company ID: must be a positive number');
+  }
+
   // Verify the token before saving
   await verifyFlytbaseTokenAndGetUser(apiToken, orgId);
 

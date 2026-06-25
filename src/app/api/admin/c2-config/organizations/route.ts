@@ -50,6 +50,10 @@ export async function POST(req: NextRequest) {
     const { error, session } = await requirePermission('manage_users');
     if (error) return error;
 
+    if (!session!.user.ownerId || session!.user.ownerId <= 0) {
+      return NextResponse.json({ success: false, message: 'Invalid user session: missing or invalid owner ID' }, { status: 400 });
+    }
+
     const body = await req.json();
     const parsed = createSchema.safeParse(body);
     if (!parsed.success) return zodError(E.VL001, parsed.error);
