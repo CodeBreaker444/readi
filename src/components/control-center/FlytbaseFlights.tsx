@@ -30,8 +30,13 @@ interface Flight {
   status?: string;
 }
 
+interface Organization {
+  id: number;
+  name: string;
+  org_id: string;
+}
+
 interface Props {
-  token: string | null;
   isActive?: boolean;
 }
 
@@ -56,7 +61,7 @@ function formatDistance(m?: number): string {
 
 type FilterMode = 'window' | 'latest';
 
-export function FlytbaseFlights({ token, isActive = true }: Props) {
+export function FlytbaseFlights({ isActive = true }: Props) {
   const { isDark } = useTheme();
   const { t } = useTranslation();
   const [window, setWindow] = useState(1440);
@@ -74,10 +79,28 @@ export function FlytbaseFlights({ token, isActive = true }: Props) {
   const [archived, setArchived] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [archiveError, setArchiveError] = useState<{ message: string; missing_sns: string[] } | null>(null);
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [selectedOrganization, setSelectedOrganization] = useState<Organization | null>(null);
+  const [orgLoading, setOrgLoading] = useState(true);
+
+  const fetchOrganizations = useCallback(async () => {
+    setOrgLoading(true);
+    try {
+      const res = await axios.get('/api/flytbase/my-organizations');
+      setOrganizations(res.data.organizations || []);
+      if (res.data.organizations && res.data.organizations.length > 0) {
+        setSelectedOrganization(res.data.organizations[0]);
+      }
+    } catch (err: any) {
+      console.error('Failed to fetch organizations:', err);
+    } finally {
+      setOrgLoading(false);
+    }
+  }, []);
 
   const fetchFlights = useCallback(async (win: number, mode: FilterMode, pageNum: number = 1) => {
-    if (!token) {
-      setError('no_token');
+    if (!selectedOrganization) {
+      setError('no_organization');
       setLoading(false);
       return;
     }
@@ -90,8 +113,8 @@ export function FlytbaseFlights({ token, isActive = true }: Props) {
     setArchiveError(null);
     try {
       const url = mode === 'latest'
-        ? `/api/flytbase/flights?mode=latest&page=${pageNum}`
-        : `/api/flytbase/flights?window=${win}&page=${pageNum}`;
+        ? `/api/flytbase/flights?mode=latest&page=${pageNum}&organizationId=${selectedOrganization.id}`
+        : `/api/flytbase/flights?window=${win}&page=${pageNum}&organizationId=${selectedOrganization.id}`;
       const res = await axios.get(url);
       setFlights(res.data.flights ?? []);
       setTotal(res.data.total ?? 0);
@@ -101,14 +124,20 @@ export function FlytbaseFlights({ token, isActive = true }: Props) {
     } finally {
       setLoading(false);
     }
-  }, [token, t]);
+  }, [selectedOrganization, t]);
 
   useEffect(() => {
     if (isActive) {
+      fetchOrganizations();
+    }
+  }, [fetchOrganizations, isActive]);
+
+  useEffect(() => {
+    if (isActive && selectedOrganization) {
       setPage(1);
       fetchFlights(window, filterMode, 1);
     }
-  }, [fetchFlights, window, filterMode, isActive]);
+  }, [fetchFlights, window, filterMode, isActive, selectedOrganization]);
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
@@ -197,6 +226,7 @@ export function FlytbaseFlights({ token, isActive = true }: Props) {
   const textSecondary = isDark ? 'text-slate-400' : 'text-slate-500';
   const rowHover = isDark ? 'hover:bg-slate-800/50' : 'hover:bg-slate-50';
   const rowSelected = isDark ? 'bg-violet-950/40 border-l-2 border-violet-500' : 'bg-violet-50 border-l-2 border-violet-500';
+  const skeletonClass = isDark ? 'bg-slate-800' : 'bg-slate-200';
 
   return (
     <div className={`h-full flex flex-col overflow-hidden animate-in fade-in duration-700`}>
@@ -269,6 +299,45 @@ export function FlytbaseFlights({ token, isActive = true }: Props) {
         )}
 
         <div className="flex gap-4 flex-1 min-h-0">
+          {/* Organization Selector Sidebar */}
+          <div className={`rounded-xl border flex-shrink-0 w-48 flex flex-col ${card}`}>
+            <div className="px-4 py-3 border-b">
+              <span className={`text-xs font-semibold uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                Organizations
+              </span>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              {orgLoading ? (
+                <div className="p-4 space-y-2">
+                  <Skeleton className={`h-8 w-full ${skeletonClass}`} />
+                  <Skeleton className={`h-8 w-full ${skeletonClass}`} />
+                </div>
+              ) : organizations.length === 0 ? (
+                <div className="p-4 text-center">
+                  <p className={`text-xs ${textSecondary}`}>No organizations</p>
+                </div>
+              ) : (
+                <div className="p-2 space-y-1">
+                  {organizations.map((org) => (
+                    <button
+                      key={org.id}
+                      onClick={() => setSelectedOrganization(org)}
+                      className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                        selectedOrganization?.id === org.id
+                          ? 'bg-violet-600 text-white'
+                          : isDark
+                          ? 'hover:bg-slate-800 text-slate-300'
+                          : 'hover:bg-slate-100 text-slate-700'
+                      }`}
+                    >
+                      {org.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
           <div className={`rounded-xl border flex-shrink-0 w-full max-w-sm flex flex-col ${card}`}>
             <div className="flex items-center justify-between px-4 py-3 border-b ${isDark ? 'border-slate-800' : 'border-slate-200'}">
               <span className={`text-xs font-semibold uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>

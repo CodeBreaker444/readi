@@ -2985,6 +2985,76 @@
       "missionSynced": "Missione sincronizzata",
       "archivedSuccess": "Log di volo archiviato su Readi.",
       "archiveFailed": "Impossibile archiviare il log di volo."
+    },
+    "c2Config": {
+      "title": "Configurazione C2",
+      "subtitle": "Gestisci le organizzazioni FlytBase Control Center e le autorizzazioni utente",
+      "tabs": {
+        "organizations": "Organizzazioni",
+        "permissions": "Autorizzazioni"
+      },
+      "organizations": {
+        "title": "Organizzazioni FlytBase",
+        "add": "Aggiungi Organizzazione",
+        "addFirst": "Aggiungi la tua prima organizzazione",
+        "noOrgs": "Nessuna organizzazione configurata ancora",
+        "name": "Nome Organizzazione",
+        "namePlaceholder": "es. Ambiente di Produzione",
+        "orgId": "ID Organizzazione FlytBase",
+        "orgIdPlaceholder": "es. 68eb444ff8f677264bfd4cb4",
+        "apiToken": "Token API",
+        "apiTokenPlaceholder": "Incolla il tuo token API FlytBase",
+        "create": "Crea Organizzazione",
+        "creating": "Creazione...",
+        "verifying": "Verifica...",
+        "deleteTitle": "Elimina Organizzazione",
+        "deleteConfirm": "Sei sicuro di voler eliminare questa organizzazione?",
+        "table": {
+          "name": "Nome",
+          "orgId": "ID Org",
+          "createdAt": "Creato",
+          "actions": "Azioni"
+        },
+        "toasts": {
+          "created": "Organizzazione creata con successo",
+          "createFailed": "Impossibile creare l'organizzazione",
+          "deleted": "Organizzazione eliminata",
+          "deleteFailed": "Impossibile eliminare l'organizzazione",
+          "loadFailed": "Impossibile caricare le organizzazioni"
+        }
+      },
+      "permissions": {
+        "title": "Autorizzazioni Utente",
+        "noUsers": "Nessun utente trovato",
+        "assignedOrgs": "Organizzazioni assegnate",
+        "noAssignedOrgs": "Nessuna organizzazione assegnata",
+        "addOrg": "Aggiungi organizzazione…",
+        "editUser": "Modifica Utente",
+        "table": {
+          "name": "Nome",
+          "email": "Email",
+          "organizations": "Organizzazioni",
+          "actions": "Azioni"
+        },
+        "toasts": {
+          "granted": "Accesso concesso con successo",
+          "grantFailed": "Impossibile concedere l'accesso",
+          "revoked": "Accesso revocato con successo",
+          "revokeFailed": "Impossibile revocare l'accesso",
+          "loadFailed": "Impossibile caricare gli utenti"
+        },
+        "modal": {
+          "title": "Modifica Organizzazioni Utente",
+          "subtitle": "Gestisci l'accesso alle organizzazioni per {{name}}",
+          "availableOrgs": "Organizzazioni Disponibili",
+          "assignedOrgs": "Organizzazioni Assegnate",
+          "assign": "Assegna",
+          "unassign": "Rimuovi",
+          "save": "Salva Modifiche",
+          "cancel": "Annulla",
+          "saving": "Salvataggio..."
+        }
+      }
     }
   },
   "training": {

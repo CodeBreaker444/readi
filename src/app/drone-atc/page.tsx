@@ -327,7 +327,7 @@ export default function DroneATCPage() {
           {userRole === 'ADMIN' || userRole === 'SUPERADMIN' ? (
             <>
               <span>{t('droneAtc.noFlytbaseKey')}</span>
-              <Link href="/profile" className={`underline font-semibold ${isDark ? 'text-amber-200 hover:text-amber-100' : 'text-amber-800 hover:text-amber-900'}`}>
+              <Link href="/control-center/c2-config" className={`underline font-semibold ${isDark ? 'text-amber-200 hover:text-amber-100' : 'text-amber-800 hover:text-amber-900'}`}>
                 {t('droneAtc.configure')}
               </Link>
             </>

@@ -1,6 +1,5 @@
 'use client';
 
-import { FlytbaseTokenConfig } from '@/components/control-center/FlytbaseTokenConfig';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -324,23 +323,6 @@ export default function Profile({ user }: { user: SessionUser }) {
           </CardContent>
         </Card>
 
-        {/* Control Center card — ADMIN / SUPERADMIN only */}
-        {!loading && (user.role === 'ADMIN' || user.role === 'SUPERADMIN') && (
-          <Card className={cardClass}>
-            <CardHeader className="pb-3">
-              <div className="flex items-center gap-2">
-                <Link2 className="h-4 w-4 text-violet-500" />
-                <CardTitle className={`text-base ${textPrimary}`}>{t('profile.controlCenter.title')}</CardTitle>
-              </div>
-              <p className={`text-xs mt-0.5 ${textSecondary}`}>
-                {t('profile.controlCenter.subtitle')}
-              </p>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <FlytbaseTokenConfig />
-            </CardContent>
-          </Card>
-        )}
 
         {/* EASA Operator Code card — ADMIN only */}
         {!loading && user.role === 'ADMIN' && (
