@@ -138,10 +138,14 @@ export default function ClientManagement({ session }: ClientManagementProps) {
   };
 
   const handleUpdateClient = async (formData: any): Promise<void> => {
+    if (!selectedClient?.client_id) {
+      toast.error(t('team.client.toast.updateError'));
+      return;
+    }
     try {
       const res = await axios.post('/api/client/update', {
         ...formData,
-        client_id: selectedClient?.client_id,
+        client_id: selectedClient.client_id,
       });
       const data = res.data;
       if (data.code === 1) {
