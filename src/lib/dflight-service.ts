@@ -1,4 +1,5 @@
 import 'server-only';
+import { Agent, fetch as undiciFetch } from 'undici';
 
 const CONNECT_TIMEOUT_MS = 10_000;
 
@@ -39,31 +40,63 @@ export interface DFlightDronePageResult {
   data: Array<{ resultView: Record<string, string | null> }>;
 }
 
-async function timedFetch(url: string, init: RequestInit): Promise<Response> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), CONNECT_TIMEOUT_MS);
-  try {
-    return await fetch(url, { ...init, signal: controller.signal });
-  } finally {
-    clearTimeout(timer);
+function createUndiciAgent(): Agent {
+  const certContent = process.env.DFLIGHT_CERT_CONTENT;
+  const keyContent  = process.env.DFLIGHT_KEY_CONTENT;
+
+  if (!certContent || !keyContent) {
+    throw new Error(
+      'D-Flight TLS configuration is missing. ' +
+      'Set DFLIGHT_CERT_CONTENT and DFLIGHT_KEY_CONTENT environment variables.'
+    );
   }
+
+  const cert = certContent.replace(/\\n/g, '\n');
+  const key  = keyContent.replace(/\\n/g, '\n');
+
+  console.log('D-Flight: creating undici Agent from environment variables');
+
+  return new Agent({
+    connect: {
+      cert,
+      key,
+      rejectUnauthorized: false, 
+      timeout: CONNECT_TIMEOUT_MS,
+    },
+  });
 }
+
+// Cache for the process lifetime — TLS Agent creation is expensive
+let _agent: Agent | null = null;
+function getAgent(): Agent {
+  if (!_agent) _agent = createUndiciAgent();
+  return _agent;
+}
+
+async function dFetch(
+  url: string,
+  init: Parameters<typeof undiciFetch>[1],
+): Promise<Awaited<ReturnType<typeof undiciFetch>>> {
+  return undiciFetch(url, { ...init, dispatcher: getAgent() });
+}
+
 
 export async function getDFlightToken(config: DFlightConfig): Promise<DFlightTokenResponse> {
   const body = new URLSearchParams({
     grant_type: 'password',
-    client_id: config.client_id,
-    username: config.username,
-    password: config.password,
-    scope: 'openid email profile user-data personal-data pilot-license dflight-identification',
+    client_id:  config.client_id,
+    username:   config.username,
+    password:   config.password,
+    scope:      'openid email profile user-data personal-data pilot-license dflight-identification',
   });
 
-  const res = await timedFetch(`${config.base_url}/iam/token`, {
-    method: 'POST',
+  const res = await dFetch(`${config.base_url}/iam/token`, {
+    method:  'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: body.toString(),
+    body:    body.toString(),
   });
 
+  console.log(`D-Flight token status: ${res.status}`);
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`D-Flight token request failed (${res.status}): ${text}`);
@@ -73,28 +106,29 @@ export async function getDFlightToken(config: DFlightConfig): Promise<DFlightTok
 }
 
 export async function getDFlightDrones(
-  baseUrl: string,
+  baseUrl:     string,
   accessToken: string,
-  owner: string,
+  owner:       string,
   pageSize = 200,
 ): Promise<DFlightDroneResult[]> {
   const params = new URLSearchParams({
     owner,
     pageNumber: '0',
-    pageSize: String(pageSize),
+    pageSize:   String(pageSize),
   });
 
-  const res = await timedFetch(
+  const res = await dFetch(
     `${baseUrl}/drone-management/v2/api/drones?${params.toString()}`,
     {
-      method: 'GET',
+      method:  'GET',
       headers: {
         Authorization: `Bearer ${accessToken}`,
-        Accept: 'application/json',
+        Accept:        'application/json',
       },
     },
   );
 
+  console.log(`D-Flight drones status: ${res.status}`);
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`D-Flight drones request failed (${res.status}): ${text}`);
@@ -106,20 +140,20 @@ export async function getDFlightDrones(
   return json.data.map((item) => {
     const v = item.resultView ?? {};
     return {
-      id: v['id'] ?? '',
-      name: v['name'] ?? '',
-      owner: v['owner'] ?? '',
-      serialNumber: v['serialNumber'] ?? null,
-      fcsSerialNumber: v['fcsSerialNumber'] ?? null,
-      gcsSerialNumber: v['gcsSerialNumber'] ?? null,
-      easaOperatorCode: v['easaOperatorCode'] ?? null,
-      matriculationNumber: v['matriculationNumber'] ?? null,
-      status: v['status'] ?? null,
-      qrCodeActivationStatus: v['qrCodeActivationStatus'] ?? null,
-      usage: v['usage'] ?? null,
-      takeOffMass: v['takeOffMass'] ?? null,
-      'model.modelName': v['model.modelName'] ?? null,
-      'model.manufacturer.name': v['model.manufacturer.name'] ?? null,
+      id:                        v['id']                        ?? '',
+      name:                      v['name']                      ?? '',
+      owner:                     v['owner']                     ?? '',
+      serialNumber:              v['serialNumber']              ?? null,
+      fcsSerialNumber:           v['fcsSerialNumber']           ?? null,
+      gcsSerialNumber:           v['gcsSerialNumber']           ?? null,
+      easaOperatorCode:          v['easaOperatorCode']          ?? null,
+      matriculationNumber:       v['matriculationNumber']       ?? null,
+      status:                    v['status']                    ?? null,
+      qrCodeActivationStatus:    v['qrCodeActivationStatus']    ?? null,
+      usage:                     v['usage']                     ?? null,
+      takeOffMass:               v['takeOffMass']               ?? null,
+      'model.modelName':         v['model.modelName']           ?? null,
+      'model.manufacturer.name': v['model.manufacturer.name']  ?? null,
     };
   });
 }

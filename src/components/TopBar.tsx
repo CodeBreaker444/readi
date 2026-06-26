@@ -220,7 +220,6 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData, loading 
 
           <a
             href="/docs"
-            download
             className={`cursor-pointer p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-slate-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}
             aria-label="Documentation"
             title="Documentation"
