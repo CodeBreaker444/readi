@@ -50,7 +50,7 @@ export async function GET() {
         data: [],
       });
     }
-
+console.log('dflight drones', dFlightDrones);
     const droneBySerial = new Map<string, (typeof dFlightDrones)[0]>();
     for (const drone of dFlightDrones) {
       if (drone.serialNumber) droneBySerial.set(drone.serialNumber.toLowerCase(), drone);
