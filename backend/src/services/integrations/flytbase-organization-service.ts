@@ -253,3 +253,27 @@ export async function getUserFlytbaseCredentials(
     organizationId: accessRecord.organization.id,
   };
 }
+
+/**
+ * Get all FlytBase credentials for a user (all accessible organizations)
+ * Returns an array of all organization credentials the user has access to
+ */
+export async function getAllUserFlytbaseCredentials(
+  userId: number,
+): Promise<Array<{ orgName: string; token: string; orgId: string; organizationId: number }>> {
+  const accessRecords = await prisma.user_flytbase_access.findMany({
+    where: { user_id: userId },
+    include: {
+      organization: true,
+    },
+  });
+
+  return accessRecords
+    .filter((record) => record.organization)
+    .map((record) => ({
+      orgName: record.organization.name,
+      token: record.organization.api_token,
+      orgId: record.organization.org_id,
+      organizationId: record.organization.id,
+    }));
+}

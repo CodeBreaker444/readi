@@ -11,6 +11,11 @@ export interface ReadiDronePayload {
   exp?: number;
 }
 
+export interface OrganizationCredentials {
+  orgId: string;
+  token: string;
+}
+
 export function signReadiDroneJwt(
   userId: string,
   flytbaseKey: string,
@@ -38,6 +43,27 @@ export function signReadiControlJwt(
     throw new Error('READI_DRONE_PRIVATE_KEY is not configured');
   }
   const payload: Record<string, string | number> = { userId };
+  if (companyId !== undefined) payload.companyId = Number(companyId);
+  
+  return jwt.sign(payload, env.READI_DRONE_PRIVATE_KEY, {
+    algorithm: 'RS256',
+    expiresIn: '1h',
+    issuer: 'readi-app',
+  });
+}
+
+export function signReadiDroneJwtWithMultipleOrgs(
+  userId: string,
+  organizations: OrganizationCredentials[],
+  companyId?: string,
+): string {
+  if (!env.READI_DRONE_PRIVATE_KEY) {
+    throw new Error('READI_DRONE_PRIVATE_KEY is not configured');
+  }
+  const payload: Record<string, string | number | OrganizationCredentials[]> = { 
+    userId, 
+    organizations 
+  };
   if (companyId !== undefined) payload.companyId = Number(companyId);
   
   return jwt.sign(payload, env.READI_DRONE_PRIVATE_KEY, {

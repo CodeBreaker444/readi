@@ -22,10 +22,12 @@ export async function GET() {
     const components = await prisma.tool_component.findMany({
       where: {
         tool: { fk_owner_id: ownerId },
+        component_type: 'DRONE',
       },
       select: {
         component_id: true,
         component_name: true,
+        component_type: true,
         serial_number: true,
         fk_tool_id: true,
         tool: {
