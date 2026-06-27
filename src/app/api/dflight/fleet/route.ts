@@ -9,7 +9,7 @@ import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
-    const { session, error } = await requirePermission('view_config');
+    const { session, error } = await requirePermission('view_drone_atc');
     if (error) return error;
 
     const ownerId = session!.user.ownerId;

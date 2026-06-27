@@ -3029,6 +3029,7 @@
         "table": {
           "name": "Name",
           "email": "E-Mail",
+          "role": "Rolle",
           "organizations": "Organisationen",
           "actions": "Aktionen"
         },
@@ -4847,6 +4848,11 @@
       },
       "error": {
         "generic": "Flottendaten konnten nicht geladen werden"
+      },
+      "notConfigured": {
+        "title": "D-Flight nicht konfiguriert",
+        "description": "Bitte konfigurieren Sie Ihre D-Flight-Integrationseinstellungen, um die Flotte anzuzeigen.",
+        "setup": "Zu den Einstellungen"
       }
     }
   }

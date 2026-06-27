@@ -3033,6 +3033,7 @@
         "table": {
           "name": "Nome",
           "email": "Email",
+          "role": "Ruolo",
           "organizations": "Organizzazioni",
           "actions": "Azioni"
         },
@@ -4852,6 +4853,11 @@
       },
       "error": {
         "generic": "Caricamento dati flotta non riuscito"
+      },
+      "notConfigured": {
+        "title": "D-Flight non configurato",
+        "description": "Configura le impostazioni di integrazione D-Flight per visualizzare la flotta.",
+        "setup": "Vai alle Impostazioni"
       }
     }
   }

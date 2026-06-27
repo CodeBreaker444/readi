@@ -3040,6 +3040,7 @@
         "table": {
           "name": "Name",
           "email": "Email",
+          "role": "Role",
           "organizations": "Organizations",
           "actions": "Actions"
         },
@@ -4861,6 +4862,11 @@
       },
       "error": {
         "generic": "Failed to load fleet data"
+      },
+      "notConfigured": {
+        "title": "D-Flight Not Configured",
+        "description": "Please configure your D-Flight integration settings to view the fleet.",
+        "setup": "Go to Settings"
       }
     }
   }

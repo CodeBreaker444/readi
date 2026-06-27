@@ -172,15 +172,19 @@ export async function revokeUserFlytbaseAccess(
  * Get all users with their FlytBase organization access for a company
  */
 export async function getAllUsersWithFlytbaseAccess(companyId: number): Promise<
-  Array<{ user_id: number; fullname: string; email: string; organizations: FlytbaseOrganization[] }>
+  Array<{ user_id: number; fullname: string; email: string; role: string; organizations: FlytbaseOrganization[] }>
 > {
   const users = await prisma.public_users.findMany({
-    where: { fk_owner_id: companyId },
+    where: { 
+      fk_owner_id: companyId,
+      user_role: { not: 'CLIENT' },
+    },
     select: {
       user_id: true,
       first_name: true,
       last_name: true,
       email: true,
+      user_role: true,
     },
   });
 
@@ -209,6 +213,7 @@ export async function getAllUsersWithFlytbaseAccess(companyId: number): Promise<
     user_id: user.user_id,
     fullname: [user.first_name, user.last_name].filter(Boolean).join(' ') || user.email || `User ${user.user_id}`,
     email: user.email ?? '',
+    role: user.user_role ?? 'USER',
     organizations: accessByUser.get(user.user_id) ?? [],
   }));
 }
