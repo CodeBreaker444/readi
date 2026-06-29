@@ -43,6 +43,7 @@ model AuditLog {
   @@index([ownerId], map: "idx_audit_logs_owner_id")
   @@index([userId], map: "idx_audit_logs_user_id")
   @@map("audit_logs")
+  @@schema("public") 
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
