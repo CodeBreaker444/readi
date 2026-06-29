@@ -176,7 +176,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
       icon: HiOutlinePaperAirplane,
       subItems: [
         // { name: t('sidebar.settings'), href: '/control-center' },
-        ...(userData?.role === 'ADMIN' || userData?.role === 'SUPERADMIN'
+        ...(userData?.role === 'ADMIN' || userData?.role === 'OPM' || userData?.role === 'SUPERADMIN'
           ? [{ name: 'C2 Config', href: '/control-center/c2-config' }]
           : []),
         { name: t('sidebar.recentFlights'), href: '/control-center/flights' },

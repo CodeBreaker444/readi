@@ -1,10 +1,11 @@
 import { getUsersWithDroneAtc } from '@/backend/services/drone-atc/drone-atc-users-service';
 import { getFlytbaseCredentials } from '@/backend/services/integrations/flytbase-service';
+import { getAllUserFlytbaseCredentials } from '@/backend/services/integrations/flytbase-organization-service';
 import { internalError } from '@/lib/api-error';
 import { requireAuth } from '@/lib/auth/api-auth';
 import { verifyFlytrelayJwt } from '@/lib/drone-atc-jwt';
 import { E } from '@/lib/error-codes';
-import { updateFlytrelayUsers } from '@/lib/flytrelay-service';
+import { updateFlytrelayUsers, updateFlytrelayUsersWithMultipleOrgs } from '@/lib/flytrelay-service';
 import { NextRequest, NextResponse } from 'next/server';
  
 export async function GET(req: NextRequest) {
@@ -40,11 +41,9 @@ export async function PATCH() {
 
     const userId = session!.user.userId;
 
-    const creds = await getFlytbaseCredentials(userId);
-    if (!creds) {
-      return NextResponse.json({ error: 'No FlytBase credentials configured' }, { status: 404 });
-    }
-
+    // Try to get multiple organization credentials first
+    const multiOrgCreds = await getAllUserFlytbaseCredentials(userId);
+    
     const users = await getUsersWithDroneAtc();
     const flytrelayUsers = users.map(({ systems, ...user }) => ({
       ...user,
@@ -53,7 +52,23 @@ export async function PATCH() {
         components: components.map(({ dccDroneId, ...comp }) => ({ ...comp, drone_id: dccDroneId })),
       })),
     }));
-    const result = await updateFlytrelayUsers(String(userId), creds.token, creds.orgId, flytrelayUsers);
+
+    let result;
+    if (multiOrgCreds.length > 0) {
+      // User has multiple organizations assigned
+      const organizations = multiOrgCreds.map(cred => ({
+        orgId: cred.orgId,
+        token: cred.token,
+      }));
+      result = await updateFlytrelayUsersWithMultipleOrgs(String(userId), organizations, flytrelayUsers);
+    } else {
+      // Fallback to single organization (legacy behavior)
+      const creds = await getFlytbaseCredentials(userId);
+      if (!creds) {
+        return NextResponse.json({ error: 'No FlytBase credentials configured' }, { status: 404 });
+      }
+      result = await updateFlytrelayUsers(String(userId), creds.token, creds.orgId, flytrelayUsers);
+    }
 
     return NextResponse.json({ ok: true, synced: result.synced });
   } catch (err) {
