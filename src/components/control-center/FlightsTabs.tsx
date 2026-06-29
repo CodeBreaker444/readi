@@ -194,11 +194,6 @@ export function FlightsTabs({ flytrelayAccess }: { flytrelayAccess: boolean }) {
               <FlytbaseFlights
                 isActive={true}
                 selectedOrganization={selectedOrganization}
-                organizations={organizations}
-                setSelectedOrganization={setSelectedOrganization}
-                orgLoading={orgLoading}
-                window={window}
-                filterMode={filterMode}
               />
             )}
             {flytrelayAccess && activeTab === 'flytrelay' && (

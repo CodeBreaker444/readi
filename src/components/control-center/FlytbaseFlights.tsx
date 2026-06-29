@@ -19,6 +19,7 @@ import {
   HiLink,
 } from 'react-icons/hi';
 import { Organization } from './FlightsTabs';
+import { NewOperationModal } from '../operation/NewOperationModal';
 
 interface Flight {
   flight_id: string;
@@ -58,6 +59,7 @@ function formatDistance(m?: number): string {
 }
 
 type FilterMode = 'window' | 'latest';
+type AttachModalTab = 'existing' | 'new';
 
 export function FlytbaseFlights({ isActive = true, selectedOrganization }: Props) {
   const { isDark } = useTheme();
@@ -79,10 +81,14 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization }: Props
   const [archived, setArchived] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [archiveError, setArchiveError] = useState<{ message: string; missing_sns: string[] } | null>(null);
+
   const [attachMissionModalOpen, setAttachMissionModalOpen] = useState(false);
+  const [attachModalTab, setAttachModalTab] = useState<AttachModalTab>('existing');
   const [attachableMissions, setAttachableMissions] = useState<any[]>([]);
   const [attachableMissionsLoading, setAttachableMissionsLoading] = useState(false);
-  const [attachingMission, setAttachingMission] = useState(false);
+  const [attachingMissionId, setAttachingMissionId] = useState<number | null>(null);
+
+  const [newMissionModalOpen, setNewMissionModalOpen] = useState(false);
 
   const fetchFlights = useCallback(async (win: number, mode: FilterMode, pageNum: number = 1) => {
     if (!selectedOrganization) {
@@ -169,11 +175,12 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization }: Props
       return;
     }
     setAttachMissionModalOpen(true);
+    setAttachModalTab('existing');
     setAttachableMissionsLoading(true);
     setAttachableMissions([]);
     try {
       const res = await axios.get('/api/operation/missions/attachable', {
-        params: { droneSerialNumber, ownerId: selectedOrganization?.id },
+        params: { droneSerialNumber },
       });
       if (res.data.code === 1) {
         setAttachableMissions(res.data.data);
@@ -187,20 +194,29 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization }: Props
     }
   };
 
-  const handleAttachMission = async (missionId: number) => {
+  const handleAttachMission = async (missionId: number, missionType?: string) => {
     if (!selectedFlight) return;
-    setAttachingMission(true);
+    setAttachingMissionId(missionId);
+
+    // If this is a PDRA mission being attached post-flight, log a compliance warning
+    const isPdra = missionType === 'PDRA';
+
     try {
       const res = await axios.post(`/api/operation/missions/${missionId}/attach-flight-log`, {
         flight_id: selectedFlight.flight_id,
+        ...(isPdra && { post_flight_attach: true }), // backend uses this to write the audit warning
       });
       if (res.data.code === 1) {
-        toast.success('Flight log attached to mission');
+        if (isPdra) {
+          toast.warning('Flight log attached. Note: This PDRA mission was logged after the flight — a compliance warning has been recorded in the audit log.');
+        } else {
+          toast.success('Flight log attached to mission');
+        }
         setAttachMissionModalOpen(false);
         const droneSerialNumber = preview?.aircraft?.serial_number;
         if (droneSerialNumber) {
           const missionsRes = await axios.get('/api/operation/missions/attachable', {
-            params: { droneSerialNumber, ownerId: selectedOrganization?.id },
+            params: { droneSerialNumber },
           });
           if (missionsRes.data.code === 1) setAttachableMissions(missionsRes.data.data);
         }
@@ -210,8 +226,21 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization }: Props
     } catch {
       toast.error('Failed to attach flight log');
     } finally {
-      setAttachingMission(false);
+      setAttachingMissionId(null);
     }
+  };
+
+  const handleOpenNewMission = () => {
+    setAttachMissionModalOpen(false);
+    setNewMissionModalOpen(true);
+  };
+
+  const handleNewMissionSuccess = () => {
+    setNewMissionModalOpen(false);
+    toast.success('Mission created. You can now attach the flight log to it.');
+    setTimeout(() => {
+      handleOpenAttachMissionModal();
+    }, 100);
   };
 
   const card = isDark ? 'bg-[#0c0f1a] border-slate-800' : 'bg-white border-slate-200 shadow-sm';
@@ -231,22 +260,20 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization }: Props
               <button
                 key={w.value}
                 onClick={() => { setFilterMode('window'); setWindow(w.value); }}
-                className={`px-2.5 py-1 cursor-pointer rounded text-[11px] font-medium ${
-                  filterMode === 'window' && window === w.value
-                    ? 'bg-violet-600 text-white'
-                    : isDark ? 'text-slate-400 bg-slate-800' : 'text-slate-500 bg-slate-100'
-                }`}
+                className={`px-2.5 py-1 cursor-pointer rounded text-[11px] font-medium ${filterMode === 'window' && window === w.value
+                  ? 'bg-violet-600 text-white'
+                  : isDark ? 'text-slate-400 bg-slate-800' : 'text-slate-500 bg-slate-100'
+                  }`}
               >
                 {t(`flytbase.flights.windows.${w.value}`)}
               </button>
             ))}
             <button
               onClick={() => setFilterMode('latest')}
-              className={`px-2.5 py-1 cursor-pointer rounded text-[11px] font-medium ${
-                filterMode === 'latest'
-                  ? 'bg-violet-600 text-white'
-                  : isDark ? 'text-slate-400 bg-slate-800' : 'text-slate-500 bg-slate-100'
-              }`}
+              className={`px-2.5 py-1 cursor-pointer rounded text-[11px] font-medium ${filterMode === 'latest'
+                ? 'bg-violet-600 text-white'
+                : isDark ? 'text-slate-400 bg-slate-800' : 'text-slate-500 bg-slate-100'
+                }`}
             >
               {t('flytbase.flights.latest20')}
             </button>
@@ -276,21 +303,6 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization }: Props
 
         {/* Error banners */}
         <div className="flex-shrink-0">
-          {error === 'no_token' && (
-            <div className={`flex items-center justify-between gap-4 rounded-xl border p-4 mb-4 ${isDark ? 'bg-violet-950/20 border-violet-800/30' : 'bg-violet-50 border-violet-200'}`}>
-              <div className="flex items-center gap-3">
-                <HiExclamationCircle className={`w-4 h-4 shrink-0 ${isDark ? 'text-violet-400' : 'text-violet-600'}`} />
-                <p className={`text-xs font-medium ${isDark ? 'text-violet-300' : 'text-violet-700'}`}>
-                  {t('flytbase.flights.noToken')}
-                </p>
-              </div>
-              <Link href="/flytbase">
-                <Button size="sm" className="h-7 text-xs shrink-0 bg-violet-600 hover:bg-violet-500 text-white">
-                  {t('flytbase.flights.setUp')}
-                </Button>
-              </Link>
-            </div>
-          )}
           {error === 'no_organization' && (
             <div className={`flex items-center gap-3 rounded-xl border p-4 mb-4 ${isDark ? 'bg-amber-950/20 border-amber-800/30' : 'bg-amber-50 border-amber-200'}`}>
               <HiExclamationCircle className={`w-4 h-4 shrink-0 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
@@ -436,15 +448,18 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization }: Props
         </div>
       </div>
 
-      {/* Modal — rendered outside overflow containers so fixed positioning works correctly */}
+      {/* ── Attach Mission Modal ── */}
       {attachMissionModalOpen && (
         <div
           className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60"
           onClick={(e) => { if (e.target === e.currentTarget) setAttachMissionModalOpen(false); }}
         >
-          <div className={`rounded-xl border shadow-2xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-hidden ${isDark ? 'bg-[#0c0f1a] border-slate-800' : 'bg-white border-slate-200'}`}>
-            <div className={`flex items-center justify-between px-5 py-4 border-b ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
-              <h2 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>Attach Flight Log to Mission</h2>
+          <div className={`rounded-xl border shadow-2xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-hidden flex flex-col ${isDark ? 'bg-[#0c0f1a] border-slate-800' : 'bg-white border-slate-200'}`}>
+            {/* Modal header */}
+            <div className={`flex items-center justify-between px-5 py-4 border-b flex-shrink-0 ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
+              <h2 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                Attach Flight Log to Mission
+              </h2>
               <button
                 onClick={() => setAttachMissionModalOpen(false)}
                 className={`text-xs px-2 py-1 rounded cursor-pointer transition-colors ${isDark ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-500 hover:bg-slate-100'}`}
@@ -452,53 +467,144 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization }: Props
                 Close
               </button>
             </div>
-            <div className="p-5 overflow-y-auto max-h-[60vh]">
-              {attachableMissionsLoading ? (
-                <div className="space-y-3">
-                  <Skeleton className={`h-12 w-full ${skeletonClass}`} />
-                  <Skeleton className={`h-12 w-full ${skeletonClass}`} />
-                  <Skeleton className={`h-12 w-full ${skeletonClass}`} />
-                </div>
-              ) : attachableMissions.length === 0 ? (
-                <div className="text-center py-8">
-                  <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>No completed missions found without flight logs for this drone</p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {attachableMissions.map((mission) => (
-                    <div
-                      key={mission.pilot_mission_id}
-                      className={`rounded-lg border p-4 ${isDark ? 'bg-slate-800/40 border-slate-700/50' : 'bg-slate-50 border-slate-200'}`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <p className={`text-xs font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                            {mission.mission_code || mission.mission_name}
-                          </p>
-                          <p className={`text-[10px] mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                            {mission.tool?.tool_name || mission.tool?.tool_code}
-                          </p>
-                          <p className={`text-[10px] mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                            {mission.actual_start && new Date(mission.actual_start).toLocaleString()}
-                          </p>
-                        </div>
-                        <Button
-                          size="sm"
-                          onClick={() => handleAttachMission(mission.pilot_mission_id)}
-                          disabled={attachingMission}
-                          className="h-7 text-xs bg-violet-600 hover:bg-violet-500 text-white"
-                        >
-                          {attachingMission ? 'Attaching...' : 'Attach'}
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+
+            {/* Tab bar */}
+            <div className={`flex border-b flex-shrink-0 ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
+              <button
+                onClick={() => setAttachModalTab('existing')}
+                className={`px-5 py-2.5 text-xs font-medium border-b-2 transition-colors cursor-pointer ${attachModalTab === 'existing'
+                  ? 'border-violet-600 text-violet-600'
+                  : isDark
+                    ? 'border-transparent text-slate-400 hover:text-slate-200'
+                    : 'border-transparent text-slate-500 hover:text-slate-800'
+                  }`}
+              >
+                Attach Existing Mission
+              </button>
+              <button
+                onClick={() => setAttachModalTab('new')}
+                className={`px-5 py-2.5 text-xs font-medium border-b-2 transition-colors cursor-pointer ${attachModalTab === 'new'
+                  ? 'border-violet-600 text-violet-600'
+                  : isDark
+                    ? 'border-transparent text-slate-400 hover:text-slate-200'
+                    : 'border-transparent text-slate-500 hover:text-slate-800'
+                  }`}
+              >
+                Create New Mission
+              </button>
             </div>
+
+            {/* Tab: Attach existing */}
+            {attachModalTab === 'existing' && (
+              <div className="p-5 overflow-y-auto flex-1">
+                {attachableMissionsLoading ? (
+                  <div className="space-y-3">
+                    <Skeleton className={`h-12 w-full ${skeletonClass}`} />
+                    <Skeleton className={`h-12 w-full ${skeletonClass}`} />
+                    <Skeleton className={`h-12 w-full ${skeletonClass}`} />
+                  </div>
+                ) : attachableMissions.length === 0 ? (
+                  <div className="text-center py-8 space-y-3">
+                    <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                      No completed missions found without flight logs for this drone.
+                    </p>
+                    <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                      You can create a new mission and attach this flight log to it.
+                    </p>
+                    <Button
+                      size="sm"
+                      onClick={() => setAttachModalTab('new')}
+                      className="h-7 text-xs bg-violet-600 hover:bg-violet-500 text-white"
+                    >
+                      Create New Mission
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {attachableMissions.map((mission) => {
+                      const isPdra = mission.op_type === 'PDRA' || !!mission.fk_planning_id;
+                      const isAttaching = attachingMissionId === mission.pilot_mission_id;
+                      return (
+                        <div
+                          key={mission.pilot_mission_id}
+                          className={`rounded-lg border p-4 ${isDark ? 'bg-slate-800/40 border-slate-700/50' : 'bg-slate-50 border-slate-200'}`}
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <p className={`text-xs font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                                  {mission.mission_code || mission.mission_name}
+                                </p>
+                                {isPdra && (
+                                  <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${isDark ? 'bg-amber-900/40 text-amber-400 border border-amber-800/50' : 'bg-amber-50 text-amber-700 border border-amber-200'}`}>
+                                    PDRA
+                                  </span>
+                                )}
+                              </div>
+                              <p className={`text-[10px] mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                                {mission.tool?.tool_name || mission.tool?.tool_code}
+                              </p>
+                              <p className={`text-[10px] mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                                {mission.actual_start && new Date(mission.actual_start).toLocaleString()}
+                              </p>
+                              {isPdra && (
+                                <p className={`text-[10px] mt-1 flex items-center gap-1 ${isDark ? 'text-amber-400/80' : 'text-amber-600'}`}>
+                                  <HiExclamationCircle className="w-3 h-3 shrink-0" />
+                                  Post-flight attach — compliance warning will be logged
+                                </p>
+                              )}
+                            </div>
+                            <Button
+                              size="sm"
+                              onClick={() => handleAttachMission(mission.pilot_mission_id, isPdra ? 'PDRA' : 'OPEN')}
+                              disabled={isAttaching}
+                              className="h-7 text-xs bg-violet-600 hover:bg-violet-500 text-white shrink-0"
+                            >
+                              {isAttaching ? 'Attaching…' : 'Attach'}
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {attachModalTab === 'new' && (
+              <div className="p-5 flex-1 flex flex-col items-center justify-center gap-4 text-center">
+                <div className={`rounded-full p-3 ${isDark ? 'bg-violet-900/30' : 'bg-violet-50'}`}>
+                  <HiLink className={`w-6 h-6 ${isDark ? 'text-violet-400' : 'text-violet-600'}`} />
+                </div>
+                <div>
+                  <p className={`text-sm font-medium mb-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                    Create a mission for this flight
+                  </p>
+                  <p className={`text-xs max-w-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                    This opens the standard mission creation form. Once created, come back here to attach the flight log.
+                    If you select a <span className="font-medium">PDRA</span> operation type, a compliance warning will be recorded in the audit log.
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={handleOpenNewMission}
+                  className="bg-violet-600 hover:bg-violet-500 text-white text-xs h-8 px-4"
+                >
+                  Open Mission Form
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       )}
+
+      <NewOperationModal
+        open={newMissionModalOpen}
+        onClose={() => setNewMissionModalOpen(false)}
+        onSuccess={handleNewMissionSuccess}
+        isDark={isDark}
+      />
+      
     </>
   );
 }
