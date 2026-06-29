@@ -132,13 +132,15 @@ export function useDroneATCSocket(): UseDroneATCSocketReturn {
       }
 
       const { wsUrl, topic, token } = credsRef.current;
-
+console.log('ws url:',wsUrl,'topic:',topic,'token present:',!!token);
       const socket = io(wsUrl, {
         path: '/socket.io/',
         transports: ['websocket'],
         reconnection: false,
         auth: { token },
       });
+
+      console.log('socket created:', socket);
 
       socketRef.current = socket;
 

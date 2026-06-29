@@ -1,0 +1,11 @@
+{
+  "pages": [
+    "introduction",
+    "start-guide",
+    "modules",
+    "configuration",
+    "records",
+    "business-logic",
+    "platform-rules"
+  ]
+}

@@ -1,4 +1,5 @@
 import { fetchFlytrelayGutma } from '@/backend/services/integrations/flytrelay-flights-service';
+import { getAllUserFlytbaseCredentials } from '@/backend/services/integrations/flytbase-organization-service';
 import { requireAuth } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -119,10 +120,18 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, message: 'flightId is required' }, { status: 400 });
     }
 
+    // Try to get multiple organization credentials first
+    const multiOrgCreds = await getAllUserFlytbaseCredentials(session!.user.userId);
+    const organizations = multiOrgCreds.length > 0 ? multiOrgCreds.map(cred => ({
+      orgId: cred.orgId,
+      token: cred.token,
+    })) : undefined;
+
     const rawData = await fetchFlytrelayGutma(
       String(session!.user.userId),
       flightId,
       session!.user.ownerId ? String(session!.user.ownerId) : undefined,
+      organizations,
     );
 
     const data = parseGutma(flightId, rawData);

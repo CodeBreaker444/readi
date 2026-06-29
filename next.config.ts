@@ -15,6 +15,8 @@ const nextConfig: NextConfig = {
   images: {
     formats: ['image/avif', 'image/webp'],
   },
+  // Exclude fumadocs directory from build
+  excludeDefaultMomentLocales: true,
   async rewrites() {
     return [
       {

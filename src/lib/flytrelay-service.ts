@@ -110,7 +110,7 @@ async function fetchFlytrelayConnectionWithMultipleOrgs(
   if (!baseUrl) throw new Error('FLYTRELAY_BASE_URL is not configured');
 
   const jwt = signReadiDroneJwtWithMultipleOrgs(userId, organizations, companyId ?? undefined);
-
+console.log('jwt payload:',jwt);
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), CONNECT_TIMEOUT_MS);
 
