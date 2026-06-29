@@ -77,14 +77,14 @@ export async function createAndAttachMission(
   if (op_type === 'PDRA' && actual_start && actual_end) {
     const flightEndTime = new Date(actual_end);
     const missionCreatedTime = new Date();
-    
+
     // Check if mission was created significantly after flight completion (more than 1 hour)
     const timeDiff = missionCreatedTime.getTime() - flightEndTime.getTime();
     if (timeDiff > 3600000) {
       await prisma.audit_logs.create({
         data: {
-          fk_user_id: BigInt(userId),
-          fk_owner_id: ownerId,
+          user_id: userId,
+          owner_id: ownerId,
           event_type: 'COMPLIANCE_WARNING',
           entity_type: 'pilot_mission',
           entity_id: String(mission.pilot_mission_id),

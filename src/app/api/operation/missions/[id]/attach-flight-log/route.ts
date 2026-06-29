@@ -2,12 +2,12 @@ import { attachFlytbaseFlightLog } from '@/backend/services/operation/flight-log
 import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { session, error } = await requirePermission('view_operations');
     if (error) return error;
 
-    const missionId = Number(params.id);
+    const missionId = Number((await params).id);
     if (!missionId || missionId <= 0) {
       return NextResponse.json({ code: 0, message: 'Invalid mission ID' }, { status: 400 });
     }

@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
   try {
-    const { session, error } = await requirePermission('edit_operations');
+    const { session, error } = await requirePermission('view_operations');
     if (error) return error;
 
     const body = await req.json();
