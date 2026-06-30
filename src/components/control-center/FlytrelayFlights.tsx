@@ -1,7 +1,6 @@
 'use client';
 
 import { GutmaPreviewPanel } from '@/components/control-center/GutmaPreviewPanel';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTheme } from '@/components/useTheme';
@@ -9,12 +8,13 @@ import axios from 'axios';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-    HiChevronRight,
-    HiClock,
-    HiExclamationCircle,
-    HiOutlineDocumentText,
-    HiRefresh,
+  HiChevronRight,
+  HiClock,
+  HiExclamationCircle,
+  HiOutlineDocumentText,
+  HiRefresh,
 } from 'react-icons/hi';
+import { Organization } from './FlightsTabs';
 
 interface Flight {
   flight_id: string;
@@ -31,6 +31,12 @@ interface Flight {
 interface Props {
   token: string | null;
   isActive?: boolean;
+  selectedOrganization: Organization | null;
+  organizations: Organization[];
+  setSelectedOrganization: (org: Organization | null) => void;
+  orgLoading: boolean;
+  window?: number;
+  filterMode?: 'window' | 'latest';
 }
 
 function formatDuration(startTime: string, endTime: string): string {
@@ -43,7 +49,7 @@ function formatDuration(startTime: string, endTime: string): string {
   return m > 0 ? `${m}m ${s}s` : `${s}s`;
 }
 
-export function FlytrelayFlights({ token, isActive = true }: Props) {
+export function FlytrelayFlights({ token, isActive = true, selectedOrganization, organizations, setSelectedOrganization, orgLoading }: Props) {
   const { isDark } = useTheme();
   const { t } = useTranslation();
   const [flights, setFlights] = useState<Flight[]>([]);
@@ -57,8 +63,8 @@ export function FlytrelayFlights({ token, isActive = true }: Props) {
   const [previewError, setPreviewError] = useState<string | null>(null);
 
   const fetchFlights = useCallback(async (pageNum: number = 1) => {
-    if (!token) {
-      setError('no_token');
+    if (!selectedOrganization) {
+      setError('no_organization');
       setLoading(false);
       return;
     }
@@ -68,7 +74,7 @@ export function FlytrelayFlights({ token, isActive = true }: Props) {
     setPreview(null);
     setPreviewError(null);
     try {
-      const res = await axios.get(`/api/flytrelay/flights?page=${pageNum}`);
+      const res = await axios.get(`/api/flytrelay/flights?page=${pageNum}&organizationId=${selectedOrganization.id}`);
       setFlights(res.data.flights ?? []);
       setTotal(res.data.total ?? 0);
     } catch (err: any) {
@@ -77,14 +83,14 @@ export function FlytrelayFlights({ token, isActive = true }: Props) {
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [selectedOrganization]);
 
   useEffect(() => {
-    if (isActive) {
+    if (isActive && selectedOrganization) {
       setPage(1);
       fetchFlights(1);
     }
-  }, [fetchFlights, isActive]);
+  }, [fetchFlights, isActive, selectedOrganization]);
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
@@ -101,11 +107,10 @@ export function FlytrelayFlights({ token, isActive = true }: Props) {
 
     try {
       const res = await fetch(
-        `/api/flytrelay/flights/gutma?flightId=${encodeURIComponent(flight.flight_id)}`,
+        `/api/flytrelay/flights/gutma?flightId=${encodeURIComponent(flight.flight_id)}&organizationId=${selectedOrganization?.id}`,
       );
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body?.message ?? `Server error ${res.status}`);
-
       setPreview(body.data);
     } catch (err: any) {
       const msg = err?.message ?? 'Failed to load flight telemetry.';
@@ -116,7 +121,6 @@ export function FlytrelayFlights({ token, isActive = true }: Props) {
     }
   }
 
-  const bg = isDark ? 'bg-slate-950' : 'bg-slate-50';
   const card = isDark ? 'bg-[#0c0f1a] border-slate-800' : 'bg-white border-slate-200 shadow-sm';
   const textPrimary = isDark ? 'text-white' : 'text-slate-900';
   const textSecondary = isDark ? 'text-slate-400' : 'text-slate-500';
@@ -124,35 +128,39 @@ export function FlytrelayFlights({ token, isActive = true }: Props) {
   const rowSelected = isDark ? 'bg-violet-950/40 border-l-2 border-violet-500' : 'bg-violet-50 border-l-2 border-violet-500';
 
   return (
-    <div className={`h-full flex flex-col overflow-hidden animate-in fade-in duration-700`}>
-      <div className="flex items-center justify-between mb-4">
-        <div></div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => fetchFlights(page)}
-            className={`h-8 gap-1.5 cursor-pointer text-xs ${isDark ? 'border-slate-700 bg-slate-800 text-slate-300' : 'border-slate-200 text-slate-600'}`}
-          >
-            <HiRefresh className="h-3.5 w-3.5" />
-            Refresh
-          </Button>
-        </div>
+    <div className="h-full flex flex-col overflow-hidden animate-in fade-in duration-700">
+      <div className="flex items-center justify-end mb-4">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => fetchFlights(page)}
+          className={`h-8 gap-1.5 cursor-pointer text-xs ${isDark ? 'border-slate-700 bg-slate-800 text-slate-300' : 'border-slate-200 text-slate-600'}`}
+        >
+          <HiRefresh className="h-3.5 w-3.5" />
+          Refresh
+        </Button>
       </div>
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        {error === 'no_token' && (
-          <div className={`flex items-center justify-between gap-4 rounded-xl border p-4 mb-6 ${isDark ? 'bg-violet-950/20 border-violet-800/30' : 'bg-violet-50 border-violet-200'}`}>
-            <div className="flex items-center gap-3">
-              <HiExclamationCircle className={`w-4 h-4 shrink-0 ${isDark ? 'text-violet-400' : 'text-violet-600'}`} />
-              <p className={`text-xs font-medium ${isDark ? 'text-violet-300' : 'text-violet-700'}`}>
-                No FlytBase integration configured
-              </p>
-            </div>
+        {error === 'no_organization' && (
+          <div className={`flex items-center gap-3 rounded-xl border p-4 mb-6 ${isDark ? 'bg-amber-950/20 border-amber-800/30' : 'bg-amber-50 border-amber-200'}`}>
+            <HiExclamationCircle className={`w-4 h-4 shrink-0 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
+            <p className={`text-xs font-medium ${isDark ? 'text-amber-300' : 'text-amber-700'}`}>
+              No organization selected.
+            </p>
           </div>
         )}
 
-        {error && error !== 'no_token' && (
+        {error === 'no_token' && (
+          <div className={`flex items-center gap-4 rounded-xl border p-4 mb-6 ${isDark ? 'bg-violet-950/20 border-violet-800/30' : 'bg-violet-50 border-violet-200'}`}>
+            <HiExclamationCircle className={`w-4 h-4 shrink-0 ${isDark ? 'text-violet-400' : 'text-violet-600'}`} />
+            <p className={`text-xs font-medium ${isDark ? 'text-violet-300' : 'text-violet-700'}`}>
+              No FlytBase integration configured for this organization.
+            </p>
+          </div>
+        )}
+
+        {error && error !== 'no_token' && error !== 'no_organization' && (
           <div className={`flex items-start gap-3 rounded-xl border p-4 mb-6 ${isDark ? 'bg-red-950/20 border-red-800/30 text-red-400' : 'bg-red-50 border-red-200 text-red-700'}`}>
             <HiExclamationCircle className="w-4 h-4 mt-0.5 shrink-0" />
             <p className="text-xs">{error}</p>
@@ -161,7 +169,7 @@ export function FlytrelayFlights({ token, isActive = true }: Props) {
 
         <div className="flex gap-4 flex-1 min-h-0">
           <div className={`rounded-xl border flex-shrink-0 w-full max-w-sm flex flex-col ${card}`}>
-            <div className="flex items-center justify-between px-4 py-3 border-b ${isDark ? 'border-slate-800' : 'border-slate-200'}">
+            <div className={`flex items-center justify-between px-4 py-3 border-b ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
               <span className={`text-xs font-semibold uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                 Flights
               </span>
@@ -183,9 +191,7 @@ export function FlytrelayFlights({ token, isActive = true }: Props) {
               {!loading && !error && flights.length === 0 && (
                 <div className="px-4 py-10 text-center">
                   <HiClock className={`w-6 h-6 mx-auto mb-2 ${textSecondary}`} />
-                  <p className={`text-xs ${textSecondary}`}>
-                    No recent flights
-                  </p>
+                  <p className={`text-xs ${textSecondary}`}>No recent flights</p>
                 </div>
               )}
 
@@ -222,9 +228,7 @@ export function FlytrelayFlights({ token, isActive = true }: Props) {
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <HiChevronRight className={`w-3.5 h-3.5 ${textSecondary}`} />
-                      </div>
+                      <HiChevronRight className={`w-3.5 h-3.5 shrink-0 ${textSecondary}`} />
                     </div>
                   </button>
                 );
@@ -244,8 +248,8 @@ export function FlytrelayFlights({ token, isActive = true }: Props) {
                       page === 1
                         ? 'opacity-50 cursor-not-allowed'
                         : isDark
-                        ? 'text-slate-300 hover:bg-slate-800'
-                        : 'text-slate-600 hover:bg-slate-100'
+                          ? 'text-slate-300 hover:bg-slate-800'
+                          : 'text-slate-600 hover:bg-slate-100'
                     }`}
                   >
                     Previous
@@ -257,8 +261,8 @@ export function FlytrelayFlights({ token, isActive = true }: Props) {
                       page >= Math.ceil(total / 20)
                         ? 'opacity-50 cursor-not-allowed'
                         : isDark
-                        ? 'text-slate-300 hover:bg-slate-800'
-                        : 'text-slate-600 hover:bg-slate-100'
+                          ? 'text-slate-300 hover:bg-slate-800'
+                          : 'text-slate-600 hover:bg-slate-100'
                     }`}
                   >
                     Next
@@ -275,7 +279,6 @@ export function FlytrelayFlights({ token, isActive = true }: Props) {
                 <p className={`text-xs ${textSecondary}`}>Select a flight to view telemetry</p>
               </div>
             )}
-
             {selectedFlight && (
               <GutmaPreviewPanel
                 flight={{

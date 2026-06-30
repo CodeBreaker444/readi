@@ -1,5 +1,5 @@
 import { fetchFlytrelayGutma } from '@/backend/services/integrations/flytrelay-flights-service';
-import { getAllUserFlytbaseCredentials } from '@/backend/services/integrations/flytbase-organization-service';
+import { getAllUserFlytbaseCredentials, getOrganizationCredentials } from '@/backend/services/integrations/flytbase-organization-service';
 import { requireAuth } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -116,16 +116,37 @@ export async function GET(req: NextRequest) {
     if (error) return error;
 
     const flightId = req.nextUrl.searchParams.get('flightId');
+    const organizationIdParam = req.nextUrl.searchParams.get('organizationId');
     if (!flightId) {
       return NextResponse.json({ success: false, message: 'flightId is required' }, { status: 400 });
     }
 
-    // Try to get multiple organization credentials first
-    const multiOrgCreds = await getAllUserFlytbaseCredentials(session!.user.userId);
-    const organizations = multiOrgCreds.length > 0 ? multiOrgCreds.map(cred => ({
-      orgId: cred.orgId,
-      token: cred.token,
-    })) : undefined;
+    let organizations;
+
+    if (organizationIdParam) {
+      const organizationId = parseInt(organizationIdParam, 10);
+      if (isNaN(organizationId)) {
+        return NextResponse.json(
+          { success: false, message: 'Invalid organization ID' },
+          { status: 400 },
+        );
+      }
+      const orgCreds = await getOrganizationCredentials(organizationId);
+      if (!orgCreds) {
+        return NextResponse.json(
+          { success: false, message: 'Organization not found or has no credentials' },
+          { status: 404 },
+        );
+      }
+      organizations = [{ orgId: orgCreds.orgId, token: orgCreds.token }];
+    } else {
+      // Try to get multiple organization credentials first
+      const multiOrgCreds = await getAllUserFlytbaseCredentials(session!.user.userId);
+      organizations = multiOrgCreds.length > 0 ? multiOrgCreds.map(cred => ({
+        orgId: cred.orgId,
+        token: cred.token,
+      })) : undefined;
+    }
 
     const rawData = await fetchFlytrelayGutma(
       String(session!.user.userId),
