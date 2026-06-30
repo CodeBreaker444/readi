@@ -672,6 +672,9 @@
       "actions": {
         "search": "Search",
         "filter": "Filter"
+      },
+      "filter": {
+        "all": "All"
       }
     },
     "table": {
