@@ -33,7 +33,6 @@ export async function createFlytbaseOrganization(
     throw new Error('Invalid company ID: must be a positive number');
   }
 
-  // Verify the token before saving
   await verifyFlytbaseTokenAndGetUser(apiToken, orgId);
 
   const organization = await prisma.flytbase_organizations.create({
