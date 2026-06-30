@@ -16,23 +16,8 @@ import { Building2, Plus, ShieldCheck, User as UserIcon } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { getOrgColumns, getUserColumns } from '../tables/ConfigColumns';
+import { getOrgColumns, getUserColumns, Organization, UserWithAccess } from '../tables/ConfigColumns';
 import { DataTable, DeleteAlertDialog, EditUserDialog, OrgDialog, SearchBar } from './ConfigDialogs';
-
-interface Organization {
-  id: string;
-  org_id: string;
-  name: string;
-  created_at: string;
-}
-
-interface User {
-  id: string;
-  fullname: string;
-  email: string;
-  role: string;
-  organizations: Organization[];
-}
 
 export default function C2Config() {
   const { isDark } = useTheme();
@@ -46,12 +31,12 @@ export default function C2Config() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
 
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<UserWithAccess[]>([]);
   const [usersLoading, setUsersLoading] = useState(true);
   const [userSearchTerm, setUserSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [editUserModalOpen, setEditUserModalOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedUser, setSelectedUser] = useState<UserWithAccess | null>(null);
 
   const fetchOrganizations = useCallback(async () => {
     setOrgLoading(true);
@@ -144,7 +129,7 @@ export default function C2Config() {
     }
   };
 
-  const handleEditUser = (user: User) => {
+  const handleEditUser = (user: UserWithAccess) => {
     setSelectedUser(user);
     setEditUserModalOpen(true);
   };
