@@ -80,6 +80,12 @@ interface FlytbaseFlight {
   status?: string;
 }
 
+export interface FlytbaseOrganization {
+  organization_id: number;
+  org_name: string;
+  org_id: string;
+}
+
 interface Props {
   open: boolean;
   onClose: () => void;
@@ -110,7 +116,6 @@ function isoToLocalInput(iso: string | null | undefined): string {
   try {
     const d = new Date(iso);
     if (isNaN(d.getTime())) return "";
-    // Use local time representation
     const pad = (n: number) => String(n).padStart(2, "0");
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
   } catch {
@@ -146,11 +151,23 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
   const [autoSyncingFlight, setAutoSyncingFlight] = useState(false);
   const [autoSyncedIds, setAutoSyncedIds] = useState<Set<number>>(new Set());
 
+  // Organization selection for FlytBase flights
+  const [organizations, setOrganizations] = useState<FlytbaseOrganization[]>([]);
+  const [selectedOrganization, setSelectedOrganization] = useState<FlytbaseOrganization | null>(null);
+  const [orgLoading, setOrgLoading] = useState(false);
+
+  const selectedOrgIdRef = useRef<number | null>(null);
+  useEffect(() => {
+    selectedOrgIdRef.current = selectedOrganization?.organization_id ?? null;
+  }, [selectedOrganization]);
+
   // Post-flight state
   const [loadingPostFlight, setLoadingPostFlight] = useState(true);
   const [submittingPostFlight, setSubmittingPostFlight] = useState(false);
   const [resultOptions, setResultOptions] = useState<MissionResultOption[]>([]);
   const [postFlightFromLog, setPostFlightFromLog] = useState(false);
+  const [waypoints, setWaypoints] = useState<any[]>([]);
+  const [loadingWaypoints, setLoadingWaypoints] = useState(false);
   const [postFlight, setPostFlight] = useState<PostFlightState>({
     actual_end: "",
     result_id: null,
@@ -195,17 +212,44 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
     }
   }, [toolId, t]);
 
+  const loadWaypoints = useCallback(async (flightId: string, organizationId?: number | null) => {
+    setLoadingWaypoints(true);
+    try {
+      const orgId = organizationId !== undefined ? organizationId : selectedOrgIdRef.current;
+      const orgParam = orgId ? `&organizationId=${orgId}` : "";
+      const { data } = await axios.get(`/api/flytbase/flights/preview?flightId=${flightId}${orgParam}`);
+      if (data.success && data.data?.waypoints) {
+        setWaypoints(data.data.waypoints);
+      } else {
+        console.log("Waypoints fetch unsuccessful:", data);
+        toast.error(data.message ?? t("operations.missionComplete.toast.loadError"));
+      }
+    } catch (err: any) {
+      console.log("Error in Fetching waypoints:", err);
+      toast.error(err.response?.data?.message ?? t("operations.missionComplete.toast.loadError"));
+    } finally {
+      setLoadingWaypoints(false);
+    }
+  }, [t]);
+
   const loadLogs = useCallback(async () => {
     setLoadingLogs(true);
     try {
       const { data } = await axios.get(`/api/operation/board/flight-logs?mission_id=${missionId}`);
-      if (data.code === 1) setLogs(data.data ?? []);
+      if (data.code === 1) {
+        setLogs(data.data ?? []);
+        // Load waypoints from first FlytBase log if available
+        const flytbaseLog = data.data?.find((log: FlightLog) => log.log_source === "flytbase");
+        if (flytbaseLog?.flytbase_flight_id) {
+          loadWaypoints(flytbaseLog.flytbase_flight_id);
+        }
+      }
     } catch (err) {
       console.log("Error in Fetching logs:", err);
     } finally {
       setLoadingLogs(false);
     }
-  }, [missionId]);
+  }, [missionId, loadWaypoints]);
 
   const loadPostFlight = useCallback(async () => {
     setLoadingPostFlight(true);
@@ -236,15 +280,37 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
     }
   }, [missionId, t]);
 
+  const loadOrganizations = useCallback(async () => {
+    setOrgLoading(true);
+    try {
+      const { data } = await axios.get('/api/flytbase/my-organizations');
+      const orgs: FlytbaseOrganization[] = data.organizations || [];
+      setOrganizations(orgs);
+      setSelectedOrganization((prev) => prev ?? (orgs.length > 0 ? orgs[0] : null));
+    } catch (err) {
+      console.error('Failed to fetch organizations:', err);
+    } finally {
+      setOrgLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (open && toolId > 0) {
       loadMaintenance();
       loadLogs();
       loadPostFlight();
+      loadOrganizations();
     }
-  }, [open, toolId, loadMaintenance, loadLogs, loadPostFlight]);
+  }, [open, toolId, loadMaintenance, loadLogs, loadPostFlight, loadOrganizations]);
 
-  // ── Maintenance handlers ─────────────────────────────────────────────────
+  const handleOrganizationChange = (organizationId: number) => {
+    const org = organizations.find((o) => o.organization_id === organizationId) ?? null;
+    setSelectedOrganization(org);
+    setFlights([]);
+    setSelectedFlight(null);
+    setFlightsError(null);
+  };
+
   const handleHoursChange = (compId: number, rawValue: string) => {
     if (rawValue === "") {
       setHoursRaw((prev) => ({ ...prev, [compId]: "" }));
@@ -354,7 +420,6 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
     }
   };
 
-  // ── Post-flight handlers ─────────────────────────────────────────────────
   const handlePostFlightChange = <K extends keyof PostFlightState>(
     field: K,
     value: PostFlightState[K]
@@ -395,7 +460,6 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
     }
   };
 
-  // ── Logs handlers ────────────────────────────────────────────────────────
   const ALLOWED_EXTENSIONS = [".zip", ".json", ".xml", ".gutma"];
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -427,12 +491,18 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
   };
 
   const handleFetchFlights = async () => {
+    if (!selectedOrganization) {
+      setFlightsError(t("operations.missionComplete.toast.noOrgSelected", "Select a FlytBase organization first."));
+      return;
+    }
     setLoadingFlights(true);
     setFlights([]);
     setSelectedFlight(null);
     setFlightsError(null);
     try {
-      const { data } = await axios.get(`/api/flytbase/flights?window=${fbWindow}`);
+      const { data } = await axios.get(
+        `/api/flytbase/flights?window=${fbWindow}&organizationId=${selectedOrganization.organization_id}`
+      );
       if (data.success) {
         setFlights(data.flights ?? []);
         if ((data.flights ?? []).length === 0) {
@@ -461,6 +531,11 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
 
   const handleAttachFlight = async () => {
     if (!selectedFlight) return;
+    if (!selectedOrganization) {
+      setFlightsError(t("operations.missionComplete.toast.noOrgSelected", "Select a FlytBase organization first."));
+      return;
+    }
+    const organizationId = selectedOrganization.organization_id;
     setAttachingFlight(true);
     setFlightsError(null);
     // Capture listing metadata before state is cleared
@@ -469,19 +544,21 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
       const { data } = await axios.post("/api/operation/board/flight-logs/flytbase", {
         mission_id: missionId,
         flight_id: selectedFlight,
+        organization_id: organizationId,
       });
       if (data.code === 1) {
         toast.success(t("operations.missionComplete.toast.attachSuccess"));
+        const flightId = selectedFlight;
         setSelectedFlight(null);
         setFlights([]);
         loadLogs();
+        // Load waypoints from the attached flight, using the org we just attached with
+        loadWaypoints(flightId, organizationId);
 
-        // Auto-sync GUTMA data into maintenance inputs + post-flight fields
-        const flightId = selectedFlight;
         setAutoSyncingFlight(true);
         try {
           const { data: previewRes } = await axios.get(
-            `/api/flytbase/flights/preview?flightId=${flightId}`
+            `/api/flytbase/flights/preview?flightId=${flightId}&organizationId=${organizationId}`
           );
           if (previewRes.success && previewRes.data && systemData) {
             const preview = previewRes.data;
@@ -496,7 +573,6 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
                 durationHhmm = secondsToHhmm(durationSeconds);
               }
             }
-            // Fallback to flight-listing duration if GUTMA had no timestamps
             if (durationSeconds === 0 && selectedFlightMeta?.duration && selectedFlightMeta.duration > 0) {
               durationSeconds = selectedFlightMeta.duration;
               durationHhmm = secondsToHhmm(durationSeconds);
@@ -570,7 +646,6 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
             }
           }
         } catch {
-          // GUTMA auto-sync is best-effort
         } finally {
           setAutoSyncingFlight(false);
         }
@@ -598,7 +673,7 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
     <Dialog open={open} onOpenChange={(o) => { if (!o) (onSkip ?? onClose)(); }}>
       <DialogContent
         className={cn(
-          "max-w-[1200px] w-[95vw] max-h-[90vh] overflow-hidden flex flex-col p-0",
+          "max-w-[1400px] w-[98vw] max-h-[95vh] overflow-hidden flex flex-col p-0",
           isDark ? "bg-[#0f1419] border-white/8" : "bg-white border-slate-200"
         )}
       >
@@ -682,6 +757,10 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
               autoSyncingFlight={autoSyncingFlight}
               flightsError={flightsError}
               isDark={isDark}
+              organizations={organizations}
+              selectedOrganization={selectedOrganization}
+              orgLoading={orgLoading}
+              onOrganizationChange={handleOrganizationChange}
               onFileChange={handleFileChange}
               onWindowChange={handleWindowChange}
               onFetchFlights={handleFetchFlights}
@@ -697,6 +776,8 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
               fromLog={postFlightFromLog}
               isDark={isDark}
               onChange={handlePostFlightChange}
+              waypoints={waypoints}
+              loadingWaypoints={loadingWaypoints}
             />
           )}
         </div>

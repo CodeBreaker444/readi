@@ -12,6 +12,13 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Skeleton } from "../ui/skeleton";
+import dynamic from "next/dynamic";
+import type { FlightWaypoint } from "@/components/control-center/FlightPathMap";
+
+const FlightPathMapDynamic = dynamic(
+  () => import('@/components/control-center/FlightPathMap').then((m) => ({ default: m.FlightPathMap })),
+  { ssr: false },
+);
 
 export interface MissionResultOption {
   mission_result_id: number;
@@ -41,6 +48,8 @@ interface PostFlightTabProps {
   fromLog: boolean;
   isDark: boolean;
   onChange: <K extends keyof PostFlightState>(field: K, value: PostFlightState[K]) => void;
+  waypoints?: FlightWaypoint[];
+  loadingWaypoints?: boolean;
 }
 
 function FieldLabel({ icon: Icon, label, isDark, fromLog }: {
@@ -125,8 +134,13 @@ function CheckboxField({ label, checked, onChange, isDark }: {
   );
 }
 
-export function PostFlightTab({ data, resultOptions, loading, fromLog, isDark, onChange }: PostFlightTabProps) {
+export function PostFlightTab({ data, resultOptions, loading, fromLog, isDark, onChange, waypoints, loadingWaypoints }: PostFlightTabProps) {
   const { t } = useTranslation();
+
+  const hasMap = !!(
+    waypoints &&
+    waypoints.some((wp) => wp.latitude != null && wp.longitude != null)
+  );
 
   if (loading) {
     return (
@@ -140,6 +154,18 @@ export function PostFlightTab({ data, resultOptions, loading, fromLog, isDark, o
 
   return (
     <div className="space-y-3">
+      {/* Flight Path Map */}
+      {loadingWaypoints ? (
+        <Skeleton className={cn("h-80 w-full rounded-xl", isDark ? "bg-slate-800" : "")} />
+      ) : hasMap ? (
+        <div className={cn("rounded-xl border overflow-hidden", isDark ? "border-white/6 bg-slate-900/40" : "border-slate-200 bg-white")}>
+          <FlightPathMapDynamic
+            waypoints={waypoints}
+            height="380px"
+            isDark={isDark}
+          />
+        </div>
+      ) : null}
       {/* Mission Outcome */}
       <div className={sectionCls(isDark)}>
         <p className={sectionTitle(isDark)}>{t("operations.missionComplete.postFlight.sections.outcome")}</p>
