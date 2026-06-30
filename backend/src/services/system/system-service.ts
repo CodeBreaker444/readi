@@ -933,12 +933,21 @@ export async function updateComponent(componentId: number, componentData: any) {
 
   const existing = await prisma.tool_component.findUnique({
     where: { component_id: componentId },
-    select: { component_metadata: true, fk_tool_id: true, current_usage_hours: true },
+    select: { component_metadata: true, fk_tool_id: true, current_usage_hours: true, current_maintenance_hours: true, current_maintenance_flights: true },
   });
 
   const existingMeta = (existing?.component_metadata as Record<string, unknown>) || {};
   const { system_detached: _ignored, ...existingMetaWithoutDetached } = existingMeta;
   const baseMeta = componentData.system_detached ? existingMeta : existingMetaWithoutDetached;
+
+  // Only apply initial_* fields if they are explicitly different from current values
+  // This prevents accidental counter resets when moving components between systems
+  const shouldResetUsageHours = componentData.initial_usage_hours != null && 
+    (existing?.current_usage_hours == null || Number(componentData.initial_usage_hours) !== Number(existing.current_usage_hours));
+  const shouldResetMaintenanceHours = componentData.initial_maintenance_hours != null && 
+    (existing?.current_maintenance_hours == null || Number(componentData.initial_maintenance_hours) !== Number(existing.current_maintenance_hours));
+  const shouldResetMaintenanceFlights = componentData.initial_maintenance_flights != null && 
+    (existing?.current_maintenance_flights == null || Number(componentData.initial_maintenance_flights) !== Number(existing.current_maintenance_flights));
 
   const prevLat = existingMeta?.latitude ?? null;
   const prevLon = existingMeta?.longitude ?? null;
@@ -974,9 +983,9 @@ export async function updateComponent(componentId: number, componentData: any) {
       ...(componentData.maintenance_cycle_hour !== undefined && { maintenance_cycle_hour: componentData.maintenance_cycle_hour ?? null }),
       ...(componentData.maintenance_cycle_day !== undefined && { maintenance_cycle_day: componentData.maintenance_cycle_day ?? null }),
       ...(componentData.maintenance_cycle_flight !== undefined && { maintenance_cycle_flight: componentData.maintenance_cycle_flight ?? null }),
-      ...(componentData.initial_usage_hours != null && { current_usage_hours: componentData.initial_usage_hours }),
-      ...(componentData.initial_maintenance_hours != null && { current_maintenance_hours: componentData.initial_maintenance_hours }),
-      ...(componentData.initial_maintenance_flights != null && { current_maintenance_flights: componentData.initial_maintenance_flights }),
+      ...(shouldResetUsageHours && { current_usage_hours: componentData.initial_usage_hours }),
+      ...(shouldResetMaintenanceHours && { current_maintenance_hours: componentData.initial_maintenance_hours }),
+      ...(shouldResetMaintenanceFlights && { current_maintenance_flights: componentData.initial_maintenance_flights }),
       component_metadata: {
         ...baseMeta,
         cc_platform: componentData.cc_platform || null,
