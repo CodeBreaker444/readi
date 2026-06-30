@@ -1,9 +1,8 @@
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 
 /**
- *
  * Call BEFORE any read/write on tool_component to update maintenance days.
- *
  */
 export async function refreshMaintenanceDays(toolIds: number[]): Promise<void> {
   if (toolIds.length === 0) return;
@@ -55,15 +54,15 @@ export async function refreshMaintenanceDays(toolIds: number[]): Promise<void> {
 
   if (updates.length === 0) return;
 
-  await prisma.$transaction(
-    updates.map((upd) =>
-      prisma.tool_component.update({
-        where: { component_id: upd.id },
-        data: { current_maintenance_days: upd.days },
-      })
-    ),
-    { timeout: 30000 } // 30 seconds
-  );
+  // Single statement bulk UPDATE instead of N sequential updates inside a transaction
+  await prisma.$executeRaw`
+    UPDATE tool_component AS tc
+    SET current_maintenance_days = v.days
+    FROM (VALUES ${Prisma.join(
+      updates.map((u) => Prisma.sql`(${u.id}::int, ${u.days}::int)`),
+    )}) AS v(component_id, days)
+    WHERE tc.component_id = v.component_id
+  `;
 }
 
 export async function refreshMaintenanceDaysForTool(toolId: number): Promise<void> {

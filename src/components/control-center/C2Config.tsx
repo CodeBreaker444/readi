@@ -302,10 +302,16 @@ export default function C2Config() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Roles</SelectItem>
-                    <SelectItem value="SUPERADMIN">SUPERADMIN</SelectItem>
                     <SelectItem value="ADMIN">ADMIN</SelectItem>
+                    <SelectItem value="PIC">PIC</SelectItem>
                     <SelectItem value="OPM">OPM</SelectItem>
-                    <SelectItem value="USER">USER</SelectItem>
+                    <SelectItem value="SM">SM</SelectItem>
+                    <SelectItem value="AM">AM</SelectItem>
+                    <SelectItem value="CMM">CMM</SelectItem>
+                    <SelectItem value="RM">RM</SelectItem>
+                    <SelectItem value="TM">TM</SelectItem>
+                    <SelectItem value="DC">DC</SelectItem>
+                    <SelectItem value="SLA">SLA</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

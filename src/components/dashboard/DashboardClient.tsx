@@ -9,14 +9,37 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from '@/components/ui/chart';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { cn } from '@/lib/utils';
-import { Clock, Navigation, Plane, TrendingUp, Users } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Clock, Navigation, Plane, Search, TrendingUp, Users } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Bar, BarChart, CartesianGrid, Cell,
   Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis
 } from 'recharts';
+import {
+  ColumnFiltersState,
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  useReactTable,
+} from '@tanstack/react-table';
 import { useTheme } from '../useTheme';
 import DashboardSkeleton from './DashboardSkeleton';
 
@@ -33,6 +56,8 @@ interface MissionData {
   date: string;
   status: 'Left' | 'Waiting' | 'Completed';
 }
+
+type MissionTableType = 'past' | 'next';
 
 const PIE_COLORS = ['#ef4444', '#10b981', '#f59e0b'];
 const BAR_COLORS = [
@@ -146,6 +171,142 @@ export default function DashboardClient({ ownerId, userProfileCode, userId, init
     date: m.date,
     status: 'Waiting',
   }));
+
+  // Mission table component with useReactTable
+  const MissionTable = ({ data, tableType }: { data: MissionData[]; tableType: MissionTableType }) => {
+    const [globalFilter, setGlobalFilter] = useState('');
+    const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+    const [statusFilter, setStatusFilter] = useState<string>('all');
+
+    const columns = useMemo(() => [
+      {
+        accessorKey: 'id',
+        header: t('dashboard.table.headers.id'),
+        cell: ({ row }: { row: any }) => (
+          <span className="font-mono text-indigo-500 font-medium">{row.getValue('id')}</span>
+        ),
+      },
+      {
+        accessorKey: 'name',
+        header: t('dashboard.table.headers.pilot'),
+        cell: ({ row }: { row: any }) => row.getValue('name'),
+      },
+      {
+        accessorKey: 'date',
+        header: t('dashboard.table.headers.date'),
+        cell: ({ row }: { row: any }) => (
+          <span className={cn('hidden sm:table-cell', isDark ? 'text-slate-400' : 'text-gray-400')}>
+            {row.getValue('date')}
+          </span>
+        ),
+      },
+      {
+        accessorKey: 'status',
+        header: t('dashboard.table.headers.status'),
+        cell: ({ row }: { row: any }) => {
+          const status = row.getValue('status') as MissionData['status'];
+          return (
+            <span className={cn(
+              'inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium',
+              STATUS_STYLE[status] ?? 'bg-gray-100 text-gray-500'
+            )}>
+              {statusToLabel(status)}
+            </span>
+          );
+        },
+      },
+    ], [t, isDark]);
+
+    const filteredData = useMemo(() => {
+      let result = data;
+      if (statusFilter !== 'all') {
+        result = result.filter(m => m.status === statusFilter);
+      }
+      return result;
+    }, [data, statusFilter]);
+
+    const table = useReactTable({
+      data: filteredData,
+      columns,
+      state: {
+        globalFilter,
+        columnFilters,
+      },
+      onGlobalFilterChange: setGlobalFilter,
+      onColumnFiltersChange: setColumnFilters,
+      getCoreRowModel: getCoreRowModel(),
+      getFilteredRowModel: getFilteredRowModel(),
+    });
+
+    const uniqueStatuses = useMemo(() => {
+      const statuses = new Set(data.map(m => m.status));
+      return Array.from(statuses);
+    }, [data]);
+
+    return (
+      <div className="flex flex-col h-full">
+        {/* Search and filter bar */}
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <div className="relative w-48">
+            <Search className={cn('absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5', isDark ? 'text-slate-500' : 'text-slate-400')} />
+            <Input
+              placeholder={t('dashboard.missions.actions.search')}
+              value={globalFilter}
+              onChange={(e) => setGlobalFilter(e.target.value)}
+              className={cn('h-8 pl-8 text-xs', isDark ? 'bg-slate-700 border-slate-600 text-slate-300 placeholder:text-slate-500 focus:border-violet-500' : 'bg-gray-50 border-gray-200 text-gray-700 placeholder:text-gray-400 focus:border-violet-400')}
+            />
+          </div>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-32 h-8 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('dashboard.missions.filter.all')}</SelectItem>
+              {uniqueStatuses.map(status => (
+                <SelectItem key={status} value={status}>{statusToLabel(status as MissionData['status'])}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Table */}
+        <div className="flex-1 overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className={cn(isDark ? 'border-slate-700/60' : 'border-gray-100')}>
+                {table.getHeaderGroups().map(headerGroup => (
+                  headerGroup.headers.map(header => (
+                    <TableHead key={header.id} className={cn('py-2.5 px-3 text-[11px] font-semibold uppercase tracking-wider', isDark ? 'text-slate-500' : 'text-gray-400')}>
+                      {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                    </TableHead>
+                  ))
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={columns.length} className={cn('py-10 text-center text-xs', isDark ? 'text-slate-500' : 'text-gray-400')}>
+                    {tableType === 'past' ? t('dashboard.missions.past.empty') : t('dashboard.missions.next.empty')}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                table.getRowModel().rows.map(row => (
+                  <TableRow key={row.id} className={cn('border-b transition-colors', isDark ? 'border-slate-700/40 hover:bg-slate-700/30' : 'border-gray-50 hover:bg-gray-50/80')}>
+                    {row.getVisibleCells().map(cell => (
+                      <TableCell key={cell.id} className={cn('py-3 px-3 text-xs', isDark ? 'text-slate-300' : 'text-gray-700')}>
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+    );
+  };
 
   const sanitizeKey = (name: string) => name.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
 
@@ -374,56 +535,28 @@ export default function DashboardClient({ ownerId, userProfileCode, userId, init
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {[
-          { title: t('dashboard.missions.past.title'),   eyebrowLabel: t('dashboard.missions.past.eyebrow'),   rows: missions,     empty: t('dashboard.missions.past.empty') },
-          { title: t('dashboard.missions.next.title'),   eyebrowLabel: t('dashboard.missions.next.eyebrow'),   rows: nextMissions, empty: t('dashboard.missions.next.empty') },
-        ].map(({ title, eyebrowLabel, rows, empty }) => (
-          <div key={title} className={cn(card, 'flex flex-col')}>
-            <div className={cardHeader}>
-              <div>
-                <p className={eyebrow}>{eyebrowLabel}</p>
-                <h2 className={cardTitle}>{title}</h2>
-              </div>
-              <div className="flex gap-1.5">
-                <button className={btnCls}>{t('dashboard.missions.actions.search')}</button>
-                <button className={btnCls}>{t('dashboard.missions.actions.filter')}</button>
-              </div>
-            </div>
-            <div className="p-5 overflow-x-auto">
-              <table className="min-w-full">
-                <thead>
-                  <tr className={cn('border-b', isDark ? 'border-slate-700/60' : 'border-gray-100')}>
-                    <th className={cn(thCls, 'w-16')}>{t('dashboard.table.headers.id')}</th>
-                    <th className={thCls}>{t('dashboard.table.headers.pilot')}</th>
-                    <th className={cn(thCls, 'hidden sm:table-cell')}>{t('dashboard.table.headers.date')}</th>
-                    <th className={thCls}>{t('dashboard.table.headers.status')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.length === 0 && (
-                    <tr>
-                      <td colSpan={4} className={cn('py-10 text-center text-xs', isDark ? 'text-slate-500' : 'text-gray-400')}>
-                        {empty}
-                      </td>
-                    </tr>
-                  )}
-                  {rows.map((m, i) => (
-                    <tr key={i} className={trCls}>
-                      <td className={cn(tdCls, 'font-mono text-indigo-500 font-medium')}>{m.id}</td>
-                      <td className={tdCls}>{m.name}</td>
-                      <td className={cn(tdCls, 'hidden sm:table-cell', isDark ? 'text-slate-400' : 'text-gray-400')}>{m.date}</td>
-                      <td className="py-3 px-3">
-                        <span className={cn('inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium', STATUS_STYLE[m.status] ?? 'bg-gray-100 text-gray-500')}>
-                          {statusToLabel(m.status)}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+        <div className={cn(card, 'flex flex-col')}>
+          <div className={cardHeader}>
+            <div>
+              <p className={eyebrow}>{t('dashboard.missions.past.eyebrow')}</p>
+              <h2 className={cardTitle}>{t('dashboard.missions.past.title')}</h2>
             </div>
           </div>
-        ))}
+          <div className="p-5">
+            <MissionTable data={missions} tableType="past" />
+          </div>
+        </div>
+        <div className={cn(card, 'flex flex-col')}>
+          <div className={cardHeader}>
+            <div>
+              <p className={eyebrow}>{t('dashboard.missions.next.eyebrow')}</p>
+              <h2 className={cardTitle}>{t('dashboard.missions.next.title')}</h2>
+            </div>
+          </div>
+          <div className="p-5">
+            <MissionTable data={nextMissions} tableType="next" />
+          </div>
+        </div>
       </div>
     </div>
   );
