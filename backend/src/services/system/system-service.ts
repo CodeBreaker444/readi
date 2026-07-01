@@ -964,6 +964,11 @@ export async function updateComponent(componentId: number, componentData: any) {
     newLon != null &&
     (String(prevLat) !== String(newLat) || String(prevLon) !== String(newLon));
 
+  const oldPosition = {
+    latitude: prevLat,
+    longitude: prevLon,
+  };
+
   const existingHistory: any[] = Array.isArray(baseMeta.location_history) ? baseMeta.location_history : [];
   const updatedHistory = locationChanged
     ? [...existingHistory, { latitude: newLat, longitude: newLon, changed_at: new Date().toISOString() }]
@@ -1013,7 +1018,7 @@ export async function updateComponent(componentId: number, componentData: any) {
     },
   });
 
-  return { code: 1, message: 'Component updated successfully', data };
+  return { code: 1, message: 'Component updated successfully', data, oldPosition };
 }
 
 
