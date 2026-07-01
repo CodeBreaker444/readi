@@ -49,6 +49,7 @@ export default function LocationPickerInner({ lat, lng, onChange, isDark = false
   const searchRef = useRef<HTMLInputElement>(null);
   const justSelectedRef = useRef(false);
   const blockMapClickRef = useRef(false);
+  const blockMapClickTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [dropdownRect, setDropdownRect] = useState<DOMRect | null>(null);
 
@@ -64,6 +65,16 @@ export default function LocationPickerInner({ lat, lng, onChange, isDark = false
 
   useEffect(() => { setDraftLat(lat); }, [lat]);
   useEffect(() => { setDraftLng(lng); }, [lng]);
+
+  useEffect(() => {
+    blockMapClickRef.current = showDropdown;
+  }, [showDropdown]);
+
+  useEffect(() => {
+    return () => {
+      if (blockMapClickTimeoutRef.current) clearTimeout(blockMapClickTimeoutRef.current);
+    };
+  }, []);
 
   const placeOrMoveMarker = (map: L.Map, clat: number, clng: number) => {
     if (markerRef.current) {
@@ -155,6 +166,12 @@ export default function LocationPickerInner({ lat, lng, onChange, isDark = false
   }, [query]);
 
   const selectResult = (r: NominatimResult) => {
+    // Hard guard: never let this click (or its trailing click/mouseup) fall
+    // through to the Leaflet map underneath and drop a pin.
+    blockMapClickRef.current = true;
+    if (blockMapClickTimeoutRef.current) clearTimeout(blockMapClickTimeoutRef.current);
+    blockMapClickTimeoutRef.current = setTimeout(() => { blockMapClickRef.current = false; }, 400);
+
     const rlat = parseFloat(r.lat);
     const rlng = parseFloat(r.lon);
     const shortLabel = r.display_name.split(',').slice(0, 3).join(', ').trim();
@@ -257,7 +274,7 @@ export default function LocationPickerInner({ lat, lng, onChange, isDark = false
         {showDropdown && results.length > 0 && dropdownRect && typeof document !== 'undefined' && createPortal(
           <div
             ref={dropdownRef}
-            className={`fixed z-9999 max-h-48 overflow-y-auto rounded-md border shadow-lg ${dropdownCls}`}
+            className={`pointer-events-auto fixed z-[99999] max-h-48 overflow-y-auto rounded-md border shadow-lg ${dropdownCls}`}
             style={{
               top: dropdownRect.bottom + window.scrollY + 4,
               left: dropdownRect.left + window.scrollX,
@@ -268,7 +285,7 @@ export default function LocationPickerInner({ lat, lng, onChange, isDark = false
               <button
                 key={r.place_id}
                 type="button"
-                onPointerDown={(e) => { e.preventDefault(); selectResult(r); }}
+                onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); selectResult(r); }}
                 className={`w-full border-b px-3 py-2 text-left text-xs last:border-0 ${resultItemCls}`}
               >
                 {r.display_name}
@@ -286,7 +303,7 @@ export default function LocationPickerInner({ lat, lng, onChange, isDark = false
           style={{ height: 220, border: isDark ? '1px solid #334155' : '1px solid #e5e7eb' }}
         />
         {showClickHint && (
-          <div className="pointer-events-none absolute inset-0 flex items-end justify-center pb-3 z-9999">
+          <div className="pointer-events-none absolute inset-0 flex items-end justify-center pb-3 z-[99999]">
             <span className={`rounded-full px-3 py-1 text-xs font-medium shadow ${isDark ? 'bg-slate-900/80 text-slate-200' : 'bg-white/90 text-slate-700'}`}>
               {t('systems.components.common.clickMapToPlace')}
             </span>

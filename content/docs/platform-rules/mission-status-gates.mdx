@@ -1,0 +1,59 @@
+---
+title: "Mission Status Gates"
+description: "All conditions that block a mission status change on the Operations Board."
+---
+
+Changing a mission status (e.g. PLANNED → IN_PROGRESS) is gated by several independent checks. All must pass before the update proceeds.
+
+---
+
+## Gate 1 — Authorization PIN
+
+The acting user must have an Authorization PIN configured.
+
+- **API:** `POST /api/authorization/transaction-sign`
+- **Block:** No entry in `user_authorization_keys` for this user
+- **Error:** HTTP 422 — "Authorization PIN not set up"
+- **Fix:** User configures PIN in Settings → Security
+
+---
+
+## Gate 2 — Pilot Daily Declaration
+
+The pilot assigned to the mission must have filed a declaration today.
+
+- **API:** `POST /api/operation/board/status`
+- **Block:** No `pilot_declaration` with `declared_at >= today 00:00:00`
+- **Fix:** Pilot files their pre-flight declaration for the day
+
+---
+
+## Gate 3 — System Operational Status
+
+The drone must be `OPERATIONAL`.
+
+- **Block conditions:**
+  - Active component with `expiration_date <= today` → `NOT_OPERATIONAL`
+  - Open maintenance ticket (`ticket_status != CLOSED`) → `MAINTENANCE`
+- **Fix:** Replace/deactivate the expired component, or close the maintenance ticket
+
+---
+
+## Gate 4 — Final Status Lock
+
+Terminal statuses cannot transition further.
+
+- **Finals:** `COMPLETED`, `CANCELLED`, `FAILED` (`is_final_status = true`)
+- **Effect:** Mission card is non-draggable on the board
+
+---
+
+## Summary
+
+| Gate | Block condition | Resolution |
+|---|---|---|
+| Authorization PIN | No key pair in `user_authorization_keys` | Configure PIN in Settings → Security |
+| Daily declaration | No declaration filed today | Pilot files pre-flight declaration |
+| NOT_OPERATIONAL | Expired component | Replace or deactivate component |
+| MAINTENANCE | Open maintenance ticket | Close the ticket |
+| Final status lock | Already COMPLETED / CANCELLED / FAILED | N/A — terminal |
