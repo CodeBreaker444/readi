@@ -67,7 +67,3 @@ export async function POST(req: NextRequest) {
     return internalError(E.SV001, err);
   }
 }
-
-export const config = {
-  api: { bodyParser: false },
-};

@@ -17,13 +17,15 @@ export default function proxy(request: NextRequest) {
     return NextResponse.rewrite(new URL(result, request.nextUrl));
   }
 
-  if (isMarkdownPreferred(request)) {
-    const result = rewriteDocs(request.nextUrl.pathname);
-
-    if (result) {
-      return NextResponse.rewrite(new URL(result, request.nextUrl));
-    }
-  }
+  // Disable automatic markdown negotiation to prevent downloads when accessing docs normally
+  // Only redirect to markdown if the URL explicitly ends with .md
+  // if (isMarkdownPreferred(request)) {
+  //   const result = rewriteDocs(request.nextUrl.pathname);
+  // 
+  //   if (result) {
+  //     return NextResponse.rewrite(new URL(result, request.nextUrl));
+  //   }
+  // }
 
   return NextResponse.next();
 }

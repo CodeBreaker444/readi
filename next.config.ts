@@ -1,9 +1,9 @@
+import { createMDX } from 'fumadocs-mdx/next';
 import type { NextConfig } from "next";
 
+const withMDX = createMDX();
+
 const nextConfig: NextConfig = {
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   serverExternalPackages: ['unpdf', 'pdfjs-dist'],
   experimental: {
     optimizePackageImports: ['lucide-react', 'recharts', 'date-fns', '@radix-ui/react-icons'],
@@ -15,20 +15,7 @@ const nextConfig: NextConfig = {
   images: {
     formats: ['image/avif', 'image/webp'],
   },
-  // Exclude fumadocs directory from build
   excludeDefaultMomentLocales: true,
-  async rewrites() {
-    return [
-      {
-        source: "/docs",
-        destination: "/docs/index.html",
-      },
-      {
-        source: "/docs/:path*",
-        destination: "/docs/:path*",
-      },
-    ];
-  },
 };
 
-export default nextConfig;
+export default withMDX(nextConfig);

@@ -154,5 +154,5 @@ export const getUsersWithDroneAtc = unstable_cache(
 );
 
 export function invalidateDroneAtcUsersCache() {
-  revalidateTag('drone-atc-users');
+  revalidateTag('drone-atc-users', 'drone-atc-users');
 }

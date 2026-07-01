@@ -1,0 +1,13 @@
+{
+  "title": "Core Modules",
+  "pages": [
+    "dashboard",
+    "operations",
+    "planning",
+    "logbooks",
+    "safety-management",
+    "compliance",
+    "training",
+    "flytbase"
+  ]
+}

@@ -25,6 +25,8 @@ const ClientLayoutWrapper: React.FC<ClientLayoutWrapperProps> = ({
   const pathname = usePathname();
   const router = useRouter();
   const isAuthPage = pathname?.startsWith('/auth');
+  const isDocsPage = pathname?.startsWith('/docs');
+  const isBarelessPage = isAuthPage || isDocsPage;
   const { isDark, toggleTheme } = useTheme();
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -35,7 +37,6 @@ const ClientLayoutWrapper: React.FC<ClientLayoutWrapperProps> = ({
     try {
       await axios.post('/api/auth/logout');
     } catch {
-      // ignore — cookie will be cleared anyway
     }
     router.replace('/auth/login');
   };
@@ -76,7 +77,7 @@ const ClientLayoutWrapper: React.FC<ClientLayoutWrapperProps> = ({
   return (
     <RouteLoadingProvider>
       <AuthorizationProvider>
-      {isAuthPage ? (
+      {isBarelessPage ? (
         <>
           {children}
           <RouteLoadingOverlay variant="fullscreen" isDark={isDark} />
