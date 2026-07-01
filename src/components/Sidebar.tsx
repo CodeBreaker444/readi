@@ -175,15 +175,18 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
       href: '/control-center',
       icon: HiOutlinePaperAirplane,
       subItems: [
-        { name: t('sidebar.settings'), href: '/control-center' },
+        // { name: t('sidebar.settings'), href: '/control-center' },
+        ...(userData?.role === 'ADMIN' || userData?.role === 'OPM' || userData?.role === 'SUPERADMIN'
+          ? [{ name: 'C2 Config', href: '/control-center/c2-config' }]
+          : []),
         { name: t('sidebar.recentFlights'), href: '/control-center/flights' },
+        ...(userData?.droneAtcEnabled ? [{
+          name: t('sidebar.droneAtc'),
+          href: '/drone-atc',
+          icon: TbRadar,
+        }] : []),
       ],
     },
-    ...(userData?.droneAtcEnabled ? [{
-      name: t('sidebar.droneAtc'),
-      href: '/drone-atc',
-      icon: TbRadar,
-    }] : []),
     ...(userData?.dFlightEnabled ? [{
       name: t('sidebar.dflight'),
       href: '/dflight/fleet',
@@ -872,8 +875,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
               title="Release Logs"
               onClick={() => { setActiveItem('/releases'); router.push('/releases'); }}
               className={`w-full flex justify-center items-center p-2 rounded-lg transition-all duration-150 ${activeItem === '/releases'
-                  ? isDark ? 'bg-amber-500/10 text-amber-400' : 'bg-amber-50 text-amber-600'
-                  : isDark ? 'text-slate-500 hover:bg-slate-800 hover:text-slate-300' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'
+                ? isDark ? 'bg-amber-500/10 text-amber-400' : 'bg-amber-50 text-amber-600'
+                : isDark ? 'text-slate-500 hover:bg-slate-800 hover:text-slate-300' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'
                 }`}
             >
               <HiOutlineDocumentText size={16} />
@@ -883,8 +886,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
               href="/releases"
               onClick={(e) => { e.preventDefault(); setActiveItem('/releases'); router.push('/releases'); }}
               className={`flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all duration-150 cursor-pointer ${activeItem === '/releases'
-                  ? isDark ? 'bg-amber-500/10 text-amber-400' : 'bg-amber-50 text-amber-600'
-                  : isDark ? 'text-slate-500 hover:bg-slate-800 hover:text-slate-300' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'
+                ? isDark ? 'bg-amber-500/10 text-amber-400' : 'bg-amber-50 text-amber-600'
+                : isDark ? 'text-slate-500 hover:bg-slate-800 hover:text-slate-300' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'
                 }`}
               style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}
             >
@@ -907,8 +910,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
             <button
               onClick={handleOpenUserMenu}
               className={`w-9 h-9 cursor-pointer rounded-full overflow-hidden flex items-center justify-center border-2 transition-all duration-150 ${showUserMenu
-                  ? isDark ? 'border-violet-500 ring-2 ring-violet-500/30' : 'border-violet-400 ring-2 ring-violet-400/20'
-                  : isDark ? 'border-slate-700 hover:border-violet-500/60' : 'border-slate-200 hover:border-violet-400/60'
+                ? isDark ? 'border-violet-500 ring-2 ring-violet-500/30' : 'border-violet-400 ring-2 ring-violet-400/20'
+                : isDark ? 'border-slate-700 hover:border-violet-500/60' : 'border-slate-200 hover:border-violet-400/60'
                 } bg-linear-to-br ${isDark ? 'from-violet-600 to-indigo-600' : 'from-violet-500 to-indigo-500'}`}
             >
               {userData?.avatar ? (
@@ -922,8 +925,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
           <button
             onClick={handleOpenUserMenu}
             className={`w-full flex items-center cursor-pointer gap-2.5 px-2 py-2.5 rounded-lg transition-all duration-150 ${showUserMenu
-                ? isDark ? 'bg-slate-800' : 'bg-slate-100'
-                : isDark ? 'hover:bg-slate-800/70' : 'hover:bg-slate-50'
+              ? isDark ? 'bg-slate-800' : 'bg-slate-100'
+              : isDark ? 'hover:bg-slate-800/70' : 'hover:bg-slate-50'
               }`}
             disabled={!userData} // Optional: disable interaction while loading
           >

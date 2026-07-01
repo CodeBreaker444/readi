@@ -1,8 +1,9 @@
 import { env } from '@/backend/config/env';
 import { getFlytbaseCredentials } from '@/backend/services/integrations/flytbase-service';
+import { getAllUserFlytbaseCredentials } from '@/backend/services/integrations/flytbase-organization-service';
 import { internalError } from '@/lib/api-error';
 import { requireAuth } from '@/lib/auth/api-auth';
-import { signReadiDroneJwt } from '@/lib/drone-atc-jwt';
+import { signReadiDroneJwt, signReadiDroneJwtWithMultipleOrgs } from '@/lib/drone-atc-jwt';
 import { E } from '@/lib/error-codes';
 import { NextResponse } from 'next/server';
 
@@ -18,15 +19,28 @@ export async function GET() {
       role === 'ADMIN' ? String(ownerId) :
       undefined;
 
-    const creds = await getFlytbaseCredentials(userId);
-    if (!creds) {
-      return NextResponse.json({ items: [], role, companyId: ownerId });
-    }
-
+    // Try to get multiple organization credentials first
+    const multiOrgCreds = await getAllUserFlytbaseCredentials(userId);
+    
     const baseUrl = env.FLYTRELAY_BASE_URL;
     if (!baseUrl) throw new Error('FLYTRELAY_BASE_URL is not configured');
 
-    const jwt = signReadiDroneJwt(String(userId), creds.token, creds.orgId, fleetCompanyId);
+    let jwt;
+    if (multiOrgCreds.length > 0) {
+      // User has multiple organizations assigned
+      const organizations = multiOrgCreds.map(cred => ({
+        orgId: cred.orgId,
+        token: cred.token,
+      }));
+      jwt = signReadiDroneJwtWithMultipleOrgs(String(userId), organizations, fleetCompanyId);
+    } else {
+      // Fallback to single organization (legacy behavior)
+      const creds = await getFlytbaseCredentials(userId);
+      if (!creds) {
+        return NextResponse.json({ items: [], role, companyId: ownerId });
+      }
+      jwt = signReadiDroneJwt(String(userId), creds.token, creds.orgId, fleetCompanyId);
+    }
 
     const res = await fetch(`${baseUrl}/api/fleet/overview`, {
       headers: { Authorization: `Bearer ${jwt}` },

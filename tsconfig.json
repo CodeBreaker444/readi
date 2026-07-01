@@ -27,7 +27,8 @@
       ],
       "@mcp-server/*": [
         "./mcp-server/*"
-      ]
+      ],
+      "@/lib/layout.shared": ["./fumadocs/lib/layout.shared.ts"]
     },
     "plugins": [
       {
@@ -45,6 +46,7 @@
   ],
   "exclude": [
     "node_modules",
+    "fumadocs",
     "platform-docs copy",
     "platform-docs copy/**"
   ]

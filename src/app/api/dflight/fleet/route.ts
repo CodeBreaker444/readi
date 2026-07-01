@@ -9,7 +9,7 @@ import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
-    const { session, error } = await requirePermission('view_config');
+    const { session, error } = await requirePermission('view_drone_atc');
     if (error) return error;
 
     const ownerId = session!.user.ownerId;
@@ -22,10 +22,12 @@ export async function GET() {
     const components = await prisma.tool_component.findMany({
       where: {
         tool: { fk_owner_id: ownerId },
+        component_type: 'DRONE',
       },
       select: {
         component_id: true,
         component_name: true,
+        component_type: true,
         serial_number: true,
         fk_tool_id: true,
         tool: {
@@ -50,7 +52,7 @@ export async function GET() {
         data: [],
       });
     }
-
+console.log('dflight drones', dFlightDrones);
     const droneBySerial = new Map<string, (typeof dFlightDrones)[0]>();
     for (const drone of dFlightDrones) {
       if (drone.serialNumber) droneBySerial.set(drone.serialNumber.toLowerCase(), drone);

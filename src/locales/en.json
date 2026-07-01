@@ -672,6 +672,9 @@
       "actions": {
         "search": "Search",
         "filter": "Filter"
+      },
+      "filter": {
+        "all": "All"
       }
     },
     "table": {
@@ -2993,6 +2996,76 @@
       "missionSynced": "Mission synced",
       "archivedSuccess": "Flight log archived to Readi.",
       "archiveFailed": "Failed to archive flight log."
+    },
+    "c2Config": {
+      "title": "C2 Config",
+      "subtitle": "Manage FlytBase Control Center organizations and user permissions",
+      "tabs": {
+        "organizations": "Organizations",
+        "permissions": "Permissions"
+      },
+      "organizations": {
+        "title": "FlytBase Organizations",
+        "add": "Add Organization",
+        "addFirst": "Add your first organization",
+        "noOrgs": "No organizations configured yet",
+        "name": "Organization Name",
+        "namePlaceholder": "e.g. Production Environment",
+        "orgId": "FlytBase Organization ID",
+        "orgIdPlaceholder": "e.g. 68eb444ff8f677264bfd4cb4",
+        "apiToken": "API Token",
+        "apiTokenPlaceholder": "Paste your FlytBase API token",
+        "create": "Create Organization",
+        "creating": "Creating...",
+        "verifying": "Verifying...",
+        "deleteConfirm": "Are you sure you want to delete this organization?",
+        "table": {
+          "name": "Name",
+          "orgId": "Org ID",
+          "createdAt": "Created",
+          "actions": "Actions"
+        },
+        "toasts": {
+          "created": "Organization created successfully",
+          "createFailed": "Failed to create organization",
+          "deleted": "Organization deleted",
+          "deleteFailed": "Failed to delete organization",
+          "loadFailed": "Failed to load organizations"
+        }
+      },
+      "permissions": {
+        "title": "User Permissions",
+        "noUsers": "No users found",
+        "assignedOrgs": "Assigned organizations",
+        "noAssignedOrgs": "No organizations assigned",
+        "addOrg": "Add organization…",
+        "editUser": "Edit User",
+        "table": {
+          "name": "Name",
+          "email": "Email",
+          "role": "Role",
+          "organizations": "Organizations",
+          "actions": "Actions"
+        },
+        "toasts": {
+          "granted": "Access granted successfully",
+          "grantFailed": "Failed to grant access",
+          "revoked": "Access revoked successfully",
+          "revokeFailed": "Failed to revoke access",
+          "loadFailed": "Failed to load users"
+        },
+        "modal": {
+          "title": "Edit User Organizations",
+          "subtitle": "Manage organization access for {{name}}",
+          "availableOrgs": "Available Organizations",
+          "assignedOrgs": "Assigned Organizations",
+          "assign": "Assign",
+          "unassign": "Remove",
+          "save": "Save Changes",
+          "cancel": "Cancel",
+          "saving": "Saving..."
+        }
+      }
     }
   },
   "training": {
@@ -4792,6 +4865,11 @@
       },
       "error": {
         "generic": "Failed to load fleet data"
+      },
+      "notConfigured": {
+        "title": "D-Flight Not Configured",
+        "description": "Please configure your D-Flight integration settings to view the fleet.",
+        "setup": "Go to Settings"
       }
     }
   }

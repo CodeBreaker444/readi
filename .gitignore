@@ -26,6 +26,9 @@
 *.pem
 !backend/src/config/keys/flytrelay-public.pem
 
+# certificates folder
+/certificates
+
 # debug
 npm-debug.log*
 yarn-debug.log*

@@ -218,14 +218,14 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData, loading 
 
           <LanguageSelect isDark={isDark} />
 
-          <button
-            onClick={() => router.push('/docs')}
+          <a
+            href="/docs"
             className={`cursor-pointer p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-slate-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}
             aria-label="Documentation"
             title="Documentation"
           >
             <FileText size={20} />
-          </button>
+          </a>
 
           <button
             onClick={toggleTheme}

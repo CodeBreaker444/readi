@@ -6,6 +6,7 @@ import { cache } from 'react';
 import { getPresignedDownloadUrl } from '../s3Client';
 import { verifyToken } from './jwt-utils';
 import { Role } from './roles';
+import { getUserFlytbaseOrganizations } from '@/backend/services/integrations/flytbase-organization-service';
 
 export interface SessionUser {
   id: string;
@@ -26,6 +27,7 @@ export interface SessionUser {
   flytrelayAccess: boolean;
   companyEasaCode: string | null;
   ownerName?: string | null;
+  hasFlytbaseOrganizations: boolean;
 }
 
 export interface Session {
@@ -117,6 +119,7 @@ export const getUserSession = cache(async (): Promise<Session | null> => {
     let flytrelayAccess = false;
     let companyEasaCode: string | null = null;
     let ownerName: string | null = null;
+    let hasFlytbaseOrganizations = false;
     if (userData.user_role !== 'SUPERADMIN' && userData.fk_owner_id) {
       const ownerData = await prisma.owner.findUnique({
         where: { owner_id: userData.fk_owner_id },
@@ -129,11 +132,16 @@ export const getUserSession = cache(async (): Promise<Session | null> => {
       flytrelayAccess = (ownerData?.flytrelay_enabled ?? false) && (userData.flytrelay_access ?? false);
       companyEasaCode = ownerData?.easa_operator_code ?? null;
       ownerName = ownerData?.owner_name ?? null;
+      
+      // Check if user has any FlytBase organizations assigned
+      const userOrgs = await getUserFlytbaseOrganizations(userData.user_id, userData.fk_owner_id);
+      hasFlytbaseOrganizations = userOrgs.length > 0;
     } else if (userData.user_role === 'SUPERADMIN') {
       droneAtcEnabled = true;
       dFlightEnabled  = true;
       flytrelayEnabled = true;
       flytrelayAccess = true;
+      hasFlytbaseOrganizations = true;
     }
 
     const sessionUser: SessionUser = {
@@ -155,6 +163,7 @@ export const getUserSession = cache(async (): Promise<Session | null> => {
       flytrelayAccess,
       companyEasaCode,
       ownerName,
+      hasFlytbaseOrganizations,
     };
 
     return {

@@ -42,12 +42,12 @@ export default async function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} ${bebasNeue.variable} antialiased`}>
         <ThemeProvider>
           <I18nProvider>
-            <TimezoneProvider userTimezone={session?.user?.timezone}>
-              <Toaster />
-              <ClientLayoutWrapper sessionPromise={Promise.resolve(session)}>
-                {children}
-              </ClientLayoutWrapper>
-            </TimezoneProvider>
+              <TimezoneProvider userTimezone={session?.user?.timezone}>
+                <Toaster />
+                <ClientLayoutWrapper sessionPromise={Promise.resolve(session)}>
+                  {children}
+                </ClientLayoutWrapper>
+              </TimezoneProvider>
           </I18nProvider>
         </ThemeProvider>
       </body>

@@ -5,6 +5,7 @@ import { requirePermission } from '@/lib/auth/api-auth';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { prisma } from '@/lib/prisma';
 
 const schema = z.object({
   fk_tool_id: z.number().positive(),
@@ -57,6 +58,16 @@ export async function POST(
     const parsed = schema.safeParse(body);
     if (!parsed.success) return zodError(E.VL009, parsed.error);
 
+    const existing = await prisma.tool_component.findUnique({
+      where: { component_id: Number(id) },
+      select: { component_metadata: true, fk_tool_id: true },
+    });
+
+    const wasDetached = (existing?.component_metadata as any)?.system_detached === true;
+    const isNowDetached = parsed.data.system_detached === true;
+    const movedToWarehouse = !wasDetached && isNowDetached;
+    const movedFromWarehouse = wasDetached && !isNowDetached;
+
     const result = await updateComponent(Number(id), {
       ...parsed.data,
       fk_parent_component_id: parsed.data.fk_parent_component_id ?? null,
@@ -70,10 +81,20 @@ export async function POST(
       const lat = parsed.data.latitude;
       const lng = parsed.data.longitude;
       const posPart = (lat != null && lng != null) ? ` — position: ${lat}, ${lng}` : '';
+
+      let description = '';
+      if (movedToWarehouse) {
+        description = `Moved component '${parsed.data.component_code ?? parsed.data.component_name ?? parsed.data.component_type}' (type: ${parsed.data.component_type}) to Warehouse${parsed.data.component_sn ? ` — SN: ${parsed.data.component_sn}` : ''}`;
+      } else if (movedFromWarehouse) {
+        description = `Moved component '${parsed.data.component_code ?? parsed.data.component_name ?? parsed.data.component_type}' (type: ${parsed.data.component_type}) from Warehouse to system '${systemCode ?? parsed.data.fk_tool_id}'${parsed.data.component_sn ? ` — SN: ${parsed.data.component_sn}` : ''}`;
+      } else {
+        description = `Updated component '${parsed.data.component_code ?? parsed.data.component_name ?? parsed.data.component_type}' (type: ${parsed.data.component_type}) on system '${systemCode ?? parsed.data.fk_tool_id}'${parsed.data.component_sn ? ` — SN: ${parsed.data.component_sn}` : ''}${posPart}`;
+      }
+
       logEvent({
         eventType: 'UPDATE',
         entityType: 'system_component',
-        description: `Updated component '${parsed.data.component_code ?? parsed.data.component_name ?? parsed.data.component_type}' (type: ${parsed.data.component_type}) on system '${systemCode ?? parsed.data.fk_tool_id}'${parsed.data.component_sn ? ` — SN: ${parsed.data.component_sn}` : ''}${posPart}`,
+        description,
         userId: session!.user.userId,
         userName: session!.user.fullname,
         userEmail: session!.user.email,
