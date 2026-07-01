@@ -80,7 +80,17 @@ export async function POST(
       const systemCode = await getToolCode(parsed.data.fk_tool_id, session!.user.ownerId);
       const lat = parsed.data.latitude;
       const lng = parsed.data.longitude;
-      const posPart = (lat != null && lng != null) ? ` — position: ${lat}, ${lng}` : '';
+      const hasCoords = lat != null && lng != null;
+      const hasOldPosition = result.oldPosition && (result.oldPosition.latitude != null || result.oldPosition.longitude != null);
+      
+      let posPart = '';
+      if (hasCoords && hasOldPosition) {
+        const oldLat = result.oldPosition.latitude ?? '—';
+        const oldLng = result.oldPosition.longitude ?? '—';
+        posPart = ` — position: ${oldLat}, ${oldLng} → ${lat}, ${lng}`;
+      } else if (hasCoords) {
+        posPart = ` — position: ${lat}, ${lng}`;
+      }
 
       let description = '';
       if (movedToWarehouse) {
@@ -89,6 +99,11 @@ export async function POST(
         description = `Moved component '${parsed.data.component_code ?? parsed.data.component_name ?? parsed.data.component_type}' (type: ${parsed.data.component_type}) from Warehouse to system '${systemCode ?? parsed.data.fk_tool_id}'${parsed.data.component_sn ? ` — SN: ${parsed.data.component_sn}` : ''}`;
       } else {
         description = `Updated component '${parsed.data.component_code ?? parsed.data.component_name ?? parsed.data.component_type}' (type: ${parsed.data.component_type}) on system '${systemCode ?? parsed.data.fk_tool_id}'${parsed.data.component_sn ? ` — SN: ${parsed.data.component_sn}` : ''}${posPart}`;
+      }
+
+      const metadata: Record<string, unknown> = {};
+      if (hasOldPosition) {
+        metadata.oldPosition = result.oldPosition;
       }
 
       logEvent({
@@ -100,6 +115,7 @@ export async function POST(
         userEmail: session!.user.email,
         userRole: session!.user.role,
         ownerId: session!.user.ownerId,
+        metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
       });
     }
 
