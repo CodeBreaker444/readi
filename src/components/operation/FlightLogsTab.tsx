@@ -1,5 +1,6 @@
 "use client";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useTranslation } from "react-i18next";
 
 import { useTimezone } from "@/components/TimezoneProvider";
@@ -214,22 +215,26 @@ export function FlightLogsTab({
               {t("operations.missionComplete.logs.noOrganizations", "No FlytBase organizations configured. Ask an admin to set one up.")}
             </div>
           ) : (
-            <select
-              value={selectedOrganization?.organization_id ?? ""}
-              onChange={(e) => onOrganizationChange(Number(e.target.value))}
-              className={cn(
-                "h-9 w-full rounded-lg border px-3 text-sm outline-none transition-colors cursor-pointer",
+            <Select
+              value={selectedOrganization?.organization_id?.toString() ?? ""}
+              onValueChange={(value) => onOrganizationChange(Number(value))}
+            >
+              <SelectTrigger className={cn(
+                "h-9 w-full",
                 isDark
                   ? "bg-slate-800/60 border-white/8 text-slate-200 focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/20"
                   : "bg-white border-slate-200 text-slate-800 focus:border-violet-400 focus:ring-1 focus:ring-violet-400/20"
-              )}
-            >
-              {organizations.map((org) => (
-                <option key={org.organization_id} value={org.organization_id}>
-                  {org.org_name}
-                </option>
-              ))}
-            </select>
+              )}>
+                <SelectValue placeholder={t("operations.missionComplete.logs.selectOrganization", "Select an organization")} />
+              </SelectTrigger>
+              <SelectContent>
+                {organizations.map((org) => (
+                  <SelectItem key={org.organization_id} value={org.organization_id.toString()}>
+                    {org.org_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           )}
         </div>
 
