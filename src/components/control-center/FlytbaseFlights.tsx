@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTheme } from '@/components/useTheme';
 import axios from 'axios';
-import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import {
@@ -37,6 +37,7 @@ interface Flight {
 interface Props {
   isActive?: boolean;
   selectedOrganization: Organization | null;
+  listContainer?: HTMLDivElement | null;
 }
 
 const WINDOWS = [
@@ -61,7 +62,7 @@ function formatDistance(m?: number): string {
 type FilterMode = 'window' | 'latest';
 type AttachModalTab = 'existing' | 'new';
 
-export function FlytbaseFlights({ isActive = true, selectedOrganization }: Props) {
+export function FlytbaseFlights({ isActive = true, selectedOrganization, listContainer = null }: Props) {
   const { isDark } = useTheme();
   const { t } = useTranslation();
 
@@ -250,6 +251,112 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization }: Props
   const rowSelected = isDark ? 'bg-violet-950/40 border-l-2 border-violet-500' : 'bg-violet-50 border-l-2 border-violet-500';
   const skeletonClass = isDark ? 'bg-slate-800' : 'bg-slate-200';
 
+  // ── Flights list content (portaled into the shared card when listContainer is provided) ──
+  const flightsListInner = (
+    <>
+      <div className={`flex items-center justify-between px-4 py-3 border-b flex-shrink-0 ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
+        <span className={`text-xs font-semibold uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+          {t('flytbase.flights.flightsLabel')}
+        </span>
+        {!loading && (
+          <span className={`text-[11px] font-mono ${textSecondary}`}>
+            {flights.length} {t('flytbase.flights.shown')}{total > flights.length ? ` ${t('flytbase.flights.of')} ${total}` : ''}
+          </span>
+        )}
+      </div>
+
+      <div className="divide-y divide-slate-800/50 overflow-y-auto flex-1 min-h-0 scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent">
+        {loading && Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="px-4 py-3 space-y-1.5">
+            <Skeleton className={`h-3 w-2/3 ${skeletonClass}`} />
+            <Skeleton className={`h-2.5 w-1/2 ${skeletonClass}`} />
+          </div>
+        ))}
+        {!loading && !error && flights.length === 0 && (
+          <div className="px-4 py-10 text-center">
+            <HiClock className={`w-6 h-6 mx-auto mb-2 ${textSecondary}`} />
+            <p className={`text-xs ${textSecondary}`}>
+              {filterMode === 'latest'
+                ? t('flytbase.flights.noRecentFlights')
+                : t('flytbase.flights.noFlightsInWindow', { window })}
+            </p>
+          </div>
+        )}
+        {!loading && flights.map((flight) => {
+          const isSelected = selectedFlight?.flight_id === flight.flight_id;
+          return (
+            <button
+              key={flight.flight_id}
+              onClick={() => handleSelectFlight(flight)}
+              className={`cursor-pointer w-full text-left px-4 py-3 transition-colors ${rowHover} ${isSelected ? rowSelected : ''}`}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <p className={`text-xs font-medium truncate ${textPrimary}`}>
+                    {flight.flight_name ?? flight.flight_id}
+                  </p>
+                  <p className={`text-[10px] font-mono truncate mt-0.5 ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>
+                    {flight.flight_id}
+                  </p>
+                  {flight.drone_name && (
+                    <div className={`flex items-center gap-1.5 mt-0.5 text-[11px] ${textSecondary}`}>
+                      <span className="truncate font-medium">{flight.drone_name}</span>
+                    </div>
+                  )}
+                  <div className={`flex items-center gap-2 mt-1 text-[10px] ${textSecondary}`}>
+                    {flight.start_time && (
+                      <span className="flex items-center gap-1">
+                        <HiClock className="w-3 h-3" />
+                        {new Date(flight.start_time).toLocaleString([], {
+                          month: 'short', day: 'numeric',
+                          hour: '2-digit', minute: '2-digit',
+                        })}
+                      </span>
+                    )}
+                    {flight.duration != null && <span>{formatDuration(flight.duration)}</span>}
+                    {flight.distance != null && <span>{formatDistance(flight.distance)}</span>}
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {flight.status && (
+                    <Badge variant="outline" className={`text-[10px] px-1.5 py-0 h-4 ${isDark ? 'border-slate-700 text-slate-400' : 'border-slate-200 text-slate-500'}`}>
+                      {flight.status}
+                    </Badge>
+                  )}
+                  <HiChevronRight className={`w-3.5 h-3.5 ${textSecondary}`} />
+                </div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {total > 20 && (
+        <div className={`flex items-center justify-between px-4 py-3 border-t flex-shrink-0 ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
+          <span className={`text-[11px] ${textSecondary}`}>
+            Page {page} of {Math.ceil(total / 20)}
+          </span>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => handlePageChange(Math.max(1, page - 1))}
+              disabled={page === 1}
+              className={`px-2 py-1 rounded text-[11px] font-medium cursor-pointer transition-colors ${page === 1 ? 'opacity-50 cursor-not-allowed' : isDark ? 'text-slate-300 hover:bg-slate-800' : 'text-slate-600 hover:bg-slate-100'}`}
+            >
+              Previous
+            </button>
+            <button
+              onClick={() => handlePageChange(Math.min(Math.ceil(total / 20), page + 1))}
+              disabled={page >= Math.ceil(total / 20)}
+              className={`px-2 py-1 rounded text-[11px] font-medium cursor-pointer transition-colors ${page >= Math.ceil(total / 20) ? 'opacity-50 cursor-not-allowed' : isDark ? 'text-slate-300 hover:bg-slate-800' : 'text-slate-600 hover:bg-slate-100'}`}
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+
   return (
     <>
       <div className="h-full flex flex-col overflow-hidden animate-in fade-in duration-700">
@@ -317,111 +424,12 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization }: Props
           )}
         </div>
 
-        {/* Content: flights list + preview */}
         <div className="flex gap-4 flex-1 min-h-0">
-          {/* Flights list */}
-          <div className={`rounded-xl border flex-shrink-0 w-full max-w-sm flex flex-col ${card}`}>
-            <div className={`flex items-center justify-between px-4 py-3 border-b ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
-              <span className={`text-xs font-semibold uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                {t('flytbase.flights.flightsLabel')}
-              </span>
-              {!loading && (
-                <span className={`text-[11px] font-mono ${textSecondary}`}>
-                  {flights.length} {t('flytbase.flights.shown')}{total > flights.length ? ` ${t('flytbase.flights.of')} ${total}` : ''}
-                </span>
-              )}
+          {!listContainer && (
+            <div className={`rounded-xl border flex-shrink-0 w-full max-w-sm flex flex-col ${card}`}>
+              {flightsListInner}
             </div>
-
-            <div className="divide-y divide-slate-800/50 overflow-y-auto flex-1 min-h-0 scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent">
-              {loading && Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="px-4 py-3 space-y-1.5">
-                  <Skeleton className={`h-3 w-2/3 ${skeletonClass}`} />
-                  <Skeleton className={`h-2.5 w-1/2 ${skeletonClass}`} />
-                </div>
-              ))}
-              {!loading && !error && flights.length === 0 && (
-                <div className="px-4 py-10 text-center">
-                  <HiClock className={`w-6 h-6 mx-auto mb-2 ${textSecondary}`} />
-                  <p className={`text-xs ${textSecondary}`}>
-                    {filterMode === 'latest'
-                      ? t('flytbase.flights.noRecentFlights')
-                      : t('flytbase.flights.noFlightsInWindow', { window })}
-                  </p>
-                </div>
-              )}
-              {!loading && flights.map((flight) => {
-                const isSelected = selectedFlight?.flight_id === flight.flight_id;
-                return (
-                  <button
-                    key={flight.flight_id}
-                    onClick={() => handleSelectFlight(flight)}
-                    className={`cursor-pointer w-full text-left px-4 py-3 transition-colors ${rowHover} ${isSelected ? rowSelected : ''}`}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="min-w-0 flex-1">
-                        <p className={`text-xs font-medium truncate ${textPrimary}`}>
-                          {flight.flight_name ?? flight.flight_id}
-                        </p>
-                        <p className={`text-[10px] font-mono truncate mt-0.5 ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>
-                          {flight.flight_id}
-                        </p>
-                        {flight.drone_name && (
-                          <div className={`flex items-center gap-1.5 mt-0.5 text-[11px] ${textSecondary}`}>
-                            <span className="truncate font-medium">{flight.drone_name}</span>
-                          </div>
-                        )}
-                        <div className={`flex items-center gap-2 mt-1 text-[10px] ${textSecondary}`}>
-                          {flight.start_time && (
-                            <span className="flex items-center gap-1">
-                              <HiClock className="w-3 h-3" />
-                              {new Date(flight.start_time).toLocaleString([], {
-                                month: 'short', day: 'numeric',
-                                hour: '2-digit', minute: '2-digit',
-                              })}
-                            </span>
-                          )}
-                          {flight.duration != null && <span>{formatDuration(flight.duration)}</span>}
-                          {flight.distance != null && <span>{formatDistance(flight.distance)}</span>}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {flight.status && (
-                          <Badge variant="outline" className={`text-[10px] px-1.5 py-0 h-4 ${isDark ? 'border-slate-700 text-slate-400' : 'border-slate-200 text-slate-500'}`}>
-                            {flight.status}
-                          </Badge>
-                        )}
-                        <HiChevronRight className={`w-3.5 h-3.5 ${textSecondary}`} />
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-
-            {total > 20 && (
-              <div className={`flex items-center justify-between px-4 py-3 border-t ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
-                <span className={`text-[11px] ${textSecondary}`}>
-                  Page {page} of {Math.ceil(total / 20)}
-                </span>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => handlePageChange(Math.max(1, page - 1))}
-                    disabled={page === 1}
-                    className={`px-2 py-1 rounded text-[11px] font-medium cursor-pointer transition-colors ${page === 1 ? 'opacity-50 cursor-not-allowed' : isDark ? 'text-slate-300 hover:bg-slate-800' : 'text-slate-600 hover:bg-slate-100'}`}
-                  >
-                    Previous
-                  </button>
-                  <button
-                    onClick={() => handlePageChange(Math.min(Math.ceil(total / 20), page + 1))}
-                    disabled={page >= Math.ceil(total / 20)}
-                    className={`px-2 py-1 rounded text-[11px] font-medium cursor-pointer transition-colors ${page >= Math.ceil(total / 20) ? 'opacity-50 cursor-not-allowed' : isDark ? 'text-slate-300 hover:bg-slate-800' : 'text-slate-600 hover:bg-slate-100'}`}
-                  >
-                    Next
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+          )}
 
           {/* Preview panel */}
           <div className="flex-1 min-w-0 overflow-y-auto">
@@ -447,6 +455,11 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization }: Props
           </div>
         </div>
       </div>
+
+      {listContainer && createPortal(
+        <div className="h-full flex flex-col">{flightsListInner}</div>,
+        listContainer,
+      )}
 
       {/* ── Attach Mission Modal ── */}
       {attachMissionModalOpen && (
@@ -604,7 +617,7 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization }: Props
         onSuccess={handleNewMissionSuccess}
         isDark={isDark}
       />
-      
+
     </>
   );
 }

@@ -45,6 +45,12 @@ export async function POST(
         ? ` — position: ${lat}, ${lng}${parsed.data.location ? ` (${parsed.data.location})` : ''}`
         : parsed.data.location ? ` — location: ${parsed.data.location}` : '';
       const statusPart = parsed.data.tool_status ? `, status: ${parsed.data.tool_status}` : '';
+      
+      const metadata: Record<string, unknown> = {};
+      if (result.oldPosition && (result.oldPosition.latitude != null || result.oldPosition.longitude != null)) {
+        metadata.oldPosition = result.oldPosition;
+      }
+      
       logEvent({
         eventType: 'UPDATE',
         entityType: 'system',
@@ -54,6 +60,7 @@ export async function POST(
         userEmail: session!.user.email,
         userRole: session!.user.role,
         ownerId: session!.user.ownerId,
+        metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
       });
     }
 

@@ -270,6 +270,12 @@ export async function updateTool(toolId: number, toolData: any) {
     select: { tool_metadata: true },
   });
 
+  const oldMetadata = current?.tool_metadata as Record<string, unknown> | null;
+  const oldPosition = {
+    latitude: oldMetadata?.latitude as number | null,
+    longitude: oldMetadata?.longitude as number | null,
+  };
+
   const data = await prisma.tool.update({
     where: { tool_id: toolId },
     data: {
@@ -289,7 +295,7 @@ export async function updateTool(toolId: number, toolData: any) {
     },
   });
 
-  return { code: 1, message: 'system updated successfully', data };
+  return { code: 1, message: 'system updated successfully', data, oldPosition };
 }
 
 

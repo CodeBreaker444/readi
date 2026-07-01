@@ -80,6 +80,12 @@ interface FlytbaseFlight {
   status?: string;
 }
 
+export interface FlytbaseOrganization {
+  organization_id: number;
+  org_name: string;
+  org_id: string;
+}
+
 interface Props {
   open: boolean;
   onClose: () => void;
@@ -110,7 +116,6 @@ function isoToLocalInput(iso: string | null | undefined): string {
   try {
     const d = new Date(iso);
     if (isNaN(d.getTime())) return "";
-    // Use local time representation
     const pad = (n: number) => String(n).padStart(2, "0");
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
   } catch {
@@ -146,11 +151,23 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
   const [autoSyncingFlight, setAutoSyncingFlight] = useState(false);
   const [autoSyncedIds, setAutoSyncedIds] = useState<Set<number>>(new Set());
 
+  // Organization selection for FlytBase flights
+  const [organizations, setOrganizations] = useState<FlytbaseOrganization[]>([]);
+  const [selectedOrganization, setSelectedOrganization] = useState<FlytbaseOrganization | null>(null);
+  const [orgLoading, setOrgLoading] = useState(false);
+
+  const selectedOrgIdRef = useRef<number | null>(null);
+  useEffect(() => {
+    selectedOrgIdRef.current = selectedOrganization?.organization_id ?? null;
+  }, [selectedOrganization]);
+
   // Post-flight state
   const [loadingPostFlight, setLoadingPostFlight] = useState(true);
   const [submittingPostFlight, setSubmittingPostFlight] = useState(false);
   const [resultOptions, setResultOptions] = useState<MissionResultOption[]>([]);
   const [postFlightFromLog, setPostFlightFromLog] = useState(false);
+  const [waypoints, setWaypoints] = useState<any[]>([]);
+  const [loadingWaypoints, setLoadingWaypoints] = useState(false);
   const [postFlight, setPostFlight] = useState<PostFlightState>({
     actual_end: "",
     result_id: null,
@@ -195,17 +212,44 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
     }
   }, [toolId, t]);
 
+  const loadWaypoints = useCallback(async (flightId: string, organizationId?: number | null) => {
+    setLoadingWaypoints(true);
+    try {
+      const orgId = organizationId !== undefined ? organizationId : selectedOrgIdRef.current;
+      const orgParam = orgId ? `&organizationId=${orgId}` : "";
+      const { data } = await axios.get(`/api/flytbase/flights/preview?flightId=${flightId}${orgParam}`);
+      if (data.success && data.data?.waypoints) {
+        setWaypoints(data.data.waypoints);
+      } else {
+        console.log("Waypoints fetch unsuccessful:", data);
+        toast.error(data.message ?? t("operations.missionComplete.toast.loadError"));
+      }
+    } catch (err: any) {
+      console.log("Error in Fetching waypoints:", err);
+      toast.error(err.response?.data?.message ?? t("operations.missionComplete.toast.loadError"));
+    } finally {
+      setLoadingWaypoints(false);
+    }
+  }, [t]);
+
   const loadLogs = useCallback(async () => {
     setLoadingLogs(true);
     try {
       const { data } = await axios.get(`/api/operation/board/flight-logs?mission_id=${missionId}`);
-      if (data.code === 1) setLogs(data.data ?? []);
+      if (data.code === 1) {
+        setLogs(data.data ?? []);
+        // Load waypoints from first FlytBase log if available
+        const flytbaseLog = data.data?.find((log: FlightLog) => log.log_source === "flytbase");
+        if (flytbaseLog?.flytbase_flight_id) {
+          loadWaypoints(flytbaseLog.flytbase_flight_id);
+        }
+      }
     } catch (err) {
       console.log("Error in Fetching logs:", err);
     } finally {
       setLoadingLogs(false);
     }
-  }, [missionId]);
+  }, [missionId, loadWaypoints]);
 
   const loadPostFlight = useCallback(async () => {
     setLoadingPostFlight(true);
@@ -236,15 +280,37 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
     }
   }, [missionId, t]);
 
+  const loadOrganizations = useCallback(async () => {
+    setOrgLoading(true);
+    try {
+      const { data } = await axios.get('/api/flytbase/my-organizations');
+      const orgs: FlytbaseOrganization[] = data.organizations || [];
+      setOrganizations(orgs);
+      setSelectedOrganization((prev) => prev ?? (orgs.length > 0 ? orgs[0] : null));
+    } catch (err) {
+      console.error('Failed to fetch organizations:', err);
+    } finally {
+      setOrgLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (open && toolId > 0) {
       loadMaintenance();
       loadLogs();
       loadPostFlight();
+      loadOrganizations();
     }
-  }, [open, toolId, loadMaintenance, loadLogs, loadPostFlight]);
+  }, [open, toolId, loadMaintenance, loadLogs, loadPostFlight, loadOrganizations]);
 
-  // ── Maintenance handlers ─────────────────────────────────────────────────
+  const handleOrganizationChange = (organizationId: number) => {
+    const org = organizations.find((o) => o.organization_id === organizationId) ?? null;
+    setSelectedOrganization(org);
+    setFlights([]);
+    setSelectedFlight(null);
+    setFlightsError(null);
+  };
+
   const handleHoursChange = (compId: number, rawValue: string) => {
     if (rawValue === "") {
       setHoursRaw((prev) => ({ ...prev, [compId]: "" }));
@@ -354,7 +420,6 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
     }
   };
 
-  // ── Post-flight handlers ─────────────────────────────────────────────────
   const handlePostFlightChange = <K extends keyof PostFlightState>(
     field: K,
     value: PostFlightState[K]
@@ -395,7 +460,6 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
     }
   };
 
-  // ── Logs handlers ────────────────────────────────────────────────────────
   const ALLOWED_EXTENSIONS = [".zip", ".json", ".xml", ".gutma"];
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -427,12 +491,18 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
   };
 
   const handleFetchFlights = async () => {
+    if (!selectedOrganization) {
+      setFlightsError(t("operations.missionComplete.toast.noOrgSelected", "Select a FlytBase organization first."));
+      return;
+    }
     setLoadingFlights(true);
     setFlights([]);
     setSelectedFlight(null);
     setFlightsError(null);
     try {
-      const { data } = await axios.get(`/api/flytbase/flights?window=${fbWindow}`);
+      const { data } = await axios.get(
+        `/api/flytbase/flights?window=${fbWindow}&organizationId=${selectedOrganization.organization_id}`
+      );
       if (data.success) {
         setFlights(data.flights ?? []);
         if ((data.flights ?? []).length === 0) {
@@ -461,6 +531,11 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
 
   const handleAttachFlight = async () => {
     if (!selectedFlight) return;
+    if (!selectedOrganization) {
+      setFlightsError(t("operations.missionComplete.toast.noOrgSelected", "Select a FlytBase organization first."));
+      return;
+    }
+    const organizationId = selectedOrganization.organization_id;
     setAttachingFlight(true);
     setFlightsError(null);
     // Capture listing metadata before state is cleared
@@ -469,19 +544,21 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
       const { data } = await axios.post("/api/operation/board/flight-logs/flytbase", {
         mission_id: missionId,
         flight_id: selectedFlight,
+        organization_id: organizationId,
       });
       if (data.code === 1) {
         toast.success(t("operations.missionComplete.toast.attachSuccess"));
+        const flightId = selectedFlight;
         setSelectedFlight(null);
         setFlights([]);
         loadLogs();
+        // Load waypoints from the attached flight, using the org we just attached with
+        loadWaypoints(flightId, organizationId);
 
-        // Auto-sync GUTMA data into maintenance inputs + post-flight fields
-        const flightId = selectedFlight;
         setAutoSyncingFlight(true);
         try {
           const { data: previewRes } = await axios.get(
-            `/api/flytbase/flights/preview?flightId=${flightId}`
+            `/api/flytbase/flights/preview?flightId=${flightId}&organizationId=${organizationId}`
           );
           if (previewRes.success && previewRes.data && systemData) {
             const preview = previewRes.data;
@@ -496,7 +573,6 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
                 durationHhmm = secondsToHhmm(durationSeconds);
               }
             }
-            // Fallback to flight-listing duration if GUTMA had no timestamps
             if (durationSeconds === 0 && selectedFlightMeta?.duration && selectedFlightMeta.duration > 0) {
               durationSeconds = selectedFlightMeta.duration;
               durationHhmm = secondsToHhmm(durationSeconds);
@@ -570,7 +646,6 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
             }
           }
         } catch {
-          // GUTMA auto-sync is best-effort
         } finally {
           setAutoSyncingFlight(false);
         }
@@ -598,13 +673,13 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
     <Dialog open={open} onOpenChange={(o) => { if (!o) (onSkip ?? onClose)(); }}>
       <DialogContent
         className={cn(
-          "max-w-[1200px] w-[95vw] max-h-[90vh] overflow-hidden flex flex-col p-0",
+          "max-w-[95vw] md:max-w-[90vw] xl:max-w-[1200px] w-full h-[85vh] overflow-hidden flex flex-col p-0",
           isDark ? "bg-[#0f1419] border-white/8" : "bg-white border-slate-200"
         )}
       >
         <DialogHeader
           className={cn(
-            "relative overflow-hidden px-6 pt-6 pb-0 shrink-0",
+            "relative overflow-hidden px-4 pt-5 sm:px-6 sm:pt-6 pb-0 shrink-0",
             isDark ? "bg-slate-900/60" : "bg-slate-50"
           )}
         >
@@ -612,33 +687,34 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
             <div className="pointer-events-none absolute right-0 top-0 h-20 w-20 rounded-bl-full bg-linear-to-bl from-violet-500/10 to-transparent" />
           )}
           <div className="flex items-center gap-3 mb-3">
-            <div className={cn("flex h-9 w-9 items-center justify-center rounded-lg", isDark ? "bg-violet-500/10 text-violet-400" : "bg-violet-50 text-violet-600")}>
+            <div className={cn("flex h-9 w-9 items-center justify-center rounded-lg shrink-0", isDark ? "bg-violet-500/10 text-violet-400" : "bg-violet-50 text-violet-600")}>
               <CheckCircle2 className="h-4.5 w-4.5" />
             </div>
-            <div>
-              <DialogTitle className={cn("text-base font-bold", isDark ? "text-white" : "text-slate-900")}>
+            <div className="min-w-0">
+              <DialogTitle className={cn("text-sm sm:text-base font-bold truncate", isDark ? "text-white" : "text-slate-900")}>
                 {t("operations.missionComplete.title")}
               </DialogTitle>
               {systemData && (
-                <p className={cn("mt-0.5 text-[12px]", isDark ? "text-slate-500" : "text-slate-400")}>
+                <p className={cn("mt-0.5 text-[11px] sm:text-[12px] truncate", isDark ? "text-slate-500" : "text-slate-400")}>
                   {systemData.tool_code}{systemData.tool_name ? ` — ${systemData.tool_name}` : ""}
                 </p>
               )}
             </div>
           </div>
-          <div className={cn("flex border-b", isDark ? "border-white/6" : "border-slate-200")}>
+
+          <div className={cn("flex border-b overflow-x-auto scrollbar-none", isDark ? "border-white/6" : "border-slate-200")}>
             {tabs.map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
                 className={cn(
-                  "flex items-center cursor-pointer gap-2 px-5 py-3 text-sm font-medium border-b-2 transition-colors",
+                  "flex items-center cursor-pointer gap-2 px-4 sm:px-5 py-3 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap",
                   activeTab === tab.key
                     ? isDark ? "border-violet-400 text-violet-400" : "border-violet-600 text-violet-600"
                     : isDark ? "border-transparent text-slate-500 hover:text-slate-300" : "border-transparent text-slate-500 hover:text-slate-700"
                 )}
               >
-                <tab.icon className="h-3.5 w-3.5" />
+                <tab.icon className="h-3.5 w-3.5 shrink-0" />
                 {tab.label}
                 {tab.badge != null && (
                   <span className={cn("ml-1 rounded-full px-1.5 py-0 text-[10px] font-semibold", isDark ? "bg-violet-500/20 text-violet-300" : "bg-violet-100 text-violet-700")}>
@@ -650,7 +726,7 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
           </div>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto px-6 py-4">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4">
           {activeTab === "maintenance" && (
             <MaintenanceTab
               loadingMaint={loadingMaint}
@@ -682,6 +758,10 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
               autoSyncingFlight={autoSyncingFlight}
               flightsError={flightsError}
               isDark={isDark}
+              organizations={organizations}
+              selectedOrganization={selectedOrganization}
+              orgLoading={orgLoading}
+              onOrganizationChange={handleOrganizationChange}
               onFileChange={handleFileChange}
               onWindowChange={handleWindowChange}
               onFetchFlights={handleFetchFlights}
@@ -697,25 +777,27 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
               fromLog={postFlightFromLog}
               isDark={isDark}
               onChange={handlePostFlightChange}
+              waypoints={waypoints}
+              loadingWaypoints={loadingWaypoints}
             />
           )}
         </div>
 
-        <div className={cn("flex items-center justify-between gap-2 px-6 py-4 border-t", isDark ? "border-white/[0.06] bg-slate-900/30" : "border-slate-200 bg-slate-50")}>
+        <div className={cn("flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 sm:px-6 py-4 border-t shrink-0", isDark ? "border-white/[0.06] bg-slate-900/30" : "border-slate-200 bg-slate-50")}>
           {onSkip ? (
             <div className={cn("flex items-center gap-1.5 rounded-lg px-3 py-2 text-[11px]", isDark ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" : "bg-amber-50 text-amber-600 border border-amber-200")}>
               <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
               <span>{t("operations.missionComplete.footer.updateWarning")}</span>
             </div>
           ) : (
-            <div />
+            <div className="hidden sm:block" />
           )}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-end gap-2 w-full sm:w-auto">
             <Button
               variant="outline"
               onClick={onSkip ?? onClose}
               className={cn(
-                "h-9 px-4 text-sm cursor-pointer",
+                "h-9 px-4 text-sm cursor-pointer flex-1 sm:flex-initial",
                 onSkip
                   ? isDark ? "border-amber-500/40 text-amber-400 hover:bg-amber-500/10" : "border-amber-300 text-amber-600 hover:bg-amber-50"
                   : isDark ? "border-slate-600 text-slate-300 hover:bg-slate-700" : ""
@@ -731,7 +813,7 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
               <Button
                 onClick={handleSubmitMaintenance}
                 disabled={submitting || loadingMaint || !hasComponents}
-                className="h-9 cursor-pointer px-4 text-sm bg-violet-600 hover:bg-violet-500 text-white"
+                className="h-9 cursor-pointer px-4 text-sm bg-violet-600 hover:bg-violet-500 text-white flex-1 sm:flex-initial"
               >
                 {submitting
                   ? <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> {t("operations.missionComplete.footer.updating")}</>
@@ -744,7 +826,7 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
               <Button
                 onClick={handleSubmitPostFlight}
                 disabled={submittingPostFlight || loadingPostFlight}
-                className="h-9 cursor-pointer px-4 text-sm bg-violet-600 hover:bg-violet-500 text-white"
+                className="h-9 cursor-pointer px-4 text-sm bg-violet-600 hover:bg-violet-500 text-white flex-1 sm:flex-initial"
               >
                 {submittingPostFlight
                   ? <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> {t("operations.missionComplete.footer.saving")}</>

@@ -1,0 +1,59 @@
+/* Docs specific styles */
+.docs-container {
+  min-height: 100vh;
+}
+
+.docs-content {
+  max-width: 100%;
+}
+
+/* Custom scrollbar for docs */
+.docs-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.docs-content::-webkit-scrollbar-trace {
+  background: transparent;
+}
+
+.docs-content::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.5);
+  border-radius: 4px;
+}
+
+.docs-content::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(156, 163, 175, 0.8);
+}
+
+/* Code block styling */
+pre {
+  border-radius: 0.5rem;
+  margin: 1rem 0;
+}
+
+/* Table styling */
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1rem 0;
+}
+
+table th,
+table td {
+  border: 1px solid #e5e7eb;
+  padding: 0.5rem 1rem;
+}
+
+table th {
+  background-color: #f9fafb;
+  font-weight: 600;
+}
+
+/* Link styling */
+a {
+  text-decoration: underline;
+}
+
+a:hover {
+  text-decoration: none;
+}

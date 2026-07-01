@@ -34,6 +34,8 @@ export function AuditLogDetailModal({ log, onClose }: AuditLogDetailModalProps) 
   const hasMeta = log.metadata && Object.keys(log.metadata).length > 0;
   const isDcc = log.entity_type === 'dcc_bug_report';
   const dcc = isDcc ? (log.metadata as any)?.dcc : null;
+  const oldPosition = (log.metadata as any)?.oldPosition as { latitude: number | null; longitude: number | null } | undefined;
+  const hasOtherMeta = hasMeta && !isDcc && Object.keys(log.metadata || {}).some(key => key !== 'oldPosition');
 
   return (
     <Dialog open={!!log} onOpenChange={onClose}>
@@ -106,14 +108,33 @@ export function AuditLogDetailModal({ log, onClose }: AuditLogDetailModalProps) 
             </div>
           )}
 
+          {/* Old position details */}
+          {oldPosition && (oldPosition.latitude != null || oldPosition.longitude != null) && (
+            <div className={`rounded-lg border p-3.5 space-y-3 ${isDark ? 'bg-blue-950/20 border-blue-800/30' : 'bg-blue-50 border-blue-200'}`}>
+              <p className={`text-[10px] font-bold uppercase tracking-wider ${isDark ? 'text-blue-400' : 'text-blue-700'}`}>
+                Previous Position
+              </p>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                <Field label="Latitude" value={oldPosition.latitude != null ? String(oldPosition.latitude) : null} mono />
+                <Field label="Longitude" value={oldPosition.longitude != null ? String(oldPosition.longitude) : null} mono />
+              </div>
+            </div>
+          )}
+
           {/* Generic metadata */}
-          {hasMeta && !isDcc && (
+          {hasOtherMeta && (
             <div className={`rounded-lg border p-3.5 ${isDark ? 'bg-white/[0.03] border-white/[0.07]' : 'bg-slate-50 border-slate-100'}`}>
               <p className={`text-[10px] font-semibold uppercase tracking-wider mb-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                 Metadata
               </p>
               <pre className={`text-[11px] font-mono overflow-x-auto whitespace-pre-wrap break-all max-h-48 leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                {JSON.stringify(log.metadata, null, 2)}
+                {JSON.stringify(
+                  Object.fromEntries(
+                    Object.entries(log.metadata || {}).filter(([key]) => key !== 'oldPosition')
+                  ),
+                  null,
+                  2
+                )}
               </pre>
             </div>
           )}
