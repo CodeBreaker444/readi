@@ -3422,6 +3422,7 @@
       "jsonSchemaTitle": "Schema JSON",
       "createAssignment": "Crea assegnazione",
       "jsonSchema": "Schema JSON",
+      "validJsonSchema": "Schema JSON valido",
       "invalidJsonError": "Correggi gli errori di sintassi JSON",
       "deleteConfirm": "Eliminare definitivamente {{code}}? Questa azione non può essere annullata.",
       "toasts": {

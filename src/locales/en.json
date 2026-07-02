@@ -3432,6 +3432,7 @@
       "jsonSchemaTitle": "JSON Schema",
       "createAssignment": "Create Assignment",
       "jsonSchema": "JSON Schema",
+      "validJsonSchema": "Valid JSON Schema",
       "invalidJsonError": "Please fix JSON syntax errors",
       "deleteConfirm": "Permanently delete {{code}}? This cannot be undone.",
       "toasts": {

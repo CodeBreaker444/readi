@@ -31,7 +31,7 @@ export async function POST() {
       orgId: cred.orgId,
       token: cred.token,
     }));
-    console.log('jwt payload:',organizations);
+    
     const conn = await connectToFlytrelayWithMultipleOrgs(String(userId), organizations, fleetCompanyId);
 
     return NextResponse.json({
