@@ -10,3 +10,57 @@ html > body[data-scroll-locked] {
   margin-right: 0px !important;
   --removed-body-scroll-bar-size: 0px !important;
 }
+
+/* Fix sidebar positioning */
+[data-sidebar] {
+  transform: translateX(0) !important;
+}
+
+/* Remove underline on sidebar links and add background color on hover */
+[data-sidebar] a {
+  text-decoration: none !important;
+  border-bottom: none !important;
+  transition: background-color 0.2s ease;
+}
+
+[data-sidebar] a:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+[data-sidebar] a[data-active="true"] {
+  background-color: rgba(0, 0, 0, 0.1);
+  font-weight: 600;
+}
+
+/* Dark mode hover and active states */
+.dark [data-sidebar] a:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.dark [data-sidebar] a[data-active="true"] {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+  [data-sidebar] {
+    position: fixed !important;
+    z-index: 50 !important;
+  }
+}
+
+/* Ensure proper responsive behavior for all containers */
+* {
+  max-width: 100%;
+}
+
+/* Fix color consistency */
+:root {
+  --fd-primary: 221 83% 53%;
+  --fd-primary-foreground: 210 40% 98%;
+}
+
+.dark {
+  --fd-primary: 217 91% 60%;
+  --fd-primary-foreground: 222 47% 11%;
+}

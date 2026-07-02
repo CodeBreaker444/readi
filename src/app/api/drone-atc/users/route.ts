@@ -41,8 +41,13 @@ export async function PATCH() {
 
     const userId = session!.user.userId;
 
-    // Try to get multiple organization credentials first
+    // Get organizations assigned to user from user_flytbase_access table
     const multiOrgCreds = await getAllUserFlytbaseCredentials(userId);
+    
+    // If no organizations assigned, return error
+    if (multiOrgCreds.length === 0) {
+      return NextResponse.json({ error: 'No FlytBase organizations assigned to user' }, { status: 404 });
+    }
     
     const users = await getUsersWithDroneAtc();
     const flytrelayUsers = users.map(({ systems, ...user }) => ({
@@ -53,22 +58,12 @@ export async function PATCH() {
       })),
     }));
 
-    let result;
-    if (multiOrgCreds.length > 0) {
-      // User has multiple organizations assigned
-      const organizations = multiOrgCreds.map(cred => ({
-        orgId: cred.orgId,
-        token: cred.token,
-      }));
-      result = await updateFlytrelayUsersWithMultipleOrgs(String(userId), organizations, flytrelayUsers);
-    } else {
-      // Fallback to single organization (legacy behavior)
-      const creds = await getFlytbaseCredentials(userId);
-      if (!creds) {
-        return NextResponse.json({ error: 'No FlytBase credentials configured' }, { status: 404 });
-      }
-      result = await updateFlytrelayUsers(String(userId), creds.token, creds.orgId, flytrelayUsers);
-    }
+    // User has organizations assigned - use them
+    const organizations = multiOrgCreds.map(cred => ({
+      orgId: cred.orgId,
+      token: cred.token,
+    }));
+    const result = await updateFlytrelayUsersWithMultipleOrgs(String(userId), organizations, flytrelayUsers);
 
     return NextResponse.json({ ok: true, synced: result.synced });
   } catch (err) {

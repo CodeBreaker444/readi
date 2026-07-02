@@ -140,12 +140,16 @@ export async function GET(req: NextRequest) {
       }
       organizations = [{ orgId: orgCreds.orgId, token: orgCreds.token }];
     } else {
-      // Try to get multiple organization credentials first
+      // Get organizations assigned to user from user_flytbase_access table
       const multiOrgCreds = await getAllUserFlytbaseCredentials(session!.user.userId);
-      organizations = multiOrgCreds.length > 0 ? multiOrgCreds.map(cred => ({
+      // If no organizations assigned, return error
+      if (multiOrgCreds.length === 0) {
+        return NextResponse.json({ success: false, message: 'No FlytBase organizations assigned to user' }, { status: 404 });
+      }
+      organizations = multiOrgCreds.map(cred => ({
         orgId: cred.orgId,
         token: cred.token,
-      })) : undefined;
+      }));
     }
 
     const rawData = await fetchFlytrelayGutma(
