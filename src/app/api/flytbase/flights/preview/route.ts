@@ -200,8 +200,14 @@ export async function GET(req: NextRequest) {
 
   if (!upstream.ok) {
     const errText = await upstream.text().catch(() => '');
+    console.error(`FlytBase GUTMA download failed for flight ${flightId} (org: ${creds.orgId}): ${upstream.status} - ${errText}`);
     return NextResponse.json(
-      { success: false, message: `FlytBase returned ${upstream.status}: ${errText.slice(0, 200)}` },
+      { 
+        success: false, 
+        message: `FlytBase returned ${upstream.status}: ${errText.slice(0, 200)}`,
+        flightId,
+        organizationId: creds.orgId,
+      },
       { status: upstream.status },
     );
   }

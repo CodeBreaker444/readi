@@ -1,0 +1,16 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/refresh-maintenance-days",
+      "schedule": "0 */6 * * *"
+    },
+    {
+      "path": "/api/cron/check-component-expiration",
+      "schedule": "0 */6 * * *"
+    },
+    {
+      "path": "/api/cron/check-maintenance-alerts",
+      "schedule": "0 */6 * * *"
+    }
+  ]
+}

@@ -170,20 +170,35 @@ export async function updateFlytrelayUsersWithMultipleOrgs(
   const baseUrl = env.FLYTRELAY_BASE_URL;
   if (!baseUrl) throw new Error('FLYTRELAY_BASE_URL is not configured');
 
+  console.log('[FlytRelay updateUsers] baseUrl:', baseUrl);
+  console.log('[FlytRelay updateUsers] userId:', userId, 'orgs count:', organizations.length, 'users count:', users.length);
+  console.log('[FlytRelay updateUsers] organizations:', organizations.map(o => ({ orgId: o.orgId, hasToken: !!o.token })));
+
   const jwt = signReadiDroneJwtWithMultipleOrgs(userId, organizations);
+  console.log('[FlytRelay updateUsers] JWT signed successfully');
 
-  const res = await fetch(`${baseUrl}/api/users`, {
-    method: 'PATCH',
-    headers: { Authorization: `Bearer ${jwt}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ users }),
-  });
+  const requestBody = { users };
+  console.log('[FlytRelay updateUsers] request body size:', JSON.stringify(requestBody).length);
 
-  const responseBody = await res.text();
-  console.log('[FlytRelay updateUsers with multiple orgs] status:', res.status, 'body:', responseBody);
+  try {
+    const url = `${baseUrl}/api/users`;
+    console.log('[FlytRelay updateUsers] calling:', url);
+    const res = await fetch(url, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${jwt}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestBody),
+    });
 
-  if (!res.ok) {
-    throw new Error(`FlytRelay user update failed (${res.status}): ${responseBody}`);
+    const responseBody = await res.text();
+    console.log('[FlytRelay updateUsers with multiple orgs] status:', res.status, 'body:', responseBody);
+
+    if (!res.ok) {
+      throw new Error(`FlytRelay user update failed (${res.status}): ${responseBody}`);
+    }
+
+    return { synced: users.length };
+  } catch (err: any) {
+    console.error('[FlytRelay updateUsers] Network or fetch error:', err);
+    throw err;
   }
-
-  return { synced: users.length };
 }
