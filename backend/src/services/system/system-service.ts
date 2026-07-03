@@ -114,23 +114,23 @@ export async function getSystemList(
       )
       .forEach((c) => { if (c.fk_tool_id != null) toolsNonOperational.add(c.fk_tool_id); });
 
-    // Fire-and-forget expiration notifications for managers
-    if (expiredComps.length > 0) {
-      const { sendExpirationNotifications } = await import('@/backend/services/system/expiration-notification');
-      const expiredItems = expiredComps
-        .filter((c) => c.fk_tool_id != null)
-        .map((c) => {
-          const tool = data.find((t) => t.tool_id === c.fk_tool_id);
-          return {
-            tool_component_id: c.component_id,
-            component_name: c.component_name,
-            tool_id: c.fk_tool_id as number,
-            tool_code: tool?.tool_code ?? String(c.fk_tool_id),
-            expiration_date: c.expiration_date?.toISOString() ?? '',
-          };
-        });
-      sendExpirationNotifications(ownerId, expiredItems).catch(() => { });
-    }
+    // Expiration notifications moved to cron job - no longer called here
+    // if (expiredComps.length > 0) {
+    //   const { sendExpirationNotifications } = await import('@/backend/services/system/expiration-notification');
+    //   const expiredItems = expiredComps
+    //     .filter((c) => c.fk_tool_id != null)
+    //     .map((c) => {
+    //       const tool = data.find((t) => t.tool_id === c.fk_tool_id);
+    //       return {
+    //         tool_component_id: c.component_id,
+    //         component_name: c.component_name,
+    //         tool_id: c.fk_tool_id as number,
+    //         tool_code: tool?.tool_code ?? String(c.fk_tool_id),
+    //         expiration_date: c.expiration_date?.toISOString() ?? '',
+    //       };
+    //     });
+    //   sendExpirationNotifications(ownerId, expiredItems).catch(() => { });
+    // }
   }
 
   let filtered = data;
@@ -651,11 +651,12 @@ export async function updateModel(modelId: number, modelData: any) {
 
 
 export async function getComponentList(ownerId: number, toolId?: number, includeDetached: boolean = false) {
-  if (toolId && toolId !== 0) {
-    await refreshMaintenanceDaysForTool(toolId);
-  } else {
-    await refreshMaintenanceDaysForOwner(ownerId);
-  }
+  // Maintenance days refresh moved to cron job - no longer called here
+  // if (toolId && toolId !== 0) {
+  //   await refreshMaintenanceDaysForTool(toolId);
+  // } else {
+  //   await refreshMaintenanceDaysForOwner(ownerId);
+  // }
 
   const selectFields = `
     component_id,
@@ -1077,7 +1078,8 @@ export async function getMaintenanceDashboard(
   clientId?: number,
   thresholdAlert: number = 80
 ) {
-  await refreshMaintenanceDaysForOwner(ownerId);
+  // Maintenance days refresh moved to cron job - no longer called here
+  // await refreshMaintenanceDaysForOwner(ownerId);
 
   const tools = await prisma.tool.findMany({
     where: { fk_owner_id: ownerId },
