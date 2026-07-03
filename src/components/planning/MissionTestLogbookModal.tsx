@@ -228,17 +228,17 @@ export default function MissionTestLogbookModal({
                         <div className="flex justify-between items-center">
                             <div>
                                 <DialogTitle className={`text-xl font-bold tracking-tight ${isDark ? "text-slate-100" : ""}`}>
-                                    {t("testLogbook.title")}
+                                    {t("planning.testLogbook.title")}
                                 </DialogTitle>
                                 <DialogDescription className={`text-sm ${isDark ? "text-slate-400" : ""}`}>
-                                    {t("testLogbook.subtitlePrefix")}{missionPlanningId}
+                                    {t("planning.testLogbook.subtitlePrefix")}{missionPlanningId}
                                 </DialogDescription>
                             </div>
                             <Badge variant="outline" className={`px-4 py-1 rounded-sm text-xs font-semibold border-none ${activeStatus === 'N'
                                 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
                                 : 'bg-green-100 text-green-700 dark:bg-emerald-900/30 dark:text-emerald-400'
                                 }`}>
-                                {activeStatus === 'N' ? t("testLogbook.putOnHold") : t("planning.status.active")}
+                                {activeStatus === 'N' ? t("planning.testLogbook.putOnHold") : t("planning.testLogbook.activateMission")}
                             </Badge>
                         </div>
                     </DialogHeader>
@@ -253,15 +253,15 @@ export default function MissionTestLogbookModal({
 
                                 <section className={`rounded-xl border shadow-sm p-6 ${isDark ? "bg-slate-900/50 border-slate-800" : "bg-card"}`}>
                                     <div className={`flex items-center gap-2 mb-6 border-b pb-4 ${isDark ? "border-slate-800" : ""}`}>
-                                        <h4 className="text-md font-semibold uppercase tracking-tight text-muted-foreground">{t("testLogbook.addNewTest")}</h4>
+                                        <h4 className="text-md font-semibold uppercase tracking-tight text-muted-foreground">{t("planning.testLogbook.addNewTest")}</h4>
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                                         <div className="space-y-2">
-                                            <Label className={isDark ? "text-white" : ""}>{t("testLogbook.pilotInCommand")} <span className="text-red-500">*</span></Label>
+                                            <Label className={isDark ? "text-white" : ""}>{t("planning.testLogbook.pilotInCommand")} <span className="text-red-500">*</span></Label>
                                             <Select value={form.fk_pic_id} onValueChange={(val) => handleFieldChange("fk_pic_id", val)}>
                                                 <SelectTrigger className={`h-11 ${errors.fk_pic_id ? "border-red-500" : ""} ${isDark ? "bg-slate-950 border-slate-800" : ""}`}>
-                                                    <SelectValue placeholder={t("testLogbook.selectPic")} />
+                                                    <SelectValue placeholder={t("planning.testLogbook.selectPic")} />
                                                 </SelectTrigger>
                                                 <SelectContent className={isDark ? "bg-slate-900 border-slate-800 text-white" : ""}>
                                                     {pilots.map((p) => (
@@ -275,10 +275,10 @@ export default function MissionTestLogbookModal({
                                         </div>
 
                                         <div className="space-y-2">
-                                            <Label className={isDark ? "text-white" : ""}>{t("testLogbook.observer")} <span className="text-red-500">*</span></Label>
+                                            <Label className={isDark ? "text-white" : ""}>{t("planning.testLogbook.observer")} <span className="text-red-500">*</span></Label>
                                             <Select value={form.fk_observer_id} onValueChange={(val) => handleFieldChange("fk_observer_id", val)}>
                                                 <SelectTrigger className={`h-11 ${errors.fk_observer_id ? "border-red-500" : ""} ${isDark ? "bg-slate-950 border-slate-800" : ""}`}>
-                                                    <SelectValue placeholder={t("testLogbook.selectObserver")} />
+                                                    <SelectValue placeholder={t("planning.testLogbook.selectObserver")} />
                                                 </SelectTrigger>
                                                 <SelectContent className={isDark ? "bg-slate-900 border-slate-800 text-white" : ""}>
                                                     {pilots.map((p) => (
@@ -292,63 +292,63 @@ export default function MissionTestLogbookModal({
                                         </div>
 
                                         <div className="space-y-2">
-                                            <Label className={isDark ? "text-slate-300" : ""}>{t("testLogbook.testCode")} <span className="text-red-500">*</span></Label>
+                                            <Label className={isDark ? "text-slate-300" : ""}>{t("planning.testLogbook.testCode")} <span className="text-red-500">*</span></Label>
                                             <Input
                                                 className={`h-11 font-mono ${errors.mission_test_code ? "border-red-500" : ""} ${isDark ? "bg-slate-950 border-slate-800 text-white" : ""}`}
                                                 value={form.mission_test_code}
                                                 onChange={(e) => handleFieldChange("mission_test_code", e.target.value)}
-                                                placeholder={t("testLogbook.testCodePlaceholder")}
+                                                placeholder={t("planning.testLogbook.testCodePlaceholder")}
                                             />
                                             {errors.mission_test_code && <p className="text-xs text-red-500">{errors.mission_test_code}</p>}
                                         </div>
 
                                         <div className="space-y-2">
-                                            <Label className={isDark ? "text-slate-300" : ""}>{t("testLogbook.testResult")}</Label>
+                                            <Label className={isDark ? "text-slate-300" : ""}>{t("planning.testLogbook.testResult")}</Label>
                                             <Select value={form.mission_test_result} onValueChange={(val) => handleFieldChange("mission_test_result", val)}>
                                                 <SelectTrigger className={`h-11 ${isDark ? "bg-slate-950 border-slate-800 text-white" : ""}`}><SelectValue /></SelectTrigger>
                                                 <SelectContent className={isDark ? "bg-slate-900 border-slate-800 text-white" : ""}>
-                                                    <SelectItem value="success">{t("testLogbook.positive")}</SelectItem>
-                                                    <SelectItem value="error">{t("testLogbook.negative")}</SelectItem>
+                                                    <SelectItem value="success">{t("planning.testLogbook.positive")}</SelectItem>
+                                                    <SelectItem value="error">{t("planning.testLogbook.negative")}</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                         </div>
 
                                         <div className="space-y-2">
-                                            <Label className={isDark ? "text-slate-300" : ""}>{t("testLogbook.startDate")} <span className="text-red-500">*</span></Label>
+                                            <Label className={isDark ? "text-slate-300" : ""}>{t("planning.testLogbook.startDate")} <span className="text-red-500">*</span></Label>
                                             <Input type="date" className={`h-11 ${errors.mission_test_date_start ? "border-red-500" : ""} ${isDark ? "bg-slate-950 border-slate-800 text-white" : ""}`} value={form.mission_test_date_start} onChange={(e) => handleFieldChange("mission_test_date_start", e.target.value)} />
                                             {errors.mission_test_date_start && <p className="text-xs text-red-500">{errors.mission_test_date_start}</p>}
                                         </div>
 
                                         <div className="space-y-2">
-                                            <Label className={isDark ? "text-slate-300" : ""}>{t("testLogbook.endDate")} <span className="text-red-500">*</span></Label>
+                                            <Label className={isDark ? "text-slate-300" : ""}>{t("planning.testLogbook.endDate")} <span className="text-red-500">*</span></Label>
                                             <Input type="date" className={`h-11 ${errors.mission_test_date_end ? "border-red-500" : ""} ${isDark ? "bg-slate-950 border-slate-800 text-white" : ""}`} value={form.mission_test_date_end} onChange={(e) => handleFieldChange("mission_test_date_end", e.target.value)} />
                                             {errors.mission_test_date_end && <p className="text-xs text-red-500">{errors.mission_test_date_end}</p>}
                                         </div>
 
                                         <div className="space-y-2 lg:col-span-2">
-                                            <Label className={isDark ? "text-slate-300" : ""}>{t("testLogbook.artifact")}</Label>
+                                            <Label className={isDark ? "text-slate-300" : ""}>{t("planning.testLogbook.artifact")}</Label>
                                             <Input type="file" className={`h-11 cursor-pointer pt-2 ${isDark ? "bg-slate-950 border-slate-800 file:text-white" : ""}`} ref={fileInputRef} />
                                         </div>
                                     </div>
 
                                     <div className={`mt-8 flex justify-end border-t pt-6 ${isDark ? "border-slate-800" : ""}`}>
                                         <Button onClick={handleAddTest} disabled={submitting} size="lg" className="bg-violet-600 hover:bg-violet-700 text-white px-12 transition-all">
-                                            {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />} {t("testLogbook.addEntry")}
+                                            {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />} {t("planning.testLogbook.addEntry")}
                                         </Button>
                                     </div>
                                 </section>
 
                                 <div className={`rounded-xl border shadow-sm overflow-hidden ${isDark ? "bg-slate-900/50 border-slate-800" : "bg-card"}`}>
                                     <div className={`bg-muted/30 px-6 py-4 border-b ${isDark ? "bg-slate-950/50 border-slate-800" : ""}`}>
-                                        <h4 className="font-semibold text-muted-foreground">{t("testLogbook.historicalLogs")}</h4>
+                                        <h4 className="font-semibold text-muted-foreground">{t("planning.testLogbook.historicalLogs")}</h4>
                                     </div>
                                     <Table>
                                         <TableHeader className={isDark ? "bg-slate-950/30 text-white" : "bg-muted/10"}>
                                             <TableRow className={isDark ? "border-slate-800" : ""}>
-                                                <TableHead className={`w-[15%] ${isDark ? "border-slate-800 text-white" : ""}`}>{t("testLogbook.testCode")}</TableHead>
-                                                <TableHead className={`w-[25%] ${isDark ? "border-slate-800 text-white" : ""}`}>{t("testLogbook.staffCol")}</TableHead>
-                                                <TableHead className={`w-[30%] text-center ${isDark ? "border-slate-800 text-white" : ""}`}>{t("testLogbook.duration")}</TableHead>
-                                                <TableHead className={`w-[15%] ${isDark ? "border-slate-800 text-white" : ""}`}>{t("testLogbook.result")}</TableHead>
+                                                <TableHead className={`w-[15%] ${isDark ? "border-slate-800 text-white" : ""}`}>{t("planning.testLogbook.testCode")}</TableHead>
+                                                <TableHead className={`w-[25%] ${isDark ? "border-slate-800 text-white" : ""}`}>{t("planning.testLogbook.staffCol")}</TableHead>
+                                                <TableHead className={`w-[30%] text-center ${isDark ? "border-slate-800 text-white" : ""}`}>{t("planning.testLogbook.duration")}</TableHead>
+                                                <TableHead className={`w-[15%] ${isDark ? "border-slate-800 text-white" : ""}`}>{t("planning.testLogbook.result")}</TableHead>
                                                 <TableHead className={`w-[15%] text-right ${isDark ? "border-slate-800 text-white" : ""}`}>{t("planning.table.actions")}</TableHead>
                                             </TableRow>
                                         </TableHeader>
@@ -356,7 +356,7 @@ export default function MissionTestLogbookModal({
                                             {tests.length === 0 ? (
                                                 <TableRow>
                                                     <TableCell colSpan={5} className="h-32 text-center text-muted-foreground">
-                                                        {t("testLogbook.noTests")}
+                                                        {t("planning.testLogbook.noTests")}
                                                     </TableCell>
                                                 </TableRow>
                                             ) : (
@@ -366,7 +366,7 @@ export default function MissionTestLogbookModal({
                                                         <TableCell>
                                                             <div className="flex flex-col">
                                                                 <span className={`text-sm font-medium ${isDark ? "text-slate-200" : ""}`}>{test.pic_name}</span>
-                                                                <span className="text-xs text-muted-foreground italic">{t("testLogbook.obsLabel")} {test.observer_name}</span>
+                                                                <span className="text-xs text-muted-foreground italic">{t("planning.testLogbook.obsLabel")} {test.observer_name}</span>
                                                             </div>
                                                         </TableCell>
                                                         <TableCell className="text-center text-xs text-slate-500">
@@ -374,7 +374,7 @@ export default function MissionTestLogbookModal({
                                                         </TableCell>
                                                         <TableCell>
                                                             <Badge className={test.mission_test_result === "success" ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-red-500/10 text-red-500 border-red-500/20"} variant="outline">
-                                                                {test.mission_test_result === "success" ? t("testLogbook.positive") : t("testLogbook.negative")}
+                                                                {test.mission_test_result === "success" ? t("planning.testLogbook.positive") : t("planning.testLogbook.negative")}
                                                             </Badge>
                                                         </TableCell>
                                                         <TableCell className="text-right">
@@ -401,11 +401,11 @@ export default function MissionTestLogbookModal({
                                         onClick={handleToggleActive}
                                     >
                                         {updatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : activeStatus === "N" ? <Play className="mr-2 h-4 w-4" /> : <Pause className="mr-2 h-4 w-4" />}
-                                        {activeStatus === "N" ? t("testLogbook.activateMission") : t("testLogbook.putOnHold")}
+                                        {activeStatus === "N" ? t("planning.testLogbook.activateMission") : t("planning.testLogbook.putOnHold")}
                                     </Button>
 
                                     <Button variant="secondary" className="px-8 bg-violet-600 hover:bg-violet-700 text-white" onClick={() => handleClose(false)}>
-                                        {t("testLogbook.finishClose")}
+                                        {t("planning.testLogbook.finishClose")}
                                     </Button>
                                 </div>
                             </div>
@@ -417,9 +417,9 @@ export default function MissionTestLogbookModal({
             <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
                 <AlertDialogContent className={isDark ? "bg-slate-900 border-slate-800" : ""}>
                     <AlertDialogHeader>
-                        <AlertDialogTitle className={isDark ? "text-slate-100" : ""}>{t("testLogbook.confirmTitle")}</AlertDialogTitle>
+                        <AlertDialogTitle className={isDark ? "text-slate-100" : ""}>{t("planning.testLogbook.confirmTitle")}</AlertDialogTitle>
                         <AlertDialogDescription className={isDark ? "text-slate-400" : ""}>
-                            {t("testLogbook.confirmDesc")}
+                            {t("planning.testLogbook.confirmDesc")}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

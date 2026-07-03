@@ -1253,7 +1253,7 @@
     },
     "testLogbook": {
       "title": "Mission Test Logbook",
-      "subtitlePrefix": "[GO.00.P03] Mission Test — Manage tests for mission planning #",
+      "subtitlePrefix": "Mission Test — Manage tests for mission planning #",
       "addNewTest": "Add New Test Entry",
       "pilotInCommand": "Pilot in Command",
       "selectPic": "Select PiC",
@@ -1272,6 +1272,7 @@
       "staffCol": "Staff (PiC / Obs)",
       "duration": "Duration",
       "result": "Result",
+      "actions": "Actions",
       "noTests": "No mission tests logged.",
       "obsLabel": "Obs:",
       "activateMission": "Activate Mission",

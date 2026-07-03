@@ -261,7 +261,7 @@ export async function getUserFlytbaseCredentials(
 /**
  * Get all FlytBase credentials for a user (all accessible organizations)
  * Returns an array of all organization credentials the user has access to
- * based on user_flytbase_access table assignments
+ * based on organization assignments
  */
 export async function getAllUserFlytbaseCredentials(
   userId: number,

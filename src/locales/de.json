@@ -1269,6 +1269,7 @@
       "staffCol": "Personal (PiC / Beob.)",
       "duration": "Dauer",
       "result": "Ergebnis",
+      "actions": "Aktionen",
       "noTests": "Keine Missionstests protokolliert.",
       "obsLabel": "Beob.:",
       "activateMission": "Mission aktivieren",
