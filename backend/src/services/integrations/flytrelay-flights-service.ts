@@ -102,7 +102,12 @@ export async function fetchFlytrelayFlights(
     throw new Error(`FlytRelay flights API returned error: ${responseText}`);
   }
 
-  return { flights: body.flights ?? [], total: body.total ?? body.flights?.length ?? 0 };
+  const flights = body.flights ?? [];
+  const total = body.total ?? flights.length ?? 0;
+
+  // Limit to requested pageSize in case FlytRelay API returns more than requested
+  const limitedFlights = flights.slice(0, pageSize ?? 8);
+  return { flights: limitedFlights, total };
 }
 
 export async function fetchFlytrelayGutma(

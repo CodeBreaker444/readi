@@ -1253,7 +1253,7 @@
     },
     "testLogbook": {
       "title": "Mission Test Logbook",
-      "subtitlePrefix": "[GO.00.P03] Mission Test — Manage tests for mission planning #",
+      "subtitlePrefix": "Mission Test — Manage tests for mission planning #",
       "addNewTest": "Add New Test Entry",
       "pilotInCommand": "Pilot in Command",
       "selectPic": "Select PiC",
@@ -1272,6 +1272,7 @@
       "staffCol": "Staff (PiC / Obs)",
       "duration": "Duration",
       "result": "Result",
+      "actions": "Actions",
       "noTests": "No mission tests logged.",
       "obsLabel": "Obs:",
       "activateMission": "Activate Mission",
@@ -3432,6 +3433,7 @@
       "jsonSchemaTitle": "JSON Schema",
       "createAssignment": "Create Assignment",
       "jsonSchema": "JSON Schema",
+      "validJsonSchema": "Valid JSON Schema",
       "invalidJsonError": "Please fix JSON syntax errors",
       "deleteConfirm": "Permanently delete {{code}}? This cannot be undone.",
       "toasts": {

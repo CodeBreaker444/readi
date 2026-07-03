@@ -1269,6 +1269,7 @@
       "staffCol": "Personal (PiC / Beob.)",
       "duration": "Dauer",
       "result": "Ergebnis",
+      "actions": "Aktionen",
       "noTests": "Keine Missionstests protokolliert.",
       "obsLabel": "Beob.:",
       "activateMission": "Mission aktivieren",
@@ -3337,6 +3338,7 @@
       "jsonSchemaTitle": "JSON-Schema",
       "createAssignment": "Zuweisung erstellen",
       "jsonSchema": "JSON-Schema",
+      "validJsonSchema": "Gültiges JSON-Schema",
       "invalidJsonError": "Bitte beheben Sie JSON-Syntaxfehler",
       "deleteConfirm": "{{code}} endgültig löschen? Dies kann nicht rückgängig gemacht werden.",
       "toasts": {

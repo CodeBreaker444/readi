@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
     const pageParam = req.nextUrl.searchParams.get('page');
     const organizationIdParam = req.nextUrl.searchParams.get('organizationId');
     const page = Math.max(1, parseInt(pageParam ?? '1', 10) || 1);
-    const pageSize = 20;
+    const pageSize = 8;
 
     let organizations;
 
@@ -33,12 +33,16 @@ export async function GET(req: NextRequest) {
       }
       organizations = [{ orgId: orgCreds.orgId, token: orgCreds.token }];
     } else {
-      // Try to get multiple organization credentials first
+      // Get organizations assigned to user from user_flytbase_access table
       const multiOrgCreds = await getAllUserFlytbaseCredentials(session!.user.userId);
-      organizations = multiOrgCreds.length > 0 ? multiOrgCreds.map(cred => ({
+      // If no organizations assigned, return empty flights
+      if (multiOrgCreds.length === 0) {
+        return NextResponse.json({ success: true, flights: [], total: 0, page, pageSize });
+      }
+      organizations = multiOrgCreds.map(cred => ({
         orgId: cred.orgId,
         token: cred.token,
-      })) : undefined;
+      }));
     }
 
     const { flights, total } = await fetchFlytrelayFlights(

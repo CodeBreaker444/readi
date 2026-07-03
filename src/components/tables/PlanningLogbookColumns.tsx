@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import type { PlanningLogbookRow } from "@/config/types/evaluation-planning";
 import { ColumnDef } from "@tanstack/react-table";
 import { TFunction } from "i18next";
-import { ArrowUpDown, ClipboardList, Trash2 } from "lucide-react";
+import { ArrowUpDown, ClipboardList, Trash2, TestTube2 } from "lucide-react";
 
 interface LogbookColumnsOptions {
   openedRowId: number | null;
@@ -86,8 +86,8 @@ export function getLogbookColumns({
                 onClick={() => onTestLogbook(row.original)}
                 title={t("planning.testLogbook.title")}
               >
-                <ClipboardList className="h-4 w-4 mr-1" />
-                {t("planning.missionPlanning.tests")}
+                <TestTube2 className="h-4 w-4 mr-1" />
+                {t("logbooks.missionPlanning.tests")}
               </Button>
             )}
             <Button
