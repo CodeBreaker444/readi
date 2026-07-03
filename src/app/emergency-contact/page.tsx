@@ -87,9 +87,10 @@ export default function EmergencyContactPage() {
       }
     } catch (err) {
       const message = axios.isAxiosError(err)
-        ? err.response?.data?.error
+        ? err.response?.data?.error || err.response?.data?.message || t('erp.toast.saveFailed')
         : t('erp.toast.saveFailed')
       toast.error(message)
+      console.error('ERP create error:', err)
     } finally {
       setIsSaving(false)
     }
@@ -110,9 +111,10 @@ export default function EmergencyContactPage() {
       }
     } catch (err) {
       const message = axios.isAxiosError(err)
-        ? err.response?.data?.error
+        ? err.response?.data?.error || err.response?.data?.message || t('erp.toast.updateFailed')
         : t('erp.toast.updateFailed')
       toast.error(message)
+      console.error('ERP update error:', err)
     } finally {
       setIsSaving(false)
     }
@@ -188,7 +190,9 @@ export default function EmergencyContactPage() {
         ? '/api/erp/location-group/update'
         : '/api/erp/location-group/save'
       const payload = editGroup ? { id: editGroup.group_id, ...values } : values
+      console.log('Submitting location group:', payload)
       const res = await axios.post(endpoint, payload)
+      console.log('Location group response:', res.data)
       if (res.data.code === 1 && res.data.data) {
         if (editGroup) {
           setGroups(prev => prev.map(g => g.group_id === editGroup.group_id ? res.data.data : g))
@@ -199,9 +203,15 @@ export default function EmergencyContactPage() {
         }
         setGroupDialogOpen(false)
         setEditGroup(null)
+      } else {
+        throw new Error(res.data.error || 'Server returned an error')
       }
-    } catch {
-      toast.error(editGroup ? 'Failed to update group' : 'Failed to create group')
+    } catch (err) {
+      const message = axios.isAxiosError(err)
+        ? err.response?.data?.error || err.response?.data?.message || (editGroup ? 'Failed to update group' : 'Failed to create group')
+        : (editGroup ? 'Failed to update group' : 'Failed to create group')
+      toast.error(message)
+      console.error('Location group submit error:', err)
     } finally {
       setGroupsSaving(false)
     }
