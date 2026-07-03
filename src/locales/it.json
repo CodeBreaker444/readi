@@ -1271,6 +1271,7 @@
       "staffCol": "Staff (PiC / Oss)",
       "duration": "Durata",
       "result": "Risultato",
+      "actions": "Azioni",
       "noTests": "Nessun test missione registrato.",
       "obsLabel": "Oss:",
       "activateMission": "Attiva Missione",
@@ -3422,6 +3423,7 @@
       "jsonSchemaTitle": "Schema JSON",
       "createAssignment": "Crea assegnazione",
       "jsonSchema": "Schema JSON",
+      "validJsonSchema": "Schema JSON valido",
       "invalidJsonError": "Correggi gli errori di sintassi JSON",
       "deleteConfirm": "Eliminare definitivamente {{code}}? Questa azione non può essere annullata.",
       "toasts": {

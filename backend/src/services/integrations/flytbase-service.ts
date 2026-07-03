@@ -280,7 +280,9 @@ export async function fetchLatestFlights(
   const rawFlights: Record<string, unknown>[] = body?.flightLogs ?? [];
   const total: number = (body?.total as { value?: number })?.value ?? rawFlights.length;
 
-  const flights = rawFlights.map(mapFlightLog);
+  // Limit to requested pageSize in case FlytBase API returns more than requested
+  const limitedFlights = rawFlights.slice(0, pageSize);
+  const flights = limitedFlights.map(mapFlightLog);
   return { flights, total };
 }
 
@@ -327,6 +329,8 @@ export async function fetchRecentFlights(
   const rawFlights: Record<string, unknown>[] = body?.flightLogs ?? [];
   const total: number = (body?.total as { value?: number })?.value ?? rawFlights.length;
 
-  const flights = rawFlights.map(mapFlightLog);
+  // Limit to requested pageSize in case FlytBase API returns more than requested
+  const limitedFlights = rawFlights.slice(0, pageSize);
+  const flights = limitedFlights.map(mapFlightLog);
   return { flights, total };
 }

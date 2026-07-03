@@ -205,10 +205,10 @@ export function FlytrelayFlights({
         })}
       </div>
 
-      {total > 20 && (
+      {total > 8 && (
         <div className={`flex items-center justify-between px-4 py-3 border-t flex-shrink-0 ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
           <span className={`text-[11px] ${textSecondary}`}>
-            Page {page} of {Math.ceil(total / 20)}
+            Page {page} of {Math.ceil(total / 8)}
           </span>
           <div className="flex items-center gap-1">
             <button
@@ -225,10 +225,10 @@ export function FlytrelayFlights({
               Previous
             </button>
             <button
-              onClick={() => handlePageChange(Math.min(Math.ceil(total / 20), page + 1))}
-              disabled={page >= Math.ceil(total / 20)}
+              onClick={() => handlePageChange(Math.min(Math.ceil(total / 8), page + 1))}
+              disabled={page >= Math.ceil(total / 8)}
               className={`px-2 py-1 rounded text-[11px] font-medium cursor-pointer transition-colors ${
-                page >= Math.ceil(total / 20)
+                page >= Math.ceil(total / 8)
                   ? 'opacity-50 cursor-not-allowed'
                   : isDark
                     ? 'text-slate-300 hover:bg-slate-800'

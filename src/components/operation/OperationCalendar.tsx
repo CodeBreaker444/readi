@@ -13,7 +13,6 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useTheme } from '../useTheme'
 import { NewOperationModal } from './NewOperationModal'
-import { DeleteOperationDialog } from './DeleteOperationDialog'
 
 export function OperationCalendar() {
   const { t } = useTranslation()
@@ -22,10 +21,6 @@ export function OperationCalendar() {
   const [events, setEvents] = useState<OperationCalendarEvent[]>([])
   const [loading, setLoading] = useState(true)
   const [addModalOpen, setAddModalOpen] = useState(false)
-  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; operation: OperationItem | null }>({
-    open: false,
-    operation: null,
-  })
 
   const fetchOperations = useCallback(async () => {
     setLoading(true)
@@ -41,15 +36,6 @@ export function OperationCalendar() {
   }, [])
 
   useEffect(() => { fetchOperations() }, [fetchOperations])
-
-  const handleDeleteSuccess = (operationId: number) => {
-    setEvents((prev) => prev.filter((e) => e.id !== String(operationId)))
-  }
-
-  const handleEventClick = (clickInfo: any) => {
-    const operation = clickInfo.event.extendedProps?.operation as OperationItem
-    if (operation) setDeleteDialog({ open: true, operation })
-  }
 
   const fcEvents = events.map((e) => {
     const isNonOp = e.tool_status === 'NOT_OPERATIONAL' || e.operation?.tool_status === 'NOT_OPERATIONAL'
@@ -266,14 +252,13 @@ export function OperationCalendar() {
                 plugins={[timeGridPlugin, dayGridPlugin, listPlugin, interactionPlugin]}
                 initialView="timeGridWeek"
                 headerToolbar={{ left: 'prev,next today', center: 'title', right: 'timeGridWeek,dayGridMonth,listWeek' }}
-                buttonText={{ 
-                    today: t('operations.calendar.calendarButtons.today'), 
-                    week: t('operations.calendar.calendarButtons.week'), 
-                    month: t('operations.calendar.calendarButtons.month'), 
-                    list: t('operations.calendar.calendarButtons.list') 
+                buttonText={{
+                    today: t('operations.calendar.calendarButtons.today'),
+                    week: t('operations.calendar.calendarButtons.week'),
+                    month: t('operations.calendar.calendarButtons.month'),
+                    list: t('operations.calendar.calendarButtons.list')
                 }}
                 events={fcEvents}
-                eventClick={handleEventClick}
                 editable={false}
                 selectable={false}
                 height="auto"
@@ -289,14 +274,6 @@ export function OperationCalendar() {
         open={addModalOpen}
         onClose={() => setAddModalOpen(false)}
         onSuccess={() => fetchOperations()}
-        isDark={isDark}
-      />
-
-      <DeleteOperationDialog
-        open={deleteDialog.open}
-        operation={deleteDialog.operation}
-        onClose={() => setDeleteDialog({ open: false, operation: null })}
-        onSuccess={handleDeleteSuccess}
         isDark={isDark}
       />
     </div>
