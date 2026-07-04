@@ -2,6 +2,7 @@ import { env } from '@/backend/config/env';
 import { unstable_cache } from 'next/cache';
 import 'server-only';
 import { signReadiDroneJwt, signReadiDroneJwtWithMultipleOrgs, OrganizationCredentials } from './drone-atc-jwt';
+import axios from 'axios';
 
 export interface FlytrelayConnection {
   wsUrl: string;
@@ -86,7 +87,7 @@ export async function updateFlytrelayUsers(
   const jwt = signReadiDroneJwt(userId, flytbaseKey, orgId);
 
   const res = await fetch(`${baseUrl}/api/users`, {
-    method: 'PATCH',
+    method: 'POST',
     headers: { Authorization: `Bearer ${jwt}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ users }),
   });
@@ -166,33 +167,27 @@ export async function updateFlytrelayUsersWithMultipleOrgs(
   userId: string,
   organizations: OrganizationCredentials[],
   users: unknown[],
+  companyId?: string,
 ): Promise<{ synced: number }> {
   const baseUrl = env.FLYTRELAY_BASE_URL;
   if (!baseUrl) throw new Error('FLYTRELAY_BASE_URL is not configured');
 
-  console.log('[FlytRelay updateUsers] baseUrl:', baseUrl);
-  console.log('[FlytRelay updateUsers] userId:', userId, 'orgs count:', organizations.length, 'users count:', users.length);
-  console.log('[FlytRelay updateUsers] organizations:', organizations.map(o => ({ orgId: o.orgId, hasToken: !!o.token })));
 
-  const jwt = signReadiDroneJwtWithMultipleOrgs(userId, organizations);
-  console.log('[FlytRelay updateUsers] JWT signed successfully');
+  const jwt = signReadiDroneJwtWithMultipleOrgs(userId, organizations, companyId);
+  console.log('[FlytRelay updateUsers] organizations count:', organizations.length, 'companyId:', companyId);
 
   const requestBody = { users };
-  console.log('[FlytRelay updateUsers] request body size:', JSON.stringify(requestBody).length);
-
+console.log('users:',users)
   try {
     const url = `${baseUrl}/api/users`;
-    console.log('[FlytRelay updateUsers] calling:', url);
-    const res = await fetch(url, {
-      method: 'PATCH',
+
+    const res = await axios.post(url, requestBody, {
       headers: { Authorization: `Bearer ${jwt}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestBody),
     });
-
-    const responseBody = await res.text();
-    console.log('[FlytRelay updateUsers with multiple orgs] status:', res.status, 'body:', responseBody);
-
-    if (!res.ok) {
+    
+    const responseBody = await res.data;
+console.log('[FlytRelay updateUsers] status:', res.status);
+    if (!res.status || res.status < 200 || res.status >= 300) {
       throw new Error(`FlytRelay user update failed (${res.status}): ${responseBody}`);
     }
 
