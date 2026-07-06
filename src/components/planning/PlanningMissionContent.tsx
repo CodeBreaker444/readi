@@ -32,6 +32,7 @@ import type {
   PlanningLogbookRow,
   RepositoryFile
 } from "@/config/types/evaluation-planning";
+import { canDelete, canEdit } from "@/lib/auth/roles";
 import { SessionUser } from "@/lib/auth/server-session";
 import axios from "axios";
 import { useTranslation } from "react-i18next";
@@ -48,6 +49,9 @@ export const PlanningMissionContent: FC<PlanningMissionProps> = ({ user }) => {
   const { isDark } = useTheme();
   const searchParams = useSearchParams();
   const router = useRouter();
+
+  const userCanEdit = canEdit(user.isViewer);
+  const userCanDelete = canDelete(user.isViewer, user.isManager);
 
   const c_id = parseInt(searchParams.get("c_id") || "0");
   const e_id = parseInt(searchParams.get("e_id") || "0");
@@ -270,62 +274,66 @@ export const PlanningMissionContent: FC<PlanningMissionProps> = ({ user }) => {
       <Breadcrumbs items={breadcrumbItems} isDark={isDark} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Card className={isDark ? "bg-slate-900 border-slate-800" : "bg-white"}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className={`text-base ${isDark ? "text-slate-100" : "text-slate-900"}`}>
-              {t("planning.evaluation.editTitle")}
-            </CardTitle>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowEditPlanning(!showEditPlanning)}
-              className={isDark ? "hover:bg-slate-800 text-slate-400" : ""}
-            >
-              <ToggleIcon show={showEditPlanning} />
-            </Button>
-          </CardHeader>
-          {showEditPlanning && (
-            <CardContent className="p-0">
-              <EditPlanningRequestCard
-                isDark={isDark}
-                planningData={planningData}
-                clinetId={c_id}
-                evaluationId={e_id}
-                planningId={p_id}
-                onUpdate={handleUpdatePlanning}
-              />
-            </CardContent>
-          )}
-        </Card>
+        {userCanEdit && (
+          <Card className={isDark ? "bg-slate-900 border-slate-800" : "bg-white"}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className={`text-base ${isDark ? "text-slate-100" : "text-slate-900"}`}>
+                {t("planning.evaluation.editTitle")}
+              </CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowEditPlanning(!showEditPlanning)}
+                className={isDark ? "hover:bg-slate-800 text-slate-400" : ""}
+              >
+                <ToggleIcon show={showEditPlanning} />
+              </Button>
+            </CardHeader>
+            {showEditPlanning && (
+              <CardContent className="p-0">
+                <EditPlanningRequestCard
+                  isDark={isDark}
+                  planningData={planningData}
+                  clinetId={c_id}
+                  evaluationId={e_id}
+                  planningId={p_id}
+                  onUpdate={handleUpdatePlanning}
+                />
+              </CardContent>
+            )}
+          </Card>
+        )}
 
-        <Card className={isDark ? "bg-slate-900 border-slate-800" : "bg-white"}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className={`text-base ${isDark ? "text-slate-100" : "text-slate-900"}`}>
-              {t("planning.missionPlanning.addNew")}
-            </CardTitle>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowAddNewMission(!showAddNewMission)}
-              className={isDark ? "hover:bg-slate-800 text-slate-400" : ""}
-            >
-              <ToggleIcon show={showAddNewMission} />
-            </Button>
-          </CardHeader>
-          {showAddNewMission && (
-            <CardContent className="p-0">
-              <MissionPlanningLogbookAddNew
-                isDark={isDark}
-                planningId={p_id}
-                evaluationId={e_id}
-                clientId={c_id}
-                droneTools={droneTools}
-                onSubmit={handleAddMissionPlanning}
-                defaultLimitJson={planningData?.default_limit_json || ""}
-              />
-            </CardContent>
-          )}
-        </Card>
+        {userCanEdit && (
+          <Card className={isDark ? "bg-slate-900 border-slate-800" : "bg-white"}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className={`text-base ${isDark ? "text-slate-100" : "text-slate-900"}`}>
+                {t("planning.missionPlanning.addNew")}
+              </CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowAddNewMission(!showAddNewMission)}
+                className={isDark ? "hover:bg-slate-800 text-slate-400" : ""}
+              >
+                <ToggleIcon show={showAddNewMission} />
+              </Button>
+            </CardHeader>
+            {showAddNewMission && (
+              <CardContent className="p-0">
+                <MissionPlanningLogbookAddNew
+                  isDark={isDark}
+                  planningId={p_id}
+                  evaluationId={e_id}
+                  clientId={c_id}
+                  droneTools={droneTools}
+                  onSubmit={handleAddMissionPlanning}
+                  defaultLimitJson={planningData?.default_limit_json || ""}
+                />
+              </CardContent>
+            )}
+          </Card>
+        )}
       </div>
 
       <Card className={isDark ? "bg-slate-900 border-slate-800" : "bg-white"}>
@@ -352,6 +360,7 @@ export const PlanningMissionContent: FC<PlanningMissionProps> = ({ user }) => {
               onDelete={confirmDelete}
               onManage={handleManageLogbook}
               onTestLogbook={handleOpenTestLogbook}
+              canDelete={userCanDelete}
             />
           </CardContent>
         )}

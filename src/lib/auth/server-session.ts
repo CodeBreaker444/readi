@@ -28,6 +28,8 @@ export interface SessionUser {
   companyEasaCode: string | null;
   ownerName?: string | null;
   hasFlytbaseOrganizations: boolean;
+  isViewer: boolean;
+  isManager: boolean;
 }
 
 export interface Session {
@@ -91,6 +93,8 @@ export const getUserSession = cache(async (): Promise<Session | null> => {
         fk_client_id: true,
         last_logout_at: true,
         flytrelay_access: true,
+        is_viewer: true,
+        is_manager: true,
         users_profile: { select: { profile_picture: true } },
       },
     });
@@ -164,6 +168,8 @@ export const getUserSession = cache(async (): Promise<Session | null> => {
       companyEasaCode,
       ownerName,
       hasFlytbaseOrganizations,
+      isViewer: userData.is_viewer === 'N',
+      isManager: userData.is_manager === 'Y',
     };
 
     return {

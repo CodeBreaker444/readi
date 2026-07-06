@@ -1,6 +1,7 @@
 "use client";
 
 import { Planning } from "@/config/types/evaluation-planning";
+import { canDelete, canEdit } from "@/lib/auth/roles";
 import { cn } from "@/lib/utils";
 import axios from "axios";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -24,9 +25,11 @@ import { useRouter } from "next/navigation";
 
 type PlanningProps = {
   isDark: boolean;
+  userCanEdit: boolean;
+  userCanDelete: boolean;
 };
 
-export default function PlanningDashboard({ isDark }: PlanningProps) {
+export default function PlanningDashboard({ isDark, userCanEdit, userCanDelete }: PlanningProps) {
   const router = useRouter();
   const { t } = useTranslation();
   const [planningData, setPlanningData] = useState<Planning[]>([]);
@@ -107,8 +110,9 @@ export default function PlanningDashboard({ isDark }: PlanningProps) {
         onOpen: handleOpen,
         deleting: false,
         t,
+        canDelete: userCanDelete,
       }),
-    [isDark, triggerDeleteConfirm, handleOpen, t]
+    [isDark, triggerDeleteConfirm, handleOpen, t, userCanDelete]
   );
 
   const bg = isDark ? "bg-slate-900" : "bg-slate-50";

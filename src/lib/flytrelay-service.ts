@@ -177,7 +177,6 @@ export async function updateFlytrelayUsersWithMultipleOrgs(
   console.log('[FlytRelay updateUsers] organizations count:', organizations.length, 'companyId:', companyId);
 
   const requestBody = { users };
-console.log('users:',users)
   try {
     const url = `${baseUrl}/api/users`;
 
@@ -186,7 +185,6 @@ console.log('users:',users)
     });
     
     const responseBody = await res.data;
-console.log('[FlytRelay updateUsers] status:', res.status);
     if (!res.status || res.status < 200 || res.status >= 300) {
       throw new Error(`FlytRelay user update failed (${res.status}): ${responseBody}`);
     }

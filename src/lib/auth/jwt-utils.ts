@@ -9,6 +9,8 @@ export interface JWTPayload {
   role: Role;
   clientId?: number;
   droneAtcEnabled?: boolean;
+  isViewer?: boolean;
+  isManager?: boolean;
   iat?: number;
   exp?: number;
 }

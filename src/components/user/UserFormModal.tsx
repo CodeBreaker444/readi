@@ -35,6 +35,9 @@ const ROLE_OPTIONS = [
   { value: 15, label: 'Data Controller (DC)' },
   { value: 16, label: 'SLA Manager (SLA)' },
   { value: 17, label: 'Administrator (ADMIN)' },
+  { value: 18, label: 'Operations Manager (OM)' },
+  { value: 19, label: 'Mission Manager (MM)' },
+  { value: 20, label: 'Viewer Manager (VM)' },
 ];
 
 interface UserFormModalProps {

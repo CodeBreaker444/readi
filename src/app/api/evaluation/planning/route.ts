@@ -1,6 +1,7 @@
 
 import { addPlanningWithAssignment, deletePlanning, getPlanningData, getPlanningList, updatePlanning } from "@/backend/services/planning/planning-dashboard";
 import { forbidden, internalError, zodError } from "@/lib/api-error";
+import { canDelete, canEdit } from "@/lib/auth/roles";
 import { requirePermission } from "@/lib/auth/api-auth";
 import { E } from "@/lib/error-codes";
 import { NextRequest, NextResponse } from "next/server";
@@ -66,6 +67,11 @@ export async function POST(req: NextRequest) {
     const { session, error } = await requirePermission('view_planning');
     if (error) return error;
 
+    // Check if user has edit permissions (isViewer = true)
+    if (!canEdit(session!.user.isViewer)) {
+      return forbidden(E.PX001);
+    }
+
     const body = await req.json();
     const parsed = addEvaluationPlanningSchema.safeParse(body);
 
@@ -76,8 +82,8 @@ export async function POST(req: NextRequest) {
     const data = await addPlanningWithAssignment(
       {
         ...parsed.data,
-        assigned_by_user_id: session!.user.userId, 
-        assigned_to_user_id: parsed.data.assigned_to_user_id,  
+        assigned_by_user_id: session!.user.userId,
+        assigned_to_user_id: parsed.data.assigned_to_user_id,
       },
       session!.user.userId,
       session!.user.ownerId
@@ -103,7 +109,11 @@ export async function PUT(req: NextRequest) {
     try {
         const { session, error } = await requirePermission('view_planning');
         if (error) return error;
-        if (!PLANNING_ALLOWED_ROLES.includes(session!.user.role)) return forbidden(E.PX004);
+
+        // Check if user has edit permissions (isViewer = true)
+        if (!canEdit(session!.user.isViewer)) {
+          return forbidden(E.PX001);
+        }
 
         const body = await req.json();
         const parsed = updatePlanningSchema.safeParse(body);
@@ -124,6 +134,11 @@ export async function DELETE(req: NextRequest) {
     try {
         const { session, error } = await requirePermission('view_planning');
         if (error) return error;
+
+        // Check if user has delete permissions (isViewer = true AND isManager = true)
+        if (!canDelete(session!.user.isViewer, session!.user.isManager)) {
+          return forbidden(E.PX001);
+        }
 
         const body = await req.json();
         const parsed = deletePlanningSchema.safeParse(body);

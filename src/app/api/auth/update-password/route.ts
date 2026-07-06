@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
 
     const userData = await prisma.public_users.findUnique({
       where:  { user_id: userId },
-      select: { user_id: true, auth_user_id: true, email: true },
+      select: { user_id: true, auth_user_id: true, email: true, is_viewer: true, is_manager: true },
     });
 
     if (!userData) {
@@ -85,6 +85,10 @@ export async function POST(request: NextRequest) {
       email:    payload.email,
       username: payload.username,
       role:     payload.role,
+      droneAtcEnabled: payload.droneAtcEnabled,
+      isViewer: userData.is_viewer === 'N',
+      isManager: userData.is_manager === 'Y',
+      ...(payload.clientId ? { clientId: payload.clientId } : {}),
     });
     cookieStore.set('readi_auth_token', freshToken, {
       httpOnly: true,

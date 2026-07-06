@@ -10,7 +10,10 @@ export type Role =
   | 'TM'
   | 'DC'
   | 'SLA'
-  | 'CLIENT';
+  | 'CLIENT'
+  | 'OM'
+  | 'MM'
+  | 'VM';
 
 export type SubRole = 'PIC_TECHNICIAN';
 
@@ -26,6 +29,7 @@ export type Permission =
   | 'view_dashboard'
   | 'view_pilot_dashboard'
   | 'view_operations'
+  | 'view_operations_full'
   | 'view_compliance'
   | 'view_training'
   | 'view_safety_mgmt'
@@ -50,7 +54,7 @@ export type RolePermission = Permission | WildcardPermission;
 export const ROLE_PERMISSIONS: Record<Role, RolePermission[]> = {
   SUPERADMIN: ['*'],
   ADMIN: [
-    'view_dashboard', 'view_pilot_dashboard', 'view_operations', 'view_compliance',
+    'view_dashboard', 'view_pilot_dashboard', 'view_operations', 'view_operations_full', 'view_compliance',
     'view_training', 'view_safety_mgmt', 'view_config', 'view_repository', 'view_logs',
     'view_planning', 'view_planning_advanced', 'view_logbooks', 'view_notifications',
     'manage_users', 'view_client', 'view_erp', 'view_drone_atc'
@@ -59,20 +63,24 @@ export const ROLE_PERMISSIONS: Record<Role, RolePermission[]> = {
     'view_pilot_dashboard',
     'view_planning',
     'view_operations',
+    'view_operations_full',
     'view_notifications',
     'view_repository',
     'view_drone_atc',
     'view_maintenance_tickets',
   ],
-  OPM: ['view_dashboard', 'view_operations', 'view_logs', 'view_repository', 'view_planning', 'view_planning_advanced', 'view_logbooks', 'view_safety_mgmt', 'view_config', 'view_notifications', 'view_client', 'manage_users', 'view_erp', 'view_drone_atc'],
+  OPM: ['view_dashboard', 'view_operations', 'view_operations_full', 'view_logs', 'view_repository', 'view_planning', 'view_planning_advanced', 'view_logbooks', 'view_safety_mgmt', 'view_config', 'view_notifications', 'view_client', 'manage_users', 'view_erp', 'view_drone_atc'],
   SM:  ['view_dashboard', 'view_safety_mgmt', 'view_repository', 'view_notifications', 'view_config', 'view_erp'],
   AM:  ['view_dashboard', 'view_logs', 'view_repository', 'view_logbooks', 'view_config', 'view_notifications', 'manage_users', 'view_erp'],
   CMM: ['view_dashboard', 'view_compliance', 'view_repository', 'view_notifications', 'view_erp'],
-  RM:  ['view_operations', 'view_logs', 'view_logbooks', 'view_notifications', 'view_erp', 'view_config', 'view_drone_atc'],
+  RM:  ['view_operations', 'view_operations_full', 'view_logs', 'view_logbooks', 'view_notifications', 'view_erp', 'view_config', 'view_drone_atc'],
   TM:  ['view_dashboard', 'view_training', 'view_repository', 'view_notifications', 'view_erp'],
   DC:  ['view_repository', 'view_config', 'view_notifications', 'view_erp'],
   SLA: ['view_dashboard', 'view_logs', 'view_config', 'view_notifications', 'view_erp'],
   CLIENT: ['view_client_portal'],
+  OM: ['view_dashboard', 'view_planning', 'view_planning_advanced', 'view_operations', 'view_logbooks', 'view_erp', 'view_drone_atc', 'view_notifications', 'view_repository', 'view_logs', 'view_config', 'manage_users'],
+  MM: ['view_dashboard', 'view_operations', 'view_logbooks', 'view_drone_atc', 'view_notifications', 'view_repository', 'view_logs', 'view_config'],
+  VM: ['view_dashboard', 'view_drone_atc', 'view_notifications', 'view_repository', 'view_logs'],
 };
 
 export function roleHasPermission(role: Role | null | undefined, permission: Permission): boolean {
@@ -95,9 +103,9 @@ export const ROUTE_PERMISSIONS: Record<string, RoutePermissionEntry> = {
   '/planning/mission-template': 'view_planning',
   '/planning/flight-requests': 'view_planning_advanced',
   '/operations/table': 'view_operations',
-  '/operations/daily-board': 'view_operations',
+  '/operations/daily-board': 'view_operations_full',
   '/operations/calendar': 'view_operations',
-  '/operations/flight-requests': 'view_operations',
+  '/operations/flight-requests': 'view_operations_full',
   '/logbooks/mission-planning-logbook': 'view_logbooks',
   '/logbooks/operation-logbook': 'view_logbooks',
   '/logbooks/battery-logbook': 'view_logbooks',
@@ -225,4 +233,20 @@ export function getDefaultRoute(role: Role | null | undefined): string {
   if (roleHasPermission(role, 'view_repository')) return '/document-repository';
 
   return '/auth/login';
+}
+
+/**
+ * Check if user can edit based on isViewer flag
+ * isViewer = 'N' means A (All permissions), isViewer = 'Y' means R (Read only)
+ */
+export function canEdit(isViewer: boolean | undefined): boolean {
+  return isViewer === false;
+}
+
+/**
+ * Check if user can delete based on isViewer and isManager flags
+ * User needs both isViewer = 'N' (A permissions) AND isManager = 'Y' (Manager type)
+ */
+export function canDelete(isViewer: boolean | undefined, isManager: boolean | undefined): boolean {
+  return isViewer === false && isManager === true;
 }

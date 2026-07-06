@@ -1,7 +1,8 @@
 
 import { addMissionPlanningLogbook } from "@/backend/services/planning/planning-dashboard";
+import { canEdit } from "@/lib/auth/roles";
 import { requirePermission } from "@/lib/auth/api-auth";
-import { internalError, zodError } from "@/lib/api-error";
+import { forbidden, internalError, zodError } from "@/lib/api-error";
 import { E } from "@/lib/error-codes";
 import { buildS3Url, uploadFileToS3 } from "@/lib/s3Client";
 import { NextResponse } from "next/server";
@@ -31,6 +32,11 @@ export async function POST(request: Request) {
   try {
     const { session, error } = await requirePermission('view_planning');
     if (error) return error;
+
+    // Check if user has edit permissions (isViewer = true)
+    if (!canEdit(session!.user.isViewer)) {
+      return forbidden(E.PX001);
+    }
 
     const formData = await request.formData();
 

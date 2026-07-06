@@ -51,6 +51,9 @@ const OWNER_ROLE_OPTIONS = [
   'Data Controller',
   'SLA Manager',
   'Administrator',
+  'Operations Manager',
+  'Mission Manager',
+  'Viewer Manager',
 ];
 
 interface ComponentOption { tool_component_id: number; component_code: string | null; component_name: string | null; component_type: string; fk_tool_id?: number | null; component_status?: string | null }
