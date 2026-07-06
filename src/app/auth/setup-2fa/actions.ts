@@ -10,6 +10,14 @@ export async function getUserIdByAuthId(authUserId: string): Promise<number | nu
   return user?.user_id ?? null;
 }
 
+export async function getUserRoleByAuthId(authUserId: string): Promise<string | null> {
+  const user = await prisma.public_users.findFirst({
+    where: { auth_user_id: authUserId },
+    select: { user_role: true },
+  });
+  return user?.user_role ?? null;
+}
+
 export async function saveMfaSettings(userId: number, mfaEnabled: boolean): Promise<void> {
   const now = new Date();
   const settings = [

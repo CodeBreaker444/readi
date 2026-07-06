@@ -2,6 +2,7 @@ import { env } from '@/backend/config/env';
 import { unstable_cache } from 'next/cache';
 import 'server-only';
 import { signReadiDroneJwt, signReadiDroneJwtWithMultipleOrgs, OrganizationCredentials } from './drone-atc-jwt';
+import axios from 'axios';
 
 export interface FlytrelayConnection {
   wsUrl: string;
@@ -86,7 +87,7 @@ export async function updateFlytrelayUsers(
   const jwt = signReadiDroneJwt(userId, flytbaseKey, orgId);
 
   const res = await fetch(`${baseUrl}/api/users`, {
-    method: 'PATCH',
+    method: 'POST',
     headers: { Authorization: `Bearer ${jwt}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ users }),
   });
@@ -166,24 +167,33 @@ export async function updateFlytrelayUsersWithMultipleOrgs(
   userId: string,
   organizations: OrganizationCredentials[],
   users: unknown[],
+  companyId?: string,
 ): Promise<{ synced: number }> {
   const baseUrl = env.FLYTRELAY_BASE_URL;
   if (!baseUrl) throw new Error('FLYTRELAY_BASE_URL is not configured');
 
-  const jwt = signReadiDroneJwtWithMultipleOrgs(userId, organizations);
 
-  const res = await fetch(`${baseUrl}/api/users`, {
-    method: 'PATCH',
-    headers: { Authorization: `Bearer ${jwt}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ users }),
-  });
+  const jwt = signReadiDroneJwtWithMultipleOrgs(userId, organizations, companyId);
+  console.log('[FlytRelay updateUsers] organizations count:', organizations.length, 'companyId:', companyId);
 
-  const responseBody = await res.text();
-  console.log('[FlytRelay updateUsers with multiple orgs] status:', res.status, 'body:', responseBody);
+  const requestBody = { users };
+console.log('users:',users)
+  try {
+    const url = `${baseUrl}/api/users`;
 
-  if (!res.ok) {
-    throw new Error(`FlytRelay user update failed (${res.status}): ${responseBody}`);
+    const res = await axios.post(url, requestBody, {
+      headers: { Authorization: `Bearer ${jwt}`, 'Content-Type': 'application/json' },
+    });
+    
+    const responseBody = await res.data;
+console.log('[FlytRelay updateUsers] status:', res.status);
+    if (!res.status || res.status < 200 || res.status >= 300) {
+      throw new Error(`FlytRelay user update failed (${res.status}): ${responseBody}`);
+    }
+
+    return { synced: users.length };
+  } catch (err: any) {
+    console.error('[FlytRelay updateUsers] Network or fetch error:', err);
+    throw err;
   }
-
-  return { synced: users.length };
 }

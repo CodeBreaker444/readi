@@ -303,6 +303,16 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
     }
   }, [open, toolId, loadMaintenance, loadLogs, loadPostFlight, loadOrganizations]);
 
+  // Reload waypoints when switching to postflight tab if waypoints are not loaded but a FlytBase log exists
+  useEffect(() => {
+    if (activeTab === "postFlight" && logs.length > 0 && waypoints.length === 0 && !loadingWaypoints) {
+      const flytbaseLog = logs.find((log: FlightLog) => log.log_source === "flytbase");
+      if (flytbaseLog?.flytbase_flight_id) {
+        loadWaypoints(flytbaseLog.flytbase_flight_id);
+      }
+    }
+  }, [activeTab, logs, waypoints, loadingWaypoints, loadWaypoints]);
+
   const handleOrganizationChange = (organizationId: number) => {
     const org = organizations.find((o) => o.organization_id === organizationId) ?? null;
     setSelectedOrganization(org);

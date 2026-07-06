@@ -54,7 +54,7 @@ export function EditMissionLogTab({ missionId, isDark }: { missionId: number; is
 
     useEffect(() => {
         setOrgLoading(true)
-        axios.get('/api/flytbase/organizations')
+        axios.get('/api/flytbase/my-organizations')
             .then(res => {
                 if (res.data.success) {
                     setOrganizations(res.data.organizations ?? [])
