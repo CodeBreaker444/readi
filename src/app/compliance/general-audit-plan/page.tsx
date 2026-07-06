@@ -194,7 +194,7 @@ export default function GeneralAuditPlanPage() {
   }, [records, q, filterStatus, filterArea]);
 
   const columns = useMemo(
-    () => getComplianceRequirementsColumns(isDark, openEdit, (r) => setDeleteTarget(r), t),
+    () => getComplianceRequirementsColumns(isDark, openEdit, (r) => setDeleteTarget(r), t, 'compliance_general_audit_plan'),
     [isDark, t]
   );
 

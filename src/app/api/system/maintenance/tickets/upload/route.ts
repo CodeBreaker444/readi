@@ -1,5 +1,5 @@
 import { getTicketAssignee, uploadAttachment } from '@/backend/services/system/maintenance-ticket';
-import { requireAuth, userHasSubRole } from '@/lib/auth/api-auth';
+import { requireAuth, requireFeatureAccess, userHasSubRole } from '@/lib/auth/api-auth';
 import { roleHasPermission } from '@/lib/auth/roles';
 import { apiError, forbidden, internalError, zodError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
@@ -18,6 +18,9 @@ export async function POST(req: NextRequest) {
   try {
     const { session, error } = await requireAuth();
     if (error) return error;
+
+    const { error: featureError } = await requireFeatureAccess('systems_maintenance_tickets', 'edit');
+    if (featureError) return featureError;
 
     const formData = await req.formData();
 

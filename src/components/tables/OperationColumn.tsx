@@ -1,6 +1,7 @@
 'use client';
 
 import { Operation } from '@/app/operations/table/page';
+import { FeatureGate } from '@/components/permissions/FeatureGate';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { SystemCell } from '@/components/tables/SystemCell';
@@ -256,14 +257,16 @@ export const getOperationColumns = (t: TFunction, isDark = false, timezone = 'Eu
             </TooltipTrigger>
             <TooltipContent>{t('operations.actions.view')}</TooltipContent>
           </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => meta.onEdit(op)}>
-                <Pencil className="h-3.5 w-3.5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>{t('operations.actions.edit')}</TooltipContent>
-          </Tooltip>
+          <FeatureGate feature="operation_mission_table" require="edit">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => meta.onEdit(op)}>
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{t('operations.actions.edit')}</TooltipContent>
+            </Tooltip>
+          </FeatureGate>
           {isCompleted && (
             <Tooltip>
               <TooltipTrigger asChild>
@@ -279,14 +282,16 @@ export const getOperationColumns = (t: TFunction, isDark = false, timezone = 'Eu
               <TooltipContent>Download Mission Report</TooltipContent>
             </Tooltip>
           )}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => meta.onDelete(op)}>
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>{t('operations.actions.delete')}</TooltipContent>
-          </Tooltip>
+          <FeatureGate feature="operation_mission_table" require="delete">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => meta.onDelete(op)}>
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{t('operations.actions.delete')}</TooltipContent>
+            </Tooltip>
+          </FeatureGate>
         </div>
       );
     },

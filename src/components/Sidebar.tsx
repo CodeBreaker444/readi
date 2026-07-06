@@ -253,6 +253,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
         { name: t('sidebar.personnel'), href: '/team/personnel' },
         // { name: t('sidebar.crewShift'), href: '/team/crew-shift' },
         { name: t('sidebar.client'), href: '/team/client' },
+         ...(role && ['ADMIN', 'OPM', 'SUPERADMIN'].includes(role)
+          ? [{ name: 'Roles & Permissions', href: '/team/roles-permissions' }]
+          : []),
       ],
     },
     {

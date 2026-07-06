@@ -272,7 +272,7 @@ export async function updateUser(userData: UserUpdateData) {
         phone: userData.user_phone || null,
         user_type: userData.user_type || null,
         user_active: userData.active === 1 ? 'Y' : 'N',
-        is_viewer: userData.is_viewer || null,
+        ...(userData.is_viewer ? { is_viewer: userData.is_viewer } : {}),
         is_manager: userData.is_manager || null,
         fk_territorial_unit: toIntOrNull(userData.fk_territorial_unit),
         fk_client_id: toIntOrNull(userData.fk_client_id),

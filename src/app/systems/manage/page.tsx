@@ -12,6 +12,7 @@ import EditComponentModal from '@/components/system/EditComponentModal';
 import EditModelModal from '@/components/system/EditModelModal';
 import EditSystemModal from '@/components/system/EditSystemModal';
 import { FilesDownloadModal, SystemFile } from '@/components/system/FilesDownloadModal';
+import { FeatureGate } from '@/components/permissions/FeatureGate';
 import SystemComponentsTable from '@/components/system/SystemComponentsTable';
 import ViewComponentModal from '@/components/system/ViewComponentModal';
 import ViewToolModal from '@/components/system/ViewToolModal';
@@ -448,18 +449,24 @@ export default function DroneToolPage() {
                             {t('systems.manage.refresh')}
                         </Button>
 
-                        <Button size="sm" onClick={() => setShowAddTool(true)}
-                            className="h-8 gap-1.5 text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white shadow-sm">
-                            <Plus size={14} /><span className="sm:hidden">{t('systems.manage.buttons.system')}</span><span className="hidden sm:inline">{t('systems.manage.buttons.addSystem')}</span>
-                        </Button>
-                        <Button size="sm" onClick={() => setShowAddModel(true)}
-                            className="h-8 gap-1.5 text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white shadow-sm">
-                            <Plus size={14} /><span className="sm:hidden">{t('systems.manage.buttons.model')}</span><span className="hidden sm:inline">{t('systems.manage.buttons.addModel')}</span>
-                        </Button>
-                        <Button size="sm" onClick={() => setShowAddComponent(true)}
-                            className="h-8 gap-1.5 text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white shadow-sm">
-                            <Plus size={14} /><span className="sm:hidden">{t('systems.manage.buttons.component')}</span><span className="hidden sm:inline">{t('systems.manage.buttons.addComponent')}</span>
-                        </Button>
+                        <FeatureGate feature="systems_manage" require="edit">
+                            <Button size="sm" onClick={() => setShowAddTool(true)}
+                                className="h-8 gap-1.5 text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white shadow-sm">
+                                <Plus size={14} /><span className="sm:hidden">{t('systems.manage.buttons.system')}</span><span className="hidden sm:inline">{t('systems.manage.buttons.addSystem')}</span>
+                            </Button>
+                        </FeatureGate>
+                        <FeatureGate feature="systems_manage" require="edit">
+                            <Button size="sm" onClick={() => setShowAddModel(true)}
+                                className="h-8 gap-1.5 text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white shadow-sm">
+                                <Plus size={14} /><span className="sm:hidden">{t('systems.manage.buttons.model')}</span><span className="hidden sm:inline">{t('systems.manage.buttons.addModel')}</span>
+                            </Button>
+                        </FeatureGate>
+                        <FeatureGate feature="systems_manage" require="edit">
+                            <Button size="sm" onClick={() => setShowAddComponent(true)}
+                                className="h-8 gap-1.5 text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white shadow-sm">
+                                <Plus size={14} /><span className="sm:hidden">{t('systems.manage.buttons.component')}</span><span className="hidden sm:inline">{t('systems.manage.buttons.addComponent')}</span>
+                            </Button>
+                        </FeatureGate>
                     </div>
                 </div>
             </div>

@@ -1,6 +1,6 @@
 import { addEvidence } from '@/backend/services/compliance/compliance-evidence-service';
 import { apiError, internalError } from '@/lib/api-error';
-import { requirePermission } from '@/lib/auth/api-auth';
+import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
 import { zodError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
@@ -18,6 +18,9 @@ export async function POST(req: NextRequest) {
   try {
     const { session, error } = await requirePermission('view_compliance');
     if (error) return error;
+
+    const { error: featureError } = await requireFeatureAccess('compliance_requirements_evidence', 'edit');
+    if (featureError) return featureError;
 
     const body = await req.json();
     const parsed = AddEvidenceSchema.safeParse(body);

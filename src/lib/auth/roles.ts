@@ -70,8 +70,8 @@ export const ROLE_PERMISSIONS: Record<Role, RolePermission[]> = {
     'view_maintenance_tickets',
   ],
   OPM: ['view_dashboard', 'view_operations', 'view_operations_full', 'view_logs', 'view_repository', 'view_planning', 'view_planning_advanced', 'view_logbooks', 'view_safety_mgmt', 'view_config', 'view_notifications', 'view_client', 'manage_users', 'view_erp', 'view_drone_atc'],
-  SM:  ['view_dashboard', 'view_safety_mgmt', 'view_repository', 'view_notifications', 'view_config', 'view_erp'],
-  AM:  ['view_dashboard', 'view_logs', 'view_repository', 'view_logbooks', 'view_config', 'view_notifications', 'manage_users', 'view_erp'],
+  SM:  ['view_dashboard', 'view_planning', 'view_planning_advanced', 'view_safety_mgmt', 'view_repository', 'view_notifications', 'view_config', 'view_erp'],
+  AM:  ['view_dashboard', 'view_planning', 'view_planning_advanced','view_logs', 'view_repository', 'view_logbooks', 'view_config', 'view_notifications', 'manage_users', 'view_erp'],
   CMM: ['view_dashboard', 'view_compliance', 'view_repository', 'view_notifications', 'view_erp'],
   RM:  ['view_operations', 'view_operations_full', 'view_logs', 'view_logbooks', 'view_notifications', 'view_erp', 'view_config', 'view_drone_atc'],
   TM:  ['view_dashboard', 'view_training', 'view_repository', 'view_notifications', 'view_erp'],
@@ -101,7 +101,6 @@ export const ROUTE_PERMISSIONS: Record<string, RoutePermissionEntry> = {
   '/planning/planning-mission': 'view_planning',
   '/planning/planning-dashboard': 'view_planning',
   '/planning/mission-template': 'view_planning',
-  '/planning/flight-requests': 'view_planning_advanced',
   '/operations/table': 'view_operations',
   '/operations/daily-board': 'view_operations_full',
   '/operations/calendar': 'view_operations',
@@ -233,20 +232,4 @@ export function getDefaultRoute(role: Role | null | undefined): string {
   if (roleHasPermission(role, 'view_repository')) return '/document-repository';
 
   return '/auth/login';
-}
-
-/**
- * Check if user can edit based on isViewer flag
- * isViewer = 'N' means A (All permissions), isViewer = 'Y' means R (Read only)
- */
-export function canEdit(isViewer: boolean | undefined): boolean {
-  return isViewer === false;
-}
-
-/**
- * Check if user can delete based on isViewer and isManager flags
- * User needs both isViewer = 'N' (A permissions) AND isManager = 'Y' (Manager type)
- */
-export function canDelete(isViewer: boolean | undefined, isManager: boolean | undefined): boolean {
-  return isViewer === false && isManager === true;
 }

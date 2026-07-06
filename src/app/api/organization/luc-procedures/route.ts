@@ -4,7 +4,7 @@ import z from 'zod';
 import { createLucProcedure, getLucProcedures } from '@/backend/services/organization/lcu-service';
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { internalError, zodError } from '@/lib/api-error';
-import { requirePermission } from '@/lib/auth/api-auth';
+import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
 import { E } from '@/lib/error-codes';
 
 export async function GET(request: NextRequest) {
@@ -57,6 +57,9 @@ export async function POST(request: NextRequest) {
     try {
         const { session, error } = await requirePermission('view_config');
         if (error) return error;
+
+        const { error: featureError } = await requireFeatureAccess('org_procedures', 'edit');
+        if (featureError) return featureError;
 
         const body = await request.json();
 

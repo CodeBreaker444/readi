@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
-import { canDelete, canEdit, getApiRoutePermission, Role, roleHasPermission, ROUTE_PERMISSIONS } from './lib/auth/roles'
+import { getApiRoutePermission, Role, roleHasPermission, ROUTE_PERMISSIONS } from './lib/auth/roles'
 import { decodeJwtPayload, decodeJwtRole, hasRoutePermission, isJwtExpired } from './lib/utils'
 
 export async function updateSession(request: NextRequest) {
@@ -156,27 +156,7 @@ export async function updateSession(request: NextRequest) {
         }
       }
 
-      // Planning routes: check isViewer/isManager for edit/delete operations
-      if (pathname.startsWith('/api/evaluation/planning') || pathname.startsWith('/api/planning')) {
-        const payload = decodeJwtPayload(jwtToken)
-        const method = request.method
-
-        // PUT/POST = edit operations, require isViewer = true
-        if ((method === 'PUT' || method === 'POST') && !canEdit(payload?.isViewer as boolean)) {
-          return NextResponse.json(
-            { error: 'Forbidden: insufficient permissions for edit operations' },
-            { status: 403 }
-          )
-        }
-
-        // DELETE = delete operation, require both isViewer = true AND isManager = true
-        if (method === 'DELETE' && !canDelete(payload?.isViewer as boolean, payload?.isManager as boolean)) {
-          return NextResponse.json(
-            { error: 'Forbidden: insufficient permissions for delete operations' },
-            { status: 403 }
-          )
-        }
-      }
+      // Planning edit/delete gating now lives per-route via requireFeatureAccess (feature-permissions.ts).
 
       // Company-level Drone ATC gate for API routes
       if (pathname.startsWith('/api/drone-atc')) {
@@ -199,6 +179,14 @@ export async function updateSession(request: NextRequest) {
     if (role) {
       const requiredEntry = ROUTE_PERMISSIONS[pathname]
       if (requiredEntry !== undefined && !hasRoutePermission(role, requiredEntry)) {
+        return NextResponse.redirect(new URL('/unauthorized', request.url))
+      }
+    }
+
+    // Roles & Permissions matrix editor — ADMIN/OPM/SUPERADMIN only
+    if (pathname === '/settings/roles-permissions') {
+      const role = decodeJwtRole(jwtToken)
+      if (role && !['ADMIN', 'OPM', 'SUPERADMIN'].includes(role)) {
         return NextResponse.redirect(new URL('/unauthorized', request.url))
       }
     }

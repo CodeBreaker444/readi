@@ -6,7 +6,7 @@ import { updateMissionStatus } from "@/backend/services/operation/operation-boar
 import { checkDailyDeclaration } from "@/backend/services/operation/pilot-declaration-service";
 import { hasOpenTicketForTool } from "@/backend/services/system/maintenance-ticket";
 import { internalError } from "@/lib/api-error";
-import { requirePermission } from "@/lib/auth/api-auth";
+import { requireFeatureAccess, requirePermission } from "@/lib/auth/api-auth";
 import { E } from "@/lib/error-codes";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
@@ -29,6 +29,9 @@ export async function POST(req: NextRequest) {
 
   const { session, error } = await requirePermission('view_operations');
   if (error) return error;
+
+  const { error: featureError } = await requireFeatureAccess('operation_daily_board', 'edit');
+  if (featureError) return featureError;
 
   const parsed = bodySchema.safeParse(body);
   if (!parsed.success) {

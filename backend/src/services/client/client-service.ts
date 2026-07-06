@@ -196,6 +196,7 @@ export async function addClient(input: CreateClientInput): Promise<{ code: numbe
           fk_owner_id: clientFields.fk_owner_id,
           fk_client_id: clientRow.client_id,
           username,
+          email,
           password_hash: passwordHash,
           user_active: 'N',
           key_: activationKey,

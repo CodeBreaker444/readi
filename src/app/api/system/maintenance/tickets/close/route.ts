@@ -1,6 +1,6 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { closeTicket } from '@/backend/services/system/maintenance-ticket';
-import { requirePermission } from '@/lib/auth/api-auth';
+import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
 import { forbidden, internalError, zodError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
@@ -23,6 +23,9 @@ export async function POST(req: NextRequest) {
     if (!CLOSE_TICKET_ROLES.includes(session!.user.role ?? '')) {
       return forbidden(E.PX001);
     }
+
+    const { error: featureError } = await requireFeatureAccess('systems_maintenance_tickets', 'edit');
+    if (featureError) return featureError;
 
     const validation = closeTicketSchema.safeParse(body);
 

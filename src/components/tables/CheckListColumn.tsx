@@ -1,4 +1,5 @@
 import { Badge } from '@/components/organization/ChecklistUi'
+import { FeatureGate } from '@/components/permissions/FeatureGate'
 import { Checklist } from '@/config/types/checklist'
 import { ColumnDef } from '@tanstack/react-table'
 import { HiPencilAlt, HiPlay, HiTrash } from 'react-icons/hi'
@@ -60,24 +61,28 @@ export const getColumns = (
       const c = row.original
       return (
         <div className="flex items-center gap-1.5">
-          <button
-            onClick={() => onEdit(c)}
-            className={`cursor-pointer p-1.5 rounded-lg transition-all ${isDark ? 'text-blue-400 hover:bg-blue-500/10' : 'text-blue-600 hover:bg-blue-50'}`}
-          >
-            <HiPencilAlt size={16} />
-          </button>
+          <FeatureGate feature="org_checklist" require="edit">
+            <button
+              onClick={() => onEdit(c)}
+              className={`cursor-pointer p-1.5 rounded-lg transition-all ${isDark ? 'text-blue-400 hover:bg-blue-500/10' : 'text-blue-600 hover:bg-blue-50'}`}
+            >
+              <HiPencilAlt size={16} />
+            </button>
+          </FeatureGate>
           <button
             onClick={() => onPreview(c)}
             className={`cursor-pointer p-1.5 rounded-lg transition-all ${isDark ? 'text-emerald-400 hover:bg-emerald-500/10' : 'text-emerald-600 hover:bg-emerald-50'}`}
           >
             <HiPlay size={16} />
           </button>
-          <button
-            onClick={() => onDelete(c)}
-            className={`cursor-pointer p-1.5 rounded-lg transition-all ${isDark ? 'text-rose-400 hover:bg-rose-500/10' : 'text-rose-600 hover:bg-rose-50'}`}
-          >
-            <HiTrash size={16} />
-          </button>
+          <FeatureGate feature="org_checklist" require="delete">
+            <button
+              onClick={() => onDelete(c)}
+              className={`cursor-pointer p-1.5 rounded-lg transition-all ${isDark ? 'text-rose-400 hover:bg-rose-500/10' : 'text-rose-600 hover:bg-rose-50'}`}
+            >
+              <HiTrash size={16} />
+            </button>
+          </FeatureGate>
         </div>
       )
     },

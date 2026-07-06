@@ -114,7 +114,7 @@ export async function getSystemList(
       )
       .forEach((c) => { if (c.fk_tool_id != null) toolsNonOperational.add(c.fk_tool_id); });
 
-    // Expiration notifications moved to cron job - no longer called here
+    // Expiration notifications moved to cron job 
     // if (expiredComps.length > 0) {
     //   const { sendExpirationNotifications } = await import('@/backend/services/system/expiration-notification');
     //   const expiredItems = expiredComps
@@ -1078,7 +1078,6 @@ export async function getMaintenanceDashboard(
   clientId?: number,
   thresholdAlert: number = 80
 ) {
-  // Maintenance days refresh moved to cron job - no longer called here
   // await refreshMaintenanceDaysForOwner(ownerId);
 
   const tools = await prisma.tool.findMany({

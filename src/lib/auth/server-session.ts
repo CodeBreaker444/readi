@@ -30,6 +30,7 @@ export interface SessionUser {
   hasFlytbaseOrganizations: boolean;
   isViewer: boolean;
   isManager: boolean;
+  hasCustomPermissions: boolean;
 }
 
 export interface Session {
@@ -95,6 +96,7 @@ export const getUserSession = cache(async (): Promise<Session | null> => {
         flytrelay_access: true,
         is_viewer: true,
         is_manager: true,
+        has_custom_permissions: true,
         users_profile: { select: { profile_picture: true } },
       },
     });
@@ -170,6 +172,7 @@ export const getUserSession = cache(async (): Promise<Session | null> => {
       hasFlytbaseOrganizations,
       isViewer: userData.is_viewer === 'N',
       isManager: userData.is_manager === 'Y',
+      hasCustomPermissions: userData.has_custom_permissions === true,
     };
 
     return {

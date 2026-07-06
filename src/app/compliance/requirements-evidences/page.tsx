@@ -1,5 +1,6 @@
 'use client';
 
+import { FeatureGate } from '@/components/permissions/FeatureGate';
 import { ComplianceRequirement, getComplianceRequirementsColumns } from '@/components/tables/ComplianceReqColumn';
 import { TablePagination } from '@/components/tables/Pagination';
 import { Button } from '@/components/ui/button';
@@ -180,7 +181,8 @@ export default function RequirementsEvidencesPage() {
       isDark,
       (r) => openEditReq(r),
       (r) => setDeleteTarget(r),
-      t
+      t,
+      'compliance_requirements_evidence'
     ),
     [isDark, t]
   );
@@ -542,13 +544,15 @@ export default function RequirementsEvidencesPage() {
                       ))}
                       <TableCell>
                         <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => openStatusModal(row.original)}
-                            className={`p-1.5 cursor-pointer rounded-md transition-colors text-xs ${isDark ? 'text-slate-500 hover:text-blue-400 hover:bg-blue-500/8' : 'text-slate-400 hover:text-blue-600 hover:bg-blue-50'}`}
-                            title={t('compliance.requirementsEvidences.table.tooltips.changeStatus')}
-                          >
-                            <RefreshCw size={13} strokeWidth={2} />
-                          </button>
+                          <FeatureGate feature="compliance_requirements_evidence" require="edit">
+                            <button
+                              onClick={() => openStatusModal(row.original)}
+                              className={`p-1.5 cursor-pointer rounded-md transition-colors text-xs ${isDark ? 'text-slate-500 hover:text-blue-400 hover:bg-blue-500/8' : 'text-slate-400 hover:text-blue-600 hover:bg-blue-50'}`}
+                              title={t('compliance.requirementsEvidences.table.tooltips.changeStatus')}
+                            >
+                              <RefreshCw size={13} strokeWidth={2} />
+                            </button>
+                          </FeatureGate>
                           <button
                             onClick={() => openEviPanel(row.original)}
                             className={`p-1.5 cursor-pointer rounded-md transition-colors ${isDark ? 'text-slate-500 hover:text-amber-400 hover:bg-amber-500/8' : 'text-slate-400 hover:text-amber-600 hover:bg-amber-50'}`}
@@ -776,12 +780,14 @@ export default function RequirementsEvidencesPage() {
                       )}
                       {ev.notes && <p className={`text-[11px] mt-0.5 ${textMuted}`}>{ev.notes}</p>}
                     </div>
-                    <button
-                      onClick={() => handleDeleteEvidence(ev.evidence_id)}
-                      className={`p-1.5 cursor-pointer rounded-md shrink-0 transition-colors ${isDark ? 'text-slate-600 hover:text-red-400 hover:bg-red-500/8' : 'text-slate-400 hover:text-red-500 hover:bg-red-50'}`}
-                    >
-                      <X size={13} />
-                    </button>
+                    <FeatureGate feature="compliance_requirements_evidence" require="delete">
+                      <button
+                        onClick={() => handleDeleteEvidence(ev.evidence_id)}
+                        className={`p-1.5 cursor-pointer rounded-md shrink-0 transition-colors ${isDark ? 'text-slate-600 hover:text-red-400 hover:bg-red-500/8' : 'text-slate-400 hover:text-red-500 hover:bg-red-50'}`}
+                      >
+                        <X size={13} />
+                      </button>
+                    </FeatureGate>
                   </div>
                 ))
               )}
@@ -822,16 +828,18 @@ export default function RequirementsEvidencesPage() {
                   placeholder={t('compliance.requirementsEvidences.evidencePanel.fields.notesPlaceholder')}
                   className={`flex-1 h-8 text-xs ${inputCls}`}
                 />
-                <Button
-                  size="sm"
-                  onClick={handleAddEvidence}
-                  disabled={eviSaving || !eviForm.evidence_description.trim()}
-                  className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
-                >
-                  {eviSaving
-                    ? t('compliance.requirementsEvidences.evidencePanel.adding')
-                    : t('compliance.requirementsEvidences.evidencePanel.add')}
-                </Button>
+                <FeatureGate feature="compliance_requirements_evidence" require="edit">
+                  <Button
+                    size="sm"
+                    onClick={handleAddEvidence}
+                    disabled={eviSaving || !eviForm.evidence_description.trim()}
+                    className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                  >
+                    {eviSaving
+                      ? t('compliance.requirementsEvidences.evidencePanel.adding')
+                      : t('compliance.requirementsEvidences.evidencePanel.add')}
+                  </Button>
+                </FeatureGate>
               </div>
             </div>
           </div>

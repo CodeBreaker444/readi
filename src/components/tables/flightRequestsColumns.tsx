@@ -1,3 +1,4 @@
+import { FeatureGate } from '@/components/permissions/FeatureGate';
 import { Button } from '@/components/ui/button';
 import { ColumnDef } from '@tanstack/react-table';
 import { format } from 'date-fns';
@@ -219,17 +220,19 @@ export function createFlightRequestColumns(handlers: FlightRequestColumnHandlers
             )}
 
             {/* Delete */}
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={isDeleting}
-              onClick={() => onDelete(r.request_id)}
-              className={`h-7 w-7 p-0 border-red-500/30 text-red-500 hover:bg-red-500/10 ${isDark ? 'hover:border-red-500/50' : ''}`}
-            >
-              {isDeleting
-                ? <Loader2 className="h-3 w-3 animate-spin" />
-                : <Trash2 className="h-3 w-3" />}
-            </Button>
+            <FeatureGate feature="operation_flight_requests" require="delete">
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={isDeleting}
+                onClick={() => onDelete(r.request_id)}
+                className={`h-7 w-7 p-0 border-red-500/30 text-red-500 hover:bg-red-500/10 ${isDark ? 'hover:border-red-500/50' : ''}`}
+              >
+                {isDeleting
+                  ? <Loader2 className="h-3 w-3 animate-spin" />
+                  : <Trash2 className="h-3 w-3" />}
+              </Button>
+            </FeatureGate>
           </div>
         );
       },

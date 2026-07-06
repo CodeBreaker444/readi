@@ -1,6 +1,7 @@
 'use client';
 
 import { Operation } from '@/app/operations/table/page';
+import { FeatureGate } from '@/components/permissions/FeatureGate';
 import { SystemCell } from '@/components/tables/SystemCell';
 import { MaintenanceCycleModal } from '@/components/operation/MaintenanceCycleModal';
 import { MissionLucProcedureModal } from '@/components/operation/MissionLucProcedureModal';
@@ -165,15 +166,17 @@ export function OperationDetailSheet({
                     )}
                   </div>
                   {onEdit && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="gap-1.5 h-7 text-xs"
-                      onClick={() => { onEdit(operation); onClose(); }}
-                    >
-                      <Pencil className="h-3 w-3" />
-                      {t('operations.actions.edit')}
-                    </Button>
+                    <FeatureGate feature="operation_mission_table" require="edit">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-1.5 h-7 text-xs"
+                        onClick={() => { onEdit(operation); onClose(); }}
+                      >
+                        <Pencil className="h-3 w-3" />
+                        {t('operations.actions.edit')}
+                      </Button>
+                    </FeatureGate>
                   )}
                 </div>
                 <SheetTitle className="text-left text-base mt-1">

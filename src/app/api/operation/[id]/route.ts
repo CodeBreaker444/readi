@@ -4,7 +4,7 @@ import { notifyPilotAssignment } from '@/backend/services/notification/notificat
 import { deleteOperation, getOperation, updateOperation } from '@/backend/services/operation/operation-service';
 import { UpdateOperationSchema } from '@/config/types/operation';
 import { apiError, dbError, internalError, notFound, zodError } from '@/lib/api-error';
-import { requirePermission } from '@/lib/auth/api-auth';
+import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
 import { getUserSession } from '@/lib/auth/server-session';
 import { E } from '@/lib/error-codes';
 import type { DccCallbackResult } from '@/types/dcc-callback';
@@ -65,6 +65,9 @@ export async function PUT(req: NextRequest, { params }: Params) {
     const { session, error } = await requirePermission('view_operations');
     if (error) return error;
 
+    const { error: featureError } = await requireFeatureAccess('operation_mission_table', 'edit');
+    if (featureError) return featureError;
+
     const id = parseInt((await params).id, 10);
     if (isNaN(id)) return apiError(E.VL002, 400);
 
@@ -120,6 +123,9 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
 export async function DELETE(_req: NextRequest, { params }: Params) {
   try {
+    const { error: featureError } = await requireFeatureAccess('operation_mission_table', 'delete');
+    if (featureError) return featureError;
+
     const id = parseInt((await params).id, 10);
     if (isNaN(id)) return zodError(E.VL002, { flatten: () => ({ fieldErrors: {} }) });
 

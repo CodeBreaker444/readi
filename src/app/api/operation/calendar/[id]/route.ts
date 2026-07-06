@@ -1,7 +1,7 @@
 import { notifyDccBulkCancellation } from '@/backend/services/mission/dcc-callback-service'
 import { deleteOperationCalendarEntry, lookupOperationMissionCode } from '@/backend/services/operation/operation-calendar-service'
 import { internalError } from '@/lib/api-error'
-import { requirePermission } from '@/lib/auth/api-auth'
+import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth'
 import { E } from '@/lib/error-codes'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -12,6 +12,9 @@ export async function DELETE(
   try {
     const { session, error } = await requirePermission('view_operations')
     if (error) return error
+
+    const { error: featureError } = await requireFeatureAccess('operation_calendar', 'delete')
+    if (featureError) return featureError
 
     const operationId = Number((await params).id)
     if (isNaN(operationId)) {

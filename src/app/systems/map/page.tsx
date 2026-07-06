@@ -1,5 +1,6 @@
 "use client";
 
+import { FeatureGate } from "@/components/permissions/FeatureGate";
 import DroneMapSkeleton from "@/components/system/DroneMapSkeleton";
 import type { DroneMapHandle } from "@/components/system/DroneMap";
 import MapFilters from "@/components/system/MapFilters";
@@ -295,20 +296,26 @@ export default function DroneToolMapPage() {
               {t('systems.map.reload')}
             </Button>
 
-            <Button size="sm" onClick={() => setShowAddTool(true)}
-              className="h-8 gap-1.5 text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white transition-all shadow-sm">
-              <Plus size={14} /><span className="sm:hidden">{t('systems.manage.buttons.system')}</span><span className="hidden sm:inline">{t('systems.manage.buttons.addSystem')}</span>
-            </Button>
+            <FeatureGate feature="systems_map" require="edit">
+              <Button size="sm" onClick={() => setShowAddTool(true)}
+                className="h-8 gap-1.5 text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white transition-all shadow-sm">
+                <Plus size={14} /><span className="sm:hidden">{t('systems.manage.buttons.system')}</span><span className="hidden sm:inline">{t('systems.manage.buttons.addSystem')}</span>
+              </Button>
+            </FeatureGate>
 
-            <Button size="sm" onClick={() => setShowAddModel(true)}
-              className="h-8 gap-1.5 text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white transition-all shadow-sm">
-              <Plus size={14} /><span className="sm:hidden">{t('systems.manage.buttons.model')}</span><span className="hidden sm:inline">{t('systems.manage.buttons.addModel')}</span>
-            </Button>
+            <FeatureGate feature="systems_map" require="edit">
+              <Button size="sm" onClick={() => setShowAddModel(true)}
+                className="h-8 gap-1.5 text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white transition-all shadow-sm">
+                <Plus size={14} /><span className="sm:hidden">{t('systems.manage.buttons.model')}</span><span className="hidden sm:inline">{t('systems.manage.buttons.addModel')}</span>
+              </Button>
+            </FeatureGate>
 
-            <Button size="sm" onClick={() => setShowAddComponent(true)}
-              className="h-8 gap-1.5 text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white transition-all shadow-sm">
-              <Plus size={14} /><span className="sm:hidden">{t('systems.manage.buttons.component')}</span><span className="hidden sm:inline">{t('systems.manage.buttons.addComponent')}</span>
-            </Button>
+            <FeatureGate feature="systems_map" require="edit">
+              <Button size="sm" onClick={() => setShowAddComponent(true)}
+                className="h-8 gap-1.5 text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white transition-all shadow-sm">
+                <Plus size={14} /><span className="sm:hidden">{t('systems.manage.buttons.component')}</span><span className="hidden sm:inline">{t('systems.manage.buttons.addComponent')}</span>
+              </Button>
+            </FeatureGate>
           </div>
         </div>
       </div>

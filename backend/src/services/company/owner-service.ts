@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcrypt';
 import { sendAdminPasswordChangedEmail, sendUserActivationEmail } from '../../../../lib/resend/mail';
 import { generateActivationToken, generateUniqueCode } from '../user/user-management';
+import { ALL_FEATURE_KEYS, DEFAULT_ROLE_FEATURE_ACCESS, MATRIX_ROLES } from '@/lib/auth/feature-permissions-types';
 
 export interface OwnerData {
     owner_id: number;
@@ -409,6 +410,23 @@ export async function deleteOwner(id: string, deletedByUserId: number) {
     return true;
 }
 
+/** Seeds the default per-role feature permission matrix for a newly created company. */
+export async function seedDefaultRolePermissions(ownerId: number): Promise<void> {
+    const rows = MATRIX_ROLES.flatMap((role) =>
+        ALL_FEATURE_KEYS.map((feature_key) => ({
+            fk_owner_id: ownerId,
+            role,
+            feature_key,
+            access: DEFAULT_ROLE_FEATURE_ACCESS[role]?.[feature_key] ?? 'R',
+        })),
+    );
+
+    await prisma.role_feature_permission.createMany({
+        data: rows,
+        skipDuplicates: true,
+    });
+}
+
 export async function addOwnerWithAdmin(payload: AddOwnerWithAdminPayload) {
     const existing = await prisma.owner.findFirst({
         where: { owner_code: payload.owner_code },
@@ -460,6 +478,8 @@ export async function addOwnerWithAdmin(payload: AddOwnerWithAdminPayload) {
     });
 
     try {
+        await seedDefaultRolePermissions(owner.owner_id);
+
         const uid = generateUniqueCode();
         const key = generateActivationToken(128);
         const nameParts = payload.admin_fullname.trim().split(' ');

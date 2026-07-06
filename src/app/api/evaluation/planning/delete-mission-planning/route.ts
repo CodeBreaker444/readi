@@ -1,7 +1,6 @@
 import { deleteMissionPlanningLogbook } from "@/backend/services/planning/planning-dashboard";
-import { canDelete } from "@/lib/auth/roles";
-import { requirePermission } from "@/lib/auth/api-auth";
-import { forbidden, internalError, zodError } from "@/lib/api-error";
+import { requireFeatureAccess, requirePermission } from "@/lib/auth/api-auth";
+import { internalError, zodError } from "@/lib/api-error";
 import { E } from "@/lib/error-codes";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -15,10 +14,8 @@ export async function POST(request: Request) {
      const { session, error } = await requirePermission('view_planning');
         if (error) return error;
 
-        // Check if user has delete permissions (isViewer = true AND isManager = true)
-        if (!canDelete(session!.user.isViewer, session!.user.isManager)) {
-          return forbidden(E.PX001);
-        }
+        const { error: featureError } = await requireFeatureAccess('logbook_planned_mission', 'delete');
+        if (featureError) return featureError;
 
     const body = await request.json();
     const parsed = schema.safeParse(body);

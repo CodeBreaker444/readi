@@ -32,7 +32,7 @@ import type {
   PlanningLogbookRow,
   RepositoryFile
 } from "@/config/types/evaluation-planning";
-import { canDelete, canEdit } from "@/lib/auth/roles";
+import { usePermissions } from "@/components/permissions/PermissionsProvider";
 import { SessionUser } from "@/lib/auth/server-session";
 import axios from "axios";
 import { useTranslation } from "react-i18next";
@@ -50,8 +50,10 @@ export const PlanningMissionContent: FC<PlanningMissionProps> = ({ user }) => {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const userCanEdit = canEdit(user.isViewer);
-  const userCanDelete = canDelete(user.isViewer, user.isManager);
+  const { canEdit, canDelete } = usePermissions();
+  const userCanEditPlanning = canEdit('planning_evaluation');
+  const userCanAddMission = canEdit('logbook_planned_mission');
+  const userCanDeleteLogbook = canDelete('logbook_planned_mission');
 
   const c_id = parseInt(searchParams.get("c_id") || "0");
   const e_id = parseInt(searchParams.get("e_id") || "0");
@@ -274,7 +276,7 @@ export const PlanningMissionContent: FC<PlanningMissionProps> = ({ user }) => {
       <Breadcrumbs items={breadcrumbItems} isDark={isDark} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {userCanEdit && (
+        {userCanEditPlanning && (
           <Card className={isDark ? "bg-slate-900 border-slate-800" : "bg-white"}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className={`text-base ${isDark ? "text-slate-100" : "text-slate-900"}`}>
@@ -304,7 +306,7 @@ export const PlanningMissionContent: FC<PlanningMissionProps> = ({ user }) => {
           </Card>
         )}
 
-        {userCanEdit && (
+        {userCanAddMission && (
           <Card className={isDark ? "bg-slate-900 border-slate-800" : "bg-white"}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className={`text-base ${isDark ? "text-slate-100" : "text-slate-900"}`}>
@@ -360,7 +362,7 @@ export const PlanningMissionContent: FC<PlanningMissionProps> = ({ user }) => {
               onDelete={confirmDelete}
               onManage={handleManageLogbook}
               onTestLogbook={handleOpenTestLogbook}
-              canDelete={userCanDelete}
+              canDelete={userCanDeleteLogbook}
             />
           </CardContent>
         )}

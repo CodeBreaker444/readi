@@ -34,7 +34,6 @@ export async function POST(req: NextRequest) {
       threshold_alert: parsed.data.threshold_alert,
     });
 
-    // Maintenance alert notifications moved to cron job - no longer called here
     // sendMaintenanceAlertNotifications(owner_id, data).catch((err) =>
     //   console.error("[maintenance-alert] notification failed:", err)
     // );

@@ -1,6 +1,7 @@
 'use client';
 
 import { AuthorizationProvider } from '@/components/authorization/AuthorizationProvider';
+import { PermissionsProvider } from '@/components/permissions/PermissionsProvider';
 import { Session, SessionUser } from '@/lib/auth/server-session';
 import axios from 'axios';
 import { usePathname, useRouter } from 'next/navigation';
@@ -76,6 +77,7 @@ const ClientLayoutWrapper: React.FC<ClientLayoutWrapperProps> = ({
 
   return (
     <RouteLoadingProvider>
+      <PermissionsProvider enabled={!isBarelessPage && !loading && !!session}>
       <AuthorizationProvider>
       {isBarelessPage ? (
         <>
@@ -113,6 +115,7 @@ const ClientLayoutWrapper: React.FC<ClientLayoutWrapperProps> = ({
         </div>
       )}
       </AuthorizationProvider>
+      </PermissionsProvider>
     </RouteLoadingProvider>
   );
 };
