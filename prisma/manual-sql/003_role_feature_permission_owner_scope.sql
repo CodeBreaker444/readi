@@ -1,14 +1,7 @@
--- Scopes role_feature_permission per company (owner) instead of being global.
--- Run this against every environment's database (local + any remote copies) before deploying.
--- Safe to re-run.
-
--- 1. Add the column nullable first so we can backfill existing rows.
 ALTER TABLE public.role_feature_permission
   ADD COLUMN IF NOT EXISTS fk_owner_id INTEGER;
 
--- 2. Backfill: the table (seeded by 002_feature_permissions_seed.sql) was global, i.e. one
---    row per (role, feature_key) shared by every company. Fan those rows out to every
---    existing company so nobody loses their current effective permissions.
+ 
 INSERT INTO public.role_feature_permission (fk_owner_id, role, feature_key, access)
 SELECT o.owner_id, rfp.role, rfp.feature_key, rfp.access
 FROM public.role_feature_permission rfp

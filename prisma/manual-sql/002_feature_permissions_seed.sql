@@ -1,10 +1,4 @@
--- Seed role_feature_permission with the default matrix transcribed from the permission image.
--- Safe to re-run: upserts on (role, feature_key).
--- NOTE: superseded by 003_role_feature_permission_owner_scope.sql, which scopes this table
--- per company (fk_owner_id) and fans these global rows out to every existing owner. New
--- companies get this same default matrix seeded automatically on creation
--- (see seedDefaultRolePermissions in backend/src/services/company/owner-service.ts) — this
--- file only matters for bootstrapping a fresh database before 003 runs.
+ 
 INSERT INTO public.role_feature_permission (role, feature_key, access)
 VALUES
 ('AM', 'dashboard_analytics', 'R'),
