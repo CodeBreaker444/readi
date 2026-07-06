@@ -1,11 +1,12 @@
 'use client'
 
+import { getDefaultRoute } from '@/lib/auth/roles'
 import { supabase } from '@/lib/supabase/client'
 import { Loader2Icon } from 'lucide-react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { getUserIdByAuthId, saveMfaSettings } from './actions'
+import { getUserIdByAuthId, getUserRoleByAuthId, saveMfaSettings } from './actions'
 
 export default function Setup2FAPage() {
   const router = useRouter()
@@ -16,6 +17,7 @@ export default function Setup2FAPage() {
   const [factorId, setFactorId] = useState<string | null>(null)
   const [secret, setSecret] = useState<string>('')
   const [userId, setUserId] = useState<number | null>(null)
+  const [role, setRole] = useState<string | null>(null)
 
   useEffect(() => { initializeMFA() }, [])
 
@@ -26,6 +28,7 @@ export default function Setup2FAPage() {
 
       const uid = await getUserIdByAuthId(user.id)
       if (uid) setUserId(uid)
+      setRole(await getUserRoleByAuthId(user.id))
 
       const { data: enrollData, error: enrollError } = await supabase.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'Authenticator App' })
       if (enrollError) throw enrollError
@@ -53,7 +56,7 @@ export default function Setup2FAPage() {
       await saveMfaSettings(userId, true)
 
       document.cookie = 'mfa_verified=true; path=/; max-age=604800; samesite=strict'
-      router.push('/dashboard')
+      router.push(getDefaultRoute(role as any))
     } catch (err: any) {
       setError('Invalid code. Please try again.')
       setCode('')
@@ -68,7 +71,7 @@ export default function Setup2FAPage() {
     try {
       await saveMfaSettings(userId, false)
       if (factorId) { try { await supabase.auth.mfa.unenroll({ factorId }) } catch {} }
-      router.push('/dashboard')
+      router.push(getDefaultRoute(role as any))
     } catch (err: any) {
       setError('Failed to skip 2FA setup.')
     } finally {
