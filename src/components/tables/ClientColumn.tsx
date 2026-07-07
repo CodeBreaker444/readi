@@ -3,7 +3,7 @@
 import '@/lib/i18n/config';
 import { formatDateInTz } from '@/lib/utils';
 import { ColumnDef } from '@tanstack/react-table';
-import { Building2, Globe, Mail, MoreHorizontal, Pencil, Phone, Trash2 } from 'lucide-react';
+import { Building2, Globe, KeyRound, Mail, MoreHorizontal, Pencil, Phone, Trash2 } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import {
@@ -36,16 +36,20 @@ export interface ClientData {
   updated_at?: string;
   owner_code?: string;
   owner_name?: string;
+  user_id?: number;
+  user_active?: string;
+  is_pending?: boolean;
 }
 interface GetClientColumnsOptions {
   isDark: boolean;
   onEdit: (client: ClientData) => void;
   onDelete: (clientId: number) => void;
+  onUpdatePassword: (client: ClientData) => void;
   timezone?: string;
   t: (key: string) => string;
 }
 
-export function getClientColumns({ isDark, onEdit, onDelete, timezone, t }: GetClientColumnsOptions): ColumnDef<ClientData>[] {
+export function getClientColumns({ isDark, onEdit, onDelete, onUpdatePassword, timezone, t }: GetClientColumnsOptions): ColumnDef<ClientData>[] {
   return [
     {
       accessorKey: 'client_name',
@@ -192,6 +196,11 @@ export function getClientColumns({ isDark, onEdit, onDelete, timezone, t }: GetC
               <DropdownMenuItem onClick={() => onEdit(client)} className="gap-2 text-xs cursor-pointer">
                 <Pencil size={12} /> {t('team.client.columns.editClient')}
               </DropdownMenuItem>
+              {client.is_pending && (
+                <DropdownMenuItem onClick={() => onUpdatePassword(client)} className="gap-2 text-xs cursor-pointer">
+                  <KeyRound size={12} /> {t('team.client.columns.updatePassword')}
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={() => onDelete(client.client_id)}

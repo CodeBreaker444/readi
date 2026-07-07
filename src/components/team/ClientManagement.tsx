@@ -38,6 +38,7 @@ import {
 } from '../ui/table';
 import { ClientFormModal } from './ClientFormModal';
 import { ClientSkeletonRow, ClientStatSkeleton } from './ClientStatSkeleton';
+import { UpdatePasswordModal } from './UpdatePasswordModal';
 
 interface ClientManagementProps {
   session: Session;
@@ -79,6 +80,8 @@ export default function ClientManagement({ session }: ClientManagementProps) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedClient, setSelectedClient] = useState<ClientData | null>(null);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordClient, setPasswordClient] = useState<ClientData | null>(null);
 
   useEffect(() => { fetchClients(); }, []);
 
@@ -97,6 +100,26 @@ export default function ClientManagement({ session }: ClientManagementProps) {
   };
 
   const handleEdit = (client: ClientData) => { setSelectedClient(client); setShowEditModal(true); };
+  const handleUpdatePassword = (client: ClientData) => { setPasswordClient(client); setShowPasswordModal(true); };
+
+  const handleSubmitPassword = async (newPassword: string) => {
+    if (!passwordClient?.client_id) return;
+    try {
+      const res = await axios.post('/api/client/update-password', {
+        client_id: passwordClient.client_id,
+        new_password: newPassword,
+        client_name: passwordClient.client_name,
+      });
+      if (res.data.code === 1) {
+        toast.success(t('team.client.toast.passwordUpdated'));
+        fetchClients();
+      } else {
+        throw new Error(res.data.message || t('team.client.toast.passwordUpdateFailed'));
+      }
+    } catch (err: any) {
+      throw new Error(err?.response?.data?.message || err.message || t('team.client.toast.passwordUpdateError'));
+    }
+  };
 
   const handleDelete = async (clientId: number) => {
     try {
@@ -201,7 +224,7 @@ export default function ClientManagement({ session }: ClientManagementProps) {
   );
 
   const columns = useMemo(
-    () => getClientColumns({ isDark, onEdit: handleEdit, onDelete: handleDelete, timezone, t }),
+    () => getClientColumns({ isDark, onEdit: handleEdit, onDelete: handleDelete, onUpdatePassword: handleUpdatePassword, timezone, t }),
     [isDark, timezone, t]
   );
 
@@ -381,6 +404,16 @@ export default function ClientManagement({ session }: ClientManagementProps) {
           mode="edit"
           clientData={selectedClient}
           onSubmit={handleUpdateClient}
+          isDark={isDark}
+        />
+      )}
+
+      {showPasswordModal && passwordClient && (
+        <UpdatePasswordModal
+          isOpen={showPasswordModal}
+          onClose={() => { setShowPasswordModal(false); setPasswordClient(null); }}
+          onSubmit={handleSubmitPassword}
+          targetLabel={passwordClient.client_name}
           isDark={isDark}
         />
       )}

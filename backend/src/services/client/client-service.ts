@@ -2,7 +2,7 @@ import { env } from "@/backend/config/env";
 import { supabase } from "@/backend/database/database";
 import { prisma } from "@/lib/prisma";
 import bcrypt from 'bcryptjs';
-import { sendUserActivationEmail } from '../../../../lib/resend/mail';
+import { sendAdminPasswordChangedEmail, sendUserActivationEmail } from '../../../../lib/resend/mail';
 
 export interface ClientData {
   client_id: number;
@@ -27,6 +27,9 @@ export interface ClientData {
   updated_at?: string;
   owner_code?: string;
   owner_name?: string;
+  user_id?: number;
+  user_active?: string;
+  is_pending?: boolean;
 }
 
 export interface CreateClientInput {
@@ -61,21 +64,35 @@ export async function listClients(owner_id?: number): Promise<{ code: number; da
         client_active: 'Y',
         ...(owner_id ? { fk_owner_id: owner_id } : {}),
       },
-      include: { owner: { select: { owner_code: true, owner_name: true } } },
+      include: {
+        owner: { select: { owner_code: true, owner_name: true } },
+        users: {
+          where: { user_role: 'CLIENT' },
+          select: { user_id: true, user_active: true, auth_user_id: true, key_: true },
+          take: 1,
+        },
+      },
       orderBy: { created_at: 'desc' },
     });
 
-    const formatted = rows.map((c) => ({
-      ...c,
-      owner_code: c.owner?.owner_code || '',
-      owner_name: c.owner?.owner_name || '',
-      owner: undefined,
-      contract_start_date: c.contract_start_date?.toISOString().slice(0, 10),
-      contract_end_date: c.contract_end_date?.toISOString().slice(0, 10),
-      credit_limit: c.credit_limit ? Number(c.credit_limit) : undefined,
-      created_at: c.created_at?.toISOString(),
-      updated_at: c.updated_at?.toISOString(),
-    }));
+    const formatted = rows.map((c) => {
+      const loginUser = c.users?.[0];
+      return {
+        ...c,
+        owner_code: c.owner?.owner_code || '',
+        owner_name: c.owner?.owner_name || '',
+        owner: undefined,
+        users: undefined,
+        user_id: loginUser?.user_id,
+        user_active: loginUser?.user_active ?? undefined,
+        is_pending: loginUser ? loginUser.user_active !== 'Y' : false,
+        contract_start_date: c.contract_start_date?.toISOString().slice(0, 10),
+        contract_end_date: c.contract_end_date?.toISOString().slice(0, 10),
+        credit_limit: c.credit_limit ? Number(c.credit_limit) : undefined,
+        created_at: c.created_at?.toISOString(),
+        updated_at: c.updated_at?.toISOString(),
+      };
+    });
 
     return { code: 1, data: formatted as unknown as ClientData[] };
   } catch (e: any) {
@@ -237,6 +254,49 @@ export async function updateClient(input: UpdateClientInput): Promise<{ code: nu
 
     const updated = await prisma.client.update({ where: { client_id }, data });
     return { code: 1, data: updated as unknown as ClientData };
+  } catch (e: any) {
+    return { code: 0, error: e.message };
+  }
+}
+
+export async function updateClientPassword(
+  client_id: number,
+  ownerId: number,
+  newPassword: string,
+  isSuperAdmin = false,
+): Promise<{ code: number; message?: string; error?: string }> {
+  try {
+    const loginUser = await prisma.public_users.findFirst({
+      where: {
+        fk_client_id: client_id,
+        user_role: 'CLIENT',
+        ...(!isSuperAdmin ? { fk_owner_id: ownerId } : {}),
+      },
+      select: {
+        user_id: true, email: true, username: true, first_name: true, last_name: true,
+        user_active: true, auth_user_id: true, fk_owner_id: true,
+      },
+    });
+
+    if (!loginUser) return { code: 0, error: 'Client account not found' };
+    if (loginUser.user_active === 'Y') return { code: 0, error: 'Client is already activated' };
+
+    if (loginUser.auth_user_id) {
+      const { error: authError } = await supabase.auth.admin.updateUserById(loginUser.auth_user_id, { password: newPassword });
+      if (authError) return { code: 0, error: authError.message };
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await prisma.public_users.update({
+      where: { user_id: loginUser.user_id },
+      data: { password_hash: passwordHash, updated_at: new Date() },
+    });
+
+    const owner = await prisma.owner.findUnique({ where: { owner_id: loginUser.fk_owner_id! }, select: { owner_name: true } });
+    const fullname = [loginUser.first_name, loginUser.last_name].filter(Boolean).join(' ') || loginUser.username || '';
+    await sendAdminPasswordChangedEmail(loginUser.email ?? '', fullname, loginUser.username ?? '', newPassword, owner?.owner_name ?? 'ReADI');
+
+    return { code: 1, message: 'Password updated successfully' };
   } catch (e: any) {
     return { code: 0, error: e.message };
   }

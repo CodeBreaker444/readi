@@ -1,4 +1,4 @@
-﻿{
+{
   "common": {
     "save": "Speichern",
     "cancel": "Abbrechen",
@@ -142,6 +142,20 @@
     "username": "Benutzername",
     "code": "Code",
     "permissions": "Berechtigungen",
+    "updatePassword": "Passwort aktualisieren",
+    "updatePasswordModal": {
+      "title": "Passwort aktualisieren",
+      "subtitle": "Neues Passwort für {{target}} festlegen. Es wird per E-Mail zugesendet.",
+      "newPassword": "Neues Passwort",
+      "newPasswordPlaceholder": "Neues Passwort eingeben",
+      "confirmPassword": "Passwort bestätigen",
+      "confirmPasswordPlaceholder": "Neues Passwort wiederholen",
+      "rules": "Das Passwort muss mindestens 6 Zeichen lang sein und Groß-/Kleinbuchstaben, eine Zahl und ein Sonderzeichen enthalten",
+      "mismatch": "Passwörter stimmen nicht überein",
+      "failed": "Fehler beim Aktualisieren des Passworts",
+      "saving": "Wird aktualisiert…",
+      "submit": "Passwort aktualisieren"
+    },
     "client": {
       "title": "Kundenverwaltung",
       "subtitle": "Kunden und ihre Verträge verwalten",
@@ -154,6 +168,7 @@
         "paymentTerms": "Zahlungsbedingungen",
         "contractEnd": "Vertragsende",
         "editClient": "Kunden bearbeiten",
+        "updatePassword": "Passwort aktualisieren",
         "deleteClient": "Kunden löschen"
       },
       "stats": {
@@ -175,7 +190,10 @@
         "addError": "Fehler beim Hinzufügen des Kunden",
         "updated": "Kunde erfolgreich aktualisiert",
         "updateFailed": "Fehler beim Aktualisieren des Kunden",
-        "updateError": "Fehler beim Aktualisieren des Kunden"
+        "updateError": "Fehler beim Aktualisieren des Kunden",
+        "passwordUpdated": "Passwort aktualisiert und per E-Mail an den Kunden gesendet",
+        "passwordUpdateFailed": "Fehler beim Aktualisieren des Passworts",
+        "passwordUpdateError": "Fehler beim Aktualisieren des Passworts"
       }
     },
     "personnel": {
@@ -209,7 +227,10 @@
         "ccTokenWarning": "Benutzer erstellt, aber Control Center Token konnte nicht gespeichert werden",
         "updated": "Benutzer erfolgreich aktualisiert",
         "updateFailed": "Fehler beim Aktualisieren des Benutzers",
-        "updateError": "Fehler beim Aktualisieren des Benutzers"
+        "updateError": "Fehler beim Aktualisieren des Benutzers",
+        "passwordUpdated": "Passwort aktualisiert und per E-Mail an den Benutzer gesendet",
+        "passwordUpdateFailed": "Fehler beim Aktualisieren des Passworts",
+        "passwordUpdateError": "Fehler beim Aktualisieren des Passworts"
       }
     }
   },

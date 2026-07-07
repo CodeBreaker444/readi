@@ -142,6 +142,20 @@
     "username": "Username",
     "code": "Code",
     "permissions": "Permissions",
+    "updatePassword": "Update password",
+    "updatePasswordModal": {
+      "title": "Update Password",
+      "subtitle": "Set a new password for {{target}}. They will receive it by email.",
+      "newPassword": "New Password",
+      "newPasswordPlaceholder": "Enter new password",
+      "confirmPassword": "Confirm Password",
+      "confirmPasswordPlaceholder": "Repeat new password",
+      "rules": "Password must be at least 6 characters and include uppercase, lowercase, a number, and a special character",
+      "mismatch": "Passwords do not match",
+      "failed": "Failed to update password",
+      "saving": "Updating…",
+      "submit": "Update Password"
+    },
     "client": {
       "title": "Client Management",
       "subtitle": "Manage clients and their contracts",
@@ -154,6 +168,7 @@
         "paymentTerms": "Payment Terms",
         "contractEnd": "Contract End",
         "editClient": "Edit Client",
+        "updatePassword": "Update Password",
         "deleteClient": "Delete Client"
       },
       "stats": {
@@ -175,7 +190,10 @@
         "addError": "Error adding client",
         "updated": "Client updated successfully",
         "updateFailed": "Failed to update client",
-        "updateError": "Error updating client"
+        "updateError": "Error updating client",
+        "passwordUpdated": "Password updated and emailed to the client",
+        "passwordUpdateFailed": "Failed to update password",
+        "passwordUpdateError": "Error updating password"
       }
     },
     "personnel": {
@@ -209,7 +227,10 @@
         "ccTokenWarning": "User created but Control Center token could not be saved",
         "updated": "User updated successfully",
         "updateFailed": "Failed to update user",
-        "updateError": "Error updating user"
+        "updateError": "Error updating user",
+        "passwordUpdated": "Password updated and emailed to the user",
+        "passwordUpdateFailed": "Failed to update password",
+        "passwordUpdateError": "Error updating password"
       }
     }
   },

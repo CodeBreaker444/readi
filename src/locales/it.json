@@ -1,4 +1,4 @@
-﻿{
+{
   "common": {
     "save": "Salva",
     "cancel": "Annulla",
@@ -142,6 +142,20 @@
     "username": "Nome utente",
     "code": "Codice",
     "permissions": "Permessi",
+    "updatePassword": "Aggiorna password",
+    "updatePasswordModal": {
+      "title": "Aggiorna Password",
+      "subtitle": "Imposta una nuova password per {{target}}. Verrà inviata via email.",
+      "newPassword": "Nuova Password",
+      "newPasswordPlaceholder": "Inserisci la nuova password",
+      "confirmPassword": "Conferma Password",
+      "confirmPasswordPlaceholder": "Ripeti la nuova password",
+      "rules": "La password deve contenere almeno 6 caratteri, con maiuscola, minuscola, un numero e un carattere speciale",
+      "mismatch": "Le password non coincidono",
+      "failed": "Aggiornamento password non riuscito",
+      "saving": "Aggiornamento…",
+      "submit": "Aggiorna Password"
+    },
     "client": {
       "title": "Gestione Clienti",
       "subtitle": "Gestisci clienti e i loro contratti",
@@ -154,6 +168,7 @@
         "paymentTerms": "Termini di pagamento",
         "contractEnd": "Fine contratto",
         "editClient": "Modifica cliente",
+        "updatePassword": "Aggiorna Password",
         "deleteClient": "Elimina cliente"
       },
       "stats": {
@@ -175,7 +190,10 @@
         "addError": "Errore durante l'aggiunta del cliente",
         "updated": "Cliente aggiornato con successo",
         "updateFailed": "Aggiornamento cliente non riuscito",
-        "updateError": "Errore durante l'aggiornamento del cliente"
+        "updateError": "Errore durante l'aggiornamento del cliente",
+        "passwordUpdated": "Password aggiornata e inviata via email al cliente",
+        "passwordUpdateFailed": "Aggiornamento password non riuscito",
+        "passwordUpdateError": "Errore durante l'aggiornamento della password"
       }
     },
     "personnel": {
@@ -209,7 +227,10 @@
         "ccTokenWarning": "Utente creato ma il token Control Center non è stato salvato",
         "updated": "Utente aggiornato con successo",
         "updateFailed": "Aggiornamento utente non riuscito",
-        "updateError": "Errore durante l'aggiornamento dell'utente"
+        "updateError": "Errore durante l'aggiornamento dell'utente",
+        "passwordUpdated": "Password aggiornata e inviata via email all'utente",
+        "passwordUpdateFailed": "Aggiornamento password non riuscito",
+        "passwordUpdateError": "Errore durante l'aggiornamento della password"
       }
     }
   },
