@@ -304,10 +304,48 @@ export async function updateClientPassword(
 
 export async function deleteClient(client_id: number): Promise<{ code: number; clientName?: string | null; clientCode?: string | null; error?: string }> {
   try {
-    const { data: clientRow } = await supabase.from('client').select('client_name, client_code').eq('client_id', client_id).maybeSingle();
-    const { error } = await supabase.from('client').delete().eq('client_id', client_id);
-    if (error) return { code: 0, error: error.message };
-    return { code: 1, clientName: clientRow?.client_name ?? null, clientCode: clientRow?.client_code ?? null };
+    const clientRow = await prisma.client.findUnique({
+      where: { client_id },
+      select: { client_name: true, client_code: true },
+    });
+    if (!clientRow) return { code: 0, error: 'Client not found' };
+
+    // Login account(s) for the client portal itself — must be fully removed (DB row + Supabase
+    // Auth user) or the client's email stays "taken" and re-creating a client with it fails.
+    const loginUsers = await prisma.public_users.findMany({
+      where: { fk_client_id: client_id, user_role: 'CLIENT' },
+      select: { user_id: true, auth_user_id: true },
+    });
+
+    // Personnel merely assigned to this client for scoping — unlink, don't delete them.
+    await prisma.public_users.updateMany({
+      where: { fk_client_id: client_id, user_role: { not: 'CLIENT' } },
+      data: { fk_client_id: null },
+    });
+
+    for (const loginUser of loginUsers) {
+      await prisma.notification.deleteMany({ where: { fk_user_id: loginUser.user_id } }).catch(() => { });
+      await Promise.allSettled([
+        prisma.checklist.updateMany({ where: { fk_user_id: loginUser.user_id }, data: { fk_user_id: null } }),
+        prisma.kanban.updateMany({ where: { fk_user_id: loginUser.user_id }, data: { fk_user_id: null } }),
+        prisma.planning_logbook.updateMany({ where: { fk_user_id: loginUser.user_id }, data: { fk_user_id: null } }),
+        prisma.training_attendance.deleteMany({ where: { fk_user_id: loginUser.user_id } }),
+      ]);
+
+      await prisma.public_users.deleteMany({ where: { user_id: loginUser.user_id } });
+
+      if (loginUser.auth_user_id) {
+        try {
+          await supabase.auth.admin.deleteUser(loginUser.auth_user_id);
+        } catch (authError) {
+          console.error('[deleteClient] Failed to delete Supabase auth user (non-fatal):', authError);
+        }
+      }
+    }
+
+    await prisma.client.delete({ where: { client_id } });
+
+    return { code: 1, clientName: clientRow.client_name ?? null, clientCode: clientRow.client_code ?? null };
   } catch (e: any) {
     return { code: 0, error: e.message };
   }

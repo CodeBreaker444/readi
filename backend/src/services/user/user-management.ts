@@ -330,12 +330,14 @@ export async function deleteUser(userId: number, ownerId: number, isSuperAdmin =
       prisma.training_attendance.deleteMany({ where: { fk_user_id: userId } }),
     ]);
 
-    await prisma.public_users.deleteMany({
+    const { count } = await prisma.public_users.deleteMany({
       where: {
         user_id: userId,
         ...(!isSuperAdmin ? { fk_owner_id: ownerId } : {}),
       },
     });
+
+    if (count === 0) throw new Error('User not found or does not belong to this organization');
 
     if (userRecord.auth_user_id) {
       try {
