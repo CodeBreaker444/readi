@@ -1,4 +1,4 @@
-import { Role, roleHasPermission } from './roles';
+import type { Role } from './roles';
 
 export type AccessLevel = 'R' | 'A';
 
@@ -262,7 +262,7 @@ function isFullAccessRole(role: Role | null | undefined): boolean {
 }
 
 /** Maps a feature key to the closest legacy view_* permission, for roles outside the matrix. */
-function featureToLegacyPermission(featureKey: FeatureKey) {
+export function featureToLegacyPermission(featureKey: FeatureKey) {
   if (featureKey.startsWith('planning_')) return 'view_planning_advanced' as const;
   if (featureKey.startsWith('operation_')) return 'view_operations_full' as const;
   if (featureKey.startsWith('logbook_')) return 'view_logbooks' as const;

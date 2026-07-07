@@ -85,6 +85,29 @@ export async function requireFeatureAccess(featureKey: FeatureKey, mutation: 'ed
   return { session, error: null };
 }
 
+ 
+export async function requireAnyFeatureAccess(featureKeys: FeatureKey[], mutation: 'edit' | 'delete'): Promise<ApiAuthResult> {
+  const session = await getUserSession();
+
+  if (!session) {
+    return { session: null, error: unauthorized(E.AU013) };
+  }
+
+  const permissions = await getSessionEffectivePermissions(session.user);
+  const allowed = featureKeys.some((featureKey) => {
+    const access = permissions[featureKey];
+    return mutation === 'delete'
+      ? canDeleteFeature(access, session.user.isManager)
+      : canEditFeature(access);
+  });
+
+  if (!allowed) {
+    return { session: null, error: forbidden(E.PX006) };
+  }
+
+  return { session, error: null };
+}
+
 /**
  * Restricts an endpoint to ADMIN / OPM / SUPERADMIN — the roles that manage the
  * permission matrix itself. Errors: AU013 (no session) · PX004 (insufficient role)

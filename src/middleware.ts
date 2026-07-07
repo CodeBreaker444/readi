@@ -1,8 +1,8 @@
 import { createServerClient } from '@supabase/ssr'
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
-import { getApiRoutePermission, Role, roleHasPermission, ROUTE_PERMISSIONS } from './lib/auth/roles'
-import { decodeJwtPayload, decodeJwtRole, hasRoutePermission, isJwtExpired } from './lib/utils'
+import { canAccessRoute, getApiRoutePermission, Role, roleHasPermission } from './lib/auth/roles'
+import { decodeJwtPayload, decodeJwtRole, isJwtExpired } from './lib/utils'
 
 export async function updateSession(request: NextRequest) {
 
@@ -176,11 +176,8 @@ export async function updateSession(request: NextRequest) {
     }
 
     const role = decodeJwtRole(jwtToken)
-    if (role) {
-      const requiredEntry = ROUTE_PERMISSIONS[pathname]
-      if (requiredEntry !== undefined && !hasRoutePermission(role, requiredEntry)) {
-        return NextResponse.redirect(new URL('/unauthorized', request.url))
-      }
+    if (role && !canAccessRoute(role, pathname)) {
+      return NextResponse.redirect(new URL('/unauthorized', request.url))
     }
 
     // Roles & Permissions matrix editor — ADMIN/OPM/SUPERADMIN only
@@ -312,8 +309,7 @@ export async function updateSession(request: NextRequest) {
 
     if (!pathname.startsWith('/api/')) {
       const role = userData.user_role as Role
-      const requiredEntry = ROUTE_PERMISSIONS[pathname]
-      if (requiredEntry !== undefined && !hasRoutePermission(role, requiredEntry)) {
+      if (!canAccessRoute(role, pathname)) {
         return NextResponse.redirect(new URL('/unauthorized', request.url))
       }
     }

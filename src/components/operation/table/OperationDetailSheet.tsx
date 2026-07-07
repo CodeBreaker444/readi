@@ -455,13 +455,15 @@ export function OperationDetailSheet({
                               </p>
                             </div>
                           </div>
-                          <Button
-                            className="w-full gap-2 bg-violet-600 hover:bg-violet-500 text-white"
-                            onClick={() => setMaintenanceOpen(true)}
-                          >
-                            <Wrench className="h-4 w-4" />
-                            {t('operations.table.detail.updateMaintenance')}
-                          </Button>
+                          <FeatureGate feature="operation_mission_table" require="edit">
+                            <Button
+                              className="w-full gap-2 bg-violet-600 hover:bg-violet-500 text-white"
+                              onClick={() => setMaintenanceOpen(true)}
+                            >
+                              <Wrench className="h-4 w-4" />
+                              {t('operations.table.detail.updateMaintenance')}
+                            </Button>
+                          </FeatureGate>
                         </>
                       )}
                       <Button

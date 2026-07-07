@@ -1,7 +1,7 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { assertNoOpenTicketForTool, createTicket, getTechnicianName, getToolCode } from '@/backend/services/system/maintenance-ticket';
 import { CreateTicketPayload } from '@/config/types/maintenance';
-import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
+import { requireAnyPermission, requireFeatureAccess } from '@/lib/auth/api-auth';
 import { apiError, internalError, zodError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
   try {
     const body: CreateTicketPayload = await req.json();
 
-        const { session, error } = await requirePermission('view_config');
+        const { session, error } = await requireAnyPermission('view_config', 'view_maintenance_tickets');
         if (error) return error;
 
     const { error: featureError } = await requireFeatureAccess('systems_maintenance_tickets', 'edit');

@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuthorization } from "@/components/authorization/AuthorizationProvider";
+import { usePermissions } from "@/components/permissions/PermissionsProvider";
 import { SystemCell } from "@/components/tables/SystemCell";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -42,6 +43,8 @@ export function OperationBoard() {
     const { isDark } = useTheme();
     const { t } = useTranslation();
     const { requireAuthorization } = useAuthorization();
+    const { canEdit } = usePermissions();
+    const userCanUpdateMaintenance = canEdit("operation_daily_board");
     const [board, setBoard] = useState<MissionBoardData>({
         scheduled: [],
         in_progress: [],
@@ -286,7 +289,7 @@ export function OperationBoard() {
                             onDragStart={handleDragStart}
                             onDrop={handleDrop}
                             onViewDetails={(m) => setSelectedMission(m)}
-                            onUpdateMaintenance={col.id === "done" ? (m) => setMaintenanceMission(m) : undefined}
+                            onUpdateMaintenance={col.id === "done" && userCanUpdateMaintenance ? (m) => setMaintenanceMission(m) : undefined}
                             onOpenLuc={(m) => setLucMission(m)}
                             isDragOver={dragOverColumn === col.id}
                             onDragOver={(e) => handleDragOver(e, col.id)}
