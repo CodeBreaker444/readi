@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
    const { session, error } = await requirePermission('manage_users')
      if (error) return error
 
-    const { error: featureError } = await requireFeatureAccess('team_personnel', 'edit');
+    const { error: featureError } = await requireFeatureAccess('team_personnel', 'create');
     if (featureError) return featureError;
 
     const body = await request.json();

@@ -1,7 +1,7 @@
- 
+
 import { createSpiKpiDefinition, updateSpiKpiDefinition } from '@/backend/services/safetyManagement/spi-kpi-service'
 import { AREAS, FREQUENCIES, TYPES } from '@/config/types/safetyMng'
-import { requirePermission } from '@/lib/auth/api-auth'
+import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth'
 import { internalError, zodError } from '@/lib/api-error'
 import { E } from '@/lib/error-codes'
 import { NextRequest, NextResponse } from 'next/server'
@@ -36,6 +36,9 @@ export async function POST(req: NextRequest) {
     if (error) return error;
     const body = await req.json()
     const isUpdate = body.id && Number(body.id) > 0
+
+    const { error: featureError } = await requireFeatureAccess('safety_spi_kpi_definitions', isUpdate ? 'edit' : 'create')
+    if (featureError) return featureError
 
     if (isUpdate) {
       const parsed = spiKpiUpdateSchema.safeParse(body)

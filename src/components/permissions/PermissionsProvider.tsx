@@ -1,6 +1,6 @@
 'use client';
 
-import { AccessLevel, FeatureKey, canDeleteFeature, canEditFeature } from '@/lib/auth/feature-permissions-types';
+import { AccessLevel, FeatureKey, canCreateFeature, canDeleteFeature, canEditFeature } from '@/lib/auth/feature-permissions-types';
 import axios from 'axios';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
@@ -10,6 +10,7 @@ interface PermissionsContextValue {
   access: (feature: FeatureKey) => AccessLevel | null;
   canEdit: (feature: FeatureKey) => boolean;
   canDelete: (feature: FeatureKey) => boolean;
+  canCreate: (feature: FeatureKey) => boolean;
 }
 
 const PermissionsContext = createContext<PermissionsContextValue>({
@@ -18,6 +19,7 @@ const PermissionsContext = createContext<PermissionsContextValue>({
   access: () => null,
   canEdit: () => false,
   canDelete: () => false,
+  canCreate: () => false,
 });
 
 interface PermissionsProviderProps {
@@ -57,6 +59,7 @@ export function PermissionsProvider({ children, enabled = true }: PermissionsPro
     access: (feature) => permissions[feature] ?? null,
     canEdit: (feature) => canEditFeature(permissions[feature]),
     canDelete: (feature) => canDeleteFeature(permissions[feature], isManager),
+    canCreate: (feature) => canCreateFeature(permissions[feature]),
   };
 
   return <PermissionsContext.Provider value={value}>{children}</PermissionsContext.Provider>;

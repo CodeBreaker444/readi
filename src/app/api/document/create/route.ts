@@ -1,6 +1,6 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { createDocument } from '@/backend/services/document/document-service';
-import { requirePermission } from '@/lib/auth/api-auth';
+import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
 import { apiError, internalError, zodError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
@@ -33,6 +33,10 @@ export async function POST(req: NextRequest) {
   try {
     const { session, error } = await requirePermission('view_repository');
     if (error) return error;
+
+    const { error: featureError } = await requireFeatureAccess('document_repository', 'create');
+    if (featureError) return featureError;
+
     const ownerId = session!.user.ownerId;
 
     const body = await req.json();

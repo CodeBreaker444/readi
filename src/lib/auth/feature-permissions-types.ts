@@ -284,3 +284,8 @@ export function canEditFeature(access: AccessLevel | null | undefined): boolean 
 export function canDeleteFeature(access: AccessLevel | null | undefined, isManager: boolean | undefined): boolean {
   return access === 'A' && isManager === true;
 }
+
+/** Any granted access level ('R' or 'A') is enough to create new items — only edit/delete require 'A'. */
+export function canCreateFeature(access: AccessLevel | null | undefined): boolean {
+  return access === 'R' || access === 'A';
+}

@@ -3,7 +3,7 @@ import { E } from '@/lib/error-codes';
 import { prisma } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 import { getSessionEffectivePermissions } from './feature-permissions';
-import { canDeleteFeature, canEditFeature, FeatureKey, FULL_ACCESS_ROLES } from './feature-permissions-types';
+import { canCreateFeature, canDeleteFeature, canEditFeature, FeatureKey, FULL_ACCESS_ROLES } from './feature-permissions-types';
 import { Permission, SubRole, roleHasPermission } from './roles';
 import { getUserSession, SessionUser } from './server-session';
 
@@ -62,10 +62,10 @@ export async function userHasSubRole(userId: number, subrole: SubRole): Promise<
 
 /**
  * Requires the current user's effective per-feature permission to allow the given mutation.
- * 'edit' requires access === 'A'; 'delete' additionally requires the Manager flag.
+ * 'create' requires access === 'R' or 'A'; 'edit' requires access === 'A'; 'delete' additionally requires the Manager flag.
  * Errors: AU013 (no session) · PX006 (insufficient feature access)
  */
-export async function requireFeatureAccess(featureKey: FeatureKey, mutation: 'edit' | 'delete'): Promise<ApiAuthResult> {
+export async function requireFeatureAccess(featureKey: FeatureKey, mutation: 'create' | 'edit' | 'delete'): Promise<ApiAuthResult> {
   const session = await getUserSession();
 
   if (!session) {
@@ -76,7 +76,9 @@ export async function requireFeatureAccess(featureKey: FeatureKey, mutation: 'ed
   const access = permissions[featureKey];
   const allowed = mutation === 'delete'
     ? canDeleteFeature(access, session.user.isManager)
-    : canEditFeature(access);
+    : mutation === 'create'
+      ? canCreateFeature(access)
+      : canEditFeature(access);
 
   if (!allowed) {
     return { session: null, error: forbidden(E.PX006) };

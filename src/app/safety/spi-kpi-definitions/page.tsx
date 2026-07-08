@@ -15,6 +15,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
+import { FeatureGate } from '@/components/permissions/FeatureGate'
 import { IndicatorFormDialog } from '@/components/safety-management/IndicatorFormDialog'
 import { LogMeasurementDialog } from '@/components/safety-management/LogMeasurementDialog'
 import { Button } from '@/components/ui/button'
@@ -187,13 +188,15 @@ const handleSave = async (payload: any) => {
           </div>
 
           <div className="flex items-center gap-3">
-            <Button
-              onClick={openNew}
-              className="h-8 gap-1.5 text-xs bg-violet-600 hover:bg-violet-500 text-white border-none shadow-sm shadow-violet-500/20"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              {t('safety.spiKpi.newIndicator')}
-            </Button>
+            <FeatureGate feature="safety_spi_kpi_definitions" require="create">
+              <Button
+                onClick={openNew}
+                className="h-8 gap-1.5 text-xs bg-violet-600 hover:bg-violet-500 text-white border-none shadow-sm shadow-violet-500/20"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                {t('safety.spiKpi.newIndicator')}
+              </Button>
+            </FeatureGate>
           </div>
         </div>
       </div>

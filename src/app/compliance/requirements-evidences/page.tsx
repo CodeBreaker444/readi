@@ -409,14 +409,16 @@ export default function RequirementsEvidencesPage() {
             >
               <RefreshCw size={13} className={loading ? 'animate-spin' : ''} strokeWidth={2.5} />
             </Button>
-            <Button
-              size="sm"
-              onClick={openNewReq}
-              className="h-8 gap-1.5 text-xs bg-violet-600 hover:bg-violet-700 text-white"
-            >
-              <Plus size={14} strokeWidth={2.5} />
-              {t('compliance.requirementsEvidences.actions.newRequirement')}
-            </Button>
+            <FeatureGate feature="compliance_requirements_evidence" require="create">
+              <Button
+                size="sm"
+                onClick={openNewReq}
+                className="h-8 gap-1.5 text-xs bg-violet-600 hover:bg-violet-700 text-white"
+              >
+                <Plus size={14} strokeWidth={2.5} />
+                {t('compliance.requirementsEvidences.actions.newRequirement')}
+              </Button>
+            </FeatureGate>
           </div>
         </div>
       </div>
@@ -828,7 +830,7 @@ export default function RequirementsEvidencesPage() {
                   placeholder={t('compliance.requirementsEvidences.evidencePanel.fields.notesPlaceholder')}
                   className={`flex-1 h-8 text-xs ${inputCls}`}
                 />
-                <FeatureGate feature="compliance_requirements_evidence" require="edit">
+                <FeatureGate feature="compliance_requirements_evidence" require="create">
                   <Button
                     size="sm"
                     onClick={handleAddEvidence}

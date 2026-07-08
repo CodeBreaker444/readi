@@ -1,5 +1,6 @@
 'use client';
  
+import { FeatureGate } from '@/components/permissions/FeatureGate';
 import { RepositoryDocument } from '@/config/types/repository';
 import { ColumnDef } from '@tanstack/react-table';
 import type { TFunction } from 'i18next';
@@ -216,24 +217,28 @@ export function getRepositoryColumns(actions: ColumnActions): ColumnDef<Reposito
             >
               <History className="h-3.5 w-3.5" />
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              title={t('common.edit')}
-              onClick={() => actions.onEdit(doc)}
-              className="h-7 w-7 text-slate-500 hover:text-blue-600 hover:bg-blue-50"
-            >
-              <Pencil className="h-3.5 w-3.5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              title={t('common.delete')}
-              onClick={() => actions.onDelete(doc)}
-              className="h-7 w-7 text-slate-500 hover:text-red-600 hover:bg-red-50"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
+            <FeatureGate feature="document_repository" require="edit">
+              <Button
+                variant="ghost"
+                size="icon"
+                title={t('common.edit')}
+                onClick={() => actions.onEdit(doc)}
+                className="h-7 w-7 text-slate-500 hover:text-blue-600 hover:bg-blue-50"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </Button>
+            </FeatureGate>
+            <FeatureGate feature="document_repository" require="delete">
+              <Button
+                variant="ghost"
+                size="icon"
+                title={t('common.delete')}
+                onClick={() => actions.onDelete(doc)}
+                className="h-7 w-7 text-slate-500 hover:text-red-600 hover:bg-red-50"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </FeatureGate>
           </div>
         );
       },

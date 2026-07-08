@@ -18,6 +18,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import DocumentFormModal from '../document-repository/DocumentModal';
 import HistoryModal from '../document-repository/HistoryModal';
+import { FeatureGate } from '../permissions/FeatureGate';
 import ExportButtons from '../system/ExportButtons';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
 import { Button } from '../ui/button';
@@ -187,13 +188,15 @@ export default function RepositoryTable() {
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
-                        <Button
-                            onClick={() => { setEditDoc(null); setFormOpen(true); }}
-                            className="h-8 gap-1.5 text-xs bg-violet-600 hover:bg-violet-500 text-white border-none shadow-sm shadow-violet-500/20"
-                        >
-                            <Plus className="h-3.5 w-3.5" />
-                            {t('repository.newDocument')}
-                        </Button>
+                        <FeatureGate feature="document_repository" require="create">
+                            <Button
+                                onClick={() => { setEditDoc(null); setFormOpen(true); }}
+                                className="h-8 gap-1.5 text-xs bg-violet-600 hover:bg-violet-500 text-white border-none shadow-sm shadow-violet-500/20"
+                            >
+                                <Plus className="h-3.5 w-3.5" />
+                                {t('repository.newDocument')}
+                            </Button>
+                        </FeatureGate>
                     </div>
                 </div>
             </div>
