@@ -1897,6 +1897,7 @@
       "fields": {
         "chooseClient": "Kunden auswählen",
         "ccPlatform": "CC-Plattform",
+        "organization": "Organisation",
         "uploadLogFile": "Protokolldatei hochladen (.gutma oder .zip)",
         "droneSystem": "Drohnensystem",
         "missionCategory": "Missionskategorie",
@@ -1916,6 +1917,7 @@
       "placeholders": {
         "selectClient": "Kunden auswählen…",
         "selectPilot": "Pilot auswählen…",
+        "selectOrganization": "Organisation auswählen…",
         "location": "z.B. Raster A-7, Standort Nord",
         "groupLabel": "z.B. Frühjahrsumfrage 2025",
         "notes": "Zusätzliche Notizen…",
@@ -1926,6 +1928,7 @@
         "clickToUpload": "Zum Hochladen klicken",
         "noPlansForDrone": "Keine Pläne für diese Drohne",
         "selectDroneFirst": "Zuerst Drohne auswählen",
+        "noOrganizations": "Keine Organisationen",
         "youAreAllSet": "Alles bereit",
         "reviewAndImport": "Überprüfen Sie Ihre Auswahl und klicken Sie auf {{importButton}}, um fortzufahren.",
         "none": "Keine"

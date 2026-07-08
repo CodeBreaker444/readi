@@ -1901,6 +1901,7 @@
       "fields": {
         "chooseClient": "Choose a Client",
         "ccPlatform": "CC Platform",
+        "organization": "Organization",
         "uploadLogFile": "Upload Log File (.gutma or .zip)",
         "flytbaseWindow": "Control Center Window",
         "selectFlightLog": "Select Flight Log",
@@ -1923,6 +1924,7 @@
         "selectClient": "Select client…",
         "selectPilot": "Select pilot…",
         "selectFlightLog": "Select a Control Center flight…",
+        "selectOrganization": "Select organization…",
         "location": "e.g. Grid A-7, Site North",
         "groupLabel": "e.g. Spring Survey 2025",
         "notes": "Additional notes…",
@@ -1934,6 +1936,7 @@
         "uploadOrSelectFlight": "Upload a .gutma/.zip file or select a Control Center flight log to auto-fetch.",
         "noPlansForDrone": "No plans for this drone",
         "selectDroneFirst": "Select drone first",
+        "noOrganizations": "No organizations",
         "youAreAllSet": "You are all set",
         "reviewAndImport": "Review your selections and click {{importButton}} to proceed.",
         "none": "None"

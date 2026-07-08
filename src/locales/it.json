@@ -1899,6 +1899,7 @@
       "fields": {
         "chooseClient": "Scegli un Cliente",
         "ccPlatform": "Piattaforma CC",
+        "organization": "Organizzazione",
         "uploadLogFile": "Carica File Log (.gutma o .zip)",
         "droneSystem": "Sistema Drone",
         "missionCategory": "Categoria Missione",
@@ -1918,6 +1919,7 @@
       "placeholders": {
         "selectClient": "Seleziona cliente…",
         "selectPilot": "Seleziona pilota…",
+        "selectOrganization": "Seleziona organizzazione…",
         "location": "es. Griglia A-7, Sito Nord",
         "groupLabel": "es. Rilevamento Primavera 2025",
         "notes": "Note aggiuntive…",
@@ -1928,6 +1930,7 @@
         "clickToUpload": "Clicca per caricare",
         "noPlansForDrone": "Nessun piano per questo drone",
         "selectDroneFirst": "Seleziona prima il drone",
+        "noOrganizations": "Nessuna organizzazione",
         "youAreAllSet": "Sei pronto",
         "reviewAndImport": "Rivedi le tue selezioni e clicca su {{importButton}} per procedere.",
         "none": "Nessuno"
