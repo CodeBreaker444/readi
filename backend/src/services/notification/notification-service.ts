@@ -136,7 +136,7 @@ export async function markNotificationRead(
     .eq("fk_user_id", userId);
 
   if (error) throw new Error(error.message);
-  revalidateTag(`notifications-unread-${userId}`);
+  revalidateTag(`notifications-unread-${userId}`,`notifications-unread-${userId}`);
 }
 
 
@@ -151,7 +151,7 @@ export async function markAllNotificationsRead(
     .select("notification_id");
 
   if (error) throw new Error(error.message);
-  revalidateTag(`notifications-unread-${userId}`);
+  revalidateTag(`notifications-unread-${userId}`,`notifications-unread-${userId}`);
 
   return { updated: data?.length ?? 0 };
 }
