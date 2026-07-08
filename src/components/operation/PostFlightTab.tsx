@@ -20,6 +20,7 @@ export interface MissionResultOption {
 }
 
 export interface PostFlightState {
+  actual_start: string;
   actual_end: string;
   result_id: number | null;
   flight_duration_min: string;
@@ -143,7 +144,16 @@ export function PostFlightTab({ data, resultOptions, loading, fromLog, isDark, o
       {/* Mission Outcome */}
       <div className={sectionCls(isDark)}>
         <p className={sectionTitle(isDark)}>{t("operations.missionComplete.postFlight.sections.outcome")}</p>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 mb-3">
+          <div>
+            <FieldLabel icon={CalendarClock} label={t("operations.missionComplete.postFlight.fields.actualStart")} isDark={isDark} fromLog={fromLog && !!data.actual_start} />
+            <input
+              type="datetime-local"
+              value={data.actual_start}
+              onChange={(e) => onChange("actual_start", e.target.value)}
+              className={cn(inputCls(isDark), "text-xs")}
+            />
+          </div>
           <div>
             <FieldLabel icon={CalendarClock} label={t("operations.missionComplete.postFlight.fields.actualEnd")} isDark={isDark} fromLog={fromLog && !!data.actual_end} />
             <input
@@ -153,21 +163,21 @@ export function PostFlightTab({ data, resultOptions, loading, fromLog, isDark, o
               className={cn(inputCls(isDark), "text-xs")}
             />
           </div>
-          <div>
-            <FieldLabel icon={Trophy} label={t("operations.missionComplete.postFlight.fields.missionResult")} isDark={isDark} />
-            <select
-              value={data.result_id ?? ""}
-              onChange={(e) => onChange("result_id", e.target.value ? Number(e.target.value) : null)}
-              className={selectCls(isDark)}
-            >
-              <option value="">{t("operations.missionComplete.postFlight.placeholders.selectResult")}</option>
-              {resultOptions.map((r) => (
-                <option key={r.mission_result_id} value={r.mission_result_id}>
-                  {r.mission_result_desc}
-                </option>
-              ))}
-            </select>
-          </div>
+        </div>
+        <div>
+          <FieldLabel icon={Trophy} label={t("operations.missionComplete.postFlight.fields.missionResult")} isDark={isDark} />
+          <select
+            value={data.result_id ?? ""}
+            onChange={(e) => onChange("result_id", e.target.value ? Number(e.target.value) : null)}
+            className={selectCls(isDark)}
+          >
+            <option value="">{t("operations.missionComplete.postFlight.placeholders.selectResult")}</option>
+            {resultOptions.map((r) => (
+              <option key={r.mission_result_id} value={r.mission_result_id}>
+                {r.mission_result_desc}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 

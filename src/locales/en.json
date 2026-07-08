@@ -1709,6 +1709,7 @@
         },
         "fields": {
           "missionResult": "Mission Result",
+          "actualStart": "Start Date / Time",
           "actualEnd": "End Date / Time",
           "duration": "Total Flown Time (Min)",
           "distanceFlown": "Total Flown Distance (Mt)",

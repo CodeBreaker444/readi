@@ -3,6 +3,7 @@
 import { env } from '@/backend/config/env';
 import { prisma } from '@/lib/prisma';
 import { getFlytbaseCredentials, getFlytbaseCredentialsForCompany } from '@/backend/services/integrations/flytbase-service';
+import { parseGutmaFlightData } from '@/backend/services/integrations/gutma-parser';
 import { BUCKET, getPresignedDownloadUrl, s3 } from '@/lib/s3Client';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 
@@ -148,4 +149,34 @@ export async function attachFlytbaseFlightLog(
       uploaded_by: BigInt(userId),
     },
   });
+
+  // Prefill the mission's post-flight fields from the GUTMA log so Edit
+  // Mission's Mission Log / Post Flight tabs reflect the attached flight
+  // without requiring a separate manual sync step.
+  try {
+    const parsed = parseGutmaFlightData(gutma);
+    const missionUpdate: Record<string, unknown> = {};
+
+    const startMs = parsed.start_time ? new Date(parsed.start_time).getTime() : NaN;
+    const endMs = parsed.end_time ? new Date(parsed.end_time).getTime() : NaN;
+
+    if (!isNaN(startMs)) missionUpdate.actual_start = new Date(startMs);
+    if (!isNaN(endMs)) missionUpdate.actual_end = new Date(endMs);
+    if (!isNaN(startMs) && !isNaN(endMs) && endMs > startMs) {
+      missionUpdate.flight_duration = Math.round((endMs - startMs) / 60000);
+    }
+    if (parsed.distance_m != null) missionUpdate.distance_flown = parsed.distance_m;
+    if (parsed.battery_charge_start != null) missionUpdate.battery_charge_start = parsed.battery_charge_start;
+    if (parsed.battery_charge_end != null) missionUpdate.battery_charge_end = parsed.battery_charge_end;
+
+    if (Object.keys(missionUpdate).length > 0) {
+      await prisma.pilot_mission.update({
+        where: { pilot_mission_id: missionId },
+        data: missionUpdate,
+      });
+    }
+  } catch (err) {
+    // Best-effort — a parsing/sync failure shouldn't fail the attach itself.
+    console.error('[attachFlytbaseFlightLog] GUTMA mission sync failed:', err);
+  }
 }

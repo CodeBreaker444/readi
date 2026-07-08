@@ -1707,6 +1707,7 @@
         },
         "fields": {
           "missionResult": "Risultato Missione",
+          "actualStart": "Data / Ora Inizio",
           "actualEnd": "Data / Ora Fine",
           "duration": "Tempo Totale di Volo (Min)",
           "distanceFlown": "Distanza Percorsa (Mt)",

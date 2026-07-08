@@ -1,0 +1,99 @@
+export interface ParsedGutmaFlight {
+  aircraft: Record<string, any>;
+  gcs: Record<string, any>;
+  payload: Array<Record<string, any>>;
+  pilot: string | null;
+  start_time: string | null;
+  end_time: string | null;
+  distance_m: number | null;
+  battery_charge_start: number | null;
+  battery_charge_end: number | null;
+}
+
+function haversineM(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+
+/**
+ * Parses a raw FlytBase/FlytRelay GUTMA export (`exchange.message.flight_data` /
+ * `flight_logging`) into the fields relevant for mission post-flight sync.
+ */
+export function parseGutmaFlightData(gutma: any): ParsedGutmaFlight {
+  const message = gutma?.exchange?.message ?? gutma?.gutma?.exchange?.message ?? {};
+  const flightData = message?.flight_data ?? {};
+  const logging = message?.flight_logging ?? {};
+
+  const keys: string[] = logging?.flight_logging_keys ?? [];
+  const items: any[][] = logging?.flight_logging_items ?? [];
+  const col = (key: string) => keys.indexOf(key);
+
+  const tsIdx = col('timestamp');
+  const lonIdx = col('gps_lon');
+  const latIdx = col('gps_lat');
+  const batteryIdx = col('battery_percent');
+
+  const loggingStart = logging?.logging_start_dtg ?? null;
+  const start_time =
+    flightData?.start_time ??
+    flightData?.start_dtg ??
+    message?.start_time ??
+    loggingStart ??
+    null;
+
+  let end_time =
+    flightData?.end_time ??
+    flightData?.end_dtg ??
+    message?.end_time ??
+    null;
+
+  // GUTMA `timestamp` values are seconds elapsed since logging_start_dtg, not
+  // absolute time — when no explicit end field is present, derive it from the
+  // last logged row instead of leaving end_time null.
+  if (!end_time && start_time && tsIdx >= 0 && items.length > 0) {
+    const lastTs = Number(items[items.length - 1][tsIdx]);
+    const startMs = new Date(start_time).getTime();
+    if (!isNaN(lastTs) && lastTs >= 0 && !isNaN(startMs)) {
+      end_time = new Date(startMs + lastTs * 1000).toISOString();
+    }
+  }
+
+  let battery_charge_start: number | null = null;
+  let battery_charge_end: number | null = null;
+  if (batteryIdx >= 0 && items.length > 0) {
+    const first = items[0][batteryIdx];
+    const last = items[items.length - 1][batteryIdx];
+    if (first != null) battery_charge_start = Math.round(Number(first));
+    if (last != null) battery_charge_end = Math.round(Number(last));
+  }
+
+  let distance_m: number | null = null;
+  if (latIdx >= 0 && lonIdx >= 0 && items.length > 1) {
+    let total = 0;
+    for (let i = 1; i < items.length; i++) {
+      const lat1 = items[i - 1][latIdx];
+      const lon1 = items[i - 1][lonIdx];
+      const lat2 = items[i][latIdx];
+      const lon2 = items[i][lonIdx];
+      if (lat1 != null && lon1 != null && lat2 != null && lon2 != null) {
+        total += haversineM(lat1, lon1, lat2, lon2);
+      }
+    }
+    if (total > 0) distance_m = Math.round(total);
+  }
+
+  return {
+    aircraft: flightData?.aircraft ?? {},
+    gcs: flightData?.gcs ?? {},
+    payload: flightData?.payload ?? [],
+    pilot: flightData?.pilot_in_command ?? null,
+    start_time,
+    end_time,
+    distance_m,
+    battery_charge_start,
+    battery_charge_end,
+  };
+}

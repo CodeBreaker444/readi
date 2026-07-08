@@ -102,7 +102,7 @@ export function EditMissionLogTab({ missionId, isDark }: { missionId: number; is
                 flight_id: selectedFlight,
             })
             if (data.code === 1) {
-                toast.success('Flight attached')
+                toast.success('Flight attached — mission start/end time and post-flight data synced')
                 setSelectedFlight(null)
                 setFlights([])
                 const res = await axios.get(`/api/operation/board/flight-logs?mission_id=${missionId}`)

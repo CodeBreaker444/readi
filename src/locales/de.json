@@ -1705,6 +1705,7 @@
         },
         "fields": {
           "missionResult": "Missionsergebnis",
+          "actualStart": "Startdatum / Uhrzeit",
           "actualEnd": "Enddatum / Uhrzeit",
           "duration": "Gesamtflugzeit (Min.)",
           "distanceFlown": "Zurückgelegte Strecke (Mt)",
