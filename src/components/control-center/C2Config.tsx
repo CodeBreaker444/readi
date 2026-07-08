@@ -2,6 +2,7 @@
 
 import { TablePagination } from '@/components/tables/Pagination';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTheme } from '@/components/useTheme';
 import '@/lib/i18n/config';
 import {
@@ -15,21 +16,8 @@ import { Building2, Plus, ShieldCheck, User as UserIcon } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { getOrgColumns, getUserColumns } from '../tables/ConfigColumns';
+import { getOrgColumns, getUserColumns, Organization, UserWithAccess } from '../tables/ConfigColumns';
 import { DataTable, DeleteAlertDialog, EditUserDialog, OrgDialog, SearchBar } from './ConfigDialogs';
-
-interface Organization {
-  id: string;
-  org_id: string;
-  name: string;
-}
-
-interface User {
-  id: string;
-  fullname: string;
-  email: string;
-  organizations: Organization[];
-}
 
 export default function C2Config() {
   const { isDark } = useTheme();
@@ -43,11 +31,12 @@ export default function C2Config() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
 
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<UserWithAccess[]>([]);
   const [usersLoading, setUsersLoading] = useState(true);
   const [userSearchTerm, setUserSearchTerm] = useState('');
+  const [roleFilter, setRoleFilter] = useState<string>('all');
   const [editUserModalOpen, setEditUserModalOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedUser, setSelectedUser] = useState<UserWithAccess | null>(null);
 
   const fetchOrganizations = useCallback(async () => {
     setOrgLoading(true);
@@ -140,7 +129,7 @@ export default function C2Config() {
     }
   };
 
-  const handleEditUser = (user: User) => {
+  const handleEditUser = (user: UserWithAccess) => {
     setSelectedUser(user);
     setEditUserModalOpen(true);
   };
@@ -163,9 +152,11 @@ export default function C2Config() {
     () =>
       users.filter((user) => {
         const s = userSearchTerm.toLowerCase();
-        return user.fullname.toLowerCase().includes(s) || user.email.toLowerCase().includes(s);
+        const matchesSearch = user.fullname.toLowerCase().includes(s) || user.email.toLowerCase().includes(s);
+        const matchesRole = roleFilter === 'all' || user.role === roleFilter;
+        return matchesSearch && matchesRole;
       }),
-    [users, userSearchTerm]
+    [users, userSearchTerm, roleFilter]
   );
 
   const orgColumns = useMemo(
@@ -281,13 +272,33 @@ export default function C2Config() {
         {activeTab === 'permissions' && (
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-3">
-              <div className="w-64">
-                <SearchBar
-                  value={userSearchTerm}
-                  onChange={setUserSearchTerm}
-                  placeholder={t('flytbase.c2Config.permissions.table.name')}
-                  isDark={isDark}
-                />
+              <div className="flex items-center gap-2">
+                <div className="w-48">
+                  <SearchBar
+                    value={userSearchTerm}
+                    onChange={setUserSearchTerm}
+                    placeholder={t('flytbase.c2Config.permissions.table.name')}
+                    isDark={isDark}
+                  />
+                </div>
+                <Select value={roleFilter} onValueChange={setRoleFilter}>
+                  <SelectTrigger className="w-[140px] h-8 text-xs">
+                    <SelectValue placeholder="All Roles" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Roles</SelectItem>
+                    <SelectItem value="ADMIN">ADMIN</SelectItem>
+                    <SelectItem value="PIC">PIC</SelectItem>
+                    <SelectItem value="OPM">OPM</SelectItem>
+                    <SelectItem value="SM">SM</SelectItem>
+                    <SelectItem value="AM">AM</SelectItem>
+                    <SelectItem value="CMM">CMM</SelectItem>
+                    <SelectItem value="RM">RM</SelectItem>
+                    <SelectItem value="TM">TM</SelectItem>
+                    <SelectItem value="DC">DC</SelectItem>
+                    <SelectItem value="SLA">SLA</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <span className={`text-xs tabular-nums ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                 {filteredUsers.length} {filteredUsers.length === 1 ? 'user' : 'users'}
@@ -297,7 +308,7 @@ export default function C2Config() {
             <DataTable
               table={userTable}
               loading={usersLoading}
-              colSpan={4}
+              colSpan={5}
               emptyIcon={<UserIcon size={36} className="opacity-40" />}
               emptyText={t('flytbase.c2Config.permissions.noUsers')}
               isDark={isDark}

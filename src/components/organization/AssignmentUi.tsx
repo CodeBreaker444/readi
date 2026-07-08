@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { Loader2 } from "lucide-react"
+import { Check, Loader2 } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
@@ -82,18 +82,31 @@ export function AssignmentForm({
   const { t } = useTranslation();
   const [form, setForm] = useState<FormData>(initial)
   const [jsonError, setJsonError] = useState("")
+  const [jsonValid, setJsonValid] = useState(false)
 
   useEffect(() => {
     setForm(initial)
     setJsonError("")
+    setJsonValid(false)
   }, [initial])
 
   const set = (k: keyof FormData, v: string) => setForm((f) => ({ ...f, [k]: v }))
 
   const validateJson = (val: string) => {
-    if (!val.trim()) { setJsonError(""); return }
-    try { JSON.parse(val); setJsonError("") } 
-    catch { setJsonError(t('organization.common.invalidJsonFormat')) }
+    if (!val.trim()) { setJsonError(""); setJsonValid(false); return }
+    try { 
+      JSON.parse(val); 
+      setJsonError(t('organization.assignments.validJsonSchema'))
+      setJsonValid(true)
+    } 
+    catch { 
+      setJsonError(t('organization.common.invalidJsonFormat'))
+      setJsonValid(false)
+    }
+  }
+
+  const handleJsonCheck = () => {
+    validateJson(form.assignment_json)
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -158,20 +171,42 @@ export function AssignmentForm({
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <Label htmlFor="json">{t('organization.assignments.jsonSchema')}</Label>
-          {jsonError && (
-            <span className="text-[10px] font-medium text-destructive animate-pulse">{jsonError}</span>
-          )}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleJsonCheck}
+            className={`h-7 px-3 text-xs gap-1.5 ${
+              isDark
+                ? "border-gray-700 bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-gray-200"
+                : "border-gray-200 bg-white text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+            }`}
+          >
+            <Check size={12} />
+            {t('organization.checklist.validateJson')}
+          </Button>
         </div>
+        {jsonError && (
+          <span className={`text-[10px] font-medium ${jsonValid ? 'text-emerald-500' : 'text-destructive'} animate-pulse`}>{jsonError}</span>
+        )}
         <Textarea
           id="json"
           rows={8}
           value={form.assignment_json}
           onChange={(e) => {
             set("assignment_json", e.target.value);
-            validateJson(e.target.value);
+            setJsonError("");
+            setJsonValid(false);
           }}
-          className={`font-mono text-xs transition-colors ${jsonError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+          className={`font-mono text-xs transition-colors resize-none ${
+            jsonError 
+              ? jsonValid 
+                ? 'border-emerald-500/50 focus-visible:ring-emerald-500/30' 
+                : 'border-destructive focus-visible:ring-destructive' 
+              : ''
+          }`}
           placeholder='{ "type": "inspection" }'
+          style={{ minHeight: '200px', maxHeight: '200px' }}
         />
       </div>
 

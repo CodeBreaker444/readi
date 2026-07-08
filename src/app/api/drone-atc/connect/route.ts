@@ -1,8 +1,9 @@
 import { getFlytbaseCredentials } from '@/backend/services/integrations/flytbase-service';
+import { getAllUserFlytbaseCredentials } from '@/backend/services/integrations/flytbase-organization-service';
 import { internalError } from '@/lib/api-error';
 import { requireAuth } from '@/lib/auth/api-auth';
 import { E } from '@/lib/error-codes';
-import { connectToFlytrelay } from '@/lib/flytrelay-service';
+import { connectToFlytrelay, connectToFlytrelayWithMultipleOrgs } from '@/lib/flytrelay-service';
 import { NextResponse } from 'next/server';
 
 export async function POST() {
@@ -17,16 +18,29 @@ export async function POST() {
       role === 'ADMIN' ? String(ownerId) :
       undefined;
 
-    const creds = await getFlytbaseCredentials(userId);
-    if (!creds) return NextResponse.json({ hasFlytbaseKey: false });
+    // Get organizations assigned to user from user_flytbase_access table
+    const multiOrgCreds = await getAllUserFlytbaseCredentials(userId);
+    
+    // If no organizations assigned, return no access
+    if (multiOrgCreds.length === 0) {
+      return NextResponse.json({ hasFlytbaseKey: false });
+    }
 
-    const conn = await connectToFlytrelay(String(userId), creds.token, creds.orgId, fleetCompanyId);
+    // User has organizations assigned - use them
+    const organizations = multiOrgCreds.map(cred => ({
+      orgId: cred.orgId,
+      token: cred.token,
+    }));
+    
+    const conn = await connectToFlytrelayWithMultipleOrgs(String(userId), organizations, fleetCompanyId);
 
     return NextResponse.json({
       hasFlytbaseKey: true,
       wsUrl: conn.wsUrl,
       topic: conn.topic,
       token: conn.token,
+      multipleOrgs: true,
+      orgCount: organizations.length,
     });
   } catch (err) {
     console.error('[POST /api/drone-atc/connect]', err);

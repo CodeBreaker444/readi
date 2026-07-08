@@ -1290,6 +1290,7 @@
       "staffCol": "Personal (PiC / Beob.)",
       "duration": "Dauer",
       "result": "Ergebnis",
+      "actions": "Aktionen",
       "noTests": "Keine Missionstests protokolliert.",
       "obsLabel": "Beob.:",
       "activateMission": "Mission aktivieren",
@@ -3055,6 +3056,7 @@
         "table": {
           "name": "Name",
           "email": "E-Mail",
+          "role": "Rolle",
           "organizations": "Organisationen",
           "actions": "Aktionen"
         },
@@ -3362,6 +3364,7 @@
       "jsonSchemaTitle": "JSON-Schema",
       "createAssignment": "Zuweisung erstellen",
       "jsonSchema": "JSON-Schema",
+      "validJsonSchema": "Gültiges JSON-Schema",
       "invalidJsonError": "Bitte beheben Sie JSON-Syntaxfehler",
       "deleteConfirm": "{{code}} endgültig löschen? Dies kann nicht rückgängig gemacht werden.",
       "toasts": {
@@ -4873,6 +4876,11 @@
       },
       "error": {
         "generic": "Flottendaten konnten nicht geladen werden"
+      },
+      "notConfigured": {
+        "title": "D-Flight nicht konfiguriert",
+        "description": "Bitte konfigurieren Sie Ihre D-Flight-Integrationseinstellungen, um die Flotte anzuzeigen.",
+        "setup": "Zu den Einstellungen"
       }
     }
   }

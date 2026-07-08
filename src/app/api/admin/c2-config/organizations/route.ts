@@ -38,6 +38,7 @@ export async function GET() {
       id: String(org.id),
       org_id: org.org_id,
       name: org.name,
+      created_at: org.created_at.toISOString(),
     }));
     return NextResponse.json({ success: true, organizations: transformedOrgs });
   } catch (err) {

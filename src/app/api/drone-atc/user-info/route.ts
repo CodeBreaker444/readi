@@ -4,12 +4,7 @@ import { verifyFlytrelayJwt } from '@/lib/drone-atc-jwt';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 
-/**
- * This endpoint is used by FlytRelay when it can’t find a userId in its Redis cache.
- * FlytRelay calls it server-to-server using an RS256 JWT signed with its private key.
- * We verify that token using the FlytRelay public key, and if valid,
- * return the corresponding user’s FlytBase credentials.
- */
+ 
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get('authorization');
   if (!authHeader?.startsWith('Bearer ')) {

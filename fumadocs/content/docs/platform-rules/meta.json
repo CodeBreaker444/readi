@@ -1,0 +1,9 @@
+{
+  "title": "Platform Rules",
+  "pages": [
+    "authorization-code",
+    "mission-status-gates",
+    "system-status-rules",
+    "operation-board-flow"
+  ]
+}

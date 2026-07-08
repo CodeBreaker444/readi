@@ -30,17 +30,17 @@ function fmt(v: number | undefined, digits = 2, suffix = ''): string {
 
 function buildTooltipHtml(wp: FlightWaypoint, index: number): string {
   const rows: [string, string][] = [
-    ['Point',    String(index + 1)],
+    ['Point', String(index + 1)],
     ['Lat / Lon', wp.latitude != null && wp.longitude != null
       ? `${wp.latitude.toFixed(6)}, ${wp.longitude.toFixed(6)}`
       : '—'],
-    ['Altitude',  fmt(wp.altitude, 1, ' m')],
-    ['Speed',     fmt(wp.speed, 2, ' m/s')],
+    ['Altitude', fmt(wp.altitude, 1, ' m')],
+    ['Speed', fmt(wp.speed, 2, ' m/s')],
     ['Vx / Vy / Vz', `${fmt(wp.speed_vx)} / ${fmt(wp.speed_vy)} / ${fmt(wp.speed_vz)} m/s`],
-    ['Heading (ψ)',   fmt(wp.heading, 1, '°')],
-    ['Roll (φ)',      fmt(wp.angle_phi, 1, '°')],
-    ['Pitch (θ)',     fmt(wp.angle_theta, 1, '°')],
-    ['Battery',       fmt(wp.battery, 0, '%')],
+    ['Heading (ψ)', fmt(wp.heading, 1, '°')],
+    ['Roll (φ)', fmt(wp.angle_phi, 1, '°')],
+    ['Pitch (θ)', fmt(wp.angle_theta, 1, '°')],
+    ['Battery', fmt(wp.battery, 0, '%')],
   ];
 
   const rowsHtml = rows
@@ -167,16 +167,26 @@ export function FlightPathMap({ waypoints, height = '380px', isDark = true }: Pr
     <div className="relative rounded-lg overflow-hidden" style={{ height }}>
       <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
       <style>{`
-        .flight-path-tooltip {
-          background: transparent !important;
-          border: none !important;
-          box-shadow: none !important;
-          padding: 0 !important;
-        }
-        .flight-path-tooltip::before {
-          display: none !important;
-        }
-      `}</style>
+  .flight-path-tooltip {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+  .flight-path-tooltip::before {
+    display: none !important;
+  }
+  /* FIX: Explicitly contain map elements and reset inner z-index priorities */
+  .leaflet-container {
+    z-index: 1 !important;
+  }
+  .leaflet-pane {
+    z-index: 2 !important;
+  }
+  .leaflet-top, .leaflet-bottom {
+    z-index: 3 !important;
+  }
+`}</style>
     </div>
   );
 }

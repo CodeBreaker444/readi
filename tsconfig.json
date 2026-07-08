@@ -27,6 +27,12 @@
       ],
       "@mcp-server/*": [
         "./mcp-server/*"
+      ],
+      "@/lib/layout.shared": [
+        "./fumadocs/lib/layout.shared.ts"
+      ],
+      "@/.source/*": [
+        "./.source/*"
       ]
     },
     "plugins": [
@@ -41,10 +47,12 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
-    "src/components/planning/function.js"
+    "src/components/planning/function.js",
+    ".source/**/*.ts"
   ],
   "exclude": [
     "node_modules",
+    "fumadocs",
     "platform-docs copy",
     "platform-docs copy/**"
   ]

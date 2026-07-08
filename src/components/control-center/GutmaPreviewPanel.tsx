@@ -273,7 +273,7 @@ export function GutmaPreviewPanel({
                   isDark={isDark}
                 />
                 {(flight.pilot_name || preview.pilot || flight.drone_name || preview.aircraft?.product_name || preview.aircraft?.model) && (
-                  <div className="absolute bottom-3 left-3 z-400 opacity-20 pointer-events-none select-none">
+                  <div className="absolute bottom-3 left-3 z-10 opacity-20 pointer-events-none select-none">
                     <div className="rounded-lg px-3 py-2.5 bg-slate-900 border border-slate-500 shadow-lg text-white min-w-37.5">
                       {(preview.pilot || flight.pilot_name) && (
                         <div className="flex items-center gap-1.5 mb-1.5">

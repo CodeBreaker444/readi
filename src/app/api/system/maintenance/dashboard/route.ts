@@ -1,4 +1,4 @@
-import { sendMaintenanceAlertNotifications } from "@/backend/services/system/maintenance-notification";
+// import { sendMaintenanceAlertNotifications } from "@/backend/services/system/maintenance-notification";
 import { getMaintenanceDashboard } from "@/backend/services/system/maintenance-service";
 import { internalError, zodError } from "@/lib/api-error";
 import { requirePermission } from "@/lib/auth/api-auth";
@@ -34,9 +34,10 @@ export async function POST(req: NextRequest) {
       threshold_alert: parsed.data.threshold_alert,
     });
 
-    sendMaintenanceAlertNotifications(owner_id, data).catch((err) =>
-      console.error("[maintenance-alert] notification failed:", err)
-    );
+    // Maintenance alert notifications moved to cron job - no longer called here
+    // sendMaintenanceAlertNotifications(owner_id, data).catch((err) =>
+    //   console.error("[maintenance-alert] notification failed:", err)
+    // );
 
     return NextResponse.json({
       code: 1,

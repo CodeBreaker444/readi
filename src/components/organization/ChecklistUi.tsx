@@ -1,4 +1,4 @@
-import { AlertCircle, CheckCircle2, ShieldCheck } from "lucide-react";
+import { AlertCircle, CheckCircle2, Check } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -265,7 +265,7 @@ export function ChecklistForm({
                 : "border-gray-200 bg-white text-gray-500 hover:bg-gray-50 hover:text-gray-700"
             }`}
           >
-            <ShieldCheck size={12} />
+            <Check size={12} />
             {t('organization.checklist.validateJson')}
           </Button>
         </div>
@@ -303,7 +303,7 @@ export function ChecklistForm({
           </div>
 
           <Textarea
-            className={`cursor-text rounded-none border-0 font-mono text-sm leading-relaxed h-44 resize-none focus-visible:ring-0 focus-visible:ring-offset-0 ${
+            className={`cursor-text rounded-none border-0 font-mono text-sm leading-relaxed resize-none focus-visible:ring-0 focus-visible:ring-offset-0 ${
               isDark
                 ? "bg-gray-900 text-gray-200 placeholder:text-gray-600"
                 : "bg-white text-gray-800 placeholder:text-gray-400"
@@ -311,6 +311,7 @@ export function ChecklistForm({
             value={form.checklist_json}
             onChange={setField("checklist_json")}
             placeholder={'{\n  "pages": [...]\n}'}
+            style={{ minHeight: '176px', maxHeight: '176px' }}
           />
         </div>
 

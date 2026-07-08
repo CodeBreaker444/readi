@@ -1,11 +1,12 @@
 
 'use client'
- 
+
 import axios from 'axios'
- 
+
 import { FlightLogsTab } from '@/components/operation/FlightLogsTab'
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
+import type { FlytbaseOrganization } from './MissionCompleteModal'
 
 interface FlightLog {
     log_id: number
@@ -39,6 +40,9 @@ export function EditMissionLogTab({ missionId, isDark }: { missionId: number; is
     const [attachingFlight, setAttachingFlight] = useState(false)
     const [autoSyncingFlight, setAutoSyncingFlight] = useState(false)
     const [flightsError, setFlightsError] = useState<string | null>(null)
+    const [organizations, setOrganizations] = useState<FlytbaseOrganization[]>([])
+    const [selectedOrganization, setSelectedOrganization] = useState<FlytbaseOrganization | null>(null)
+    const [orgLoading, setOrgLoading] = useState(false)
 
     useEffect(() => {
         setLoadingLogs(true)
@@ -47,6 +51,21 @@ export function EditMissionLogTab({ missionId, isDark }: { missionId: number; is
             .catch(() => toast.error('Failed to load flight logs'))
             .finally(() => setLoadingLogs(false))
     }, [missionId])
+
+    useEffect(() => {
+        setOrgLoading(true)
+        axios.get('/api/flytbase/my-organizations')
+            .then(res => {
+                if (res.data.success) {
+                    setOrganizations(res.data.organizations ?? [])
+                    if (res.data.organizations?.length === 1) {
+                        setSelectedOrganization(res.data.organizations[0])
+                    }
+                }
+            })
+            .catch(() => toast.error('Failed to load organizations'))
+            .finally(() => setOrgLoading(false))
+    }, [])
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
@@ -118,6 +137,11 @@ export function EditMissionLogTab({ missionId, isDark }: { missionId: number; is
         }
     }
 
+    const handleOrganizationChange = (organizationId: number) => {
+        const org = organizations.find(o => o.organization_id === organizationId)
+        setSelectedOrganization(org ?? null)
+    }
+
     return (
         <FlightLogsTab
             logs={logs}
@@ -132,6 +156,10 @@ export function EditMissionLogTab({ missionId, isDark }: { missionId: number; is
             autoSyncingFlight={autoSyncingFlight}
             flightsError={flightsError}
             isDark={isDark}
+            organizations={organizations}
+            selectedOrganization={selectedOrganization}
+            orgLoading={orgLoading}
+            onOrganizationChange={handleOrganizationChange}
             onFileChange={handleFileChange}
             onWindowChange={setFbWindow}
             onFetchFlights={handleFetchFlights}

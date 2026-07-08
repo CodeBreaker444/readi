@@ -1292,6 +1292,7 @@
       "staffCol": "Staff (PiC / Oss)",
       "duration": "Durata",
       "result": "Risultato",
+      "actions": "Azioni",
       "noTests": "Nessun test missione registrato.",
       "obsLabel": "Oss:",
       "activateMission": "Attiva Missione",
@@ -3059,6 +3060,7 @@
         "table": {
           "name": "Nome",
           "email": "Email",
+          "role": "Ruolo",
           "organizations": "Organizzazioni",
           "actions": "Azioni"
         },
@@ -3447,6 +3449,7 @@
       "jsonSchemaTitle": "Schema JSON",
       "createAssignment": "Crea assegnazione",
       "jsonSchema": "Schema JSON",
+      "validJsonSchema": "Schema JSON valido",
       "invalidJsonError": "Correggi gli errori di sintassi JSON",
       "deleteConfirm": "Eliminare definitivamente {{code}}? Questa azione non può essere annullata.",
       "toasts": {
@@ -4878,6 +4881,11 @@
       },
       "error": {
         "generic": "Caricamento dati flotta non riuscito"
+      },
+      "notConfigured": {
+        "title": "D-Flight non configurato",
+        "description": "Configura le impostazioni di integrazione D-Flight per visualizzare la flotta.",
+        "setup": "Vai alle Impostazioni"
       }
     }
   }

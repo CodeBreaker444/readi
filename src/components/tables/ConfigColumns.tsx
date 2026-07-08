@@ -91,6 +91,7 @@ export interface UserWithAccess {
   id: string;   
   fullname: string;
   email: string;
+  role: string;
   organizations: Organization[];
 }
  
@@ -139,6 +140,26 @@ export function getUserColumns({ isDark, t, onEdit }: UserColumnsOptions): Colum
           {String(getValue())}
         </span>
       ),
+    },
+    {
+      accessorKey: 'role',
+      header: t('flytbase.c2Config.permissions.table.role'),
+      cell: ({ getValue }) => {
+        const role = String(getValue());
+        const roleColors: Record<string, string> = {
+          SUPERADMIN: isDark ? 'bg-rose-500/20 text-rose-300 border-rose-500/30' : 'bg-rose-50 text-rose-600 border-rose-200',
+          ADMIN: isDark ? 'bg-violet-500/20 text-violet-300 border-violet-500/30' : 'bg-violet-50 text-violet-600 border-violet-200',
+          OPM: isDark ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' : 'bg-amber-50 text-amber-600 border-amber-200',
+          USER: isDark ? 'bg-slate-600/50 text-slate-300 border-slate-500/30' : 'bg-slate-100 text-slate-600 border-slate-200',
+        };
+        const colorClass = roleColors[role] || roleColors.USER;
+        
+        return (
+          <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border ${colorClass}`}>
+            {role}
+          </span>
+        );
+      },
     },
     {
       accessorKey: 'organizations',

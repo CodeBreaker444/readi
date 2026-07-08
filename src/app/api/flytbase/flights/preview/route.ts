@@ -1,5 +1,6 @@
 import { env } from '@/backend/config/env';
 import { getFlytbaseCredentials } from '@/backend/services/integrations/flytbase-service';
+import { getOrganizationCredentials } from '@/backend/services/integrations/flytbase-organization-service';
 import { requireAuth } from '@/lib/auth/api-auth';
 import { BUCKET, getPresignedDownloadUrl, getPresignedUploadUrl, s3 } from '@/lib/s3Client';
 import { HeadObjectCommand } from '@aws-sdk/client-s3';
@@ -148,17 +149,36 @@ export async function GET(req: NextRequest) {
   if (error) return error;
 
   const flightId = req.nextUrl.searchParams.get('flightId');
+  const organizationIdParam = req.nextUrl.searchParams.get('organizationId');
   // const flightId = '6f5bbd84-2341-4b62-ab4c-852f3a416a0b';
   if (!flightId) {
     return NextResponse.json({ success: false, message: 'flightId is required' }, { status: 400 });
   }
 
-  const creds = await getFlytbaseCredentials(session!.user.userId);
-  if (!creds) {
-    return NextResponse.json(
-      { success: false, message: 'No FlytBase integration configured.' },
-      { status: 422 },
-    );
+  let creds;
+  if (organizationIdParam) {
+    const organizationId = parseInt(organizationIdParam, 10);
+    if (isNaN(organizationId)) {
+      return NextResponse.json(
+        { success: false, message: 'Invalid organization ID' },
+        { status: 400 },
+      );
+    }
+    creds = await getOrganizationCredentials(organizationId);
+    if (!creds) {
+      return NextResponse.json(
+        { success: false, message: 'Organization not found or has no credentials' },
+        { status: 404 },
+      );
+    }
+  } else {
+    creds = await getFlytbaseCredentials(session!.user.userId);
+    if (!creds) {
+      return NextResponse.json(
+        { success: false, message: 'No FlytBase integration configured.' },
+        { status: 422 },
+      );
+    }
   }
 
   const derivedKey = s3Key(gutmaFilename(flightId));
@@ -191,8 +211,14 @@ export async function GET(req: NextRequest) {
 
   if (!upstream.ok) {
     const errText = await upstream.text().catch(() => '');
+    console.error(`FlytBase GUTMA download failed for flight ${flightId} (org: ${creds.orgId}): ${upstream.status} - ${errText}`);
     return NextResponse.json(
-      { success: false, message: `FlytBase returned ${upstream.status}: ${errText.slice(0, 200)}` },
+      { 
+        success: false, 
+        message: `FlytBase returned ${upstream.status}: ${errText.slice(0, 200)}`,
+        flightId,
+        organizationId: creds.orgId,
+      },
       { status: upstream.status },
     );
   }

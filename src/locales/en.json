@@ -693,6 +693,9 @@
       "actions": {
         "search": "Search",
         "filter": "Filter"
+      },
+      "filter": {
+        "all": "All"
       }
     },
     "table": {
@@ -1271,7 +1274,7 @@
     },
     "testLogbook": {
       "title": "Mission Test Logbook",
-      "subtitlePrefix": "[GO.00.P03] Mission Test — Manage tests for mission planning #",
+      "subtitlePrefix": "Mission Test — Manage tests for mission planning #",
       "addNewTest": "Add New Test Entry",
       "pilotInCommand": "Pilot in Command",
       "selectPic": "Select PiC",
@@ -1290,6 +1293,7 @@
       "staffCol": "Staff (PiC / Obs)",
       "duration": "Duration",
       "result": "Result",
+      "actions": "Actions",
       "noTests": "No mission tests logged.",
       "obsLabel": "Obs:",
       "activateMission": "Activate Mission",
@@ -3066,6 +3070,7 @@
         "table": {
           "name": "Name",
           "email": "Email",
+          "role": "Role",
           "organizations": "Organizations",
           "actions": "Actions"
         },
@@ -3454,6 +3459,7 @@
       "jsonSchemaTitle": "JSON Schema",
       "createAssignment": "Create Assignment",
       "jsonSchema": "JSON Schema",
+      "validJsonSchema": "Valid JSON Schema",
       "invalidJsonError": "Please fix JSON syntax errors",
       "deleteConfirm": "Permanently delete {{code}}? This cannot be undone.",
       "toasts": {
@@ -4887,6 +4893,11 @@
       },
       "error": {
         "generic": "Failed to load fleet data"
+      },
+      "notConfigured": {
+        "title": "D-Flight Not Configured",
+        "description": "Please configure your D-Flight integration settings to view the fleet.",
+        "setup": "Go to Settings"
       }
     }
   }

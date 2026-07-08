@@ -41,19 +41,36 @@ export async function POST(
       const lat = parsed.data.tool_latitude;
       const lng = parsed.data.tool_longitude;
       const hasCoords = lat != null && lng != null;
-      const locationPart = hasCoords
-        ? ` — position: ${lat}, ${lng}${parsed.data.location ? ` (${parsed.data.location})` : ''}`
-        : parsed.data.location ? ` — location: ${parsed.data.location}` : '';
+      const hasOldPosition = result.oldPosition && (result.oldPosition.latitude != null || result.oldPosition.longitude != null);
+      
+      let positionPart = '';
+      if (hasCoords && hasOldPosition) {
+        const oldLat = result.oldPosition.latitude ?? '—';
+        const oldLng = result.oldPosition.longitude ?? '—';
+        positionPart = ` — position: ${oldLat}, ${oldLng} → ${lat}, ${lng}`;
+      } else if (hasCoords) {
+        positionPart = ` — position: ${lat}, ${lng}${parsed.data.location ? ` (${parsed.data.location})` : ''}`;
+      } else if (parsed.data.location) {
+        positionPart = ` — location: ${parsed.data.location}`;
+      }
+      
       const statusPart = parsed.data.tool_status ? `, status: ${parsed.data.tool_status}` : '';
+      
+      const metadata: Record<string, unknown> = {};
+      if (hasOldPosition) {
+        metadata.oldPosition = result.oldPosition;
+      }
+      
       logEvent({
         eventType: 'UPDATE',
         entityType: 'system',
-        description: `Updated system '${parsed.data.tool_code}'${locationPart}${statusPart}`,
+        description: `Updated system '${parsed.data.tool_code}'${positionPart}${statusPart}`,
         userId: session!.user.userId,
         userName: session!.user.fullname,
         userEmail: session!.user.email,
         userRole: session!.user.role,
         ownerId: session!.user.ownerId,
+        metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
       });
     }
 

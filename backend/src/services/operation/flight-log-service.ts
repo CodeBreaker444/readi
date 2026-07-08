@@ -6,6 +6,7 @@ import { getFlytbaseCredentials, getFlytbaseCredentialsForCompany } from '@/back
 import { GutmaWaypoint, parseGutmaFlightData } from '@/backend/services/integrations/gutma-parser';
 import { BUCKET, getPresignedDownloadUrl, s3 } from '@/lib/s3Client';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
+import JSZip from 'jszip';
 
 export interface FlightLog {
   log_id: number;
@@ -83,6 +84,83 @@ export async function getFlightLogWaypoints(missionId: number): Promise<FlightLo
 
 const ALLOWED_EXTENSIONS = ['.zip', '.json', '.xml', '.gutma'];
 
+async function getDroneSerialNumberForMission(missionId: number): Promise<string | null> {
+  const mission = await prisma.pilot_mission.findUnique({
+    where: { pilot_mission_id: missionId },
+    select: { fk_tool_id: true },
+  });
+
+  if (!mission?.fk_tool_id) return null;
+
+  const droneComponent = await prisma.tool_component.findFirst({
+    where: {
+      fk_tool_id: mission.fk_tool_id,
+      component_active: 'Y',
+      OR: [
+        { component_type: { equals: 'DRONE', mode: 'insensitive' } },
+        { component_type: { equals: 'AIRCRAFT', mode: 'insensitive' } },
+      ],
+      serial_number: { not: null },
+    },
+    select: { serial_number: true },
+  });
+
+  return droneComponent?.serial_number?.trim() || null;
+}
+
+function extractSerialNumberFromGutma(gutma: any): string | null {
+  const sn = gutma?.aircraft?.serial_number || gutma?.flight?.aircraft?.serial_number;
+  return sn?.trim() || null;
+}
+
+async function extractSerialNumberFromFile(file: File): Promise<string | null> {
+  const ext = '.' + (file.name.split('.').pop()?.toLowerCase() ?? '');
+  const buffer = await file.arrayBuffer();
+
+  if (ext === '.gutma' || ext === '.json') {
+    try {
+      const parsed = JSON.parse(new TextDecoder().decode(buffer));
+      return extractSerialNumberFromGutma(parsed);
+    } catch {
+      return null;
+    }
+  }
+
+  if (ext === '.zip') {
+    try {
+      const zip = await JSZip.loadAsync(buffer);
+      for (const [name, entry] of Object.entries(zip.files)) {
+        if (!entry.dir && (name.endsWith('.gutma') || name.endsWith('.json'))) {
+          const buf = await entry.async('arraybuffer');
+          try {
+            const parsed = JSON.parse(new TextDecoder().decode(buf));
+            const sn = extractSerialNumberFromGutma(parsed);
+            if (sn) return sn;
+          } catch {
+            continue;
+          }
+        }
+      }
+    } catch {
+      return null;
+    }
+  }
+
+  if (ext === '.xml') {
+    try {
+      const text = new TextDecoder().decode(buffer);
+      const snMatch = text.match(/<serialNumber[^>]*>([^<]+)<\/serialNumber>/i) ||
+                     text.match(/<serial_number[^>]*>([^<]+)<\/serial_number>/i) ||
+                     text.match(/serialNumber[\s]*=[\s]*"([^"]+)"/i);
+      return snMatch?.[1]?.trim() || null;
+    } catch {
+      return null;
+    }
+  }
+
+  return null;
+}
+
 export async function uploadManualFlightLog(
   missionId: number,
   userId: number,
@@ -94,6 +172,17 @@ export async function uploadManualFlightLog(
   const ext = '.' + (file.name.split('.').pop()?.toLowerCase() ?? '');
   if (!ALLOWED_EXTENSIONS.includes(ext)) {
     throw new Error(`Invalid file type. Allowed: ${ALLOWED_EXTENSIONS.join(', ')}`);
+  }
+
+  // Validate serial number from log matches mission's drone
+  const missionDroneSn = await getDroneSerialNumberForMission(missionId);
+  if (missionDroneSn) {
+    const logSn = await extractSerialNumberFromFile(file);
+    if (logSn && logSn.toLowerCase() !== missionDroneSn.toLowerCase()) {
+      throw new Error(
+        `Serial number mismatch: Log contains serial number "${logSn}" but mission is assigned to drone with serial number "${missionDroneSn}"`
+      );
+    }
   }
 
   const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
@@ -162,6 +251,17 @@ export async function attachFlytbaseFlightLog(
     gutma = await upstream.json();
   } catch {
     throw new Error('GUTMA data unavailable for this flight.');
+  }
+
+  // Validate serial number from GUTMA matches mission's drone
+  const missionDroneSn = await getDroneSerialNumberForMission(missionId);
+  if (missionDroneSn) {
+    const logSn = extractSerialNumberFromGutma(gutma);
+    if (logSn && logSn.toLowerCase() !== missionDroneSn.toLowerCase()) {
+      throw new Error(
+        `Serial number mismatch: FlytBase log contains serial number "${logSn}" but mission is assigned to drone with serial number "${missionDroneSn}"`
+      );
+    }
   }
 
   const filename: string = gutma?.file?.filename ?? `FlytBase_Export_${flightId}.gutma`;

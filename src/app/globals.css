@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import "fumadocs-ui/css/neutral.css";
+@import "fumadocs-ui/css/preset.css";
 @import "leaflet/dist/leaflet.css";
 @import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 @import "tw-animate-css";
