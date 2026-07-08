@@ -8,10 +8,11 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import axios from 'axios';
-import { AlertCircle, RefreshCw } from 'lucide-react';
+import { AlertCircle, RefreshCw, Settings } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import Link from 'next/link';
 
 import type { FleetRow } from '@/types/dflight';
 import { ColumnMeta, fleetColumns } from '../tables/DFlightColumn';
@@ -27,6 +28,7 @@ export default function DFlightFleet() {
   const [loading, setLoading] = useState(true);
   const [rows, setRows]       = useState<FleetRow[]>([]);
   const [error, setError]     = useState<string | null>(null);
+  const [notConfigured, setNotConfigured] = useState(false);
 
   const [page, setPage]         = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(8);
@@ -38,13 +40,19 @@ export default function DFlightFleet() {
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setNotConfigured(false);
     try {
       const { data } = await axios.get<{ code: number; data: FleetRow[]; message?: string }>(
         '/api/dflight/fleet',
       );
       if (data.code === 0) {
-        setError(data.message ?? t('dflight.fleet.error.generic'));
-        setRows([]);
+        if (data.message === 'D-Flight integration not configured') {
+          setNotConfigured(true);
+          setRows([]);
+        } else {
+          setError(data.message ?? t('dflight.fleet.error.generic'));
+          setRows([]);
+        }
       } else {
         setRows(data.data ?? []);
         setPage(0);
@@ -161,6 +169,29 @@ export default function DFlightFleet() {
                 </div>
               ))}
             </div>
+          </div>
+        ) : notConfigured ? (
+          <div className="flex flex-col items-center justify-center py-16 gap-4">
+            <Settings className="h-10 w-10 text-slate-400" />
+            <div className="text-center space-y-2">
+              <p className={`text-sm font-medium ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
+                {t('dflight.fleet.notConfigured.title')}
+              </p>
+              <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-500'}`}>
+                {t('dflight.fleet.notConfigured.description')}
+              </p>
+            </div>
+            <Link
+              href="/dflight/settings"
+              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium transition-colors ${
+                isDark
+                  ? 'bg-violet-600 hover:bg-violet-700 text-white'
+                  : 'bg-violet-600 hover:bg-violet-700 text-white'
+              }`}
+            >
+              <Settings className="h-3.5 w-3.5" />
+              {t('dflight.fleet.notConfigured.setup')}
+            </Link>
           </div>
         ) : error ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3">

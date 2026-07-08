@@ -30,6 +30,7 @@ export async function GET() {
       id: String(user.user_id),
       fullname: user.fullname,
       email: user.email,
+      role: user.role,
       organizations: user.organizations.map(org => ({
         id: String(org.id),
         name: org.name,

@@ -1,0 +1,13 @@
+{
+  "title": "Business Logic",
+  "pages": [
+    "systems",
+    "mission-lifecycle",
+    "pilot-logic",
+    "checklist-logic",
+    "platform-flow",
+    "agent-api",
+    "role-glossary",
+    "db-tables"
+  ]
+}

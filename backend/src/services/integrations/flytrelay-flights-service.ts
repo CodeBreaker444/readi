@@ -1,7 +1,12 @@
 'use server';
 
 import { env } from '@/backend/config/env';
-import { signReadiControlJwt } from '@/lib/drone-atc-jwt';
+import { signReadiControlJwt, signReadiControlJwtWithMultipleOrgs } from '@/lib/drone-atc-jwt';
+
+export interface OrganizationCredentials {
+  orgId: string;
+  token: string;
+}
 
 export interface FlytrelayFlight {
   flight_id: string;
@@ -43,11 +48,17 @@ export async function fetchFlytrelayFlights(
   droneId?: string,
   page?: number,
   pageSize?: number,
+  organizations?: OrganizationCredentials[],
 ): Promise<{ flights: FlytrelayFlight[]; total: number }> {
   const baseUrl = env.FLYTRELAY_BASE_URL;
   if (!baseUrl) throw new Error('FLYTRELAY_BASE_URL is not configured');
 
-  const jwt = signReadiControlJwt(userId, companyId);
+  let jwt;
+  if (organizations && organizations.length > 0) {
+    jwt = signReadiControlJwtWithMultipleOrgs(userId, organizations, companyId);
+  } else {
+    jwt = signReadiControlJwt(userId, companyId);
+  }
 
   const params = new URLSearchParams();
   if (companyId !== undefined) params.set('companyId', String(companyId));
@@ -91,18 +102,29 @@ export async function fetchFlytrelayFlights(
     throw new Error(`FlytRelay flights API returned error: ${responseText}`);
   }
 
-  return { flights: body.flights ?? [], total: body.total ?? body.flights?.length ?? 0 };
+  const flights = body.flights ?? [];
+  const total = body.total ?? flights.length ?? 0;
+
+  // Limit to requested pageSize in case FlytRelay API returns more than requested
+  const limitedFlights = flights.slice(0, pageSize ?? 8);
+  return { flights: limitedFlights, total };
 }
 
 export async function fetchFlytrelayGutma(
   userId: string,
   flightId: string,
   companyId?: string,
+  organizations?: OrganizationCredentials[],
 ): Promise<FlytrelayGutmaData> {
   const baseUrl = env.FLYTRELAY_BASE_URL;
   if (!baseUrl) throw new Error('FLYTRELAY_BASE_URL is not configured');
 
-  const jwt = signReadiControlJwt(userId,companyId);
+  let jwt;
+  if (organizations && organizations.length > 0) {
+    jwt = signReadiControlJwtWithMultipleOrgs(userId, organizations, companyId);
+  } else {
+    jwt = signReadiControlJwt(userId, companyId);
+  }
 
   const url = `${baseUrl}/api/logs/${encodeURIComponent(flightId)}/gutma`;
 

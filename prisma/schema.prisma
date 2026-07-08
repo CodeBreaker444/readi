@@ -1226,16 +1226,15 @@ model flytbase_mission_status {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model flytbase_organizations {
-  id          Int      @id @default(autoincrement())
-  name        String   @db.VarChar(255)
-  org_id      String   @db.VarChar(255)
-  api_token   String   @db.Text
-  fk_owner_id Int?
-  created_at  DateTime @default(now()) @db.Timestamptz(6)
-  updated_at  DateTime @default(now()) @db.Timestamptz(6)
+  id                   Int                    @id @default(autoincrement())
+  name                 String                 @db.VarChar(255)
+  org_id               String                 @unique @db.VarChar(255)
+  api_token            String
+  created_at           DateTime               @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime               @default(now()) @db.Timestamptz(6)
+  fk_owner_id          Int
   user_flytbase_access user_flytbase_access[]
 
-  @@unique([org_id])
   @@index([org_id])
   @@index([fk_owner_id])
   @@schema("public")
@@ -1243,11 +1242,11 @@ model flytbase_organizations {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model user_flytbase_access {
-  id             Int      @id @default(autoincrement())
-  user_id        Int
+  id              Int                    @id @default(autoincrement())
+  user_id         Int
   organization_id Int
-  fk_owner_id Int
-  created_at     DateTime @default(now()) @db.Timestamptz(6)
+  created_at      DateTime               @default(now()) @db.Timestamptz(6)
+  fk_owner_id     Int
   organization    flytbase_organizations @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 
   @@unique([user_id, organization_id])

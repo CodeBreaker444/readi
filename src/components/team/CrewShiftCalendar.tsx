@@ -2,9 +2,8 @@
 
 import { AddShiftModal } from '@/components/team/AddShiftModal'
 import { CategoryLegend } from '@/components/team/CategoryBadge'
-import { DeleteShiftDialog } from '@/components/team/DeleteShiftDialog'
 import { Button } from '@/components/ui/button'
-import { CalendarEvent, Shift } from '@/config/types/crewShift'
+import { CalendarEvent } from '@/config/types/crewShift'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import interactionPlugin from '@fullcalendar/interaction'
 import listPlugin from '@fullcalendar/list'
@@ -21,7 +20,6 @@ export function CrewShiftCalendar() {
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [loading, setLoading] = useState(true)
   const [addModalOpen, setAddModalOpen] = useState(false)
-  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; shift: Shift | null }>({ open: false, shift: null })
 
   const fetchShifts = useCallback(async () => {
     setLoading(true)
@@ -37,15 +35,6 @@ export function CrewShiftCalendar() {
   }, [])
 
   useEffect(() => { fetchShifts() }, [fetchShifts])
-
-  const handleDeleteSuccess = (shiftId: number) => {
-    setEvents((prev) => prev.filter((e) => e.id !== String(shiftId)))
-  }
-
-  const handleEventClick = (clickInfo: any) => {
-    const shift = clickInfo.event.extendedProps?.shift as Shift
-    if (shift) setDeleteDialog({ open: true, shift })
-  }
 
   const fcEvents = events.map((e) => ({
     id: e.id,
@@ -274,7 +263,6 @@ export function CrewShiftCalendar() {
                 headerToolbar={{ left: 'prev,next today', center: 'title', right: 'timeGridWeek,dayGridMonth,listWeek' }}
                 buttonText={{ today: 'Today', week: 'Week', month: 'Month', list: 'List' }}
                 events={fcEvents}
-                eventClick={handleEventClick}
                 editable={false}
                 selectable={false}
                 height="auto"
@@ -290,14 +278,6 @@ export function CrewShiftCalendar() {
         open={addModalOpen}
         onClose={() => setAddModalOpen(false)}
         onSuccess={(count: number) => fetchShifts()}
-        isDark={isDark}
-      />
-
-      <DeleteShiftDialog
-        open={deleteDialog.open}
-        shift={deleteDialog.shift}
-        onClose={() => setDeleteDialog({ open: false, shift: null })}
-        onSuccess={handleDeleteSuccess}
         isDark={isDark}
       />
     </div>

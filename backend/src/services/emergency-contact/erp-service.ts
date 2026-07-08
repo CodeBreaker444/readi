@@ -21,6 +21,14 @@ export async function listErp(input: ErpListInput): Promise<EmergencyResponsePla
   return rows.map(mapRow);
 }
 
+export async function listErpByCompany(ownerId: number): Promise<EmergencyResponsePlan[]> {
+  const rows = await prisma.emergency_response_plan.findMany({
+    where: { fk_owner_id: ownerId },
+    orderBy: { created_at: 'desc' },
+  });
+  return rows.map(mapRow);
+}
+
 export async function createErp(input: ErpCreateInput): Promise<EmergencyResponsePlan> {
   const row = await prisma.emergency_response_plan.create({
     data: {

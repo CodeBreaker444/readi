@@ -10,7 +10,12 @@ export async function GET() {
     if (error) return error;
 
     const organizations = await getUserFlytbaseOrganizations(session!.user.userId, session!.user.ownerId);
-    return NextResponse.json({ success: true, organizations });
+    const transformedOrgs = organizations.map((org) => ({
+      organization_id: org.id,
+      org_name: org.name,
+      org_id: org.org_id,
+    }));
+    return NextResponse.json({ success: true, organizations: transformedOrgs });
   } catch (err) {
     return internalError(E.SV001, err);
   }

@@ -1,0 +1,23 @@
+---
+title: "Key Features"
+description: "Overview of Readi core feature areas."
+---
+
+## Feature areas
+
+| Area | What it covers |
+|---|---|
+| **Planning** | Flight plan creation, approval workflow, waypoints, test logbooks |
+| **Operations** | Kanban board, daily calendar, mission execution tracking |
+| **Logbooks** | Flight logbooks with filtering by pilot, drone, date, type |
+| **Systems** | Drone and equipment inventory, component lifecycle, maintenance tickets |
+| **Safety** | Incident reports, hazard observations, corrective actions, KPI tracking |
+| **Compliance** | Audit records, regulatory requirements, evidence upload |
+| **Training** | Course definitions, attendance, certification tracking |
+| **AI Agent** | Role-scoped natural language queries over mission, maintenance, and compliance data |
+
+## Standout behaviours
+
+- Operational status (`OPERATIONAL / MAINTENANCE / NOT_OPERATIONAL`) is computed live on every fleet load — not stored
+- Mission status changes require a cryptographic **Authorization PIN** — every transition is signed and auditable
+- The AI Agent enforces row-level security — pilots only see their own data

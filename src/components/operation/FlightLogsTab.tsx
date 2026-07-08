@@ -1,10 +1,12 @@
 "use client";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useTranslation } from "react-i18next";
- 
+
 import { useTimezone } from "@/components/TimezoneProvider";
 import { cn, formatDateTimeInTz } from "@/lib/utils";
 import {
+  Building2,
   CheckCircle2,
   Clock,
   Download,
@@ -14,8 +16,9 @@ import {
   Zap
 } from "lucide-react";
 import { Skeleton } from "../ui/skeleton";
+import type { FlytbaseOrganization } from "./MissionCompleteModal";
 
- 
+
 interface FlightLog {
   log_id: number;
   log_source: "manual" | "flytbase";
@@ -37,7 +40,7 @@ interface FlytbaseFlight {
   mission_name?: string;
   status?: string;
 }
- 
+
 
 const TIME_WINDOWS = [
   { key: "1hr",  minutes: 60 },
@@ -72,6 +75,10 @@ interface FlightLogsTabProps {
   autoSyncingFlight: boolean;
   flightsError: string | null;
   isDark: boolean;
+  organizations: FlytbaseOrganization[];
+  selectedOrganization: FlytbaseOrganization | null;
+  orgLoading: boolean;
+  onOrganizationChange: (organizationId: number) => void;
   onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onWindowChange: (minutes: number) => void;
   onFetchFlights: () => void;
@@ -92,6 +99,10 @@ export function FlightLogsTab({
   autoSyncingFlight,
   flightsError,
   isDark,
+  organizations,
+  selectedOrganization,
+  orgLoading,
+  onOrganizationChange,
   onFileChange,
   onWindowChange,
   onFetchFlights,
@@ -188,6 +199,45 @@ export function FlightLogsTab({
           </p>
         </div>
 
+        {/* Organization selector */}
+        <div className="mb-3">
+          <label className={cn("flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider mb-1.5", isDark ? "text-slate-500" : "text-slate-400")}>
+            <Building2 className="h-3 w-3" />
+            {t("operations.missionComplete.logs.organization", "Organization")}
+          </label>
+          {orgLoading ? (
+            <Skeleton className="h-9 w-full rounded-lg" />
+          ) : organizations.length === 0 ? (
+            <div className={cn(
+              "flex items-center gap-2 rounded-lg border px-3 py-2 text-xs",
+              isDark ? "bg-amber-950/20 border-amber-800/30 text-amber-300" : "bg-amber-50 border-amber-200 text-amber-700"
+            )}>
+              {t("operations.missionComplete.logs.noOrganizations", "No FlytBase organizations configured. Ask an admin to set one up.")}
+            </div>
+          ) : (
+            <Select
+              value={selectedOrganization?.organization_id?.toString() ?? ""}
+              onValueChange={(value) => onOrganizationChange(Number(value))}
+            >
+              <SelectTrigger className={cn(
+                "h-9 w-full",
+                isDark
+                  ? "bg-slate-800/60 border-white/8 text-slate-200 focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/20"
+                  : "bg-white border-slate-200 text-slate-800 focus:border-violet-400 focus:ring-1 focus:ring-violet-400/20"
+              )}>
+                <SelectValue placeholder={t("operations.missionComplete.logs.selectOrganization", "Select an organization")} />
+              </SelectTrigger>
+              <SelectContent>
+                {organizations.map((org) => (
+                  <SelectItem key={org.organization_id} value={org.organization_id.toString()}>
+                    {org.org_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
+
         <div className="flex items-center gap-2 mb-3">
           <div className={cn("flex rounded-lg border overflow-hidden", isDark ? "border-slate-700" : "border-slate-200")}>
             {TIME_WINDOWS.map((w) => (
@@ -210,7 +260,7 @@ export function FlightLogsTab({
             size="sm"
             variant="outline"
             onClick={onFetchFlights}
-            disabled={loadingFlights}
+            disabled={loadingFlights || !selectedOrganization}
             className={cn("h-8 gap-1.5", isDark ? "border-slate-600 text-slate-300 hover:bg-slate-700" : "")}
           >
             {loadingFlights ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}

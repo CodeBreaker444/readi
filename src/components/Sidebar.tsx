@@ -8,23 +8,23 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { GrSystem } from "react-icons/gr";
 import {
-    HiChevronDown,
-    HiChevronRight,
-    HiOutlineAcademicCap,
-    HiOutlineBell,
-    HiOutlineBookOpen,
-    HiOutlineBriefcase,
-    HiOutlineChartBar,
-    HiOutlineClipboardList,
-    HiOutlineCog,
-    HiOutlineDocumentText,
-    HiOutlineHome,
-    HiOutlineOfficeBuilding,
-    HiOutlinePaperAirplane,
-    HiOutlinePhone,
-    HiOutlineShieldCheck,
-    HiOutlineTemplate,
-    HiOutlineUsers
+  HiChevronDown,
+  HiChevronRight,
+  HiOutlineAcademicCap,
+  HiOutlineBell,
+  HiOutlineBookOpen,
+  HiOutlineBriefcase,
+  HiOutlineChartBar,
+  HiOutlineClipboardList,
+  HiOutlineCog,
+  HiOutlineDocumentText,
+  HiOutlineHome,
+  HiOutlineOfficeBuilding,
+  HiOutlinePaperAirplane,
+  HiOutlinePhone,
+  HiOutlineShieldCheck,
+  HiOutlineTemplate,
+  HiOutlineUsers
 } from 'react-icons/hi';
 import { MdFlightTakeoff } from 'react-icons/md';
 import { TbDrone, TbLayoutSidebarFilled, TbRadar } from "react-icons/tb";
@@ -176,17 +176,17 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
       icon: HiOutlinePaperAirplane,
       subItems: [
         // { name: t('sidebar.settings'), href: '/control-center' },
-        ...(userData?.role === 'ADMIN' || userData?.role === 'SUPERADMIN'
+        ...(userData?.role === 'ADMIN' || userData?.role === 'OPM' || userData?.role === 'SUPERADMIN'
           ? [{ name: 'C2 Config', href: '/control-center/c2-config' }]
           : []),
         { name: t('sidebar.recentFlights'), href: '/control-center/flights' },
+        ...(userData?.droneAtcEnabled ? [{
+          name: t('sidebar.droneAtc'),
+          href: '/drone-atc',
+          icon: TbRadar,
+        }] : []),
       ],
     },
-    ...(userData?.droneAtcEnabled ? [{
-      name: t('sidebar.droneAtc'),
-      href: '/drone-atc',
-      icon: TbRadar,
-    }] : []),
     ...(userData?.dFlightEnabled ? [{
       name: t('sidebar.dflight'),
       href: '/dflight/fleet',

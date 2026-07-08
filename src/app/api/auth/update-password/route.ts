@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
       path:     '/',
     });
 
-    return NextResponse.json({ success: true, message: 'Password changed successfully' });
+    return NextResponse.json({ success: true, message: 'Password changed successfully', role: payload.role });
 
   } catch (err) {
     console.error('Change password error:', err);
