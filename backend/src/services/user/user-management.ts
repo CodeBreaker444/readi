@@ -426,9 +426,6 @@ export async function updateUserPassword(userId: number, ownerId: number, newPas
   });
 
   if (!user) throw new Error('User not found');
-  if (user.user_active === 'Y') {
-    throw new Error('User is already activated');
-  }
 
   if (user.auth_user_id) {
     const { error: authError } = await supabase.auth.admin.updateUserById(user.auth_user_id, { password: newPassword });

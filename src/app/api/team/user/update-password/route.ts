@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ code: 1, status: 'SUCCESS', message: result.message });
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Failed to update password';
-    if (msg === 'User is already activated' || msg === 'User not found') {
+    if (msg === 'User not found') {
       return NextResponse.json({ code: 0, message: msg }, { status: 400 });
     }
     return internalError(E.SV001, err);

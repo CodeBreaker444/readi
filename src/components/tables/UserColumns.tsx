@@ -201,23 +201,21 @@ export function getUserColumns({
                 </Tooltip>
               )}
 
-              {user.is_pending && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={() => onUpdatePassword(user)}
-                      className={`cursor-pointer p-1.5 rounded-lg transition-all duration-150 ${
-                        isDark
-                          ? 'bg-violet-500/10 hover:bg-violet-500/25 text-violet-400 hover:text-violet-300 border border-violet-700/40 hover:border-violet-500/60'
-                          : 'bg-violet-50 hover:bg-violet-100 text-violet-500 hover:text-violet-700 border border-violet-200 hover:border-violet-300'
-                      }`}
-                    >
-                      <KeyRound size={14} strokeWidth={2} />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="text-xs">{t('team.updatePassword')}</TooltipContent>
-                </Tooltip>
-              )}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => onUpdatePassword(user)}
+                    className={`cursor-pointer p-1.5 rounded-lg transition-all duration-150 ${
+                      isDark
+                        ? 'bg-violet-500/10 hover:bg-violet-500/25 text-violet-400 hover:text-violet-300 border border-violet-700/40 hover:border-violet-500/60'
+                        : 'bg-violet-50 hover:bg-violet-100 text-violet-500 hover:text-violet-700 border border-violet-200 hover:border-violet-300'
+                    }`}
+                  >
+                    <KeyRound size={14} strokeWidth={2} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-xs">{t('team.updatePassword')}</TooltipContent>
+              </Tooltip>
 
               <Tooltip>
                 <TooltipTrigger asChild>
