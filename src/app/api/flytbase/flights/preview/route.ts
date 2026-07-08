@@ -108,11 +108,22 @@ function parseGutma(flightId: string, gutma: any): Record<string, any> {
     message?.start_time ??
     loggingStart ??
     null;
-  const end_time =
+  let end_time =
     flightData?.end_time ??
     flightData?.end_dtg ??
     message?.end_time ??
     null;
+
+  // GUTMA `timestamp` values are seconds elapsed since logging_start_dtg, not
+  // absolute time — fall back to start_time + last logged row when no
+  // explicit end field is present.
+  if (!end_time && start_time && tsIdx >= 0 && items.length > 0) {
+    const lastTs = Number(items[items.length - 1][tsIdx]);
+    const startMs = new Date(start_time).getTime();
+    if (!isNaN(lastTs) && lastTs >= 0 && !isNaN(startMs)) {
+      end_time = new Date(startMs + lastTs * 1000).toISOString();
+    }
+  }
 
   return {
     flight_id:            flightId,

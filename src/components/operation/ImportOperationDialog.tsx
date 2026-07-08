@@ -42,6 +42,7 @@ interface DroneSystem   { tool_id: number; tool_code: string; tool_name: string 
 interface MissionPlan   { mission_planning_id: number; mission_planning_code: string; mission_planning_desc: string }
 interface SelectOption  { id: number; name: string }
 interface Pilot         { user_id: number; first_name: string; last_name: string }
+interface FlytbaseOrganization { id: number; name: string }
 interface FlytbaseFlight {
     flight_id: string;
     flight_name?: string;
@@ -102,6 +103,9 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
     const [clientId,    setClientId]    = useState('');
     const [platform,    setPlatform]    = useState('FLYTBASE');
     const [logFile,     setLogFile]     = useState<File | null>(null);
+    const [organizations, setOrganizations] = useState<FlytbaseOrganization[]>([]);
+    const [organizationId, setOrganizationId] = useState('');
+    const [loadingOrgs, setLoadingOrgs] = useState(false);
     const [fbWindow, setFbWindow] = useState('30');
     const [flights, setFlights] = useState<FlytbaseFlight[]>([]);
     const [loadingFlights, setLoadingFlights] = useState(false);
@@ -125,6 +129,16 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
             .then((r) => setClients(r.data.clients ?? []))
             .catch(() => toast.error(t(`${ns}.toast.loadClientsError`)))
             .finally(() => setLoadingClients(false));
+
+        setLoadingOrgs(true);
+        axios.get('/api/flytbase/my-organizations')
+            .then((r) => {
+                const orgs = r.data.organizations ?? [];
+                setOrganizations(orgs);
+                if (orgs.length > 0) setOrganizationId(String(orgs[0].id));
+            })
+            .catch(() => {})
+            .finally(() => setLoadingOrgs(false));
     }, [open]);
 
     useEffect(() => {
@@ -174,6 +188,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
     function resetForm() {
         setStep(1); setImportedIds([]); setSkippedList([]);
         setClientId(''); setPlatform('FLYTBASE'); setLogFile(null);
+        setOrganizations([]); setOrganizationId(''); setLoadingOrgs(false);
         setVehicleId(''); setCategoryId(''); setTypeId(''); setPlanId('N');
         setStatusId(''); setLocation(''); setGroupLabel(''); setNotes(''); setPilotId('');
         setFbWindow('30'); setFlights([]); setSelectedFlightId(''); setFlightsError('');
@@ -182,12 +197,13 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
     }
 
     const fetchFlytbaseFlights = useCallback(async () => {
+        if (!organizationId) return;
         setLoadingFlights(true);
         setFlights([]);
         setSelectedFlightId('');
         setFlightsError('');
         try {
-            const { data } = await axios.get(`/api/flytbase/flights?window=${fbWindow}`);
+            const { data } = await axios.get(`/api/flytbase/flights?window=${fbWindow}&organizationId=${organizationId}`);
             if (data.success) {
                 const loaded = data.flights ?? [];
                 setFlights(loaded);
@@ -202,12 +218,12 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
         } finally {
             setLoadingFlights(false);
         }
-    }, [fbWindow, ns, t]);
+    }, [fbWindow, organizationId, ns, t]);
 
     useEffect(() => {
-        if (step !== 2 || platform !== 'FLYTBASE') return;
+        if (step !== 2 || platform !== 'FLYTBASE' || !organizationId) return;
         fetchFlytbaseFlights();
-    }, [step, platform, fetchFlytbaseFlights]);
+    }, [step, platform, organizationId, fetchFlytbaseFlights]);
 
     const canNext = useCallback(() => {
         if (step === 1) return !!clientId;
@@ -236,6 +252,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
             fd.append('pilot_id',            pilotId);
             if (selectedFlightId) {
                 fd.append('flytbase_flight_id', selectedFlightId);
+                if (organizationId) fd.append('organization_id', organizationId);
             }
 
             const { data } = await axios.post('/api/operation/import', fd);
@@ -270,7 +287,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
 
     return (
         <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-            <DialogContent className="max-w-2xl gap-0 p-0 overflow-hidden">
+            <DialogContent className="sm:max-w-3xl gap-0 p-0 overflow-hidden">
                 <DialogHeader className="px-6 pt-6 pb-4 border-b">
                     <DialogTitle className="flex items-center gap-2 text-base font-semibold">
                         <FileUp className="h-5 w-5 text-violet-600" />
@@ -388,6 +405,27 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                             </div>
                             <div className="rounded-md border p-3 space-y-3">
                                 <div className="flex items-end gap-3">
+                                    <div className="w-48">
+                                        <Label className="mb-1.5 block">{t(`${ns}.fields.organization`)}</Label>
+                                        <Select value={organizationId} onValueChange={setOrganizationId} disabled={loadingOrgs || organizations.length === 0}>
+                                            <SelectTrigger>
+                                                {loadingOrgs ? (
+                                                    <span className="flex items-center gap-2 text-muted-foreground">
+                                                        <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading...
+                                                    </span>
+                                                ) : organizations.length === 0 ? (
+                                                    <span className="text-muted-foreground">{t(`${ns}.info.noOrganizations`)}</span>
+                                                ) : (
+                                                    <SelectValue placeholder={t(`${ns}.placeholders.selectOrganization`)} />
+                                                )}
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {organizations.map((o) => (
+                                                    <SelectItem key={o.id} value={String(o.id)}>{o.name}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
                                     <div className="w-40">
                                         <Label className="mb-1.5 block">{t(`${ns}.fields.flytbaseWindow`)}</Label>
                                         <Select value={fbWindow} onValueChange={setFbWindow}>
@@ -401,7 +439,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                             </SelectContent>
                                         </Select>
                                     </div>
-                                    <Button type="button" variant="outline" size="sm" onClick={fetchFlytbaseFlights} disabled={loadingFlights}>
+                                    <Button type="button" variant="outline" size="sm" onClick={fetchFlytbaseFlights} disabled={loadingFlights || !organizationId}>
                                         {loadingFlights ? <Loader2 className="h-4 w-4 animate-spin" /> : t(`${ns}.buttons.refreshFlights`)}
                                     </Button>
                                 </div>

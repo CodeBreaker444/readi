@@ -142,6 +142,20 @@
     "username": "Nome utente",
     "code": "Codice",
     "permissions": "Permessi",
+    "updatePassword": "Aggiorna password",
+    "updatePasswordModal": {
+      "title": "Aggiorna Password",
+      "subtitle": "Imposta una nuova password per {{target}}. Verrà inviata via email.",
+      "newPassword": "Nuova Password",
+      "newPasswordPlaceholder": "Inserisci la nuova password",
+      "confirmPassword": "Conferma Password",
+      "confirmPasswordPlaceholder": "Ripeti la nuova password",
+      "rules": "La password deve contenere almeno 6 caratteri, con maiuscola, minuscola, un numero e un carattere speciale",
+      "mismatch": "Le password non coincidono",
+      "failed": "Aggiornamento password non riuscito",
+      "saving": "Aggiornamento…",
+      "submit": "Aggiorna Password"
+    },
     "client": {
       "title": "Gestione Clienti",
       "subtitle": "Gestisci clienti e i loro contratti",
@@ -154,6 +168,7 @@
         "paymentTerms": "Termini di pagamento",
         "contractEnd": "Fine contratto",
         "editClient": "Modifica cliente",
+        "updatePassword": "Aggiorna Password",
         "deleteClient": "Elimina cliente"
       },
       "stats": {
@@ -175,7 +190,10 @@
         "addError": "Errore durante l'aggiunta del cliente",
         "updated": "Cliente aggiornato con successo",
         "updateFailed": "Aggiornamento cliente non riuscito",
-        "updateError": "Errore durante l'aggiornamento del cliente"
+        "updateError": "Errore durante l'aggiornamento del cliente",
+        "passwordUpdated": "Password aggiornata e inviata via email al cliente",
+        "passwordUpdateFailed": "Aggiornamento password non riuscito",
+        "passwordUpdateError": "Errore durante l'aggiornamento della password"
       }
     },
     "personnel": {
@@ -209,7 +227,10 @@
         "ccTokenWarning": "Utente creato ma il token Control Center non è stato salvato",
         "updated": "Utente aggiornato con successo",
         "updateFailed": "Aggiornamento utente non riuscito",
-        "updateError": "Errore durante l'aggiornamento dell'utente"
+        "updateError": "Errore durante l'aggiornamento dell'utente",
+        "passwordUpdated": "Password aggiornata e inviata via email all'utente",
+        "passwordUpdateFailed": "Aggiornamento password non riuscito",
+        "passwordUpdateError": "Errore durante l'aggiornamento della password"
       }
     }
   },
@@ -1679,6 +1700,7 @@
       "postFlight": {
         "sections": {
           "outcome": "Esito Missione",
+          "flightPath": "Percorso di Volo",
           "flightData": "Dati di Volo",
           "battery": "Batteria",
           "incidents": "Incidenti & Segnalazioni",
@@ -1687,6 +1709,7 @@
         },
         "fields": {
           "missionResult": "Risultato Missione",
+          "actualStart": "Data / Ora Inizio",
           "actualEnd": "Data / Ora Fine",
           "duration": "Tempo Totale di Volo (Min)",
           "distanceFlown": "Distanza Percorsa (Mt)",
@@ -1877,6 +1900,7 @@
       "fields": {
         "chooseClient": "Scegli un Cliente",
         "ccPlatform": "Piattaforma CC",
+        "organization": "Organizzazione",
         "uploadLogFile": "Carica File Log (.gutma o .zip)",
         "droneSystem": "Sistema Drone",
         "missionCategory": "Categoria Missione",
@@ -1896,6 +1920,7 @@
       "placeholders": {
         "selectClient": "Seleziona cliente…",
         "selectPilot": "Seleziona pilota…",
+        "selectOrganization": "Seleziona organizzazione…",
         "location": "es. Griglia A-7, Sito Nord",
         "groupLabel": "es. Rilevamento Primavera 2025",
         "notes": "Note aggiuntive…",
@@ -1906,6 +1931,7 @@
         "clickToUpload": "Clicca per caricare",
         "noPlansForDrone": "Nessun piano per questo drone",
         "selectDroneFirst": "Seleziona prima il drone",
+        "noOrganizations": "Nessuna organizzazione",
         "youAreAllSet": "Sei pronto",
         "reviewAndImport": "Rivedi le tue selezioni e clicca su {{importButton}} per procedere.",
         "none": "Nessuno"
@@ -4657,9 +4683,9 @@
     "requestFlightSubtitle": "Invia una nuova richiesta di volo al team operativo",
     "flightDetails": "Dettagli volo",
     "fieldMissionType": "Tipo missione",
-    "missionTypePlaceholder": "es. ON_DEMAND, PROGRAMMATO...",
+    "missionTypePlaceholder": "Seleziona tipo missione",
     "fieldTarget": "Obiettivo / Area",
-    "targetPlaceholder": "Descrizione del luogo o dell'area",
+    "targetPlaceholder": "es. Emergenza, punto di interesse, evento specifico",
     "fieldStartDatetime": "Orario di inizio preferito",
     "fieldPriority": "Priorità",
     "priorityHigh": "Alta",
@@ -4677,10 +4703,10 @@
     "fieldOperator": "Nome operatore",
     "operatorPlaceholder": "Azienda o persona responsabile di questa richiesta",
     "localizationSection": "Localizzazione",
-    "fieldHighway": "Autostrada",
-    "fieldCarriageway": "Carreggiata",
-    "fieldKmStart": "Km Inizio",
-    "fieldKmEnd": "Km Fine",
+    "fieldHighway": "Posizione",
+    "fieldCarriageway": "Direzione",
+    "fieldKmStart": "Punto di inizio",
+    "fieldKmEnd": "Punto di fine",
     "waypointSection": "Waypoint",
     "fieldLatitude": "Latitudine",
     "fieldLongitude": "Longitudine",

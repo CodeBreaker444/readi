@@ -46,6 +46,7 @@ import {
   TableHeader,
   TableRow,
 } from '../ui/table';
+import { UpdatePasswordModal } from '../team/UpdatePasswordModal';
 import { UserFormModal } from './UserFormModal';
 import { SkeletonRow, StatSkeleton } from './UserSkeleton';
 
@@ -79,6 +80,8 @@ export default function UserManagement({ session }: UserManagementProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [userToDelete, setUserToDelete] = useState<UserData | null>(null);
   const [resendingUserId, setResendingUserId] = useState<number | null>(null);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordUser, setPasswordUser] = useState<UserData | null>(null);
 
 
   useEffect(() => {
@@ -146,6 +149,27 @@ export default function UserManagement({ session }: UserManagementProps) {
       toast.error(t('team.personnel.toast.inviteResendError'));
     } finally {
       setResendingUserId(null);
+    }
+  };
+
+  const handleUpdatePassword = (user: UserData) => { setPasswordUser(user); setShowPasswordModal(true); };
+
+  const handleSubmitPassword = async (newPassword: string) => {
+    if (!passwordUser?.user_id) return;
+    try {
+      const res = await axios.post('/api/team/user/update-password', {
+        user_id: passwordUser.user_id,
+        new_password: newPassword,
+        email: passwordUser.email
+      });
+      if (res.data.code === 1) {
+        toast.success(t('team.personnel.toast.passwordUpdated'));
+        fetchUsers();
+      } else {
+        throw new Error(res.data.message || t('team.personnel.toast.passwordUpdateFailed'));
+      }
+    } catch (err: any) {
+      throw new Error(err?.response?.data?.message || err.message || t('team.personnel.toast.passwordUpdateError'));
     }
   };
 
@@ -288,7 +312,7 @@ export default function UserManagement({ session }: UserManagementProps) {
     return matchesSearch && matchesRole && matchesStatus && matchesCompany;
   }), [users, searchTerm, roleFilter, statusFilter, companyFilter, isSuperAdmin]);
 
-  const columns = useMemo(() => getUserColumns({ isDark, onEdit: handleEdit, onDelete: handleDelete, onResendInvite: handleResendInvite, resendingUserId, t }), [isDark, handleEdit, handleDelete, handleResendInvite, resendingUserId, t]);
+  const columns = useMemo(() => getUserColumns({ isDark, onEdit: handleEdit, onDelete: handleDelete, onResendInvite: handleResendInvite, onUpdatePassword: handleUpdatePassword, resendingUserId, t }), [isDark, handleEdit, handleDelete, handleResendInvite, handleUpdatePassword, resendingUserId, t]);
 
   const table = useReactTable({
     data: filteredData,
@@ -467,6 +491,16 @@ export default function UserManagement({ session }: UserManagementProps) {
       )}
       {showEditModal && selectedUser && (
         <UserFormModal isOpen={showEditModal} clients={clients} onClose={() => { setShowEditModal(false); setSelectedUser(null); }} mode="edit" userData={selectedUser} onSubmit={handleUpdateUser} isDark={isDark} canEditEmail={canEditEmail} sessionRole={session.user.role} companyFlytrelayEnabled={session.user.flytrelayEnabled} />
+      )}
+
+      {showPasswordModal && passwordUser && (
+        <UpdatePasswordModal
+          isOpen={showPasswordModal}
+          onClose={() => { setShowPasswordModal(false); setPasswordUser(null); }}
+          onSubmit={handleSubmitPassword}
+          targetLabel={passwordUser.fullname}
+          isDark={isDark}
+        />
       )}
 
       <AlertDialog open={showDeleteDialog} onOpenChange={(open) => { if (!open) { setShowDeleteDialog(false); setUserToDelete(null); } }}>

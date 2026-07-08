@@ -2,6 +2,7 @@
 
 import { Operation } from '@/app/operations/table/page'
 import { useTimezone } from '@/components/TimezoneProvider'
+import type { FlightWaypoint } from '@/components/control-center/FlightPathMap'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { EmergencyResponsePlan } from '@/config/types/erp'
@@ -125,8 +126,10 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
     const [submittingPostFlight, setSubmittingPostFlight] = useState(false)
     const [resultOptions, setResultOptions] = useState<MissionResultOption[]>([])
     const [postFlightFromLog] = useState(false)
+    const [flightWaypoints, setFlightWaypoints] = useState<FlightWaypoint[]>([])
+    const [loadingWaypoints, setLoadingWaypoints] = useState(false)
     const [postFlight, setPostFlight] = useState<PostFlightState>({
-        actual_end: '', result_id: null, flight_duration_min: '', distance_m: '',
+        actual_start: '', actual_end: '', result_id: null, flight_duration_min: '', distance_m: '',
         battery_charge_start: '', battery_charge_end: '',
         incident_flag: false, rth_unplanned: false, link_loss: false, deviation_flag: false,
         weather_temp: '', notes: '',
@@ -286,6 +289,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                     const { flight, result_options } = res.data.data
                     setResultOptions(result_options ?? [])
                     setPostFlight({
+                        actual_start: isoToLocalInput(flight?.actual_start),
                         actual_end: isoToLocalInput(flight?.actual_end),
                         result_id: flight?.fk_mission_result_type_id ?? null,
                         flight_duration_min: flight?.flight_duration != null ? String(flight.flight_duration) : '',
@@ -303,6 +307,15 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
             })
             .catch(() => toast.error(t('operations.newOperation.toast.loadPostFlightError')))
             .finally(() => setLoadingPostFlight(false))
+    }, [editTab, isEdit, editOperation])
+
+    useEffect(() => {
+        if (!isEdit || editTab !== 'postFlight' || !editOperation) return
+        setLoadingWaypoints(true)
+        axios.get(`/api/operation/board/flight-logs/waypoints?mission_id=${editOperation.pilot_mission_id}`)
+            .then(res => setFlightWaypoints(res.data?.data?.waypoints ?? []))
+            .catch(() => setFlightWaypoints([]))
+            .finally(() => setLoadingWaypoints(false))
     }, [editTab, isEdit, editOperation])
 
 
@@ -345,6 +358,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
         setExistingMissionCodes(new Set()); setGeneratingId(false)
         setConflicts([]); setConflictChecked(false)
         setErps([]); setResultOptions([])
+        setFlightWaypoints([]); setLoadingWaypoints(false)
         setErpGroupId(''); setErpGroups([]); setLoadingErpGroups(false)
         setSchedulerForm({
             missionCode: '', scheduledStart: '', scheduledEnd: '',
@@ -353,7 +367,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
             isRecurring: false, daysOfWeek: [], recurUntil: '', missionGroupLabel: '',
         })
         setPostFlight({
-            actual_end: '', result_id: null, flight_duration_min: '', distance_m: '',
+            actual_start: '', actual_end: '', result_id: null, flight_duration_min: '', distance_m: '',
             battery_charge_start: '', battery_charge_end: '',
             incident_flag: false, rth_unplanned: false, link_loss: false, deviation_flag: false,
             weather_temp: '', notes: '',
@@ -484,6 +498,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
         const payload: Record<string, unknown> = {
             mission_id: editOperation.pilot_mission_id,
             flight_duration: postFlight.flight_duration_min ? parseInt(postFlight.flight_duration_min, 10) : null,
+            actual_start: postFlight.actual_start ? new Date(postFlight.actual_start).toISOString() : null,
             actual_end: postFlight.actual_end ? new Date(postFlight.actual_end).toISOString() : null,
             distance_flown: postFlight.distance_m ? parseFloat(postFlight.distance_m) : null,
             battery_charge_start: postFlight.battery_charge_start ? parseFloat(postFlight.battery_charge_start) : null,
@@ -698,6 +713,8 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                             fromLog={postFlightFromLog}
                             isDark={isDark}
                             onChange={handlePostFlightChange}
+                            waypoints={flightWaypoints}
+                            loadingWaypoints={loadingWaypoints}
                         />
                     )}
 

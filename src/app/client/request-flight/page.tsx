@@ -1,6 +1,7 @@
 'use client';
 
 import { useTheme } from '@/components/useTheme';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
 import { CheckCircle2, MapPin, Navigation, PlaneTakeoff, Send, User } from 'lucide-react';
@@ -10,6 +11,8 @@ import { toast } from 'sonner';
 
 const PRIORITY_OPTIONS = ['HIGH', 'MEDIUM', 'LOW'] as const;
 type Priority = (typeof PRIORITY_OPTIONS)[number];
+
+const MISSION_TYPE_OPTIONS = ['On Demand', 'Scheduled'] as const;
 
 interface FormState {
   mission_type: string;
@@ -234,13 +237,21 @@ export default function RequestFlightPage() {
 
               <div>
                 <FieldLabel label={t('clientPortal.fieldMissionType', 'Mission Type')} required />
-                <input
-                  type="text"
+                <Select
                   value={form.mission_type}
-                  onChange={set('mission_type')}
-                  placeholder={t('clientPortal.missionTypePlaceholder', 'e.g. Surveillance, Inspection, Delivery…')}
-                  className={inputBase}
-                />
+                  onValueChange={(value) => setForm((f) => ({ ...f, mission_type: value }))}
+                >
+                  <SelectTrigger className={cn(inputBase, 'w-full')}>
+                    <SelectValue placeholder={t('clientPortal.missionTypePlaceholder', 'Select mission type')} />
+                  </SelectTrigger>
+                  <SelectContent className={isDark ? 'bg-[#1a1f2e] border-white/10 text-white' : ''}>
+                    {MISSION_TYPE_OPTIONS.map((opt) => (
+                      <SelectItem key={opt} value={opt}>
+                        {opt}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>
@@ -249,7 +260,7 @@ export default function RequestFlightPage() {
                   type="text"
                   value={form.target}
                   onChange={set('target')}
-                  placeholder={t('clientPortal.targetPlaceholder', 'Location or area description')}
+                  placeholder={t('clientPortal.targetPlaceholder', 'e.g. Emergency, point of interest, specific event')}
                   className={inputBase}
                 />
               </div>
@@ -335,7 +346,7 @@ export default function RequestFlightPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <FieldLabel label={t('clientPortal.fieldHighway', 'Highway')} />
+                  <FieldLabel label={t('clientPortal.fieldHighway', 'Position')} />
                   <input
                     type="text"
                     value={form.loc_highway}
@@ -345,7 +356,7 @@ export default function RequestFlightPage() {
                   />
                 </div>
                 <div>
-                  <FieldLabel label={t('clientPortal.fieldCarriageway', 'Carriageway')} />
+                  <FieldLabel label={t('clientPortal.fieldCarriageway', 'Direction')} />
                   <input
                     type="text"
                     value={form.loc_carriageway}
@@ -358,7 +369,7 @@ export default function RequestFlightPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <FieldLabel label={t('clientPortal.fieldKmStart', 'Km Start')} />
+                  <FieldLabel label={t('clientPortal.fieldKmStart', 'Starting point')} />
                   <input
                     type="number"
                     value={form.loc_km_start}
@@ -368,7 +379,7 @@ export default function RequestFlightPage() {
                   />
                 </div>
                 <div>
-                  <FieldLabel label={t('clientPortal.fieldKmEnd', 'Km End')} />
+                  <FieldLabel label={t('clientPortal.fieldKmEnd', 'Ending point')} />
                   <input
                     type="number"
                     value={form.loc_km_end}

@@ -39,6 +39,7 @@ export async function GET(req: NextRequest) {
 const postFlightSchema = z.object({
   mission_id: z.number().int().positive(),
   flight_duration: z.number().nonnegative().nullable().optional(),
+  actual_start: z.string().nullable().optional(),
   actual_end: z.string().nullable().optional(),
   distance_flown: z.number().nonnegative().nullable().optional(),
   battery_charge_start: z.number().min(0).max(100).nullable().optional(),
@@ -71,6 +72,7 @@ export async function POST(req: NextRequest) {
   const { mission_id, ...fields } = parsed.data;
   const payload: Record<string, unknown> = {};
   if (fields.flight_duration !== undefined) payload.flight_duration = fields.flight_duration;
+  if (fields.actual_start !== undefined) payload.actual_start = fields.actual_start || null;
   if (fields.actual_end !== undefined) payload.actual_end = fields.actual_end || null;
   if (fields.distance_flown !== undefined) payload.distance_flown = fields.distance_flown;
   if (fields.battery_charge_start !== undefined) payload.battery_charge_start = fields.battery_charge_start;

@@ -169,6 +169,7 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
   const [waypoints, setWaypoints] = useState<any[]>([]);
   const [loadingWaypoints, setLoadingWaypoints] = useState(false);
   const [postFlight, setPostFlight] = useState<PostFlightState>({
+    actual_start: "",
     actual_end: "",
     result_id: null,
     flight_duration_min: "",
@@ -259,6 +260,7 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
         const { flight, result_options } = data.data;
         setResultOptions(result_options ?? []);
         setPostFlight({
+          actual_start: isoToLocalInput(flight?.actual_start),
           actual_end: isoToLocalInput(flight?.actual_end),
           result_id: flight?.fk_mission_result_type_id ?? null,
           flight_duration_min: flight?.flight_duration != null ? String(flight.flight_duration) : "",
@@ -441,6 +443,7 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
     const payload: Record<string, unknown> = {
       mission_id: missionId,
       flight_duration: postFlight.flight_duration_min ? parseInt(postFlight.flight_duration_min, 10) : null,
+      actual_start: postFlight.actual_start ? new Date(postFlight.actual_start).toISOString() : null,
       actual_end: postFlight.actual_end ? new Date(postFlight.actual_end).toISOString() : null,
       distance_flown: postFlight.distance_m ? parseFloat(postFlight.distance_m) : null,
       battery_charge_start: postFlight.battery_charge_start ? parseFloat(postFlight.battery_charge_start) : null,
@@ -641,12 +644,13 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
             setPostFlight((prev) => ({
               ...prev,
               flight_duration_min: durationTotalMinutes > 0 ? String(durationTotalMinutes) : prev.flight_duration_min,
+              actual_start: preview.start_time ? isoToLocalInput(preview.start_time) : prev.actual_start,
               actual_end: preview.end_time ? isoToLocalInput(preview.end_time) : prev.actual_end,
               distance_m: previewDistanceM != null && previewDistanceM > 0 ? String(previewDistanceM) : prev.distance_m,
               battery_charge_start: previewBattStart != null ? String(previewBattStart) : prev.battery_charge_start,
               battery_charge_end: previewBattEnd != null ? String(previewBattEnd) : prev.battery_charge_end,
             }));
-            if (durationTotalMinutes > 0 || preview.end_time || previewDistanceM || previewBattStart != null || previewBattEnd != null) {
+            if (durationTotalMinutes > 0 || preview.start_time || preview.end_time || previewDistanceM || previewBattStart != null || previewBattEnd != null) {
               setPostFlightFromLog(true);
             }
 
