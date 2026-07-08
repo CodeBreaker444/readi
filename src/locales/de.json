@@ -1697,6 +1697,7 @@
       "postFlight": {
         "sections": {
           "outcome": "Missionsergebnis",
+          "flightPath": "Flugroute",
           "flightData": "Flugdaten",
           "battery": "Batterie",
           "incidents": "Vorfälle & Markierungen",

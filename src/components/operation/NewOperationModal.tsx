@@ -2,6 +2,7 @@
 
 import { Operation } from '@/app/operations/table/page'
 import { useTimezone } from '@/components/TimezoneProvider'
+import type { FlightWaypoint } from '@/components/control-center/FlightPathMap'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { EmergencyResponsePlan } from '@/config/types/erp'
@@ -125,6 +126,8 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
     const [submittingPostFlight, setSubmittingPostFlight] = useState(false)
     const [resultOptions, setResultOptions] = useState<MissionResultOption[]>([])
     const [postFlightFromLog] = useState(false)
+    const [flightWaypoints, setFlightWaypoints] = useState<FlightWaypoint[]>([])
+    const [loadingWaypoints, setLoadingWaypoints] = useState(false)
     const [postFlight, setPostFlight] = useState<PostFlightState>({
         actual_start: '', actual_end: '', result_id: null, flight_duration_min: '', distance_m: '',
         battery_charge_start: '', battery_charge_end: '',
@@ -306,6 +309,15 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
             .finally(() => setLoadingPostFlight(false))
     }, [editTab, isEdit, editOperation])
 
+    useEffect(() => {
+        if (!isEdit || editTab !== 'postFlight' || !editOperation) return
+        setLoadingWaypoints(true)
+        axios.get(`/api/operation/board/flight-logs/waypoints?mission_id=${editOperation.pilot_mission_id}`)
+            .then(res => setFlightWaypoints(res.data?.data?.waypoints ?? []))
+            .catch(() => setFlightWaypoints([]))
+            .finally(() => setLoadingWaypoints(false))
+    }, [editTab, isEdit, editOperation])
+
 
     function generateMissionId(exclude: Set<string>): string {
         const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
@@ -346,6 +358,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
         setExistingMissionCodes(new Set()); setGeneratingId(false)
         setConflicts([]); setConflictChecked(false)
         setErps([]); setResultOptions([])
+        setFlightWaypoints([]); setLoadingWaypoints(false)
         setErpGroupId(''); setErpGroups([]); setLoadingErpGroups(false)
         setSchedulerForm({
             missionCode: '', scheduledStart: '', scheduledEnd: '',
@@ -700,6 +713,8 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                             fromLog={postFlightFromLog}
                             isDark={isDark}
                             onChange={handlePostFlightChange}
+                            waypoints={flightWaypoints}
+                            loadingWaypoints={loadingWaypoints}
                         />
                     )}
 

@@ -1,17 +1,25 @@
 "use client";
 import { cn } from "@/lib/utils";
+import type { FlightWaypoint } from "@/components/control-center/FlightPathMap";
 import {
   AlertTriangle,
   Battery,
   CalendarClock,
   Clock,
+  Map as MapIcon,
   MapPin,
   Sparkles,
   Thermometer,
   Trophy,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useTranslation } from "react-i18next";
 import { Skeleton } from "../ui/skeleton";
+
+const FlightPathMapDynamic = dynamic(
+  () => import("@/components/control-center/FlightPathMap").then((m) => ({ default: m.FlightPathMap })),
+  { ssr: false },
+);
 
 export interface MissionResultOption {
   mission_result_id: number;
@@ -42,6 +50,8 @@ interface PostFlightTabProps {
   fromLog: boolean;
   isDark: boolean;
   onChange: <K extends keyof PostFlightState>(field: K, value: PostFlightState[K]) => void;
+  waypoints?: FlightWaypoint[];
+  loadingWaypoints?: boolean;
 }
 
 function FieldLabel({ icon: Icon, label, isDark, fromLog }: {
@@ -126,7 +136,7 @@ function CheckboxField({ label, checked, onChange, isDark }: {
   );
 }
 
-export function PostFlightTab({ data, resultOptions, loading, fromLog, isDark, onChange }: PostFlightTabProps) {
+export function PostFlightTab({ data, resultOptions, loading, fromLog, isDark, onChange, waypoints, loadingWaypoints }: PostFlightTabProps) {
   const { t } = useTranslation();
 
   if (loading) {
@@ -180,6 +190,21 @@ export function PostFlightTab({ data, resultOptions, loading, fromLog, isDark, o
           </select>
         </div>
       </div>
+
+      {/* Flight Path */}
+      {(loadingWaypoints || (waypoints && waypoints.length > 0)) && (
+        <div className={sectionCls(isDark)}>
+          <div className="flex items-center gap-1.5 mb-3">
+            <MapIcon className={cn("h-3.5 w-3.5 shrink-0", isDark ? "text-slate-500" : "text-slate-400")} />
+            <p className={cn(sectionTitle(isDark), "mb-0")}>{t("operations.missionComplete.postFlight.sections.flightPath")}</p>
+          </div>
+          {loadingWaypoints ? (
+            <Skeleton className={cn("h-[320px] w-full rounded-lg", isDark ? "bg-slate-800" : "")} />
+          ) : (
+            <FlightPathMapDynamic waypoints={waypoints!} height="320px" isDark={isDark} />
+          )}
+        </div>
+      )}
 
       {/* Flight Data */}
       <div className={sectionCls(isDark)}>

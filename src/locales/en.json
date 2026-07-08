@@ -1701,6 +1701,7 @@
       "postFlight": {
         "sections": {
           "outcome": "Mission Outcome",
+          "flightPath": "Flight Path",
           "flightData": "Flight Data",
           "battery": "Battery",
           "incidents": "Incidents & Flags",

@@ -1,3 +1,18 @@
+export interface GutmaWaypoint {
+  timestamp?: number;
+  latitude?: number;
+  longitude?: number;
+  altitude?: number;
+  speed?: number;
+  heading?: number;
+  battery?: number;
+  speed_vx?: number;
+  speed_vy?: number;
+  speed_vz?: number;
+  angle_phi?: number;
+  angle_theta?: number;
+}
+
 export interface ParsedGutmaFlight {
   aircraft: Record<string, any>;
   gcs: Record<string, any>;
@@ -8,6 +23,7 @@ export interface ParsedGutmaFlight {
   distance_m: number | null;
   battery_charge_start: number | null;
   battery_charge_end: number | null;
+  waypoints: GutmaWaypoint[];
 }
 
 function haversineM(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -34,7 +50,14 @@ export function parseGutmaFlightData(gutma: any): ParsedGutmaFlight {
   const tsIdx = col('timestamp');
   const lonIdx = col('gps_lon');
   const latIdx = col('gps_lat');
+  const altIdx = col('gps_altitude');
+  const vxIdx = col('speed_vx');
+  const vyIdx = col('speed_vy');
+  const vzIdx = col('speed_vz');
+  const headingIdx = col('angle_psi');
   const batteryIdx = col('battery_percent');
+  const phiIdx = col('angle_phi');
+  const thetaIdx = col('angle_theta');
 
   const loggingStart = logging?.logging_start_dtg ?? null;
   const start_time =
@@ -85,6 +108,26 @@ export function parseGutmaFlightData(gutma: any): ParsedGutmaFlight {
     if (total > 0) distance_m = Math.round(total);
   }
 
+  const waypoints: GutmaWaypoint[] = items.map((row) => {
+    const vx = vxIdx >= 0 ? (row[vxIdx] ?? 0) : 0;
+    const vy = vyIdx >= 0 ? (row[vyIdx] ?? 0) : 0;
+    const vz = vzIdx >= 0 ? (row[vzIdx] ?? 0) : 0;
+    return {
+      timestamp:   tsIdx      >= 0 ? row[tsIdx]      : undefined,
+      latitude:    latIdx     >= 0 ? row[latIdx]     : undefined,
+      longitude:   lonIdx     >= 0 ? row[lonIdx]     : undefined,
+      altitude:    altIdx     >= 0 ? row[altIdx]     : undefined,
+      speed:       Math.round(Math.sqrt(vx * vx + vy * vy + vz * vz) * 100) / 100,
+      heading:     headingIdx >= 0 ? row[headingIdx] : undefined,
+      battery:     batteryIdx >= 0 ? row[batteryIdx] : undefined,
+      speed_vx:    vxIdx      >= 0 ? row[vxIdx]      : undefined,
+      speed_vy:    vyIdx      >= 0 ? row[vyIdx]      : undefined,
+      speed_vz:    vzIdx      >= 0 ? row[vzIdx]      : undefined,
+      angle_phi:   phiIdx     >= 0 ? row[phiIdx]     : undefined,
+      angle_theta: thetaIdx   >= 0 ? row[thetaIdx]   : undefined,
+    };
+  });
+
   return {
     aircraft: flightData?.aircraft ?? {},
     gcs: flightData?.gcs ?? {},
@@ -95,5 +138,6 @@ export function parseGutmaFlightData(gutma: any): ParsedGutmaFlight {
     distance_m,
     battery_charge_start,
     battery_charge_end,
+    waypoints,
   };
 }

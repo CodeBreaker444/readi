@@ -3,7 +3,7 @@
 import { env } from '@/backend/config/env';
 import { prisma } from '@/lib/prisma';
 import { getFlytbaseCredentials, getFlytbaseCredentialsForCompany } from '@/backend/services/integrations/flytbase-service';
-import { parseGutmaFlightData } from '@/backend/services/integrations/gutma-parser';
+import { GutmaWaypoint, parseGutmaFlightData } from '@/backend/services/integrations/gutma-parser';
 import { BUCKET, getPresignedDownloadUrl, s3 } from '@/lib/s3Client';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 
@@ -40,6 +40,45 @@ export async function getFlightLogsForMission(missionId: number): Promise<Flight
       download_url: await getPresignedDownloadUrl(log.s3_key, 3600),
     }))
   );
+}
+
+export interface FlightLogWaypointsResult {
+  log_id: number;
+  original_filename: string;
+  waypoints: GutmaWaypoint[];
+}
+
+/**
+ * Reads the most recently attached/uploaded flight log for a mission 
+ * and parses its GUTMA waypoints for use in the Flight Path Map.
+ */
+export async function getFlightLogWaypoints(missionId: number): Promise<FlightLogWaypointsResult | null> {
+  const log = await prisma.mission_flight_logs.findFirst({
+    where: { fk_mission_id: BigInt(missionId) },
+    orderBy: { uploaded_at: 'desc' },
+    select: { log_id: true, s3_key: true, original_filename: true },
+  });
+  if (!log) return null;
+
+  const downloadUrl = await getPresignedDownloadUrl(log.s3_key, 300);
+  const res = await fetch(downloadUrl);
+  if (!res.ok) return null;
+
+  let raw: any;
+  try {
+    raw = await res.json();
+  } catch {
+    return null;
+  }
+
+  const parsed = parseGutmaFlightData(raw);
+  if (parsed.waypoints.length === 0) return null;
+
+  return {
+    log_id: Number(log.log_id),
+    original_filename: log.original_filename ?? '',
+    waypoints: parsed.waypoints,
+  };
 }
 
 const ALLOWED_EXTENSIONS = ['.zip', '.json', '.xml', '.gutma'];
