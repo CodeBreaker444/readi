@@ -3,6 +3,7 @@
 import { env } from '@/backend/config/env';
 import { prisma } from '@/lib/prisma';
 import { getFlytbaseCredentials, getFlytbaseCredentialsForCompany } from '@/backend/services/integrations/flytbase-service';
+import { GutmaWaypoint, parseGutmaFlightData } from '@/backend/services/integrations/gutma-parser';
 import { BUCKET, getPresignedDownloadUrl, s3 } from '@/lib/s3Client';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import JSZip from 'jszip';
@@ -40,6 +41,45 @@ export async function getFlightLogsForMission(missionId: number): Promise<Flight
       download_url: await getPresignedDownloadUrl(log.s3_key, 3600),
     }))
   );
+}
+
+export interface FlightLogWaypointsResult {
+  log_id: number;
+  original_filename: string;
+  waypoints: GutmaWaypoint[];
+}
+
+/**
+ * Reads the most recently attached/uploaded flight log for a mission 
+ * and parses its GUTMA waypoints for use in the Flight Path Map.
+ */
+export async function getFlightLogWaypoints(missionId: number): Promise<FlightLogWaypointsResult | null> {
+  const log = await prisma.mission_flight_logs.findFirst({
+    where: { fk_mission_id: BigInt(missionId) },
+    orderBy: { uploaded_at: 'desc' },
+    select: { log_id: true, s3_key: true, original_filename: true },
+  });
+  if (!log) return null;
+
+  const downloadUrl = await getPresignedDownloadUrl(log.s3_key, 300);
+  const res = await fetch(downloadUrl);
+  if (!res.ok) return null;
+
+  let raw: any;
+  try {
+    raw = await res.json();
+  } catch {
+    return null;
+  }
+
+  const parsed = parseGutmaFlightData(raw);
+  if (parsed.waypoints.length === 0) return null;
+
+  return {
+    log_id: Number(log.log_id),
+    original_filename: log.original_filename ?? '',
+    waypoints: parsed.waypoints,
+  };
 }
 
 const ALLOWED_EXTENSIONS = ['.zip', '.json', '.xml', '.gutma'];
@@ -248,4 +288,34 @@ export async function attachFlytbaseFlightLog(
       uploaded_by: BigInt(userId),
     },
   });
+
+  // Prefill the mission's post-flight fields from the GUTMA log so Edit
+  // Mission's Mission Log / Post Flight tabs reflect the attached flight
+  // without requiring a separate manual sync step.
+  try {
+    const parsed = parseGutmaFlightData(gutma);
+    const missionUpdate: Record<string, unknown> = {};
+
+    const startMs = parsed.start_time ? new Date(parsed.start_time).getTime() : NaN;
+    const endMs = parsed.end_time ? new Date(parsed.end_time).getTime() : NaN;
+
+    if (!isNaN(startMs)) missionUpdate.actual_start = new Date(startMs);
+    if (!isNaN(endMs)) missionUpdate.actual_end = new Date(endMs);
+    if (!isNaN(startMs) && !isNaN(endMs) && endMs > startMs) {
+      missionUpdate.flight_duration = Math.round((endMs - startMs) / 60000);
+    }
+    if (parsed.distance_m != null) missionUpdate.distance_flown = parsed.distance_m;
+    if (parsed.battery_charge_start != null) missionUpdate.battery_charge_start = parsed.battery_charge_start;
+    if (parsed.battery_charge_end != null) missionUpdate.battery_charge_end = parsed.battery_charge_end;
+
+    if (Object.keys(missionUpdate).length > 0) {
+      await prisma.pilot_mission.update({
+        where: { pilot_mission_id: missionId },
+        data: missionUpdate,
+      });
+    }
+  } catch (err) {
+    // Best-effort — a parsing/sync failure shouldn't fail the attach itself.
+    console.error('[attachFlytbaseFlightLog] GUTMA mission sync failed:', err);
+  }
 }

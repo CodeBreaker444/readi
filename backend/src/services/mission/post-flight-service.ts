@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 
 export interface PostFlightData {
   flight_duration: number | null;
+  actual_start: string | null;
   actual_end: string | null;
   distance_flown: number | null;
   battery_charge_start: number | null;
@@ -23,6 +24,7 @@ export async function getPostFlightData(missionId: number): Promise<PostFlightDa
     where: { pilot_mission_id: missionId },
     select: {
       flight_duration: true,
+      actual_start: true,
       actual_end: true,
       distance_flown: true,
       battery_charge_start: true,
@@ -39,6 +41,7 @@ export async function getPostFlightData(missionId: number): Promise<PostFlightDa
 
   return {
     flight_duration: row.flight_duration,
+    actual_start: row.actual_start?.toISOString() ?? null,
     actual_end: row.actual_end?.toISOString() ?? null,
     distance_flown: row.distance_flown !== null ? Number(row.distance_flown) : null,
     battery_charge_start: row.battery_charge_start !== null ? Number(row.battery_charge_start) : null,
@@ -60,6 +63,7 @@ export async function updatePostFlightData(
   const data: Prisma.pilot_missionUpdateInput = {};
 
   if (payload.flight_duration !== undefined) data.flight_duration = payload.flight_duration;
+  if (payload.actual_start !== undefined) data.actual_start = payload.actual_start ? new Date(payload.actual_start) : null;
   if (payload.actual_end !== undefined) data.actual_end = payload.actual_end ? new Date(payload.actual_end) : null;
   if (payload.distance_flown !== undefined) data.distance_flown = payload.distance_flown;
   if (payload.battery_charge_start !== undefined) data.battery_charge_start = payload.battery_charge_start;

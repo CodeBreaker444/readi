@@ -3,7 +3,7 @@ import { supabase } from '@/backend/database/database';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import bcrypt from 'bcrypt';
-import { sendUserActivationEmail } from '../../../../lib/resend/mail';
+import { sendAdminPasswordChangedEmail, sendUserActivationEmail } from '../../../../lib/resend/mail';
 
 export interface UserCreateData {
   username: string;
@@ -330,12 +330,14 @@ export async function deleteUser(userId: number, ownerId: number, isSuperAdmin =
       prisma.training_attendance.deleteMany({ where: { fk_user_id: userId } }),
     ]);
 
-    await prisma.public_users.deleteMany({
+    const { count } = await prisma.public_users.deleteMany({
       where: {
         user_id: userId,
         ...(!isSuperAdmin ? { fk_owner_id: ownerId } : {}),
       },
     });
+
+    if (count === 0) throw new Error('User not found or does not belong to this organization');
 
     if (userRecord.auth_user_id) {
       try {
@@ -403,6 +405,47 @@ export async function resendUserInvite(userId: number, ownerId: number, isSuperA
     message: 'Activation email resent successfully',
     emailSent: emailResult.message,
   };
+}
+
+export async function updateUserPassword(userId: number, ownerId: number, newPassword: string, isSuperAdmin = false) {
+  const user = await prisma.public_users.findFirst({
+    where: {
+      user_id: userId,
+      ...(!isSuperAdmin ? { fk_owner_id: ownerId } : {}),
+    },
+    select: {
+      user_id: true,
+      email: true,
+      username: true,
+      first_name: true,
+      last_name: true,
+      user_active: true,
+      auth_user_id: true,
+      fk_owner_id: true,
+    },
+  });
+
+  if (!user) throw new Error('User not found');
+  if (user.user_active === 'Y') {
+    throw new Error('User is already activated');
+  }
+
+  if (user.auth_user_id) {
+    const { error: authError } = await supabase.auth.admin.updateUserById(user.auth_user_id, { password: newPassword });
+    if (authError) throw new Error(authError.message);
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, 10);
+  await prisma.public_users.update({
+    where: { user_id: userId },
+    data: { password_hash: passwordHash, updated_at: new Date() },
+  });
+
+  const owner = await prisma.owner.findUnique({ where: { owner_id: user.fk_owner_id! }, select: { owner_name: true } });
+  const fullname = (`${user.first_name ?? ''} ${user.last_name ?? ''}`.trim()) || (user.username ?? '');
+  await sendAdminPasswordChangedEmail(user.email ?? '', fullname, user.username ?? '', newPassword, owner?.owner_name ?? 'ReADI Control Center');
+
+  return { success: true, message: 'Password updated successfully' };
 }
 
 const getRoleIdFromCode = (roleCode: string): number => {

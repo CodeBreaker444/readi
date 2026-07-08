@@ -142,6 +142,20 @@
     "username": "Username",
     "code": "Code",
     "permissions": "Permissions",
+    "updatePassword": "Update password",
+    "updatePasswordModal": {
+      "title": "Update Password",
+      "subtitle": "Set a new password for {{target}}. They will receive it by email.",
+      "newPassword": "New Password",
+      "newPasswordPlaceholder": "Enter new password",
+      "confirmPassword": "Confirm Password",
+      "confirmPasswordPlaceholder": "Repeat new password",
+      "rules": "Password must be at least 6 characters and include uppercase, lowercase, a number, and a special character",
+      "mismatch": "Passwords do not match",
+      "failed": "Failed to update password",
+      "saving": "Updating…",
+      "submit": "Update Password"
+    },
     "client": {
       "title": "Client Management",
       "subtitle": "Manage clients and their contracts",
@@ -154,6 +168,7 @@
         "paymentTerms": "Payment Terms",
         "contractEnd": "Contract End",
         "editClient": "Edit Client",
+        "updatePassword": "Update Password",
         "deleteClient": "Delete Client"
       },
       "stats": {
@@ -175,7 +190,10 @@
         "addError": "Error adding client",
         "updated": "Client updated successfully",
         "updateFailed": "Failed to update client",
-        "updateError": "Error updating client"
+        "updateError": "Error updating client",
+        "passwordUpdated": "Password updated and emailed to the client",
+        "passwordUpdateFailed": "Failed to update password",
+        "passwordUpdateError": "Error updating password"
       }
     },
     "personnel": {
@@ -209,7 +227,10 @@
         "ccTokenWarning": "User created but Control Center token could not be saved",
         "updated": "User updated successfully",
         "updateFailed": "Failed to update user",
-        "updateError": "Error updating user"
+        "updateError": "Error updating user",
+        "passwordUpdated": "Password updated and emailed to the user",
+        "passwordUpdateFailed": "Failed to update password",
+        "passwordUpdateError": "Error updating password"
       }
     }
   },
@@ -1684,6 +1705,7 @@
       "postFlight": {
         "sections": {
           "outcome": "Mission Outcome",
+          "flightPath": "Flight Path",
           "flightData": "Flight Data",
           "battery": "Battery",
           "incidents": "Incidents & Flags",
@@ -1692,6 +1714,7 @@
         },
         "fields": {
           "missionResult": "Mission Result",
+          "actualStart": "Start Date / Time",
           "actualEnd": "End Date / Time",
           "duration": "Total Flown Time (Min)",
           "distanceFlown": "Total Flown Distance (Mt)",
@@ -1882,6 +1905,7 @@
       "fields": {
         "chooseClient": "Choose a Client",
         "ccPlatform": "CC Platform",
+        "organization": "Organization",
         "uploadLogFile": "Upload Log File (.gutma or .zip)",
         "flytbaseWindow": "Control Center Window",
         "selectFlightLog": "Select Flight Log",
@@ -1904,6 +1928,7 @@
         "selectClient": "Select client…",
         "selectPilot": "Select pilot…",
         "selectFlightLog": "Select a Control Center flight…",
+        "selectOrganization": "Select organization…",
         "location": "e.g. Grid A-7, Site North",
         "groupLabel": "e.g. Spring Survey 2025",
         "notes": "Additional notes…",
@@ -1915,6 +1940,7 @@
         "uploadOrSelectFlight": "Upload a .gutma/.zip file or select a Control Center flight log to auto-fetch.",
         "noPlansForDrone": "No plans for this drone",
         "selectDroneFirst": "Select drone first",
+        "noOrganizations": "No organizations",
         "youAreAllSet": "You are all set",
         "reviewAndImport": "Review your selections and click {{importButton}} to proceed.",
         "none": "None"
@@ -4669,9 +4695,9 @@
     "requestFlightSubtitle": "Submit a new flight request to the operations team",
     "flightDetails": "Flight Details",
     "fieldMissionType": "Mission Type",
-    "missionTypePlaceholder": "e.g. ON_DEMAND, SCHEDULED...",
+    "missionTypePlaceholder": "Select mission type",
     "fieldTarget": "Target / Area",
-    "targetPlaceholder": "Location or area description",
+    "targetPlaceholder": "e.g. Emergency, point of interest, specific event",
     "fieldStartDatetime": "Preferred Start Time",
     "fieldPriority": "Priority",
     "priorityHigh": "High",
@@ -4689,10 +4715,10 @@
     "fieldOperator": "Operator Name",
     "operatorPlaceholder": "Company or person responsible for this request",
     "localizationSection": "Localization",
-    "fieldHighway": "Highway",
-    "fieldCarriageway": "Carriageway",
-    "fieldKmStart": "Km Start",
-    "fieldKmEnd": "Km End",
+    "fieldHighway": "Position",
+    "fieldCarriageway": "Direction",
+    "fieldKmStart": "Starting point",
+    "fieldKmEnd": "Ending point",
     "waypointSection": "Waypoint",
     "fieldLatitude": "Latitude",
     "fieldLongitude": "Longitude",

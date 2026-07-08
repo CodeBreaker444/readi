@@ -2,7 +2,7 @@
 
 import '@/lib/i18n/config';
 import { ColumnDef } from '@tanstack/react-table';
-import { Loader2, Mail, Pencil, RotateCcw, Trash2 } from 'lucide-react';
+import { KeyRound, Loader2, Mail, Pencil, RotateCcw, Trash2 } from 'lucide-react';
 import {
     Tooltip,
     TooltipContent,
@@ -34,6 +34,7 @@ interface GetUserColumnsOptions {
   onEdit: (user: UserData) => void;
   onDelete: (user: UserData) => void;
   onResendInvite: (user: UserData) => void;
+  onUpdatePassword: (user: UserData) => void;
   resendingUserId: number | null;
   t: (key: string) => string;
 }
@@ -43,6 +44,7 @@ export function getUserColumns({
   onEdit,
   onDelete,
   onResendInvite,
+  onUpdatePassword,
   resendingUserId,
   t,
 }: GetUserColumnsOptions): ColumnDef<UserData>[] {
@@ -196,6 +198,24 @@ export function getUserColumns({
                   <TooltipContent side="top" className="text-xs">
                     {resendingUserId === user.user_id ? t('team.sending') : t('team.resendInvite')}
                   </TooltipContent>
+                </Tooltip>
+              )}
+
+              {user.is_pending && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => onUpdatePassword(user)}
+                      className={`cursor-pointer p-1.5 rounded-lg transition-all duration-150 ${
+                        isDark
+                          ? 'bg-violet-500/10 hover:bg-violet-500/25 text-violet-400 hover:text-violet-300 border border-violet-700/40 hover:border-violet-500/60'
+                          : 'bg-violet-50 hover:bg-violet-100 text-violet-500 hover:text-violet-700 border border-violet-200 hover:border-violet-300'
+                      }`}
+                    >
+                      <KeyRound size={14} strokeWidth={2} />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-xs">{t('team.updatePassword')}</TooltipContent>
                 </Tooltip>
               )}
 
