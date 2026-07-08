@@ -156,18 +156,6 @@ export function PostFlightTab({ data, resultOptions, loading, fromLog, isDark, o
 
   return (
     <div className="space-y-3">
-      {/* Flight Path Map */}
-      {loadingWaypoints ? (
-        <Skeleton className={cn("h-80 w-full rounded-xl", isDark ? "bg-slate-800" : "")} />
-      ) : hasMap ? (
-        <div className={cn("rounded-xl border overflow-hidden", isDark ? "border-white/6 bg-slate-900/40" : "border-slate-200 bg-white")}>
-          <FlightPathMapDynamic
-            waypoints={waypoints}
-            height="380px"
-            isDark={isDark}
-          />
-        </div>
-      ) : null}
       {/* Mission Outcome */}
       <div className={sectionCls(isDark)}>
         <p className={sectionTitle(isDark)}>{t("operations.missionComplete.postFlight.sections.outcome")}</p>
@@ -209,7 +197,7 @@ export function PostFlightTab({ data, resultOptions, loading, fromLog, isDark, o
       </div>
 
       {/* Flight Path */}
-      {(loadingWaypoints || (waypoints && waypoints.length > 0)) && (
+      {(loadingWaypoints || hasMap) && (
         <div className={sectionCls(isDark)}>
           <div className="flex items-center gap-1.5 mb-3">
             <MapIcon className={cn("h-3.5 w-3.5 shrink-0", isDark ? "text-slate-500" : "text-slate-400")} />

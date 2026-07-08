@@ -111,7 +111,7 @@ export default function OperationsPage() {
   const [batchSettingPilot, setBatchSettingPilot] = useState(false);
   const [batchAutofilling, setBatchAutofilling] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [sorting, setSorting] = useState<SortingState>([{ id: 'scheduled_start', desc: true }]);
+  const [sorting, setSorting] = useState<SortingState>([]);
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [pilots, setPilots] = useState<
     { user_id: number; first_name: string; last_name: string }[]
