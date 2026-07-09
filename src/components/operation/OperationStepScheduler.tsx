@@ -1,6 +1,5 @@
 'use client'
 
-import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -8,7 +7,7 @@ import { cn, formatDateTimeInTz } from '@/lib/utils'
 import { AlertTriangle, CheckCircle2, Loader2, RefreshCw } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { inputCls, labelCls, scCls, SectionTitle, siCls } from './OperationModalHelpers'
-import { ConflictEvent, DAYS_OF_WEEK, GenericOption, LucOption, SchedulerFormData } from './OperationModalTypes'
+import { ConflictEvent, GenericOption, LucOption, SchedulerFormData } from './OperationModalTypes'
 
 interface Props {
     form: SchedulerFormData
@@ -75,63 +74,6 @@ export function OperationStepScheduler({
                     className={inputCls(isDark)}
                 />
             </div>
-
-            {!isEdit && (
-                <div className={cn('rounded-lg border p-3 space-y-3', isDark ? 'border-slate-600 bg-slate-700/30' : 'border-slate-200 bg-slate-50/60')}>
-                    <div className="flex items-center gap-2">
-                        <Checkbox
-                            id="is_recurring"
-                            checked={form.isRecurring}
-                            onCheckedChange={v => {
-                                onChange('isRecurring', !!v)
-                                onChange('daysOfWeek', [])
-                                onChange('recurUntil', '')
-                            }}
-                            className="border-sky-500 data-[state=checked]:bg-sky-600"
-                        />
-                        <label htmlFor="is_recurring" className={cn('flex items-center gap-1.5 text-sm font-medium cursor-pointer', isDark ? 'text-slate-200' : 'text-slate-700')}>
-                            <RefreshCw className="h-3.5 w-3.5 text-sky-500" />
-                            {t('operations.newOperation.scheduler.recurring')}
-                        </label>
-                    </div>
-                    {form.isRecurring && (
-                        <div className="space-y-3 pl-1">
-                            <div>
-                                <Label className={cn(labelCls(isDark), 'text-xs')}>{t('operations.newOperation.scheduler.daysOfWeek')} <span className="text-red-500">*</span></Label>
-                                <div className="flex flex-wrap gap-1.5 mt-1">
-                                    {DAYS_OF_WEEK.map(day => {
-                                        const checked = form.daysOfWeek.includes(day.value)
-                                        return (
-                                            <button key={day.value} type="button"
-                                                onClick={() => onChange('daysOfWeek', checked
-                                                    ? form.daysOfWeek.filter(d => d !== day.value)
-                                                    : [...form.daysOfWeek, day.value]
-                                                )}
-                                                className={cn('px-2.5 py-1 cursor-pointer rounded-md text-xs font-semibold border transition-colors',
-                                                    checked ? 'bg-sky-600 border-sky-600 text-white'
-                                                        : isDark ? 'bg-slate-600 border-slate-500 text-slate-300 hover:bg-slate-500'
-                                                            : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-100'
-                                                )}>
-                                                {day.label}
-                                            </button>
-                                        )
-                                    })}
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <Label className={cn(labelCls(isDark), 'text-xs')}>{t('operations.newOperation.scheduler.repeatUntil')} <span className="text-red-500">*</span></Label>
-                                    <Input type="date" value={form.recurUntil} onChange={e => onChange('recurUntil', e.target.value)} className={inputCls(isDark)} />
-                                </div>
-                                <div>
-                                    <Label className={cn(labelCls(isDark), 'text-xs')}>{t('operations.newOperation.scheduler.groupLabel')} <span className="text-[10px] text-muted-foreground font-normal">{t('operations.newOperation.scheduler.optional')}</span></Label>
-                                    <Input value={form.missionGroupLabel} onChange={e => onChange('missionGroupLabel', e.target.value)} placeholder={t('operations.newOperation.scheduler.groupLabelPlaceholder')} className={inputCls(isDark)} />
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            )}
 
             {loadingConflicts && (
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">

@@ -3,8 +3,10 @@
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { LocationGroup } from '@/config/types/erp'
+import { serialsMatch } from '@/lib/serial-number'
 import { cn } from '@/lib/utils'
 import { AlertTriangle, Shield } from 'lucide-react'
+import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { inputCls, labelCls, scCls, SectionTitle, siCls } from './OperationModalHelpers'
 import { Drone, FlightMode, MissionPlanningOption, OpType, PlanningOption } from './OperationModalTypes'
@@ -32,7 +34,7 @@ interface Props {
     erpGroupId: string
     onErpGroupChange: (id: string) => void
     loadingErpGroups?: boolean
-    /** Drone serial number pulled from an attached flight log, if this mission is being created to attach that log. */
+    /** Drone serial number pulled from an attached flight log  */
     logSerialNumber?: string | null
 }
 
@@ -49,13 +51,15 @@ export function OperationStepDrone({
     const selectedDrone = drones.find(d => String(d.tool_id) === droneId)
     const selectedIsNonOp = (selectedDrone?.is_non_operational || selectedDrone?.is_dismissed) ?? false
     const selectedIsDismissed = selectedDrone?.is_dismissed ?? false
-    // Only warn when we actually know the drone's serial number and it differs —
-    // an unrecorded serial number isn't evidence of a mismatch, so stay silent.
-    const selectedSnMismatch = !!(
-        logSerialNumber &&
-        selectedDrone?.drone_serial_number &&
-        selectedDrone.drone_serial_number.trim().toLowerCase() !== logSerialNumber.trim().toLowerCase()
-    )
+    const matchingDrone = logSerialNumber
+        ? drones.find(d => serialsMatch(d.drone_serial_number, logSerialNumber))
+        : undefined
+    const serialBlocked = !!logSerialNumber && !matchingDrone
+
+    useEffect(() => {
+        if (!logSerialNumber || drones.length === 0 || !matchingDrone) return
+        if (String(matchingDrone.tool_id) !== droneId) onDroneChange(String(matchingDrone.tool_id))
+    }, [logSerialNumber, drones, matchingDrone])
 
     const planLabel = planId
         ? (clientPlannings.find(p => String(p.planning_id) === planId)?.planning_name ?? selectedPlanName)
@@ -113,15 +117,22 @@ export function OperationStepDrone({
                         } />
                     </SelectTrigger>
                     <SelectContent className={scCls(isDark)}>
-                        {drones.map(d => (
+                        {drones.map(d => {
+                            const snMismatch = !!logSerialNumber && !serialsMatch(d.drone_serial_number, logSerialNumber)
+                            return (
                             <SelectItem
                                 key={d.tool_id}
                                 value={String(d.tool_id)}
-                                disabled={!!d.is_non_operational || !!d.is_dismissed || !!d.in_maintenance}
-                                className={cn(siCls(isDark), (d.is_non_operational || d.is_dismissed) ? 'opacity-50' : '')}
+                                disabled={!!d.is_non_operational || !!d.is_dismissed || !!d.in_maintenance || snMismatch}
+                                className={cn(siCls(isDark), (d.is_non_operational || d.is_dismissed || snMismatch) ? 'opacity-50' : '')}
                             >
                                 <span className="flex items-center gap-2">
                                     <span>{d.tool_code} — {d.tool_name}</span>
+                                    {snMismatch && (
+                                        <span className="text-[10px] font-semibold text-red-600 bg-red-50 border border-red-200 rounded px-1.5 py-0.5 leading-none">
+                                            {t('operations.newOperation.drone.snMismatchTag')}
+                                        </span>
+                                    )}
                                     {d.is_non_operational && (
                                         <span className="text-[10px] font-semibold text-red-600 bg-red-50 border border-red-200 rounded px-1.5 py-0.5 leading-none">
                                             {t('operations.newOperation.drone.notOperationalTag')}
@@ -144,7 +155,8 @@ export function OperationStepDrone({
                                     )}
                                 </span>
                             </SelectItem>
-                        ))}
+                            )
+                        })}
                     </SelectContent>
                 </Select>
                 {selectedIsNonOp && !selectedIsDismissed && (
@@ -197,17 +209,14 @@ export function OperationStepDrone({
                         {t('operations.newOperation.drone.maintenanceDueWarning')}
                     </p>
                 )}
-                {selectedSnMismatch && (
+                {serialBlocked && (
                     <div className={cn(
                         'mt-2 flex items-start gap-2 rounded-lg border px-3 py-2.5',
-                        isDark ? 'border-amber-800 bg-amber-950/40' : 'border-amber-200 bg-amber-50'
+                        isDark ? 'border-red-800 bg-red-950/40' : 'border-red-200 bg-red-50'
                     )}>
-                        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
-                        <p className={cn('text-xs leading-snug', isDark ? 'text-amber-400' : 'text-amber-700')}>
-                            {t('operations.newOperation.drone.serialMismatchWarning', {
-                                logSn: logSerialNumber,
-                                droneSn: selectedDrone?.drone_serial_number,
-                            })}
+                        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-red-500" />
+                        <p className={cn('text-xs leading-snug', isDark ? 'text-red-400' : 'text-red-700')}>
+                            {t('operations.newOperation.drone.noSystemWithSerial', { serial: logSerialNumber })}
                         </p>
                     </div>
                 )}

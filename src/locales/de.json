@@ -1925,10 +1925,10 @@
         "groupLabel": "z.B. Frühjahrsumfrage 2025",
         "notes": "Zusätzliche Notizen…",
         "selectDot": "Auswählen…",
-        "missionCode": "Leer lassen, um automatisch aus dem Protokoll zu generieren"
+        "missionCode": "Leer lassen, um automatisch zu generieren"
       },
       "info": {
-        "gutmaAutoExtract": "Missionscode, Höhe, Distanz und Zeitstempel werden automatisch aus der GUTMA-Protokolldatei extrahiert. Sie können den Missionscode unten überschreiben.",
+        "gutmaAutoExtract": "Höhe, Distanz und Zeitstempel werden automatisch aus der GUTMA-Protokolldatei extrahiert. Der Missionscode wird automatisch generiert, sofern Sie unten keinen eigenen festlegen.",
         "clickToUpload": "Zum Hochladen klicken",
         "noPlansForDrone": "Keine Pläne für diese Drohne",
         "selectDroneFirst": "Zuerst Drohne auswählen",
@@ -1943,7 +1943,9 @@
         "notOperational": "Nicht Betriebsbereit",
         "dismissed": "Ausgemustert",
         "inMaintenance": "Wartung",
-        "maintenanceDue": "Wartung Fällig"
+        "maintenanceDue": "Wartung Fällig",
+        "snMismatch": "SN-Abweichung",
+        "noSystemWithSerial": "Es ist kein System mit der Seriennummer {{serial}} vorhanden"
       },
       "review": {
         "client": "Kunde",
@@ -2015,7 +2017,8 @@
         "maintenanceTag": "WARTUNG",
         "maintenanceDueTag": "WARTUNG FÄLLIG",
         "maintenanceDueWarning": "Bei einer oder mehreren Drohnen ist eine Wartung fällig. Vor der Planung prüfen.",
-        "serialMismatchWarning": "Die Seriennummer dieses Systems ({{droneSn}}) stimmt nicht mit der Drohnen-Seriennummer des Flugprotokolls ({{logSn}}) überein. Sie können diese Mission trotzdem erstellen.",
+        "snMismatchTag": "SN-Abweichung",
+        "noSystemWithSerial": "Es ist kein System mit der Seriennummer {{serial}} vorhanden",
         "notOperationalTag": "Nicht betriebsbereit",
         "selectedNonOpWarningPre": "Das ausgewählte System ist",
         "selectedNonOpWarningPost": "— eine seiner Komponenten ist abgelaufen. Die Missionserstellung wird gesperrt.",
@@ -2050,11 +2053,6 @@
         "missionIdLocked": "Missions-ID kann nicht geändert werden",
         "regenerateId": "ID neu generieren",
         "startDateTime": "Startdatum/-uhrzeit",
-        "recurring": "Wiederkehrend (wöchentlich)",
-        "daysOfWeek": "Wochentage",
-        "repeatUntil": "Wiederholen bis",
-        "groupLabel": "Gruppenbezeichnung",
-        "groupLabelPlaceholder": "z.B. Wöchentliche Patrouille",
         "optional": "(optional)",
         "checkingConflicts": "Konflikte werden geprüft…",
         "conflictsFound_one": "{{count}} Konflikt für diese Drohne gefunden",

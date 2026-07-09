@@ -278,10 +278,6 @@ export type CreateOperationCalendarInput = {
   location?: string
   notes?: string
   status_name?: string
-  is_recurring?: boolean
-  days_of_week?: number[]
-  recur_until?: string
-  mission_group_label?: string
   fk_luc_procedure_id: number
   luc_procedure_steps?: Record<string, unknown> | null
 }

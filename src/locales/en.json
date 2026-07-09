@@ -1935,10 +1935,10 @@
         "groupLabel": "e.g. Spring Survey 2025",
         "notes": "Additional notes…",
         "selectDot": "Select…",
-        "missionCode": "Leave blank to auto-generate from the log"
+        "missionCode": "Leave blank to auto-generate"
       },
       "info": {
-        "gutmaAutoExtract": "Mission code, altitude, distance and timestamps are extracted automatically from the GUTMA log file. You can override the mission code below if you'd like.",
+        "gutmaAutoExtract": "Altitude, distance and timestamps are extracted automatically from the GUTMA log file. The mission code is auto-generated unless you set one below.",
         "clickToUpload": "Click to upload",
         "uploadOrSelectFlight": "Upload a .gutma/.zip file or select a Control Center flight log to auto-fetch.",
         "noPlansForDrone": "No plans for this drone",
@@ -1954,7 +1954,9 @@
         "notOperational": "Not Operational",
         "dismissed": "Dismissed",
         "inMaintenance": "Maintenance",
-        "maintenanceDue": "Maintenance Due"
+        "maintenanceDue": "Maintenance Due",
+        "snMismatch": "SN Mismatch",
+        "noSystemWithSerial": "No system is present with the serial number {{serial}}"
       },
       "review": {
         "client": "Client",
@@ -2029,7 +2031,8 @@
         "maintenanceTag": "MAINTENANCE",
         "maintenanceDueTag": "MAINTENANCE DUE",
         "maintenanceDueWarning": "One or more drones have maintenance due. Review before scheduling.",
-        "serialMismatchWarning": "This system's serial number ({{droneSn}}) doesn't match the flight log's drone serial number ({{logSn}}). You can still create this mission.",
+        "snMismatchTag": "SN Mismatch",
+        "noSystemWithSerial": "No system is present with the serial number {{serial}}",
         "notOperationalTag": "Not Operational",
         "selectedNonOpWarningPre": "The selected system is",
         "selectedNonOpWarningPost": "— one of its components has expired. Mission creation will be blocked.",
@@ -2064,11 +2067,6 @@
         "missionIdLocked": "Mission ID cannot be changed",
         "regenerateId": "Regenerate ID",
         "startDateTime": "Start Date/Time",
-        "recurring": "Recurring (weekly)",
-        "daysOfWeek": "Days of week",
-        "repeatUntil": "Repeat until",
-        "groupLabel": "Group label",
-        "groupLabelPlaceholder": "e.g. Weekly patrol",
         "optional": "(optional)",
         "checkingConflicts": "Checking for conflicts…",
         "conflictsFound_one": "{{count}} conflict found for this drone",

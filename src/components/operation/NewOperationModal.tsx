@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { EmergencyResponsePlan } from '@/config/types/erp'
 import { toastWithDcc } from '@/lib/dcc-toast'
+import { serialsMatch } from '@/lib/serial-number'
 import { cn } from '@/lib/utils'
 import axios from 'axios'
 import {
@@ -113,7 +114,6 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
         missionCode: '', scheduledStart: '', scheduledEnd: '',
         missionName: '', location: '', notes: '', distanceFlown: '',
         typeId: '', categoryId: '', lucId: '',
-        isRecurring: false, daysOfWeek: [], recurUntil: '', missionGroupLabel: '',
     })
 
     const [conflicts, setConflicts] = useState<ConflictEvent[]>([])
@@ -212,7 +212,6 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
             typeId: editOperation.fk_mission_type_id?.toString() ?? '',
             categoryId: editOperation.fk_mission_category_id?.toString() ?? '',
             lucId: editOperation.fk_luc_procedure_id?.toString() ?? '',
-            isRecurring: false, daysOfWeek: [], recurUntil: '', missionGroupLabel: '',
         })
         setStep(2)
     }, [editOperation, open])
@@ -387,7 +386,6 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
             missionCode: '', scheduledStart: '', scheduledEnd: '',
             missionName: '', location: '', notes: '', distanceFlown: '',
             typeId: '', categoryId: '', lucId: '',
-            isRecurring: false, daysOfWeek: [], recurUntil: '', missionGroupLabel: '',
         })
         setPostFlight({
             actual_start: '', actual_end: '', result_id: null, flight_duration_min: '', distance_m: '',
@@ -409,6 +407,10 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
         if (step === 1) return isEdit || !!clientId
         if (step === 2) {
             if (!droneId) return false
+            if (logSerialNumber) {
+                const selected = drones.find(d => String(d.tool_id) === droneId)
+                if (!serialsMatch(selected?.drone_serial_number, logSerialNumber)) return false
+            }
             if (opType === 'PDRA') {
                 if (!planId) return false
                 const selected = clientPlannings.find(p => String(p.planning_id) === planId)
@@ -418,7 +420,6 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
         }
         if (step === 3) {
             if (!schedulerForm.missionCode.trim() || !schedulerForm.scheduledStart || !schedulerForm.lucId) return false
-            if (schedulerForm.isRecurring && (schedulerForm.daysOfWeek.length === 0 || !schedulerForm.recurUntil)) return false
             return true
         }
         if (step === 4) return !!pilotId
@@ -486,12 +487,6 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                 // completed, not scheduled for the future.
                 status_name: createPrefill ? 'COMPLETED' : 'PLANNED',
                 ...(visualObserverIds.length > 0 && { visual_observer_ids: visualObserverIds.map(Number) }),
-                ...(schedulerForm.isRecurring && {
-                    is_recurring: true,
-                    days_of_week: schedulerForm.daysOfWeek,
-                    recur_until: schedulerForm.recurUntil,
-                    mission_group_label: schedulerForm.missionGroupLabel || undefined,
-                }),
             }
             const res = await axios.post('/api/operation', payload)
             if (!res.data.success) throw new Error(res.data.error ?? t('operations.newOperation.toast.createError'))

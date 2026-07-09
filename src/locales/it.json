@@ -1927,10 +1927,10 @@
         "groupLabel": "es. Rilevamento Primavera 2025",
         "notes": "Note aggiuntive…",
         "selectDot": "Seleziona…",
-        "missionCode": "Lascia vuoto per generarlo automaticamente dal log"
+        "missionCode": "Lascia vuoto per generarlo automaticamente"
       },
       "info": {
-        "gutmaAutoExtract": "Codice missione, altitudine, distanza e timestamp vengono estratti automaticamente dal file di log GUTMA. Puoi sovrascrivere il codice missione qui sotto.",
+        "gutmaAutoExtract": "Altitudine, distanza e timestamp vengono estratti automaticamente dal file di log GUTMA. Il codice missione viene generato automaticamente a meno che non ne imposti uno qui sotto.",
         "clickToUpload": "Clicca per caricare",
         "noPlansForDrone": "Nessun piano per questo drone",
         "selectDroneFirst": "Seleziona prima il drone",
@@ -1945,7 +1945,9 @@
         "notOperational": "Non Operativo",
         "dismissed": "Dismesso",
         "inMaintenance": "Manutenzione",
-        "maintenanceDue": "Manutenzione in Scadenza"
+        "maintenanceDue": "Manutenzione in Scadenza",
+        "snMismatch": "SN non corrispondente",
+        "noSystemWithSerial": "Nessun sistema è presente con il numero di serie {{serial}}"
       },
       "review": {
         "client": "Cliente",
@@ -2017,7 +2019,8 @@
         "maintenanceTag": "MANUTENZIONE",
         "maintenanceDueTag": "MANUTENZIONE SCADUTA",
         "maintenanceDueWarning": "Uno o più droni richiedono manutenzione. Verifica prima di pianificare.",
-        "serialMismatchWarning": "Il numero di serie di questo sistema ({{droneSn}}) non corrisponde al numero di serie del drone nel log di volo ({{logSn}}). Puoi comunque creare questa missione.",
+        "snMismatchTag": "SN non corrispondente",
+        "noSystemWithSerial": "Nessun sistema è presente con il numero di serie {{serial}}",
         "notOperationalTag": "Non Operativo",
         "selectedNonOpWarningPre": "Il sistema selezionato è",
         "selectedNonOpWarningPost": "— uno dei suoi componenti è scaduto. La creazione della missione sarà bloccata.",
@@ -2052,11 +2055,6 @@
         "missionIdLocked": "L'ID missione non può essere modificato",
         "regenerateId": "Rigenera ID",
         "startDateTime": "Data/Ora Inizio",
-        "recurring": "Ricorrente (settimanale)",
-        "daysOfWeek": "Giorni della settimana",
-        "repeatUntil": "Ripeti fino a",
-        "groupLabel": "Etichetta gruppo",
-        "groupLabelPlaceholder": "es. Pattuglia settimanale",
         "optional": "(opzionale)",
         "checkingConflicts": "Verifica conflitti in corso…",
         "conflictsFound_one": "{{count}} conflitto trovato per questo drone",
