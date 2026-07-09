@@ -39,7 +39,11 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 interface Client        { client_id: number; client_name: string; client_code: string }
-interface DroneSystem   { tool_id: number; tool_code: string; tool_name: string }
+interface DroneSystem   {
+    tool_id: number; tool_code: string; tool_name: string;
+    in_maintenance?: boolean; maintenance_due?: boolean;
+    is_non_operational?: boolean; is_dismissed?: boolean;
+}
 interface MissionPlan   { mission_planning_id: number; mission_planning_code: string; mission_planning_desc: string }
 interface SelectOption  { id: number; name: string }
 interface Pilot         { user_id: number; first_name: string; last_name: string }
@@ -587,7 +591,36 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                                     {t(`${ns}.info.noData`)}
                                                 </div>
                                             ) : drones.map((d) => (
-                                                <SelectItem key={d.tool_id} value={String(d.tool_id)}>{d.tool_code}</SelectItem>
+                                                <SelectItem
+                                                    key={d.tool_id}
+                                                    value={String(d.tool_id)}
+                                                    disabled={!!d.is_non_operational || !!d.is_dismissed || !!d.in_maintenance}
+                                                    className={cn((d.is_non_operational || d.is_dismissed || d.in_maintenance) && 'opacity-50')}
+                                                >
+                                                    <span className="flex items-center gap-2">
+                                                        <span>{d.tool_code}</span>
+                                                        {d.is_non_operational && (
+                                                            <span className="text-[10px] font-semibold text-red-600 bg-red-50 border border-red-200 rounded px-1.5 py-0.5 leading-none">
+                                                                {t(`${ns}.info.notOperational`)}
+                                                            </span>
+                                                        )}
+                                                        {!d.is_non_operational && d.is_dismissed && (
+                                                            <span className="text-[10px] font-semibold text-slate-600 bg-slate-100 border border-slate-300 rounded px-1.5 py-0.5 leading-none">
+                                                                {t(`${ns}.info.dismissed`)}
+                                                            </span>
+                                                        )}
+                                                        {!d.is_non_operational && !d.is_dismissed && d.in_maintenance && (
+                                                            <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 leading-none">
+                                                                {t(`${ns}.info.inMaintenance`)}
+                                                            </span>
+                                                        )}
+                                                        {!d.is_non_operational && !d.is_dismissed && !d.in_maintenance && d.maintenance_due && (
+                                                            <span className="text-[10px] font-semibold text-orange-600 bg-orange-50 border border-orange-200 rounded px-1.5 py-0.5 leading-none">
+                                                                {t(`${ns}.info.maintenanceDue`)}
+                                                            </span>
+                                                        )}
+                                                    </span>
+                                                </SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
