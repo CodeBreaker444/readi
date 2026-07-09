@@ -39,7 +39,11 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 interface Client        { client_id: number; client_name: string; client_code: string }
-interface DroneSystem   { tool_id: number; tool_code: string; tool_name: string }
+interface DroneSystem   {
+    tool_id: number; tool_code: string; tool_name: string;
+    in_maintenance?: boolean; maintenance_due?: boolean;
+    is_non_operational?: boolean; is_dismissed?: boolean;
+}
 interface MissionPlan   { mission_planning_id: number; mission_planning_code: string; mission_planning_desc: string }
 interface SelectOption  { id: number; name: string }
 interface Pilot         { user_id: number; first_name: string; last_name: string }
@@ -95,6 +99,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
     const [types,      setTypes]      = useState<SelectOption[]>([]);
     const [statuses,   setStatuses]   = useState<SelectOption[]>([]);
     const [pilots,     setPilots]     = useState<Pilot[]>([]);
+    const [lucProcedures, setLucProcedures] = useState<SelectOption[]>([]);
     const [loadingClients, setLoadingClients] = useState(false);
     const [loadingDrones, setLoadingDrones] = useState(false);
     const [loadingMissionOptions, setLoadingMissionOptions] = useState(false);
@@ -120,6 +125,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
     const [typeId,      setTypeId]      = useState('');
     const [planId,      setPlanId]      = useState('N');
     const [statusId,    setStatusId]    = useState('');
+    const [lucProcedureId, setLucProcedureId] = useState('');
     const [location,    setLocation]    = useState('');
     const [groupLabel,  setGroupLabel]  = useState('');
     const [notes,       setNotes]       = useState('');
@@ -162,9 +168,11 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
             axios.get('/api/operation/import/options?type=categories'),
             axios.get('/api/operation/import/options?type=types'),
             axios.get('/api/operation/import/options?type=statuses'),
-        ]).then(([cat, typ, sta]) => {
+            axios.get('/api/operation/import/options?type=lucProcedures'),
+        ]).then(([cat, typ, sta, luc]) => {
             setCategories(cat.data.categories ?? []);
             setTypes(typ.data.types ?? []);
+            setLucProcedures(luc.data.lucProcedures ?? []);
             const statusList: SelectOption[] = sta.data.statuses ?? [];
             setStatuses(statusList);
             // status to "Completed" instead of making the user pick it.
@@ -201,10 +209,10 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
         setClientId(''); setPlatform('FLYTBASE'); setLogFile(null);
         setOrganizations([]); setOrganizationId(''); setLoadingOrgs(false);
         setVehicleId(''); setMissionCode(''); setCategoryId(''); setTypeId(''); setPlanId('N');
-        setStatusId(''); setLocation(''); setGroupLabel(''); setNotes(''); setPilotId('');
+        setStatusId(''); setLucProcedureId(''); setLocation(''); setGroupLabel(''); setNotes(''); setPilotId('');
         setFbWindow('30'); setFlights([]); setSelectedFlightId(''); setFlightsError('');
         setLogSerialNumber(null); setLoadingSerialNumber(false);
-        setDrones([]); setPlans([]); setCategories([]); setTypes([]); setStatuses([]); setPilots([]);
+        setDrones([]); setPlans([]); setCategories([]); setTypes([]); setStatuses([]); setPilots([]); setLucProcedures([]);
         setLoadingClients(false); setLoadingDrones(false); setLoadingMissionOptions(false); setLoadingPlans(false); setLoadingPilots(false);
     }
 
@@ -270,10 +278,10 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
     const canNext = useCallback(() => {
         if (step === 1) return !!clientId;
         if (step === 2) return !!logFile || !!selectedFlightId;
-        if (step === 3) return !!vehicleId && !!categoryId && !!typeId && !!statusId;
+        if (step === 3) return !!vehicleId && !!categoryId && !!typeId && !!statusId && !!lucProcedureId;
         if (step === 4) return !!pilotId;
         return true;
-    }, [step, clientId, logFile, vehicleId, categoryId, typeId, statusId, pilotId]);
+    }, [step, clientId, logFile, vehicleId, categoryId, typeId, statusId, lucProcedureId, pilotId]);
 
     async function handleSubmit() {
         if (!logFile && !selectedFlightId) return;
@@ -288,6 +296,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
             fd.append('mission_type',        typeId);
             fd.append('mission_plan',        planId);
             fd.append('mission_status',      statusId);
+            fd.append('mission_luc_procedure', lucProcedureId);
             fd.append('mission_code',        missionCode.trim());
             fd.append('mission_location',    location);
             fd.append('mission_group_label', groupLabel);
@@ -577,8 +586,41 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                             ) : <SelectValue placeholder={t(`${ns}.placeholders.selectDot`)} />}
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {drones.map((d) => (
-                                                <SelectItem key={d.tool_id} value={String(d.tool_id)}>{d.tool_code}</SelectItem>
+                                            {drones.length === 0 ? (
+                                                <div className="px-3 py-2 text-xs text-muted-foreground italic">
+                                                    {t(`${ns}.info.noData`)}
+                                                </div>
+                                            ) : drones.map((d) => (
+                                                <SelectItem
+                                                    key={d.tool_id}
+                                                    value={String(d.tool_id)}
+                                                    disabled={!!d.is_non_operational || !!d.is_dismissed || !!d.in_maintenance}
+                                                    className={cn((d.is_non_operational || d.is_dismissed || d.in_maintenance) && 'opacity-50')}
+                                                >
+                                                    <span className="flex items-center gap-2">
+                                                        <span>{d.tool_code}</span>
+                                                        {d.is_non_operational && (
+                                                            <span className="text-[10px] font-semibold text-red-600 bg-red-50 border border-red-200 rounded px-1.5 py-0.5 leading-none">
+                                                                {t(`${ns}.info.notOperational`)}
+                                                            </span>
+                                                        )}
+                                                        {!d.is_non_operational && d.is_dismissed && (
+                                                            <span className="text-[10px] font-semibold text-slate-600 bg-slate-100 border border-slate-300 rounded px-1.5 py-0.5 leading-none">
+                                                                {t(`${ns}.info.dismissed`)}
+                                                            </span>
+                                                        )}
+                                                        {!d.is_non_operational && !d.is_dismissed && d.in_maintenance && (
+                                                            <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 leading-none">
+                                                                {t(`${ns}.info.inMaintenance`)}
+                                                            </span>
+                                                        )}
+                                                        {!d.is_non_operational && !d.is_dismissed && !d.in_maintenance && d.maintenance_due && (
+                                                            <span className="text-[10px] font-semibold text-orange-600 bg-orange-50 border border-orange-200 rounded px-1.5 py-0.5 leading-none">
+                                                                {t(`${ns}.info.maintenanceDue`)}
+                                                            </span>
+                                                        )}
+                                                    </span>
+                                                </SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
@@ -674,6 +716,30 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                 </div>
                             </div>
 
+                            <div className="max-w-xs">
+                                <Label className="mb-1.5 block">
+                                    {t(`${ns}.fields.procedure`)} <span className="text-red-500">*</span>
+                                </Label>
+                                <Select value={lucProcedureId} onValueChange={setLucProcedureId} disabled={loadingMissionOptions}>
+                                    <SelectTrigger>
+                                        {loadingMissionOptions ? (
+                                            <span className="flex items-center gap-2 text-muted-foreground">
+                                                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading...
+                                            </span>
+                                        ) : <SelectValue placeholder={t(`${ns}.placeholders.selectDot`)} />}
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {lucProcedures.length === 0 ? (
+                                            <div className="px-3 py-2 text-xs text-muted-foreground italic">
+                                                {t(`${ns}.info.noData`)}
+                                            </div>
+                                        ) : lucProcedures.map((p) => (
+                                            <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
                                     <Label className="mb-1.5 block">{t(`${ns}.fields.groupLabel`)}
@@ -752,6 +818,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                         <Row label={t(`${ns}.review.category`)} value={categories.find((c) => String(c.id) === categoryId)?.name} />
                                         <Row label={t(`${ns}.review.type`)}     value={types.find((tp) => String(tp.id) === typeId)?.name} />
                                         <Row label={t(`${ns}.review.status`)}   value={statusLabel} />
+                                        <Row label={t(`${ns}.review.procedure`)} value={lucProcedures.find((p) => String(p.id) === lucProcedureId)?.name} />
                                         <Row label={t(`${ns}.review.location`)} value={location} />
                                         <Row label={t(`${ns}.review.plan`)}     value={planId === 'N' ? t(`${ns}.info.none`) : plans.find((p) => String(p.mission_planning_id) === planId)?.mission_planning_code} />
                                         <Row label={t(`${ns}.review.pilot`)}    value={pilotLabel} />
