@@ -444,7 +444,8 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
               variant="outline"
               size="sm"
               onClick={handleOpenAttachMissionModal}
-              disabled={!selectedFlight || !preview}
+              disabled={!selectedFlight || !preview || !!selectedFlight?.linked_to_mission}
+              title={selectedFlight?.linked_to_mission ? 'This flight log is already attached to a mission' : undefined}
               className={`h-8 gap-1.5 cursor-pointer text-xs ${isDark ? 'border-slate-700 bg-slate-800 text-slate-300' : 'border-slate-200 text-slate-600'}`}
             >
               <HiLink className="h-3.5 w-3.5" />

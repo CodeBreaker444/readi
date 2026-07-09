@@ -307,6 +307,13 @@ export async function attachFlytbaseFlightLog(
   flightId: string,
   organizationId: number | null = null
 ): Promise<void> {
+  // A flight log can only ever be attached to one mission — reject if it's already linked
+  const existingLink = await prisma.mission_flight_logs.findFirst({
+    where: { flytbase_flight_id: flightId, log_source: 'flytbase' },
+    select: { log_id: true },
+  });
+  if (existingLink) throw new Error('This flight log is already attached to a mission.');
+
   const creds = organizationId
     ? await getOrganizationCredentials(organizationId)
     : (await getFlytbaseCredentials(userId)) ?? (await getFlytbaseCredentialsForCompany(ownerId, userId));
