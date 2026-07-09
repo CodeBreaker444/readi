@@ -56,6 +56,23 @@ function parseDurationSeconds(start?: string | null, end?: string | null): numbe
   return isNaN(ms) || ms < 0 ? null : Math.round(ms / 1000);
 }
 
+const STATUS_NAME_TO_ID: Record<string, number> = {
+  PLANNED: 1,
+  IN_PROGRESS: 2,
+  COMPLETED: 3,
+  CANCELLED: 4,
+  ABORTED: 5,
+};
+
+function normalizeStatusName(rawName: string | null | undefined): string {
+  const s = (rawName ?? '').toLowerCase();
+  if (s.includes('progress')) return 'IN_PROGRESS';
+  if (s.includes('complet')) return 'COMPLETED';
+  if (s.includes('cancel')) return 'CANCELLED';
+  if (s.includes('abort')) return 'ABORTED';
+  return 'PLANNED';
+}
+
 // Same 6-char alphanumeric scheme as the normal mission-creation flow
 // (NewOperationModal.generateMissionId) — not derived from the log file.
 const MISSION_CODE_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -118,13 +135,15 @@ async function processGutmaBuffer(
     return { duplicate: true, error: `Duplicate mission_code "${missionCode}" — skipped` };
   }
 
-  let statusName: string | null = null;
+  // Imports represent flights that already happened, so default to COMPLETED
+  // (matches the wizard's own default status selection) if no status was chosen.
+  let statusName = 'COMPLETED';
   if (params.statusId) {
     const st = await prisma.pilot_mission_status.findUnique({
       where: { status_id: params.statusId },
       select: { status_name: true },
     });
-    statusName = st?.status_name ?? null;
+    if (st?.status_name) statusName = normalizeStatusName(st.status_name);
   }
 
   const notesArr = [
@@ -144,7 +163,7 @@ async function processGutmaBuffer(
       fk_mission_planning_id: params.missionPlanningId || null,
       fk_mission_type_id: params.typeId || null,
       fk_mission_category_id: params.categoryId || null,
-      fk_mission_status_id: params.statusId || null,
+      fk_mission_status_id: STATUS_NAME_TO_ID[statusName] ?? 3,
       fk_luc_procedure_id: params.lucProcedureId || null,
       mission_code: missionCode,
       mission_name: missionCode,
