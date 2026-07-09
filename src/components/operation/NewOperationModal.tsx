@@ -47,6 +47,13 @@ import { OperationStepPilot } from './OperationStepPilot'
 import { OperationStepScheduler } from './OperationStepScheduler'
 import { PostFlightTab, type MissionResultOption, type PostFlightState } from './PostFlightTab'
 
+export interface NewOperationCreatePrefill {
+    missionCode?: string | null
+    scheduledStart?: string | null
+    scheduledEnd?: string | null
+    distanceFlown?: number | null
+}
+
 export interface NewOperationModalProps {
     open: boolean
     onClose: () => void
@@ -54,6 +61,8 @@ export interface NewOperationModalProps {
     isDark: boolean
     editOperation?: Operation | null
     onSaved?: (op: Operation) => void
+    logSerialNumber?: string | null
+    createPrefill?: NewOperationCreatePrefill | null
 }
 
 type EditTab = 'data' | 'execution' | 'log' | 'postFlight' | 'maintenance'
@@ -66,7 +75,7 @@ const EDIT_TABS = [
     { id: 'maintenance' as const, labelKey: 'operations.newOperation.tabs.maintenance',         icon: Wrench },
 ]
 
-export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperation, onSaved }: NewOperationModalProps) {
+export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperation, onSaved, logSerialNumber, createPrefill }: NewOperationModalProps) {
     const isEdit = !!editOperation
     const { timezone } = useTimezone()
     const { t } = useTranslation()
@@ -206,6 +215,19 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
         })
         setStep(2)
     }, [editOperation, open])
+
+    // Seed mission code, start,and end distance from a flight log when this
+    // mission is being created specifically to attach that log (control-center flow).
+    useEffect(() => {
+        if (!open || isEdit || !createPrefill) return
+        setSchedulerForm(prev => ({
+            ...prev,
+            missionCode: createPrefill.missionCode || prev.missionCode,
+            scheduledStart: createPrefill.scheduledStart ? isoToLocalInput(createPrefill.scheduledStart) : prev.scheduledStart,
+            scheduledEnd: createPrefill.scheduledEnd ? isoToLocalInput(createPrefill.scheduledEnd) : prev.scheduledEnd,
+            distanceFlown: createPrefill.distanceFlown != null ? String(createPrefill.distanceFlown) : prev.distanceFlown,
+        }))
+    }, [open, isEdit, createPrefill])
 
     useEffect(() => {
         if (!clientId) {
@@ -457,7 +479,9 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                 location: schedulerForm.location || undefined,
                 notes: schedulerForm.notes || undefined,
                 distance_flown: schedulerForm.distanceFlown !== '' ? parseFloat(schedulerForm.distanceFlown) : null,
-                status_name: 'PLANNED',
+                // A mission created to attach an already-flown log is inherently
+                // completed, not scheduled for the future.
+                status_name: createPrefill ? 'COMPLETED' : 'PLANNED',
                 ...(visualObserverIds.length > 0 && { visual_observer_ids: visualObserverIds.map(Number) }),
                 ...(schedulerForm.isRecurring && {
                     is_recurring: true,
@@ -469,6 +493,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
             const res = await axios.post('/api/operation', payload)
             if (!res.data.success) throw new Error(res.data.error ?? t('operations.newOperation.toast.createError'))
             toast.success(t('operations.newOperation.toast.createSuccess'))
+            onSaved?.(res.data)
             onSuccess(); onClose()
         } catch (err: any) {
             const data = err.response?.data
@@ -644,6 +669,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                             onErpGroupChange={setErpGroupId}
                             loadingErpGroups={loadingErpGroups}
                             selectedPlanName={editOperation?.planning_name ?? undefined}
+                            logSerialNumber={logSerialNumber}
                         />
                     )}
 

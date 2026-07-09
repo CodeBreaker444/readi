@@ -2022,6 +2022,7 @@
         "maintenanceTag": "MAINTENANCE",
         "maintenanceDueTag": "MAINTENANCE DUE",
         "maintenanceDueWarning": "One or more drones have maintenance due. Review before scheduling.",
+        "serialMismatchWarning": "This system's serial number ({{droneSn}}) doesn't match the flight log's drone serial number ({{logSn}}). You can still create this mission.",
         "notOperationalTag": "Not Operational",
         "selectedNonOpWarningPre": "The selected system is",
         "selectedNonOpWarningPost": "— one of its components has expired. Mission creation will be blocked.",
