@@ -8,8 +8,17 @@ import {
   getOrganizationCredentials,
   getUserFlytbaseCredentials,
 } from '@/backend/services/integrations/flytbase-organization-service';
+import { getFlightIdsLinkedToMission } from '@/backend/services/operation/mission-service';
 import { requireAuth } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
+
+async function withMissionLinkFlags<T extends { flight_id: string }>(
+  flights: T[],
+  ownerId: number,
+): Promise<(T & { linked_to_mission: boolean })[]> {
+  const linkedIds = await getFlightIdsLinkedToMission(flights.map((f) => f.flight_id), ownerId);
+  return flights.map((f) => ({ ...f, linked_to_mission: linkedIds.has(f.flight_id) }));
+}
 
 export async function GET(req: NextRequest) {
   try {
@@ -62,7 +71,8 @@ export async function GET(req: NextRequest) {
 
     if (mode === 'latest') {
       const { flights, total } = await fetchLatestFlights(creds.token, creds.orgId, page, pageSize);
-      return NextResponse.json({ success: true, flights, total, mode: 'latest', page, pageSize });
+      const flightsWithLinks = await withMissionLinkFlags(flights, session!.user.ownerId);
+      return NextResponse.json({ success: true, flights: flightsWithLinks, total, mode: 'latest', page, pageSize });
     }
 
     const windowParam = req.nextUrl.searchParams.get('window');
@@ -72,7 +82,8 @@ export async function GET(req: NextRequest) {
     );
 
     const { flights, total } = await fetchRecentFlights(creds.token, creds.orgId, windowMinutes, page, pageSize);
-    return NextResponse.json({ success: true, flights, total, windowMinutes, page, pageSize });
+    const flightsWithLinks = await withMissionLinkFlags(flights, session!.user.ownerId);
+    return NextResponse.json({ success: true, flights: flightsWithLinks, total, windowMinutes, page, pageSize });
   } catch (err: any) {
     console.error('[GET /api/integrations/flytbase/flights]', err);
     return NextResponse.json({ success: false, message: err.message }, { status: 500 });

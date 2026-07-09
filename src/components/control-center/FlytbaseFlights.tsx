@@ -32,6 +32,7 @@ interface Flight {
   pilot_name?: string;
   mission_name?: string;
   status?: string;
+  linked_to_mission?: boolean;
 }
 
 interface Props {
@@ -357,6 +358,11 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
+                  {flight.linked_to_mission && (
+                    <Badge variant="outline" className={`text-[10px] px-1.5 py-0 h-4 ${isDark ? 'border-violet-800/50 text-violet-400' : 'border-violet-200 text-violet-600'}`}>
+                      Manual Mission
+                    </Badge>
+                  )}
                   {flight.status && (
                     <Badge variant="outline" className={`text-[10px] px-1.5 py-0 h-4 ${isDark ? 'border-slate-700 text-slate-400' : 'border-slate-200 text-slate-500'}`}>
                       {flight.status}

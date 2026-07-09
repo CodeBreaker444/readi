@@ -172,3 +172,38 @@ export async function getAttachableMissions(droneSerialNumber: string, ownerId: 
 
   return missions;
 }
+
+/**
+ * Returns the set of FlytBase flight IDs (out of the given list) that already
+ * have a flight log attached to a mission belonging to this owner.
+ */
+export async function getFlightIdsLinkedToMission(
+  flightIds: string[],
+  ownerId: number,
+): Promise<Set<string>> {
+  if (flightIds.length === 0) return new Set();
+
+  const logs = await prisma.mission_flight_logs.findMany({
+    where: {
+      flytbase_flight_id: { in: flightIds },
+      log_source: 'flytbase',
+    },
+    select: { flytbase_flight_id: true, fk_mission_id: true },
+  });
+  if (logs.length === 0) return new Set();
+
+  const missionIds = [...new Set(logs.map((log) => Number(log.fk_mission_id)))];
+  const ownedMissions = await prisma.pilot_mission.findMany({
+    where: { pilot_mission_id: { in: missionIds }, fk_owner_id: ownerId },
+    select: { pilot_mission_id: true },
+  });
+  const ownedMissionIds = new Set(ownedMissions.map((m) => m.pilot_mission_id));
+
+  const linked = new Set<string>();
+  for (const log of logs) {
+    if (log.flytbase_flight_id && ownedMissionIds.has(Number(log.fk_mission_id))) {
+      linked.add(log.flytbase_flight_id);
+    }
+  }
+  return linked;
+}
