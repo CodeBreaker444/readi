@@ -1,4 +1,4 @@
-import { importCategories, importClinets, importDrones, importPilots, importPlans, importStatus, importTypes } from '@/backend/services/operation/importOperation-service';
+import { importCategories, importClinets, importDrones, importLucProcedures, importPilots, importPlans, importStatus, importTypes } from '@/backend/services/operation/importOperation-service';
 import { requirePermission } from '@/lib/auth/api-auth';
 import { internalError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
@@ -65,6 +65,13 @@ export async function GET(req: NextRequest) {
       case 'pilots': {
        const data = await importPilots(ownerId)
         return NextResponse.json({ pilots: data });
+      }
+
+      case 'lucProcedures': {
+        const data = await importLucProcedures(ownerId)
+        return NextResponse.json({
+          lucProcedures: (data ?? []).map((r: any) => ({ id: r.procedure_id, name: `${r.procedure_code} — ${r.procedure_name}` })),
+        });
       }
 
       default:

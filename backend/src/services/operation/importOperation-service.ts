@@ -16,6 +16,7 @@ export interface ImportMissionParams {
   statusId: number;
   resultId: number;
   pilotId: number;
+  lucProcedureId: number | null;
   groupLabel: string;
   notes: string;
   location: string;
@@ -113,6 +114,7 @@ async function processGutmaBuffer(
       fk_mission_type_id: params.typeId || null,
       fk_mission_category_id: params.categoryId || null,
       fk_mission_status_id: params.statusId || null,
+      fk_luc_procedure_id: params.lucProcedureId || null,
       mission_code: missionCode,
       mission_name: missionCode,
       status_name: statusName,
@@ -265,11 +267,15 @@ export async function importClinets(ownerId: number) {
 }
 
 export async function importDrones(ownerId: number, clientId?: number) {
-  const tools = await prisma.tool.findMany({
+  const allTools = await prisma.tool.findMany({
     where: { fk_owner_id: ownerId, tool_active: 'Y' },
     orderBy: { tool_code: 'asc' },
     select: { tool_id: true, tool_code: true, tool_name: true, tool_metadata: true },
   });
+
+  const tools = clientId
+    ? allTools.filter((t) => (t.tool_metadata as any)?.clientId === clientId)
+    : allTools;
 
   const toolIds = tools.map((t) => t.tool_id);
   const inMaintenanceSet = new Set<number>();
@@ -359,6 +365,14 @@ export async function importStatus(ownerId: number) {
     where: { fk_owner_id: ownerId, is_active: true },
     orderBy: { status_order: 'asc' },
     select: { status_id: true, status_name: true },
+  });
+}
+
+export async function importLucProcedures(ownerId: number) {
+  return prisma.luc_procedure.findMany({
+    where: { fk_owner_id: ownerId, procedure_status: 'MISSION', procedure_active: 'Y' },
+    orderBy: { procedure_name: 'asc' },
+    select: { procedure_id: true, procedure_name: true, procedure_code: true },
   });
 }
 
