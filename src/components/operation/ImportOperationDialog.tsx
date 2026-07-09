@@ -28,6 +28,7 @@ import {
     Clock,
     FileText,
     FileUp,
+    Fingerprint,
     Loader2,
     Settings,
     Upload,
@@ -42,6 +43,7 @@ interface DroneSystem   { tool_id: number; tool_code: string; tool_name: string 
 interface MissionPlan   { mission_planning_id: number; mission_planning_code: string; mission_planning_desc: string }
 interface SelectOption  { id: number; name: string }
 interface Pilot         { user_id: number; first_name: string; last_name: string }
+interface FlytbaseOrganization { id: number; name: string }
 interface FlytbaseFlight {
     flight_id: string;
     flight_name?: string;
@@ -102,12 +104,18 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
     const [clientId,    setClientId]    = useState('');
     const [platform,    setPlatform]    = useState('FLYTBASE');
     const [logFile,     setLogFile]     = useState<File | null>(null);
+    const [organizations, setOrganizations] = useState<FlytbaseOrganization[]>([]);
+    const [organizationId, setOrganizationId] = useState('');
+    const [loadingOrgs, setLoadingOrgs] = useState(false);
     const [fbWindow, setFbWindow] = useState('30');
     const [flights, setFlights] = useState<FlytbaseFlight[]>([]);
     const [loadingFlights, setLoadingFlights] = useState(false);
     const [selectedFlightId, setSelectedFlightId] = useState('');
     const [flightsError, setFlightsError] = useState('');
+    const [logSerialNumber, setLogSerialNumber] = useState<string | null>(null);
+    const [loadingSerialNumber, setLoadingSerialNumber] = useState(false);
     const [vehicleId,   setVehicleId]   = useState('');
+    const [missionCode, setMissionCode] = useState('');
     const [categoryId,  setCategoryId]  = useState('');
     const [typeId,      setTypeId]      = useState('');
     const [planId,      setPlanId]      = useState('N');
@@ -125,6 +133,16 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
             .then((r) => setClients(r.data.clients ?? []))
             .catch(() => toast.error(t(`${ns}.toast.loadClientsError`)))
             .finally(() => setLoadingClients(false));
+
+        setLoadingOrgs(true);
+        axios.get('/api/flytbase/my-organizations')
+            .then((r) => {
+                const orgs = r.data.organizations ?? [];
+                setOrganizations(orgs);
+                if (orgs.length > 0) setOrganizationId(String(orgs[0].id));
+            })
+            .catch(() => {})
+            .finally(() => setLoadingOrgs(false));
     }, [open]);
 
     useEffect(() => {
@@ -147,7 +165,14 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
         ]).then(([cat, typ, sta]) => {
             setCategories(cat.data.categories ?? []);
             setTypes(typ.data.types ?? []);
-            setStatuses(sta.data.statuses ?? []);
+            const statusList: SelectOption[] = sta.data.statuses ?? [];
+            setStatuses(statusList);
+            // status to "Completed" instead of making the user pick it.
+            setStatusId((prev) => {
+                if (prev) return prev;
+                const completed = statusList.find((s) => s.name?.toLowerCase() === 'completed');
+                return completed ? String(completed.id) : prev;
+            });
         }).catch(() => toast.error(t(`${ns}.toast.loadMissionOptionsError`)))
           .finally(() => setLoadingMissionOptions(false));
     }, [step]);
@@ -174,20 +199,23 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
     function resetForm() {
         setStep(1); setImportedIds([]); setSkippedList([]);
         setClientId(''); setPlatform('FLYTBASE'); setLogFile(null);
-        setVehicleId(''); setCategoryId(''); setTypeId(''); setPlanId('N');
+        setOrganizations([]); setOrganizationId(''); setLoadingOrgs(false);
+        setVehicleId(''); setMissionCode(''); setCategoryId(''); setTypeId(''); setPlanId('N');
         setStatusId(''); setLocation(''); setGroupLabel(''); setNotes(''); setPilotId('');
         setFbWindow('30'); setFlights([]); setSelectedFlightId(''); setFlightsError('');
+        setLogSerialNumber(null); setLoadingSerialNumber(false);
         setDrones([]); setPlans([]); setCategories([]); setTypes([]); setStatuses([]); setPilots([]);
         setLoadingClients(false); setLoadingDrones(false); setLoadingMissionOptions(false); setLoadingPlans(false); setLoadingPilots(false);
     }
 
     const fetchFlytbaseFlights = useCallback(async () => {
+        if (!organizationId) return;
         setLoadingFlights(true);
         setFlights([]);
         setSelectedFlightId('');
         setFlightsError('');
         try {
-            const { data } = await axios.get(`/api/flytbase/flights?window=${fbWindow}`);
+            const { data } = await axios.get(`/api/flytbase/flights?window=${fbWindow}&organizationId=${organizationId}`);
             if (data.success) {
                 const loaded = data.flights ?? [];
                 setFlights(loaded);
@@ -202,12 +230,42 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
         } finally {
             setLoadingFlights(false);
         }
-    }, [fbWindow, ns, t]);
+    }, [fbWindow, organizationId, ns, t]);
 
     useEffect(() => {
-        if (step !== 2 || platform !== 'FLYTBASE') return;
+        if (step !== 2 || platform !== 'FLYTBASE' || !organizationId) return;
         fetchFlytbaseFlights();
-    }, [step, platform, fetchFlytbaseFlights]);
+    }, [step, platform, organizationId, fetchFlytbaseFlights]);
+
+    // Detect the drone serial number from whichever log source is selected,
+    // so it can be shown as a hint on the Mission Data step.
+    useEffect(() => {
+        if (logFile) {
+            let cancelled = false;
+            setLoadingSerialNumber(true);
+            setLogSerialNumber(null);
+            const fd = new FormData();
+            fd.append('file', logFile);
+            axios.post('/api/operation/import/preview', fd)
+                .then((r) => { if (!cancelled) setLogSerialNumber(r.data.serial_number ?? null); })
+                .catch(() => { if (!cancelled) setLogSerialNumber(null); })
+                .finally(() => { if (!cancelled) setLoadingSerialNumber(false); });
+            return () => { cancelled = true; };
+        }
+        if (selectedFlightId) {
+            let cancelled = false;
+            setLoadingSerialNumber(true);
+            setLogSerialNumber(null);
+            const orgParam = organizationId ? `&organizationId=${organizationId}` : '';
+            axios.get(`/api/flytbase/flights/preview?flightId=${selectedFlightId}${orgParam}`)
+                .then((r) => { if (!cancelled) setLogSerialNumber(r.data?.data?.aircraft?.serial_number?.trim() || null); })
+                .catch(() => { if (!cancelled) setLogSerialNumber(null); })
+                .finally(() => { if (!cancelled) setLoadingSerialNumber(false); });
+            return () => { cancelled = true; };
+        }
+        setLogSerialNumber(null);
+        setLoadingSerialNumber(false);
+    }, [logFile, selectedFlightId, organizationId]);
 
     const canNext = useCallback(() => {
         if (step === 1) return !!clientId;
@@ -229,13 +287,15 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
             fd.append('mission_category',    categoryId);
             fd.append('mission_type',        typeId);
             fd.append('mission_plan',        planId);
-            fd.append('mission_status',      statusId);    
-            fd.append('mission_location',    location);    
+            fd.append('mission_status',      statusId);
+            fd.append('mission_code',        missionCode.trim());
+            fd.append('mission_location',    location);
             fd.append('mission_group_label', groupLabel);
             fd.append('mission_notes',       notes);
             fd.append('pilot_id',            pilotId);
             if (selectedFlightId) {
                 fd.append('flytbase_flight_id', selectedFlightId);
+                if (organizationId) fd.append('organization_id', organizationId);
             }
 
             const { data } = await axios.post('/api/operation/import', fd);
@@ -270,7 +330,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
 
     return (
         <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-            <DialogContent className="max-w-2xl gap-0 p-0 overflow-hidden">
+            <DialogContent className="sm:max-w-3xl gap-0 p-0 overflow-hidden">
                 <DialogHeader className="px-6 pt-6 pb-4 border-b">
                     <DialogTitle className="flex items-center gap-2 text-base font-semibold">
                         <FileUp className="h-5 w-5 text-violet-600" />
@@ -388,6 +448,27 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                             </div>
                             <div className="rounded-md border p-3 space-y-3">
                                 <div className="flex items-end gap-3">
+                                    <div className="w-48">
+                                        <Label className="mb-1.5 block">{t(`${ns}.fields.organization`)}</Label>
+                                        <Select value={organizationId} onValueChange={setOrganizationId} disabled={loadingOrgs || organizations.length === 0}>
+                                            <SelectTrigger>
+                                                {loadingOrgs ? (
+                                                    <span className="flex items-center gap-2 text-muted-foreground">
+                                                        <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading...
+                                                    </span>
+                                                ) : organizations.length === 0 ? (
+                                                    <span className="text-muted-foreground">{t(`${ns}.info.noOrganizations`)}</span>
+                                                ) : (
+                                                    <SelectValue placeholder={t(`${ns}.placeholders.selectOrganization`)} />
+                                                )}
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {organizations.map((o) => (
+                                                    <SelectItem key={o.id} value={String(o.id)}>{o.name}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
                                     <div className="w-40">
                                         <Label className="mb-1.5 block">{t(`${ns}.fields.flytbaseWindow`)}</Label>
                                         <Select value={fbWindow} onValueChange={setFbWindow}>
@@ -401,7 +482,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                             </SelectContent>
                                         </Select>
                                     </div>
-                                    <Button type="button" variant="outline" size="sm" onClick={fetchFlytbaseFlights} disabled={loadingFlights}>
+                                    <Button type="button" variant="outline" size="sm" onClick={fetchFlytbaseFlights} disabled={loadingFlights || !organizationId}>
                                         {loadingFlights ? <Loader2 className="h-4 w-4 animate-spin" /> : t(`${ns}.buttons.refreshFlights`)}
                                     </Button>
                                 </div>
@@ -463,6 +544,26 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                     {step === 3 && (
                         <div className="space-y-3">
                             <SectionTitle>{t(`${ns}.sections.missionDetails`)}</SectionTitle>
+
+                            {loadingSerialNumber ? (
+                                <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-xs text-muted-foreground">
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t(`${ns}.info.detectingSerialNumber`)}
+                                </div>
+                            ) : logSerialNumber ? (
+                                <div className="flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-800 px-3 py-2 text-xs text-emerald-700 dark:text-emerald-400">
+                                    <Fingerprint className="h-3.5 w-3.5 shrink-0" />
+                                    {t(`${ns}.info.detectedSerialNumber`)}: <span className="font-mono font-semibold">{logSerialNumber}</span>
+                                </div>
+                            ) : null}
+
+                            <div>
+                                <Label className="mb-1.5 block">
+                                    {t(`${ns}.fields.missionCode`)}
+                                    <span className="ml-1 text-[10px] text-muted-foreground font-normal">{t(`${ns}.fields.optional`)}</span>
+                                </Label>
+                                <Input value={missionCode} onChange={(e) => setMissionCode(e.target.value)}
+                                    placeholder={t(`${ns}.placeholders.missionCode`)} />
+                            </div>
 
                             <div className="grid grid-cols-3 gap-3">
                                 <div>
@@ -646,6 +747,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                         <Row label={t(`${ns}.review.client`)}   value={clients.find((c) => String(c.client_id) === clientId)?.client_name} />
                                         <Row label={t(`${ns}.review.platform`)} value={platform} />
                                         <Row label={t(`${ns}.review.file`)}     value={logFile?.name || flights.find((f) => f.flight_id === selectedFlightId)?.flight_name || selectedFlightId} />
+                                        <Row label={t(`${ns}.review.missionCode`)} value={missionCode.trim() || t(`${ns}.info.autoGenerated`)} />
                                         <Row label={t(`${ns}.review.drone`)}    value={drones.find((d) => String(d.tool_id) === vehicleId)?.tool_code} />
                                         <Row label={t(`${ns}.review.category`)} value={categories.find((c) => String(c.id) === categoryId)?.name} />
                                         <Row label={t(`${ns}.review.type`)}     value={types.find((tp) => String(tp.id) === typeId)?.name} />

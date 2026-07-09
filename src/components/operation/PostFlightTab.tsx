@@ -1,19 +1,20 @@
 "use client";
 import { cn } from "@/lib/utils";
+import type { FlightWaypoint } from "@/components/control-center/FlightPathMap";
 import {
   AlertTriangle,
   Battery,
   CalendarClock,
   Clock,
+  Map as MapIcon,
   MapPin,
   Sparkles,
   Thermometer,
   Trophy,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useTranslation } from "react-i18next";
 import { Skeleton } from "../ui/skeleton";
-import dynamic from "next/dynamic";
-import type { FlightWaypoint } from "@/components/control-center/FlightPathMap";
 
 const FlightPathMapDynamic = dynamic(
   () => import('@/components/control-center/FlightPathMap').then((m) => ({ default: m.FlightPathMap })),
@@ -27,6 +28,7 @@ export interface MissionResultOption {
 }
 
 export interface PostFlightState {
+  actual_start: string;
   actual_end: string;
   result_id: number | null;
   flight_duration_min: string;
@@ -154,22 +156,19 @@ export function PostFlightTab({ data, resultOptions, loading, fromLog, isDark, o
 
   return (
     <div className="space-y-3">
-      {/* Flight Path Map */}
-      {loadingWaypoints ? (
-        <Skeleton className={cn("h-80 w-full rounded-xl", isDark ? "bg-slate-800" : "")} />
-      ) : hasMap ? (
-        <div className={cn("rounded-xl border overflow-hidden", isDark ? "border-white/6 bg-slate-900/40" : "border-slate-200 bg-white")}>
-          <FlightPathMapDynamic
-            waypoints={waypoints}
-            height="380px"
-            isDark={isDark}
-          />
-        </div>
-      ) : null}
       {/* Mission Outcome */}
       <div className={sectionCls(isDark)}>
         <p className={sectionTitle(isDark)}>{t("operations.missionComplete.postFlight.sections.outcome")}</p>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 mb-3">
+          <div>
+            <FieldLabel icon={CalendarClock} label={t("operations.missionComplete.postFlight.fields.actualStart")} isDark={isDark} fromLog={fromLog && !!data.actual_start} />
+            <input
+              type="datetime-local"
+              value={data.actual_start}
+              onChange={(e) => onChange("actual_start", e.target.value)}
+              className={cn(inputCls(isDark), "text-xs")}
+            />
+          </div>
           <div>
             <FieldLabel icon={CalendarClock} label={t("operations.missionComplete.postFlight.fields.actualEnd")} isDark={isDark} fromLog={fromLog && !!data.actual_end} />
             <input
@@ -179,23 +178,38 @@ export function PostFlightTab({ data, resultOptions, loading, fromLog, isDark, o
               className={cn(inputCls(isDark), "text-xs")}
             />
           </div>
-          <div>
-            <FieldLabel icon={Trophy} label={t("operations.missionComplete.postFlight.fields.missionResult")} isDark={isDark} />
-            <select
-              value={data.result_id ?? ""}
-              onChange={(e) => onChange("result_id", e.target.value ? Number(e.target.value) : null)}
-              className={selectCls(isDark)}
-            >
-              <option value="">{t("operations.missionComplete.postFlight.placeholders.selectResult")}</option>
-              {resultOptions.map((r) => (
-                <option key={r.mission_result_id} value={r.mission_result_id}>
-                  {r.mission_result_desc}
-                </option>
-              ))}
-            </select>
-          </div>
+        </div>
+        <div>
+          <FieldLabel icon={Trophy} label={t("operations.missionComplete.postFlight.fields.missionResult")} isDark={isDark} />
+          <select
+            value={data.result_id ?? ""}
+            onChange={(e) => onChange("result_id", e.target.value ? Number(e.target.value) : null)}
+            className={selectCls(isDark)}
+          >
+            <option value="">{t("operations.missionComplete.postFlight.placeholders.selectResult")}</option>
+            {resultOptions.map((r) => (
+              <option key={r.mission_result_id} value={r.mission_result_id}>
+                {r.mission_result_desc}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
+
+      {/* Flight Path */}
+      {(loadingWaypoints || hasMap) && (
+        <div className={sectionCls(isDark)}>
+          <div className="flex items-center gap-1.5 mb-3">
+            <MapIcon className={cn("h-3.5 w-3.5 shrink-0", isDark ? "text-slate-500" : "text-slate-400")} />
+            <p className={cn(sectionTitle(isDark), "mb-0")}>{t("operations.missionComplete.postFlight.sections.flightPath")}</p>
+          </div>
+          {loadingWaypoints ? (
+            <Skeleton className={cn("h-[320px] w-full rounded-lg", isDark ? "bg-slate-800" : "")} />
+          ) : (
+            <FlightPathMapDynamic waypoints={waypoints!} height="320px" isDark={isDark} />
+          )}
+        </div>
+      )}
 
       {/* Flight Data */}
       <div className={sectionCls(isDark)}>

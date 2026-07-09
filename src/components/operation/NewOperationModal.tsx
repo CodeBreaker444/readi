@@ -2,6 +2,7 @@
 
 import { Operation } from '@/app/operations/table/page'
 import { useTimezone } from '@/components/TimezoneProvider'
+import type { FlightWaypoint } from '@/components/control-center/FlightPathMap'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { EmergencyResponsePlan } from '@/config/types/erp'
@@ -46,6 +47,13 @@ import { OperationStepPilot } from './OperationStepPilot'
 import { OperationStepScheduler } from './OperationStepScheduler'
 import { PostFlightTab, type MissionResultOption, type PostFlightState } from './PostFlightTab'
 
+export interface NewOperationCreatePrefill {
+    missionCode?: string | null
+    scheduledStart?: string | null
+    scheduledEnd?: string | null
+    distanceFlown?: number | null
+}
+
 export interface NewOperationModalProps {
     open: boolean
     onClose: () => void
@@ -53,6 +61,8 @@ export interface NewOperationModalProps {
     isDark: boolean
     editOperation?: Operation | null
     onSaved?: (op: Operation) => void
+    logSerialNumber?: string | null
+    createPrefill?: NewOperationCreatePrefill | null
 }
 
 type EditTab = 'data' | 'execution' | 'log' | 'postFlight' | 'maintenance'
@@ -65,7 +75,7 @@ const EDIT_TABS = [
     { id: 'maintenance' as const, labelKey: 'operations.newOperation.tabs.maintenance',         icon: Wrench },
 ]
 
-export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperation, onSaved }: NewOperationModalProps) {
+export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperation, onSaved, logSerialNumber, createPrefill }: NewOperationModalProps) {
     const isEdit = !!editOperation
     const { timezone } = useTimezone()
     const { t } = useTranslation()
@@ -125,8 +135,10 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
     const [submittingPostFlight, setSubmittingPostFlight] = useState(false)
     const [resultOptions, setResultOptions] = useState<MissionResultOption[]>([])
     const [postFlightFromLog] = useState(false)
+    const [flightWaypoints, setFlightWaypoints] = useState<FlightWaypoint[]>([])
+    const [loadingWaypoints, setLoadingWaypoints] = useState(false)
     const [postFlight, setPostFlight] = useState<PostFlightState>({
-        actual_end: '', result_id: null, flight_duration_min: '', distance_m: '',
+        actual_start: '', actual_end: '', result_id: null, flight_duration_min: '', distance_m: '',
         battery_charge_start: '', battery_charge_end: '',
         incident_flag: false, rth_unplanned: false, link_loss: false, deviation_flag: false,
         weather_temp: '', notes: '',
@@ -203,6 +215,19 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
         })
         setStep(2)
     }, [editOperation, open])
+
+    // Seed mission code, start,and end distance from a flight log when this
+    // mission is being created specifically to attach that log (control-center flow).
+    useEffect(() => {
+        if (!open || isEdit || !createPrefill) return
+        setSchedulerForm(prev => ({
+            ...prev,
+            missionCode: createPrefill.missionCode || prev.missionCode,
+            scheduledStart: createPrefill.scheduledStart ? isoToLocalInput(createPrefill.scheduledStart) : prev.scheduledStart,
+            scheduledEnd: createPrefill.scheduledEnd ? isoToLocalInput(createPrefill.scheduledEnd) : prev.scheduledEnd,
+            distanceFlown: createPrefill.distanceFlown != null ? String(createPrefill.distanceFlown) : prev.distanceFlown,
+        }))
+    }, [open, isEdit, createPrefill])
 
     useEffect(() => {
         if (!clientId) {
@@ -286,6 +311,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                     const { flight, result_options } = res.data.data
                     setResultOptions(result_options ?? [])
                     setPostFlight({
+                        actual_start: isoToLocalInput(flight?.actual_start),
                         actual_end: isoToLocalInput(flight?.actual_end),
                         result_id: flight?.fk_mission_result_type_id ?? null,
                         flight_duration_min: flight?.flight_duration != null ? String(flight.flight_duration) : '',
@@ -303,6 +329,15 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
             })
             .catch(() => toast.error(t('operations.newOperation.toast.loadPostFlightError')))
             .finally(() => setLoadingPostFlight(false))
+    }, [editTab, isEdit, editOperation])
+
+    useEffect(() => {
+        if (!isEdit || editTab !== 'postFlight' || !editOperation) return
+        setLoadingWaypoints(true)
+        axios.get(`/api/operation/board/flight-logs/waypoints?mission_id=${editOperation.pilot_mission_id}`)
+            .then(res => setFlightWaypoints(res.data?.data?.waypoints ?? []))
+            .catch(() => setFlightWaypoints([]))
+            .finally(() => setLoadingWaypoints(false))
     }, [editTab, isEdit, editOperation])
 
 
@@ -345,6 +380,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
         setExistingMissionCodes(new Set()); setGeneratingId(false)
         setConflicts([]); setConflictChecked(false)
         setErps([]); setResultOptions([])
+        setFlightWaypoints([]); setLoadingWaypoints(false)
         setErpGroupId(''); setErpGroups([]); setLoadingErpGroups(false)
         setSchedulerForm({
             missionCode: '', scheduledStart: '', scheduledEnd: '',
@@ -353,7 +389,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
             isRecurring: false, daysOfWeek: [], recurUntil: '', missionGroupLabel: '',
         })
         setPostFlight({
-            actual_end: '', result_id: null, flight_duration_min: '', distance_m: '',
+            actual_start: '', actual_end: '', result_id: null, flight_duration_min: '', distance_m: '',
             battery_charge_start: '', battery_charge_end: '',
             incident_flag: false, rth_unplanned: false, link_loss: false, deviation_flag: false,
             weather_temp: '', notes: '',
@@ -443,7 +479,9 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                 location: schedulerForm.location || undefined,
                 notes: schedulerForm.notes || undefined,
                 distance_flown: schedulerForm.distanceFlown !== '' ? parseFloat(schedulerForm.distanceFlown) : null,
-                status_name: 'PLANNED',
+                // A mission created to attach an already-flown log is inherently
+                // completed, not scheduled for the future.
+                status_name: createPrefill ? 'COMPLETED' : 'PLANNED',
                 ...(visualObserverIds.length > 0 && { visual_observer_ids: visualObserverIds.map(Number) }),
                 ...(schedulerForm.isRecurring && {
                     is_recurring: true,
@@ -455,6 +493,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
             const res = await axios.post('/api/operation', payload)
             if (!res.data.success) throw new Error(res.data.error ?? t('operations.newOperation.toast.createError'))
             toast.success(t('operations.newOperation.toast.createSuccess'))
+            onSaved?.(res.data)
             onSuccess(); onClose()
         } catch (err: any) {
             const data = err.response?.data
@@ -484,6 +523,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
         const payload: Record<string, unknown> = {
             mission_id: editOperation.pilot_mission_id,
             flight_duration: postFlight.flight_duration_min ? parseInt(postFlight.flight_duration_min, 10) : null,
+            actual_start: postFlight.actual_start ? new Date(postFlight.actual_start).toISOString() : null,
             actual_end: postFlight.actual_end ? new Date(postFlight.actual_end).toISOString() : null,
             distance_flown: postFlight.distance_m ? parseFloat(postFlight.distance_m) : null,
             battery_charge_start: postFlight.battery_charge_start ? parseFloat(postFlight.battery_charge_start) : null,
@@ -629,6 +669,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                             onErpGroupChange={setErpGroupId}
                             loadingErpGroups={loadingErpGroups}
                             selectedPlanName={editOperation?.planning_name ?? undefined}
+                            logSerialNumber={logSerialNumber}
                         />
                     )}
 
@@ -698,6 +739,8 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                             fromLog={postFlightFromLog}
                             isDark={isDark}
                             onChange={handlePostFlightChange}
+                            waypoints={flightWaypoints}
+                            loadingWaypoints={loadingWaypoints}
                         />
                     )}
 

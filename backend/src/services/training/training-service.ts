@@ -406,20 +406,24 @@ export async function getFlatTrainingList(owner_id: number): Promise<FlatTrainin
 export async function addFlatTraining(input: AddFlatTrainingInput): Promise<number[]> {
   const { owner_id, user_ids, training_name, training_type, certificate_type, session_code, session_date, completion_date, expiry_date } = input;
 
-  const created = await prisma.training.create({
-    data: {
-      fk_owner_id: owner_id,
-      training_name,
-      training_type: training_type ?? null,
-      certificate_type: certificate_type ?? null,
-      training_active: 'Y',
-    },
-    select: { training_id: true },
-  });
+  // Each attendee gets their own training record so that editing one
+  // person's course fields (name/type/certificate) never affects another
+  // attendee's row, even if they were added together in the same batch.
+  const inserted = await prisma.$transaction(async (tx) => {
+    const rows = [];
+    for (const uid of user_ids) {
+      const created = await tx.training.create({
+        data: {
+          fk_owner_id: owner_id,
+          training_name,
+          training_type: training_type ?? null,
+          certificate_type: certificate_type ?? null,
+          training_active: 'Y',
+        },
+        select: { training_id: true },
+      });
 
-  const inserted = await prisma.$transaction(
-    user_ids.map((uid) =>
-      prisma.training_attendance.create({
+      const attendance = await tx.training_attendance.create({
         data: {
           fk_training_id: created.training_id,
           fk_user_id: uid,
@@ -432,9 +436,12 @@ export async function addFlatTraining(input: AddFlatTrainingInput): Promise<numb
           attendance_status: 'PRESENT',
         },
         select: { attendance_id: true },
-      })
-    )
-  );
+      });
+
+      rows.push(attendance);
+    }
+    return rows;
+  });
 
   return inserted.map((r) => r.attendance_id);
 }

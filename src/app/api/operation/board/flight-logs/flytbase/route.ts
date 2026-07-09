@@ -12,6 +12,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const missionId = Number(body.mission_id);
     const flightId = String(body.flight_id ?? '').trim();
+    const organizationId = body.organization_id ? Number(body.organization_id) || null : null;
 
     if (!missionId || missionId <= 0) {
       return NextResponse.json({ code: 0, message: 'mission_id is required' }, { status: 400 });
@@ -20,8 +21,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ code: 0, message: 'flight_id is required' }, { status: 400 });
     }
 
-    await attachFlytbaseFlightLog(missionId, session!.user.userId, session!.user.ownerId, flightId);
-    return NextResponse.json({ code: 1, message: 'Flight log attached from FlytBase' });
+    const result = await attachFlytbaseFlightLog(missionId, session!.user.userId, session!.user.ownerId, flightId, organizationId);
+    return NextResponse.json({
+      code: 1,
+      message: 'Flight log attached from FlytBase',
+      serialNumberMismatch: result.serialNumberMismatch,
+    });
   } catch (err: any) {
     console.error('[flight-logs/flytbase] POST error:', err);
     const message = err instanceof Error ? err.message : 'Unknown error';

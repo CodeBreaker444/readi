@@ -1,13 +1,21 @@
 import { importMissionFromLog } from '@/backend/services/operation/importOperation-service';
 import { env } from '@/backend/config/env';
-import { getFlytbaseCredentials } from '@/backend/services/integrations/flytbase-service';
+import { getFlytbaseCredentials, getFlytbaseCredentialsForCompany } from '@/backend/services/integrations/flytbase-service';
+import { getOrganizationCredentials } from '@/backend/services/integrations/flytbase-organization-service';
 import { requirePermission } from '@/lib/auth/api-auth';
 import { internalError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 
-async function fetchFlytbaseGutmaFile(userId: number, flightId: string): Promise<File> {
-  const creds = await getFlytbaseCredentials(userId);
+async function fetchFlytbaseGutmaFile(
+  userId: number,
+  ownerId: number,
+  flightId: string,
+  organizationId: number | null
+): Promise<File> {
+  const creds = organizationId
+    ? await getOrganizationCredentials(organizationId)
+    : (await getFlytbaseCredentials(userId)) ?? (await getFlytbaseCredentialsForCompany(ownerId, userId));
   if (!creds) throw new Error('No FlytBase integration configured.');
 
   const gutmaUrl = `${env.FLYTBASE_URL}/v2/flight/report/download/gutma?${new URLSearchParams({ flightIds: flightId })}`;
@@ -40,10 +48,12 @@ export async function POST(req: NextRequest) {
 
     const requestedFile = formData.get('mission_file_log') as File | null;
     const flytbaseFlightId = String(formData.get('flytbase_flight_id') ?? '').trim();
+    const organizationIdRaw = String(formData.get('organization_id') ?? '').trim();
+    const organizationId = organizationIdRaw ? Number(organizationIdRaw) || null : null;
 
     let file: File | null = requestedFile;
     if (!file && flytbaseFlightId) {
-      file = await fetchFlytbaseGutmaFile(session!.user.userId, flytbaseFlightId);
+      file = await fetchFlytbaseGutmaFile(session!.user.userId, ownerId, flytbaseFlightId, organizationId);
     }
     if (!file) {
       return NextResponse.json({ code: 0, message: 'No file or FlytBase flight selected' }, { status: 400 });
@@ -72,9 +82,11 @@ export async function POST(req: NextRequest) {
       location:   String(formData.get('mission_location')     ?? ''),
       groupLabel: String(formData.get('mission_group_label')  ?? ''),
       notes:      String(formData.get('mission_notes')        ?? ''),
+      userId:     session!.user.userId,
+      missionCode: String(formData.get('mission_code') ?? '').trim() || undefined,
     };
 
-    const result = await importMissionFromLog(file, params);
+    const result = await importMissionFromLog(file, params, flytbaseFlightId || null);
 
     return NextResponse.json({
       code: 1,

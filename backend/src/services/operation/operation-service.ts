@@ -3,11 +3,16 @@ import { AttachmentUploadResponse, CreateOperationSchema, ListOperationsQuerySch
 import { prisma } from '@/lib/prisma';
 import { buildS3Url, deleteFileFromS3, getPresignedDownloadUrl, REGION, uploadFileToS3 } from '@/lib/s3Client';
 
+// Keys must match the `status_name` values actually sent by callers
+// (the OperationStatus enum: PLANNED | IN_PROGRESS | COMPLETED | CANCELLED | ABORTED).
+// These previously used title-case keys ("Scheduled", "In Progress", ...) that never
+// matched, so fk_mission_status_id silently defaulted to 1 for every created mission.
 const STATUS_NAME_TO_ID: Record<string, number> = {
-  Scheduled: 1,
-  'In Progress': 2,
-  Completed: 3,
-  Cancelled: 4,
+  PLANNED: 1,
+  IN_PROGRESS: 2,
+  COMPLETED: 3,
+  CANCELLED: 4,
+  ABORTED: 5,
 };
 
 function asUtc(ts: Date | string | null | undefined): string | null {
@@ -665,7 +670,7 @@ export async function getToolOptions(ownerId: number) {
     }),
     prisma.tool_component.findMany({
       where:  { fk_tool_id: { in: toolIds }, component_type: 'DRONE', component_active: 'Y' },
-      select: { fk_tool_id: true },
+      select: { fk_tool_id: true, serial_number: true },
     }),
     prisma.tool_component.findMany({
       where:  { fk_tool_id: { in: toolIds }, component_active: 'Y' },
@@ -691,6 +696,12 @@ export async function getToolOptions(ownerId: number) {
   const hasDroneSet = new Set<number>(
     droneComponents.filter((c) => c.fk_tool_id != null).map((c) => c.fk_tool_id as number)
   );
+  const droneSerialMap = new Map<number, string | null>();
+  droneComponents.forEach((c) => {
+    if (c.fk_tool_id != null && !droneSerialMap.has(c.fk_tool_id)) {
+      droneSerialMap.set(c.fk_tool_id, c.serial_number?.trim() || null);
+    }
+  });
   const nonOperationalSet = new Set<number>(
     expiredComps.filter((c) => c.fk_tool_id != null).map((c) => c.fk_tool_id as number)
   );
@@ -711,6 +722,7 @@ export async function getToolOptions(ownerId: number) {
     maintenance_due: maintenanceDueSet.has(t.tool_id),
     is_non_operational: nonOperationalSet.has(t.tool_id),
     is_dismissed: (t.tool_metadata as any)?.status === 'DISMISSED',
+    drone_serial_number: droneSerialMap.get(t.tool_id) ?? null,
   }));
 }
 

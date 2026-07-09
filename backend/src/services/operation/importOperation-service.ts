@@ -1,4 +1,7 @@
+import { parseGutmaFlightData } from '@/backend/services/integrations/gutma-parser';
 import { prisma } from '@/lib/prisma';
+import { BUCKET, s3 } from '@/lib/s3Client';
+import { PutObjectCommand } from '@aws-sdk/client-s3';
 import JSZip from 'jszip';
 
 
@@ -16,6 +19,8 @@ export interface ImportMissionParams {
   groupLabel: string;
   notes: string;
   location: string;
+  userId: number;
+  missionCode?: string;
 }
 
 export interface ImportMissionResult {
@@ -23,32 +28,6 @@ export interface ImportMissionResult {
   operations: any[];
   skipped: string[];
 }
-
-interface GutmaRoot {
-  flight_logging?: {
-    flight_id?: string;
-    start_dtg?: string;
-    end_dtg?: string;
-    logging_start_dtg?: string;
-    max_altitude_agl?: number;
-    total_distance?: number;
-    [key: string]: any;
-  };
-  flight?: {
-    flight_id?: string;
-    takeoff_time?: string;
-    landing_time?: string;
-    max_altitude?: number;
-    flight_distance?: number;
-    [key: string]: any;
-  };
-  gcs_info?: {
-    registration_id?: string;
-    [key: string]: any;
-  };
-  [key: string]: any;
-}
-
 
 function extractMissionCodeFromFilename(filename: string): string | null {
   const pattern =
@@ -63,26 +42,16 @@ function parseDurationSeconds(start?: string | null, end?: string | null): numbe
   return isNaN(ms) || ms < 0 ? null : Math.round(ms / 1000);
 }
 
-function resolveTimes(parsed: GutmaRoot): { takeoff: string | null; landing: string | null } {
-  return {
-    takeoff:
-      parsed.flight_logging?.start_dtg ??
-      parsed.flight_logging?.logging_start_dtg ??
-      parsed.flight?.takeoff_time ??
-      null,
-    landing:
-      parsed.flight_logging?.end_dtg ??
-      parsed.flight?.landing_time ??
-      null,
-  };
+/** GUTMA nests everything under exchange.message.flight_data — pull the raw flight_id out of that envelope for mission-code fallback. */
+function resolveFlightId(parsed: any): string | null {
+  const message = parsed?.exchange?.message ?? parsed?.gutma?.exchange?.message ?? {};
+  return message?.flight_data?.flight_id ?? null;
 }
 
-function resolveMissionCode(parsed: GutmaRoot, filename: string): string {
+function resolveMissionCode(flightId: string | null, filename: string): string {
   return (
     extractMissionCodeFromFilename(filename) ??
-    parsed.flight_logging?.flight_id ??
-    parsed.flight?.flight_id ??
-    parsed.gcs_info?.registration_id ??
+    flightId ??
     `IMPORT-${Date.now()}`
   );
 }
@@ -91,19 +60,23 @@ function resolveMissionCode(parsed: GutmaRoot, filename: string): string {
 async function processGutmaBuffer(
   buffer: ArrayBuffer,
   filename: string,
-  params: ImportMissionParams
+  params: ImportMissionParams,
+  sourceFlightId: string | null,
+  missionCodeOverride?: string
 ): Promise<{ missionId: number; operation: any } | { error: string; duplicate?: boolean }> {
-  let parsed: GutmaRoot;
+  let parsed: any;
   try {
     parsed = JSON.parse(new TextDecoder().decode(buffer));
   } catch (e) {
     return { error: `Failed to parse JSON in "${filename}": ${(e as Error).message}` };
   }
 
-  const missionCode = resolveMissionCode(parsed, filename);
-  const { takeoff, landing } = resolveTimes(parsed);
+  const gutma = parseGutmaFlightData(parsed);
+  const missionCode = missionCodeOverride || resolveMissionCode(resolveFlightId(parsed), filename);
+  const takeoff = gutma.start_time;
+  const landing = gutma.end_time;
   const durationSec = parseDurationSeconds(takeoff, landing);
-  const distanceFlown = parsed.flight?.flight_distance ?? parsed.flight_logging?.total_distance ?? null;
+  const distanceFlown = gutma.distance_m;
 
   const existing = await prisma.pilot_mission.findFirst({
     where: { mission_code: missionCode, fk_owner_id: params.ownerId },
@@ -133,6 +106,7 @@ async function processGutmaBuffer(
   const inserted = await prisma.pilot_mission.create({
     data: {
       fk_owner_id: params.ownerId,
+      fk_client_id: params.clientId || null,
       fk_pilot_user_id: params.pilotId || 1,
       fk_tool_id: params.vehicleId || null,
       fk_planning_id: params.planId || null,
@@ -154,6 +128,35 @@ async function processGutmaBuffer(
     select: { pilot_mission_id: true },
   });
 
+  try {
+    const s3Key = `flight-logs/mission/${inserted.pilot_mission_id}/${filename}`;
+    await s3.send(
+      new PutObjectCommand({
+        Bucket: BUCKET,
+        Key: s3Key,
+        Body: Buffer.from(buffer),
+        ContentType: 'application/json',
+        ContentDisposition: `attachment; filename="${filename}"`,
+        ServerSideEncryption: 'AES256',
+      })
+    );
+
+    await prisma.mission_flight_logs.create({
+      data: {
+        fk_mission_id: BigInt(inserted.pilot_mission_id),
+        log_source: sourceFlightId ? 'flytbase' : 'manual',
+        s3_key: s3Key,
+        original_filename: filename,
+        flytbase_flight_id: sourceFlightId,
+        uploaded_by: BigInt(params.userId),
+      },
+    });
+  } catch (err) {
+    // Best-effort — the mission was already created; a storage failure
+    // shouldn't roll back the import, but should be visible in logs.
+    console.error('[processGutmaBuffer] Failed to persist flight log:', err);
+  }
+
   const full = await prisma.pilot_mission.findUnique({
     where: { pilot_mission_id: inserted.pilot_mission_id },
     select: {
@@ -162,6 +165,9 @@ async function processGutmaBuffer(
       mission_name: true,
       status_name: true,
       scheduled_start: true,
+      actual_start: true,
+      actual_end: true,
+      distance_flown: true,
       location: true,
       notes: true,
       users: { select: { first_name: true, last_name: true } },
@@ -183,7 +189,8 @@ async function processGutmaBuffer(
 
 export async function importMissionFromLog(
   file: File,
-  params: ImportMissionParams
+  params: ImportMissionParams,
+  flytbaseFlightId: string | null = null
 ): Promise<ImportMissionResult> {
   const buffer = await file.arrayBuffer();
   const ext = file.name.split('.').pop()?.toLowerCase();
@@ -192,8 +199,10 @@ export async function importMissionFromLog(
   const errors: string[] = [];
   const duplicates: string[] = [];
 
+  const missionCode = params.missionCode?.trim() || undefined;
+
   if (ext === 'gutma') {
-    const res = await processGutmaBuffer(buffer, file.name, params);
+    const res = await processGutmaBuffer(buffer, file.name, params, flytbaseFlightId, missionCode);
     if ('error' in res) {
       if (res.duplicate) duplicates.push(res.error);
       else errors.push(res.error);
@@ -214,9 +223,16 @@ export async function importMissionFromLog(
 
     if (gutmaEntries.length === 0) throw new Error('ZIP contains no .gutma files.');
 
+    // A user-provided code only uniquely identifies a single mission, so a
+    // multi-file ZIP gets it suffixed per entry to avoid duplicate codes.
+    let index = 0;
     for (const [name, entry] of gutmaEntries) {
+      index++;
+      const entryCode = missionCode
+        ? (gutmaEntries.length > 1 ? `${missionCode}-${index}` : missionCode)
+        : undefined;
       const buf = await entry.async('arraybuffer');
-      const res = await processGutmaBuffer(buf, name.split('/').pop() ?? name, params);
+      const res = await processGutmaBuffer(buf, name.split('/').pop() ?? name, params, null, entryCode);
       if ('error' in res) {
         if (res.duplicate) duplicates.push(res.error);
         else errors.push(res.error);

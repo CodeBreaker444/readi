@@ -32,12 +32,14 @@ interface Props {
     erpGroupId: string
     onErpGroupChange: (id: string) => void
     loadingErpGroups?: boolean
+    /** Drone serial number pulled from an attached flight log, if this mission is being created to attach that log. */
+    logSerialNumber?: string | null
 }
 
 export function OperationStepDrone({
     opType, onOpTypeChange, droneId, onDroneChange, drones, loadingDrones,
     planId, onPlanChange, clientPlannings, missionPlannings, missionPlanningId, onMissionPlanningChange, loadingMissionPlannings, selectedPlanName, flightMode, onFlightModeChange,
-    loadingOptions, isDark, erpGroups, erpGroupId, onErpGroupChange, loadingErpGroups,
+    loadingOptions, isDark, erpGroups, erpGroupId, onErpGroupChange, loadingErpGroups, logSerialNumber,
 }: Props) {
     const { t } = useTranslation()
     const allInMaintenance = drones.length > 0 && drones.every(d => d.in_maintenance)
@@ -47,6 +49,13 @@ export function OperationStepDrone({
     const selectedDrone = drones.find(d => String(d.tool_id) === droneId)
     const selectedIsNonOp = (selectedDrone?.is_non_operational || selectedDrone?.is_dismissed) ?? false
     const selectedIsDismissed = selectedDrone?.is_dismissed ?? false
+    // Only warn when we actually know the drone's serial number and it differs —
+    // an unrecorded serial number isn't evidence of a mismatch, so stay silent.
+    const selectedSnMismatch = !!(
+        logSerialNumber &&
+        selectedDrone?.drone_serial_number &&
+        selectedDrone.drone_serial_number.trim().toLowerCase() !== logSerialNumber.trim().toLowerCase()
+    )
 
     const planLabel = planId
         ? (clientPlannings.find(p => String(p.planning_id) === planId)?.planning_name ?? selectedPlanName)
@@ -187,6 +196,20 @@ export function OperationStepDrone({
                         <AlertTriangle className="h-3 w-3 shrink-0" />
                         {t('operations.newOperation.drone.maintenanceDueWarning')}
                     </p>
+                )}
+                {selectedSnMismatch && (
+                    <div className={cn(
+                        'mt-2 flex items-start gap-2 rounded-lg border px-3 py-2.5',
+                        isDark ? 'border-amber-800 bg-amber-950/40' : 'border-amber-200 bg-amber-50'
+                    )}>
+                        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
+                        <p className={cn('text-xs leading-snug', isDark ? 'text-amber-400' : 'text-amber-700')}>
+                            {t('operations.newOperation.drone.serialMismatchWarning', {
+                                logSn: logSerialNumber,
+                                droneSn: selectedDrone?.drone_serial_number,
+                            })}
+                        </p>
+                    </div>
                 )}
             </div>
 

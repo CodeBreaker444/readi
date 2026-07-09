@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { useState } from 'react'
 import { CiLock } from 'react-icons/ci'
 import { toast } from 'sonner'
+import { getDefaultRoute } from '@/lib/auth/roles'
 
 export default function ChangePasswordPage() {
   const [formData, setFormData] = useState({ newPassword: '', confirmPassword: '' })
@@ -35,7 +36,8 @@ export default function ChangePasswordPage() {
       const response = await axios.post('/api/auth/update-password', { newPassword: formData.newPassword })
       if (response.data?.success) {
         toast.success('Password changed successfully!')
-        setTimeout(() => { window.location.href = '/auth/setup-2fa' }, 500)
+        const nextRoute = response.data.role === 'CLIENT' ? getDefaultRoute('CLIENT') : '/auth/setup-2fa'
+        setTimeout(() => { window.location.href = nextRoute }, 500)
       } else {
         throw new Error(response.data?.error || 'Failed to change password')
       }
