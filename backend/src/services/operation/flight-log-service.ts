@@ -163,16 +163,26 @@ export async function previewUploadedFlightLog(
   };
 }
 
-/** Syncs a mission's post-flight fields (actual start/end, duration, distance, battery) from a parsed GUTMA payload, since an attached log means the flight already happened. */
+/**
+ * Syncs a mission's post-flight fields (actual start/end, duration, distance,
+ * battery) from a parsed GUTMA payload and marks it COMPLETED — an attached
+ * log is proof the flight already happened, regardless of what stage the
+ * mission was in before (e.g. a mission created ad hoc from Control Center).
+ */
 async function syncMissionFromGutma(missionId: number, gutma: any): Promise<void> {
   const parsed = parseGutmaFlightData(gutma);
-  const missionUpdate: Record<string, unknown> = {};
+  const missionUpdate: Record<string, unknown> = {
+    status_name: 'COMPLETED',
+    fk_mission_status_id: 3,
+  };
 
   const startMs = parsed.start_time ? new Date(parsed.start_time).getTime() : NaN;
   const endMs = parsed.end_time ? new Date(parsed.end_time).getTime() : NaN;
 
   if (!isNaN(startMs)) missionUpdate.actual_start = new Date(startMs);
-  if (!isNaN(endMs)) missionUpdate.actual_end = new Date(endMs);
+  // Fall back to "now" for the end date so a completed mission always has one,
+  // even if the GUTMA payload is missing an end timestamp.
+  missionUpdate.actual_end = !isNaN(endMs) ? new Date(endMs) : new Date();
   if (!isNaN(startMs) && !isNaN(endMs) && endMs > startMs) {
     missionUpdate.flight_duration = Math.round((endMs - startMs) / 60000);
   }
@@ -180,12 +190,10 @@ async function syncMissionFromGutma(missionId: number, gutma: any): Promise<void
   if (parsed.battery_charge_start != null) missionUpdate.battery_charge_start = parsed.battery_charge_start;
   if (parsed.battery_charge_end != null) missionUpdate.battery_charge_end = parsed.battery_charge_end;
 
-  if (Object.keys(missionUpdate).length > 0) {
-    await prisma.pilot_mission.update({
-      where: { pilot_mission_id: missionId },
-      data: missionUpdate,
-    });
-  }
+  await prisma.pilot_mission.update({
+    where: { pilot_mission_id: missionId },
+    data: missionUpdate,
+  });
 }
 
 async function extractSerialNumberFromFile(file: File): Promise<string | null> {
