@@ -12,12 +12,6 @@ export interface ConflictEvent { id: string; title: string; start: string; end: 
 export type OpType = 'OPEN' | 'PDRA'
 export type FlightMode = 'RC' | 'DOCK'
 
-export const DAYS_OF_WEEK = [
-    { value: 1, label: 'Mon' }, { value: 2, label: 'Tue' }, { value: 3, label: 'Wed' },
-    { value: 4, label: 'Thu' }, { value: 5, label: 'Fri' }, { value: 6, label: 'Sat' },
-    { value: 0, label: 'Sun' },
-]
-
 export const STEPS = [
     { id: 1, label: 'Client', icon: User },
     { id: 2, label: 'Drone & Mission', icon: Settings },
@@ -36,8 +30,4 @@ export interface SchedulerFormData {
     typeId: string
     categoryId: string
     lucId: string
-    isRecurring: boolean
-    daysOfWeek: number[]
-    recurUntil: string
-    missionGroupLabel: string
 }
