@@ -141,3 +141,44 @@ export function parseGutmaFlightData(gutma: any): ParsedGutmaFlight {
     waypoints,
   };
 }
+
+export interface ParsedGutmaFlightPreview extends Omit<ParsedGutmaFlight, 'waypoints'> {
+  flight_id: string;
+  filename: string;
+  logging_start: string | null;
+  events: any[];
+  waypoints: GutmaWaypoint[];
+  total_waypoints: number;
+}
+
+/**
+ * Same underlying GUTMA structure as parseGutmaFlightData, but shaped for the
+ * flight-log preview UI (GutmaPreviewPanel): adds flight_id/filename/events/
+ * logging_start and caps the returned waypoint list (full count still reported
+ * via total_waypoints) instead of trimming fields down to post-flight-sync needs.
+ */
+export function parseGutmaFlightPreview(flightId: string, gutma: any): ParsedGutmaFlightPreview {
+  const message = gutma?.exchange?.message ?? gutma?.gutma?.exchange?.message ?? {};
+  const logging = message?.flight_logging ?? {};
+
+  const parsed = parseGutmaFlightData(gutma);
+  const items: any[][] = logging?.flight_logging_items ?? [];
+
+  return {
+    flight_id: flightId,
+    filename: gutma?.file?.filename ?? `FlytBase_Export_${flightId}.gutma`,
+    aircraft: parsed.aircraft,
+    gcs: parsed.gcs,
+    payload: parsed.payload,
+    pilot: parsed.pilot,
+    logging_start: logging?.logging_start_dtg ?? null,
+    events: logging?.events ?? [],
+    waypoints: parsed.waypoints.slice(0, 500),
+    total_waypoints: items.length,
+    start_time: parsed.start_time,
+    end_time: parsed.end_time,
+    distance_m: parsed.distance_m,
+    battery_charge_start: parsed.battery_charge_start,
+    battery_charge_end: parsed.battery_charge_end,
+  };
+}

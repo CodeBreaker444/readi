@@ -4,7 +4,7 @@ import { env } from '@/backend/config/env';
 import { prisma } from '@/lib/prisma';
 import { getFlytbaseCredentials, getFlytbaseCredentialsForCompany } from '@/backend/services/integrations/flytbase-service';
 import { getOrganizationCredentials } from '@/backend/services/integrations/flytbase-organization-service';
-import { GutmaWaypoint, parseGutmaFlightData } from '@/backend/services/integrations/gutma-parser';
+import { GutmaWaypoint, parseGutmaFlightData, parseGutmaFlightPreview } from '@/backend/services/integrations/gutma-parser';
 import { BUCKET, getPresignedDownloadUrl, s3 } from '@/lib/s3Client';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import JSZip from 'jszip';
@@ -81,6 +81,40 @@ export async function getFlightLogWaypoints(missionId: number): Promise<FlightLo
     original_filename: log.original_filename ?? '',
     waypoints: parsed.waypoints,
   };
+}
+
+/**
+ * Full GUTMA preview (map, aircraft/GCS/payload info, waypoint table) for an
+ * already-attached flight log, read straight from our own S3 copy — no live
+ * FlytBase call. Used by the "manage system" flight-log viewer so a flight
+ * archived/deleted on FlytBase's side, an expired token, or a rate limit
+ * doesn't break viewing a log we already have a durable copy of.
+ */
+export async function getFlightLogGutmaPreview(logId: number, ownerId: number) {
+  const log = await prisma.mission_flight_logs.findUnique({
+    where: { log_id: BigInt(logId) },
+    select: { log_id: true, fk_mission_id: true, s3_key: true, flytbase_flight_id: true },
+  });
+  if (!log) throw new Error('Flight log not found');
+
+  const mission = await prisma.pilot_mission.findUnique({
+    where: { pilot_mission_id: Number(log.fk_mission_id) },
+    select: { fk_owner_id: true },
+  });
+  if (!mission || mission.fk_owner_id !== ownerId) throw new Error('Access denied');
+
+  const downloadUrl = await getPresignedDownloadUrl(log.s3_key, 300);
+  const res = await fetch(downloadUrl);
+  if (!res.ok) throw new Error('Failed to read the archived flight log from storage.');
+
+  let raw: any;
+  try {
+    raw = await res.json();
+  } catch {
+    throw new Error('The archived flight log is not a readable GUTMA file.');
+  }
+
+  return parseGutmaFlightPreview(log.flytbase_flight_id ?? String(log.log_id), raw);
 }
 
 const ALLOWED_EXTENSIONS = ['.zip', '.json', '.xml', '.gutma'];
