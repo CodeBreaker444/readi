@@ -1943,7 +1943,9 @@
         "notOperational": "Nicht Betriebsbereit",
         "dismissed": "Ausgemustert",
         "inMaintenance": "Wartung",
-        "maintenanceDue": "Wartung Fällig"
+        "maintenanceDue": "Wartung Fällig",
+        "snMismatch": "SN-Abweichung",
+        "noSystemWithSerial": "Es ist kein System mit der Seriennummer {{serial}} vorhanden"
       },
       "review": {
         "client": "Kunde",
@@ -2015,7 +2017,8 @@
         "maintenanceTag": "WARTUNG",
         "maintenanceDueTag": "WARTUNG FÄLLIG",
         "maintenanceDueWarning": "Bei einer oder mehreren Drohnen ist eine Wartung fällig. Vor der Planung prüfen.",
-        "serialMismatchWarning": "Die Seriennummer dieses Systems ({{droneSn}}) stimmt nicht mit der Drohnen-Seriennummer des Flugprotokolls ({{logSn}}) überein. Sie können diese Mission trotzdem erstellen.",
+        "snMismatchTag": "SN-Abweichung",
+        "noSystemWithSerial": "Es ist kein System mit der Seriennummer {{serial}} vorhanden",
         "notOperationalTag": "Nicht betriebsbereit",
         "selectedNonOpWarningPre": "Das ausgewählte System ist",
         "selectedNonOpWarningPost": "— eine seiner Komponenten ist abgelaufen. Die Missionserstellung wird gesperrt.",

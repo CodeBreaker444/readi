@@ -17,6 +17,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Operation } from '@/config/types/operation';
+import { serialsMatch } from '@/lib/serial-number';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
 import {
@@ -43,6 +44,7 @@ interface DroneSystem   {
     tool_id: number; tool_code: string; tool_name: string;
     in_maintenance?: boolean; maintenance_due?: boolean;
     is_non_operational?: boolean; is_dismissed?: boolean;
+    drone_serial_number?: string | null;
 }
 interface MissionPlan   { mission_planning_id: number; mission_planning_code: string; mission_planning_desc: string }
 interface SelectOption  { id: number; name: string }
@@ -161,6 +163,15 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
             .finally(() => setLoadingDrones(false));
     }, [clientId]);
 
+    // Once the log's aircraft serial number and the drone list are both known,
+    // auto-select the one matching system — the user must not be able to pick
+    // a different one for a mismatched log.
+    useEffect(() => {
+        if (!logSerialNumber || drones.length === 0) return;
+        const match = drones.find((d) => serialsMatch(d.drone_serial_number, logSerialNumber));
+        if (match && String(match.tool_id) !== vehicleId) setVehicleId(String(match.tool_id));
+    }, [logSerialNumber, drones]);
+
     useEffect(() => {
         if (step !== 3) return;
         setLoadingMissionOptions(true);
@@ -275,13 +286,20 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
         setLoadingSerialNumber(false);
     }, [logFile, selectedFlightId, organizationId]);
 
+    // A log's aircraft serial number must match the selected system's — a log
+    // from one drone can never be attached to a different one.
+    const matchingDrone = logSerialNumber
+        ? drones.find((d) => serialsMatch(d.drone_serial_number, logSerialNumber))
+        : undefined;
+    const serialBlocked = !!logSerialNumber && !matchingDrone;
+
     const canNext = useCallback(() => {
         if (step === 1) return !!clientId;
         if (step === 2) return !!logFile || !!selectedFlightId;
-        if (step === 3) return !!vehicleId && !!categoryId && !!typeId && !!statusId && !!lucProcedureId;
+        if (step === 3) return !!vehicleId && !!categoryId && !!typeId && !!statusId && !!lucProcedureId && !serialBlocked;
         if (step === 4) return !!pilotId;
         return true;
-    }, [step, clientId, logFile, vehicleId, categoryId, typeId, statusId, lucProcedureId, pilotId]);
+    }, [step, clientId, logFile, vehicleId, categoryId, typeId, statusId, lucProcedureId, pilotId, serialBlocked]);
 
     async function handleSubmit() {
         if (!logFile && !selectedFlightId) return;
@@ -565,6 +583,13 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                 </div>
                             ) : null}
 
+                            {serialBlocked && (
+                                <div className="flex items-center gap-2 rounded-md border border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-800 px-3 py-2 text-xs text-red-700 dark:text-red-400">
+                                    <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                                    {t(`${ns}.info.noSystemWithSerial`, { serial: logSerialNumber })}
+                                </div>
+                            )}
+
                             <div>
                                 <Label className="mb-1.5 block">
                                     {t(`${ns}.fields.missionCode`)}
@@ -590,15 +615,22 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                                 <div className="px-3 py-2 text-xs text-muted-foreground italic">
                                                     {t(`${ns}.info.noData`)}
                                                 </div>
-                                            ) : drones.map((d) => (
+                                            ) : drones.map((d) => {
+                                                const snMismatch = !!logSerialNumber && !serialsMatch(d.drone_serial_number, logSerialNumber);
+                                                return (
                                                 <SelectItem
                                                     key={d.tool_id}
                                                     value={String(d.tool_id)}
-                                                    disabled={!!d.is_non_operational || !!d.is_dismissed || !!d.in_maintenance}
-                                                    className={cn((d.is_non_operational || d.is_dismissed || d.in_maintenance) && 'opacity-50')}
+                                                    disabled={!!d.is_non_operational || !!d.is_dismissed || !!d.in_maintenance || snMismatch}
+                                                    className={cn((d.is_non_operational || d.is_dismissed || d.in_maintenance || snMismatch) && 'opacity-50')}
                                                 >
                                                     <span className="flex items-center gap-2">
                                                         <span>{d.tool_code}</span>
+                                                        {snMismatch && (
+                                                            <span className="text-[10px] font-semibold text-red-600 bg-red-50 border border-red-200 rounded px-1.5 py-0.5 leading-none">
+                                                                {t(`${ns}.info.snMismatch`)}
+                                                            </span>
+                                                        )}
                                                         {d.is_non_operational && (
                                                             <span className="text-[10px] font-semibold text-red-600 bg-red-50 border border-red-200 rounded px-1.5 py-0.5 leading-none">
                                                                 {t(`${ns}.info.notOperational`)}
@@ -621,7 +653,8 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                                         )}
                                                     </span>
                                                 </SelectItem>
-                                            ))}
+                                                );
+                                            })}
                                         </SelectContent>
                                     </Select>
                                 </div>

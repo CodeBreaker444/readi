@@ -1,8 +1,26 @@
 import { parseGutmaFlightData } from '@/backend/services/integrations/gutma-parser';
 import { prisma } from '@/lib/prisma';
+import { serialsMatch } from '@/lib/serial-number';
 import { BUCKET, s3 } from '@/lib/s3Client';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import JSZip from 'jszip';
+
+/** Looks up the registered serial number for a tool's drone/aircraft component, if any. */
+async function getDroneSerialNumberForTool(toolId: number): Promise<string | null> {
+  const droneComponent = await prisma.tool_component.findFirst({
+    where: {
+      fk_tool_id: toolId,
+      component_active: 'Y',
+      OR: [
+        { component_type: { equals: 'DRONE', mode: 'insensitive' } },
+        { component_type: { equals: 'AIRCRAFT', mode: 'insensitive' } },
+      ],
+      serial_number: { not: null },
+    },
+    select: { serial_number: true },
+  });
+  return droneComponent?.serial_number?.trim() || null;
+}
 
 
 export interface ImportMissionParams {
@@ -78,6 +96,17 @@ async function processGutmaBuffer(
   const landing = gutma.end_time;
   const durationSec = parseDurationSeconds(takeoff, landing);
   const distanceFlown = gutma.distance_m;
+
+  const logSerialNumber = typeof gutma.aircraft?.serial_number === 'string'
+    ? gutma.aircraft.serial_number.trim() || null
+    : null;
+
+  if (params.vehicleId && logSerialNumber) {
+    const vehicleSerial = await getDroneSerialNumberForTool(params.vehicleId);
+    if (vehicleSerial && !serialsMatch(vehicleSerial, logSerialNumber)) {
+      return { error: `No system is present with the serial number ${logSerialNumber}` };
+    }
+  }
 
   const existing = await prisma.pilot_mission.findFirst({
     where: { mission_code: missionCode, fk_owner_id: params.ownerId },
@@ -282,8 +311,10 @@ export async function importDrones(ownerId: number, clientId?: number) {
   const maintenanceDueSet = new Set<number>();
   const nonOperationalSet = new Set<number>();
 
+  const droneSerialMap = new Map<number, string | null>();
+
   if (toolIds.length > 0) {
-    const [openTickets, maintComps, expiredComps] = await Promise.all([
+    const [openTickets, maintComps, expiredComps, droneComponents] = await Promise.all([
       prisma.maintenance_ticket.findMany({
         where:  { fk_tool_id: { in: toolIds }, ticket_status: { not: 'CLOSED' } },
         select: { fk_tool_id: true },
@@ -304,6 +335,17 @@ export async function importDrones(ownerId: number, clientId?: number) {
         where:  { fk_tool_id: { in: toolIds }, component_active: 'Y', expiration_date: { lte: new Date(), not: null } },
         select: { fk_tool_id: true },
       }),
+      prisma.tool_component.findMany({
+        where:  {
+          fk_tool_id: { in: toolIds },
+          component_active: 'Y',
+          OR: [
+            { component_type: { equals: 'DRONE', mode: 'insensitive' } },
+            { component_type: { equals: 'AIRCRAFT', mode: 'insensitive' } },
+          ],
+        },
+        select: { fk_tool_id: true, serial_number: true },
+      }),
     ]);
     openTickets.forEach((t) => { if (t.fk_tool_id != null) inMaintenanceSet.add(t.fk_tool_id); });
     expiredComps.forEach((c) => { if (c.fk_tool_id != null) nonOperationalSet.add(c.fk_tool_id); });
@@ -313,6 +355,11 @@ export async function importDrones(ownerId: number, clientId?: number) {
       const hourDue   = Number(c.maintenance_cycle_hour   ?? 0) > 0 && Number(c.current_maintenance_hours)   >= Number(c.maintenance_cycle_hour);
       const flightDue = Number(c.maintenance_cycle_flight ?? 0) > 0 && Number(c.current_maintenance_flights) >= Number(c.maintenance_cycle_flight);
       if (dayDue || hourDue || flightDue) maintenanceDueSet.add(c.fk_tool_id);
+    });
+    droneComponents.forEach((c) => {
+      if (c.fk_tool_id != null && !droneSerialMap.has(c.fk_tool_id)) {
+        droneSerialMap.set(c.fk_tool_id, c.serial_number?.trim() || null);
+      }
     });
   }
 
@@ -324,6 +371,7 @@ export async function importDrones(ownerId: number, clientId?: number) {
     maintenance_due: maintenanceDueSet.has(t.tool_id),
     is_non_operational: nonOperationalSet.has(t.tool_id),
     is_dismissed: (t.tool_metadata as any)?.status === 'DISMISSED',
+    drone_serial_number: droneSerialMap.get(t.tool_id) ?? null,
   }));
 }
 

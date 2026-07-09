@@ -1954,7 +1954,9 @@
         "notOperational": "Not Operational",
         "dismissed": "Dismissed",
         "inMaintenance": "Maintenance",
-        "maintenanceDue": "Maintenance Due"
+        "maintenanceDue": "Maintenance Due",
+        "snMismatch": "SN Mismatch",
+        "noSystemWithSerial": "No system is present with the serial number {{serial}}"
       },
       "review": {
         "client": "Client",
@@ -2029,7 +2031,8 @@
         "maintenanceTag": "MAINTENANCE",
         "maintenanceDueTag": "MAINTENANCE DUE",
         "maintenanceDueWarning": "One or more drones have maintenance due. Review before scheduling.",
-        "serialMismatchWarning": "This system's serial number ({{droneSn}}) doesn't match the flight log's drone serial number ({{logSn}}). You can still create this mission.",
+        "snMismatchTag": "SN Mismatch",
+        "noSystemWithSerial": "No system is present with the serial number {{serial}}",
         "notOperationalTag": "Not Operational",
         "selectedNonOpWarningPre": "The selected system is",
         "selectedNonOpWarningPost": "— one of its components has expired. Mission creation will be blocked.",

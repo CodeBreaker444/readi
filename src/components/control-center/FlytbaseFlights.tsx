@@ -209,10 +209,7 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
         ...(isPdra && { post_flight_attach: true }), // backend uses this to write the audit warning
       });
       if (res.data.code === 1) {
-        const mismatch = res.data.serialNumberMismatch;
-        if (mismatch) {
-          toast.warning(`Flight log attached — but the drone's serial number doesn't match the log (log: ${mismatch.logSerialNumber}, mission drone: ${mismatch.missionSerialNumber}).`);
-        } else if (isPdra) {
+        if (isPdra) {
           toast.warning('Flight log attached. Note: This PDRA mission was logged after the flight — a compliance warning has been recorded in the audit log.');
         } else {
           toast.success('Flight log attached to mission');
@@ -228,8 +225,8 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
       } else {
         toast.error(res.data.message || 'Failed to attach flight log');
       }
-    } catch {
-      toast.error('Failed to attach flight log');
+    } catch (err: any) {
+      toast.error(err.response?.data?.message ?? 'Failed to attach flight log');
     } finally {
       setAttachingMissionId(null);
     }

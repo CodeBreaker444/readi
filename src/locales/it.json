@@ -1945,7 +1945,9 @@
         "notOperational": "Non Operativo",
         "dismissed": "Dismesso",
         "inMaintenance": "Manutenzione",
-        "maintenanceDue": "Manutenzione in Scadenza"
+        "maintenanceDue": "Manutenzione in Scadenza",
+        "snMismatch": "SN non corrispondente",
+        "noSystemWithSerial": "Nessun sistema è presente con il numero di serie {{serial}}"
       },
       "review": {
         "client": "Cliente",
@@ -2017,7 +2019,8 @@
         "maintenanceTag": "MANUTENZIONE",
         "maintenanceDueTag": "MANUTENZIONE SCADUTA",
         "maintenanceDueWarning": "Uno o più droni richiedono manutenzione. Verifica prima di pianificare.",
-        "serialMismatchWarning": "Il numero di serie di questo sistema ({{droneSn}}) non corrisponde al numero di serie del drone nel log di volo ({{logSn}}). Puoi comunque creare questa missione.",
+        "snMismatchTag": "SN non corrispondente",
+        "noSystemWithSerial": "Nessun sistema è presente con il numero di serie {{serial}}",
         "notOperationalTag": "Non Operativo",
         "selectedNonOpWarningPre": "Il sistema selezionato è",
         "selectedNonOpWarningPost": "— uno dei suoi componenti è scaduto. La creazione della missione sarà bloccata.",

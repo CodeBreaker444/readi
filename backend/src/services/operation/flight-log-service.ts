@@ -110,8 +110,6 @@ async function getDroneSerialNumberForMission(missionId: number): Promise<string
 }
 
 function extractSerialNumberFromGutma(gutma: any): string | null {
-  // GUTMA nests aircraft info under exchange.message.flight_data — reuse the
-  // shared parser so this stays in sync with that envelope shape.
   const sn = parseGutmaFlightData(gutma).aircraft?.serial_number;
   return typeof sn === 'string' ? sn.trim() || null : null;
 }
@@ -256,9 +254,7 @@ export async function uploadManualFlightLog(
   if (missionDroneSn) {
     const logSn = await extractSerialNumberFromFile(file);
     if (logSn && logSn.toLowerCase() !== missionDroneSn.toLowerCase()) {
-      throw new Error(
-        `Serial number mismatch: Log contains serial number "${logSn}" but mission is assigned to drone with serial number "${missionDroneSn}"`
-      );
+      throw new Error(`No system is present with the serial number ${logSn}`);
     }
   }
 
@@ -296,18 +292,13 @@ export async function uploadManualFlightLog(
   }
 }
 
-export interface AttachFlightLogResult {
-  /** Set when the log's aircraft serial number doesn't match the mission's assigned drone — informational only, the log is still attached. */
-  serialNumberMismatch: { logSerialNumber: string; missionSerialNumber: string } | null;
-}
-
 export async function attachFlytbaseFlightLog(
   missionId: number,
   userId: number,
   ownerId: number,
   flightId: string,
   organizationId: number | null = null
-): Promise<AttachFlightLogResult> {
+): Promise<void> {
   const creds = organizationId
     ? await getOrganizationCredentials(organizationId)
     : (await getFlytbaseCredentials(userId)) ?? (await getFlytbaseCredentialsForCompany(ownerId, userId));
@@ -344,15 +335,13 @@ export async function attachFlytbaseFlightLog(
     throw new Error('GUTMA data unavailable for this flight.');
   }
 
-  // Flag when the GUTMA log's aircraft doesn't match the mission's assigned
-  // drone — surfaced to the caller as a warning rather than blocking the
-  // attach, since the log is the source of truth for what actually flew.
-  let serialNumberMismatch: AttachFlightLogResult['serialNumberMismatch'] = null;
+  // Block when the GUTMA log's aircraft doesn't match the mission's assigned
+  // drone — a log from one drone must never be attached to a different one.
   const missionDroneSn = await getDroneSerialNumberForMission(missionId);
   if (missionDroneSn) {
     const logSn = extractSerialNumberFromGutma(gutma);
     if (logSn && logSn.toLowerCase() !== missionDroneSn.toLowerCase()) {
-      serialNumberMismatch = { logSerialNumber: logSn, missionSerialNumber: missionDroneSn };
+      throw new Error(`No system is present with the serial number ${logSn}`);
     }
   }
 
@@ -390,6 +379,4 @@ export async function attachFlytbaseFlightLog(
     // Best-effort — a parsing/sync failure shouldn't fail the attach itself.
     console.error('[attachFlytbaseFlightLog] GUTMA mission sync failed:', err);
   }
-
-  return { serialNumberMismatch };
 }

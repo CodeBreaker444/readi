@@ -111,7 +111,7 @@ export async function createAndAttachMission(
 export async function getAttachableMissions(droneSerialNumber: string, ownerId: number) {
   const toolComponent = await prisma.tool_component.findFirst({
     where: {
-      serial_number: droneSerialNumber,
+      serial_number: { equals: droneSerialNumber.trim(), mode: 'insensitive' },
       tool: {
         fk_owner_id: ownerId,
       },

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { EmergencyResponsePlan } from '@/config/types/erp'
 import { toastWithDcc } from '@/lib/dcc-toast'
+import { serialsMatch } from '@/lib/serial-number'
 import { cn } from '@/lib/utils'
 import axios from 'axios'
 import {
@@ -409,6 +410,10 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
         if (step === 1) return isEdit || !!clientId
         if (step === 2) {
             if (!droneId) return false
+            if (logSerialNumber) {
+                const selected = drones.find(d => String(d.tool_id) === droneId)
+                if (!serialsMatch(selected?.drone_serial_number, logSerialNumber)) return false
+            }
             if (opType === 'PDRA') {
                 if (!planId) return false
                 const selected = clientPlannings.find(p => String(p.planning_id) === planId)
