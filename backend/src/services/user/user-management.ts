@@ -449,6 +449,7 @@ const getRoleIdFromCode = (roleCode: string): number => {
   const codeToId: Record<string, number> = {
     'PIC': 8, 'OPM': 9, 'SM': 10, 'AM': 11,
     'CMM': 12, 'RM': 13, 'TM': 14, 'DC': 15, 'SLA': 16, 'ADMIN': 17,
+    'OM': 18, 'MM': 19, 'VM': 20,
   };
   return codeToId[roleCode] || 0;
 };
@@ -457,6 +458,7 @@ const getRoleLabel = (profileId: number): string => {
   const roleMapping: Record<number, string> = {
     8: 'PIC', 9: 'OPM', 10: 'SM', 11: 'AM',
     12: 'CMM', 13: 'RM', 14: 'TM', 15: 'DC', 16: 'SLA', 17: 'ADMIN',
+    18: 'OM', 19: 'MM', 20: 'VM',
   };
   return roleMapping[profileId] || 'Unknown';
 };
