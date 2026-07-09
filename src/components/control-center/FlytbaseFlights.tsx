@@ -564,7 +564,7 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
                 ) : attachableMissions.length === 0 ? (
                   <div className="text-center py-8 space-y-3">
                     <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                      No completed missions found without flight logs for this drone.
+                      No completed missions found for this drone.
                     </p>
                     <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                       You can create a new mission and attach this flight log to it.
@@ -582,10 +582,11 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
                     {attachableMissions.map((mission) => {
                       const isPdra = mission.op_type === 'PDRA' || !!mission.fk_planning_id;
                       const isAttaching = attachingMissionId === mission.pilot_mission_id;
+                      const hasLog = !!mission.has_flight_log;
                       return (
                         <div
                           key={mission.pilot_mission_id}
-                          className={`rounded-lg border p-4 ${isDark ? 'bg-slate-800/40 border-slate-700/50' : 'bg-slate-50 border-slate-200'}`}
+                          className={`rounded-lg border p-4 ${hasLog ? 'opacity-50' : ''} ${isDark ? 'bg-slate-800/40 border-slate-700/50' : 'bg-slate-50 border-slate-200'}`}
                         >
                           <div className="flex items-center justify-between gap-3">
                             <div className="flex-1 min-w-0">
@@ -605,7 +606,12 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
                               <p className={`text-[10px] mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                                 {mission.actual_start && new Date(mission.actual_start).toLocaleString()}
                               </p>
-                              {isPdra && (
+                              {hasLog ? (
+                                <p className={`text-[10px] mt-1 flex items-center gap-1 ${isDark ? 'text-red-400/80' : 'text-red-600'}`}>
+                                  <HiExclamationCircle className="w-3 h-3 shrink-0" />
+                                  This mission already has a flight log attached
+                                </p>
+                              ) : isPdra && (
                                 <p className={`text-[10px] mt-1 flex items-center gap-1 ${isDark ? 'text-amber-400/80' : 'text-amber-600'}`}>
                                   <HiExclamationCircle className="w-3 h-3 shrink-0" />
                                   Post-flight attach — compliance warning will be logged
@@ -615,7 +621,8 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
                             <Button
                               size="sm"
                               onClick={() => handleAttachMission(mission.pilot_mission_id, isPdra ? 'PDRA' : 'OPEN')}
-                              disabled={isAttaching}
+                              disabled={isAttaching || hasLog}
+                              title={hasLog ? 'This mission already has a flight log attached' : undefined}
                               className="h-7 text-xs bg-violet-600 hover:bg-violet-500 text-white shrink-0"
                             >
                               {isAttaching ? 'Attaching…' : 'Attach'}

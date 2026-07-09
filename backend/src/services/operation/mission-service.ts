@@ -122,11 +122,10 @@ export async function getAttachableMissions(droneSerialNumber: string, ownerId: 
   });
 
   if (!toolComponent) return [];
-
+// If a mission already has a flight log attached (manual or FlytBase),
+// don't allow another log to be attached. We still return it to the UI
+// so it can be shown as disabled instead of being hidden.
   const missionsWithLogs = await prisma.mission_flight_logs.findMany({
-    where: {
-      log_source: 'flytbase',
-    },
     select: {
       fk_mission_id: true,
     },
@@ -140,9 +139,6 @@ export async function getAttachableMissions(droneSerialNumber: string, ownerId: 
       fk_tool_id: toolComponent.fk_tool_id,
       fk_owner_id: ownerId,
       status_name: 'COMPLETED',
-      pilot_mission_id: {
-        notIn: Array.from(missionIdsWithLogs),
-      },
     },
     select: {
       pilot_mission_id: true,
@@ -170,7 +166,10 @@ export async function getAttachableMissions(droneSerialNumber: string, ownerId: 
     take: 50,
   });
 
-  return missions;
+  return missions.map((mission) => ({
+    ...mission,
+    has_flight_log: missionIdsWithLogs.has(mission.pilot_mission_id),
+  }));
 }
 
 /**
