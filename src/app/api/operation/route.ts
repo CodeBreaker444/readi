@@ -46,6 +46,7 @@ const createOperationSchema = z.object({
   actual_end: z.string().nullable().optional(),
   visual_observer_ids: z.array(z.number().int().positive()).optional().nullable(),
   fk_erp_group_id: z.number().int().positive().nullable().optional(),
+  flight_mode: z.enum(['RC', 'DOCK']).nullable().optional(),
 });
 
 const createRecurringSchema = z.object({

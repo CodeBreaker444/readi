@@ -37,6 +37,7 @@ const updateOperationSchema = z.object({
   distance_flown: z.number().nonnegative().nullable().optional(),
   max_altitude: z.number().nonnegative().nullable().optional(),
   fk_erp_group_id: z.number().int().positive().nullable().optional(),
+  flight_mode: z.enum(['RC', 'DOCK']).nullable().optional(),
 });
 
 interface Params {

@@ -114,6 +114,7 @@ export async function listOperations(
     planning_name: row.planning?.planning_name ?? null,
     client_name: row.planning?.client?.client_name ?? row.client?.client_name ?? null,
     visual_observer_ids: (row.mission_metadata as any)?.visual_observers ?? null,
+    flight_mode: (row.mission_metadata as any)?.flight_mode ?? null,
   })) as unknown as Operation[];
 
   const toolIds = [...new Set(operations.filter((op) => op.fk_tool_id).map((op) => op.fk_tool_id as number))];
@@ -172,6 +173,7 @@ export async function getOperation(id: number): Promise<Operation | null> {
     category_name: data.pilot_mission_category?.category_name ?? null,
     type_name: data.pilot_mission_type?.type_name ?? null,
     visual_observer_ids: (data.mission_metadata as any)?.visual_observers ?? null,
+    flight_mode: (data.mission_metadata as any)?.flight_mode ?? null,
   } as unknown as Operation;
 }
 
@@ -224,6 +226,10 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
     }
   }
 
+  const missionMetadata: Record<string, unknown> = {};
+  if (visualObservers?.length) missionMetadata.visual_observers = visualObservers;
+  if ((input as any).flight_mode) missionMetadata.flight_mode = (input as any).flight_mode;
+
   const baseInsert: any = {
     mission_code: codeToChild,
     mission_name: input.mission_name,
@@ -246,7 +252,7 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
     fk_erp_group_id: (input as any).fk_erp_group_id ?? null,
     luc_procedure_progress: luc_procedure_progress as any,
     luc_completed_at: null,
-    ...(visualObservers?.length && { mission_metadata: { visual_observers: visualObservers } }),
+    ...(Object.keys(missionMetadata).length && { mission_metadata: missionMetadata }),
   };
 
   const inserted = await prisma.pilot_mission.create({
@@ -281,6 +287,17 @@ export async function updateOperation(id: number, input: UpdateOperationSchema):
   if ((input as any).status_name !== undefined) updatePayload.status_name = (input as any).status_name;
   if (input.distance_flown !== undefined) updatePayload.distance_flown = input.distance_flown;
   if ((input as any).fk_erp_group_id !== undefined) updatePayload.fk_erp_group_id = (input as any).fk_erp_group_id;
+
+  if ((input as any).flight_mode !== undefined) {
+    const current = await prisma.pilot_mission.findUnique({
+      where: { pilot_mission_id: id },
+      select: { mission_metadata: true },
+    });
+    updatePayload.mission_metadata = {
+      ...(current?.mission_metadata as any ?? {}),
+      flight_mode: (input as any).flight_mode,
+    };
+  }
 
   await prisma.pilot_mission.update({
     where: { pilot_mission_id: id },

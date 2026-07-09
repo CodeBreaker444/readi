@@ -32,6 +32,7 @@ export interface Operation {
   type_name?: string | null;
   planning_name?: string | null;
   attachment_count?: number;
+  flight_mode?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -63,6 +64,7 @@ export type CreateOperationSchema = {
   fk_mission_type_id?: number | null;
   fk_mission_category_id?: number | null;
   fk_luc_procedure_id: number;
+  flight_mode?: string | null;
 };
 export type UpdateOperationSchema = {
   mission_code?: string;
@@ -81,6 +83,7 @@ export type UpdateOperationSchema = {
   fk_mission_status_id?: number;
   distance_flown?: number | null;
   max_altitude?: number | null;
+  flight_mode?: string | null;
 };
 export interface OperationAttachment {
   attachment_id: number;

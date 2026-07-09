@@ -527,8 +527,8 @@ function MissionDetailSheet({ mission, isDark, onClose, onOpenLuc }: { mission: 
                                         <p className="text-sm font-medium">
                                             {mission.planned_at
                                                 ? formatBoardDate(mission.planned_at, timezone)
-                                                : (mission.date_start || mission.time_start)
-                                                    ? `${mission.date_start} ${mission.time_start}`.trim()
+                                                : mission.official_start
+                                                    ? formatBoardDate(mission.official_start, timezone)
                                                     : "—"}
                                         </p>
                                     </div>

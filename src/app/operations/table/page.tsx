@@ -67,6 +67,7 @@ export interface Operation {
   type_name?: string | null;
   planning_name?: string | null;
   visual_observer_ids?: Array<{ user_id: number; name: string }> | null;
+  flight_mode?: string | null;
   created_at: string;
   updated_at: string;
 }
