@@ -31,6 +31,7 @@ export interface ImportMissionParams {
   categoryId: number;
   typeId: number;
   planId: number | null;
+  missionPlanningId: number | null;
   statusId: number;
   resultId: number;
   pilotId: number;
@@ -40,6 +41,7 @@ export interface ImportMissionParams {
   location: string;
   userId: number;
   missionCode?: string;
+  flightMode?: string | null;
 }
 
 export interface ImportMissionResult {
@@ -48,31 +50,30 @@ export interface ImportMissionResult {
   skipped: string[];
 }
 
-function extractMissionCodeFromFilename(filename: string): string | null {
-  const pattern =
-    /^(.*?)_[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}(?:_.*)?\.[A-Za-z0-9]+$/;
-  const match = filename.match(pattern);
-  return match ? match[1].trim() : null;
-}
-
 function parseDurationSeconds(start?: string | null, end?: string | null): number | null {
   if (!start || !end) return null;
   const ms = new Date(end).getTime() - new Date(start).getTime();
   return isNaN(ms) || ms < 0 ? null : Math.round(ms / 1000);
 }
 
-/** GUTMA nests everything under exchange.message.flight_data — pull the raw flight_id out of that envelope for mission-code fallback. */
-function resolveFlightId(parsed: any): string | null {
-  const message = parsed?.exchange?.message ?? parsed?.gutma?.exchange?.message ?? {};
-  return message?.flight_data?.flight_id ?? null;
+// Same 6-char alphanumeric scheme as the normal mission-creation flow
+// (NewOperationModal.generateMissionId) — not derived from the log file.
+const MISSION_CODE_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+
+function randomMissionCode(): string {
+  return Array.from({ length: 6 }, () => MISSION_CODE_CHARS[Math.floor(Math.random() * MISSION_CODE_CHARS.length)]).join('');
 }
 
-function resolveMissionCode(flightId: string | null, filename: string): string {
-  return (
-    extractMissionCodeFromFilename(filename) ??
-    flightId ??
-    `IMPORT-${Date.now()}`
-  );
+async function generateUniqueMissionCode(ownerId: number): Promise<string> {
+  for (let attempts = 0; attempts < 100; attempts++) {
+    const code = randomMissionCode();
+    const existing = await prisma.pilot_mission.findFirst({
+      where: { mission_code: code, fk_owner_id: ownerId },
+      select: { pilot_mission_id: true },
+    });
+    if (!existing) return code;
+  }
+  throw new Error('Failed to generate a unique mission code');
 }
 
 
@@ -91,7 +92,7 @@ async function processGutmaBuffer(
   }
 
   const gutma = parseGutmaFlightData(parsed);
-  const missionCode = missionCodeOverride || resolveMissionCode(resolveFlightId(parsed), filename);
+  const missionCode = missionCodeOverride || await generateUniqueMissionCode(params.ownerId);
   const takeoff = gutma.start_time;
   const landing = gutma.end_time;
   const durationSec = parseDurationSeconds(takeoff, landing);
@@ -140,6 +141,7 @@ async function processGutmaBuffer(
       fk_pilot_user_id: params.pilotId || 1,
       fk_tool_id: params.vehicleId || null,
       fk_planning_id: params.planId || null,
+      fk_mission_planning_id: params.missionPlanningId || null,
       fk_mission_type_id: params.typeId || null,
       fk_mission_category_id: params.categoryId || null,
       fk_mission_status_id: params.statusId || null,
@@ -155,6 +157,7 @@ async function processGutmaBuffer(
       flight_duration: durationSec,
       distance_flown: distanceFlown,
       notes: notesArr.join(' | ') || null,
+      ...(params.missionPlanningId && params.flightMode && { mission_metadata: { flight_mode: params.flightMode } }),
     } as any,
     select: { pilot_mission_id: true },
   });
@@ -373,23 +376,6 @@ export async function importDrones(ownerId: number, clientId?: number) {
     is_dismissed: (t.tool_metadata as any)?.status === 'DISMISSED',
     drone_serial_number: droneSerialMap.get(t.tool_id) ?? null,
   }));
-}
-
-export async function importPlans(ownerId: number, clientId?: number, vehicleId?: number) {
-  return prisma.planning_logbook.findMany({
-    where: {
-      fk_owner_id: ownerId,
-      mission_planning_active: 'Y',
-      ...(clientId && { fk_client_id: clientId }),
-      ...(vehicleId && { fk_tool_id: vehicleId }),
-    },
-    orderBy: { mission_planning_code: 'asc' },
-    select: {
-      mission_planning_id: true,
-      mission_planning_code: true,
-      mission_planning_desc: true,
-    },
-  });
 }
 
 export async function importCategories(ownerId: number) {

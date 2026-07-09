@@ -1925,10 +1925,10 @@
         "groupLabel": "z.B. Frühjahrsumfrage 2025",
         "notes": "Zusätzliche Notizen…",
         "selectDot": "Auswählen…",
-        "missionCode": "Leer lassen, um automatisch aus dem Protokoll zu generieren"
+        "missionCode": "Leer lassen, um automatisch zu generieren"
       },
       "info": {
-        "gutmaAutoExtract": "Missionscode, Höhe, Distanz und Zeitstempel werden automatisch aus der GUTMA-Protokolldatei extrahiert. Sie können den Missionscode unten überschreiben.",
+        "gutmaAutoExtract": "Höhe, Distanz und Zeitstempel werden automatisch aus der GUTMA-Protokolldatei extrahiert. Der Missionscode wird automatisch generiert, sofern Sie unten keinen eigenen festlegen.",
         "clickToUpload": "Zum Hochladen klicken",
         "noPlansForDrone": "Keine Pläne für diese Drohne",
         "selectDroneFirst": "Zuerst Drohne auswählen",

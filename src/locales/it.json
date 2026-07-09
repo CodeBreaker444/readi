@@ -1927,10 +1927,10 @@
         "groupLabel": "es. Rilevamento Primavera 2025",
         "notes": "Note aggiuntive…",
         "selectDot": "Seleziona…",
-        "missionCode": "Lascia vuoto per generarlo automaticamente dal log"
+        "missionCode": "Lascia vuoto per generarlo automaticamente"
       },
       "info": {
-        "gutmaAutoExtract": "Codice missione, altitudine, distanza e timestamp vengono estratti automaticamente dal file di log GUTMA. Puoi sovrascrivere il codice missione qui sotto.",
+        "gutmaAutoExtract": "Altitudine, distanza e timestamp vengono estratti automaticamente dal file di log GUTMA. Il codice missione viene generato automaticamente a meno che non ne imposti uno qui sotto.",
         "clickToUpload": "Clicca per caricare",
         "noPlansForDrone": "Nessun piano per questo drone",
         "selectDroneFirst": "Seleziona prima il drone",

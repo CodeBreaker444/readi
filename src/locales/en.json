@@ -1935,10 +1935,10 @@
         "groupLabel": "e.g. Spring Survey 2025",
         "notes": "Additional notes…",
         "selectDot": "Select…",
-        "missionCode": "Leave blank to auto-generate from the log"
+        "missionCode": "Leave blank to auto-generate"
       },
       "info": {
-        "gutmaAutoExtract": "Mission code, altitude, distance and timestamps are extracted automatically from the GUTMA log file. You can override the mission code below if you'd like.",
+        "gutmaAutoExtract": "Altitude, distance and timestamps are extracted automatically from the GUTMA log file. The mission code is auto-generated unless you set one below.",
         "clickToUpload": "Click to upload",
         "uploadOrSelectFlight": "Upload a .gutma/.zip file or select a Control Center flight log to auto-fetch.",
         "noPlansForDrone": "No plans for this drone",
