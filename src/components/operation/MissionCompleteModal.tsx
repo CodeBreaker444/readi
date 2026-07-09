@@ -493,6 +493,8 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
       if (data.code === 1) {
         toast.success(t("operations.missionComplete.toast.uploadSuccess"));
         loadLogs();
+        loadPostFlight();
+        setPostFlightFromLog(true);
       } else {
         toast.error(data.message ?? t("operations.missionComplete.toast.uploadFailed"));
       }
@@ -560,7 +562,11 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
         organization_id: organizationId,
       });
       if (data.code === 1) {
-        toast.success(t("operations.missionComplete.toast.attachSuccess"));
+        if (data.serialNumberMismatch) {
+          toast.warning(`Flight log attached — but the drone's serial number doesn't match the log (log: ${data.serialNumberMismatch.logSerialNumber}, mission drone: ${data.serialNumberMismatch.missionSerialNumber}).`);
+        } else {
+          toast.success(t("operations.missionComplete.toast.attachSuccess"));
+        }
         const flightId = selectedFlight;
         setSelectedFlight(null);
         setFlights([]);

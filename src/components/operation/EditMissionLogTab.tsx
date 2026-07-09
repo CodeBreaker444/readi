@@ -121,7 +121,11 @@ export function EditMissionLogTab({ missionId, isDark }: { missionId: number; is
                 flight_id: selectedFlight,
             })
             if (data.code === 1) {
-                toast.success('Flight attached — mission start/end time and post-flight data synced')
+                if (data.serialNumberMismatch) {
+                    toast.warning(`Flight attached — but the drone's serial number doesn't match the log (log: ${data.serialNumberMismatch.logSerialNumber}, mission drone: ${data.serialNumberMismatch.missionSerialNumber}).`)
+                } else {
+                    toast.success('Flight attached — mission start/end time and post-flight data synced')
+                }
                 setSelectedFlight(null)
                 setFlights([])
                 const res = await axios.get(`/api/operation/board/flight-logs?mission_id=${missionId}`)

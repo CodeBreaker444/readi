@@ -28,6 +28,7 @@ import {
     Clock,
     FileText,
     FileUp,
+    Fingerprint,
     Loader2,
     Settings,
     Upload,
@@ -111,7 +112,10 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
     const [loadingFlights, setLoadingFlights] = useState(false);
     const [selectedFlightId, setSelectedFlightId] = useState('');
     const [flightsError, setFlightsError] = useState('');
+    const [logSerialNumber, setLogSerialNumber] = useState<string | null>(null);
+    const [loadingSerialNumber, setLoadingSerialNumber] = useState(false);
     const [vehicleId,   setVehicleId]   = useState('');
+    const [missionCode, setMissionCode] = useState('');
     const [categoryId,  setCategoryId]  = useState('');
     const [typeId,      setTypeId]      = useState('');
     const [planId,      setPlanId]      = useState('N');
@@ -161,7 +165,14 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
         ]).then(([cat, typ, sta]) => {
             setCategories(cat.data.categories ?? []);
             setTypes(typ.data.types ?? []);
-            setStatuses(sta.data.statuses ?? []);
+            const statusList: SelectOption[] = sta.data.statuses ?? [];
+            setStatuses(statusList);
+            // status to "Completed" instead of making the user pick it.
+            setStatusId((prev) => {
+                if (prev) return prev;
+                const completed = statusList.find((s) => s.name?.toLowerCase() === 'completed');
+                return completed ? String(completed.id) : prev;
+            });
         }).catch(() => toast.error(t(`${ns}.toast.loadMissionOptionsError`)))
           .finally(() => setLoadingMissionOptions(false));
     }, [step]);
@@ -189,9 +200,10 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
         setStep(1); setImportedIds([]); setSkippedList([]);
         setClientId(''); setPlatform('FLYTBASE'); setLogFile(null);
         setOrganizations([]); setOrganizationId(''); setLoadingOrgs(false);
-        setVehicleId(''); setCategoryId(''); setTypeId(''); setPlanId('N');
+        setVehicleId(''); setMissionCode(''); setCategoryId(''); setTypeId(''); setPlanId('N');
         setStatusId(''); setLocation(''); setGroupLabel(''); setNotes(''); setPilotId('');
         setFbWindow('30'); setFlights([]); setSelectedFlightId(''); setFlightsError('');
+        setLogSerialNumber(null); setLoadingSerialNumber(false);
         setDrones([]); setPlans([]); setCategories([]); setTypes([]); setStatuses([]); setPilots([]);
         setLoadingClients(false); setLoadingDrones(false); setLoadingMissionOptions(false); setLoadingPlans(false); setLoadingPilots(false);
     }
@@ -225,6 +237,36 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
         fetchFlytbaseFlights();
     }, [step, platform, organizationId, fetchFlytbaseFlights]);
 
+    // Detect the drone serial number from whichever log source is selected,
+    // so it can be shown as a hint on the Mission Data step.
+    useEffect(() => {
+        if (logFile) {
+            let cancelled = false;
+            setLoadingSerialNumber(true);
+            setLogSerialNumber(null);
+            const fd = new FormData();
+            fd.append('file', logFile);
+            axios.post('/api/operation/import/preview', fd)
+                .then((r) => { if (!cancelled) setLogSerialNumber(r.data.serial_number ?? null); })
+                .catch(() => { if (!cancelled) setLogSerialNumber(null); })
+                .finally(() => { if (!cancelled) setLoadingSerialNumber(false); });
+            return () => { cancelled = true; };
+        }
+        if (selectedFlightId) {
+            let cancelled = false;
+            setLoadingSerialNumber(true);
+            setLogSerialNumber(null);
+            const orgParam = organizationId ? `&organizationId=${organizationId}` : '';
+            axios.get(`/api/flytbase/flights/preview?flightId=${selectedFlightId}${orgParam}`)
+                .then((r) => { if (!cancelled) setLogSerialNumber(r.data?.data?.aircraft?.serial_number?.trim() || null); })
+                .catch(() => { if (!cancelled) setLogSerialNumber(null); })
+                .finally(() => { if (!cancelled) setLoadingSerialNumber(false); });
+            return () => { cancelled = true; };
+        }
+        setLogSerialNumber(null);
+        setLoadingSerialNumber(false);
+    }, [logFile, selectedFlightId, organizationId]);
+
     const canNext = useCallback(() => {
         if (step === 1) return !!clientId;
         if (step === 2) return !!logFile || !!selectedFlightId;
@@ -245,8 +287,9 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
             fd.append('mission_category',    categoryId);
             fd.append('mission_type',        typeId);
             fd.append('mission_plan',        planId);
-            fd.append('mission_status',      statusId);    
-            fd.append('mission_location',    location);    
+            fd.append('mission_status',      statusId);
+            fd.append('mission_code',        missionCode.trim());
+            fd.append('mission_location',    location);
             fd.append('mission_group_label', groupLabel);
             fd.append('mission_notes',       notes);
             fd.append('pilot_id',            pilotId);
@@ -502,6 +545,26 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                         <div className="space-y-3">
                             <SectionTitle>{t(`${ns}.sections.missionDetails`)}</SectionTitle>
 
+                            {loadingSerialNumber ? (
+                                <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-xs text-muted-foreground">
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t(`${ns}.info.detectingSerialNumber`)}
+                                </div>
+                            ) : logSerialNumber ? (
+                                <div className="flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-800 px-3 py-2 text-xs text-emerald-700 dark:text-emerald-400">
+                                    <Fingerprint className="h-3.5 w-3.5 shrink-0" />
+                                    {t(`${ns}.info.detectedSerialNumber`)}: <span className="font-mono font-semibold">{logSerialNumber}</span>
+                                </div>
+                            ) : null}
+
+                            <div>
+                                <Label className="mb-1.5 block">
+                                    {t(`${ns}.fields.missionCode`)}
+                                    <span className="ml-1 text-[10px] text-muted-foreground font-normal">{t(`${ns}.fields.optional`)}</span>
+                                </Label>
+                                <Input value={missionCode} onChange={(e) => setMissionCode(e.target.value)}
+                                    placeholder={t(`${ns}.placeholders.missionCode`)} />
+                            </div>
+
                             <div className="grid grid-cols-3 gap-3">
                                 <div>
                                     <Label className="mb-1.5 block">{t(`${ns}.fields.droneSystem`)} <span className="text-red-500">*</span></Label>
@@ -684,6 +747,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                         <Row label={t(`${ns}.review.client`)}   value={clients.find((c) => String(c.client_id) === clientId)?.client_name} />
                                         <Row label={t(`${ns}.review.platform`)} value={platform} />
                                         <Row label={t(`${ns}.review.file`)}     value={logFile?.name || flights.find((f) => f.flight_id === selectedFlightId)?.flight_name || selectedFlightId} />
+                                        <Row label={t(`${ns}.review.missionCode`)} value={missionCode.trim() || t(`${ns}.info.autoGenerated`)} />
                                         <Row label={t(`${ns}.review.drone`)}    value={drones.find((d) => String(d.tool_id) === vehicleId)?.tool_code} />
                                         <Row label={t(`${ns}.review.category`)} value={categories.find((c) => String(c.id) === categoryId)?.name} />
                                         <Row label={t(`${ns}.review.type`)}     value={types.find((tp) => String(tp.id) === typeId)?.name} />

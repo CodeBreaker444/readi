@@ -83,6 +83,7 @@ export async function POST(req: NextRequest) {
       groupLabel: String(formData.get('mission_group_label')  ?? ''),
       notes:      String(formData.get('mission_notes')        ?? ''),
       userId:     session!.user.userId,
+      missionCode: String(formData.get('mission_code') ?? '').trim() || undefined,
     };
 
     const result = await importMissionFromLog(file, params, flytbaseFlightId || null);

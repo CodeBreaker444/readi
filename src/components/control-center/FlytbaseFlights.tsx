@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTheme } from '@/components/useTheme';
 import axios from 'axios';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -205,10 +205,14 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
     try {
       const res = await axios.post(`/api/operation/missions/${missionId}/attach-flight-log`, {
         flight_id: selectedFlight.flight_id,
+        organization_id: selectedOrganization?.id,
         ...(isPdra && { post_flight_attach: true }), // backend uses this to write the audit warning
       });
       if (res.data.code === 1) {
-        if (isPdra) {
+        const mismatch = res.data.serialNumberMismatch;
+        if (mismatch) {
+          toast.warning(`Flight log attached — but the drone's serial number doesn't match the log (log: ${mismatch.logSerialNumber}, mission drone: ${mismatch.missionSerialNumber}).`);
+        } else if (isPdra) {
           toast.warning('Flight log attached. Note: This PDRA mission was logged after the flight — a compliance warning has been recorded in the audit log.');
         } else {
           toast.success('Flight log attached to mission');
@@ -238,11 +242,49 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
 
   const handleNewMissionSuccess = () => {
     setNewMissionModalOpen(false);
-    toast.success('Mission created. You can now attach the flight log to it.');
-    setTimeout(() => {
-      handleOpenAttachMissionModal();
-    }, 100);
   };
+
+  // Fires as soon as the mission is created, so the flight log gets attached
+  // immediately instead of relying on the user coming back to manually
+  // attach it from the "Attach Existing Mission" list.
+  const handleNewMissionCreated = async (op: { pilot_mission_id: number }) => {
+    if (!selectedFlight) return;
+    try {
+      const res = await axios.post(`/api/operation/missions/${op.pilot_mission_id}/attach-flight-log`, {
+        flight_id: selectedFlight.flight_id,
+        organization_id: selectedOrganization?.id,
+      });
+      if (res.data.code === 1) {
+        const mismatch = res.data.serialNumberMismatch;
+        if (mismatch) {
+          toast.warning(`Mission created and flight log attached — but the drone's serial number doesn't match the log (log: ${mismatch.logSerialNumber}, mission drone: ${mismatch.missionSerialNumber}).`);
+        } else {
+          toast.success('Mission created and flight log attached.');
+        }
+      } else {
+        toast.error(res.data.message
+          ? `Mission created, but attaching the flight log failed: ${res.data.message}`
+          : 'Mission created, but attaching the flight log failed.');
+      }
+    } catch (err: any) {
+      console.error('Failed to auto-attach flight log to new mission:', err);
+      const message = err?.response?.data?.message ?? '';
+      toast.error(message
+        ? `Mission created, but attaching the flight log failed: ${message}`
+        : 'Mission created, but attaching the flight log failed.');
+    }
+  };
+
+  // Prefill the new-mission form with details already known from the flight
+  // log, so the user isn't re-typing what's already in the GUTMA data.
+  const newMissionPrefill = useMemo(() => {
+    if (!selectedFlight || !preview) return null;
+    return {
+      scheduledStart: preview.start_time ?? null,
+      scheduledEnd: preview.end_time ?? null,
+      distanceFlown: preview.distance_m ?? null,
+    };
+  }, [selectedFlight, preview]);
 
   const card = isDark ? 'bg-[#0c0f1a] border-slate-800' : 'bg-white border-slate-200 shadow-sm';
   const textPrimary = isDark ? 'text-white' : 'text-slate-900';
@@ -615,6 +657,9 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
         open={newMissionModalOpen}
         onClose={() => setNewMissionModalOpen(false)}
         onSuccess={handleNewMissionSuccess}
+        onSaved={handleNewMissionCreated}
+        logSerialNumber={preview?.aircraft?.serial_number ?? null}
+        createPrefill={newMissionPrefill}
         isDark={isDark}
       />
 
