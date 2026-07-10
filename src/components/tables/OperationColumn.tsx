@@ -247,6 +247,7 @@ export const getOperationColumns = (t: TFunction, isDark = false, timezone = 'Eu
       const meta = table.options.meta as any;
       const op = row.original;
       const isCompleted = op.status_name === 'COMPLETED';
+      const isAborted = op.status_name === 'ABORTED';
       return (
         <div className="flex items-center gap-1">
           <Tooltip>
@@ -260,11 +261,11 @@ export const getOperationColumns = (t: TFunction, isDark = false, timezone = 'Eu
           <FeatureGate feature="operation_mission_table" require="edit">
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => meta.onEdit(op)}>
+                <Button variant="ghost" size="icon" className="h-7 w-7" disabled={isAborted} onClick={() => meta.onEdit(op)}>
                   <Pencil className="h-3.5 w-3.5" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>{t('operations.actions.edit')}</TooltipContent>
+              <TooltipContent>{isAborted ? 'Aborted missions cannot be edited' : t('operations.actions.edit')}</TooltipContent>
             </Tooltip>
           </FeatureGate>
           {isCompleted && (

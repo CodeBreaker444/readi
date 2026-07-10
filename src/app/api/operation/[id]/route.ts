@@ -116,6 +116,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     const msg = err instanceof Error ? err.message : '';
     if (msg === 'OPERATION_NOT_FOUND') return notFound(E.NF004);
     const pgCode: string | undefined = err?.code;
+    if (pgCode === 'MISSION_LOCKED') return apiError(E.BL003, 422);
     if (pgCode === '23505') return apiError({ code: 'DB005', category: 'Database', message: 'Mission code is already in use by another operation', detail: 'Unique constraint violation on pilot_mission.mission_code during UPDATE.' }, 409);
     if (pgCode === '23503') return dbError(E.DB003, err);
     return internalError(E.SV001, err);

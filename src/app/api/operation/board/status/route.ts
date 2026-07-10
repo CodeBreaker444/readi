@@ -5,7 +5,7 @@ import { notifyDccExecution, notifyDccTermination } from "@/backend/services/mis
 import { updateMissionStatus } from "@/backend/services/operation/operation-board-service";
 import { checkDailyDeclaration } from "@/backend/services/operation/pilot-declaration-service";
 import { hasOpenTicketForTool } from "@/backend/services/system/maintenance-ticket";
-import { internalError } from "@/lib/api-error";
+import { apiError, internalError } from "@/lib/api-error";
 import { requireFeatureAccess, requirePermission } from "@/lib/auth/api-auth";
 import { E } from "@/lib/error-codes";
 import { NextRequest, NextResponse } from "next/server";
@@ -101,7 +101,8 @@ export async function POST(req: NextRequest) {
       dcc ? { ...result, dcc } : result,
       { status: result.code === 1 ? 200 : 422 },
     );
-  } catch (err) {
+  } catch (err: any) {
+    if (err?.code === 'MISSION_LOCKED') return apiError(E.BL003, 422);
     return internalError(E.SV001, err);
   }
 }

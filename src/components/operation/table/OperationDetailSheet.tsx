@@ -126,6 +126,7 @@ export function OperationDetailSheet({
 
   const { timezone } = useTimezone();
   const isCompleted = operation?.status_name === 'COMPLETED';
+  const isAborted = operation?.status_name === 'ABORTED';
 
   const statusLabel = operation?.status_name
     ? t(`operations.table.status.${
@@ -171,6 +172,8 @@ export function OperationDetailSheet({
                         variant="outline"
                         size="sm"
                         className="gap-1.5 h-7 text-xs"
+                        disabled={isAborted}
+                        title={isAborted ? 'Aborted missions cannot be edited' : undefined}
                         onClick={() => { onEdit(operation); onClose(); }}
                       >
                         <Pencil className="h-3 w-3" />
@@ -186,6 +189,14 @@ export function OperationDetailSheet({
                   <p className="text-sm text-muted-foreground text-left">
                     {operation.mission_description}
                   </p>
+                )}
+                {isAborted && (
+                  <div className="flex items-center gap-2 rounded-md border border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/20 px-3 py-2 mt-2">
+                    <Ban className="h-3.5 w-3.5 text-red-600 dark:text-red-400 shrink-0" />
+                    <p className="text-xs text-red-700 dark:text-red-400">
+                      This mission was automatically aborted and is locked from further edits.
+                    </p>
+                  </div>
                 )}
               </SheetHeader>
 
@@ -245,6 +256,8 @@ export function OperationDetailSheet({
                       variant="outline"
                       size="sm"
                       className="w-full gap-2 text-xs"
+                      disabled={isAborted}
+                      title={isAborted ? 'Aborted missions cannot be edited' : undefined}
                       onClick={() => { setProcedureOperation(operation); onClose(); }}
                     >
                       <ClipboardList className="h-3.5 w-3.5" />

@@ -34,6 +34,7 @@ export async function POST(req: NextRequest) {
     const message = err instanceof Error ? err.message : 'Unknown error';
     const status =
       err?.code === 'FLYTBASE_TIMEOUT'        ? 504 :
+      err?.code === 'MISSION_LOCKED'          ? 422 :
       message.includes('No FlytBase')         ? 422 :
       message.startsWith('No system is present') ? 400 : 500;
     return NextResponse.json({ code: 0, message }, { status });

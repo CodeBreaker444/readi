@@ -29,6 +29,7 @@ export async function POST(req: NextRequest) {
     console.error('[flight-logs/upload] POST error:', err);
     const message = err instanceof Error ? err.message : 'Unknown error';
     const status = message.includes('too large') ? 413
+      : (err as any)?.code === 'MISSION_LOCKED' ? 422
       : message.startsWith('No system is present') ? 400
       : 500;
     return NextResponse.json({ code: 0, message }, { status });

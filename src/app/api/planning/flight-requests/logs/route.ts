@@ -71,9 +71,10 @@ export async function POST(req: NextRequest) {
     const dcc = await notifyDccLogging(session!.user.ownerId, missionId, logUri);
 
     return NextResponse.json({ code: 1, message: 'Flight log pushed to DCC', dcc });
-  } catch (err) {
+  } catch (err: any) {
     console.error('[flight-requests/logs] POST error:', err);
     const message = err instanceof Error ? err.message : 'Unknown error';
+    if (err?.code === 'MISSION_LOCKED') return apiError(E.BL003, 422);
     if (message.startsWith('No system is present')) {
       return NextResponse.json({ code: 0, message }, { status: 400 });
     }

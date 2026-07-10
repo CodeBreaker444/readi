@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { getFlytbaseCredentials, getFlytbaseCredentialsForCompany } from '@/backend/services/integrations/flytbase-service';
 import { getOrganizationCredentials } from '@/backend/services/integrations/flytbase-organization-service';
 import { GutmaWaypoint, parseGutmaFlightData, parseGutmaFlightPreview } from '@/backend/services/integrations/gutma-parser';
+import { assertMissionEditable } from '@/backend/services/operation/mission-lock';
 import { BUCKET, getPresignedDownloadUrl, s3 } from '@/lib/s3Client';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import JSZip from 'jszip';
@@ -293,6 +294,12 @@ export async function uploadManualFlightLog(
     throw new Error(`Invalid file type. Allowed: ${ALLOWED_EXTENSIONS.join(', ')}`);
   }
 
+  const mission = await prisma.pilot_mission.findUnique({
+    where: { pilot_mission_id: missionId },
+    select: { status_name: true },
+  });
+  assertMissionEditable(mission?.status_name);
+
   // Validate serial number from log matches mission's drone
   const missionDroneSn = await getDroneSerialNumberForMission(missionId);
   if (missionDroneSn) {
@@ -343,6 +350,12 @@ export async function attachFlytbaseFlightLog(
   flightId: string,
   organizationId: number | null = null
 ): Promise<{ missionCode: string | null }> {
+  const mission = await prisma.pilot_mission.findUnique({
+    where: { pilot_mission_id: missionId },
+    select: { status_name: true },
+  });
+  assertMissionEditable(mission?.status_name);
+
   // A flight log can only ever be attached to one mission — reject if it's already linked
   const existingLink = await prisma.mission_flight_logs.findFirst({
     where: { flytbase_flight_id: flightId, log_source: 'flytbase' },
