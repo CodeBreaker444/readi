@@ -157,6 +157,13 @@ function FragmentSection({ section, matrix, columns, isDark, onToggle }: {
               );
             }
             const value = matrix[role]?.[feature.key];
+            if (!value) {
+              return (
+                <td key={role} className="px-3 py-1.5 text-center">
+                  <span className={`text-xs select-none ${isDark ? 'text-slate-700' : 'text-slate-300'}`} title="No access">—</span>
+                </td>
+              );
+            }
             return (
               <td key={role} className="px-3 py-1.5 text-center">
                 <button

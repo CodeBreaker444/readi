@@ -26,7 +26,8 @@ export async function GET() {
     for (const role of MATRIX_ROLES) {
       matrix[role] = {};
       for (const key of ALL_FEATURE_KEYS) {
-        matrix[role][key] = overrides.get(`${role}:${key}`) ?? DEFAULT_ROLE_FEATURE_ACCESS[role]?.[key] ?? 'R';
+        const value = overrides.get(`${role}:${key}`) ?? DEFAULT_ROLE_FEATURE_ACCESS[role]?.[key];
+        if (value) matrix[role][key] = value;
       }
     }
 

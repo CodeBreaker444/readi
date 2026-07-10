@@ -414,12 +414,14 @@ export async function deleteOwner(id: string, deletedByUserId: number) {
 /** Seeds the default per-role feature permission matrix for a newly created company. */
 export async function seedDefaultRolePermissions(ownerId: number): Promise<void> {
     const rows = MATRIX_ROLES.flatMap((role) =>
-        ALL_FEATURE_KEYS.map((feature_key) => ({
-            fk_owner_id: ownerId,
-            role,
-            feature_key,
-            access: DEFAULT_ROLE_FEATURE_ACCESS[role]?.[feature_key] ?? 'R',
-        })),
+        ALL_FEATURE_KEYS
+            .filter((feature_key) => DEFAULT_ROLE_FEATURE_ACCESS[role]?.[feature_key] !== undefined)
+            .map((feature_key) => ({
+                fk_owner_id: ownerId,
+                role,
+                feature_key,
+                access: DEFAULT_ROLE_FEATURE_ACCESS[role]![feature_key]!,
+            })),
     );
 
     await prisma.role_feature_permission.createMany({
