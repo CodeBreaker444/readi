@@ -83,8 +83,8 @@ export function EditMissionLogTab({ missionId, isDark }: { missionId: number; is
             } else {
                 toast.error(data.message ?? 'Upload failed')
             }
-        } catch {
-            toast.error('Upload failed')
+        } catch (err: any) {
+            toast.error(err.response?.data?.message ?? 'Upload failed')
         } finally {
             setUploading(false)
             if (fileInputRef.current) fileInputRef.current.value = ''
@@ -121,11 +121,7 @@ export function EditMissionLogTab({ missionId, isDark }: { missionId: number; is
                 flight_id: selectedFlight,
             })
             if (data.code === 1) {
-                if (data.serialNumberMismatch) {
-                    toast.warning(`Flight attached — but the drone's serial number doesn't match the log (log: ${data.serialNumberMismatch.logSerialNumber}, mission drone: ${data.serialNumberMismatch.missionSerialNumber}).`)
-                } else {
-                    toast.success('Flight attached — mission start/end time and post-flight data synced')
-                }
+                toast.success('Flight attached — mission start/end time and post-flight data synced')
                 setSelectedFlight(null)
                 setFlights([])
                 const res = await axios.get(`/api/operation/board/flight-logs?mission_id=${missionId}`)
@@ -133,8 +129,8 @@ export function EditMissionLogTab({ missionId, isDark }: { missionId: number; is
             } else {
                 toast.error(data.message ?? 'Attach failed')
             }
-        } catch {
-            toast.error('Failed to attach flight')
+        } catch (err: any) {
+            toast.error(err.response?.data?.message ?? 'Failed to attach flight')
         } finally {
             setAttachingFlight(false)
             setAutoSyncingFlight(false)

@@ -196,6 +196,14 @@ export async function updateSession(request: NextRequest) {
       }
     }
 
+    // D-Flight settings & fleet — ADMIN/OPM/SUPERADMIN only
+    if (pathname.startsWith('/dflight')) {
+      const role = decodeJwtRole(jwtToken)
+      if (role && !['ADMIN', 'OPM', 'SUPERADMIN'].includes(role)) {
+        return NextResponse.redirect(new URL('/unauthorized', request.url))
+      }
+    }
+
     // Company-level Drone ATC gate for page route
     if (pathname.startsWith('/drone-atc')) {
       const role = decodeJwtRole(jwtToken)

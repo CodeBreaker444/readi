@@ -187,7 +187,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
         }] : []),
       ],
     },
-    ...(userData?.dFlightEnabled ? [{
+    ...(userData?.dFlightEnabled && role && ['ADMIN', 'OPM', 'SUPERADMIN'].includes(role) ? [{
       name: t('sidebar.dflight'),
       href: '/dflight/fleet',
       icon: TbDrone,

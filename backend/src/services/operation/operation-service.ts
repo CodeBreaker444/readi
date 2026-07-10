@@ -114,6 +114,7 @@ export async function listOperations(
     planning_name: row.planning?.planning_name ?? null,
     client_name: row.planning?.client?.client_name ?? row.client?.client_name ?? null,
     visual_observer_ids: (row.mission_metadata as any)?.visual_observers ?? null,
+    flight_mode: (row.mission_metadata as any)?.flight_mode ?? null,
   })) as unknown as Operation[];
 
   const toolIds = [...new Set(operations.filter((op) => op.fk_tool_id).map((op) => op.fk_tool_id as number))];
@@ -172,6 +173,7 @@ export async function getOperation(id: number): Promise<Operation | null> {
     category_name: data.pilot_mission_category?.category_name ?? null,
     type_name: data.pilot_mission_type?.type_name ?? null,
     visual_observer_ids: (data.mission_metadata as any)?.visual_observers ?? null,
+    flight_mode: (data.mission_metadata as any)?.flight_mode ?? null,
   } as unknown as Operation;
 }
 
@@ -224,6 +226,10 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
     }
   }
 
+  const missionMetadata: Record<string, unknown> = {};
+  if (visualObservers?.length) missionMetadata.visual_observers = visualObservers;
+  if ((input as any).flight_mode) missionMetadata.flight_mode = (input as any).flight_mode;
+
   const baseInsert: any = {
     mission_code: codeToChild,
     mission_name: input.mission_name,
@@ -246,7 +252,7 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
     fk_erp_group_id: (input as any).fk_erp_group_id ?? null,
     luc_procedure_progress: luc_procedure_progress as any,
     luc_completed_at: null,
-    ...(visualObservers?.length && { mission_metadata: { visual_observers: visualObservers } }),
+    ...(Object.keys(missionMetadata).length && { mission_metadata: missionMetadata }),
   };
 
   const inserted = await prisma.pilot_mission.create({
@@ -281,6 +287,17 @@ export async function updateOperation(id: number, input: UpdateOperationSchema):
   if ((input as any).status_name !== undefined) updatePayload.status_name = (input as any).status_name;
   if (input.distance_flown !== undefined) updatePayload.distance_flown = input.distance_flown;
   if ((input as any).fk_erp_group_id !== undefined) updatePayload.fk_erp_group_id = (input as any).fk_erp_group_id;
+
+  if ((input as any).flight_mode !== undefined) {
+    const current = await prisma.pilot_mission.findUnique({
+      where: { pilot_mission_id: id },
+      select: { mission_metadata: true },
+    });
+    updatePayload.mission_metadata = {
+      ...(current?.mission_metadata as any ?? {}),
+      flight_mode: (input as any).flight_mode,
+    };
+  }
 
   await prisma.pilot_mission.update({
     where: { pilot_mission_id: id },
@@ -379,149 +396,6 @@ export async function deleteOperationAttachment(attachmentId: number): Promise<v
   await deleteFileFromS3(data.file_key);
 
   await prisma.operation_attachment.delete({ where: { attachment_id: attachmentId } });
-}
-
-export async function createRecurringOperations(
-  input: {
-    mission_name: string;
-    mission_code?: string;
-    mission_description?: string | null;
-    scheduled_start: string;
-    actual_end?: string | null;
-    fk_pilot_user_id: number;
-    fk_tool_id?: number | null;
-    fk_mission_type_id?: number | null;
-    fk_mission_category_id?: number | null;
-    fk_planning_id?: number | null;
-    fk_luc_procedure_id: number;
-    location?: string | null;
-    notes?: string | null;
-    days_of_week: number[];
-    recur_until: string;
-    mission_group_label?: string | null;
-  },
-  ownerId: number
-): Promise<{
-  count: number;
-  first_id: number;
-  missions: Array<{ pilotMissionId: number; dccMissionId: string; startDateTime: string }>;
-}> {
-  const recurringGroupId = crypto.randomUUID();
-
-  const procRow = await prisma.luc_procedure.findFirst({
-    where: {
-      procedure_id: input.fk_luc_procedure_id,
-      fk_owner_id: ownerId,
-      procedure_status: 'MISSION',
-      procedure_active: 'Y',
-    },
-    select: { procedure_steps: true },
-  });
-
-  if (!procRow) throw new Error('Procedure not found or not available for missions');
-
-  const luc_procedure_progress =
-    seedLucProcedureProgressFromSteps(procRow.procedure_steps) ?? {
-      checklist: {},
-      communication: {},
-      assignment: {},
-    };
-
-  const startMatch = input.scheduled_start.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
-  if (!startMatch) throw new Error('Invalid scheduled_start format. Expected YYYY-MM-DDTHH:mm');
-  const [, sYear, sMonth, sDay, sHour, sMin] = startMatch.map(Number);
-
-  let durationMs = 0;
-  if (input.actual_end) {
-    const endMatch = input.actual_end.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
-    if (endMatch) {
-      const [, eYear, eMonth, eDay, eHour, eMin] = endMatch.map(Number);
-      durationMs = Math.max(
-        Date.UTC(eYear, eMonth - 1, eDay, eHour, eMin) - Date.UTC(sYear, sMonth - 1, sDay, sHour, sMin),
-        0
-      );
-    }
-  }
-
-  const untilMatch = input.recur_until.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (!untilMatch) throw new Error('Invalid recur_until format. Expected YYYY-MM-DD');
-  const [, uYear, uMonth, uDay] = untilMatch.map(Number);
-  const untilDate = new Date(Date.UTC(uYear, uMonth - 1, uDay, 23, 59, 59));
-
-  if (new Date(Date.UTC(sYear, sMonth - 1, sDay)) > untilDate) {
-    throw new Error('Recurrence end date must be on or after the start date');
-  }
-
-  const daysSet = new Set(input.days_of_week.map(Number));
-  let cursorDate = new Date(Date.UTC(sYear, sMonth - 1, sDay));
-
-  const rows: any[] = [];
-  const rowMeta: Array<{ dccMissionId: string; startDateTime: string }> = [];
-  let instanceIndex = 0;
-  let iterations = 0;
-
-  while (cursorDate <= untilDate && iterations < 1000) {
-    iterations++;
-    if (daysSet.has(cursorDate.getUTCDay())) {
-      instanceIndex++;
-      const y = cursorDate.getUTCFullYear();
-      const m = cursorDate.getUTCMonth();
-      const d = cursorDate.getUTCDate();
-      const instanceStart = new Date(Date.UTC(y, m, d, sHour, sMin, 0, 0));
-      const instanceCode = input.mission_code
-        ? `${input.mission_code}-${instanceIndex}`
-        : crypto.randomUUID();
-
-      rowMeta.push({ dccMissionId: instanceCode, startDateTime: instanceStart.toISOString() });
-      rows.push({
-        fk_owner_id: ownerId,
-        mission_name: input.mission_name,
-        mission_description: input.mission_description ?? null,
-        status_name: 'Scheduled',
-        fk_mission_status_id: 1,
-        fk_pilot_user_id: input.fk_pilot_user_id,
-        fk_tool_id: input.fk_tool_id ?? null,
-        fk_mission_type_id: input.fk_mission_type_id ?? null,
-        fk_mission_category_id: input.fk_mission_category_id ?? null,
-        fk_planning_id: input.fk_planning_id ?? null,
-        fk_luc_procedure_id: input.fk_luc_procedure_id,
-        luc_procedure_progress: luc_procedure_progress as any,
-        luc_completed_at: null,
-        location: input.location ?? null,
-        notes: input.notes ?? null,
-        mission_code: instanceCode,
-        scheduled_start: instanceStart,
-        actual_end: durationMs > 0 ? new Date(instanceStart.getTime() + durationMs) : null,
-        recurring_group_id: recurringGroupId,
-        mission_date_until: new Date(input.recur_until),
-        mission_group_label: input.mission_group_label ?? null,
-      });
-    }
-    cursorDate = new Date(Date.UTC(
-      cursorDate.getUTCFullYear(), cursorDate.getUTCMonth(), cursorDate.getUTCDate() + 1
-    ));
-  }
-
-  if (rows.length === 0) throw new Error('No matching days found in the recurrence range');
-
-  await prisma.pilot_mission.createMany({ data: rows });
-
-  const missionCodes = rowMeta.map((r) => r.dccMissionId);
-  const created = await prisma.pilot_mission.findMany({
-    where: { mission_code: { in: missionCodes }, fk_owner_id: ownerId },
-    orderBy: { scheduled_start: 'asc' },
-    select: { pilot_mission_id: true, scheduled_start: true, mission_code: true },
-  });
-
-  return {
-    count: rows.length,
-    first_id: created[0].pilot_mission_id,
-    missions: created.map((row, i) => ({
-      pilotMissionId: row.pilot_mission_id,
-      dccMissionId: rowMeta[i]?.dccMissionId ?? row.mission_code ?? '',
-      startDateTime: rowMeta[i]?.startDateTime ?? row.scheduled_start?.toISOString() ?? '',
-    })),
-  };
 }
 
 export async function batchSetPilot(
