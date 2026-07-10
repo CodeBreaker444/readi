@@ -203,7 +203,7 @@ export async function previewUploadedFlightLog(
  * log is proof the flight already happened, regardless of what stage the
  * mission was in before (e.g. a mission created ad hoc from Control Center).
  */
-async function syncMissionFromGutma(missionId: number, gutma: any): Promise<void> {
+async function syncMissionFromGutma(missionId: number, gutma: any): Promise<string | null> {
   const parsed = parseGutmaFlightData(gutma);
   const missionUpdate: Record<string, unknown> = {
     status_name: 'COMPLETED',
@@ -224,10 +224,12 @@ async function syncMissionFromGutma(missionId: number, gutma: any): Promise<void
   if (parsed.battery_charge_start != null) missionUpdate.battery_charge_start = parsed.battery_charge_start;
   if (parsed.battery_charge_end != null) missionUpdate.battery_charge_end = parsed.battery_charge_end;
 
-  await prisma.pilot_mission.update({
+  const updated = await prisma.pilot_mission.update({
     where: { pilot_mission_id: missionId },
     data: missionUpdate,
+    select: { mission_code: true },
   });
+  return updated.mission_code ?? null;
 }
 
 async function extractSerialNumberFromFile(file: File): Promise<string | null> {
@@ -340,7 +342,7 @@ export async function attachFlytbaseFlightLog(
   ownerId: number,
   flightId: string,
   organizationId: number | null = null
-): Promise<void> {
+): Promise<{ missionCode: string | null }> {
   // A flight log can only ever be attached to one mission — reject if it's already linked
   const existingLink = await prisma.mission_flight_logs.findFirst({
     where: { flytbase_flight_id: flightId, log_source: 'flytbase' },
@@ -422,10 +424,13 @@ export async function attachFlytbaseFlightLog(
   // Prefill the mission's post-flight fields from the GUTMA log so Edit
   // Mission's Mission Log / Post Flight tabs reflect the attached flight
   // without requiring a separate manual sync step.
+  let missionCode: string | null = null;
   try {
-    await syncMissionFromGutma(missionId, gutma);
+    missionCode = await syncMissionFromGutma(missionId, gutma);
   } catch (err) {
     // Best-effort — a parsing/sync failure shouldn't fail the attach itself.
     console.error('[attachFlytbaseFlightLog] GUTMA mission sync failed:', err);
   }
+
+  return { missionCode };
 }

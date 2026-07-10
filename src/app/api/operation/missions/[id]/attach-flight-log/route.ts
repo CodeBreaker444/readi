@@ -1,4 +1,5 @@
 import { attachFlytbaseFlightLog } from '@/backend/services/operation/flight-log-service';
+import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -20,7 +21,20 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ code: 0, message: 'flight_id is required' }, { status: 400 });
     }
 
-    await attachFlytbaseFlightLog(missionId, session!.user.userId, session!.user.ownerId, flightId, organizationId);
+    const { missionCode } = await attachFlytbaseFlightLog(missionId, session!.user.userId, session!.user.ownerId, flightId, organizationId);
+
+    logEvent({
+      eventType: 'CREATE',
+      entityType: 'operation',
+      description: `Attached flight log (${flightId}) to mission ${missionCode ?? missionId} from Control Center`,
+      userId: session!.user.userId,
+      userName: session!.user.fullname,
+      userEmail: session!.user.email,
+      userRole: session!.user.role,
+      ownerId: session!.user.ownerId,
+      metadata: { flight_id: flightId, organization_id: organizationId },
+    });
+
     return NextResponse.json({
       code: 1,
       message: 'Flight log attached to mission',

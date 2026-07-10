@@ -36,6 +36,7 @@ export interface AddOwnerWithAdminPayload {
     owner_website: string;
     owner_active: string;
     drone_atc_enabled?: boolean;
+    d_flight_enabled?: boolean;
     flytrelay_enabled?: boolean;
     email_notifications_enabled?: boolean;
     easa_operator_code?: string;
@@ -468,6 +469,7 @@ export async function addOwnerWithAdmin(payload: AddOwnerWithAdminPayload) {
             owner_website: payload.owner_website,
             owner_active: payload.owner_active,
             drone_atc_enabled: payload.drone_atc_enabled ?? false,
+            d_flight_enabled: payload.d_flight_enabled ?? false,
             flytrelay_enabled: payload.flytrelay_enabled ?? false,
             email_notifications_enabled: payload.email_notifications_enabled ?? false,
             tax_id: payload.tax_id || null,

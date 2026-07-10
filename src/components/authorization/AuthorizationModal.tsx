@@ -142,8 +142,9 @@ export function AuthorizationModal({ open, context, onSuccess, onCancel, isDark 
   return (
     <Dialog open={open} onOpenChange={o => { if (!o) onCancel(); }}>
       <DialogContent
+        overlayClassName="z-[100000]"
         className={cn(
-          'max-w-sm w-[95vw] p-0 overflow-hidden',
+          'z-[100000] max-w-sm w-[95vw] p-0 overflow-hidden',
           isDark ? 'bg-slate-900 border-slate-700/60' : 'bg-white border-slate-200'
         )}
       >

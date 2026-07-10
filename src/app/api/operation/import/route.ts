@@ -2,6 +2,7 @@ import { importMissionFromLog } from '@/backend/services/operation/importOperati
 import { env } from '@/backend/config/env';
 import { getFlytbaseCredentials, getFlytbaseCredentialsForCompany } from '@/backend/services/integrations/flytbase-service';
 import { getOrganizationCredentials } from '@/backend/services/integrations/flytbase-organization-service';
+import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { requirePermission } from '@/lib/auth/api-auth';
 import { internalError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
@@ -91,6 +92,21 @@ export async function POST(req: NextRequest) {
     };
 
     const result = await importMissionFromLog(file, params, flytbaseFlightId || null);
+
+    for (const op of result.operations) {
+      logEvent({
+        eventType: 'CREATE',
+        entityType: 'operation',
+        entityId: op.pilot_mission_id,
+        description: `Imported mission ${op.mission_code ?? `#${op.mission_code}`} from flight log on Operations table`,
+        userId: session!.user.userId,
+        userName: session!.user.fullname,
+        userEmail: session!.user.email,
+        userRole: session!.user.role,
+        ownerId,
+        metadata: { flytbase_flight_id: flytbaseFlightId || undefined, source_file: file.name },
+      });
+    }
 
     return NextResponse.json({
       code: 1,

@@ -1,5 +1,6 @@
 'use client';
 
+import { useAuthorization } from '@/components/authorization/AuthorizationProvider';
 import { GutmaPreviewPanel } from '@/components/control-center/GutmaPreviewPanel';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -66,6 +67,7 @@ type AttachModalTab = 'existing' | 'new';
 export function FlytbaseFlights({ isActive = true, selectedOrganization, listContainer = null }: Props) {
   const { isDark } = useTheme();
   const { t } = useTranslation();
+  const { requireAuthorization } = useAuthorization();
 
   const [window, setWindow] = useState(1440);
   const [filterMode, setFilterMode] = useState<FilterMode>('window');
@@ -196,12 +198,31 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
     }
   };
 
-  const handleAttachMission = async (missionId: number, missionType?: string) => {
+  const handleAttachMission = async (missionId: number, missionType?: string, missionCode?: string) => {
     if (!selectedFlight) return;
-    setAttachingMissionId(missionId);
 
     // If this is a PDRA mission being attached post-flight, log a compliance warning
     const isPdra = missionType === 'PDRA';
+
+    try {
+      await requireAuthorization({
+        actionType: 'mission_attach_flight_log',
+        entityType: 'mission',
+        entityId: String(missionId),
+        title: 'Authorize Flight Log Attachment',
+        label: `Attach ${selectedFlight.flight_name ?? selectedFlight.flight_id} to ${missionCode ?? `mission #${missionId}`}`,
+        details: {
+          mission_id: missionId,
+          mission_code: missionCode,
+          flight_id: selectedFlight.flight_id,
+          is_pdra: isPdra,
+        },
+      });
+    } catch {
+      return; // user cancelled or wrong PIN
+    }
+
+    setAttachingMissionId(missionId);
 
     try {
       const res = await axios.post(`/api/operation/missions/${missionId}/attach-flight-log`, {
@@ -213,7 +234,7 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
         if (isPdra) {
           toast.warning('Flight log attached. Note: This PDRA mission was logged after the flight — a compliance warning has been recorded in the audit log.');
         } else {
-          toast.success('Flight log attached to mission');
+          toast.success('Flight log attached to mission — post-flight data has been filled in automatically.');
         }
         setAttachMissionModalOpen(false);
         const droneSerialNumber = preview?.aircraft?.serial_number;
@@ -233,7 +254,21 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
     }
   };
 
-  const handleOpenNewMission = () => {
+  const handleOpenNewMission = async () => {
+    try {
+      await requireAuthorization({
+        actionType: 'mission_create_from_flight',
+        entityType: 'mission',
+        title: 'Authorize New Mission Creation',
+        label: `Create a new mission for ${selectedFlight?.flight_name ?? selectedFlight?.flight_id ?? 'this flight'}`,
+        details: {
+          flight_id: selectedFlight?.flight_id,
+        },
+      });
+    } catch {
+      return; // user cancelled or wrong PIN
+    }
+
     setAttachMissionModalOpen(false);
     setNewMissionModalOpen(true);
   };
@@ -621,7 +656,7 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
                             </div>
                             <Button
                               size="sm"
-                              onClick={() => handleAttachMission(mission.pilot_mission_id, isPdra ? 'PDRA' : 'OPEN')}
+                              onClick={() => handleAttachMission(mission.pilot_mission_id, isPdra ? 'PDRA' : 'OPEN', mission.mission_code || mission.mission_name)}
                               disabled={isAttaching || hasLog}
                               title={hasLog ? 'This mission already has a flight log attached' : undefined}
                               className="h-7 text-xs bg-violet-600 hover:bg-violet-500 text-white shrink-0"
