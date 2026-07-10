@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     const { session, error } = await requirePermission('view_operations');
     if (error) return error;
 
-    const { error: featureError } = await requireFeatureAccess('systems_manage', 'edit');
+    const { error: featureError } = await requireFeatureAccess('systems_manage', 'create');
     if (featureError) return featureError;
 
     const { type_value, type_label } = await req.json();

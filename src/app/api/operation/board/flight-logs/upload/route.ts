@@ -1,5 +1,5 @@
 import { uploadManualFlightLog } from '@/backend/services/operation/flight-log-service';
-import { requirePermission } from '@/lib/auth/api-auth';
+import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 export const runtime = 'nodejs';
@@ -8,6 +8,9 @@ export async function POST(req: NextRequest) {
   try {
     const { session, error } = await requirePermission('view_operations');
     if (error) return error;
+
+    const { error: featureError } = await requireFeatureAccess('operation_daily_board', 'edit');
+    if (featureError) return featureError;
 
     const form = await req.formData();
     const missionId = Number(form.get('mission_id'));

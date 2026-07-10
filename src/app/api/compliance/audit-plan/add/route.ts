@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
         const { session, error } = await requirePermission('view_compliance');
         if (error) return error;
 
-        const { error: featureError } = await requireFeatureAccess('compliance_general_audit_plan', 'edit');
+        const { error: featureError } = await requireFeatureAccess('compliance_general_audit_plan', 'create');
         if (featureError) return featureError;
 
         const body = await req.json();

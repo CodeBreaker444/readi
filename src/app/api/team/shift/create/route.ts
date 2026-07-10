@@ -1,6 +1,6 @@
 import { createShiftSchema } from '@/app/api/team/shift/schema'
 import { createShift } from '@/backend/services/shift/crew-shift-service'
-import { requirePermission } from '@/lib/auth/api-auth'
+import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth'
 import { NextRequest, NextResponse } from 'next/server'
 import { ZodError } from 'zod'
 
@@ -9,6 +9,9 @@ export async function POST(req: NextRequest) {
   try {
     const { session, error } = await requirePermission('manage_users');
     if (error) return error;
+
+    const { error: featureError } = await requireFeatureAccess('team_personnel', 'create');
+    if (featureError) return featureError;
 
     const ownerId = session!.user.ownerId
 

@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
         const { session, error } = await requirePermission('view_config')
         if (error) return error
 
-        const { error: featureError } = await requireFeatureAccess('org_checklist', 'edit')
+        const { error: featureError } = await requireFeatureAccess('org_checklist', 'create')
         if (featureError) return featureError
 
         const validationResult = checklistSchema.safeParse(body)

@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
         const { session, error } = await requireAnyPermission('view_config', 'view_maintenance_tickets');
         if (error) return error;
 
-    const { error: featureError } = await requireFeatureAccess('systems_maintenance_tickets', 'edit');
+    const { error: featureError } = await requireFeatureAccess('systems_maintenance_tickets', 'create');
     if (featureError) return featureError;
 
     const validation = createTicketSchema.safeParse(body);

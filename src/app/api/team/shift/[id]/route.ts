@@ -1,5 +1,5 @@
 import { deleteShift } from '@/backend/services/shift/crew-shift-service'
-import { requirePermission } from '@/lib/auth/api-auth'
+import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth'
 import { NextRequest, NextResponse } from 'next/server'
 import z from 'zod'
 
@@ -16,6 +16,9 @@ export async function DELETE(
 
     const { session, error } = await requirePermission('manage_users');
        if (error) return error;
+
+    const { error: featureError } = await requireFeatureAccess('team_personnel', 'delete');
+    if (featureError) return featureError;
 
     const parsed = deleteShiftSchema.safeParse({ shift_id: shiftId })
     if (!parsed.success) {

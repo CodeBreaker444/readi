@@ -1,5 +1,5 @@
 import { createNewEvaluationRequest } from '@/backend/services/planning/evaluation';
-import { requirePermission } from '@/lib/auth/api-auth';
+import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import * as z from 'zod';
 
@@ -31,6 +31,9 @@ export async function POST(request: NextRequest) {
   try {
     const { session, error } = await requirePermission('view_planning_advanced');
     if (error) return error;
+
+    const { error: featureError } = await requireFeatureAccess('planning_new_evaluation', 'create');
+    if (featureError) return featureError;
 
     const body = await request.json();
     const ownerId = session!.user.ownerId;

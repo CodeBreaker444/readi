@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     const { session, error } = await requirePermission('view_config')
     if (error) return error
 
-    const { error: featureError } = await requireFeatureAccess('org_assignments', 'edit')
+    const { error: featureError } = await requireFeatureAccess('org_assignments', 'create')
     if (featureError) return featureError
 
     const body = await request.json()
